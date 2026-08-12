@@ -55,7 +55,7 @@ class DatabaseBoundariesTest {
         long workspaceB = workspace("workspace-b", "Workspace B");
         SQLException exception = assertThrows(SQLException.class, () -> {
             try (Connection connection = adminConnection(); PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO organization.commercial_group (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO organization.commercial_group (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
             )) {
                 statement.setString(1, "workspace-a");
                 statement.setLong(2, workspaceB);
@@ -64,6 +64,7 @@ class DatabaseBoundariesTest {
                 statement.setString(5, "platform-admin:test");
                 statement.setObject(6, UUID.randomUUID());
                 statement.setLong(7, Instant.now().toEpochMilli());
+                statement.setLong(8, Instant.now().toEpochMilli());
                 statement.executeUpdate();
             }
         });

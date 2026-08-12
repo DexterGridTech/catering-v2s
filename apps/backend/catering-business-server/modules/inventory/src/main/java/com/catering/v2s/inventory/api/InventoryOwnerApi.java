@@ -5,6 +5,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /** Public inventory owner boundary. Inventory facts are stored and changed only in inventory schema. */
@@ -35,6 +36,60 @@ public interface InventoryOwnerApi {
 
     JsonNode write(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
 
+    /**
+     * M1 command boundary for an operations inventory count.  Scope/grant facts
+     * come only from the resolved context; the request cannot select them.
+     */
+    InventoryMutationReadback countTarget(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CountTargetCommand command, String idempotencyKey);
+
+    /** M1 command boundary for a positive inventory increase. */
+    InventoryMutationReadback increaseTarget(WorkspaceExecutionContext<CatalogAuthorizationScope> context, IncreaseTargetCommand command, String idempotencyKey);
+
+    /** M1 command boundary for an explicitly directed inventory adjustment. */
+    InventoryMutationReadback adjustTarget(WorkspaceExecutionContext<CatalogAuthorizationScope> context, AdjustTargetCommand command, String idempotencyKey);
+
+    /** M1 command boundary for the owner-held inventory configuration. */
+    InventoryTargetCurrentReadback updateTargetConfiguration(WorkspaceExecutionContext<CatalogAuthorizationScope> context, UpdateTargetConfigurationCommand command, String idempotencyKey);
+
+    record CountTargetCommand(UUID targetRef, long expectedVersion, BigDecimal countedQuantity, String unit,
+                              boolean zeroConfirmation, String note) { }
+    record IncreaseTargetCommand(UUID targetRef, long expectedVersion, BigDecimal quantity, String unit, String note) { }
+    record AdjustTargetCommand(UUID targetRef, long expectedVersion, String direction, BigDecimal quantity,
+                               String unit, String reasonCode, String note) { }
+    record InventoryConfiguration(boolean allowNegative, BigDecimal lowStockThreshold, String countingUnit,
+                                  BigDecimal conversionFactor) { }
+    record UpdateTargetConfigurationCommand(UUID targetRef, long expectedVersion, InventoryConfiguration configuration) { }
+
+    /** Owner-native mutation result; HTTP serialization remains at the edge. */
+    record InventoryMutationReadback(UUID targetRef, BigDecimal before, BigDecimal change, BigDecimal after,
+                                    UUID ledgerEntryRef, String stockState, long version) { }
+
+    /** Owner-native current-target readback used by the configuration command. */
+    record InventoryTargetCurrentReadback(InventoryTargetReadback target, BigDecimal balance,
+                                         InventoryConfiguration configuration, long version, String stockState,
+                                         boolean stale, boolean unknown, BigDecimal threshold, BigDecimal gap,
+                                         InventoryChangeSummaryReadback changeSummary,
+                                         java.util.List<InventoryRecentChangeReadback> recentChanges,
+                                         java.util.List<InventoryReferenceReadback> references,
+                                         java.util.List<InventoryLedgerEntryReadback> ledger,
+                                         InventoryDiagnosticsAvailabilityReadback diagnosticsAvailability) { }
+    record InventoryTargetReadback(UUID targetRef, UUID itemRef, UUID productSkuRef, String targetType,
+                                  String productCode, String productName, String productShape, String skuCode,
+                                  String skuName, String consumptionUnit, String countingUnit,
+                                  String conversionSummary, String authorityType) { }
+    record InventoryChangeSummaryReadback(InventoryChangePeriodReadback today,
+                                          InventoryChangePeriodReadback sevenDays,
+                                          InventoryChangePeriodReadback thirtyDays) { }
+    record InventoryChangePeriodReadback(BigDecimal increase, BigDecimal decrease, BigDecimal netChange,
+                                         long entryCount) { }
+    record InventoryRecentChangeReadback(long occurredAt, String changeType, BigDecimal quantity, String source) { }
+    record InventoryReferenceReadback(String sourceCode, String sourceSkuCode, String sourceOptionValueCode,
+                                     String sourceKind, BigDecimal quantity, String unit, String timing,
+                                     String status) { }
+    record InventoryLedgerEntryReadback(UUID entryRef, String source, String reasonCode, BigDecimal beforeQuantity,
+                                        BigDecimal changeQuantity, BigDecimal afterQuantity, long occurredAt) { }
+    record InventoryDiagnosticsAvailabilityReadback(boolean canRead, String reason) { }
+
     /** Coordinated copy command; inventory owns balance/ledger reset and BOM facts. */
     JsonNode copy(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
                   UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
@@ -51,6 +106,19 @@ public interface InventoryOwnerApi {
                            UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
 
     JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request);
+
+    record LocalCopyPreflightCommand(String targetItemCode, java.util.List<String> selectedSections, String catalogReferencePlanJson) { }
+    record LocalCopyPreflightReadback(String preflightDigest, String canonicalJson) { }
+    LocalCopyPreflightReadback preflightLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyPreflightCommand command);
+    record LocalCopyExecuteCommand(String sourceItemCode, String targetItemCode, java.util.List<String> selectedSections,
+                                   String inventoryPreflightDigest, String catalogReferencePlanJson) { }
+    /** Named execution contribution; receipt JSON remains private to inventory. */
+    record LocalCopyExecutionReadback(String owner, String status, long version) { }
+    LocalCopyExecutionReadback executeLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyExecuteCommand command, String idempotencyKey);
+    record BrandCopyPreflightCommand(java.util.List<String> selectedItemCodes, String targetDataNodeRef, String catalogReferencePlanJson) { }
+    record BrandCopyExecuteCommand(java.util.List<String> selectedItemCodes, String targetDataNodeRef, String inventoryPreflightDigest, String catalogReferencePlanJson) { }
+    LocalCopyPreflightReadback preflightBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
+    LocalCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyExecuteCommand command, String idempotencyKey);
 
     /**
      * Task-read used by the catalog detail surface.  It returns only the
@@ -70,6 +138,11 @@ public interface InventoryOwnerApi {
     default JsonNode catalogItemVoidDependencies(String dataNodeRef, String brandRef, String itemRef, String requestId) {
         throw new UnsupportedOperationException("inventory void-dependency judgement is not implemented");
     }
+
+    /** M1 typed owner judgement used before a catalog item can transition to VOIDED. */
+    CatalogItemVoidDependencyReadback catalogItemVoidDependencies(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemRef);
+
+    record CatalogItemVoidDependencyReadback(boolean hasDependentFacts, long stockTargetCount, long productBomCount) { }
 
     /**
      * Bounded task-read for the catalog workbench.  It returns definition
@@ -92,6 +165,26 @@ public interface InventoryOwnerApi {
                                    UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
 
     JsonNode saveCatalogProductBom(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
+
+    /**
+     * Typed catalog-save boundary. The canonical request text remains opaque outside the
+     * inventory owner; parsing, target recheck, receipt replay and final result stay here.
+     */
+    record CatalogItemSaveEnsureTargetCommand(String canonicalRequestJson) { }
+    record CatalogItemSaveBomCommand(String canonicalRequestJson) { }
+    record CatalogItemSaveReadback(String canonicalJson) { }
+
+    CatalogItemSaveReadback ensureCatalogItemSaveTarget(
+        WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+        CatalogItemSaveEnsureTargetCommand command,
+        String idempotencyKey
+    );
+
+    CatalogItemSaveReadback saveCatalogItemProductBom(
+        WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+        CatalogItemSaveBomCommand command,
+        String idempotencyKey
+    );
 
     final class Problem extends RuntimeException {
         private final String code;

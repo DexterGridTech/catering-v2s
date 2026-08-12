@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_FINAL_ADAPTER_20260810",
+  "design": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-intake.md",
+    "sha256": "cf239e59081de1ea8280f36e8da3e5b30a29a51156fdb0b1028a048fe0b3f584"
+  },
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-adapter-design-input.md",
+    "sha256": "69daa36d2c0a86c0db9664cde12dab816ad459a75515479b34512036690c3968",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "candidateJourney": {
+    "id": "BACKEND-PERFORMANCE-FINAL-ADAPTER",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering",
+    "task": "execute final backend-performance workload only through a managed isolated lifecycle adapter",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_FINAL_ADAPTER",
+    "ownerReadback": "run manifest, immutable snapshot and cleanup evidence",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "FINAL-U01",
+      "title": "Final-only managed lifecycle and finite fixture materialization",
+      "approvedAssertions": [
+        "Only backend-performance-runtime-runner --run admits a static-exit/review/digest-bound final dynamic package and uses no callback injection.",
+        "One final adapter owns seven phases, exact local/remote identities, fixture catalog, server-origin evidence, snapshot and cleanup.",
+        "The literal 396 catalog exactly equals workload recipes and each row carries anchor, typed materializer, path parameters and prerequisite/readback.",
+        "Nested Testcontainers proof is parent-bound, task-bound and has child business/cleanup PASS.",
+        "RM1/R5 remain isolated; no reset, browser L2, UAT or manual SSH/SQL path exists."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-intake.md",
+          "sha256": "cf239e59081de1ea8280f36e8da3e5b30a29a51156fdb0b1028a048fe0b3f584",
+          "anchor": "## Mechanical dynamic-admission and fixture contracts"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-intake.md",
+        "anchor": "## Exact implementation surfaces"
+      },
+      "currentDeviation": "The final runner is deliberately fail-closed because there is no managed lifecycle adapter or source-bound fixture materializer.",
+      "changeSurfaces": [
+        {
+          "path": "scripts/dev/backend-performance-runtime-runner.mjs",
+          "disposition": "update",
+          "target": "sole final --run admission and adapter call"
+        },
+        {
+          "path": "scripts/dev/backend-performance-runtime-runner.test.mjs",
+          "disposition": "update",
+          "target": "admission red cases"
+        },
+        {
+          "path": "scripts/dev/backend-performance-final-managed-adapter.mjs",
+          "disposition": "create",
+          "target": "own seven-phase final lifecycle"
+        },
+        {
+          "path": "scripts/dev/backend-performance-final-managed-adapter.test.mjs",
+          "disposition": "create",
+          "target": "identity, phase, snapshot and cleanup red cases"
+        },
+        {
+          "path": "scripts/dev/managed-isolated-local-runtime.mjs",
+          "disposition": "create",
+          "target": "closed local process/tunnel primitive"
+        },
+        {
+          "path": "scripts/dev/managed-isolated-local-runtime.test.mjs",
+          "disposition": "create",
+          "target": "identity and profile isolation proof"
+        },
+        {
+          "path": "scripts/dev/http-diagnostic-runner.mjs",
+          "disposition": "update",
+          "target": "extract primitives without changing RM1 semantics"
+        },
+        {
+          "path": "scripts/test/backend-performance-final-fixtures.mjs",
+          "disposition": "create",
+          "target": "private owner HTTP fixture materializer"
+        },
+        {
+          "path": "scripts/test/backend-performance-final-fixtures.test.mjs",
+          "disposition": "create",
+          "target": "fixture secrecy and finite materialization proof"
+        },
+        {
+          "path": "contracts/policy/backend-performance-final-fixture-catalog.json",
+          "disposition": "create",
+          "target": "literal 396 source-bound fixture rows"
+        },
+        {
+          "path": "scripts/check/backend-performance-final-fixture-catalog",
+          "disposition": "create",
+          "target": "fixture exact-set/red checker"
+        },
+        {
+          "path": "scripts/test/backend-performance-workload.mjs",
+          "disposition": "update",
+          "target": "consume only fixture catalog/materializer"
+        },
+        {
+          "path": "scripts/test/backend-performance-workload.test.mjs",
+          "disposition": "update",
+          "target": "no generic callback proof"
+        },
+        {
+          "path": "scripts/test/backend-performance-final-acceptance.mjs",
+          "disposition": "update",
+          "target": "terminal manifest and nested technical proof admission"
+        },
+        {
+          "path": "scripts/test/backend-performance-final-acceptance.test.mjs",
+          "disposition": "update",
+          "target": "final lifecycle admission red cases"
+        },
+        {
+          "path": "contracts/policy/backend-performance-final-workload.json",
+          "disposition": "update",
+          "target": "bind adapter and catalog digest"
+        }
+      ],
+      "orderedChain": [
+        "extract closed local primitive",
+        "implement final adapter and fixture catalog",
+        "bind workload and final admission",
+        "static red/compile proof then independent implementation review"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "No dynamic run before static implementation review GO.",
+        "Remote Testcontainers is nested technical proof only.",
+        "No RM1/R5 workload or root is reusable."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "Run-scoped isolated resources only."
+      },
+      "uiAndTerms": {
+        "notApplicableReason": "No UI delivery.",
+        "termSource": "AGENTS.md"
+      },
+      "evidence": {
+        "l1": "source exact-set and real red mutations",
+        "l2": "managed remote Testcontainers technical proof",
+        "l3": "immutable final snapshot",
+        "business": "final HTTP workload PASS",
+        "cleanup": "owned local/remote cleanup PASS"
+      },
+      "forbiddenPseudoFixes": [
+        "callback injection",
+        "manual SSH or SQL",
+        "generic fixture/default IDs",
+        "RM1/R5 reuse",
+        "static-plan runtime claim"
+      ],
+      "discriminator": {
+        "fixture": "inject a foreign callback, stale process identity, missing fixture row or cleanup failure; admission must fail."
+      }
+    }
+  ],
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_ADAPTER_DESIGN_20260810",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-review-round2.md",
+    "reviewedManifestSha256": "c4327964d02761c32561780be432d8b921af08e5677c950dcaed95bdd51e04e8",
+    "reviewSha256": "95a0e765cc32526cbc9400d5f84b9313a246014cdc22579cb61c47ae7ce7f468",
+    "intake": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-author-intake.md",
+      "sha256": "6676085e9454fdfba9b7b66482c79cb3e7731d6e0fed06895d9c3495398e41a6"
+    },
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false,
+    "reason": "Round-2 authority-input repairs, the Claude-confirmed trim-exit admission correction, and the honest retention/extension corrections were made without changing delivery units, implementation surfaces, 396 denominator, runtime authority, or dynamic execution state."
+  }
+}

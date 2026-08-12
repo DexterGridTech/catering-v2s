@@ -16,6 +16,9 @@ const outputPath = "contracts/registry/backend-performance-sql-merge-applicabili
 const snapshotCheckPath = "scripts/check/backend-performance-evidence-snapshot";
 const finalAcceptancePath = "scripts/test/backend-performance-final-acceptance.mjs";
 const bindingPath = "contracts/registry/operation-handler-bindings.json";
+const commandProfilesPath = "contracts/registry/backend-performance-command-enforcement-profiles.json";
+const commandTopologyPath = "contracts/registry/backend-performance-command-topology-matrix.json";
+const m1ExecutionMatrixPath = "contracts/registry/backend-performance-m1-command-execution-matrix.json";
 const protocolReadExemptions = new Set([
   "getCurrentPlatformSession",
   "getOperationsWorkspaceLoginEntry",
@@ -164,7 +167,85 @@ const sourceRetirements = {
   ],
 };
 
-function fail(code, detail = "") { throw new Error(detail ? `${code}:${detail}` : code); }
+const m1CommandArchitectureControls = [
+  {
+    sourcePath: "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+    method: "commandAuthorizationFacts",
+    required: ["activeAuthorizationRow(rawToken)", "commandScopeContext(row)", "new WorkspaceCommandAuthorizationFacts("],
+    forbidden: ["sessionCache.", "visibility."],
+  },
+  {
+    sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+    method: "requireWorkspaceCommandFacts",
+    required: ["sessions.commandAuthorizationFacts(token(request))", "facts.sessionReadback().groupWorkspaceKey()"],
+    forbidden: ["sessions.session(token(request))"],
+  },
+  {
+    sourcePath: "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+    method: "resolveWithCapability",
+    required: ["taskPaths.commandTaskPathFacts(", "pathFacts.assignmentScopeAllowed()"],
+    forbidden: ["taskPaths.requireTaskPath(", "taskPaths.isScopeAllowed("],
+  },
+  {
+    sourcePath: "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+    method: "commandTaskPathFacts",
+    required: ["TaskPath taskPath", "scopeAllowed(assignmentType, assignmentId, taskPath)"],
+    forbidden: ["isScopeAllowed("],
+  },
+  {
+    sourcePath: "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+    method: "resolveCommandTarget",
+    required: ["commandTaskPathFacts(session, assignment, expectedTargetType, requestedTargetRef)", "facts.assignmentScopeAllowed()"],
+    forbidden: ["taskPaths.requireTaskPath(", "taskPaths.isScopeAllowed("],
+  },
+  {
+    sourcePath: "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+    method: "catalogWorkspaceCommandHandlers",
+    required: ["@Transactional public JsonNode createCatalogItem", "@Transactional public JsonNode releaseCatalogAsset"],
+    forbidden: [],
+    requiredOccurrences: {"@Transactional public JsonNode": 25},
+  },
+];
+
+const m1CommandBoundaryControls = [
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java", commandCount: 15, commandSessionMinimum: 1, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java", commandCount: 5, commandSessionMinimum: 1, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java", commandCount: 3, commandSessionMinimum: 3, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java", commandCount: 9, commandSessionMinimum: 9, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java", commandCount: 5, commandSessionMinimum: 5, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java", commandCount: 2, commandSessionMinimum: 2, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java", commandCount: 3, commandSessionMinimum: 1, edgeTransactionForbidden: true},
+  {sourcePath: "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java", commandCount: 26, catalogCoordinator: true},
+];
+
+const gateDiagnosticCatalog = {
+  BP_U07_COMMAND_PROFILE_INPUT_INVALID: ["the profile registry is missing, malformed, or bound to stale handler bytes", "the 113-command denominator is the contract for operations, platform, and public mutations", "regenerate or correct the five closed profiles from operation-handler-bindings before editing runtime sources"],
+  BP_U07_COMMAND_PROFILE_COVERAGE_DRIFT: ["a command tuple has no unique declared profile or a profile covers no command", "a known tuple is not a substitute for an explicit endpoint-to-owner topology", "make the five profile tuples exactly equal to the current COMMAND tuple set"],
+  BP_U07_COMMAND_PROFILE_UNRESOLVED: ["a command cannot be classified by the closed profile registry", "face, context, boundary and REQUIRED transaction determine whether workspace grant rules apply", "add the reviewed profile/topology admission for the command; never infer it from a name"],
+  BP_U07_COMMAND_TOPOLOGY_INPUT_INVALID: ["the 113-row topology matrix is missing, malformed, or has a wrong denominator", "every command must retain a real edge, context and owner/protocol chain", "restore a source-hash-bound topology row for every current command before runtime implementation"],
+  BP_U07_COMMAND_TOPOLOGY_COVERAGE_DRIFT: ["topology operation IDs no longer equal the COMMAND registry denominator", "future commands must not inherit safety merely from an existing profile", "add or remove the exact topology row so the two sets are equal"],
+  BP_U07_COMMAND_TOPOLOGY_DRIFT: ["a topology row disagrees with its authoritative binding or route registry", "HTTP face, owner, route and adapter are an end-to-end command contract", "repair the row from the authoritative registry; do not patch controller behavior to match stale metadata"],
+  BP_U07_M1_EXECUTION_INPUT_INVALID: ["the 68-row M1 execution matrix is missing, malformed, or has a wrong denominator", "the shared operations-admin command context requires one explicit typed boundary per selected operation", "restore all 68 source-bound rows before editing an M1 runtime chain"],
+  BP_U07_M1_EXECUTION_COVERAGE_DRIFT: ["execution matrix operation IDs no longer equal the selected M1 set", "all WORKSPACE_OWNER_COMMAND operations must receive the same admission discipline", "make matrix IDs exactly equal to the derived M1 IDs"],
+  BP_U07_M1_EXECUTION_BINDING_DRIFT: ["an M1 row disagrees with its topology, registry adapter, route, or transaction entry", "a typed one-operation handler prevents generic dispatch and wrong-owner routing", "derive the row from the matching topology/binding entry and keep the adapter one-to-one"],
+  BP_U07_M1_UNRESOLVED_SOURCE: ["a required source anchor is unresolved or unsafe", "authorization, DTO, owner and readback facts cannot be guessed from operation names", "replace the placeholder with a real reviewed source anchor; do not use a naming-based substitute"],
+  BP_U07_M1_RUNTIME_CLOSURE_PENDING: ["static runtime admission still has pending adapters, catalog owner migrations, or P1 DTOs", "declared pending is allowed only during incremental implementation and is never completion", "finish the typed sources and generated DTO/owner migration, then update statuses before closure"],
+  BP_U07_M1_HANDLER_DUPLICATE: ["two M1 operations share an adapter FQCN or source path", "each operation needs a unique transaction boundary so context and owner invocation cannot dispatch generically", "give every operation its own declared adapter source"],
+  BP_U07_M1_OPERATION_ID_LITERAL_DRIFT: ["an existing adapter does not declare its exact operation literal", "the literal binds generated edge routing to one concrete transaction handler", "restore the exact OPERATION_ID matching the matrix row"],
+  BP_U07_M1_TRANSACTION_REQUIRED: ["an existing adapter lacks a REQUIRED transaction boundary", "one command must resolve context and call owners inside its single command transaction", "place REQUIRED on the declared adapter entry, never on the edge"],
+  BP_U07_M1_TRANSACTION_ENTRY_MISSING: ["the declared adapter entry method is absent", "the generated binding must enter one explicit typed command boundary", "restore the exact matrix entry method or correct the reviewed matrix/source together"],
+  BP_U07_M1_GENERIC_OR_DATA_ESCAPE: ["an adapter uses generic dispatch, JDBC/repository/entity access, or another data-owner escape", "composition adapters orchestrate typed public owner APIs and hold no facts or data access", "remove the escape and call only the declared typed owner API"],
+  BP_U07_NON_M1_TOPOLOGY_SOURCE_ANCHOR_INVALID: ["a non-M1 protocol/platform/public anchor is missing or does not name an existing source method", "the 45 non-M1 commands are not exempt from topology verification; only M1 workspace-grant assertions are N/A", "bind context, transaction owner and public API to real source methods"],
+  BP_U07_NON_M1_TOPOLOGY_KIND_INVALID: ["a non-M1 topology uses an incompatible context/transaction/API kind", "public protocol has no authenticated owner context while platform and workspace protocol retain their own origins", "use the profile-specific declared topology kind; do not recast it as a workspace command"],
+  BP_U07_M1_EDGE_TRANSACTION_FORBIDDEN: ["an edge controller owns a transaction", "edge code only decodes/maps; the named application adapter owns REQUIRED", "remove the edge annotation and enter through the declared adapter"],
+};
+const genericGateDiagnostic = ["a mechanical command-topology invariant failed", "command safety preserves owner sovereignty, typed REQUIRED boundaries, authorization context and readback; static checks never prove JDBC savings", "repair the declared registry/source relationship and rerun this mandatory gate; do not bypass it or substitute a runtime test"];
+function fail(code, detail = "") {
+  const [why, background, pattern] = gateDiagnosticCatalog[code] ?? genericGateDiagnostic;
+  const suffix = detail ? `; DETAIL=${detail}` : "";
+  throw new Error(`${code}: WHY=${why}; BACKGROUND=${background}; PATTERN=${pattern}${suffix}`);
+}
+function diagnosticComplete(error) { return ["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker)); }
 function digest(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
 function json(relative) { const bytes = fs.readFileSync(path.join(root, relative)); return { bytes, value: JSON.parse(bytes) }; }
 function normalizedPath(operation) { return operation.path.startsWith("/api/") ? operation.path : `/api${operation.path}`; }
@@ -279,6 +360,8 @@ function expected() {
     sourceRetirements,
     legacyAllowedImplementations: [],
     sourceRetirementAnchors,
+    m1CommandArchitectureControls,
+    m1CommandBoundaryControls,
   };
 }
 
@@ -403,6 +486,47 @@ function validateBindingAdapters() {
     if (fs.existsSync(absolute)) validateBindingAdapterText(relative, fs.readFileSync(absolute, "utf8"));
   }
 }
+function sourceForControl(control, sourceOverrides) {
+  return sourceOverrides?.get(control.sourcePath) ?? fs.readFileSync(path.join(root, control.sourcePath), "utf8");
+}
+function validateM1CommandArchitecture(sourceOverrides = new Map()) {
+  for (const control of m1CommandArchitectureControls) {
+    const source = sourceForControl(control, sourceOverrides);
+    const body = control.method === "catalogWorkspaceCommandHandlers"
+      ? source
+      : javaMethodBodies(source, control.method).at(0);
+    if (!body) fail("BP_U07_M1_COMMAND_SOURCE_MISSING", `${control.sourcePath}#${control.method}`);
+    for (const required of control.required) {
+      if (!body.includes(required)) fail("BP_U07_M1_COMMAND_PATTERN_MISSING", `${control.sourcePath}#${control.method}:${required}`);
+    }
+    for (const forbidden of control.forbidden) {
+      if (body.includes(forbidden)) fail("BP_U07_M1_COMMAND_LEGACY_PATH_PRESENT", `${control.sourcePath}#${control.method}:${forbidden}`);
+    }
+    for (const [needle, count] of Object.entries(control.requiredOccurrences ?? {})) {
+      if (body.split(needle).length - 1 !== count) fail("BP_U07_M1_COMMAND_TRANSACTION_BOUNDARY_DRIFT", `${control.sourcePath}:${needle}`);
+    }
+  }
+}
+function count(source, needle) { return source.split(needle).length - 1; }
+function validateM1CommandBoundaries(sourceOverrides = new Map()) {
+  let total = 0;
+  for (const control of m1CommandBoundaryControls) {
+    const source = sourceOverrides.get(control.sourcePath) ?? fs.readFileSync(path.join(root, control.sourcePath), "utf8");
+    if (control.catalogCoordinator) {
+      const handlerCount = count(source, "@Transactional public JsonNode");
+      if (handlerCount !== 25 || !source.includes("@Transactional\n    public JsonNode stageWorkspaceAsset")) {
+        fail("BP_U07_M1_COMMAND_TRANSACTION_BOUNDARY_DRIFT", control.sourcePath);
+      }
+    } else {
+      if (control.edgeTransactionForbidden && source.includes("@Transactional")) fail("BP_U07_M1_EDGE_TRANSACTION_FORBIDDEN", control.sourcePath);
+      const commandBoundaryCount = count(source, "requireWorkspaceCommand(") + count(source, "requireWorkspaceCommandFacts(");
+      if (commandBoundaryCount < control.commandSessionMinimum) fail("BP_U07_M1_COMMAND_SESSION_BOUNDARY_DRIFT", control.sourcePath);
+      if (source.includes("sessions.requireWorkspace(")) fail("BP_U07_M1_COMMAND_LEGACY_SESSION_PRESENT", control.sourcePath);
+    }
+    total += control.commandCount;
+  }
+  if (total !== 68) fail("BP_U07_M1_COMMAND_BOUNDARY_DENOMINATOR_DRIFT", String(total));
+}
 function jsonlTuples(absolute) {
   const tuples = new Set();
   for (const line of fs.readFileSync(absolute, "utf8").split("\n")) {
@@ -435,12 +559,138 @@ function validateSnapshot(snapshot, value) {
   if (finalAdmission.status !== 0) fail("BP_U07_FINAL_SNAPSHOT_ADMISSION_INVALID", (finalAdmission.stderr || finalAdmission.stdout).trim());
   validateMeasuredSnapshot(value, snapshot);
 }
-function validate(value) {
+function exactSet(actual, expectedValue, code) {
+  if (actual.size !== expectedValue.size || [...actual].some((value) => !expectedValue.has(value))) fail(code);
+}
+function safeAnchor(anchor, code) {
+  if (typeof anchor !== "string" || !anchor || anchor.includes("UNRESOLVED_REQUIRES_SOURCE") || anchor.includes("..") || path.isAbsolute(anchor)) fail(code, String(anchor));
+}
+function existingJavaAnchor(anchor, code) {
+  safeAnchor(anchor, code);
+  const separator = anchor.lastIndexOf("#"), relative = anchor.slice(0, separator), method = anchor.slice(separator + 1);
+  if (separator < 1 || !relative.endsWith(".java") || !/^[A-Za-z_$][\w$]*$/.test(method) || !fs.existsSync(path.join(root, relative))) fail(code, anchor);
+  const source = fs.readFileSync(path.join(root, relative), "utf8");
+  if (!javaMethodBodies(source, method).length && !new RegExp(`\\b${escapeRegex(method)}\\s*\\(`).test(source)) fail(code, anchor);
+}
+function profileTuple(row) { return [row.face, row.contextKind, row.commandBoundary, row.transactionMode].join("\u0000"); }
+function profileDefinitionTuple(row) { return [row.consumerFace, row.contextKind, row.commandBoundary, row.transactionMode].join("\u0000"); }
+function topologyInputs(overrides = {}) {
+  const input = (relative) => overrides[relative] ?? json(relative).value;
+  const {bytes, value: binding} = json(bindingPath);
+  const commands = binding?.operations?.filter((row) => row.mode === "COMMAND");
+  if (!Array.isArray(binding?.operations) || binding.operations.length !== 196 || !Array.isArray(commands) || commands.length !== 113) fail("BP_U07_COMMAND_DENOMINATOR_DRIFT");
+  return {
+    bindingSha256: digest(bytes),
+    commands,
+    profiles: input(commandProfilesPath),
+    topology: input(commandTopologyPath),
+    execution: input(m1ExecutionMatrixPath),
+  };
+}
+function commandRouteIndex() {
+  const index = new Map();
+  for (const registry of sourceRegistries()) {
+    for (const operation of registry.operations) {
+      if (index.has(operation.operationId)) fail("BP_U07_COMMAND_ROUTE_DUPLICATE", operation.operationId);
+      index.set(operation.operationId, {...operation, registryPath: registry.path});
+    }
+  }
+  return index;
+}
+function validatePresentM1Adapter(row) {
+  const source = fs.readFileSync(path.join(root, row.adapterSourcePath), "utf8");
+  if (!source.includes(`OPERATION_ID = "${row.operationId}"`)) fail("BP_U07_M1_OPERATION_ID_LITERAL_DRIFT", row.operationId);
+  if (!/@Transactional[\s\S]{0,160}Propagation\.REQUIRED/.test(source)) fail("BP_U07_M1_TRANSACTION_REQUIRED", row.operationId);
+  if (!javaMethodBodies(source, row.transactionEntry.methodName).length) fail("BP_U07_M1_TRANSACTION_ENTRY_MISSING", row.operationId);
+  if (/\b(?:Map|ObjectNode|Function|JdbcTemplate|NamedParameterJdbcTemplate|DataSource|Connection|DriverManager|EntityManager)\b|\.repository\.|\.domain\./.test(source)) fail("BP_U07_M1_GENERIC_OR_DATA_ESCAPE", row.operationId);
+}
+const requiredNamedOrganizationOwnerMethods = new Map([
+  ["transitionOperationsOrganizationBrandStatus", "transitionBrandStatus"],
+  ["transitionOperationsOrganizationTenantStatus", "transitionTenantStatus"],
+  ["transitionOperationsOrganizationNodeStatus", "transitionNodeStatus"],
+]);
+function validateCommandTopology({closure = false, overrides = {}} = {}) {
+  const {bindingSha256, commands, profiles, topology, execution} = topologyInputs(overrides);
+  if (profiles?.schemaVersion !== 1 || profiles.kind !== "backend-performance-command-enforcement-profiles" || profiles.source?.path !== bindingPath || profiles.source.sha256 !== bindingSha256 || !Array.isArray(profiles.profiles) || profiles.profiles.length !== 5) fail("BP_U07_COMMAND_PROFILE_INPUT_INVALID");
+  if (topology?.schemaVersion !== 1 || topology.kind !== "backend-performance-command-topology-matrix" || topology.admissionPhase !== "STATIC_RUNTIME_ADMISSION" || topology.source?.operationHandlerBindings?.path !== bindingPath || topology.source.operationHandlerBindings.sha256 !== bindingSha256 || !Array.isArray(topology.rows) || topology.rows.length !== 113) fail("BP_U07_COMMAND_TOPOLOGY_INPUT_INVALID");
+  if (execution?.schemaVersion !== 1 || execution.kind !== "backend-performance-m1-command-execution-matrix" || execution.source?.path !== bindingPath || execution.source.sha256 !== bindingSha256 || execution.admissionPhase !== "STATIC_RUNTIME_ADMISSION" || !Array.isArray(execution.rows) || execution.rows.length !== 68) fail("BP_U07_M1_EXECUTION_INPUT_INVALID");
+  const profilesById = new Map(), profilesByTuple = new Map();
+  for (const profile of profiles.profiles) {
+    const tuple = profileDefinitionTuple(profile);
+    if (!profile?.profileId || profilesById.has(profile.profileId) || profilesByTuple.has(tuple) || !["APPLICABLE", "NOT_APPLICABLE_WITH_REASON"].includes(profile.workspaceGrantAssertion)) fail("BP_U07_COMMAND_PROFILE_INVALID", profile?.profileId);
+    profilesById.set(profile.profileId, profile); profilesByTuple.set(tuple, profile);
+  }
+  const commandIds = new Set(commands.map((row) => row.operationId));
+  exactSet(new Set(profilesByTuple.keys()), new Set(commands.map(profileTuple)), "BP_U07_COMMAND_PROFILE_COVERAGE_DRIFT");
+  const profileByOperation = new Map(), m1Ids = new Set();
+  for (const command of commands) {
+    const profile = profilesByTuple.get(profileTuple(command));
+    if (!profile || command.transactionMode !== "REQUIRED") fail("BP_U07_COMMAND_PROFILE_UNRESOLVED", command.operationId);
+    profileByOperation.set(command.operationId, profile);
+    if (profile.enforcementMode === "M1_EXECUTION_MATRIX_REQUIRED") m1Ids.add(command.operationId);
+  }
+  if (m1Ids.size !== 68) fail("BP_U07_M1_PROFILE_DENOMINATOR_DRIFT", String(m1Ids.size));
+  const routes = commandRouteIndex(), topologyById = new Map();
+  for (const row of topology.rows) {
+    const command = commands.find((candidate) => candidate.operationId === row?.operationId), route = routes.get(row?.operationId), profile = profileByOperation.get(row?.operationId);
+    if (!command || !route || !profile || topologyById.has(row.operationId)) fail("BP_U07_COMMAND_TOPOLOGY_OPERATION_INVALID", row?.operationId);
+    if (row.profileId !== profile.profileId || row.owner !== command.owner || row.declaredRegistryAdapter?.fqcn !== command.adapter || row.route?.method !== route.method || row.route.path !== route.path || !row.route.routeRegistry?.endsWith(route.registryPath.split("/").at(-1))) fail("BP_U07_COMMAND_TOPOLOGY_DRIFT", row.operationId);
+    safeAnchor(row.edge?.sourceAnchor, "BP_U07_COMMAND_TOPOLOGY_SOURCE_ANCHOR_INVALID");
+    if (m1Ids.has(row.operationId)) {
+      if (!row.m1Runtime || !["DECLARED_RUNTIME_SOURCE_PENDING", "IMPLEMENTED_SOURCE_ANCHORED"].includes(row.implementationStatus) || row.m1Runtime.executionMatrixOperationId !== row.operationId || row.m1Runtime.entryMethod !== "execute" || row.workspaceGrantAssertion?.status !== "APPLICABLE_IN_M1_EXECUTION_MATRIX") fail("BP_U07_M1_TOPOLOGY_INVALID", row.operationId);
+    } else {
+      if (row.implementationStatus !== "SOURCE_IMPLEMENTED_NON_M1" || row.m1Runtime !== null || row.workspaceGrantAssertion?.status !== "NOT_APPLICABLE_WITH_REASON" || !row.workspaceGrantAssertion.reason) fail("BP_U07_NON_M1_TOPOLOGY_INVALID", row.operationId);
+      const expectedContextKind = profile.profileId === "PUBLIC_PROTOCOL" ? "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT" : "CURRENT_EDGE_CONTEXT_ORIGIN";
+      if (row.contextOrigin?.kind !== expectedContextKind || row.transactionOwner?.kind !== "CURRENT_OWNER_OR_PROTOCOL_ENTRY" || row.ownerOrProtocolApi?.kind !== "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API") fail("BP_U07_NON_M1_TOPOLOGY_KIND_INVALID", row.operationId);
+      for (const anchor of [row.edge.sourceAnchor, row.contextOrigin.sourceAnchor, row.transactionOwner.sourceAnchor, row.ownerOrProtocolApi.sourceAnchor]) existingJavaAnchor(anchor, "BP_U07_NON_M1_TOPOLOGY_SOURCE_ANCHOR_INVALID");
+    }
+    topologyById.set(row.operationId, row);
+  }
+  exactSet(new Set(topologyById.keys()), commandIds, "BP_U07_COMMAND_TOPOLOGY_COVERAGE_DRIFT");
+  const executionById = new Map(); let pending = 0, catalogMigration = 0, p1WirePending = 0;
+  for (const row of execution.rows) {
+    const command = commands.find((candidate) => candidate.operationId === row?.operationId), route = routes.get(row?.operationId), topologyRow = topologyById.get(row?.operationId);
+    if (!m1Ids.has(row?.operationId) || !command || !route || !topologyRow || executionById.has(row.operationId)) fail("BP_U07_M1_EXECUTION_OPERATION_INVALID", row?.operationId);
+    if (row.owner !== command.owner || row.face !== command.face || row.routeRegistry !== command.routeRegistry || row.method !== route.method || row.path !== route.path || row.topologyOperationId !== row.operationId || row.adapterFqcn !== command.adapter || row.adapterFqcn !== topologyRow.declaredRegistryAdapter.fqcn || row.adapterSourcePath !== topologyRow.m1Runtime.sourcePath || row.implementationStatus !== topologyRow.implementationStatus || row.transactionEntry?.className !== row.adapterFqcn || row.transactionEntry.methodName !== "execute" || row.transactionEntry.propagation !== "REQUIRED") fail("BP_U07_M1_EXECUTION_BINDING_DRIFT", row.operationId);
+    for (const anchor of [row.transactionEntry.sourceAnchor, row.edge?.sourceAnchor, row.context?.sourceAnchor, row.ownerInvocation?.sourceAnchor, ...(row.sourceAnchors ?? [])]) safeAnchor(anchor, "BP_U07_M1_UNRESOLVED_SOURCE");
+    if (!row.context?.resolverFqcn || !row.context.resolverVariant || row.context.contextKind !== "WORKSPACE_EXECUTION_CONTEXT" || row.context.tokenPolicy !== "WORKSPACE_COMMAND_OPERATION_TOKEN" || !row.edge?.className || !row.edge.methodName || !row.edge.sourcePath || !row.edge.requestDto?.fqcn || !row.edge.responseDto?.fqcn || !Array.isArray(row.edge.serverOnlyArguments) || !Array.isArray(row.sourceAnchors) || row.sourceAnchors.length === 0 || !["OWNER_READBACK", "NO_CONTENT"].includes(row.responseMode)) fail("BP_U07_M1_EXECUTION_FIELDS_INVALID", row.operationId);
+    const ownerInvocationValid = row.ownerInvocation?.kind === "CURRENT_NAMED_OWNER_API"
+      ? Boolean(row.ownerInvocation.fqcn && row.ownerInvocation.methodName)
+      : row.ownerInvocation?.kind === "TYPED_OWNER_API"
+        ? Boolean(row.ownerInvocation.apiFqcn && row.ownerInvocation.apiSourcePath && row.ownerInvocation.implementationFqcn
+          && row.ownerInvocation.implementationSourcePath && row.ownerInvocation.methodName
+          && row.ownerInvocation.commandType && row.ownerInvocation.readbackType)
+        : row.ownerInvocation?.kind === "MIGRATION_SOURCE_GENERIC_COORDINATOR" && row.ownerInvocation.declaredTypedTargetRequired === true;
+    if (!["PRESENT_EDGE_JAVA_WIRE", "GENERATED_P1_DTO_PENDING", "GENERATED_P1_DTO_SOURCE_ANCHORED"].includes(row.edge.requestDto.kind) || !["PRESENT_EDGE_JAVA_WIRE", "GENERATED_P1_DTO_PENDING", "GENERATED_P1_DTO_SOURCE_ANCHORED"].includes(row.edge.responseDto.kind) || !ownerInvocationValid) fail("BP_U07_M1_EXECUTION_ADMISSION_INVALID", row.operationId);
+    const exists = fs.existsSync(path.join(root, row.adapterSourcePath));
+    if (row.implementationStatus === "DECLARED_RUNTIME_SOURCE_PENDING") { if (exists) fail("BP_U07_M1_PENDING_SOURCE_PRESENT", row.operationId); pending += 1; }
+    else if (row.implementationStatus === "IMPLEMENTED_SOURCE_ANCHORED") { if (!exists) fail("BP_U07_M1_IMPLEMENTED_SOURCE_MISSING", row.operationId); validatePresentM1Adapter(row); }
+    else fail("BP_U07_M1_IMPLEMENTATION_STATUS_INVALID", row.operationId);
+    if (row.ownerInvocation.kind === "MIGRATION_SOURCE_GENERIC_COORDINATOR") catalogMigration += 1;
+    const requiredNamedOwnerMethod = requiredNamedOrganizationOwnerMethods.get(row.operationId);
+    if (requiredNamedOwnerMethod && (row.ownerInvocation.methodName !== requiredNamedOwnerMethod
+        || !row.ownerInvocation.sourceAnchor.endsWith(`#${requiredNamedOwnerMethod}`)
+        || !row.context.targetResourceValueSource.endsWith(`#${requiredNamedOwnerMethod}`)
+        || !row.context.readbackProducer.endsWith(`#${requiredNamedOwnerMethod}`))) {
+      fail("BP_U07_M1_EXECUTION_ADMISSION_INVALID", row.operationId);
+    }
+    if (row.edge.requestDto.kind === "GENERATED_P1_DTO_PENDING" || row.edge.responseDto.kind === "GENERATED_P1_DTO_PENDING") p1WirePending += 1;
+    executionById.set(row.operationId, row);
+  }
+  exactSet(new Set(executionById.keys()), m1Ids, "BP_U07_M1_EXECUTION_COVERAGE_DRIFT");
+  if (new Set([...executionById.values()].map((row) => row.adapterFqcn)).size !== 68 || new Set([...executionById.values()].map((row) => row.adapterSourcePath)).size !== 68) fail("BP_U07_M1_HANDLER_DUPLICATE");
+  if (closure && (pending || catalogMigration || p1WirePending)) fail("BP_U07_M1_RUNTIME_CLOSURE_PENDING", `${pending}:${catalogMigration}:${p1WirePending}`);
+  return {pending, catalogMigration, p1WirePending};
+}
+function validate(value, topologyOptions = {}) {
   const wanted = expected();
   if (value?.schemaVersion !== 1 || value.kind !== wanted.kind) fail("BP_U07_APPLICABILITY_IDENTITY_INVALID");
   validateMappings(value);
   validateBindingAdapters();
-  for (const key of ["sourceRegistries", "denominators", "m1BindingPartition", "m1ReadFactPartition", "m2SourceProvenPartition", "operationApplicability", "factImplementations", "m5Rows", "sourceRetirements", "legacyAllowedImplementations", "sourceRetirementAnchors"]) equal(value[key], wanted[key], `BP_U07_${key.toUpperCase()}_DRIFT`);
+  validateM1CommandArchitecture();
+  validateM1CommandBoundaries();
+  topologyOptions.summary = validateCommandTopology(topologyOptions);
+  for (const key of ["sourceRegistries", "denominators", "m1BindingPartition", "m1ReadFactPartition", "m2SourceProvenPartition", "operationApplicability", "factImplementations", "m5Rows", "sourceRetirements", "legacyAllowedImplementations", "sourceRetirementAnchors", "m1CommandArchitectureControls", "m1CommandBoundaryControls"]) equal(value[key], wanted[key], `BP_U07_${key.toUpperCase()}_DRIFT`);
   if (value.operationApplicability.some((row) => row.coverageStatus !== "UNMEASURED_BLOCKS_OPTIMIZATION")) fail("BP_U07_UNMEASURED_STATUS_REQUIRED");
 }
 
@@ -449,12 +699,28 @@ function scratch(mutator, expectedCode) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-u07-applicability-"));
   try {
     const value = JSON.parse(fs.readFileSync(path.join(root, outputPath), "utf8")); mutator(value);
-    try { validate(value); fail("BP_U07_RED_MUTATION_ACCEPTED", expectedCode); } catch (error) { if (error.message.split(":")[0] !== expectedCode) throw error; }
+    try { validate(value); fail("BP_U07_RED_MUTATION_ACCEPTED", expectedCode); } catch (error) { if (error.message.split(":")[0] !== expectedCode || !diagnosticComplete(error)) throw error; }
   } finally { fs.rmSync(temp, { recursive: true, force: true }); }
 }
 function selfTest() {
   const value = JSON.parse(fs.readFileSync(path.join(root, outputPath), "utf8"));
   validate(value);
+  const profiles = json(commandProfilesPath).value, topology = json(commandTopologyPath).value, execution = json(m1ExecutionMatrixPath).value;
+  const topologyScratch = (mutator, expectedCode, closure = false) => {
+    const overrides = {[commandProfilesPath]: structuredClone(profiles), [commandTopologyPath]: structuredClone(topology), [m1ExecutionMatrixPath]: structuredClone(execution)};
+    mutator(overrides);
+    try { validateCommandTopology({overrides, closure}); fail("BP_U07_RED_MUTATION_ACCEPTED", expectedCode); } catch (error) { if (error.message.split(":")[0] !== expectedCode || !diagnosticComplete(error)) throw error; }
+  };
+  topologyScratch((inputs) => inputs[commandProfilesPath].profiles[0].contextKind = "UNKNOWN_FUTURE_CONTEXT", "BP_U07_COMMAND_PROFILE_COVERAGE_DRIFT");
+  topologyScratch((inputs) => inputs[commandTopologyPath].rows.pop(), "BP_U07_COMMAND_TOPOLOGY_INPUT_INVALID");
+  topologyScratch((inputs) => inputs[m1ExecutionMatrixPath].rows.pop(), "BP_U07_M1_EXECUTION_INPUT_INVALID");
+  topologyScratch((inputs) => inputs[m1ExecutionMatrixPath].rows[0].context.sourceAnchor = "UNRESOLVED_REQUIRES_SOURCE", "BP_U07_M1_UNRESOLVED_SOURCE");
+  topologyScratch((inputs) => inputs[m1ExecutionMatrixPath].rows[1].adapterFqcn = inputs[m1ExecutionMatrixPath].rows[0].adapterFqcn, "BP_U07_M1_EXECUTION_BINDING_DRIFT");
+  topologyScratch((inputs) => inputs[commandTopologyPath].rows.find((row) => row.implementationStatus === "SOURCE_IMPLEMENTED_NON_M1").contextOrigin.sourceAnchor = "missing/NonM1.java#missing", "BP_U07_NON_M1_TOPOLOGY_SOURCE_ANCHOR_INVALID");
+  topologyScratch((inputs) => {
+    const row = inputs[m1ExecutionMatrixPath].rows.find((candidate) => candidate.routeRegistry === "catalog-inventory");
+    row.ownerInvocation = {...row.ownerInvocation, kind: "MIGRATION_SOURCE_GENERIC_COORDINATOR", declaredTypedTargetRequired: true};
+  }, "BP_U07_M1_RUNTIME_CLOSURE_PENDING", true);
   scratch((value) => value.operationApplicability.pop(), "BP_U07_OPERATIONAPPLICABILITY_DRIFT");
   scratch((value) => value.operationApplicability[0].owner = "wrong-owner", "BP_U07_OPERATIONAPPLICABILITY_DRIFT");
   scratch((value) => value.m1BindingPartition.protocolReadExemptions.pop(), "BP_U07_M1BINDINGPARTITION_DRIFT");
@@ -471,18 +737,53 @@ function selfTest() {
   scratch((value) => value.factImplementations.find((row) => row.factLoaderId === "EnabledSelectedWorkspaceFact").branchPolicy.enabledBranchExpressions.pop(), "BP_U07_PLATFORM_AUDIT_BRANCH_POLICY_DRIFT");
   try { validatePlatformAuditBranchBody(platformAuditHistoryBody().replace("new PlatformAuditHistoryQuery.WorkspaceRole", "new PlatformAuditHistoryQuery.PlatformAdmin")); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_PLATFORM_AUDIT_BRANCH_SOURCE_MISSING"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_PLATFORM_AUDIT_BRANCH_SOURCE_MISSING") throw error; }
   scratch((value) => value.sourceRetirementAnchors.retainedPreAuth.pop(), "BP_U07_M4_SOURCE_ANCHOR_MISSING");
+  {
+    const control = m1CommandArchitectureControls[0];
+    const source = sourceForControl(control, new Map());
+    const needle = "ReadAuthorizationRow row = activeAuthorizationRow(rawToken);";
+    const index = source.lastIndexOf(needle);
+    if (index < 0) fail("BP_U07_SELF_TEST_FIXTURE_INVALID", needle);
+    const mutated = `${source.slice(0, index)}ReadAuthorizationRow row = session(rawToken);${source.slice(index + needle.length)}`;
+    try { validateM1CommandArchitecture(new Map([[control.sourcePath, mutated]])); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_M1_COMMAND_PATTERN_MISSING"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_COMMAND_PATTERN_MISSING") throw error; }
+  }
+  {
+    const control = m1CommandArchitectureControls[5];
+    const source = sourceForControl(control, new Map());
+    const mutated = source.replace("@Transactional public JsonNode createCatalogItem", "public JsonNode createCatalogItem");
+    try { validateM1CommandArchitecture(new Map([[control.sourcePath, mutated]])); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_M1_COMMAND_PATTERN_MISSING"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_COMMAND_PATTERN_MISSING") throw error; }
+  }
+  {
+    const control = m1CommandArchitectureControls[2];
+    const source = sourceForControl(control, new Map());
+    const mutated = source.replace("pathFacts.assignmentScopeAllowed()", "true");
+    try { validateM1CommandArchitecture(new Map([[control.sourcePath, mutated]])); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_M1_COMMAND_PATTERN_MISSING"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_COMMAND_PATTERN_MISSING") throw error; }
+  }
+  {
+    const control = m1CommandBoundaryControls[3];
+    const source = sourceForControl(control, new Map());
+    const mutated = source.replace("ResponseEntity<Brand> createBrand", "@Transactional\n    ResponseEntity<Brand> createBrand");
+    try { validateM1CommandBoundaries(new Map([[control.sourcePath, mutated]])); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_M1_EDGE_TRANSACTION_FORBIDDEN"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_EDGE_TRANSACTION_FORBIDDEN") throw error; }
+  }
   try { validateBindingAdapterText("fixture.java", "JdbcTemplate jdbc"); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_BINDING_ADAPTER_DIRECT_JDBC"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_BINDING_ADAPTER_DIRECT_JDBC") throw error; }
   try { validateBindingAdapterText("fixture.java", "legacyAllowedImplementations"); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_BINDING_ADAPTER_LEGACY_REFERENCE"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_BINDING_ADAPTER_LEGACY_REFERENCE") throw error; }
   const snapshot = path.join(root, ".runtime", "r5", "snapshots", "650f35d79dbfcb7d3dac3ff9368e056e5edb5751590bf5877bf5c844a6f8d666");
   const fakeMeasured = structuredClone(value); fakeMeasured.operationApplicability[0].coverageStatus = "MEASURED_NEW_FIXTURE"; fakeMeasured.operationApplicability[0].measurementTuples = [{operationId: fakeMeasured.operationApplicability[0].operationId, requestId: "missing-request"}];
   try { validateMeasuredSnapshot(fakeMeasured, snapshot); fail("BP_U07_RED_MUTATION_ACCEPTED", "BP_U07_MEASURED_TUPLE_MISSING"); } catch (error) { if (error.message.split(":")[0] !== "BP_U07_MEASURED_TUPLE_MISSING") throw error; }
   try { validateSnapshot(path.join(root, ".runtime", "r5", "evidence", "db-operations.jsonl"), value); fail("BP_U07_RED_LIVE_INPUT_ACCEPTED"); } catch (error) { if (!error.message.startsWith("BP_U07_SNAPSHOT_ONLY_INPUT_REQUIRED:")) throw error; }
-  console.log("BP_U07_APPLICABILITY_SELF_TEST=PASS"); console.log("RED_FIXTURES=19");
+  console.log("BP_U07_APPLICABILITY_SELF_TEST=PASS"); console.log("BP_U07_COMMAND_TOPOLOGY_RED_MUTATIONS=PASS"); console.log("RED_FIXTURES=29");
 }
 try {
-  const [argument, snapshotFlag, snapshot] = process.argv.slice(2);
+  const [argument, ...options] = process.argv.slice(2);
+  const closure = options.includes("--closure");
+  const snapshotIndex = options.indexOf("--snapshot");
+  const snapshot = snapshotIndex >= 0 ? options[snapshotIndex + 1] : undefined;
   if (argument === "--write") { write(); console.log("BP_U07_APPLICABILITY_GENERATION=PASS"); }
-  else if (argument === "--check") { if (snapshotFlag != null && (snapshotFlag !== "--snapshot" || !snapshot)) fail("BP_U07_SNAPSHOT_ARGUMENT_INVALID"); const value = JSON.parse(fs.readFileSync(path.join(root, outputPath), "utf8")); validate(value); if (snapshot) validateSnapshot(path.resolve(snapshot), value); console.log("BP_U07_APPLICABILITY_CHECK=PASS"); console.log("ROUTES=196"); console.log("TASK_READ=78"); console.log("SQL_M1_COMMAND=68"); console.log("SQL_M1_READ=58"); console.log("SQL_M1_APPLICABLE=126"); console.log("SQL_M2_C5_COMMAND=2"); console.log("SQL_M2_TASK_READ=58"); console.log("SQL_M2_APPLICABLE=60"); console.log("SQL_M3=25"); console.log("SQL_M6=11"); console.log(snapshot ? "BP_U07_SNAPSHOT=PASS" : "BP_U07_SNAPSHOT=NOT_SUPPLIED_UNMEASURED"); }
-  else if (argument === "--self-test" && snapshotFlag == null) selfTest();
+  else if (argument === "--check") {
+    const permitted = new Set(["--closure", "--snapshot", snapshot]);
+    if (options.some((option) => !permitted.has(option)) || (snapshotIndex >= 0 && (!snapshot || snapshotIndex !== options.length - 2))) fail("BP_U07_SNAPSHOT_ARGUMENT_INVALID");
+    const value = JSON.parse(fs.readFileSync(path.join(root, outputPath), "utf8")); const topologyOptions = {closure}; validate(value, topologyOptions); if (snapshot) validateSnapshot(path.resolve(snapshot), value);
+    console.log("BP_U07_APPLICABILITY_CHECK=PASS"); console.log("ROUTES=196"); console.log("TASK_READ=78"); console.log("SQL_M1_COMMAND=68"); console.log("COMMAND_PROFILES=5"); console.log("COMMAND_TOPOLOGY=113"); console.log("M1_EXECUTION_MATRIX=68"); console.log(`M1_RUNTIME_SOURCES_PENDING=${topologyOptions.summary.pending}`); console.log(`M1_CATALOG_OWNER_MIGRATIONS_PENDING=${topologyOptions.summary.catalogMigration}`); console.log(`M1_CATALOG_P1_WIRES_PENDING=${topologyOptions.summary.p1WirePending}`); console.log(closure ? "BP_U07_M1_RUNTIME_CLOSURE=PASS" : "BP_U07_M1_RUNTIME_CLOSURE=NOT_REQUESTED"); console.log("SQL_M1_READ=58"); console.log("SQL_M1_APPLICABLE=126"); console.log("SQL_M2_C5_COMMAND=2"); console.log("SQL_M2_TASK_READ=58"); console.log("SQL_M2_APPLICABLE=60"); console.log("SQL_M3=25"); console.log("SQL_M6=11"); console.log(snapshot ? "BP_U07_SNAPSHOT=PASS" : "BP_U07_SNAPSHOT=NOT_SUPPLIED_UNMEASURED");
+  }
+  else if (argument === "--self-test" && options.length === 0) selfTest();
   else fail("BP_U07_APPLICABILITY_ARGUMENT_INVALID");
 } catch (error) { console.error(error.message); process.exitCode = 1; }

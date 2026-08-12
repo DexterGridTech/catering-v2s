@@ -505,13 +505,9 @@ class OrganizationOwnerServiceTest {
     }
 
     @Test void persistedPresentationPathsRenderDisabledAssignmentsWithoutMakingThemEnabledAuthority() {
-        UUID group = UUID.randomUUID();
-        CommercialGroupLookup groups = new CommercialGroupLookup() {
-            @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String key) { return group; }
-            @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String key, UUID commercialGroupRef) { return group.equals(commercialGroupRef); }
-            @Override public String describeCommercialGroup(UUID workspaceUuid, String key, UUID commercialGroupRef) { return "Group"; }
-        };
-        OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), groups);
+        ensureCommercialGroupInitialized();
+        UUID group = commercialGroups.requireCommercialGroupRef(workspaceId, "organization-test");
+        OrganizationTaskPathService paths = new OrganizationTaskPathService(jdbc(), commercialGroups);
         var region = hierarchy.create(workspaceId, "organization-test", "REGION", null, "PERSISTED-R", "Persisted region");
         var project = hierarchy.create(workspaceId, "organization-test", "PROJECT", region.id(), "PERSISTED-P", "Persisted project");
         var headCompany = entities.createEntity("HEAD_COMPANY", workspaceId, "organization-test", "persisted-head", "Persisted head", "Persisted head", "91310000PERSISTEDHEAD", Map.of());

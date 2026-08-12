@@ -4,13 +4,13 @@
   "source": "dynamically-derived-by-tools/compliance-control/cli.mjs",
   "rows": [
     {
-      "ruleId": "SRC-02e69ff1695c04987321060fe5239e0d7fc1d740e1317657b3eed9ba6f389102",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/11/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-05167a42fe88fc704ced5580d99808bf2b34436dc8eb2cc54961c89664e64063",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/11"
     },
     {
       "ruleId": "SRC-0537062e324a12c0985cb0734df60616005c284b762e942c8ac4221407f77290",
@@ -31,10 +31,10 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-071b8169bb5650ec7c1ca5d352ae23276214a9b2a63a1df733860a5ddf83d963",
+      "ruleId": "SRC-06b6f361dd2cc5d55a23fc911e41e7e86117eb3287a8ce39b2c2eda84e8cb035",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/17/assertionSources/1",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -58,91 +58,118 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "ruleId": "SRC-09d47300ff1140f714002562f9d49810ba7dbe3011278058b2061b0cdcdb4016",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/10/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-0a4cfaf605578d4ac96b098df8c3a0a9ed7a7bd51950c72d69a308e350b9474f",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/3"
+    },
+    {
       "ruleId": "SRC-0a5c23c302cdb95082295001db1878a5cb50dbcaef6b3bd31955a2f23d111884",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-0f694d7816a0243e31d6450a7d5ebdb7ada2d03ce4d1b68146b02a01e4d8e583",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-0c839fba5e2259db4a26c6f3c102bc42c6f85fd1a8807f07afc491f4e190bc59",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/5"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-0d3ec824ad8044f4af25ebe86edbf4017c15b6fc627c2c400240f66dfc9475c9",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/4"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-0dede47f0d6c9c1083a04394301db639c1c0c78c13c42591509ad41b521f9685",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/4/assertionSources/7"
     },
     {
       "ruleId": "SRC-0ffa54675c86c9ac9b375ef0326bfdd09309755e7b241d53aab9f87f4ce915f4",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/4",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-103d3b261a0af002aa129c15350b3737eb7cddd5e629011f36078367b60b7faa",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/6"
+    },
+    {
       "ruleId": "SRC-10913bac675ecff0196df656c1dfeffb3eb04da6b82d05208f5773b916655333",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/2/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-132903a02c0a25e11ac128ff0e645ed970571b82f0cdb8b8d32771d59233e0a3",
+      "ruleId": "SRC-10f1ad3ce6de60e446f967b0439cf4bbd6b0b6f8ace1241624f4e248ff271bc7",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/18/assertionSources/0",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/10/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-134bf6e8bf71133f0ae2c494b42549ca8112f144cd1f777ff601dea8cb395a7a",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/4/assertionSources/6",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-12ce96c8fa8f5b202d436fc4f743924318d3c542554052fdd08989ea9df5502f",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/18"
     },
     {
-      "ruleId": "SRC-186365a27900c9a7ce9bcb46addf496aa8c4564e76f6fe5e041efed8319dcae4",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/19/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-149300a387d224e134e0ea72b62c6360917b1075f3902542562ebe32993719e9",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/9"
     },
     {
-      "ruleId": "SRC-1a3dfbef5336f5b77c5135743257a3d512bdc38b8a04f28956dd447109eee12e",
+      "ruleId": "SRC-1def9a4237b0e52341a8a936ea773a2f4d1d01857cdadfb2426e077da9d9f204",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/19/assertionSources/0",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
-    },
-    {
-      "ruleId": "SRC-1ae1fd5584bc8c46ad5710132933c6de23ff2fc778504d65018b16f394c00b2c",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/11/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-1e6941e32438e790af8ba63a12cb7c6cf89b69a6cec1d3ecec20612dba3b3592",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/14/assertionSources/0",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/16/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -157,22 +184,13 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-1e88dacdebca281722f4a67d8ad5ad120f86d1ab6d56a08152b68b73d0afceeb",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/18/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-1fd11eef2c04ab5343c8f7c98ec2a14f990ce13f355c866a9a3e2ae3e4d3406b",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-206e52ce19a44161ef1259291db1d4c42abcc2c5805ec7913da5961165dc62a8",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/10"
     },
     {
       "ruleId": "SRC-21b3b3b75a1bec18a89fef8103d9f37a4be5c0f49d00e78a7fd340ed177d7fb7",
@@ -193,10 +211,10 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-2585a5d76c8c2a7ad6d4b5e046cdfe588fc874824d4aac793211510fad745129",
+      "ruleId": "SRC-24ad108913f718f1ae9164848c5c44c959ff56c2c70aff307a7018ad81ff1805",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/4",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/13/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -220,29 +238,36 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-2a1a136a654a13f804ca11b61f2c5b18102cbbd9f7a50eb8adc19f64f295b5f9",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "MACHINE",
-      "predicateId": "PROBLEM_FAMILY_DISCOVERY_BEFORE_SOURCE_WRITE",
-      "implementationPath": "tools/compliance-control/cli.mjs",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/6",
-      "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
-    },
-    {
       "ruleId": "SRC-2a38e5ba792340ee4d87069eb2ad14ae37111898a64f9c7c42bdb2d83c575976",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/2/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "ruleId": "SRC-2a8dbc3d26ffcee172afc2593fc689c627753693f71919498c78002ff34cede7",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/10/assertionSources/2",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-2ab4200d3b9dc191fe1d5100157033318b2a163431ab83bb10d689abc2ccac36",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/2"
+    },
+    {
       "ruleId": "SRC-2bf0cdb11c457d4e9e6f14fed1c64c7cd119b74bec525bb2c1441a985544cd19",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/4",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -258,6 +283,24 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-2c7fe9ef1f4ed802952e4bfc76f11875905360d25c215803af3b25cf9fe55936",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/23"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-2e86e26e60fe223d5d7b65293a44c9ab3d22cdc2a7d162b0e850679da86e71f3",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/7"
+    },
+    {
       "ruleId": "SRC-2ec0eb6f6fb5ab0c053326710c1dbaa9a0004b6b2d629261c9e397e3bb749fab",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
@@ -269,7 +312,7 @@
     {
       "ruleId": "SRC-2f05211287f3df4e01b87aebfe0e6b25c1f35f0c9db0cc2e944487b2ce6d9faf",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/6",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -278,7 +321,7 @@
     {
       "ruleId": "SRC-35f3ef826a5582b6fab46e3e5574d91f25bb93c6edf395e658d9209b8d86ab54",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/6",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -287,20 +330,20 @@
     {
       "ruleId": "SRC-36a009cd17b8769c522857a89cb3e169dd9a3822b4a21239c8723420c1839ea6",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/5/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-3a2bad2861d1c9997a181b9f852a00d4f6d5645221612dfeda39537671dcc3be",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/12/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-37a75c75c1a999aca54ae7856409cbbb9bfd17aa55b1031a765fd9c59bfe292b",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/15"
     },
     {
       "ruleId": "SRC-3b91ceed20ed4af904da6a406d343870519debe2707d4f9afa88ddb6e53f555d",
@@ -312,22 +355,40 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-3fd89d3cdaa8bd115b33a501bbed268b9890a34174a729e6a7d0a7591ee2abf9",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-3bdf08b8b3a57318efada123c9973cbf1c3b4aee0b23fa637f3aecc40f54cfdb",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/8/assertionSources/1",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/8"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-3e025dc56266c74737da9687e3a554de03be16a6f84eddc9caf81fd97024a703",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/5"
+    },
+    {
+      "ruleId": "SRC-3ffa06035eb1c125cc9c26a646efeb1a6f2245a4cc757d3936560220edabee2a",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/6/assertionSources/5",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-3ffa06035eb1c125cc9c26a646efeb1a6f2245a4cc757d3936560220edabee2a",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/6/assertionSources/5",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-4033293006699bba10d030c604114cf78a02415d8c4c7f7bf97a1f6d7b816314",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/5"
     },
     {
       "ruleId": "SRC-40ecc74808715e19648725dd8aefd7dd48444bf37d17da83930020cdfcdcd6c5",
@@ -341,16 +402,25 @@
     {
       "ruleId": "SRC-41c362e20cd3d0f0b59f86cd1b9f9099fa3b2b4c530efd5c891c38837340e4fd",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/7",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "ruleId": "SRC-420e6473316f408ea695556c3d90ece47f86ace8b7cf808ac7737b84864bf177",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/19/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
+    },
+    {
       "ruleId": "SRC-435148aeec5bbd990b5a9a932166f66c42c5677be08d9c0b195ffb47a1223cc5",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/5/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -366,19 +436,19 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-45bd04cc0de17c2c25ba854554998616456db46be8cc779729572f310875bd72",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/7/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-45651260b1e24020d42f6762557e3e2f1584a987bbf70c85fc09ca1cf7ceb39f",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/7"
     },
     {
-      "ruleId": "SRC-498d64766f47af0d2899fc52e702de5a46722838db0a83c07815d50cc88864fb",
+      "ruleId": "SRC-45bd04cc0de17c2c25ba854554998616456db46be8cc779729572f310875bd72",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/0",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/7/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -386,7 +456,7 @@
     {
       "ruleId": "SRC-49f10dcd4b8c3eb4ea414f0bbad959092b08d958c7503714e74795fd1026ba6a",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -395,20 +465,11 @@
     {
       "ruleId": "SRC-4b4c10c3886ce40e8d9db2aed87656b176f065c66e945c7c79ccef0e7a3aa607",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/4",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-4be5ed97fc586fe416979126eb3a5a80b98bd53d8cabbaff08e3a929b4c3d12f",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/19/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
     },
     {
       "ruleId": "SRC-4c6027b5838244c224a3d1b470941647d5c31011f1f8b68e6619a3bac85d95b9",
@@ -424,7 +485,7 @@
     {
       "ruleId": "SRC-4c885355c64c0f691d50a30c62772e391619ce572a801e43cfda99258afe7469",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/15/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -433,17 +494,8 @@
     {
       "ruleId": "SRC-4d048aef4399a18365a71110ce1cc034eb8f6c0f7b512407384ca69143710e70",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-4d6874bf14ea556559eb1f4afd31694242c21ed12e3cb993221a72e770eddfbf",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/9/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -451,7 +503,7 @@
     {
       "ruleId": "SRC-4dd600403c86d77db5503445cf90d887a427f3c4e74eb557ea5e514657b91d20",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -476,31 +528,20 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-4e4b1109658958eaab3d109e3bec5aff091672b1f44fd8db9d0e669308b8b8f2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "MACHINE",
-      "predicateId": "PROBLEM_FAMILY_DISCOVERY_BEFORE_SOURCE_WRITE",
-      "implementationPath": "tools/compliance-control/cli.mjs",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/5",
-      "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
-    },
-    {
-      "ruleId": "SRC-4f53980569591742069ebc50670edcb2953c3a80b0f9ea8d1dc88e7a7d113b42",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
       "ruleId": "SRC-4fa625626bd85930854ca7de9de6e8ef5ac4944cc9c13be6f16dee0338575fe4",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U08/forbiddenPseudoFixes/2",
       "applicabilitySelector": "R5-CR-U08",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-5053f21b271aeefb7659a61f0bee16f297a987c22cfc6d0d94a95439e483328d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/9/assertionSources/2",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -525,8 +566,17 @@
     {
       "ruleId": "SRC-5455568e08438c30fa95fb40118175a9510d0be26311e39350a5cb9f7f0bf90c",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/3",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-547c83a92146a582e7a301d27bb51218a01234c123e43ca89aa316e9282e90cd",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -537,6 +587,24 @@
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U01/forbiddenPseudoFixes/0",
       "applicabilitySelector": "R5-CR-U01",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-58b8a0eece262ac3439e30fecfafa6640e087ace26a63b3ab020d07415d1bb0d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/3"
+    },
+    {
+      "ruleId": "SRC-5a679aa3a0c73366a0b4d050aaa99ffbb3a907eae91253cdf009a05b123bac13",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -552,22 +620,13 @@
       "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
     },
     {
-      "ruleId": "SRC-5b7df8e90fd748869d724e4680b20a859e14e8a2b3b4ffd7a013ec78b375d710",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/7",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
-    },
-    {
-      "ruleId": "SRC-5c2a523733949c35f63a3b7fde5ddedf372b7e44d359c428ccdae1b5b5d03ae7",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-5b8cb5c5f788be259337c6c5ab315d0dcd425f4bf34035b12bfaa6150e515bff",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/3",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/3"
     },
     {
       "ruleId": "SRC-5de4c8535cf2f0a0543bf5e26cc76cd17a1b3058f7cdc2a5d98e5de33a7010c4",
@@ -579,6 +638,24 @@
       "predicateId": "CLIENT_HOOK_INVOCATION",
       "implementationPath": "tools/compliance-control/cli.mjs",
       "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
+    },
+    {
+      "ruleId": "SRC-5edb076b2a78a8ff8f2ab6892e1a0374399ec3b7d64c5db0b77790543d14cd0b",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/14/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-62db816f4cf765c732e30312f52f578d4102723c5cab63b59193bee615f6d4c9",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/4/assertionSources/6",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
     },
     {
       "ruleId": "SRC-630b66f445b476fe3a4bddd21656bf01eedd9d2b163c8482db32d772fc105fd7",
@@ -601,11 +678,20 @@
     {
       "ruleId": "SRC-6344231692cf402b4426eadcef9856582046c0f491899ad1bdcff17e7206c2e6",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/1/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-6351366848363d4356cd85aa65929f4391c1cd249433f32a0ae57f1753a38ed4",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/14"
     },
     {
       "ruleId": "SRC-64cc2fce71869839c948b8fe6780a376435f978ef147fee6ed99e75e4d8f3931",
@@ -619,16 +705,25 @@
     {
       "ruleId": "SRC-659437981caa12277760d69ff11f1daaebab129afd260abf78ab435d9b2e8124",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-6621919665266e5d666d0741aa5777fb868807b9add7a19b03a600f73db758c8",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/10"
+    },
+    {
       "ruleId": "SRC-6860371ea5abbb86068bb2a57a3264a7526c727c8d82f6ae1a863e87fd241eb2",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/7/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -637,7 +732,7 @@
     {
       "ruleId": "SRC-688ca0d07ee054342eaf07365490a3824cf7e2082b3f2a4f30d6ad1bd60c6c8e",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -653,20 +748,20 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-69b3906e557eddbdcac1b85eca5b21452ac972773085e76824be3608ac1c4c7d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/8"
+    },
+    {
       "ruleId": "SRC-6c3e24af562813c8d2676555865d7afad1f8d579c0277ed95d9ffc324a9fecbb",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U05/forbiddenPseudoFixes/0",
       "applicabilitySelector": "R5-CR-U05",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-6cbcfa7f0f5aae815cdea8bd3af41960619f7119262d6c5f385cd8d0a116fda7",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/1",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -680,6 +775,15 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-6fb8b8550efeae368a2d587d686d0cb1e663105db1252301ce3e4e5405e144a1",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/16"
+    },
+    {
       "ruleId": "SRC-7013e75bda0702b20baf7d423356cd4893812b86a7f967fad558e0da69014a93",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
@@ -691,7 +795,7 @@
     {
       "ruleId": "SRC-70b2a2cb352fdc0ab935e03b0d1aeb7f59aa86eb0ea275263d73f0e47cf5b8e2",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/5/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -700,17 +804,8 @@
     {
       "ruleId": "SRC-70e54bf64f290965d3e0fa44447109e88c9a58f6da6e3dfba20429740c22cab5",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/5",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-72faa949f9b8e2cb490fc48ff8ff931e3de5595b1e2d7713474905a73e246573",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/14/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -718,29 +813,56 @@
     {
       "ruleId": "SRC-753cd3ea2f18884c755aa3e464921b88089133c84bf9dd918d126bfe9845555e",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/7/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-7597899c7243991509062e2261acd822c25ffcc0f596f73871e204ea0fe93c13",
+      "ruleId": "SRC-784f4900c701c8e5e6dfd3e5f025df9c096fad694fbec314967017cb8434b7f0",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/5",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-78cbd359bb1fc2bed1ea4bba657691b4528be588897906f62a81ad8b07e11d0e",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/20"
+    },
+    {
       "ruleId": "SRC-798d4a18402e0313ad27e0411157faa6fb5eb8f11548183c964d293639896741",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/0/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-79cc54003cd915ff2999cd404c5796036b44b3ed50b9f851fe4448aa3d002190",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/20/assertionSources/0"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-7a4de7c8e5f0b352f2141804f66dd0be91351407a52ad8cd0b2efa25cd59b19d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/4"
     },
     {
       "ruleId": "SRC-7beb5cc4291f57646bda99ad027094749401ae1ff8aa875360e28ddc98952a01",
@@ -763,8 +885,17 @@
     {
       "ruleId": "SRC-7c34adc9c143d60efd190fc9caab113993eff72381898899807ebaa95845cf95",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-7db0375d749daf10fd0e1001474a0d961abdef90b73c7e06e5f3f9f622667059",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -772,16 +903,25 @@
     {
       "ruleId": "SRC-80ce4c65b3c147920a4dc0fac33443ff346c4ec6cb5103ead42716fe55441c5b",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/1/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-81145b88a1c38b10b3b2959ac0d3bd2060ae3678c4673eee30d3f175362603de",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/14/assertionSources/2"
+    },
+    {
       "ruleId": "SRC-820b02aca255e06705fefb483455ba0a977fdd0aa28ddea0a15b77974fa164f1",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/7/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -790,7 +930,7 @@
     {
       "ruleId": "SRC-845be7e7a8b17ab6c4e899a256390e8411da1c3f93c7adb8bee03649fbbc8e17",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/2/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -806,11 +946,38 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-868b5ee45891cd03b8680674f271c3fd9ff4f6e28a818a7c3e0fb2b63540e0ba",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/13"
+    },
+    {
       "ruleId": "SRC-87cc11475841b0383bcf243eb228260efe9717015e0984b87e869de7e8e281cc",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U03/forbiddenPseudoFixes/0",
       "applicabilitySelector": "R5-CR-U03",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-89671fc770b8c8fd37bace166e1e49f9dfdde2540983fd37de99d0520764bcf7",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/14/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-8a8a37f7c121a458e33a00b6430b452dec9ab0f4cc8caf22a5953a5d711b11b6",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/13/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -824,20 +991,29 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-8b72cd32dd0aaa6a4f2b00d5bb799425f670e9568ab0cf9f07661a4039ff661b",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/19/assertionSources/3",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
-    },
-    {
       "ruleId": "SRC-8c54184c10b6ebe7dd23caa23fc9540bc51735ff116a566260fd8360658de79e",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U01/approvedAssertions/1",
       "applicabilitySelector": "R5-CR-U01",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-8f580da401345d742c96a9dc0858ce82036f5cd112f973d5d756e0551d73948a",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-8fd65087cca6caab8b3dc99d64743600496bfbccd5431766a1f87c3a158ad1bb",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/13/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -851,6 +1027,15 @@
       "predicateId": "PRODUCTION_RED_MUTATION",
       "implementationPath": "tools/compliance-control/cli.mjs",
       "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
+    },
+    {
+      "ruleId": "SRC-9210840815d3fa3ec9547f5c40d03cab7e5fdd71c0edf5b315c73c902f9832fa",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/19/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
     },
     {
       "ruleId": "SRC-923c4c9d205649bba68ebf1cbcba847b482b5467c29dd71e40c008804b4832bc",
@@ -871,15 +1056,6 @@
       "predicateId": "PACKAGE_SERIAL_PREDECESSOR",
       "implementationPath": "tools/compliance-control/cli.mjs",
       "implementationSha256": "4ed077904ba1b8c685348234f4a42caab1878b29ddf9f603aeda9adaa8252104"
-    },
-    {
-      "ruleId": "SRC-95be3beb5e5322dc55890adfb1f15ef0a18d608b308ceda614423d351cf44e25",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/8/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
       "ruleId": "SRC-9c5e3a38d649a208622ca2f3ae0ca52e38b0220e5ad315becfb92f3da325505b",
@@ -909,38 +1085,11 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-9e3b19900bcde8323ac0437edb09da97b839f9699087f88664be52ee4d0162c9",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/6",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-9ed950eb2d717d4743e7188066575208dd0e912884dba551d6102e9cb1a097fe",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/9/assertionSources/1",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
       "ruleId": "SRC-a0bfb48126bd9caa6fc14957ee2dd0e67c0c2e4a7c38b9505b3044e29dbe9762",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
       "selector": "/deliveryUnits/R5-CR-U06/forbiddenPseudoFixes/0",
       "applicabilitySelector": "R5-CR-U06",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-a10cd7edd6cc69d50bdcd20ad69b00884877876530575cb3e86516a84d84df1e",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/13/assertionSources/1",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
@@ -956,7 +1105,7 @@
     {
       "ruleId": "SRC-a3fdfefde07f4100ca058c1fdbaf912c07af3175d55e9eb40da0ce9b75046269",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -974,7 +1123,7 @@
     {
       "ruleId": "SRC-aa8e677500a582ec4f95445fb46ba64787d57601fa6e2bc3372c0f0e5cd3a8cd",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/8",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -992,7 +1141,7 @@
     {
       "ruleId": "SRC-ab732ccaf09c6a5bfb69fd87b2289d1afe06ab0593d2f741649ba4bc12e8c006",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/3/assertionSources/9",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1017,9 +1166,18 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-ad076d34b17a3a8e7f2c4e6386e0bd51451e25caea4926ec1cbb81ba50e95115",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/6"
+    },
+    {
       "ruleId": "SRC-ad4bcb4d15a97e4578bcbf741682c3d395814030bae9bd80dfb216d02d667da6",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/1/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1028,7 +1186,7 @@
     {
       "ruleId": "SRC-ad508668ee68399935a6bf34f6f95564cde388158d27eaedb2b5b079e0e51cb5",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1044,6 +1202,15 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-b0d02904321514eccbefdb3d23bb8177e7e8cf485adc1527ccfdcab1fe0a4a27",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/5"
+    },
+    {
       "ruleId": "SRC-b152f10794c628ed3eb61698095fbc580d52af8d493fec527ab54954fd7d3970",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
@@ -1051,6 +1218,15 @@
       "applicabilitySelector": "R5-CR-U04",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-b184a8c4efcc27d60f43fa4fd245ef15795fefae7850c4903719430a70628947",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/6"
     },
     {
       "ruleId": "SRC-b19d7c2ecc68673a88b8ac879a4dff6b0b623609f41704fcb9e0ffa36a16bc99",
@@ -1062,10 +1238,37 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-b3a057ad18dca4bc80abf7e14ebf63ae2e2f1736eda89350935d372dc6c06730",
+      "ruleId": "SRC-b2b4246142091e48b8431075c12da507a2dc9ef73658a1a17637870841a5fd5b",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/12/assertionSources/2",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/15/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-b2cee3af7cb960492215a263f91884870637c4fced4624c18b042d7d1fbf3aa5",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/17"
+    },
+    {
+      "ruleId": "SRC-b41dc15d7386ccc57e6adae2f35d44689d3ebe1f6062cf2741b1c71a3e06ef9f",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/2",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-b4cd4b9d7daa883b9ff9b22c6cdfbf31a1058c8b3aa4e468d141293f63c8ef50",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/18/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -1089,6 +1292,15 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "ruleId": "SRC-b5853a16235ca313762bb2ac69987b1e5ea3fc2413ec5abdfa26893eca61e49b",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
       "ruleId": "SRC-b6eba8386a9335878a09c3afebb870f410f4f483a93bfab92d188c53161e5394",
       "sourcePath": "doc/review/platform/2026-07-27-v2s-r5-compliance-remediation-design-granularity-manifest.json",
       "sourceSha256": "b92d1f91367754f0fd3e9772af35056ff4acd9c0120511fd7fd2cb4247b8e863",
@@ -1105,6 +1317,15 @@
       "applicabilitySelector": "R5-CR-U04",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-b84feaf086071f0c49121aef6f91350e8eaf5c4d341b63d2cc04f4982cd6769d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/3"
     },
     {
       "ruleId": "SRC-ba445cdfc3ccbd37d14e6dc52ab16e75cc6c902a8aca7229d3ce0d76a2524165",
@@ -1134,18 +1355,27 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-c08335cb60dd60946e9a792cd3073a9db8cecd7662d82dee62e5df3bb967eeaf",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/18/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-bf7d2dd8802006bf1c4d37b1d1733c9da92bcc009689f399071fdce9cc5629f4",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/4"
+    },
+    {
+      "ruleId": "SRC-bfcc8b20e7c5605d4f327963c5d136ab3f49f900bfdaeb2daa52cd304598dd15",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/19/assertionSources/2",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
     },
     {
       "ruleId": "SRC-c0b0b22bf90682f6dbaa5ae443b63ce3e2076b136bd2f029d2a9c9570ca3667a",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/0/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1161,22 +1391,13 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-c3a36f99cbb82aecbdc36280cd0114cc034a565127ab6d41031fad14b1995ada",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/17/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-c53ef34f41e0a8f08dcdd7c33f7c5a6bab6e94aa992e2e5c695c658fd4981e6f",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-c4a278c4e42a9017f39ef761a292af61c0822138b4f346c3059b76a7d4a810a8",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/8/assertionSources/0",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/7"
     },
     {
       "ruleId": "SRC-c5625902d200dad142eeaba8314761175d8655223508ffc869fd6d7b472b321d",
@@ -1188,19 +1409,46 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
+      "ruleId": "SRC-c6accce93f1cfcd3a9510310c08007870bc0ac7beebdfeac199b6c2ba69d454f",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/16/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-c990938d6760ed1d50095c4a0ea40a09aa1ded6c1fd4ec476f6b6e95db1e5f7e",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/18/assertionSources/0",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
       "ruleId": "SRC-caa5d620dc264b0ab1e1e4f45e515b28e1792cb7da528df3d5703c1a192ff4a6",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-ccf1c5fab3da77ffad7500888a338deb7e653db1a29d1f8ab617457ca7a620ec",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-cb3f0c63933077ed74d884b2a5edada19542d1056e2f45da5a305bb397d0dc73",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/15/assertionSources/0",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/4"
+    },
+    {
+      "ruleId": "SRC-ce26733b9c80f705dd75058763180c81af249f4dfb2b24a808f5ad8f584b93f6",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/9/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -1208,11 +1456,29 @@
     {
       "ruleId": "SRC-ce3ceadf69748112d2a13c598089bc9434223f9dad99a98fc90b176e14d55244",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/6/assertionSources/3",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-cfc55a36a30d03b25d3ffd230842b1ea85a6b9fd6b74bc4862bf59bdf8b9234c",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-d206e8be70f51919bcc82e6625cf90d968ba10d6e74f3c69a6333328126e0897",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/19"
     },
     {
       "ruleId": "SRC-d238631497d06ca4e0dbd51c4cc3ce134c5cc624a5c88f36d755c14d26ca6a3c",
@@ -1224,13 +1490,13 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-d25128662bd9d817995f0c13d55d2f7435075973d29c361e78201cd6aa225579",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-d869db35d94d94235614f686f28263a876239424c77cf770f9cc88bc72700fb7",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/22"
     },
     {
       "ruleId": "SRC-da4416ff5acb4fad0fcad092a42a7b5b5ee2052a9d1e244af30a29dfec954b30",
@@ -1242,22 +1508,31 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-dc1b36c72ffc9efb80cfac489c87a0bfb32364bde5718d37a79383c528ce6722",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/11/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-db641b8a0e4e4447bb15baab415fec7f98f6c19456210fb7f63ae00e73182a6e",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/12/assertionSources/6"
     },
     {
-      "ruleId": "SRC-dff7202075a673d829c8fe0480aa9945a2be8ee8287ec99dd5cf336bed00fc22",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/13/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW",
+      "ruleId": "SRC-dd92f9ab6436a529b9265b088777187b95795bb6a250235704c52543c7c57393",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/21"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-de817860fdae5a7786384dec80387c490dc3a6d48605255b415d5adbca11d78d",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/11/assertionSources/8"
     },
     {
       "ruleId": "SRC-e0260b7d704ca747a8b39344b4c42910281c11f6f85904d70f32467a01330e26",
@@ -1280,37 +1555,19 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-e051433bd0fe9d727db9327a574131e4dc52e19ce948c321fbbc077400dab88f",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/4",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-e16141f6786f19e4e5a51cae306ade2a65b48c6160092366f13cdfc16b067b65",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/9"
     },
     {
-      "ruleId": "SRC-e19d4604c8b29a136f56617c1739f9971364b17b66bc037d7922397ae17d29e1",
+      "ruleId": "SRC-e3a2273e464c88ece0d34414c06f5ddfd7dbce289264c4e856a2f9755e1f93cd",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/10/assertionSources/8",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW"
-    },
-    {
-      "ruleId": "SRC-e3c8f57c4276b5d66a951a7155f0ab39c69b9b2529033e142c66355721687ee7",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/12/assertionSources/0",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
-      "ruleId": "SRC-e409165479a48aa3130df1452fadb2966dbd5485eccb470ae758bc17dda003b3",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/16/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -1325,10 +1582,10 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-f045ac66028c139ea4c9c2d08436a6c516f5475af3b526f5522686c1de98c8ed",
+      "ruleId": "SRC-ee5c28262b9d2c7795a411e80dd475e9902e49bb69ce3ff1b1a398c16bb62022",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/13/assertionSources/0",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/8/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -1336,7 +1593,7 @@
     {
       "ruleId": "SRC-f0eb602d96bfffca6adeee53811231f77b0f44049bb2cb079ff17580081d6ad0",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/0/assertionSources/2",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1354,7 +1611,7 @@
     {
       "ruleId": "SRC-f1d6fefddfd54ef9958f82c8e65bcfe45be25ba3f9368912bec3714e7ed700fd",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/4/assertionSources/5",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1363,8 +1620,17 @@
     {
       "ruleId": "SRC-f2b74ff163629157f2bb500d7bdb7b9a9f032fa6ea06bf02096435f91fe8f310",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/0/assertionSources/1",
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "ruleId": "SRC-f4a15a9451e787c5731f7bcb41463376ea1322547d7f17e46174592ea800fed2",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/9/assertionSources/1",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
@@ -1379,18 +1645,9 @@
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
     },
     {
-      "ruleId": "SRC-f8f6d7b62a12ca06672ef9e14d046a2ab0e98917d01dffa1f8607d6482d3164b",
-      "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
-      "selector": "/entries/9/assertionSources/2",
-      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
-      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
-      "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
-    },
-    {
       "ruleId": "SRC-fa1c761ebc2e7d91f07824281c74419f67779d1d0bc2850339d4eda73f842d84",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/2/assertionSources/0",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
@@ -1408,11 +1665,20 @@
     {
       "ruleId": "SRC-fc66e3d04d4a350e4e7f63193abab3187168af20f3128ac190494bc8dcae8877",
       "sourcePath": "project-memory/required-inventory.json",
-      "sourceSha256": "91dd5470e27e0a8058bb255ff4392f3debde8bbaf0e7cba91127f68d20845260",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
       "selector": "/entries/2/assertionSources/4",
       "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
       "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
       "reviewChecklistRef": "DELIVERY_PROCESS_REVIEW"
+    },
+    {
+      "applicabilitySelector": "ALL_ROUTED_OCCURRENCES",
+      "enforcementKind": "UNENFORCEABLE_BY_MACHINE",
+      "reviewChecklistRef": "JOURNEY_INTERACTION_REVIEW",
+      "ruleId": "SRC-ff2952af5e363d155ad5fdaffaed2037fd1600765f664fd3803a720baca3168a",
+      "sourcePath": "project-memory/required-inventory.json",
+      "sourceSha256": "4a0ec6d1ffec9cb887bad89d72b0f3286a9be5af62c70faa0c15f6ad1f4b3951",
+      "selector": "/entries/17/assertionSources/12"
     }
   ]
 }

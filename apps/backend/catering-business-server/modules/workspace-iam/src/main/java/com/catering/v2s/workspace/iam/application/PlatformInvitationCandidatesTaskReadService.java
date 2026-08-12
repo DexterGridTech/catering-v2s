@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Typed platform invitation-candidate boundary; candidate intent never accepts an operation id. */
 @Service
-public final class PlatformInvitationCandidatesTaskReadService {
+public class PlatformInvitationCandidatesTaskReadService {
     private final OrganizationAssignmentCandidateLookup organizations;
     private final WorkspaceRoleService roles;
 

@@ -5,8 +5,18 @@
   "runnerKind": "backend-performance-final-acceptance",
   "runtimeRoot": ".runtime/backend-performance",
   "finalImplementationManifest": {
-    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-design-granularity-manifest.json",
-    "sha256": "0ea428559639c1609e152d3458a8483a7f99b57a59f2c75942a382579f922c95"
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-implementation-granularity-manifest.json",
+    "sha256": "c9073f8e83c41ad12b0c9462b0686cc4f29549270f389c17527a76e4055c43fc"
+  },
+  "fixtureCatalog": {
+    "path": "contracts/policy/backend-performance-final-fixture-catalog.json",
+    "sha256": "99f81e62df79ece7d6ee5e36992079b39e15a7e4023f99da6e6a251602f73b4e",
+    "rows": 396
+  },
+  "adapterContract": {
+    "kind": "backend-performance-final-managed-adapter",
+    "nestedTechnicalProof": "REQUIRED_PARENT_BOUND_CLEANUP_PASS",
+    "terminalBusinessCleanupRequired": true
   },
   "sourcePolicies": {
     "sqlMergeApplicability": "contracts/registry/backend-performance-sql-merge-applicability.json",
@@ -16,7 +26,12 @@
   "denominators": {
     "u05TaskReads": 78,
     "u05ProtocolCompletions": 5,
-    "u05ReadContextPartition": [58, 15, 4, 1],
+    "u05ReadContextPartition": [
+      58,
+      15,
+      4,
+      1
+    ],
     "u05CapExceptions": 10,
     "u04NumericBaselines": 79,
     "u04NormalBaselines": 74,
@@ -32,13 +47,52 @@
     "u07M6": 11
   },
   "snapshotAdmission": {
-    "requiredInputKinds": ["DATABASE_OPERATIONS", "STATEMENT_DICTIONARY", "REQUEST_EVENTS", "SEED_REPORT", "RUN_MANIFEST"],
-    "requiredRunManifest": ["runId", "kind", "finalImplementationManifestSha256", "workloadPolicySha256"],
-    "requiredMeasurementFields": ["operationId", "requestId", "correlationId", "performanceFixtureId", "performanceArea"],
-    "allowedAreas": ["U05_TASK_READ", "U05_PROTOCOL", "U04_NUMERIC", "U04_CONTEXT_PARITY", "U07_ROUTE"],
+    "requiredInputKinds": [
+      "DATABASE_OPERATIONS",
+      "STATEMENT_DICTIONARY",
+      "REQUEST_EVENTS",
+      "SEED_REPORT",
+      "RUN_MANIFEST"
+    ],
+    "requiredRunManifest": [
+      "runId",
+      "kind",
+      "adapterKind",
+      "finalImplementationManifestSha256",
+      "workloadPolicySha256",
+      "fixtureCatalogSha256",
+      "fixtureReportSha256",
+      "nestedTechnicalProof",
+      "business",
+      "cleanup"
+    ],
+    "requiredMeasurementFields": [
+      "operationId",
+      "requestId",
+      "correlationId",
+      "performanceFixtureId",
+      "performanceArea"
+    ],
+    "allowedAreas": [
+      "U05_TASK_READ",
+      "U05_PROTOCOL",
+      "U04_NUMERIC",
+      "U04_CONTEXT_PARITY",
+      "U07_ROUTE"
+    ],
     "unclassifiedMustEqual": 0,
     "sameRunTupleRequired": true,
-    "historicRuntimeRootsRejected": [".runtime/r5", ".runtime/rm1"]
+    "serverEvidence": {
+      "algorithm": "HmacSHA256",
+      "keyEnvironment": "V2S_DB_OPERATIONS_HMAC_KEY",
+      "keyEncoding": "BASE64URL",
+      "requestField": "serverEvidenceHmac",
+      "databaseField": "serverOperationHmac"
+    },
+    "historicRuntimeRootsRejected": [
+      ".runtime/r5",
+      ".runtime/rm1"
+    ]
   },
   "executionBoundary": {
     "localApplicationsOnly": true,

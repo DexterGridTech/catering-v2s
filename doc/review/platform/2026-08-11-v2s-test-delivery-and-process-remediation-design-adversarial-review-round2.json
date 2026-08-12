@@ -1,0 +1,122 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TEST_DELIVERY_PROCESS_REMEDIATION_DESIGN_20260811",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-review-round2-input-checklist.md",
+    "sha256": "a3441f13cd6ea4b780786c55aa10839add3a6798e133fecbd53ddabbc72f612e"
+  },
+  "blindReviewDeclaration": "I entered as a fresh independent reviewer, reopened the checklist, authorization, current manifest, detailed design, checker, root verifier, execution catalog, standards checker, HMAC owners, tests, requirements, Roadmap, and routed project memory; I attempted to falsify the three round-1 repairs and formed the NO_GO conclusion before reading the round-1 report and author intake.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "b8be1899b948e85ab0350dd1e0084e9ab7d2d8d50c793113edd562ac632f6b21",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "design-authority-binding",
+      "execution-receipt-integrity",
+      "cryptographic-evidence-authenticity",
+      "scope-and-runtime-boundary",
+      "static-control-red-mutation"
+    ]
+  },
+  "expectedBehavior": [
+    "The hash-bound Markdown design contains a standalone implementationAuthority: false line accepted by the existing granularity checker, and the manifest binds its current SHA-256.",
+    "tools/verify-gates/verify.mjs is the sole VERIFY_CHILD executor; the root run emits one atomic, run-scoped receipt, and U12 only consumes that receipt without spawning a second child execution.",
+    "Receipt admission rejects duplicate, missing, extra, substituted, hash-drift, marker-incomplete, and stale receipts against the current root invocation; ARCHUNIT_SELECTOR remains outside the GATE-child exact set.",
+    "One shared HMAC owner preserves both current canonical byte sequences, decodes V2S_DB_OPERATIONS_HMAC_KEY only at its verifier boundary, and emits only non-secret verification results to consumers.",
+    "Wrong MAC, wrong key, and changed canonical payload are exact red mutations for the shared 196 evidence verifier.",
+    "No execution map or gate is added, daily verify is not widened, and this static design review neither runs nor claims Testcontainers, DEV, L2, seed, reset, browser, UAT, deployment, business, cleanup, or performance success."
+  ],
+  "round1FindingDisposition": [
+    {
+      "id": "THCL-M-001",
+      "status": "PARTIALLY_CONFIRMED",
+      "evidence": "The design starts with the standalone line implementationAuthority: false and the manifest binds its SHA-256, but the hash-bound authorization still contains implementationAuthority=false. tools/implementation-design-granularity/cli.mjs:433-437 requires the colon form for both design and authorization, and the current manifest-plus-review check reproduces AUTHORIZATION_IMPLEMENTATION_AUTHORITY_NOT_FALSE."
+    },
+    {
+      "id": "THCL-S-001",
+      "status": "PARTIALLY_CONFIRMED",
+      "evidence": "The repair now names one root executor, atomic receipt, pure U12 consumer, selector separation, and most exact-set mutations, but it does not supply U12 an expected current root-run identity. The remaining stale-receipt counterexample is recorded as the sole current S finding."
+    },
+    {
+      "id": "THCL-S-002",
+      "status": "CONFIRMED_CLOSED",
+      "evidence": "The design names scripts/test/backend-performance-evidence-hmac.mjs as the sole shared owner, preserves both canonical field orders and HmacSHA256/base64url, confines V2S_DB_OPERATIONS_HMAC_KEY decoding to that boundary, declares non-secret receipts, and names wrong-MAC/wrong-key/canonical-payload red tests on both consumers."
+    }
+  ],
+  "findings": [
+    {
+      "id": "THCL-M-001",
+      "severity": "M",
+      "status": "PARTIALLY_CONFIRMED",
+      "unitIds": ["THCL-U01", "THCL-U02", "THCL-U03", "THCL-U04", "THCL-U05", "THCL-U06"],
+      "title": "The hash-bound authorization is still not machine-readable as design-only authority",
+      "claim": "The design repair added the exact standalone implementationAuthority: false declaration and the manifest binds its new hash, but the separately hash-bound authorization file still declares implementationAuthority=false. The existing checker requires /^implementationAuthority:\\s*false\\s*$/m for both artifacts, so the manifest-plus-review control still fails.",
+      "evidence": "scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json --review doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-adversarial-review-round2.json -> AUTHORIZATION_IMPLEMENTATION_AUTHORITY_NOT_FALSE; doc/evidence/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-authorization.md:7; tools/implementation-design-granularity/cli.mjs:433-437; doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json:9-10.",
+      "impact": "The design-only authorization boundary is still not mechanically admitted. Every THCL delivery unit depends on this manifest/authorization pair, so none can receive a design GO even though the design Markdown half is corrected.",
+      "minimalRepair": "Change only the authorization declaration to the existing checker's exact standalone implementationAuthority: false form, update the manifest authorization SHA-256, and rerun the existing manifest-plus-review checker. Do not weaken the checker, add a new gate, or infer authorization from the detailed design.",
+      "denominator": "The one hash-bound authorization artifact, the current manifest binding, and all six THCL delivery units admitted by that design-only pair.",
+      "sourceReopened": [
+        "doc/evidence/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-authorization.md",
+        "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json",
+        "tools/implementation-design-granularity/cli.mjs",
+        "scripts/check/implementation-design-granularity"
+      ],
+      "risk": "A human-readable authorization statement can be treated as sufficient even though the declared mechanical control rejects it, leaving the package's design-only boundary unenforced.",
+      "disposition": "Hard stop for this round-2 DESIGN scope. Dexter must decide the next authorized remediation path; no further Codex adversarial round is allowed in this cycle."
+    },
+    {
+      "id": "THCL-S-001",
+      "severity": "S",
+      "status": "PARTIALLY_CONFIRMED",
+      "unitIds": ["THCL-U01", "THCL-U02"],
+      "title": "Stale root receipt is not bound to the current root invocation",
+      "claim": "The current design declares a fresh runId inside the root-produced receipt and says that U12 rejects a stale runId, but its only specified U12 interface is --validate-active-receipts <receipt-path>. It does not define an expected current runId (or equivalent root-generated nonce) supplied from the same root invocation to the pure validator. A prior complete receipt therefore carries its own internally consistent runId and cannot be distinguished from the present invocation by the stated validator contract.",
+      "evidence": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md:53-58 defines a root-generated runId and only --validate-active-receipts <receipt-path>; lines 100-104 repeat root-owned transport and U12 pure-read without an expected-run input. scripts/check/standards-coverage:541-590 shows the existing checker receives only explicit CLI options and has no ambient root identity. The author intake's THCL-S-001 row likewise lists root run identity and stale mutation but supplies no current-root binding contract.",
+      "impact": "The duplicate, missing, extra, substitute, hash, marker, and selector repairs are concrete, but the required stale-receipt guarantee remains unenforceable. A verifier can validate an old complete receipt as self-consistent rather than prove that it was produced by this root execution, leaving the C3 admission boundary false-green-prone.",
+      "minimalRepair": "Keep the existing catalog, root executor, and standards checker. Before the root executes children, generate its runId once; after atomic receipt creation, invoke the existing pure validator with both receipt path and an expectedRootRunId (or equivalently a root-owned nonce that is written into the receipt). Require exact equality, derive the receipt path from that identity, and add a red mutation that substitutes a structurally valid prior-run receipt. This is an existing-checker option and receipt-schema refinement, not a new execution map, gate, runner, or dynamic action.",
+      "denominator": "The one scripts/verify root invocation, all 11 VERIFY_CHILD receipts admitted from its run, the one separately validated ARCHUNIT_SELECTOR receipt, and every U12 active admission under the 43 ACTIVE GATE rules -> 16 refs denominator.",
+      "sourceReopened": [
+        "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json",
+        "tools/verify-gates/verify.mjs",
+        "contracts/policy/standards-enforcement-execution-catalog.json",
+        "scripts/check/standards-coverage",
+        "contracts/policy/standards-coverage-matrix.json",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-author-intake.md"
+      ],
+      "risk": "The root-to-U12 transport can be atomic yet still be replayed as a complete old fact because freshness is asserted, not bound to the current root invocation.",
+      "disposition": "Hard stop for this round-2 DESIGN scope. Do not implement from this design; Dexter must decide the next authorized remediation path because this cycle has exhausted its two Codex adversarial rounds."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "THCL-U01", "verdict": "NO_GO", "findingIds": ["THCL-M-001", "THCL-S-001"]},
+    {"id": "THCL-U02", "verdict": "NO_GO", "findingIds": ["THCL-M-001", "THCL-S-001"]},
+    {"id": "THCL-U03", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]},
+    {"id": "THCL-U04", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]},
+    {"id": "THCL-U05", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]},
+    {"id": "THCL-U06", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The repair remains focused on C1-C4: a standalone authority declaration closes the design-only control, one root receipt flow closes duplicate execution, and one extracted HMAC owner closes format-only 196 authentication. The missing expected-current-run input is within the same C3 transport problem and is not a scope expansion.",
+    "simplerAlternativeAssessment": "A new execution map, a second gate, a timestamp freshness heuristic, a broad verify expansion, or an in-process U12 re-run would be larger or less trustworthy. Passing a root-generated identity to the already-selected pure validator is the smallest way to make stale rejection meaningful.",
+    "costFit": "The proposed repair is low-cost and bounded to the declared root/checker/receipt surfaces, while leaving Testcontainers and all dynamic work untouched. However, accepting the present text would externalize an essential correctness choice to implementation, so the current design is not yet cost-fit for a GO.",
+    "verdict": "NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "THCL-S-002 is confirmed closed. THCL-M-001 is only partially closed because the authorization half of the hash-bound pair still fails the existing checker, and THCL-S-001 is only partially closed because stale receipt rejection has no expected-current-run binding. One M and one S finding remain, so round-2 is a hard stop and no further Codex adversarial round is allowed.",
+    "authorizationBoundary": "This is a static DESIGN review only. It does not authorize or demonstrate implementation, dynamic execution, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, deployment, contract, production, or runner success.",
+    "severityCounts": {"M": 1, "S": 1, "N": 0}
+  }
+}

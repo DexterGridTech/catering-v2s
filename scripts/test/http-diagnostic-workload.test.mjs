@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync, readFileSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {createDiagnosticRecipeExecutor, createDiagnosticWorkloadState, executeOperationsAccessWorkload, executeOperationsOrganizationWorkload, executeOperationsRecoveryWorkload, executeOperationsStatusTerminalWorkload, executeOperationsUserReadbackWorkload, executePlatformFoundationWorkload, executePlatformMaintenanceWorkload, executePublicInvitationWorkload, replayDiagnosticOperation} from './http-diagnostic-workload.mjs';
+import {createDiagnosticRecipeExecutor, createDiagnosticWorkloadState, executeOperationsAccessWorkload, executeOperationsOrganizationWorkload, executeOperationsRecoveryWorkload, executeOperationsStatusTerminalWorkload, executeOperationsStoreProfileWorkload, executeOperationsUserReadbackWorkload, executePlatformFoundationWorkload, executePlatformMaintenanceWorkload, executePublicInvitationWorkload, replayDiagnosticOperation} from './http-diagnostic-workload.mjs';
 import {loadGeneratedDiagnosticRegistry} from './http-diagnostic-inventory.mjs';
 import {declareSourceBoundDiagnosticScenarios} from './http-diagnostic-scenarios.mjs';
 
@@ -145,17 +145,28 @@ test('platform foundation chain uses the source-bound HTTP sequence without seri
   writeFileSync(manifestPath, JSON.stringify({kind: 'rm1-http-diagnostic-local-runtime', runId: 'rm1-http-diagnostic-abcdefgh', eventPath: path.join(runtime, 'events.jsonl')}));
   const scenarios = declareSourceBoundDiagnosticScenarios(loadGeneratedDiagnosticRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url)));
   let requestNumber = 0;
+  const roleBodies = [];
   const result = await executePlatformFoundationWorkload({
     manifestPath, baseUrl: 'http://127.0.0.1:8081', secret: 'x'.repeat(24), scenarios, bootstrapLogin: 'diagnostic-admin', bootstrapCredential: 'x'.repeat(24), uniqueSuffix: 'abc12345',
     fetchImpl: async (url, init) => {
       requestNumber += 1;
-      const payload = url.endsWith('/password-login') ? {} : url.endsWith('/assets/staging') ? {assetRef: 'asset-private', bindGrant: 'grant-private'} : url.endsWith('/commercial-group') ? {id: 'group-private'} : url.endsWith('/extension-definitions/BRAND') && init.method === 'GET' ? {revision: 1} : url.endsWith('/extension-definitions/BRAND') ? {revision: 2} : url.endsWith('/extension-definitions') ? {items: []} : url.endsWith('/roles') ? {id: 'role-private', revision: 1} : {groupWorkspaceKey: 'diagabc12345', version: 1};
+      if (init.headers['X-Http-Diagnostic-Operation-Id'] === 'createWorkspaceRole') roleBodies.push(JSON.parse(init.body));
+      const operationId = init.headers['X-Http-Diagnostic-Operation-Id'];
+      const payload = operationId === 'createPlatformAdmin' ? {id: 'private-admin', loginName: 'diagnostic-admin-abc12345', mobile: '13612345000', version: 1}
+        : operationId === 'updatePlatformAdminProfile' ? {id: 'private-admin', loginName: 'diagnostic-admin-abc12345', mobile: '13612345000', version: 2}
+          : operationId === 'resetPlatformAdminCredential' ? {id: 'private-admin', loginName: 'diagnostic-admin-abc12345', mobile: '13612345000', version: 3}
+            : url.endsWith('/password-login') ? {} : url.endsWith('/assets/staging') ? {assetRef: 'asset-private', bindGrant: 'grant-private'} : url.endsWith('/commercial-group') ? {id: 'group-private'} : url.endsWith('/extension-definitions/BRAND') && init.method === 'GET' ? {revision: 1} : url.endsWith('/extension-definitions/BRAND') ? {revision: 2} : url.endsWith('/extension-definitions') ? {items: []} : url.endsWith('/roles') ? {id: 'role-private', revision: 1} : {groupWorkspaceKey: 'diagabc12345', version: 1};
       if (init.method !== 'GET') assert.match(init.headers['Idempotency-Key'], /^diagnostic-/);
       return new Response(JSON.stringify(payload), {status: url.endsWith('/assets/staging') || url.endsWith('/commercial-group') || url.endsWith('/group-workspaces') || url.endsWith('/roles') ? 201 : 200, headers: {'X-Correlation-Id': init.headers['X-Correlation-Id'], 'X-Request-Id': `req-abcdef${requestNumber}`, 'Set-Cookie': requestNumber === 1 ? 'session=private-cookie' : ''}});
     },
   });
   assert.equal(result.calls.length, 21);
   assert.equal(result.workspaceKey, 'diagabc12345');
+  assert.deepEqual(roleBodies.map(({serviceNodeType}) => serviceNodeType), ['GROUP', 'REGION', 'PROJECT', 'HEAD_COMPANY', 'STORE']);
+  assert.deepEqual(roleBodies.find(({serviceNodeType}) => serviceNodeType === 'HEAD_COMPANY').capabilityKeys, ['EDIT_HEAD_COMPANY_CATALOG']);
+  assert.deepEqual(roleBodies.find(({serviceNodeType}) => serviceNodeType === 'STORE').capabilityKeys, ['EDIT_STORE_CATALOG', 'EDIT_STORE_INVENTORY']);
+  assert.deepEqual(roleBodies.find(({serviceNodeType}) => serviceNodeType === 'REGION').capabilityKeys, []);
+  assert.deepEqual(roleBodies.find(({serviceNodeType}) => serviceNodeType === 'PROJECT').capabilityKeys, []);
   assert.doesNotMatch(JSON.stringify(result.calls), /private-(?:cookie|id)|diagnostic-admin/i);
   assert.doesNotMatch(JSON.stringify(result.state.snapshot()), /private-(?:cookie|id)|diagnostic-admin/i);
 });
@@ -231,8 +242,8 @@ test('operations organization recipe uses the authenticated owner chain and does
         serial += 1;
         const json = operationId === 'operationsWorkspacePasswordLogin' ? {contextVersion: 1}
           : operationId === 'sendOperationsPasswordRecoveryOtp' ? {debugVerificationCode: 'private-recovery-otp'}
-          : operationId === 'getOperationsWorkspaceSessionEntry' ? {contextVersion: 1, dataNodeCandidates: [{dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'}]}
-          : operationId === 'selectOperationsWorkspaceSessionDataNode' ? {contextVersion: 2, dataNodeCandidates: [{dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'}]}
+          : operationId === 'getOperationsWorkspaceSessionEntry' ? {contextVersion: 1, dataNodeCandidates: [{dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'}, {dataNodeType: 'HEAD_COMPANY', dataNodeRef: 'head-company-private', headCompanyRef: 'head-company-private'}, {dataNodeType: 'STORE', dataNodeRef: 'store-private', storeRef: 'store-private'}]}
+          : operationId === 'selectOperationsWorkspaceSessionDataNode' ? {contextVersion: 2, dataNodeCandidates: [{dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'}, {dataNodeType: 'HEAD_COMPANY', dataNodeRef: 'head-company-private', headCompanyRef: 'head-company-private'}, {dataNodeType: 'STORE', dataNodeRef: 'store-private', storeRef: 'store-private'}]}
           : operationId === 'createOperationsOrganizationRegion' ? {id: 'region-private', revision: 1}
           : operationId === 'createOperationsOrganizationProject' ? {id: 'project-private', revision: 1}
           : operationId === 'createOperationsOrganizationStore' || operationId === 'updateOperationsOrganizationStore' || operationId === 'transitionOperationsOrganizationStoreStatus' ? {id: 'store-private', revision: 1}
@@ -250,11 +261,24 @@ test('operations organization recipe uses the authenticated owner chain and does
       },
     },
   });
-  assert.equal(result.calls.length, 44);
+  assert.equal(result.calls.length, 45);
+  assert.deepEqual(
+    requests.filter((request) => request.operationId === 'addOperationsOrganizationHeadCompanyBrandAuthorization' || request.operationId === 'removeOperationsOrganizationHeadCompanyBrandAuthorization').map((request) => request.operationId),
+    ['addOperationsOrganizationHeadCompanyBrandAuthorization', 'removeOperationsOrganizationHeadCompanyBrandAuthorization', 'addOperationsOrganizationHeadCompanyBrandAuthorization'],
+  );
+  const restoredAuthorization = requests.find((request) => request.headers?.['Idempotency-Key'] === 'diagnostic-head-company-brand-restore-abc12345');
+  assert.deepEqual(restoredAuthorization.body, {brandId: 'brand-private'});
   const brand = requests.find((request) => request.operationId === 'createOperationsOrganizationBrand');
   assert.deepEqual(brand.body, {code: 'BRABC12345', name: '诊断品牌abc12345'});
   const storeCreate = requests.find((request) => request.operationId === 'createOperationsOrganizationStore');
-  assert.deepEqual(Object.keys(storeCreate.body).sort(), ['brandId', 'code', 'name', 'tenantId']);
+  assert.deepEqual(storeCreate.body, {
+    brandId: 'brand-private', tenantId: 'tenant-private', headCompanyId: 'head-company-private',
+    code: 'STABC12345', name: '诊断门店abc12345',
+  });
+  const storeUpdate = requests.find((request) => request.operationId === 'updateOperationsOrganizationStore');
+  assert.deepEqual(storeUpdate.body, {
+    name: '诊断门店更新abc12345', headCompanyId: 'head-company-private', expectedVersion: 1,
+  });
   const contractCreate = requests.find((request) => request.operationId === 'createOperationsContract');
   assert.deepEqual(Object.keys(contractCreate.body).sort(), ['contractNo', 'effectiveFrom', 'effectiveTo', 'items', 'phaseName', 'storeId']);
   const queryKeys = (operationId) => Object.keys(requests.find((request) => request.operationId === operationId)?.query ?? {}).sort();
@@ -272,10 +296,18 @@ test('operations organization recipe uses the authenticated owner chain and does
   for (const request of requests) for (const field of forbiddenBodyFields) assert.equal(Object.hasOwn(request.body ?? {}, field), false, `${request.operationId} body contains forbidden ${field}`);
   const declaredProjectQueryOperations = catalog.operations.filter((operation) => (operation.queryParameters ?? []).some((parameter) => parameter.name === 'projectId')).map((operation) => operation.operationId).sort();
   assert.deepEqual(declaredProjectQueryOperations, ['getOperationsOrganizationCandidates', 'getPlatformOrganizationCandidates', 'getPlatformOrganizationOverviewPage']);
+  const projectNodeBeforeStoreProfile = result.state.requirePrivate('VISIBLE_DATA_NODE');
+  await executeOperationsStoreProfileWorkload({operationsFlow: result, target: {storeId: 'store-private', loginName: 'private-store-login', password: 'private-store-password'}, uniqueSuffix: 'abc12345'});
+  assert.deepEqual(result.state.requirePrivate('VISIBLE_DATA_NODE'), projectNodeBeforeStoreProfile);
   const access = await executeOperationsAccessWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
   const terminal = await executeOperationsStatusTerminalWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
   const recovery = await executeOperationsRecoveryWorkload({operationsFlow: result, uniqueSuffix: 'abc12345'});
-  assert.equal(access.calls.length, 30);
+  assert.equal(access.calls.length, 33);
+  const invitationCandidateRequests = requests.filter((request) => request.operationId.endsWith('InvitationCandidates'));
+  assert.equal(invitationCandidateRequests.length, 10);
+  assert.ok(invitationCandidateRequests.every((request) => request.query.candidateUsage === 'INVITATION_TARGET'));
+  assert.equal(invitationCandidateRequests.filter((request) => request.query.subjectType === 'ORGANIZATION').length, 5);
+  assert.equal(invitationCandidateRequests.filter((request) => request.query.subjectType === 'ROLE').length, 5);
   const invitationActions = requests.filter((request) => request.operationId.startsWith('reissueOperationsWorkspace') || request.operationId.startsWith('cancelOperationsWorkspace'));
   assert.ok(invitationActions.length > 0);
   for (const request of invitationActions) assert.equal(Object.hasOwn(request.body ?? {}, 'expectedContextVersion'), true, `${request.operationId} body misses expectedContextVersion`);
@@ -306,4 +338,74 @@ test('operations user readback uses owner assignment revision for detail and rev
   assert.equal(requests[2].body.expectedVersion, 4);
   assert.equal(Object.hasOwn(requests[2].body, 'expectedContextVersion'), false);
   assert.doesNotMatch(JSON.stringify(result.state.snapshot()), /account-private|assignment-private|private-cookie/);
+});
+
+test('operations user readback selects owner data nodes for head-company and store pages and restores project scope', async () => {
+  const state = createDiagnosticWorkloadState();
+  state.setPrivate('OPERATIONS_SESSION', ['V2S_OPERATIONS_SESSION=private-cookie']);
+  state.setPrivate('CONTEXT_VERSION', 7);
+  const projectNode = {dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'};
+  const headNode = {dataNodeType: 'HEAD_COMPANY', dataNodeRef: 'head-private', headCompanyRef: 'head-private'};
+  const storeNode = {dataNodeType: 'STORE', dataNodeRef: 'store-private', storeRef: 'store-private'};
+  const candidates = [projectNode, headNode, storeNode];
+  state.setPrivate('OPERATIONS_SESSION_ENTRY', {contextVersion: 7, dataNodeCandidates: candidates, scopeContext: {project: projectNode}});
+  state.setPrivate('VISIBLE_DATA_NODE', projectNode);
+  const requests = [];
+  let contextVersion = 7;
+  const users = {
+    HEAD_COMPANY: {loginName: 'diag-head', accountId: 'head-account-private', assignmentId: 'head-assignment-private', revision: 4},
+    STORE: {loginName: 'diag-store', accountId: 'store-account-private', assignmentId: 'store-assignment-private', revision: 5},
+  };
+  const result = await executeOperationsUserReadbackWorkload({
+    operationsFlow: {state, workspaceKey: 'diagabc12345', execute: async (operationId, request) => {
+      requests.push({operationId, query: request.queryParameters, body: request.body});
+      let json = {};
+      if (operationId === 'selectOperationsWorkspaceSessionDataNode') {
+        contextVersion += 1;
+        json = {contextVersion, dataNodeCandidates: candidates, scopeContext: {project: projectNode, headCompany: headNode, store: storeNode}};
+      } else {
+        const targetType = operationId.includes('HeadCompany') ? 'HEAD_COMPANY' : 'STORE';
+        const user = users[targetType];
+        if (operationId === `getOperationsWorkspace${targetType === 'HEAD_COMPANY' ? 'HeadCompany' : 'Store'}User`) {
+          json = {items: [{loginName: user.loginName, accountId: user.accountId, assignments: [{id: user.assignmentId, serviceNodeType: targetType, status: 'ACTIVE', revision: user.revision}]}]};
+        } else if (operationId === `revokeOperationsWorkspace${targetType === 'HEAD_COMPANY' ? 'HeadCompany' : 'Store'}UserAssignment`) {
+          json = {revokedAssignmentId: user.assignmentId, accountRetained: true};
+        }
+      }
+      request.capturePrivateResponse?.({json}, state);
+      return {operationId, method: operationId.startsWith('get') ? 'GET' : 'POST', path: '/safe-template', owner: 'workspace-iam', consumerFace: 'operations-admin', correlationId: `corr-${requests.length}`, requestId: `req-${requests.length}`, status: 200, durationMs: 1};
+    }},
+    targets: [
+      {targetType: 'HEAD_COMPANY', scopeRef: 'head-private', loginName: 'diag-head'},
+      {targetType: 'STORE', scopeRef: 'store-private', loginName: 'diag-store'},
+    ],
+    uniqueSuffix: 'abc12345',
+  });
+  const selections = requests.filter((request) => request.operationId === 'selectOperationsWorkspaceSessionDataNode');
+  assert.deepEqual(selections.map((request) => [request.body.dataNodeType, request.body.dataNodeRef]), [['HEAD_COMPANY', 'head-private'], ['STORE', 'store-private'], ['PROJECT', 'project-private']]);
+  const headPage = requests.find((request) => request.operationId === 'getOperationsWorkspaceHeadCompanyUser');
+  const storePage = requests.find((request) => request.operationId === 'getOperationsWorkspaceStoreUser');
+  assert.deepEqual(Object.keys(headPage.query).sort(), ['expectedContextVersion', 'page', 'pageSize']);
+  assert.deepEqual(Object.keys(storePage.query).sort(), ['expectedContextVersion', 'page', 'pageSize', 'scopeRef']);
+  assert.deepEqual(result.state.requirePrivate('VISIBLE_DATA_NODE'), projectNode);
+  assert.equal(result.state.requirePrivate('CONTEXT_VERSION'), 10);
+  assert.doesNotMatch(JSON.stringify(result.state.snapshot()), /private-cookie|head-account-private|store-account-private/);
+});
+
+test('operations user readback fails closed when a scoped owner data-node candidate is missing', async () => {
+  const state = createDiagnosticWorkloadState();
+  state.setPrivate('OPERATIONS_SESSION', ['V2S_OPERATIONS_SESSION=private-cookie']);
+  state.setPrivate('CONTEXT_VERSION', 7);
+  const projectNode = {dataNodeType: 'PROJECT', dataNodeRef: 'project-private', projectRef: 'project-private'};
+  state.setPrivate('OPERATIONS_SESSION_ENTRY', {contextVersion: 7, dataNodeCandidates: [projectNode], scopeContext: {project: projectNode}});
+  state.setPrivate('VISIBLE_DATA_NODE', projectNode);
+  let invoked = false;
+  await assert.rejects(
+    () => executeOperationsUserReadbackWorkload({
+      operationsFlow: {state, workspaceKey: 'diagabc12345', execute: async () => { invoked = true; return {operationId: 'unexpected', method: 'GET', path: '/safe-template', owner: 'workspace-iam', consumerFace: 'operations-admin', correlationId: 'corr', requestId: 'req', status: 200, durationMs: 1}; }},
+      targets: [{targetType: 'HEAD_COMPANY', scopeRef: 'head-private', loginName: 'diag-head'}], uniqueSuffix: 'abc12345',
+    }),
+    /HTTP_DIAGNOSTIC_WORKLOAD_HEAD_COMPANY_DATA_NODE_MISSING/,
+  );
+  assert.equal(invoked, false);
 });

@@ -1,0 +1,115 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TEST_DELIVERY_PROCESS_REMEDIATION_DESIGN_REMEDIATION_20260811",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-round1-input-checklist.md",
+    "sha256": "42a7d58569a6cc0a17ab83e0ae0edffa0c024e1135a89d46a67c2892fcbb89a5"
+  },
+  "blindReviewDeclaration": "INTEGRITY_EXCEPTION: the required blind boundary was not preserved. Before an independent verdict was formed, a source-location command emitted excerpts from the author intake because the query text matched it. This artifact therefore records a NO_GO integrity finding and makes no GO claim from that contaminated sequence.",
+  "authorMaterialReadAfterIndependentVerdict": false,
+  "manifestSha256": "d3a915808c3565371a683e0879afc7439aae03643387674f71d75f399d5b45c8",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "design-authority-parser-and-hash-binding",
+      "root-receipt-freshness-and-single-executor",
+      "independent-review-integrity"
+    ]
+  },
+  "expectedBehavior": [
+    "The standalone implementationAuthority: false declaration is present in both the hash-bound detailed design and the separately hash-bound design-only authorization, and the existing granularity checker recognizes that exact colon form.",
+    "The remediation manifest binds the current SHA-256 bytes of both authority artifacts and retains implementationAuthority false at its own top level without granting implementation authority.",
+    "A future root verify invocation generates one rootRunId before child execution, derives its receipt path from that identity, and supplies the same rootRunId through --expected-root-run-id to the pure U12 receipt validator.",
+    "U12 validates the caller-supplied expected root identity and derived path without executing children, so a structurally complete receipt from a prior root invocation is rejected rather than admitted as current.",
+    "This is a static DESIGN review only. It makes no implementation, dynamic, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment claim."
+  ],
+  "findings": [
+    {
+      "id": "THCL-M-CHECKER-ANCHOR-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "THCL-U01",
+        "THCL-U02"
+      ],
+      "title": "Remediation manifest does not provide unique approved-source anchors to the existing checker",
+      "claim": "Although both authority artifacts have the exact colon-form declaration and their manifest hashes match current bytes, the remediation manifest still anchors THCL-U01 and THCL-U02 to repeated finding IDs in the prior round-2 JSON. The existing checker requires each approved source anchor to occur exactly once, so the full manifest cannot be mechanically admitted.",
+      "evidence": "scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-granularity-manifest.json --review doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-round1.json returns UNIT_SOURCE_THCL-U01_1_ANCHOR_NOT_UNIQUE:9 before review-field validation. The manifest uses anchors THCL-M-001 and THCL-S-001; the prior round-2 JSON repeats each ID in disposition, findings, verdict, and summary locations. tools/implementation-design-granularity/cli.mjs requires a unique anchor for an approved source.",
+      "impact": "The checker cannot reach the authority-pair or receipt-design admission outcome for either scoped unit. Therefore the intended existing-checker proof of the two remediations is not currently reproducible, despite the individual authority bytes being parser- and hash-correct.",
+      "minimalRepair": "Change only the two approvedSources anchor strings in the remediation manifest to unique existing literals from the same prior round-2 source, for example its unique finding titles, then recompute only the review manifestSha256 and rerun the existing checker. Do not weaken the checker, change the design/authorization authority boundary, or add a source, runner, test, contract, active package, or dynamic action.",
+      "denominator": "THCL-U01 and THCL-U02, their two approvedSources references in the remediation manifest, and the one existing implementation-design-granularity validator.",
+      "sourceReopened": [
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-granularity-manifest.json",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-adversarial-review-round2.json",
+        "tools/implementation-design-granularity/cli.mjs",
+        "scripts/check/implementation-design-granularity"
+      ],
+      "risk": "A manifest that names a correct technical fix but cannot pass its declared existing checker is not hash-bound admission evidence and could be mistaken for a complete design-only control.",
+      "disposition": "NO_GO until the manifest has unique source anchors and the existing checker can evaluate the permitted authority and receipt scope."
+    },
+    {
+      "id": "THCL-S-REVIEW-INTEGRITY-001",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "THCL-U01",
+        "THCL-U02"
+      ],
+      "title": "Round-1 blind-review ordering was not preserved",
+      "claim": "The required independent verdict-before-author-material ordering cannot be truthfully declared for this artifact because author-intake excerpts were emitted by a broad source-location command before the verdict was formed.",
+      "evidence": "The current checker source requires authorMaterialReadAfterIndependentVerdict === true when the manifest requires INDEPENDENT_SUBAGENT_V1 (tools/implementation-design-granularity/cli.mjs:697-734). The governing decision requires findings and verdict before author self-assessment or disposition is read (doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md:20-42). This artifact deliberately records false rather than making a contradictory declaration.",
+      "impact": "Although the two scoped technical design checks are supported by primary sources, this reviewer cannot issue a valid independent blind-review GO for either delivery unit. Treating the review as GO would defeat the fresh-review control.",
+      "minimalRepair": "Start a new fresh independent round-1 reviewer context that reads the immutable checklist and primary sources while excluding the author intake until its own findings and verdict are formed; then produce the same bounded static review artifact. Do not change source, runner, test, contract, active package, or dynamic environment for this repair.",
+      "denominator": "The two delivery units THCL-U01 and THCL-U02 in the remediation manifest and this one DESIGN round-1 adversarial-review artifact.",
+      "sourceReopened": [
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-round1-input-checklist.md",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-granularity-manifest.json",
+        "tools/implementation-design-granularity/cli.mjs",
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+      ],
+      "risk": "A mechanically shaped review could falsely appear independent and blind even though its verdict was exposed to author-disposition material before formation.",
+      "disposition": "NO_GO for this review artifact only. The technical remediation design is not expanded or rejected on HMAC, fixture, UI, dynamic, runtime, or business grounds."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "THCL-U01",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "THCL-M-CHECKER-ANCHOR-001",
+        "THCL-S-REVIEW-INTEGRITY-001"
+      ]
+    },
+    {
+      "id": "THCL-U02",
+      "verdict": "NO_GO",
+      "findingIds": [
+        "THCL-M-CHECKER-ANCHOR-001",
+        "THCL-S-REVIEW-INTEGRITY-001"
+      ]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The two remediations are the minimum changes for their stated failures: checker-exact, hash-bound design-only authority; and a caller-bound receipt identity that distinguishes the current root invocation from a valid historical receipt. Neither adds an execution map, gate, runner, or dynamic action.",
+    "simplerAlternativeAssessment": "Relaxing the colon-form checker or accepting prose authority would remove the existing mechanical boundary. A timestamp heuristic or receipt self-attestation would not bind U12 to the current caller. The specified rootRunId plus derived path and expected-root-run-id is the smaller reliable alternative.",
+    "costFit": "Both technical changes are narrowly scoped to existing checker/root/catalog/validator surfaces and intentionally defer implementation and all dynamic proof. The cost of a fresh blind reviewer is lower than accepting a non-independent review declaration.",
+    "verdict": "NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Static source review finds the authority artifacts themselves checker-parseable and hash-bound, and the planned rootRunId/path/expected-root-run-id chain sufficient to reject old complete receipts without a second child execution. However, the remediation manifest's repeated approved-source anchors block the existing checker before it can admit either scoped unit, and this artifact cannot truthfully satisfy blind-review ordering. One M and one S finding prevent GO. No dynamic or business result is claimed.",
+    "authorizationBoundary": "Static DESIGN review only; no implementation authority and no claim of implementation, dynamic execution, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment success.",
+    "severityCounts": {
+      "M": 1,
+      "S": 1,
+      "N": 0
+    }
+  }
+}

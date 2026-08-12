@@ -5,7 +5,6 @@ public record OrganizationStoreUpdateRequest(
     String name,
     String headCompanyId,
     String notes,
-    tools.jackson.databind.JsonNode extensionValues,
-    Long extensionRuleRevision,
+    java.util.List<OrganizationStoreUpdateRequestExtensionValuesItem> extensionValues,
     Long expectedVersion
 ) {}

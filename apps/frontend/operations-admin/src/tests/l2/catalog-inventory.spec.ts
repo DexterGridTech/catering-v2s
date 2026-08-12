@@ -1,4 +1,6 @@
 import {expect, test, type Locator, type Page} from '@playwright/test';
+import {CATALOG_INVENTORY_OPERATIONS} from '../../app/api/generated/catalog-inventory-edge';
+import {PUBLIC_OPERATIONS} from '../../app/api/generated/public-edge';
 import {appendFileSync, mkdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {selectOperationsDataScope} from './operationsL2';
@@ -15,6 +17,23 @@ type LocatorBinding = {
 };
 type CatalogCaseContext = {loginEnv: string; scope: 'STORE' | 'HEAD_COMPANY'; route: string; storeEnv?: string};
 type RuntimeFixtureBinding = {catalogItemCodes?: string[]; primaryCatalogItemCode?: string; primaryTargetRef?: string; primaryTargetProductCode?: string; productionTagCodes?: string[]; primaryProductionTagCode?: string; assetRefs?: string[]};
+type GeneratedOperation = {operationId: string; path: string};
+
+function generatedPath(operations: readonly GeneratedOperation[], operationId: string, pathParameters: Record<string, string>): string {
+  const operation = operations.find((entry) => entry.operationId === operationId);
+  if (!operation) throw new Error(`GENERATED_OPERATION_REQUIRED:${operationId}`);
+  return operation.path.replace(/\{([^}]+)\}/g, (_, name: string) => {
+    const value = pathParameters[name];
+    if (!value) throw new Error(`GENERATED_PATH_PARAMETER_REQUIRED:${name}`);
+    return encodeURIComponent(value);
+  });
+}
+
+function generatedRoutePattern(operations: readonly GeneratedOperation[], operationId: string): string {
+  const operation = operations.find((entry) => entry.operationId === operationId);
+  if (!operation) throw new Error(`GENERATED_OPERATION_REQUIRED:${operationId}`);
+  return operation.path.replace(/\{[^}]+\}/g, '**');
+}
 
 const locatorPolicy = JSON.parse(readFileSync(new URL('../../../../../../contracts/policy/catalog-inventory-l2-locator-bindings.json', import.meta.url), 'utf8')) as {bindings: LocatorBinding[]};
 const bindingsByCase = new Map(locatorPolicy.bindings.map((binding) => [binding.caseId, binding]));
@@ -146,12 +165,12 @@ async function openCatalogItemByCode(page: Page, fixtureRef: string, options: {s
   await searchInput.press('Enter');
   const item = page.getByTestId(`catalog-inventory-open-item-${code}`);
   await expect(item).toHaveCount(1);
-  const detailRoute = '**/api/operations/catalog-inventory/items/**';
+  const detailRoute = `**${generatedRoutePattern(CATALOG_INVENTORY_OPERATIONS, 'getOperationsCatalogItem')}`;
   let shouldFailDetail = options.simulateDetailFailure === true;
   if (shouldFailDetail) {
     await page.route(detailRoute, async (route) => {
       const url = new URL(route.request().url());
-      const detailPath = `/api/operations/catalog-inventory/items/${encodeURIComponent(code)}`;
+      const detailPath = generatedPath(CATALOG_INVENTORY_OPERATIONS, 'getOperationsCatalogItem', {itemCode: code});
       if (shouldFailDetail && route.request().method() === 'GET' && url.pathname === detailPath) {
         shouldFailDetail = false;
         await route.abort('failed');
@@ -166,7 +185,7 @@ async function openCatalogItemByCode(page: Page, fixtureRef: string, options: {s
 }
 
 function publicAssetLookupPath(assetRef: string) {
-  return `/api/public/assets/${encodeURIComponent(assetRef)}/content`;
+  return generatedPath(PUBLIC_OPERATIONS, 'getPublicAssetContent', {assetRef});
 }
 
 async function assertLoadedImages(page: Page, expectedUrls: string[], label: string) {
@@ -248,13 +267,14 @@ async function assertCatalogImageFailureRecovery(
   const {drawer} = await assertCatalogAssetPresentation(page, fixtureRef, publicAssetLookups);
   await drawer.getByTestId('catalog-item-edit').click();
   const editor = drawer.getByTestId('catalog-item-media-editor');
-  await page.route('**/api/operations/catalog-inventory/assets/stage', async (route) => {
+  const stageRoute = `**${generatedRoutePattern(CATALOG_INVENTORY_OPERATIONS, 'stageOperationsCatalogAsset')}`;
+  await page.route(stageRoute, async (route) => {
     await route.fulfill({status: 422, contentType: 'application/problem+json', body: JSON.stringify({errorCode: 'ASSET_PROCESSING_FAILED', detail: 'L2 controlled image failure'})});
   });
   await setCatalogMediaFile(drawer, 'beef-burger.jpg');
   await expect(drawer.getByTestId('catalog-item-media-status-2')).toContainText('L2 controlled image failure');
   await expect(editor.locator('img')).toHaveCount(2);
-  await page.unroute('**/api/operations/catalog-inventory/assets/stage');
+  await page.unroute(stageRoute);
   await drawer.getByTestId('catalog-item-media-retry-2').click();
   await expect(drawer.getByTestId('catalog-item-media-status-2')).toContainText('可用');
   await expect(editor.locator('img')).toHaveCount(3);

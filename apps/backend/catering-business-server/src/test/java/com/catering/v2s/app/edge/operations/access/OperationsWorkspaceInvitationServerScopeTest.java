@@ -21,7 +21,23 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
@@ -65,24 +81,20 @@ class OperationsWorkspaceInvitationServerScopeTest {
     }
 
     @Test
-    void createUsesOnlyOwnerResolvedTaskPathForAssignmentIntent() {
+    void createDelegatesUnresolvedScopeToTypedOwnerCommand() {
         Fixture fixture = fixture();
         UUID scopeRef = UUID.randomUUID();
-        UUID targetId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
-        when(fixture.user.resolveCommandTarget(fixture.session, "STORE", scopeRef))
-            .thenReturn(new OrganizationTaskPathLookup.TaskPath("STORE", targetId, List.of(targetId), "group/store"));
         WorkspaceInvitationReadback created = new WorkspaceInvitationReadback(UUID.randomUUID(), fixture.session.workspaceUuid(), KEY, "13800000000", "PENDING", 100L, 1L, 10L, null, null, null, null);
-        when(fixture.invitations.createForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("13800000000"), argThat(intents -> intents.size() == 1 && intents.getFirst().roleId().equals(roleId) && intents.getFirst().serviceNodeType().equals("STORE") && intents.getFirst().serviceNodeId().equals(targetId)), eq(IDEMPOTENCY_KEY), eq(fixture.actor)))
-            .thenReturn(created);
-        when(fixture.invitations.managementView(created)).thenReturn(new WorkspaceInvitationService.ManagementInvitationView(created.id(), KEY, "138****0000", "13800000000", "平台管理员", "STORE", "group/store", List.of("Store manager"), "PENDING", 1L, 100L, 1L, 10L, null, null, null, null));
+        WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(created.id(), KEY, "138****0000", "13800000000", "平台管理员", "STORE", "group/store", List.of("Store manager"), "PENDING", 1L, 100L, 1L, 10L, null, null, null, null);
+        when(fixture.commands.createInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "STORE".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && command.roleIds().equals(List.of(roleId)) && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
         var response = fixture.controller.storeCreate(fixture.request, KEY, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationCreateRequest(scopeRef.toString(), "13800000000", List.of(roleId.toString()), IDEMPOTENCY_KEY));
 
         assertEquals(201, response.getStatusCode().value());
         verify(fixture.authentication).session("operations-session");
-        verify(fixture.user).resolveCommandTarget(fixture.session, "STORE", scopeRef);
-        verify(fixture.invitations).createForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("13800000000"), argThat(intents -> intents.size() == 1 && intents.getFirst().serviceNodeType().equals("STORE") && intents.getFirst().serviceNodeId().equals(targetId)), eq(IDEMPOTENCY_KEY), eq(fixture.actor));
+        verify(fixture.commands).createInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "STORE".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && command.roleIds().equals(List.of(roleId))));
+        verifyNoInteractions(fixture.user, fixture.invitations);
     }
 
     @Test
@@ -100,23 +112,36 @@ class OperationsWorkspaceInvitationServerScopeTest {
     }
 
     @Test
-    void invitationActionsCarryOwnerContextAndExactSelectedScope() {
+    void invitationActionsDelegateOwnerContextAndExactSelectedScope() {
         Fixture fixture = fixture();
         UUID scopeRef = UUID.randomUUID();
         UUID invitationId = UUID.randomUUID();
-        OrganizationTaskPathLookup.TaskPath scope = new OrganizationTaskPathLookup.TaskPath("PROJECT", scopeRef, List.of(scopeRef), "group/project");
         WorkspaceInvitationReadback cancelled = new WorkspaceInvitationReadback(invitationId, fixture.session.workspaceUuid(), KEY, "13800000000", "CANCELLED", 100L, 2L, 10L, null, null, 11L, null);
-        when(fixture.user.resolveTaskScope(fixture.session, "PROJECT", scopeRef)).thenReturn(scope);
-        when(fixture.invitations.cancelForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("PROJECT"), eq(scope), eq(invitationId), eq(1L), eq(IDEMPOTENCY_KEY), eq(fixture.actor))).thenReturn(cancelled);
-        when(fixture.invitations.managementView(cancelled)).thenReturn(new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "CANCELLED", 2L, 100L, 2L, 10L, null, null, 11L, null));
+        WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "CANCELLED", 2L, 100L, 2L, 10L, null, null, 11L, null);
+        when(fixture.commands.cancelInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
         var result = fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), 1L, fixture.session.contextVersion(), IDEMPOTENCY_KEY));
 
         assertEquals(WorkspaceInvitationStatus.CANCELLED, result.status());
         assertTrue(List.of(WorkspaceOperationsInvitationActionRequest.class.getRecordComponents()).stream().anyMatch(component -> component.getName().equals("scopeRef")));
         assertTrue(List.of(WorkspaceOperationsInvitationActionRequest.class.getRecordComponents()).stream().anyMatch(component -> component.getName().equals("expectedContextVersion")));
-        verify(fixture.user).resolveTaskScope(fixture.session, "PROJECT", scopeRef);
-        verify(fixture.invitations).cancelForOperations(eq(fixture.session.workspaceUuid()), eq(KEY), eq(fixture.session.currentAssignmentId()), eq("PROJECT"), eq(scope), eq(invitationId), eq(1L), eq(IDEMPOTENCY_KEY), eq(fixture.actor));
+        verify(fixture.commands).cancelInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L));
+        verifyNoInteractions(fixture.user, fixture.invitations);
+    }
+
+    @Test
+    void reissueDelegatesOwnerContextAndExactSelectedScope() {
+        Fixture fixture = fixture();
+        UUID scopeRef = UUID.randomUUID();
+        UUID invitationId = UUID.randomUUID();
+        WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "ACTIVE", 2L, 120L, 2L, 20L, null, null, null, null);
+        when(fixture.commands.reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
+
+        var result = fixture.controller.projectReissue(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), 1L, fixture.session.contextVersion(), IDEMPOTENCY_KEY));
+
+        assertEquals(WorkspaceInvitationStatus.ACTIVE, result.status());
+        verify(fixture.commands).reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L));
+        verifyNoInteractions(fixture.user, fixture.invitations);
     }
 
     @Test
@@ -140,9 +165,14 @@ class OperationsWorkspaceInvitationServerScopeTest {
         OperationsSessionResolver sessions = new OperationsSessionResolver(authentication);
         WorkspaceInvitationService invitations = mock(WorkspaceInvitationService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
+        WorkspaceOperationsCommandApi commands = mock(WorkspaceOperationsCommandApi.class);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
-        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, invitations, authentication)), sessions, authentication, invitations, user, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
+        return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, invitations, authentication),
+            new CreateOperationsWorkspaceGroupInvitationOperation(commands), new CreateOperationsWorkspaceRegionInvitationOperation(commands), new CreateOperationsWorkspaceProjectInvitationOperation(commands), new CreateOperationsWorkspaceHeadCompanyInvitationOperation(commands), new CreateOperationsWorkspaceStoreInvitationOperation(commands),
+            new CancelOperationsWorkspaceGroupInvitationOperation(commands), new CancelOperationsWorkspaceRegionInvitationOperation(commands), new CancelOperationsWorkspaceProjectInvitationOperation(commands), new CancelOperationsWorkspaceHeadCompanyInvitationOperation(commands), new CancelOperationsWorkspaceStoreInvitationOperation(commands),
+            new ReissueOperationsWorkspaceGroupInvitationOperation(commands), new ReissueOperationsWorkspaceRegionInvitationOperation(commands), new ReissueOperationsWorkspaceProjectInvitationOperation(commands), new ReissueOperationsWorkspaceHeadCompanyInvitationOperation(commands), new ReissueOperationsWorkspaceStoreInvitationOperation(commands)),
+            sessions, authentication, invitations, user, commands, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
     }
 
-    private record Fixture(OperationsWorkspaceInvitationController controller, OperationsSessionResolver sessions, WorkspaceAuthenticationService authentication, WorkspaceInvitationService invitations, WorkspaceUserService user, EdgeRequestContext request, AuditActor actor, WorkspaceSessionReadback session) { }
+    private record Fixture(OperationsWorkspaceInvitationController controller, OperationsSessionResolver sessions, WorkspaceAuthenticationService authentication, WorkspaceInvitationService invitations, WorkspaceUserService user, WorkspaceOperationsCommandApi commands, EdgeRequestContext request, AuditActor actor, WorkspaceSessionReadback session) { }
 }

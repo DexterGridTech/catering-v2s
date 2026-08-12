@@ -6,6 +6,7 @@ import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.organization.api.InitializeCommercialGroupCommand;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi;
 import com.catering.v2s.organization.api.UpdateCommercialGroupCommand;
 import com.catering.v2s.organization.api.OrganizationProblem;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
@@ -15,10 +16,12 @@ import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class OrganizationCommandService implements InitializeCommercialGroupCommand, UpdateCommercialGroupCommand, CommercialGroupLookup {
+public class OrganizationCommandService implements InitializeCommercialGroupCommand, UpdateCommercialGroupCommand, CommercialGroupLookup, OperationsCommercialGroupCommandApi {
     private final JdbcTemplate jdbcTemplate;
     private final TimeProvider time;
     private final ExtensionDefinitionLookup definitions;
@@ -49,6 +52,22 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         this.time = time;
         this.definitions = definitions;
         this.receipts = receipts;
+    }
+
+    @Override
+    @Transactional
+    public CommercialGroupReadback update(OperationsCommercialGroupCommandApi.UpdateCommand command) {
+        CommercialGroupReadback current = requireCommercialGroup(command.groupWorkspaceKey());
+        if (!command.ownerScopeGrant().matches(command.workspaceUuid(), command.groupWorkspaceKey(), ServiceNodeTypes.GROUP, current.id())) {
+            throw new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_NOT_INITIALIZED, "commercial group authorization target does not match");
+        }
+        String code = normalize(command.commercialGroupCode(), 64);
+        String name = normalize(command.commercialGroupName(), 120);
+        String canonical = "update-commercial-group\\u0000" + command.groupWorkspaceKey() + "\\u0000" + code + "\\u0000" + name + "\\u0000" + command.expectedVersion() + "\\u0000"
+            + extensionCanonical(command.extensionSubmission());
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical, () ->
+            updateOnce(command.workspaceUuid(), command.groupWorkspaceKey(), code, name, command.expectedVersion(), command.extensionSubmission(), command.actor(), current)
+        );
     }
 
     @Override
@@ -236,6 +255,24 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         return updated;
     }
 
+    private CommercialGroupReadback updateOnce(UUID workspaceUuid, String groupWorkspaceKey, String code, String name, long expectedVersion, ExtensionSubmission submission, AuditActor actor, CommercialGroupReadback current) {
+        ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, valuesJson(current.extensionValues()), submission);
+        long now = time.currentEpochMillis();
+        if (current.revision() != expectedVersion || jdbcTemplate.update(
+            "UPDATE organization.commercial_group SET commercial_group_code=?, commercial_group_name=?, extension_values=CAST(? AS JSONB), extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE commercial_group_uuid=? AND group_workspace_key=? AND version=?",
+            code, name, extensions.json(), extensions.revision(), now, current.id(), groupWorkspaceKey, expectedVersion
+        ) != 1) {
+            throw new OrganizationHierarchyService.OrganizationConflictException();
+        }
+        CommercialGroupReadback updated = requireCommercialGroup(groupWorkspaceKey);
+        jdbcTemplate.update(
+            "INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'COMMERCIAL_GROUP', ?, ?, ?, ?, 'COMMERCIAL_GROUP_UPDATED', ?, CAST(? AS JSONB))",
+            UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, updated.id().toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), now,
+            AuditChangeJson.write(java.util.List.of(new com.catering.v2s.audit.contract.AuditChange("commercialGroupCode", current.commercialGroupCode(), updated.commercialGroupCode()), new com.catering.v2s.audit.contract.AuditChange("commercialGroupName", current.commercialGroupName(), updated.commercialGroupName())))
+        );
+        return updated;
+    }
+
     /** Task read for the hierarchy snapshot; commercial-group ownership remains in this module. */
     @Transactional(readOnly = true)
     public CommercialGroupReadback requireCommercialGroup(String groupWorkspaceKey) {
@@ -337,8 +374,32 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
         }
     }
 
+    private ExtensionValues extensionValues(UUID workspaceUuid, String groupWorkspaceKey, String currentValuesJson, ExtensionSubmission submission) {
+        ExtensionSubmission requested = submission == null ? new ExtensionSubmission(List.of()) : submission;
+        if (definitions == null) {
+            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "extension definition lookup is unavailable");
+        }
+        try {
+            ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.COMMERCIAL_GROUP);
+            return new ExtensionValues(ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested), definition.version());
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "commercial group extension values are invalid");
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationCommandException(OrganizationProblem.VALIDATION_FAILED, "commercial group extension values are invalid");
+        }
+    }
+
     private static String valuesJson(Map<String, String> values) {
         return "{" + values.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> "\"" + json(entry.getKey()) + "\":" + entry.getValue()).collect(java.util.stream.Collectors.joining(",")) + "}";
+    }
+
+    private static String extensionCanonical(ExtensionSubmission submission) {
+        return submission.fields().stream()
+            .sorted(java.util.Comparator.comparing(ExtensionSubmission.ExtensionFieldValue::fieldKey))
+            .map(value -> value.fieldKey() + "=" + value.mode() + "=" + value.valueJson())
+            .collect(java.util.stream.Collectors.joining("\\u001f"));
     }
 
     private static String fingerprint(String groupWorkspaceKey, String code, String name, Map<String, String> extensionValues) {

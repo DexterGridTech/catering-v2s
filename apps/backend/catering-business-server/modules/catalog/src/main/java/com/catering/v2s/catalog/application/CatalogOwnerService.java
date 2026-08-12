@@ -135,6 +135,338 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return executeWrite(context.operationToken().operationId(), scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
     }
 
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CategoryReadback createCategory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                            CatalogOwnerApi.CategoryCreateCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "createOperationsCatalogCategory");
+        ObjectNode request = mapper.createObjectNode().put("code", command.code()).put("name", command.name());
+        putNullableUuid(request, "parentCategoryRef", command.parentCategoryRef());
+        JsonNode result = executeWrite("createOperationsCatalogCategory", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+        return categoryReadback(scope.dataNodeId().toString(), scope.brandRef(), UUID.fromString(result.path("result").path("categoryRef").asText()));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CategoryReadback updateCategory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                            CatalogOwnerApi.CategoryUpdateCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "updateOperationsCatalogCategory");
+        ObjectNode request = mapper.createObjectNode().put("categoryRef", command.categoryRef().toString())
+            .put("expectedVersion", command.expectedVersion()).put("name", command.name());
+        executeWrite("updateOperationsCatalogCategory", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+        return categoryReadback(scope.dataNodeId().toString(), scope.brandRef(), command.categoryRef());
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CategoryReadback moveCategory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                          CatalogOwnerApi.CategoryMoveCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "moveOperationsCatalogCategory");
+        ObjectNode request = mapper.createObjectNode().put("categoryRef", command.categoryRef().toString())
+            .put("expectedVersion", command.expectedVersion()).put("action", command.action().name());
+        putNullableUuid(request, "parentCategoryRef", command.parentCategoryRef());
+        executeWrite("moveOperationsCatalogCategory", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+        return categoryReadback(scope.dataNodeId().toString(), scope.brandRef(), command.categoryRef());
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CategoryDeleteReadback deleteCategory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                  CatalogOwnerApi.CategoryDeleteCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "deleteOperationsCatalogCategory");
+        ObjectNode request = mapper.createObjectNode().put("categoryRef", command.categoryRef().toString())
+            .put("expectedVersion", command.expectedVersion());
+        JsonNode result = executeWrite("deleteOperationsCatalogCategory", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+        JsonNode value = result.path("result");
+        return new CatalogOwnerApi.CategoryDeleteReadback(UUID.fromString(value.path("categoryRef").asText()),
+            value.path("deletedSubtreeSize").asLong(), textValues(value.path("deletedCategoryCodes")));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.DictionaryCommandReadback createDictionaryEntry(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                            CatalogOwnerApi.DictionaryEntryCreateCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "createOperationsCatalogDictionaryEntry");
+        return dictionaryCommandReadback(executeWrite("createOperationsCatalogDictionaryEntry", scope.dataNodeId().toString(), scope.brandRef(),
+            dictionaryRequest(command.dictionaryKind(), "code", command.code(), null, command.name(), null), context.requestId(), idempotencyKey));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.DictionaryCommandReadback updateDictionaryEntry(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                            CatalogOwnerApi.DictionaryEntryUpdateCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "updateOperationsCatalogDictionaryEntry");
+        return dictionaryCommandReadback(executeWrite("updateOperationsCatalogDictionaryEntry", scope.dataNodeId().toString(), scope.brandRef(),
+            dictionaryRequest(command.dictionaryKind(), "entryCode", command.entryCode(), command.expectedVersion(), command.name(), null), context.requestId(), idempotencyKey));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.DictionaryViewReadback reorderDictionaryEntries(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                            CatalogOwnerApi.DictionaryEntryReorderCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "reorderOperationsCatalogDictionaryEntry");
+        ObjectNode request = mapper.createObjectNode().put("dictionaryKind", command.dictionaryKind());
+        ArrayNode codes = request.putArray("orderedCodes");
+        command.orderedCodes().forEach(codes::add);
+        return dictionaryViewReadback(executeWrite("reorderOperationsCatalogDictionaryEntry", scope.dataNodeId().toString(), scope.brandRef(), request,
+            context.requestId(), idempotencyKey));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.DictionaryCommandReadback transitionDictionaryEntry(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                                CatalogOwnerApi.DictionaryEntryTransitionCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "transitionOperationsCatalogDictionaryEntryStatus");
+        return dictionaryCommandReadback(executeWrite("transitionOperationsCatalogDictionaryEntryStatus", scope.dataNodeId().toString(), scope.brandRef(),
+            dictionaryRequest(command.dictionaryKind(), "entryCode", command.entryCode(), command.expectedVersion(), null, command.targetStatus()), context.requestId(), idempotencyKey));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CatalogItemCommandReadback createCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                         CatalogOwnerApi.CatalogItemCreateCommand command,
+                                                                         String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "createOperationsCatalogItem");
+        ObjectNode request = mapper.createObjectNode().put("name", command.name()).put("code", command.code()).put("shapeKey", command.shapeKey());
+        request.set("attributes", requiredCanonicalObject(command.attributesJson(), "attributes"));
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            generation(scope.dataNodeId().toString(), scope.brandRef());
+        }
+        JsonNode replay = replayTyped(scope.dataNodeId().toString(), idempotencyKey, "createOperationsCatalogItem", request);
+        if (replay != null) return catalogItemCommandReadback(replay);
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            ObjectNode result = createItem(scope.dataNodeId().toString(), scope.brandRef(), context.requestId(), request);
+            saveTypedReceipt(scope.dataNodeId().toString(), idempotencyKey, "createOperationsCatalogItem", request, result);
+            return catalogItemCommandReadback(result);
+        }
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CatalogItemCommandReadback transitionCatalogItemStatus(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                                   CatalogOwnerApi.CatalogItemStatusTransitionCommand command,
+                                                                                   String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "transitionOperationsCatalogItemStatus");
+        ObjectNode request = mapper.createObjectNode().put("itemCode", command.itemCode())
+            .put("expectedVersion", command.expectedVersion()).put("targetStatus", command.targetStatus());
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            recheckTypedItemReceipt(scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), command.expectedVersion(), command.targetStatus());
+        }
+        JsonNode replay = replayTyped(scope.dataNodeId().toString(), idempotencyKey, "transitionOperationsCatalogItemStatus", request);
+        if (replay != null) return catalogItemCommandReadback(replay);
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            ObjectNode result = transitionItem(scope.dataNodeId().toString(), scope.brandRef(), context.requestId(), request);
+            saveTypedReceipt(scope.dataNodeId().toString(), idempotencyKey, "transitionOperationsCatalogItemStatus", request, result);
+            return catalogItemCommandReadback(result);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UUID resolveCatalogItemRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemCode) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "transitionOperationsCatalogItemStatus");
+        return requireItem(scope.dataNodeId().toString(), scope.brandRef(), itemCode).ref();
+    }
+
+    /** Named owner boundary for the whole save; free request fields stay canonical text until this owner validates them. */
+    @Override @Transactional
+    public CatalogOwnerApi.CatalogItemSaveReadback saveCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                    CatalogOwnerApi.CatalogItemSaveCommand command,
+                                                                    String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        ObjectNode request;
+        try {
+            JsonNode parsed = mapper.readTree(command.canonicalRequestJson());
+            if (!parsed.isObject()) throw new IllegalArgumentException("request must be object");
+            request = (ObjectNode) parsed;
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "catalog save request is invalid", failure);
+        }
+        if (command.itemCode() == null || command.itemCode().isBlank() || !command.itemCode().equals(request.path("itemCode").asText())) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode is required and must match the save request");
+        }
+        return new CatalogOwnerApi.CatalogItemSaveReadback(canonicalJson(executeWrite(
+            "saveOperationsCatalogItem", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey
+        )));
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.TemporaryPromotionPreflightReadback preflightTemporaryCatalogItemPromotion(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                                                         CatalogOwnerApi.TemporaryPromotionPreflightCommand command,
+                                                                                                         String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "preflightOperationsTemporaryCatalogItemPromotion");
+        ObjectNode request = temporaryPromotionRequest(command.itemCode(), command.formalCode(), command.shapeKey(), command.name(),
+            command.shortName(), command.materialRole(), command.attributesJson(), command.expectedSourceVersion(), null, null);
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            recheckTypedItemReceipt(scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), null, null);
+        }
+        JsonNode replay = replayTyped(scope.dataNodeId().toString(), idempotencyKey, "preflightOperationsTemporaryCatalogItemPromotion", request);
+        if (replay != null) return temporaryPromotionPreflightReadback(replay);
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            ObjectNode result = promotionPreflight(scope.dataNodeId().toString(), scope.brandRef(), context.requestId(), request);
+            saveTypedReceipt(scope.dataNodeId().toString(), idempotencyKey, "preflightOperationsTemporaryCatalogItemPromotion", request, result);
+            return temporaryPromotionPreflightReadback(result);
+        }
+    }
+
+    @Override
+    @Transactional
+    public CatalogOwnerApi.CatalogItemCommandReadback executeTemporaryCatalogItemPromotion(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                                             CatalogOwnerApi.TemporaryPromotionExecuteCommand command,
+                                                                                             String idempotencyKey) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "executeOperationsTemporaryCatalogItemPromotion");
+        ObjectNode request = temporaryPromotionRequest(command.itemCode(), command.formalCode(), command.shapeKey(), command.name(),
+            command.shortName(), command.materialRole(), command.attributesJson(), command.expectedSourceVersion(), command.expectedVersion(), command.preflightDigest());
+        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
+            recheckTypedItemReceipt(scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), command.expectedVersion(), null);
+        }
+        JsonNode replay = replayTyped(scope.dataNodeId().toString(), idempotencyKey, "executeOperationsTemporaryCatalogItemPromotion", request);
+        if (replay != null) return catalogItemCommandReadback(replay);
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
+             var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+            ObjectNode result = promotionExecute(scope.dataNodeId().toString(), scope.brandRef(), context.requestId(), request);
+            saveTypedReceipt(scope.dataNodeId().toString(), idempotencyKey, "executeOperationsTemporaryCatalogItemPromotion", request, result);
+            return catalogItemCommandReadback(result);
+        }
+    }
+
+    private ObjectNode temporaryPromotionRequest(String itemCode, String formalCode, String shapeKey, String name, String shortName,
+                                                 String materialRole, String attributesJson, long expectedSourceVersion,
+                                                 Long expectedVersion, String preflightDigest) {
+        ObjectNode request = mapper.createObjectNode().put("itemCode", itemCode).put("formalCode", formalCode)
+            .put("shapeKey", shapeKey).put("name", name).put("expectedSourceVersion", expectedSourceVersion);
+        if (shortName != null) request.put("shortName", shortName);
+        if (materialRole != null) request.put("materialRole", materialRole);
+        if (attributesJson != null) request.set("attributes", requiredCanonicalObject(attributesJson, "attributes"));
+        if (expectedVersion != null) request.put("expectedVersion", expectedVersion);
+        if (preflightDigest != null) request.put("preflightDigest", preflightDigest);
+        return request;
+    }
+
+    private JsonNode requiredCanonicalObject(String canonicalJson, String field) {
+        try {
+            JsonNode value = mapper.readTree(canonicalJson);
+            if (value == null || !value.isObject()) throw new IllegalArgumentException();
+            return value;
+        } catch (Exception invalid) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a canonical JSON object", invalid);
+        }
+    }
+
+    private void recheckTypedItemReceipt(String scope, String brand, String itemCode, Long expectedVersion, String targetStatus) {
+        ItemRow current = requireItem(scope, brand, itemCode);
+        if (expectedVersion != null && current.version() != expectedVersion && current.version() != expectedVersion + 1L) {
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
+        }
+        if ("VOIDED".equals(current.status()) && !"VOIDED".equals(targetStatus)) {
+            throw new CatalogOwnerApi.Problem("VOIDED_RECORD_IMMUTABLE", 422, "已作废商品不可修改");
+        }
+    }
+
+    private JsonNode replayTyped(String dataNodeRef, String idempotencyKey, String operationId, ObjectNode request) {
+        String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
+        return receiptKey.isEmpty() ? null : replay(dataNodeRef, receiptKey, operationId, request);
+    }
+
+    private void saveTypedReceipt(String dataNodeRef, String idempotencyKey, String operationId, ObjectNode request, JsonNode response) {
+        String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
+        if (!receiptKey.isEmpty()) saveReceipt(dataNodeRef, receiptKey, operationId, request, response);
+    }
+
+    private CatalogOwnerApi.CatalogItemCommandReadback catalogItemCommandReadback(JsonNode response) {
+        JsonNode value = response.path("result");
+        List<CatalogOwnerApi.CatalogItemOwnerReadback> ownerReadbacks = new ArrayList<>();
+        for (JsonNode owner : value.path("ownerReadbacks")) {
+            ownerReadbacks.add(new CatalogOwnerApi.CatalogItemOwnerReadback(owner.path("owner").asText(), owner.path("status").asText(), owner.path("version").asLong()));
+        }
+        JsonNode availability = value.path("actionAvailability");
+        return new CatalogOwnerApi.CatalogItemCommandReadback(value.path("operation").asText(), value.path("resourceRef").asText(),
+            value.path("status").asText(), value.path("version").asLong(), List.copyOf(ownerReadbacks),
+            new CatalogOwnerApi.CatalogItemActionAvailability(availability.path("canEdit").asBoolean(), availability.path("canEnable").asBoolean(), availability.path("canDisable").asBoolean()));
+    }
+
+    private CatalogOwnerApi.TemporaryPromotionPreflightReadback temporaryPromotionPreflightReadback(JsonNode response) {
+        JsonNode data = response.path("data");
+        JsonNode item = data.path("item"); JsonNode proposed = data.path("proposed");
+        List<CatalogOwnerApi.TemporaryPromotionChange> changes = new ArrayList<>();
+        for (JsonNode change : data.path("changes")) changes.add(new CatalogOwnerApi.TemporaryPromotionChange(change.path("field").asText(), nullableText(change, "before"), nullableText(change, "after")));
+        return new CatalogOwnerApi.TemporaryPromotionPreflightReadback(
+            new CatalogOwnerApi.TemporaryPromotionItem(item.path("code").asText(), item.path("name").asText(), item.path("shapeKey").asText()),
+            new CatalogOwnerApi.TemporaryPromotionProposed(proposed.path("code").asText(), proposed.path("name").asText(), proposed.path("shapeKey").asText(), nullableText(proposed, "materialRole")),
+            data.path("source").asText(), data.path("sourceVersion").asLong(), data.path("formalCodeAvailable").asBoolean(),
+            textValues(data.path("requiredFields")), textValues(data.path("blockedReasons")), List.copyOf(changes),
+            data.path("preflightDigest").asText(), data.path("canPromote").asBoolean());
+    }
+
+    private static String nullableText(JsonNode object, String field) {
+        return object.path(field).isNull() || object.path(field).isMissingNode() ? null : object.path(field).asText();
+    }
+
+    private CatalogAuthorizationScope typedCommandScope(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String operationId) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        if (!operationId.equals(context.operationToken().operationId())) {
+            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "catalog command token does not match owner command");
+        }
+        return scope;
+    }
+
+    private static void putNullableUuid(ObjectNode target, String field, UUID value) {
+        if (value == null) target.putNull(field); else target.put(field, value.toString());
+    }
+
+    private ObjectNode dictionaryRequest(String dictionaryKind, String codeField, String code, Long expectedVersion, String name, String targetStatus) {
+        ObjectNode request = mapper.createObjectNode().put("dictionaryKind", dictionaryKind).put(codeField, code);
+        if (expectedVersion != null) request.put("expectedVersion", expectedVersion);
+        if (name != null) request.put("name", name);
+        if (targetStatus != null) request.put("targetStatus", targetStatus);
+        return request;
+    }
+
+    private CatalogOwnerApi.CategoryReadback categoryReadback(String scope, String brand, UUID categoryRef) {
+        CategoryRow category = category(scope, brand, categoryRef);
+        List<UUID> subtree = categorySubtreeRefs(scope, brand, categoryRef);
+        List<String> blocking = categoryReferencedItems(scope, brand, subtree);
+        return new CatalogOwnerApi.CategoryReadback(category.ref(), category.code(), category.name(), category.parentCategoryRef(),
+            category.version(), category.displayOrder(), new CatalogOwnerApi.CategoryDeletionAvailability(blocking.isEmpty(), subtree.size(), blocking.size(), blocking));
+    }
+
+    private CatalogOwnerApi.DictionaryCommandReadback dictionaryCommandReadback(JsonNode response) {
+        JsonNode result = response.path("result");
+        return new CatalogOwnerApi.DictionaryCommandReadback(result.path("dictionaryKind").asText(), result.path("code").asText(),
+            result.path("name").asText(), result.path("status").asText(), result.path("version").asLong());
+    }
+
+    private CatalogOwnerApi.DictionaryViewReadback dictionaryViewReadback(JsonNode response) {
+        JsonNode data = response.path("data");
+        List<CatalogOwnerApi.DictionaryEntryView> entries = new ArrayList<>();
+        for (JsonNode entry : data.path("entries")) {
+            JsonNode availability = entry.path("voidAvailability");
+            List<CatalogOwnerApi.DictionaryBlockingReference> blocking = new ArrayList<>();
+            for (JsonNode reference : availability.path("blockingReferences")) {
+                blocking.add(new CatalogOwnerApi.DictionaryBlockingReference(reference.path("referenceKind").asText(), reference.path("referenceRef").asText()));
+            }
+            List<CatalogOwnerApi.DictionaryDependentFact> dependencies = new ArrayList<>();
+            for (JsonNode dependency : availability.path("dependentFacts")) {
+                dependencies.add(new CatalogOwnerApi.DictionaryDependentFact(dependency.path("factKind").asText(), dependency.path("factRef").asText()));
+            }
+            entries.add(new CatalogOwnerApi.DictionaryEntryView(entry.path("code").asText(), entry.path("name").asText(), entry.path("status").asText(),
+                entry.path("ownerType").asText(), entry.path("ownerRef").asText(), entry.path("brandRef").asText(), entry.path("version").asLong(),
+                entry.path("updatedAt").asLong(), new CatalogOwnerApi.DictionaryVoidAvailability(availability.path("canVoid").asBoolean(), List.copyOf(blocking), List.copyOf(dependencies))));
+        }
+        return new CatalogOwnerApi.DictionaryViewReadback(data.path("dictionaryKind").asText(), List.copyOf(entries),
+            data.path("cursor").isNull() ? null : data.path("cursor").asText(), data.path("total").asLong(), data.path("generation").asText());
+    }
+
+    private static List<String> textValues(JsonNode values) {
+        List<String> result = new ArrayList<>();
+        if (values.isArray()) values.forEach(value -> result.add(value.asText()));
+        return List.copyOf(result);
+    }
+
     private JsonNode executeWrite(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
         requireScope(dataNodeRef, brandRef);
         String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
@@ -178,7 +510,9 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private CatalogCoordinationSnapshot recheckWriteFactsBeforeReceipt(String operationId, String scope, String brand, ObjectNode request) {
         if (Set.of("saveOperationsCatalogItem", "transitionOperationsCatalogItemStatus", "preflightOperationsTemporaryCatalogItemPromotion", "executeOperationsTemporaryCatalogItemPromotion").contains(operationId)) {
             ItemRow current = requireItem(scope, brand, required(request, "itemCode"));
-            long expected = requiredLong(request, "expectedVersion", -1);
+            long expected = "saveOperationsCatalogItem".equals(operationId)
+                ? requiredCatalogExpectedVersion(request)
+                : requiredLong(request, "expectedVersion", -1);
             if (expected >= 0 && current.version() != expected && current.version() != expected + 1L) {
                 throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
             }
@@ -188,10 +522,17 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             return "saveOperationsCatalogItem".equals(operationId) ? new CatalogCoordinationSnapshot(current) : null;
         }
         switch (operationId) {
-            case "updateOperationsCatalogCategory", "moveOperationsCatalogCategory", "deleteOperationsCatalogCategory" -> {
+            case "updateOperationsCatalogCategory", "moveOperationsCatalogCategory" -> {
                 CategoryRow current = lockCategory(scope, brand, UUID.fromString(required(request, "categoryRef")));
                 long expected = requiredLong(request, "expectedVersion", -1);
                 if (expected >= 0 && current.version() != expected && current.version() != expected + 1L) {
+                    throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
+                }
+            }
+            case "deleteOperationsCatalogCategory" -> {
+                CategoryRow current = findLockedCategory(scope, brand, UUID.fromString(required(request, "categoryRef")));
+                long expected = requiredLong(request, "expectedVersion", -1);
+                if (current != null && expected >= 0 && current.version() != expected && current.version() != expected + 1L) {
                     throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
                 }
             }
@@ -217,6 +558,11 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         requireScope(sourceDataNodeRef, brandRef);
         requireScope(targetDataNodeRef, brandRef);
         requireOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, targetDataNodeType, targetDataNodeRef, ownerScopeGrant);
+        if ("preflightOperationsLocalCatalogCopy".equals(operationId)) return localCopyPreflight(targetDataNodeRef, brandRef, request);
+        if ("preflightOperationsBrandCatalogCopy".equals(operationId)) {
+            CatalogCopyPlan plan = catalogCopyPlan(sourceDataNodeRef, targetDataNodeRef, brandRef, request);
+            return copyPreflight(sourceDataNodeRef, targetDataNodeRef, brandRef, plan);
+        }
         return executeCopy(operationId, sourceDataNodeRef, targetDataNodeRef, brandRef, request, requestId, idempotencyKey);
     }
 
@@ -224,25 +570,152 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     @Transactional
     public JsonNode copy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        if (scope.copySourcePolicy() == WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE) {
+            return copyLocal(context.operationToken().operationId(), scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+        }
         return executeCopy(context.operationToken().operationId(), copySourceDataNodeRef(scope), scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        String sourceDataNodeRef = copySourceDataNodeRef(scope);
+        String targetDataNodeRef = scope.dataNodeId().toString();
+        if (scope.copySourcePolicy() == WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE) {
+            return localCopyPreflight(scope.dataNodeId().toString(), scope.brandRef(), request);
+        }
+        CatalogCopyPlan plan = catalogCopyPlan(sourceDataNodeRef, targetDataNodeRef, scope.brandRef(), request);
+        return copyPreflight(sourceDataNodeRef, targetDataNodeRef, scope.brandRef(), plan);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public CatalogOwnerApi.CopyPreflightReadback preflightLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogOwnerApi.LocalCopyPreflightCommand command) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        ObjectNode request = mapper.createObjectNode().put("sourceItemCode", command.sourceItemCode()).put("targetItemCode", command.targetItemCode());
+        request.set("selectedSections", mapper.valueToTree(command.selectedSections() == null ? List.of() : command.selectedSections()));
+        ObjectNode result = localCopyPreflight(scope.dataNodeId().toString(), scope.brandRef(), request);
+        ObjectNode envelope = envelope(context.requestId(), result);
+        return new CatalogOwnerApi.CopyPreflightReadback(envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope));
+    }
+
+    @Override @Transactional
+    public CatalogOwnerApi.CopyExecutionReadback executeLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogOwnerApi.LocalCopyExecuteCommand command, String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog");
+        ObjectNode request = mapper.createObjectNode().put("sourceItemCode", command.sourceItemCode()).put("targetItemCode", command.targetItemCode())
+            .put("preflightDigest", command.catalogPreflightDigest()).put("expectedSourceVersion", command.expectedSourceVersion()).put("expectedTargetVersion", command.expectedTargetVersion());
+        request.set("selectedSections", mapper.valueToTree(command.selectedSections() == null ? List.of() : command.selectedSections()));
+        applyLocalCopyReferencePlan(request, command.referencePlanJson());
+        return copyExecutionReadback(copyLocal("executeOperationsLocalCatalogCopy", scope.dataNodeId().toString(), scope.brandRef(), request, context.requestId(), idempotencyKey));
+    }
+
+    @Override @Transactional(readOnly = true)
+    public CatalogOwnerApi.CopyPreflightReadback preflightBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogOwnerApi.BrandCopyPreflightCommand command) {
+        ObjectNode request = mapper.createObjectNode().put("targetDataNodeRef", command.targetDataNodeRef()); request.set("selectedItemCodes", mapper.valueToTree(command.selectedItemCodes()));
+        JsonNode result = preflightCopy(context, request);
+        ObjectNode envelope = envelope(context.requestId(), result);
+        return new CatalogOwnerApi.CopyPreflightReadback(envelope.path("data").path("preflightDigest").asText(), canonicalLocalCopyJson(envelope));
+    }
+
+    @Override @Transactional
+    public CatalogOwnerApi.CopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CatalogOwnerApi.BrandCopyExecuteCommand command, String idempotencyKey) {
+        ObjectNode request = mapper.createObjectNode().put("targetDataNodeRef", command.targetDataNodeRef()).put("preflightDigest", command.catalogPreflightDigest()).put("expectedSourceVersion", command.expectedSourceVersion()).put("expectedTargetVersion", command.expectedTargetVersion()); request.set("selectedItemCodes", mapper.valueToTree(command.selectedItemCodes())); applyLocalCopyReferencePlan(request, command.referencePlanJson());
+        return copyExecutionReadback(copy(context, request, idempotencyKey));
+    }
+
+    private void applyLocalCopyReferencePlan(ObjectNode request, String canonicalPlan) {
+        if (canonicalPlan == null || canonicalPlan.isBlank()) return;
+        try { JsonNode plan = mapper.readTree(canonicalPlan); if (!plan.isObject()) throw new IllegalArgumentException(); for (String field : List.of("closureItemRefs", "productionTagRefs", "referenceMappings")) if (plan.has(field)) request.set(field, plan.path(field).deepCopy()); }
+        catch (Exception failure) { throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "copy reference plan is invalid", failure); }
+    }
+
+    private String canonicalLocalCopyJson(JsonNode value) { try { return mapper.writeValueAsString(value); } catch (Exception failure) { throw new IllegalStateException("catalog owner could not encode copy readback", failure); } }
+
+    /** Converts the owner result before it leaves this owner boundary. */
+    private CatalogOwnerApi.CopyExecutionReadback copyExecutionReadback(JsonNode result) {
+        JsonNode data = requiredCopyData(result, "catalog");
+        return new CatalogOwnerApi.CopyExecutionReadback(
+            requiredCopyText(data, "preflightDigest", "catalog"),
+            copyObjects(data, "created"), copyObjects(data, "reused"), copyObjects(data, "skipped"),
+            copyReferenceMappings(data, "referenceMappings"), copyTargetVersions(data), copyOwnerReadbacks(data)
+        );
+    }
+
+    private JsonNode requiredCopyData(JsonNode result, String owner) {
+        JsonNode data = result == null ? null : result.path("data");
+        if (data == null || !data.isObject()) throw copyReadbackProblem(owner, "data");
+        return data;
+    }
+
+    private String requiredCopyText(JsonNode data, String field, String owner) {
+        JsonNode value = data.path(field);
+        if (!value.isTextual() || value.asText().isBlank()) throw copyReadbackProblem(owner, field);
+        return value.asText();
+    }
+
+    private List<CatalogOwnerApi.CopyObjectReadback> copyObjects(JsonNode data, String field) {
+        JsonNode values = data.path(field);
+        if (!values.isArray()) throw copyReadbackProblem("catalog", field);
+        List<CatalogOwnerApi.CopyObjectReadback> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (!value.isObject() || value.path("objectType").asText().isBlank() || value.path("code").asText().isBlank()) throw copyReadbackProblem("catalog", field);
+            result.add(new CatalogOwnerApi.CopyObjectReadback(value.path("objectType").asText(), value.path("code").asText()));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.CopyReferenceMapping> copyReferenceMappings(JsonNode data, String field) {
+        JsonNode values = data.path(field);
+        if (!values.isArray()) throw copyReadbackProblem("catalog", field);
+        List<CatalogOwnerApi.CopyReferenceMapping> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (!value.isObject() || value.path("objectType").asText().isBlank() || value.path("sourceRef").asText().isBlank() || value.path("targetRef").asText().isBlank()) throw copyReadbackProblem("catalog", field);
+            result.add(new CatalogOwnerApi.CopyReferenceMapping(value.path("objectType").asText(), value.path("sourceRef").asText(), value.path("targetRef").asText(),
+                nullableCopyText(value, "targetCode"), nullableCopyText(value, "targetSkuCode"), nullableCopyText(value, "targetOptionValueCode")));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.CopyTargetVersion> copyTargetVersions(JsonNode data) {
+        JsonNode values = data.path("targetVersions");
+        if (!values.isArray()) throw copyReadbackProblem("catalog", "targetVersions");
+        List<CatalogOwnerApi.CopyTargetVersion> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (!value.isObject() || value.path("targetRef").asText().isBlank() || !value.path("version").canConvertToLong()) throw copyReadbackProblem("catalog", "targetVersions");
+            result.add(new CatalogOwnerApi.CopyTargetVersion(value.path("targetRef").asText(), value.path("version").asLong()));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<CatalogOwnerApi.CopyOwnerReadback> copyOwnerReadbacks(JsonNode data) {
+        JsonNode values = data.path("ownerReadbacks");
+        if (!values.isArray()) throw copyReadbackProblem("catalog", "ownerReadbacks");
+        List<CatalogOwnerApi.CopyOwnerReadback> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (!value.isObject() || value.path("owner").asText().isBlank() || value.path("status").asText().isBlank() || !value.path("version").canConvertToLong()) throw copyReadbackProblem("catalog", "ownerReadbacks");
+            result.add(new CatalogOwnerApi.CopyOwnerReadback(value.path("owner").asText(), value.path("status").asText(), value.path("version").asLong()));
+        }
+        return List.copyOf(result);
+    }
+
+    private String nullableCopyText(JsonNode value, String field) { return value.hasNonNull(field) ? value.path(field).asText() : null; }
+
+    private CatalogOwnerApi.Problem copyReadbackProblem(String owner, String field) {
+        return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, owner + " copy readback is missing: " + field);
     }
 
     private JsonNode executeCopy(String operationId, String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
         requireScope(sourceDataNodeRef, brandRef);
         requireScope(targetDataNodeRef, brandRef);
         if (operationId.contains("Local")) return copyLocal(operationId, sourceDataNodeRef, brandRef, request, requestId, idempotencyKey);
-        List<String> selected = selectedCodes(request);
-        if (selected.size() > copyLimits.selectedItemCount()) throw tooLarge("COPY_SELECTED_ITEMS_TOO_LARGE", selected.size(), copyLimits.selectedItemCount());
-        CatalogClosure graph = closureGraph(sourceDataNodeRef, brandRef, selected);
+        CatalogCopyPlan plan = catalogCopyPlan(sourceDataNodeRef, targetDataNodeRef, brandRef, request);
+        List<String> selected = plan.selected();
+        CatalogClosure graph = plan.graph();
         List<ItemRow> source = graph.items();
-        if (!source.stream().map(ItemRow::code).collect(java.util.stream.Collectors.toSet()).containsAll(selected)) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "copy source item is not available in the approved scope");
-        int closure = graph.size();
-        if (closure > copyLimits.closureItemCount()) throw tooLarge("COPY_CLOSURE_TOO_LARGE", closure, copyLimits.closureItemCount());
-        long sourceVersion = scopeVersion(graph);
-        long targetVersion = targetScopeVersion(targetDataNodeRef, brandRef, request, graph);
-        String currentDigest = copyDigest(sourceDataNodeRef, targetDataNodeRef, selected, graph, sourceVersion, targetVersion);
-        if (operationId.contains("preflight")) return copyPreflight(operationId, sourceDataNodeRef, targetDataNodeRef, brandRef, requestId, selected, graph, sourceVersion, targetVersion, currentDigest);
-        CopyCompatibility compatibility = validateCopyCompatibility(sourceDataNodeRef, targetDataNodeRef, brandRef, graph, request);
+        long sourceVersion = plan.sourceVersion();
+        long targetVersion = plan.targetVersion();
+        String currentDigest = plan.digest();
+        CopyCompatibility compatibility = validateCopyCompatibility(sourceDataNodeRef, targetDataNodeRef, brandRef, graph, request, true);
         assertNoOwnerReferenceLeak(graph, compatibility.mapping(), sourceDataNodeRef);
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             JsonNode replay = replay(targetDataNodeRef, idempotencyKey.trim(), operationId, request);
@@ -298,36 +771,13 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     private JsonNode copyLocal(String operationId, String scope, String brandRef, ObjectNode request, String requestId, String idempotencyKey) {
-        String sourceCode = required(request, "sourceItemCode");
-        String targetCode = required(request, "targetItemCode");
-        if (sourceCode.equals(targetCode)) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "复制来源与目标不能相同");
-        ItemRow source = requireItem(scope, brandRef, sourceCode);
-        ItemRow target = requireItem(scope, brandRef, targetCode);
-        ArrayNode selectedSections = request.path("selectedSections").isArray() ? (ArrayNode) request.path("selectedSections") : null;
-        if (selectedSections == null || selectedSections.isEmpty()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "selectedSections is required");
-        String digest = localCopyDigest(source, target, selectedSections);
-        CompatibilityCheck compatibility = source.shapeKey().equals(target.shapeKey())
-            ? new CompatibilityCheck("CONFIRMABLE_REUSE", "同形态商品可复制", null, false)
-            : new CompatibilityCheck("BLOCKED", "商品形态结构不兼容", "STRUCTURE_INCOMPATIBLE", true);
-        if (!compatibility.blocking()) {
-            LinkedHashSet<String> refs = itemReferenceRefs(json(source.sectionsJson()));
-            for (String ref : refs) if (!itemExistsByRef(scope, brandRef, ref)) { compatibility = new CompatibilityCheck("BLOCKED", "BOM 引用无法在当前商品库解析", "REFERENCE_MAPPING_UNRESOLVED", true); break; }
-        }
-        if (operationId.contains("preflight")) {
-            ObjectNode data = mapper.createObjectNode();
-            data.putObject("sourceScope").put("ownerType", "DATA_NODE").put("ownerRef", scope).put("brandRef", brandRef);
-            data.putObject("targetScope").put("ownerType", "DATA_NODE").put("ownerRef", scope).put("brandRef", brandRef);
-            data.putArray("selectedItems").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("name", source.name());
-            data.putArray("closureItems").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("name", source.name()).put("action", "REPLACE");
-            data.putArray("closureEdges");
-            data.putArray("objectVersions").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("sourceVersion", source.version()).put("targetVersion", target.version());
-            data.putArray("mappingPreview").addObject().put("fromCode", source.code()).put("toCode", target.code()).put("referenceKind", "CATALOG_ITEM").put("status", compatibility.result());
-            data.putArray("compatibilityResults").addObject().put("objectType", "CATALOG_ITEM").put("result", compatibility.result()).put("reason", compatibility.reason());
-            data.putArray("referenceRewritePreview");
-            data.put("preflightDigest", digest).put("selectedCount", 1).put("selectedLimit", 1).put("closureCount", 1).put("closureLimit", copyLimits.closureItemCount()).put("blockingCount", compatibility.blocking() ? 1 : 0).put("confirmationRequiredCount", compatibility.blocking() ? 0 : 1);
-            return envelope(requestId, data);
-        }
-        if (!operationId.contains("preflight") && requiredLong(request, "expectedSourceVersion", -1) != source.version()) {
+        LocalCopyPlan plan = localCopyPlan(scope, brandRef, request);
+        ItemRow source = plan.source();
+        ItemRow target = plan.target();
+        ArrayNode selectedSections = plan.selectedSections();
+        String digest = plan.digest();
+        CompatibilityCheck compatibility = plan.compatibility();
+        if (requiredLong(request, "expectedSourceVersion", -1) != source.version()) {
             throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制来源事实已变化，请重新预检");
         }
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
@@ -351,15 +801,62 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (changed != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "目标商品版本已变化");
         ObjectNode data = mapper.createObjectNode().put("preflightDigest", digest);
         data.putArray("created"); data.putArray("reused").addObject().put("objectType", "CATALOG_ITEM").put("code", target.code()); data.putArray("skipped");
-        data.putArray("mappings").addObject().put("fromCode", source.code()).put("toCode", target.code()).put("referenceKind", "CATALOG_ITEM");
+        data.putArray("referenceMappings").addObject().put("objectType", "CATALOG_ITEM")
+            .put("sourceRef", source.ref().toString()).put("targetRef", target.ref().toString()).put("targetCode", target.code());
         data.putArray("targetVersions").addObject().put("targetRef", target.ref().toString()).put("version", target.version() + 1);
         data.putArray("ownerReadbacks").addObject().put("owner", "catalog").put("status", "COMMITTED").put("version", target.version() + 1);
         ObjectNode result = envelope(requestId, data);
-        ItemRow updatedTarget = requireItem(scope, brandRef, targetCode);
+        ItemRow updatedTarget = requireItem(scope, brandRef, target.code());
         result.put("receiptObjectFingerprint", localCopyDigest(source, updatedTarget, selectedSections));
         if (idempotencyKey != null && !idempotencyKey.isBlank()) saveReceipt(scope, idempotencyKey.trim(), operationId, request, result);
         return result;
         }
+    }
+
+    private ObjectNode localCopyPreflight(String scope, String brandRef, ObjectNode request) {
+        LocalCopyPlan plan = localCopyPlan(scope, brandRef, request);
+        ItemRow source = plan.source();
+        ItemRow target = plan.target();
+        CompatibilityCheck compatibility = plan.compatibility();
+        ObjectNode data = mapper.createObjectNode();
+        data.putObject("sourceScope").put("ownerType", "DATA_NODE").put("ownerRef", scope).put("brandRef", brandRef);
+        data.putObject("targetScope").put("ownerType", "DATA_NODE").put("ownerRef", scope).put("brandRef", brandRef);
+        data.putArray("selectedItems").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("name", source.name());
+        data.putArray("closureItems").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("name", source.name()).put("action", "REPLACE");
+        data.putArray("closureEdges");
+        data.putArray("objectVersions").addObject().put("objectType", "CATALOG_ITEM").put("code", source.code()).put("sourceVersion", source.version()).put("targetVersion", target.version());
+        data.putArray("referenceMappings").addObject()
+            .put("objectType", "CATALOG_ITEM")
+            .put("sourceRef", source.ref().toString())
+            .put("targetRef", target.ref().toString())
+            .put("targetCode", target.code());
+        data.putArray("mappingPreview").addObject().put("fromCode", source.code()).put("toCode", target.code()).put("referenceKind", "CATALOG_ITEM").put("status", compatibility.result());
+        data.putArray("compatibilityResults").addObject().put("objectType", "CATALOG_ITEM").put("result", compatibility.result()).put("reason", compatibility.reason());
+        data.putArray("referenceRewritePreview");
+        data.put("preflightDigest", plan.digest()).put("selectedCount", 1).put("selectedLimit", 1).put("closureCount", 1).put("closureLimit", copyLimits.closureItemCount()).put("blockingCount", compatibility.blocking() ? 1 : 0).put("confirmationRequiredCount", compatibility.blocking() ? 0 : 1);
+        return data;
+    }
+
+    private LocalCopyPlan localCopyPlan(String scope, String brandRef, ObjectNode request) {
+        String sourceCode = required(request, "sourceItemCode");
+        String targetCode = required(request, "targetItemCode");
+        if (sourceCode.equals(targetCode)) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "复制来源与目标不能相同");
+        ItemRow source = requireItem(scope, brandRef, sourceCode);
+        ItemRow target = requireItem(scope, brandRef, targetCode);
+        ArrayNode selectedSections = request.path("selectedSections").isArray() ? (ArrayNode) request.path("selectedSections") : null;
+        if (selectedSections == null || selectedSections.isEmpty()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "selectedSections is required");
+        CompatibilityCheck compatibility = source.shapeKey().equals(target.shapeKey())
+            ? new CompatibilityCheck("CONFIRMABLE_REUSE", "同形态商品可复制", null, false)
+            : new CompatibilityCheck("BLOCKED", "商品形态结构不兼容", "STRUCTURE_INCOMPATIBLE", true);
+        if (!compatibility.blocking()) {
+            for (String ref : itemReferenceRefs(json(source.sectionsJson()))) {
+                if (!itemExistsByRef(scope, brandRef, ref)) {
+                    compatibility = new CompatibilityCheck("BLOCKED", "BOM 引用无法在当前商品库解析", "REFERENCE_MAPPING_UNRESOLVED", true);
+                    break;
+                }
+            }
+        }
+        return new LocalCopyPlan(source, target, selectedSections, localCopyDigest(source, target, selectedSections), compatibility);
     }
 
     private String sectionKey(String section) {
@@ -433,13 +930,32 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     @Override
     @Transactional(readOnly = true)
     public boolean assetReferencedAnywhere(String assetRef) {
-        if (assetRef == null || assetRef.isBlank()) return false;
+        return assetRefsStillReferenced(java.util.Set.of(assetRef)).contains(assetRef);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Set<String> assetRefsStillReferenced(java.util.Set<String> assetRefs) {
+        if (assetRefs == null || assetRefs.isEmpty()) return java.util.Set.of();
+        java.util.Set<String> candidates = assetRefs.stream().filter(ref -> ref != null && !ref.isBlank())
+            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        if (candidates.isEmpty()) return java.util.Set.of();
         return jdbc.query("SELECT sections::text FROM catalog.catalog_item WHERE status <> 'VOIDED'", result -> {
+            java.util.Set<String> referenced = new java.util.LinkedHashSet<>();
             while (result.next()) {
-                if (catalogAssetRefs(json(result.getString(1))).contains(assetRef)) return true;
+                for (String ref : catalogAssetRefs(json(result.getString(1)))) if (candidates.contains(ref)) referenced.add(ref);
             }
-            return false;
+            return java.util.Set.copyOf(referenced);
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireAssetUnreferencedAnywhere(UUID assetRef) {
+        if (assetRef == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "assetRef is required");
+        if (assetReferencedAnywhere(assetRef.toString())) {
+            throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产仍被商品引用，不能释放");
+        }
     }
 
     private void lockCatalogAssetRefs(JsonNode... sections) {
@@ -661,7 +1177,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         boolean sourceOwnedCatalog = "AUTO_SYNC".equals(sourceFact(row, sections));
         data.putObject("fieldOwnership").put("catalog", sourceOwnedCatalog ? "SOURCE" : "CATALOG").put("inventory", "INVENTORY").put("asset", "ASSET");
         data.putObject("queryIdentity").put("dataNodeRef", dataNodeRef).put("generation", generation(dataNodeRef, brandRef));
-        return data;
+        return envelope(requestId, data);
     }
 
     private ArrayNode detailTabs(String shapeKey) {
@@ -669,7 +1185,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             JsonNode tabs = mapper.readTree(CatalogInventoryShapeManifest.MANIFEST_JSON).path("tabRules").path(shapeKey).path("visible");
             return tabs.isArray() ? (ArrayNode) tabs : mapper.createArrayNode();
         } catch (Exception failure) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态页签契约不可用");
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态页签契约不可用", failure);
         }
     }
 
@@ -711,14 +1227,14 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         try {
             JsonNode manifest = mapper.readTree(CatalogInventoryShapeManifest.MANIFEST_JSON);
             ObjectNode data = mapper.createObjectNode();
-            data.put("revision", CatalogInventoryShapeManifest.REVISION);
+            data.put("manifestRevision", CatalogInventoryShapeManifest.REVISION);
             data.put("manifestDigest", CatalogInventoryShapeManifest.MANIFEST_DIGEST);
             data.set("shapeKeys", manifest.path("shapeKeys"));
             data.set("capabilityValues", manifest.path("capabilityValues"));
             for (String key : List.of("modeRules", "shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections")) data.set(key, manifest.path(key));
             return envelope(requestId, data);
         } catch (Exception ex) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态契约不可用");
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态契约不可用", ex);
         }
     }
 
@@ -741,10 +1257,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         ObjectNode sectionsRequest = request.has("sections") && request.get("sections").isObject() ? (ObjectNode) request.get("sections") : mapper.createObjectNode();
         ObjectNode draft = sectionsRequest.has("catalogDraft") && sectionsRequest.get("catalogDraft").isObject()
             ? (ObjectNode) sectionsRequest.get("catalogDraft") : sectionsRequest;
-        long expected = sectionsRequest.has("expectedCatalogVersion")
-            ? requiredLong(sectionsRequest, "expectedCatalogVersion", -1)
-            : requiredLong(request, "expectedVersion", -1);
-        if (expected < 0) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "expectedCatalogVersion is required");
+        long expected = requiredCatalogExpectedVersion(request);
         // This is the same invocation and no write occurs between receipt
         // recheck and this owner command.  Reusing that immutable fact removes
         // only the duplicate pre-write load; the UPDATE version predicate and
@@ -923,7 +1436,9 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (!blockingItems.isEmpty()) throw new CatalogOwnerApi.Problem("REFERENCE_BLOCKS_DELETE", 422, "分类或其子分类仍被商品引用，不能删除");
         String placeholders = String.join(",", Collections.nCopies(subtree.size(), "?"));
         jdbc.update("DELETE FROM catalog.catalog_category WHERE category_ref IN (" + placeholders + ")", subtree.toArray());
-        ObjectNode result = mapper.createObjectNode().put("categoryRef", categoryRef.toString()).put("deletedCount", subtree.size());
+        ObjectNode result = mapper.createObjectNode().put("categoryRef", categoryRef.toString()).put("deletedSubtreeSize", subtree.size());
+        ArrayNode deletedCategoryCodes = result.putArray("deletedCategoryCodes");
+        locked.stream().map(CategoryRow::code).sorted().forEach(deletedCategoryCodes::add);
         return mapper.createObjectNode().put("revision", CatalogOwnerTypes.REVISION).put("requestId", requestId).set("result", result);
     }
 
@@ -950,8 +1465,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private ObjectNode promotionPreflight(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         ItemRow row = requireItem(dataNodeRef, brandRef, required(request, "itemCode"));
         JsonNode sections = json(row.sectionsJson());
-        boolean temporary = "TEMPORARY".equalsIgnoreCase(firstText(sections, "source", "sourceType", "ownershipSource"))
-            || "TEMPORARY".equals(row.status());
+        boolean temporary = temporaryItem(row, sections);
         String formalCode = required(request, "formalCode");
         validateCatalogCode(formalCode);
         String shapeKey = required(request, "shapeKey");
@@ -983,8 +1497,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         detail.set("changes", promotionChanges(row, formalCode, shapeKey, name, materialRole));
         detail.put("preflightDigest", promotionDigest(row, request, rule));
         detail.put("canPromote", temporary && blockedReasons.isEmpty());
-        ObjectNode model = mapper.createObjectNode().put("revision", CatalogOwnerTypes.REVISION).put("requestId", requestId).set("data", detail);
-        return envelope(requestId, model);
+        return envelope(requestId, detail);
     }
     private ObjectNode promotionExecute(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         String code = required(request, "itemCode");
@@ -999,8 +1512,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         String submittedDigest = required(request, "preflightDigest");
         ItemRow row = requireItem(dataNodeRef, brandRef, code);
         JsonNode sections = json(row.sectionsJson());
-        String source = firstText(sections, "source", "sourceType", "ownershipSource");
-        if (!("TEMPORARY".equalsIgnoreCase(source) || "TEMPORARY".equals(row.status()))) {
+        if (!temporaryItem(row, sections)) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "只有外部订单临时商品可以转正");
         }
         if (expected != row.version() || expectedSourceVersion != row.version() || !submittedDigest.equals(promotionDigest(row, request, rule))) {
@@ -1026,10 +1538,31 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return itemCommand(requestId, formalCode, "DRAFT", 1L, false);
     }
 
-    private ObjectNode copyPreflight(String operationId, String source, String target, String brandRef, String requestId, List<String> selected, CatalogClosure graph, long sourceVersion, long targetVersion, String preflightDigest) {
+    private CatalogCopyPlan catalogCopyPlan(String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request) {
+        requireScope(sourceDataNodeRef, brandRef);
+        requireScope(targetDataNodeRef, brandRef);
+        List<String> selected = selectedCodes(request);
+        if (selected.size() > copyLimits.selectedItemCount()) throw tooLarge("COPY_SELECTED_ITEMS_TOO_LARGE", selected.size(), copyLimits.selectedItemCount());
+        CatalogClosure graph = closureGraph(sourceDataNodeRef, brandRef, selected);
+        if (!graph.items().stream().map(ItemRow::code).collect(java.util.stream.Collectors.toSet()).containsAll(selected)) {
+            throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "copy source item is not available in the approved scope");
+        }
+        if (graph.size() > copyLimits.closureItemCount()) throw tooLarge("COPY_CLOSURE_TOO_LARGE", graph.size(), copyLimits.closureItemCount());
+        long sourceVersion = scopeVersion(graph);
+        long targetVersion = targetScopeVersion(targetDataNodeRef, brandRef, request, graph);
+        return new CatalogCopyPlan(selected, graph, sourceVersion, targetVersion,
+            copyDigest(sourceDataNodeRef, targetDataNodeRef, selected, graph, sourceVersion, targetVersion));
+    }
+
+    private ObjectNode copyPreflight(String source, String target, String brandRef, CatalogCopyPlan plan) {
+        List<String> selected = plan.selected();
+        CatalogClosure graph = plan.graph();
+        long sourceVersion = plan.sourceVersion();
+        long targetVersion = plan.targetVersion();
+        String preflightDigest = plan.digest();
         List<ItemRow> rows = graph.items();
         ObjectNode data=mapper.createObjectNode();
-        ObjectNode sourceScope=data.putObject("sourceScope").put("ownerType", operationId.contains("Brand") ? "HEAD_COMPANY" : "DATA_NODE").put("ownerRef",source).put("brandRef",brandRef);
+        ObjectNode sourceScope=data.putObject("sourceScope").put("ownerType", "HEAD_COMPANY").put("ownerRef",source).put("brandRef",brandRef);
         ObjectNode targetScope=data.putObject("targetScope").put("ownerType","DATA_NODE").put("ownerRef",target).put("brandRef",brandRef);
         data.put("selectedCount",selected.size()).put("selectedLimit",copyLimits.selectedItemCount()).put("closureCount",graph.size()).put("closureLimit",copyLimits.closureItemCount()).put("sourceVersion",sourceVersion).put("targetVersion",targetVersion).put("preflightDigest",preflightDigest);
         ArrayNode selectedItems=data.putArray("selectedItems"); rows.stream().filter(row->selected.contains(row.code())).forEach(row -> selectedItems.addObject().put("objectType","CATALOG_ITEM").put("code",row.code()).put("name",row.name()));
@@ -1046,7 +1579,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         ArrayNode referenceMappings=data.putArray("referenceMappings");
         Map<String, ItemRow> targetRows = new LinkedHashMap<>();
         if (!rows.isEmpty()) loadItems(target, brandRef, rows.stream().map(ItemRow::code).toList()).forEach(row -> targetRows.put(row.code(), row));
-        CopyCompatibility plannedCompatibility = validateCopyCompatibility(source, target, brandRef, graph, null);
+        CopyCompatibility plannedCompatibility = validateCopyCompatibility(source, target, brandRef, graph, null, false);
         Map<ReferenceKey, String> mapping = plannedCompatibility.mapping();
         Map<String, ItemRow> targetItemsByRef = itemsByRef(target, brandRef, rows.stream().map(ItemRow::code).toList());
         mapping.forEach((from, to) -> referenceMappings.add(referenceMappingRow(from, to, graph, targetItemsByRef)));
@@ -1062,8 +1595,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         graph.edges().forEach(edge -> rewrites.addObject().put("sourceRef",edge.toRef()).put("targetRef",edge.toRef()).put("referenceKind",edge.referenceKind()));
         graph.dictionaries().forEach(row -> compatibility.addObject().put("objectType",row.objectType()).put("result","REUSE_OR_CREATE").put("reason","按编码复用或创建"));
         data.put("blockingCount", blockingCount).put("confirmationRequiredCount", Math.max(0, graph.size() - blockingCount));
-        if (operationId.contains("Brand")) return data;
-        return envelope(requestId,data);
+        return data;
     }
 
     private CategoryRow category(String dataNodeRef, String brandRef, UUID categoryRef) {
@@ -1082,6 +1614,19 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
             return new CategoryRow(result.getObject(1, UUID.class), result.getString(2), result.getString(3), result.getString(4), result.getObject(5, UUID.class), result.getString(6), result.getLong(7), result.getInt(8));
         });
+    }
+
+    /**
+     * Delete replays retain the outer typed grant/context check and inspect the
+     * current owner fact before receipt lookup. An absent category is the one
+     * post-delete state in which the receipt may decide the response.
+     */
+    private CategoryRow findLockedCategory(String dataNodeRef, String brandRef, UUID categoryRef) {
+        return jdbc.query("SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' FOR UPDATE", statement -> {
+            statement.setString(1, dataNodeRef); statement.setString(2, brandRef); statement.setObject(3, categoryRef);
+        }, result -> result.next()
+            ? new CategoryRow(result.getObject(1, UUID.class), result.getString(2), result.getString(3), result.getString(4), result.getObject(5, UUID.class), result.getString(6), result.getLong(7), result.getInt(8))
+            : null);
     }
 
     private List<CategoryRow> lockCategories(String scope, String brand, List<UUID> refs) {
@@ -1478,6 +2023,10 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return row.sourceScopeRef() == null ? "SELF_MANAGED" : "COPIED";
     }
 
+    private boolean temporaryItem(ItemRow row, JsonNode sections) {
+        return "TEMPORARY".equals(sourceFact(row, sections)) || "TEMPORARY".equals(row.status());
+    }
+
     /** Source ownership is a server fact. The explicit section list wins; AUTO_SYNC has a safe minimum. */
     private List<String> sourceDeniedFields(ItemRow row, JsonNode sections) {
         LinkedHashSet<String> denied = new LinkedHashSet<>();
@@ -1722,7 +2271,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             ItemRow row = byCode.get(code); if (row == null) continue;
             for (TypedReference reference : typedReferences(json(row.sectionsJson()))) {
                 references.add(reference); edges.add(new ClosureEdge(row.ref().toString(), reference.ref(), reference.referenceKind()));
-                if ("CATALOG_ITEM".equals(reference.referenceKind())) { ItemRow target = byRef.get(reference.ref()); if (target != null && !visited.contains(target.code())) queue.add(target.code()); }
+                if (expandsCatalogItemClosure(reference.referenceKind())) { ItemRow target = byRef.get(reference.ref()); if (target != null && !visited.contains(target.code())) queue.add(target.code()); }
                 if ("PRODUCT_SKU".equals(reference.referenceKind())) { ItemRow target = skuOwnerByRef.get(reference.ref()); if (target != null && !visited.contains(target.code())) queue.add(target.code()); }
             }
         }
@@ -1803,8 +2352,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             addDeclaredRef(result, sku.path("productSkuRef"), "PRODUCT_SKU");
             if (sku.path("attributeValueRefs").isArray()) for (JsonNode value : sku.path("attributeValueRefs")) addDeclaredRef(result, value.path("attributeValueRef"), "SKU_ATTRIBUTE_VALUE");
         }
-        if (node.path("compositeGroups").isArray()) for (JsonNode group : node.path("compositeGroups")) if (group.path("components").isArray()) for (JsonNode component : group.path("components")) { addDeclaredRef(result, component.path("itemRef"), "CATALOG_ITEM"); addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU"); }
-        if (node.path("inventoryBom").isArray()) for (JsonNode component : node.path("inventoryBom")) { addDeclaredRef(result, component.path("itemRef"), "CATALOG_ITEM"); addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU"); addDeclaredRef(result, component.path("optionValueRef"), "SKU_ATTRIBUTE_VALUE"); }
+        if (node.path("compositeGroups").isArray()) for (JsonNode group : node.path("compositeGroups")) if (group.path("components").isArray()) for (JsonNode component : group.path("components")) { addDeclaredRef(result, component.path("itemRef"), "COMPOSITE_COMPONENT"); addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU"); }
+        if (node.path("inventoryBom").isArray()) for (JsonNode component : node.path("inventoryBom")) { addDeclaredRef(result, component.path("itemRef"), "BOM_COMPONENT"); addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU"); addDeclaredRef(result, component.path("optionValueRef"), "SKU_ATTRIBUTE_VALUE"); }
         if (node.path("productionTags").isArray()) for (JsonNode tag : node.path("productionTags")) addDeclaredRef(result, tag.path("tagRef"), "PRODUCTION_TAG");
         if (node.path("orderOptions").isArray()) for (JsonNode option : node.path("orderOptions")) if (option.path("values").isArray()) for (JsonNode value : option.path("values")) addDeclaredRef(result, value.path("attributeValueRef"), "SKU_ATTRIBUTE_VALUE");
         return List.copyOf(result);
@@ -1888,8 +2437,17 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         catch (IllegalArgumentException failure) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be an opaque UUID ref"); }
     }
     private static String optional(ObjectNode request,String key){ JsonNode value=request==null?null:request.get(key); return value==null||value.isNull()?null:value.asText(); }
+    private static long requiredCatalogExpectedVersion(ObjectNode request) {
+        JsonNode sections = request == null ? null : request.get("sections");
+        if (!(sections instanceof ObjectNode sectionObject)) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "expectedCatalogVersion is required");
+        }
+        long expected = requiredLong(sectionObject, "expectedCatalogVersion", -1);
+        if (expected < 0) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "expectedCatalogVersion is required");
+        return expected;
+    }
     private static long requiredLong(ObjectNode request,String key,long fallback){ JsonNode value=request.get(key); if(value==null||!value.isIntegralNumber()) return fallback; return value.asLong(); }
-    private String canonicalJson(JsonNode value){ try{return mapper.writeValueAsString(value==null?mapper.createObjectNode():value);}catch(Exception ex){throw new CatalogOwnerApi.Problem("VALIDATION_ERROR",422,"JSON payload is invalid");} }
+    private String canonicalJson(JsonNode value){ try{return mapper.writeValueAsString(value==null?mapper.createObjectNode():value);}catch(Exception ex){throw new CatalogOwnerApi.Problem("VALIDATION_ERROR",422,"JSON payload is invalid", ex);} }
     private JsonNode json(String value){ try{return mapper.readTree(value);}catch(Exception ex){return mapper.createObjectNode();} }
     private String hash(JsonNode value){ return digest(canonicalJson(value)); }
     private static String digest(String value){ try{return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(Exception ex){throw new IllegalStateException(ex);} }
@@ -1934,7 +2492,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
      * rewrite key.  On execute, the preflight plan is supplied back by the
      * coordinator and must agree with any target fact that already exists.
      */
-    private CopyCompatibility validateCopyCompatibility(String source, String target, String brand, CatalogClosure graph, ObjectNode request) {
+    private CopyCompatibility validateCopyCompatibility(String source, String target, String brand, CatalogClosure graph, ObjectNode request, boolean rejectBlocking) {
         Map<ReferenceKey, String> supplied = suppliedReferenceMappings(request);
         Map<ReferenceKey, String> mapping = new LinkedHashMap<>();
         Map<String, ItemRow> targetRows = new LinkedHashMap<>();
@@ -1971,7 +2529,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         supplied.forEach((key, value) -> { if ("PRODUCTION_TAG".equals(key.objectType())) mapping.put(key, value); });
         for (ItemRow row : graph.items()) {
             CompatibilityCheck check = compatibilityCheck(row, targetRows.get(row.code()), graph, mapping);
-            if (check.blocking()) throw new CatalogOwnerApi.Problem(check.problemCode(), 422, check.reason() + ": " + row.code());
+            if (rejectBlocking && check.blocking()) throw new CatalogOwnerApi.Problem(check.problemCode(), 422, check.reason() + ": " + row.code());
         }
         return new CopyCompatibility(Map.copyOf(mapping));
     }
@@ -2031,14 +2589,18 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (sourceUnit != null && targetUnit != null && !sourceUnit.equals(targetUnit)) return new CompatibilityCheck("BLOCKED", "消耗单位不一致", "CONSUMPTION_UNIT_INCOMPATIBLE", true);
         for (TypedReference ref : typedReferences(json(source.sectionsJson()))) {
             if (Set.of("PRODUCTION_TAG", "STOCK_TARGET", "SKU").contains(ref.referenceKind())) continue;
-            ReferenceKey key = new ReferenceKey(objectTypeForReference(ref.referenceKind()), ref.ref());
+            ReferenceKey key = new ReferenceKey(copyReferenceObjectType(ref.referenceKind()), ref.ref());
             if (!mapping.containsKey(key)) return new CompatibilityCheck("BLOCKED", "商品引用无法重写", "REFERENCE_MAPPING_UNRESOLVED", true);
         }
         return new CompatibilityCheck(existing == null ? "CREATE" : "REUSE", existing == null ? "目标不存在，将创建" : "编码与结构兼容，可复用", null, false);
     }
-    private String objectTypeForReference(String referenceKind) {
+    static boolean expandsCatalogItemClosure(String referenceKind) {
+        return Set.of("CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT").contains(referenceKind);
+    }
+
+    static String copyReferenceObjectType(String referenceKind) {
         return switch (referenceKind) {
-            case "COMPOSITE_COMPONENT", "SKU" -> "CATALOG_ITEM";
+            case "CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT", "SKU" -> "CATALOG_ITEM";
             case "CATEGORY" -> "CATALOG_CATEGORY";
             case "TAG" -> "CATALOG_TAG";
             case "SALES_UNIT" -> "SALES_UNIT";
@@ -2169,7 +2731,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
     private JsonNode rewriteReferenceValue(JsonNode value, String kind, Map<ReferenceKey, String> mapping) {
         if (value == null || value.isNull()) return mapper.nullNode();
-        ReferenceKey key = value.isTextual() ? new ReferenceKey(objectTypeForReference(kind), value.asText()) : null;
+        ReferenceKey key = value.isTextual() ? new ReferenceKey(copyReferenceObjectType(kind), value.asText()) : null;
         if (key != null && mapping.containsKey(key)) return mapper.getNodeFactory().textNode(mapping.get(key));
         if (value.isArray()) { ArrayNode copy = mapper.createArrayNode(); value.forEach(entry -> copy.add(rewriteReferenceValue(entry, kind, mapping))); return copy; }
         if (value.isObject()) return value.deepCopy();
@@ -2193,7 +2755,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private void assertNoOwnerReferenceLeak(CatalogClosure graph, Map<ReferenceKey, String> mapping, String sourceScope) {
         for (ClosureEdge edge : graph.edges()) {
             if (Set.of("PRODUCTION_TAG", "STOCK_TARGET").contains(edge.referenceKind())) continue;
-            ReferenceKey key = new ReferenceKey(objectTypeForReference(edge.referenceKind()), edge.toRef());
+            ReferenceKey key = new ReferenceKey(copyReferenceObjectType(edge.referenceKind()), edge.toRef());
             if (!mapping.containsKey(key)) throw new CatalogOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "复制引用未完成映射: " + edge.toRef());
         }
         for (ItemRow row : graph.items()) if (containsForbiddenOwnerReference(json(row.sectionsJson()), sourceScope)) throw new CatalogOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "源 owner 引用不能进入目标图");
@@ -2241,6 +2803,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private record ReferenceKey(String objectType,String ref) { }
     private interface CatalogObject { String objectType(); String code(); String name(); long version(); }
     private record CatalogClosure(List<ItemRow> items,List<CategoryRow> categories,List<DictionaryRow> dictionaries,List<ClosureEdge> edges) { List<CatalogObject> objects(){ List<CatalogObject> all=new ArrayList<>(); all.addAll(items); all.addAll(categories); all.addAll(dictionaries); return all; } int size(){ return objects().size(); } }
+    private record CatalogCopyPlan(List<String> selected, CatalogClosure graph, long sourceVersion, long targetVersion, String digest) { }
+    private record LocalCopyPlan(ItemRow source, ItemRow target, ArrayNode selectedSections, String digest, CompatibilityCheck compatibility) { }
     private record CopyCompatibility(Map<ReferenceKey, String> mapping) { }
     private record CompatibilityCheck(String result, String reason, String problemCode, boolean blocking) { }
     private record Receipt(String operationId,String requestHash,JsonNode response) { }

@@ -44,8 +44,8 @@ export function checkIndependence(input = Object.fromEntries(Object.entries(sour
   // Standalone stage selectors must be present and must terminate before the
   // legacy all-domain fixture continues.  This is the command-level proof
   // that API and L2 can be launched independently in fresh namespaces.
-  requireText(parent, "process.argv.includes('--catalog-api-only')", 'API_ONLY_ENTRY_MISSING');
-  requireText(parent, "process.argv.includes('--catalog-l2-only')", 'L2_ONLY_ENTRY_MISSING');
+  requireText(parent, "const known = new Set(['--catalog-api-only', '--catalog-l2-only']);", 'CATALOG_STAGE_OPTION_SET_MISSING');
+  requireText(parent, "return args[0] === '--catalog-api-only' ? 'API' : 'L2';", 'CATALOG_STAGE_MAPPING_MISSING');
   requireText(fixture, "if (catalogStage === 'API') process.exit(0);", 'API_ONLY_TERMINATION_MISSING');
   requireText(fixture, "if (catalogStage === 'L2') {", 'L2_ONLY_TERMINATION_MISSING');
 
@@ -67,6 +67,7 @@ export function checkIndependence(input = Object.fromEntries(Object.entries(sour
 
 if (process.argv.includes('--self-test')) {
   const baseline = checkIndependence();
+  const parent = read(sources.parent);
   const fixture = read(sources.fixture);
   const mutatedFixture = fixture.replace("label: 'CATALOG_INVENTORY_API'", "label: 'CATALOG_INVENTORY_L2_TEST_FIXTURE'");
   try { checkIndependence({...Object.fromEntries(Object.entries(sources).map(([name, file]) => [name, read(file)])), fixture: mutatedFixture}); fail('RED_MUTATION_NOT_REJECTED'); }
@@ -74,6 +75,12 @@ if (process.argv.includes('--self-test')) {
   const guardRemoved = fixture.replace("if (catalogStage !== 'L2') {\n", '');
   try { checkIndependence({...Object.fromEntries(Object.entries(sources).map(([name, file]) => [name, read(file)])), fixture: guardRemoved}); fail('L2_GUARD_RED_MUTATION_NOT_REJECTED'); }
   catch (error) { if (!String(error.message).startsWith('CATALOG_INVENTORY_TEST_INDEPENDENCE=L2_API_CALL_NOT_STAGE_GUARDED')) throw error; }
+  const stageOptionSetRemoved = parent.replace("const known = new Set(['--catalog-api-only', '--catalog-l2-only']);", "const known = new Set(['--catalog-api-only']);");
+  try { checkIndependence({...Object.fromEntries(Object.entries(sources).map(([name, file]) => [name, read(file)])), parent: stageOptionSetRemoved}); fail('STAGE_OPTION_SET_RED_MUTATION_NOT_REJECTED'); }
+  catch (error) { if (!String(error.message).startsWith('CATALOG_INVENTORY_TEST_INDEPENDENCE=CATALOG_STAGE_OPTION_SET_MISSING')) throw error; }
+  const stageMappingRemoved = parent.replace("return args[0] === '--catalog-api-only' ? 'API' : 'L2';", "return args[0] === '--catalog-api-only' ? 'L2' : 'L2';");
+  try { checkIndependence({...Object.fromEntries(Object.entries(sources).map(([name, file]) => [name, read(file)])), parent: stageMappingRemoved}); fail('STAGE_MAPPING_RED_MUTATION_NOT_REJECTED'); }
+  catch (error) { if (!String(error.message).startsWith('CATALOG_INVENTORY_TEST_INDEPENDENCE=CATALOG_STAGE_MAPPING_MISSING')) throw error; }
   process.stdout.write(`CATALOG_INVENTORY_TEST_INDEPENDENCE_SELF_TEST=PASS\nBASELINE=${baseline.status}\nRED_MUTATION=ORDER_AND_L2_GUARD_REJECTED\n`);
 } else {
   try {

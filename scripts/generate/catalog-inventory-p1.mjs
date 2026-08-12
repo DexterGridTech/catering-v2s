@@ -14,6 +14,10 @@ const COPY_POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
 const MEDIA_ASSET_DIR = "contracts/policy/catalog-inventory-p1-media";
+const M1_EXECUTION_MATRIX_PATH = "contracts/registry/backend-performance-m1-command-execution-matrix.json";
+const BACKEND_WIRE_INPUTS_PATH = "contracts/registry/catalog-inventory-p1-backend-wire-inputs.json";
+const BACKEND_WIRE_SOURCE_ROOT = "apps/backend/catering-business-server/build/generated/sources/catalog-inventory-p1/main/java";
+const BACKEND_WIRE_PACKAGE = "com.catering.v2s.app.edge.generated.wire";
 // The media catalog retains the historical P1 representative-seed marker; the
 // final full-parity delivery obligation is owned by the P4 acceptance package.
 const FULL_CATALOG_PARITY_DELIVERY_PHASE = "P4";
@@ -68,6 +72,33 @@ for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
 if (mediaCatalog.coverage?.v4CatalogItemCount !== 73 || mediaCatalog.coverage?.v4MediaAssetCount !== 34 || mediaCatalog.coverage?.fullCatalogParityRequiredInP2 !== true) {
   throw new Error("P1_V4_SEED_PARITY_METADATA_INVALID");
 }
+function sameExactSet(left, right) {
+  return left.length === right.length && new Set(left).size === left.length && left.every((value) => right.includes(value));
+}
+function verifyBackendWireInputManifest() {
+  const manifest = readJson(BACKEND_WIRE_INPUTS_PATH);
+  if (manifest?.schemaVersion !== 1 || manifest.kind !== "catalog-inventory-p1-backend-wire-inputs" || !Array.isArray(manifest.inputs)) {
+    throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_INVALID");
+  }
+  const expectedPaths = [
+    REQUIREMENTS_PATH, IA_PATH, OPERATION_CONTRACT_PATH, CATEGORY_REMEDIATION_DESIGN_PATH,
+    REFERENCE_PATH_MATRIX, COPY_POLICY_PATH, DESIGN_COVERAGE_PATH, MEDIA_CATALOG_PATH,
+    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
+    M1_EXECUTION_MATRIX_PATH,
+    ...Object.values(mediaCatalog.assets || {}).map((asset) => path.join(MEDIA_ASSET_DIR, asset.fileName))
+  ].sort();
+  const actualPaths = manifest.inputs.map((input) => input?.path);
+  if (!sameExactSet(actualPaths, expectedPaths)) throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_PATH_SET_DRIFT");
+  for (const input of manifest.inputs) {
+    if (!input || typeof input.path !== "string" || typeof input.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(input.sha256) || fileHash(input.path) !== input.sha256) {
+      throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_HASH_DRIFT:" + String(input?.path));
+    }
+  }
+  return manifest;
+}
+const backendWireInputManifest = verifyBackendWireInputManifest();
+const backendWireInputManifestHash = fileHash(BACKEND_WIRE_INPUTS_PATH);
 if (!copyPolicy.limits || !Number.isInteger(copyPolicy.limits.selectedItemCount) || !Number.isInteger(copyPolicy.limits.closureItemCount)) {
   throw new Error("P1_COPY_POLICY_INVALID");
 }
@@ -510,11 +541,27 @@ const modelFieldOverrides = Object.fromEntries(readModelNames.map((name) => {
 }));
 const typedModelFieldSchema = (model, field) => modelFieldOverrides[model]?.[field] || fieldSchema(model, field);
 const componentSchemas = {};
+const queryEnvelopeModels = new Set([
+  "CatalogNavigationView",
+  "CatalogItemPage",
+  "CatalogItemDetail",
+  "CatalogShapeManifestView"
+]);
 for (const model of readModels.models) {
-  componentSchemas[model.name] = {
+  const dataSchema = {
     type: "object", additionalProperties: false, required: model.required,
     properties: Object.fromEntries(model.required.map((field) => [field, typedModelFieldSchema(model.name, field)]))
   };
+  componentSchemas[model.name] = queryEnvelopeModels.has(model.name)
+    ? {
+      type: "object", additionalProperties: false, required: ["revision", "requestId", "data"],
+      properties: {
+        revision: stringField("contract revision"),
+        requestId: stringField("request correlation"),
+        data: dataSchema
+      }
+    }
+    : dataSchema;
 }
 const requestFieldMap = {
   CatalogContextQuery: {dataNodeRef: stringField("selected data node")},
@@ -539,7 +586,7 @@ const requestFieldMap = {
   ProductionTagTransitionRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
   LocalCopyCandidateQuery: {dataNodeRef: stringField("selected data node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
   LocalCopyPreflightRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: arrayField("copy sections")},
-  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
+  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: arrayField("copy sections fixed by preflight"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
   TemporaryPromotionPreflightRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version")},
   TemporaryPromotionExecuteRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version"), expectedVersion: integerField("temporary item version"), preflightDigest: stringField("promotion preflight digest")},
   BrandCopyCandidateQuery: {dataNodeRef: stringField("selected store node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
@@ -745,6 +792,44 @@ for (const dataset of seedDatasets) {
   if (binding.skus && dataset.entities.skus) for (const sku of dataset.entities.skus) sku.mediaAssetKey = binding.skus[0];
 }
 
+// The seed executor must never invent display text from an opaque code. Keep
+// the finite business-label contract beside the generated seed datasets so
+// the plan, executor and schema consume the same owner. Catalogue/tag/SKU
+// labels follow the read-only v4 classification fixture; the representative
+// option groups, option values and inventory units are the explicit P1 seed
+// definitions above and retain their existing Chinese business terminology.
+const seedBusinessLabels = {
+  categories: {
+    APPETIZER: "前菜", SALAD: "沙拉", SOUP: "汤品", PASTA_RICE: "意面与饭", MAIN: "主菜", PIZZA: "披萨",
+    DESSERT: "甜品", BEVERAGE: "饮品", COMBO: "套餐", MATERIAL: "物料", SERVICE: "服务", BENEFIT: "权益"
+  },
+  productionTags: {SIGNATURE: "招牌推荐", LUNCH: "午餐常用", DINNER: "晚餐常用", TAKEOUT: "适合外卖"},
+  dictionary: {
+    SKU_ATTRIBUTE: {SIZE: "杯型", PORTION_SIZE: "份量", DONENESS: "熟度", PIZZA_SIZE: "披萨尺寸", DRINK_SIZE: "饮品杯型"},
+    SKU_ATTRIBUTE_VALUE: {
+      "BURRATA_SAUCE_BALSAMIC": "黑醋汁", "BURRATA_SAUCE_OLIVE": "橄榄油海盐",
+      "CAESAR_ADDON_BACON": "加培根", "CAESAR_ADDON_CHICKEN": "加鸡胸肉", "CAESAR_ADDON_EGG": "加溏心蛋",
+      "CAESAR_CUTLERY_NO": "不需要餐具", "CAESAR_CUTLERY_YES": "需要餐具", "CAESAR_SAUCE_CLASSIC": "标准凯撒酱",
+      "CAESAR_SAUCE_LIGHT": "少酱", "CAESAR_SAUCE_VINAIGRETTE": "油醋汁", "COFFEE_BEAN_COLOMBIA": "哥伦比亚",
+      "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚", "COFFEE_PROCESS_NATURAL": "日晒", "COFFEE_PROCESS_WASHED": "水洗",
+      "COFFEE_SERVE_HOT": "热手冲", "COFFEE_SERVE_ICEBALL": "加冰球", "COFFEE_SERVE_ICED": "冰手冲",
+      "DRESSING-CLASSIC": "标准凯撒酱", "FRIES_ADDON_BACON": "培根碎", "FRIES_ADDON_LARGE": "升级大份",
+      "FRIES_ADDON_PARMESAN": "帕玛森芝士", "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱", "FRIES_DIP_KETCHUP": "番茄酱",
+      "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱", "HQ_CAESAR_ADDON_CHICKEN": "加鸡胸肉", LARGE: "大份",
+      "LEMONADE_FLAVOR_BERRY": "加莓果", "LEMONADE_FLAVOR_MINT": "加薄荷", "LEMONADE_ICE_LESS": "少冰",
+      "LEMONADE_ICE_NONE": "去冰", "LEMONADE_ICE_NORMAL": "正常冰", "LEMONADE_SWEETNESS_LESS": "少甜",
+      "LEMONADE_SWEETNESS_REGULAR": "标准甜", "LEMONADE_SWEETNESS_ZERO": "无糖", MEDIUM: "七分熟",
+      MEDIUM_RARE: "五分熟", "NINE_INCH": "9 寸", REGULAR: "标准份", "SIZE-LARGE": "大份", SMALL: "小杯",
+      "TOMATO_PASTA_ADDON_CHEESE": "加马苏里拉芝士", "TOMATO_PASTA_ADDON_CHICKEN": "加烤鸡胸", "TOMATO_PASTA_ADDON_MUSHROOM": "加蘑菇",
+      "TOMATO_PASTA_COOK_AL_DENTE": "偏硬口感", "TOMATO_PASTA_COOK_NORMAL": "标准口感", "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
+      "TOMATO_PASTA_SPICY_MILD": "微辣", "TOMATO_PASTA_SPICY_NONE": "不辣", "TOPPING-BACON": "加培根",
+      TWELVE_INCH: "12 寸", WELL_DONE: "全熟"
+    }
+  },
+  optionGroups: {"CAESAR-DRESSING": "酱汁", "CAESAR-SIZE": "份量", "CAESAR-TOPPING": "配料"},
+  units: {GRAM: "克", KILOGRAM: "千克", EACH: "个", BOX: "箱", g: "克", ml: "毫升", bottle: "瓶", case: "箱", pack: "包", piece: "个", 个: "个", 套: "套"}
+};
+
 const testDatasetSpecs = [
   ["FIXTURE-MISSING-HEAD-COMPANY", "无 headCompanyRef 门店，不渲染品牌复制入口", ["CI-API-023", "CI-L2-005"]],
   ["FIXTURE-UNIT-GRAM-EACH", "同编码物料消耗单位不一致，双向均阻断", ["CI-API-019", "CI-L2-015"]],
@@ -758,7 +843,7 @@ const testDatasetSpecs = [
   ["FIXTURE-PRODUCIBLE-RETAINED", "PRODUCIBLE 在契约全集但无形态派生", ["CI-API-001", "CI-L2-007"]],
   ["FIXTURE-SKU-STRUCTURE-CONFLICT", "同 SKU 编码但属性组合不同，商品结构阻断", ["CI-API-018", "CI-L2-015"]],
   ["FIXTURE-DAG-CYCLE", "闭包循环引用与多层 DAG", ["CI-API-015"]],
-  ["FIXTURE-REFERENCE-MAPPING-MISSING", "删除一个映射导致整体阻断", ["CI-API-020"]],
+  ["FIXTURE-REFERENCE-MAPPING-MISSING", "受控 owner 输入中的缺映射阻断；公开复制路径只验证真实可构造的完整映射", ["CI-API-020"]],
   ["FIXTURE-VOID-INBOUND-REFERENCE", "入站引用存在时作废阻断", ["CI-API-006", "CI-L2-010"]],
   ["FIXTURE-VOID-DEPENDENT-FACT", "owner 自有依赖事实存在时作废阻断", ["CI-API-006", "CI-L2-010"]],
   ["FIXTURE-INVENTORY-NEGATIVE", "盘点/人工调整造成负库存时 typed failure", ["CI-API-012", "CI-L2-014"]],
@@ -766,7 +851,7 @@ const testDatasetSpecs = [
   ["FIXTURE-ASSET-PROCESSING", "资产处理失败与引用保护", ["CI-API-009", "CI-L2-011"]],
   ["FIXTURE-AUTO-SYNC", "来源字段 ownership/deniedFields", ["CI-API-007", "CI-L2-009"]],
   ["FIXTURE-TEMPORARY-ITEM", "外部订单临时商品治理转正预检", ["CI-API-007", "CI-L2-009"]],
-  ["FIXTURE-LOCAL-COPY", "当前门店内五步复制配置", ["CI-API-014", "CI-L2-010"]],
+  ["FIXTURE-LOCAL-COPY", "当前门店内五步复制配置", ["CI-API-014", "CI-API-020", "CI-L2-010"]],
   ["FIXTURE-BRAND-COPY", "总公司到门店完整闭包复制", ["CI-API-020", "CI-L2-015"]],
   ["FIXTURE-COUNT-INCREASE-ADJUST", "库存三类变化动作读回前/变化/后", ["CI-API-012", "CI-L2-014"]],
   ["FIXTURE-CONFIG-ONLY", "库存快捷配置不产生余额与流水", ["CI-API-012", "CI-L2-014"]],
@@ -774,6 +859,14 @@ const testDatasetSpecs = [
   ["FIXTURE-OWNER-SCOPE", "总公司+品牌、门店+品牌，项目级标签阻断", ["CI-API-024", "CI-API-025"]],
   ["FIXTURE-SEED-READBACK", "五个真实复杂商品图按契约读回", ["CI-API-026", "CI-L2-006"]]
 ];
+const unimplementedIngressFixtures = new Map([
+  ["FIXTURE-AUTO-SYNC", "AUTO_SYNC is an ERP-owned ingress fact; this phase retains its model and smart view but explicitly excludes the sync execution chain."],
+  ["FIXTURE-TEMPORARY-ITEM", "EXTERNAL_ORDER_TEMPORARY is an external-order ingress fact; this phase retains its model and smart view but explicitly excludes the external-order intake chain."]
+]);
+const unimplementedIngressScenarioReasons = new Map([
+  ["CI-API-007", "Both source-owned fixture variants require ingress chains explicitly excluded by the approved phase; model/view coverage remains independently declared."],
+  ["CI-L2-009", "Both source-owned fixture variants require ingress chains explicitly excluded by the approved phase; model/view coverage remains independently declared."]
+]);
 testDatasetSpecs.push(
   ["FIXTURE-SHAPE-MATRIX", "七形态逐一派生与页签准入", ["CI-API-002", "CI-L2-007"]],
   ["FIXTURE-VOID-OBJECT-TYPES", "八类有编码对象逐类作废与引用保护", ["CI-API-006", "CI-L2-010"]],
@@ -819,6 +912,12 @@ const testGraphFor = (fixtureId) => {
   if (fixtureId === "FIXTURE-ASSET-PROCESSING") graph.objects = [{type: "StagedAsset", code: "ASSET-FAILED", ref: "ASSET-FAILED", status: "PROCESSING"}, {type: "StagedAsset", code: "ASSET-REFERENCED", ref: "ASSET-REFERENCED", status: "READY", references: 1}], graph.expected = {problemCodes: ["ASSET_PROCESSING_FAILED", "ASSET_REFERENCE_PROTECTED"]};
   if (fixtureId === "FIXTURE-AUTO-SYNC") graph.objects = [{type: "CatalogItem", code: "AUTO-001", source: "AUTO_SYNC", deniedFields: ["name", "code"]}], graph.expected = {ownership: "source-owned"};
   if (fixtureId === "FIXTURE-TEMPORARY-ITEM") graph.objects = [{type: "CatalogItem", code: "TEMP-001", source: "EXTERNAL_ORDER_TEMPORARY", status: "GOVERNANCE_TODO", externalIdentity: {sourceOrderRef: "EXT-ORDER-001", sourceRecordRef: "EXT-RECORD-001", sourceItemRef: "EXT-SKU-88", snapshot: {name: "外部订单临时拿铁", specification: "中杯 / 热", price: 2800}}}], graph.expected = {requiresPromotionPreflight: true};
+  if (unimplementedIngressFixtures.has(fixtureId)) {
+    graph.executionApplicability = "NOT_APPLICABLE_WITH_REASON";
+    graph.notApplicableReason = unimplementedIngressFixtures.get(fixtureId);
+    graph.generatorRecipe = {kind: "NOT_APPLICABLE_WITH_REASON", fixtureId};
+    graph.setupChannel = "NO_APPROVED_INGRESS_THIS_PHASE";
+  }
   if (fixtureId === "FIXTURE-LOCAL-COPY") graph.expected = {wizardSteps: ["source-scope", "source-item", "copy-scope", "bom-mapping", "preview"]};
   if (fixtureId === "FIXTURE-BRAND-COPY") graph.expected = {closure: "complete", refs: "all-outbound-rewritten", ownerInvariant: true};
   if (fixtureId === "FIXTURE-COUNT-INCREASE-ADJUST") graph.expected = {readbackFields: ["before", "change", "after", "ledgerEntry"], caseParameterKey: "command"};
@@ -843,14 +942,14 @@ const testGraphFor = (fixtureId) => {
 };
 const testDatasets = testDatasetSpecs.map(function (row) {
   const graph = testGraphFor(row[0]);
-  return {fixtureId: row[0], class: "TEST", purpose: row[1], scenarioIds: row[2], ownerScopes: graph.ownerScopes, objects: graph.objects, edges: graph.edges, generatorRecipe: graph.generatorRecipe, setupChannel: graph.setupChannel, readbackSelectors: graph.readbackSelectors, expected: graph.expected, cleanupPolicy: graph.cleanupPolicy, entities: {constructedAt: "test-run", source: "fixture-catalog", ownerGraph: graph.ownerScopes, objects: graph.objects, edges: graph.edges}};
+  return {fixtureId: row[0], class: "TEST", purpose: row[1], scenarioIds: row[2], ownerScopes: graph.ownerScopes, objects: graph.objects, edges: graph.edges, generatorRecipe: graph.generatorRecipe, setupChannel: graph.setupChannel, readbackSelectors: graph.readbackSelectors, expected: graph.expected, cleanupPolicy: graph.cleanupPolicy, ...(graph.executionApplicability ? {executionApplicability: graph.executionApplicability, notApplicableReason: graph.notApplicableReason} : {}), entities: {constructedAt: "test-run", source: "fixture-catalog", ownerGraph: graph.ownerScopes, objects: graph.objects, edges: graph.edges}};
 });
 const fixtureCatalog = {
   schemaVersion: 1, kind: "catalog-inventory-fixture-catalog", catalogId: "CATALOG_INVENTORY_P1_FIXTURES", revision: REVISION,
   sourceBindings: {requirements: {path: REQUIREMENTS_PATH, sha256: requirementsHash}, ia: {path: IA_PATH, sha256: iaHash}, copyPolicy: {path: "contracts/policy/catalog-inventory-copy-policy.json"}, mediaCatalog: {path: MEDIA_CATALOG_PATH}},
-  seedDatasets: seedDatasets, testDatasets: testDatasets,
+  seedDatasets: seedDatasets, seedBusinessLabels, testDatasets: testDatasets,
   scenarioCatalog: {api: "contracts/policy/catalog-inventory-api-scenarios.json", l2: "contracts/policy/catalog-inventory-l2-scenarios.json"},
-  denominators: {seed: seedDatasets.length, test: testDatasets.length, apiDefinitions: 26, apiCases: 100, l2Definitions: 18, l2Cases: 43},
+  denominators: {seed: seedDatasets.length, test: testDatasets.length, apiDefinitions: 26, apiCases: 99, l2Definitions: 18, l2Cases: 41},
   consumerBindings: {P2_API: {catalogPath: "contracts/policy/catalog-inventory-fixture-catalog.json", fixtureClass: "TEST"}, P3_L2: {catalogPath: "contracts/policy/catalog-inventory-fixture-catalog.json", fixtureClass: "TEST"}},
   forbiddenStructures: ["SalesStockView", "InventoryAuthorityConfig", "CatalogAttributeDefinition", "independentStockTargetCreate", "projectScopedProductionTag"],
   seedExecutionPlan: {
@@ -873,10 +972,22 @@ const fixtureObject = (properties, required = []) => ({type: "object", additiona
 const fixtureSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://v2s.local/contracts/policy/catalog-inventory-fixture-catalog.schema.json",
-  type: "object", required: ["schemaVersion", "kind", "catalogId", "revision", "sourceBindings", "seedDatasets", "testDatasets", "scenarioCatalog", "denominators", "consumerBindings", "forbiddenStructures", "seedExecutionPlan", "separation", "fixtureDigest"], additionalProperties: false,
+  type: "object", required: ["schemaVersion", "kind", "catalogId", "revision", "sourceBindings", "seedDatasets", "seedBusinessLabels", "testDatasets", "scenarioCatalog", "denominators", "consumerBindings", "forbiddenStructures", "seedExecutionPlan", "separation", "fixtureDigest"], additionalProperties: false,
   properties: {
     schemaVersion: {const: 1}, kind: {const: "catalog-inventory-fixture-catalog"}, catalogId: {type: "string"}, revision: {type: "string"}, fixtureDigest: {type: "string"},
     sourceBindings: fixtureObject({requirements: fixtureObject({path: stringField("source path"), sha256: stringField("source hash")}, ["path", "sha256"]), ia: fixtureObject({path: stringField("source path"), sha256: stringField("source hash")}, ["path", "sha256"]), copyPolicy: fixtureObject({path: stringField("policy path")}, ["path"]), mediaCatalog: fixtureObject({path: stringField("media catalog path")}, ["path"])}, ["requirements", "ia", "copyPolicy", "mediaCatalog"]),
+    seedBusinessLabels: {
+      type: "object", additionalProperties: false, required: ["categories", "productionTags", "dictionary", "optionGroups", "units"], properties: {
+        categories: {type: "object", additionalProperties: {type: "string"}},
+        productionTags: {type: "object", additionalProperties: {type: "string"}},
+        dictionary: {type: "object", additionalProperties: false, required: ["SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"], properties: {
+          SKU_ATTRIBUTE: {type: "object", additionalProperties: {type: "string"}},
+          SKU_ATTRIBUTE_VALUE: {type: "object", additionalProperties: {type: "string"}}
+        }},
+        optionGroups: {type: "object", additionalProperties: {type: "string"}},
+        units: {type: "object", additionalProperties: {type: "string"}}
+      }
+    },
     scenarioCatalog: fixtureObject({api: stringField("API scenario catalog path"), l2: stringField("L2 scenario catalog path")}, ["api", "l2"]),
     denominators: fixtureObject({seed: integerField("seed count"), test: integerField("test count"), apiDefinitions: integerField("API definitions"), apiCases: integerField("API cases"), l2Definitions: integerField("L2 definitions"), l2Cases: integerField("L2 cases")}, ["seed", "test", "apiDefinitions", "apiCases", "l2Definitions", "l2Cases"]),
     seedDatasets: {type: "array", minItems: 5, items: {$ref: "#/$defs/dataset"}},
@@ -896,6 +1007,8 @@ const fixtureSchema = {
     }}
   }
 };
+fixtureSchema.$defs.dataset.properties.executionApplicability = {type: "string", enum: ["NOT_APPLICABLE_WITH_REASON"], description: "execution applicability disposition"};
+fixtureSchema.$defs.dataset.properties.notApplicableReason = stringField("reason why this fixture is not applicable to the current execution plane");
 fixtureSchema.properties.seedExecutionPlan.properties.cleanup = fixtureObject({
   seed: fixtureObject({strategy: {const: "PASS_PRESERVED_DEV_STATE"}, readback: stringField("seed business readback"), destructiveCleanupOwner: {const: "r5-reset"}}, ["strategy", "readback", "destructiveCleanupOwner"]),
   reset: fixtureObject({strategy: {const: "MANAGED_RESET_RUN_SCOPED_REVERT"}, mediaPurgeRequired: {const: true}, mediaNamespace: {const: "run-scoped"}, readback: stringField("reset cleanup readback"), owner: {const: "r5-reset"}}, ["strategy", "mediaPurgeRequired", "mediaNamespace", "readback", "owner"]),
@@ -903,7 +1016,7 @@ fixtureSchema.properties.seedExecutionPlan.properties.cleanup = fixtureObject({
 }, ["seed", "reset", "businessAndCleanupSeparate"]);
 writeJson("contracts/policy/catalog-inventory-fixture-catalog.schema.json", fixtureSchema);
 
-const apiCaseCounts = [1, 7, 1, 1, 9, 10, 1, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
+const apiCaseCounts = [1, 7, 1, 1, 9, 10, 0, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
 const apiDescriptions = [
   "形态 manifest 的七形态、四 capability、relation 与 typed problem 闭集", "七形态派生字段、页签与创建可用性",
   "左树节点后域内筛选、分页 generation 与旧响应隔离", "六智能视图计数与需处理不进入 stockState",
@@ -919,7 +1032,8 @@ const apiDescriptions = [
 ];
 const allFixtures = [...seedDatasets, ...testDatasets];
 const fixtureIds = allFixtures.map((entry) => entry.fixtureId);
-const fixtureIdsForScenario = (scenarioId) => allFixtures.filter((entry) => entry.scenarioIds.includes(scenarioId)).map((entry) => entry.fixtureId);
+const declaredFixtureIdsForScenario = (scenarioId) => allFixtures.filter((entry) => entry.scenarioIds.includes(scenarioId)).map((entry) => entry.fixtureId);
+const fixtureIdsForScenario = (scenarioId) => declaredFixtureIdsForScenario(scenarioId).filter((fixtureId) => !unimplementedIngressFixtures.has(fixtureId));
 const caseParameterFor = (scenarioId, caseIndex, fixtureRef) => {
   if (scenarioId === "CI-API-002") return {shapeKey: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"][caseIndex]};
   if (scenarioId === "CI-API-006") return {objectType: ["CatalogItem", "CatalogCategory", "CatalogDictionaryEntry", "ProductionTag", "CatalogItemSku", "CatalogAsset", "StockTarget", "ProductBom", "InboundReference", "DependentFact"][caseIndex]};
@@ -948,6 +1062,7 @@ const caseFixtureFor = (scenarioId, caseIndex, matchingFixtures) => {
   if (scenarioId === "CI-API-012") return ["FIXTURE-COUNT-INCREASE-ADJUST", "FIXTURE-COUNT-INCREASE-ADJUST", "FIXTURE-COUNT-INCREASE-ADJUST", "FIXTURE-CONFIG-ONLY"][caseIndex] || "FIXTURE-COUNT-INCREASE-ADJUST";
   if (scenarioId === "CI-API-016") return "FIXTURE-SELECTED-LIMIT";
   if (scenarioId === "CI-API-017") return "FIXTURE-CLOSURE-LIMIT";
+  if (scenarioId === "CI-API-020" && caseIndex === 0) return "FIXTURE-LOCAL-COPY";
   if (scenarioId === "CI-API-024") return ["FIXTURE-NO-COPY-SOURCE", "FIXTURE-OWNER-SCOPE", "FIXTURE-NO-COPY-SOURCE", "FIXTURE-OWNER-SCOPE"][caseIndex];
   if (scenarioId === "CI-API-025") return "FIXTURE-OWNER-SCOPE";
   return matchingFixtures[caseIndex % matchingFixtures.length];
@@ -963,7 +1078,7 @@ const caseExpectationFor = (scenarioId, caseIndex, fixtureRef, parameter) => {
   }
   if (scenarioId === "CI-API-016" && caseIndex === 1) return {kind: "TYPED_FAILURE", ref: {operationId: "preflightOperationsBrandCatalogCopy", problemCode: "COPY_SELECTED_ITEMS_TOO_LARGE"}};
   if (scenarioId === "CI-API-017" && caseIndex === 1) return {kind: "TYPED_FAILURE", ref: {operationId: "preflightOperationsBrandCatalogCopy", problemCode: "COPY_CLOSURE_TOO_LARGE"}};
-  if (scenarioId === "CI-API-020" && caseIndex === 0) return {kind: "TYPED_FAILURE", ref: {operationId: "executeOperationsLocalCatalogCopy", problemCode: "REFERENCE_MAPPING_UNRESOLVED"}};
+  if (scenarioId === "CI-API-020" && caseIndex === 0) return {kind: "FACT"};
   if (scenarioId === "CI-API-021") return {kind: "TYPED_FAILURE", ref: {operationId: "executeOperationsBrandCatalogCopy", problemCode: "STALE_COPY_PREFLIGHT"}};
   if (scenarioId === "CI-API-022" && parameter.failurePoint === "owner-failure") return {kind: "TYPED_FAILURE", ref: {operationId: "executeOperationsBrandCatalogCopy", problemCode: "RESULT_UNKNOWN"}};
   if (scenarioId === "CI-API-024" && fixtureRef === "FIXTURE-OWNER-SCOPE") return {kind: "TYPED_FAILURE", ref: {operationId: "executeOperationsBrandCatalogCopy", problemCode: "SCOPE_FORBIDDEN"}};
@@ -974,8 +1089,9 @@ const p4FixtureCandidate = (fixtureRef) => /^FIXTURE-(?:VOID-|INVENTORY-NEGATIVE
 const p4BoundaryCase = (scenarioId, caseIndex, parameter, fixtureRef) => p4FixtureCandidate(fixtureRef) || (scenarioId === "CI-API-018" && parameter.outcome === "STRUCTURAL_BLOCK") || (scenarioId === "CI-API-015" && caseIndex === 1) || (scenarioId === "CI-API-012" && caseIndex === 0) || (scenarioId === "CI-API-022" && parameter.failurePoint === "owner-failure");
 const apiScenarios = apiCaseCounts.map(function (caseCount, index) {
   const scenarioId = "CI-API-" + String(index + 1).padStart(3, "0");
+  const declaredFixtures = declaredFixtureIdsForScenario(scenarioId);
   const matchingFixtures = fixtureIdsForScenario(scenarioId);
-  if (!matchingFixtures.length) throw new Error("P1_API_SCENARIO_FIXTURE_MISSING:" + scenarioId);
+  if (!declaredFixtures.length || (caseCount > 0 && !matchingFixtures.length)) throw new Error("P1_API_SCENARIO_FIXTURE_MISSING:" + scenarioId);
   const cases = Array.from({length: caseCount}, function (_, caseIndex) {
     const fixtureRef = caseFixtureFor(scenarioId, caseIndex, matchingFixtures);
     const parameter = caseParameterFor(scenarioId, caseIndex, fixtureRef);
@@ -998,7 +1114,7 @@ const apiScenarios = apiCaseCounts.map(function (caseCount, index) {
       ...(expectation.ref ? {conditionToProblemRef: expectation.ref} : {})
     };
   });
-  return {scenarioId: scenarioId, layer: "API", caseCount: caseCount, fixtureRefs: matchingFixtures, businessRequirement: apiDescriptions[index], primaryVerifier: "owner-api", cases: cases};
+  return {scenarioId: scenarioId, layer: "API", caseCount: caseCount, fixtureRefs: declaredFixtures, businessRequirement: apiDescriptions[index], primaryVerifier: "owner-api", ...(unimplementedIngressScenarioReasons.has(scenarioId) ? {executionApplicability: "NOT_APPLICABLE_WITH_REASON", notApplicableReason: unimplementedIngressScenarioReasons.get(scenarioId)} : {}), cases: cases};
 });
 const apiCaseRows = apiScenarios.flatMap((scenario) => scenario.cases);
 const p4CaseBindingSets = {
@@ -1010,7 +1126,7 @@ const p4CaseBindingSets = {
   typedFailureCaseIds: apiCaseRows.filter((entry) => entry.expectationKind === "TYPED_FAILURE").map((entry) => entry.caseId),
   factCaseIds: apiCaseRows.filter((entry) => entry.expectationKind === "FACT").map((entry) => entry.caseId)
 };
-const l2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+const l2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1];
 const l2Descriptions = [
   "三页导航与角色/数据节点组合", "先选树节点再域内搜索并隔离旧响应", "视图切换最左、品牌切换紧邻且结果域正确",
   "名称与弱化编码、复合单元格、compact table", "来源事实与写 capability 双条件控制复制入口",
@@ -1023,8 +1139,9 @@ const l2Descriptions = [
 ];
 const l2Scenarios = l2CaseCounts.map(function (caseCount, index) {
   const scenarioId = "CI-L2-" + String(index + 1).padStart(3, "0");
+  const declaredFixtures = declaredFixtureIdsForScenario(scenarioId);
   const matchingFixtures = fixtureIdsForScenario(scenarioId);
-  if (!matchingFixtures.length) throw new Error("P1_L2_SCENARIO_FIXTURE_MISSING:" + scenarioId);
+  if (!declaredFixtures.length || (caseCount > 0 && !matchingFixtures.length)) throw new Error("P1_L2_SCENARIO_FIXTURE_MISSING:" + scenarioId);
   const cases = Array.from({length: caseCount}, function (_, caseIndex) {
     const fixtureRef = matchingFixtures[caseIndex % matchingFixtures.length];
     const parameter = {journeyVariant: caseIndex + 1, fixtureRef};
@@ -1037,7 +1154,7 @@ const l2Scenarios = l2CaseCounts.map(function (caseCount, index) {
       expectedBusinessResult: caseExpectedFor(l2Descriptions[index], parameter)
     };
   });
-  return {scenarioId: scenarioId, layer: "L2", caseCount: caseCount, fixtureRefs: matchingFixtures, businessRequirement: l2Descriptions[index], primaryVerifier: "browser-business", cases: cases};
+  return {scenarioId: scenarioId, layer: "L2", caseCount: caseCount, fixtureRefs: declaredFixtures, businessRequirement: l2Descriptions[index], primaryVerifier: "browser-business", ...(unimplementedIngressScenarioReasons.has(scenarioId) ? {executionApplicability: "NOT_APPLICABLE_WITH_REASON", notApplicableReason: unimplementedIngressScenarioReasons.get(scenarioId)} : {}), cases: cases};
 });
 const apiScenarioCatalog = {schemaVersion: 1, kind: "catalog-inventory-api-scenarios", revision: REVISION, scenarioCount: apiScenarios.length, caseCount: apiScenarios.reduce((sum, entry) => sum + entry.caseCount, 0), caseBindingSets: p4CaseBindingSets, scenarios: apiScenarios};
 const l2ScenarioCatalog = {schemaVersion: 1, kind: "catalog-inventory-l2-scenarios", revision: REVISION, scenarioCount: l2Scenarios.length, caseCount: l2Scenarios.reduce((sum, entry) => sum + entry.caseCount, 0), locatorBinding: "P3_ONLY", scenarios: l2Scenarios};
@@ -1192,6 +1309,142 @@ writeText("contracts/catalog/catalogInventoryEdgeWire.ts",
   "/** Generated from " + REVISION + "; do not edit. */\n" +
   "export const catalogInventoryEdgeWire = " + edgeWireJson + " as const;\n"
 );
+
+// The M1 command adapters consume concrete backend DTOs, never schema-name or
+// generic-JSON substitutes.  Keep the admitted set matrix-derived so adding a
+// catalog command cannot silently bypass the P1-generated source boundary.
+const m1ExecutionMatrix = readJson(M1_EXECUTION_MATRIX_PATH);
+const catalogM1Rows = (m1ExecutionMatrix.rows || []).filter((row) => row.routeRegistry === "catalog-inventory");
+if (catalogM1Rows.length !== 26) throw new Error("P1_BACKEND_WIRE_CATALOG_OPERATION_DENOMINATOR_INVALID:" + catalogM1Rows.length);
+const backendWireTypes = new Map();
+for (const row of catalogM1Rows) {
+  for (const dto of [row.edge?.requestDto, row.edge?.responseDto]) {
+    if (!dto || !["GENERATED_P1_DTO_PENDING", "GENERATED_P1_DTO_SOURCE_ANCHORED"].includes(dto.kind) || typeof dto.contractName !== "string" || typeof dto.fqcn !== "string") {
+      throw new Error("P1_BACKEND_WIRE_MATRIX_DTO_INVALID:" + row.operationId);
+    }
+    const expectedFqcn = BACKEND_WIRE_PACKAGE + "." + dto.contractName;
+    if (dto.fqcn !== expectedFqcn || !componentSchemas[dto.contractName]) {
+      throw new Error("P1_BACKEND_WIRE_MATRIX_CONTRACT_DRIFT:" + row.operationId + ":" + dto.contractName);
+    }
+    backendWireTypes.set(dto.contractName, componentSchemas[dto.contractName]);
+  }
+}
+if (backendWireTypes.size !== 42) throw new Error("P1_BACKEND_WIRE_DTO_DENOMINATOR_INVALID:" + backendWireTypes.size);
+const javaKeyword = new Set(["abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false", "null", "record", "sealed", "permits", "var", "yield"]);
+const javaIdentifier = (value) => {
+  const normalized = value.replace(/[^A-Za-z0-9_]/g, "_").replace(/^([^A-Za-z_])/, "_$1");
+  return javaKeyword.has(normalized) ? normalized + "Value" : normalized;
+};
+const javaTypeName = (value) => value.split(/[^A-Za-z0-9]+/).filter(Boolean).map((part) => part.slice(0, 1).toUpperCase() + part.slice(1)).join("") || "Value";
+const schemaType = (schema) => Array.isArray(schema?.type) ? schema.type.find((type) => type !== "null") : schema?.type;
+function emitJavaRecord(name, schema) {
+  const nested = [];
+  const nestedNames = new Set();
+  const allocateNestedName = (fieldName) => {
+    const base = javaTypeName(fieldName);
+    let candidate = base;
+    let ordinal = 2;
+    while (nestedNames.has(candidate)) candidate = base + ordinal++;
+    nestedNames.add(candidate);
+    return candidate;
+  };
+  const javaTypeFor = (fieldName, fieldSchema) => {
+    if (!fieldSchema || typeof fieldSchema !== "object") throw new Error("P1_BACKEND_WIRE_SCHEMA_INVALID:" + name + ":" + fieldName);
+    if (typeof fieldSchema.$ref === "string") {
+      const refName = fieldSchema.$ref.replace("#/components/schemas/", "");
+      if (!componentSchemas[refName]) throw new Error("P1_BACKEND_WIRE_REFERENCE_INVALID:" + name + ":" + fieldName);
+      return refName;
+    }
+    const type = schemaType(fieldSchema);
+    if (type === "string") {
+      // Multipart staging preserves a stream; JSON/base64 or an intermediate byte array are not valid M1 transport.
+      return fieldSchema.format === "binary" ? (name === "CatalogAssetStageRequest" && fieldName === "content" ? "java.io.InputStream" : "byte[]") : "String";
+    }
+    if (type === "integer") return "Long";
+    if (type === "number") return "java.math.BigDecimal";
+    if (type === "boolean") return "Boolean";
+    if (type === "array") {
+      if (!fieldSchema.items) throw new Error("P1_BACKEND_WIRE_ARRAY_ITEMS_INVALID:" + name + ":" + fieldName);
+      return "java.util.List<" + javaTypeFor(fieldName + "Item", fieldSchema.items) + ">";
+    }
+    if (type === "object" || fieldSchema.properties) {
+      // A free OpenAPI object stays an HTTP object, but no generated M1 wire
+      // type may expose a Jackson tree.  Spring MVC uses Jackson 3 and the
+      // owner boundary accepts only canonical JSON text.  The wrapper keeps
+      // the transport stack and the owner boundary consistent for attributes,
+      // production profiles and every other additional-properties document.
+      if (fieldSchema.additionalProperties === true || (fieldSchema.additionalProperties && typeof fieldSchema.additionalProperties === "object")) {
+        return "CanonicalJsonDocument";
+      }
+      const nestedName = allocateNestedName(fieldName);
+      nested.push({name: nestedName, schema: fieldSchema});
+      return nestedName;
+    }
+    throw new Error("P1_BACKEND_WIRE_SCHEMA_TYPE_UNSUPPORTED:" + name + ":" + fieldName + ":" + String(type));
+  };
+  const fields = Object.entries(schema.properties || {}).map(([fieldName, fieldSchema]) => javaTypeFor(fieldName, fieldSchema) + " " + javaIdentifier(fieldName));
+  const declarations = nested.map((entry) => "  " + emitJavaRecord(entry.name, entry.schema).replace(/\n/g, "\n  ")).join("\n\n");
+  return "public record " + name + "(" + fields.join(", ") + ")" + (declarations ? " {\n" + declarations + "\n}" : " {}");
+}
+const backendWireEntries = [...backendWireTypes.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([name, schema]) => ({
+  name,
+  source: "package " + BACKEND_WIRE_PACKAGE + ";\n\n/** Generated from catalog-inventory P1; do not edit. */\n" + emitJavaRecord(name, schema) + "\n"
+}));
+const backendWireDigest = hash(backendWireEntries.map((entry) => entry.name + "\n" + entry.source).join("\n"));
+const backendWireComponentDigest = hash(Object.keys(componentShardGroups).sort().map((shard) => shard + "\n" + fileHash("contracts/openapi/" + shard)).join("\n"));
+for (const entry of backendWireEntries) writeText(path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split("."), entry.name + ".java"), entry.source);
+writeText(path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split("."), "CanonicalJsonDocument.java"),
+  "package " + BACKEND_WIRE_PACKAGE + ";\n\n" +
+  "import tools.jackson.core.JacksonException;\n" +
+  "import tools.jackson.core.JsonParser;\n" +
+  "import tools.jackson.databind.DeserializationContext;\n" +
+  "import tools.jackson.databind.ValueDeserializer;\n" +
+  "import tools.jackson.databind.annotation.JsonDeserialize;\n\n" +
+  "import tools.jackson.databind.SerializationContext;\n" +
+  "import tools.jackson.databind.ValueSerializer;\n" +
+  "import tools.jackson.databind.annotation.JsonSerialize;\n\n" +
+  "/** Generated owner-native JSON document transport; do not edit. */\n" +
+  "@JsonDeserialize(using = CanonicalJsonDocument.Deserializer.class)\n" +
+  "@JsonSerialize(using = CanonicalJsonDocument.Serializer.class)\n" +
+  "public record CanonicalJsonDocument(String canonicalJson) {\n" +
+  "  public CanonicalJsonDocument {\n" +
+  "    if (canonicalJson == null || canonicalJson.isBlank() || \"null\".equals(canonicalJson.trim())) {\n" +
+  "      throw new IllegalArgumentException(\"canonical JSON object is required\");\n" +
+  "    }\n" +
+  "  }\n\n" +
+  "  public static final class Deserializer extends ValueDeserializer<CanonicalJsonDocument> {\n" +
+  "    @Override public CanonicalJsonDocument deserialize(JsonParser parser, DeserializationContext context) throws JacksonException {\n" +
+  "      var value = parser.readValueAsTree();\n" +
+  "      if (value == null || !value.isObject()) {\n" +
+  "        return (CanonicalJsonDocument) context.handleUnexpectedToken(CanonicalJsonDocument.class, parser);\n" +
+  "      }\n" +
+  "      return new CanonicalJsonDocument(value.toString());\n" +
+  "    }\n" +
+  "  }\n\n" +
+  "  public static final class Serializer extends ValueSerializer<CanonicalJsonDocument> {\n" +
+  "    @Override public void serialize(CanonicalJsonDocument value, tools.jackson.core.JsonGenerator generator, SerializationContext context) throws JacksonException {\n" +
+  "      generator.writeRawValue(value.canonicalJson());\n" +
+  "    }\n" +
+  "  }\n" +
+  "}\n"
+);
+const backendWireManifestSource =
+  "package " + BACKEND_WIRE_PACKAGE + ";\n\n" +
+  "/** Generated P1 admission evidence for the catalog-family M1 DTO surface. */\n" +
+  "public final class CatalogInventoryP1BackendWireManifest {\n" +
+  "  public static final int CATALOG_M1_OPERATION_COUNT = " + catalogM1Rows.length + ";\n" +
+  "  public static final int DTO_TYPE_COUNT = " + backendWireEntries.length + ";\n" +
+  "  public static final String P1_GENERATOR_SHA256 = \"" + fileHash("scripts/generate/catalog-inventory-p1.mjs") + "\";\n" +
+  "  public static final String P1_INPUT_MANIFEST_SHA256 = \"" + backendWireInputManifestHash + "\";\n" +
+  "  public static final int P1_INPUT_COUNT = " + backendWireInputManifest.inputs.length + ";\n" +
+  "  public static final String OPENAPI_ROOT_SHA256 = \"" + fileHash("contracts/openapi/catalog-inventory.openapi.yaml") + "\";\n" +
+  "  public static final String OPENAPI_COMPONENTS_SHA256 = \"" + backendWireComponentDigest + "\";\n" +
+  "  public static final String EXECUTION_MATRIX_SHA256 = \"" + fileHash(M1_EXECUTION_MATRIX_PATH) + "\";\n" +
+  "  public static final String GENERATED_TYPES_SHA256 = \"" + backendWireDigest + "\";\n" +
+  "  public static final String[] DTO_TYPES = {" + backendWireEntries.map((entry) => "\"" + entry.name + "\"").join(", ") + "};\n" +
+  "  private CatalogInventoryP1BackendWireManifest() {}\n" +
+  "}\n";
+writeText(path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split("."), "CatalogInventoryP1BackendWireManifest.java"), backendWireManifestSource);
 
 const implementationManifest = {
   schemaVersion: 1, kind: "v2s-implementation-delivery-manifest", packageId: "CATALOG-INVENTORY-P1-DEFINITION-20260806", unitId: "CI-P1-DEFINITION",

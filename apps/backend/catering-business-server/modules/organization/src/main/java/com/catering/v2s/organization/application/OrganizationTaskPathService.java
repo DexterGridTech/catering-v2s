@@ -285,7 +285,29 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     @Override
     @Transactional(readOnly = true)
     public boolean isScopeAllowed(UUID workspaceUuid, String key, String assignmentType, UUID assignmentId, TaskPath target) {
-        if (workspaceUuid == null || key == null || assignmentType == null || assignmentId == null || target == null
+        return scopeAllowed(assignmentType, assignmentId, target);
+    }
+
+    /** One owner transaction for command target/path resolution and range judgment. */
+    @Override
+    @Transactional(readOnly = true)
+    public CommandTaskPathFacts commandTaskPathFacts(
+        UUID workspaceUuid,
+        String key,
+        String assignmentType,
+        UUID assignmentId,
+        String targetType,
+        UUID targetId,
+        boolean statusTransition
+    ) {
+        TaskPath taskPath = statusTransition
+            ? requireStatusTransitionTaskPath(workspaceUuid, key, targetType, targetId)
+            : requireTaskPath(workspaceUuid, key, targetType, targetId);
+        return new CommandTaskPathFacts(taskPath, scopeAllowed(assignmentType, assignmentId, taskPath));
+    }
+
+    private static boolean scopeAllowed(String assignmentType, UUID assignmentId, TaskPath target) {
+        if (assignmentType == null || assignmentId == null || target == null
             || target.ancestorIds().isEmpty() || !target.ancestorIds().contains(target.targetId())) return false;
         return switch (assignmentType) {
             case ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> target.ancestorIds().contains(assignmentId);

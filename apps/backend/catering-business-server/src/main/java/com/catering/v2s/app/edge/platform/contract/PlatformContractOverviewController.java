@@ -1,6 +1,7 @@
 package com.catering.v2s.app.edge.platform.contract;
 
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItem;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemContractRef;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemExtensionFieldsItem;
@@ -79,6 +80,6 @@ public final class PlatformContractOverviewController {
     private java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields(ExtensionDefinitionReadback definition, java.util.Map<String, String> values) {
         return definition.fields().stream().filter(field -> "ENABLED".equals(field.status())).sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder)).map(field -> new ContractOverviewItemExtensionFieldsItem(field.label(), displayValue(values.get(field.fieldKey())))).toList();
     }
-    private static String displayValue(String encoded) { if (encoded == null) return null; try { JsonNode value = JSON.readTree(encoded); return value.isValueNode() ? value.asText() : value.toString(); } catch (java.io.IOException failure) { throw new IllegalArgumentException("invalid contract extension value", failure); } }
+    private static String displayValue(String encoded) { if (encoded == null) return null; try { JsonNode value = JSON.readTree(encoded); return value.isValueNode() ? value.asText() : value.toString(); } catch (java.io.IOException failure) { throw new InvalidEdgeRequestException("invalid contract extension value", failure); } }
 
 }

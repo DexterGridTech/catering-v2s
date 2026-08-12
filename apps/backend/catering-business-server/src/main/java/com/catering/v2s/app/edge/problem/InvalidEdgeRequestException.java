@@ -5,4 +5,8 @@ public final class InvalidEdgeRequestException extends RuntimeException {
     public InvalidEdgeRequestException(String message) {
         super(message);
     }
+
+    public InvalidEdgeRequestException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

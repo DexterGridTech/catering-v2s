@@ -28,6 +28,19 @@ function scan(contractRoot) {
     try { return [file, JSON.parse(fs.readFileSync(file, "utf8"))]; }
     catch { fail("R5_STRICT_OPENAPI_JSON_DOCUMENT_INVALID", path.relative(contractRoot, file)); }
   }));
+  const rootDocument = documents.get(path.join(contractRoot, "edge.openapi.yaml"));
+  const catalogInventoryRootDocument = documents.get(path.join(contractRoot, "catalog-inventory.openapi.yaml"));
+  const localReferenceDocument = (file, fragment) => {
+    const document = documents.get(file);
+    // Generated catalog path shards are fragments of the edge document, not
+    // standalone OpenAPI roots. Their local component refs are intentionally
+    // authored against the root component set; keep ordinary JSON Reference
+    // resolution strict for every other document kind.
+    return document?.kind === "catalog-inventory-openapi-path-shard"
+      && fragment.startsWith("/components/")
+      ? catalogInventoryRootDocument
+      : document;
+  };
   const result = { documents: documents.size, totalReferences: 0, missingFile: 0, missingPointer: 0, other: 0, unresolved: 0, findings: [] };
   const report = (kind, file, at, ref) => {
     result[kind] += 1;
@@ -42,7 +55,10 @@ function scan(contractRoot) {
       const target = rawFile ? path.resolve(path.dirname(file), rawFile) : file;
       if (!documents.has(target)) report("missingFile", file, at, value.$ref);
       else {
-        try { if (pointer(documents.get(target), `#${rawFragment}`) === undefined) report("missingPointer", file, at, value.$ref); }
+        try {
+          const referenceDocument = rawFile ? documents.get(target) : localReferenceDocument(target, rawFragment);
+          if (pointer(referenceDocument, `#${rawFragment}`) === undefined) report("missingPointer", file, at, value.$ref);
+        }
         catch { report("other", file, at, value.$ref); }
       }
     }
@@ -57,14 +73,23 @@ function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-openapi-resolver-"));
   try {
     const component = path.join(scratch, "components.yaml");
-    const edge = path.join(scratch, "edge.yaml");
+    const edge = path.join(scratch, "edge.openapi.yaml");
     fs.writeFileSync(component, `${JSON.stringify({components:{schemas:{Value:{type:"string"}}}})}\n`);
     fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Value"}}}})}\n`);
     if (scan(scratch).unresolved !== 0) fail("R5_STRICT_OPENAPI_SELF_TEST_CLEAN_INVALID");
     fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Missing"}}}})}\n`);
     const red = scan(scratch);
     if (red.unresolved !== 1 || red.missingPointer !== 1) fail("R5_STRICT_OPENAPI_SELF_TEST_RED_NOT_DETECTED");
-    process.stdout.write("R5_STRICT_OPENAPI_RESOLVER_SELF_TEST=PASS\nRED=missingPointer\n");
+    const pathShard = path.join(scratch, "paths.yaml");
+    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Value"}}}})}\n`);
+    const catalogInventoryRoot = path.join(scratch, "catalog-inventory.openapi.yaml");
+    fs.writeFileSync(catalogInventoryRoot, `${JSON.stringify({openapi:"3.1.0",paths:{"/x":{$ref:"./paths.yaml#/paths/~1x"}},components:{schemas:{Value:{type:"string"}}}})}\n`);
+    fs.writeFileSync(pathShard, `${JSON.stringify({kind:"catalog-inventory-openapi-path-shard",paths:{"/x":{get:{responses:{"200":{content:{"application/json":{schema:{$ref:"#/components/schemas/Value"}}}}}}}}})}\n`);
+    if (scan(scratch).unresolved !== 0) fail("R5_STRICT_OPENAPI_PATH_SHARD_ROOT_COMPONENT_SELF_TEST_CLEAN_INVALID");
+    fs.writeFileSync(pathShard, `${JSON.stringify({kind:"catalog-inventory-openapi-path-shard",paths:{"/x":{get:{responses:{"200":{content:{"application/json":{schema:{$ref:"#/components/schemas/Missing"}}}}}}}}})}\n`);
+    const pathShardRed = scan(scratch);
+    if (pathShardRed.unresolved !== 1 || pathShardRed.missingPointer !== 1) fail("R5_STRICT_OPENAPI_PATH_SHARD_ROOT_COMPONENT_SELF_TEST_RED_NOT_DETECTED");
+    process.stdout.write("R5_STRICT_OPENAPI_RESOLVER_SELF_TEST=PASS\nRED=missingPointer\nRED=pathShardRootComponentMissingPointer\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 

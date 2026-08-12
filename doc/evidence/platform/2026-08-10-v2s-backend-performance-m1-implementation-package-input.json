@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-m1-static-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-M1-IMPLEMENTATION-20260810",
+  "status": "ACTIVE_STATIC_IMPLEMENTATION",
+  "designReviewStatus": "POST_REMEDIATION_V2_CLAUDE_M01_SURFACE_ADMITTED_TOPOLOGY_GATE_PENDING",
+  "authorization": "Dexter authorized the planned SQL-M1 command-side implementation first. This package contains only static source and existing JUnit assertion work; reset, seed and L2 follow only after static implementation and are executed through their existing managed entries.",
+  "scope": {
+    "includedUnits": ["BP-U07 SQL-M1 command 68"],
+    "excludedUnits": ["BP-U05 task-read 58", "BP-U07 SQL-M2 read 58", "new test runners or test environments", "runtime", "DEV", "reset", "seed", "L2", "deployment", "manual SSH or SQL"],
+    "commandDenominator": 68,
+    "primaryMeasuredOperations": [
+      "createOperationsOrganizationStore",
+      "createOperationsContract",
+      "transitionOperationsOrganizationStoreStatus",
+      "invalidateOperationsContract"
+    ]
+  },
+  "deliverySequence": [
+    "admit the already-approved registry, code-generation, build and exact composition-adapter surfaces before any M1 runtime-chain source edit",
+    "replace the mandatory coverage gate with the 113-command topology gate and prove its red mutations before any M1 runtime-chain source edit",
+    "FIRST_BATCH: owner-local command context, one REQUIRED transaction boundary, and command-local post-write readback only",
+    "existing focused unit tests",
+    "authorized managed reset then r5-full seed, with a separate first-batch comparison",
+    "SECOND_BATCH only after that evidence: operation-specific validation folding using EXISTS/CTE",
+    "existing catalog L2"
+  ],
+  "designInputs": [
+    {
+      "path": "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md",
+      "anchor": "### BP-U07｜SQL-M1～M6 合并、目标与 196 行覆盖矩阵"
+    },
+    {
+      "path": "doc/decisions/2026-08-09-v2s-backend-performance-phase3-to-phase4-rebaseline.md",
+      "anchor": "SQL-M1 command 68"
+    },
+    {
+      "path": "contracts/registry/backend-performance-sql-merge-applicability.json",
+      "anchor": "m1BindingPartition.commandOperationIds"
+    },
+    {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-m1-command-handler-gate-design-amendment.md",
+      "anchor": "## Generated runtime binding and build closure"
+    }
+  ],
+  "sourceDenominators": {
+    "PROJECT_MEMORY_ASSERTION_OCCURRENCES": [
+      "project-memory/decisions/deterministic-context-only.md",
+      "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "project-memory/decisions/incremental-compliance-hook.md",
+      "project-memory/operations/implementation-source-reread-discipline.md",
+      "project-memory/operations/phase-retrospective-and-systemic-repair.md"
+    ],
+    "APPROVED_ASSERTIONS": [
+      "SQL-M1 command 68 is the exact source-bound implementation denominator.",
+      "Each owner resolves its own facts; no cross-owner query, generic request fact bag, cache bypass or operationId-selected SQL is permitted.",
+      "One command uses one existing REQUIRED transaction; receipt claim and owner recheck remain before mutation semantics require them.",
+      "FIRST_BATCH moves only command-local post-write readback into the existing REQUIRED transaction. Operation-specific validation folding into EXISTS/CTE is a separate second batch and is forbidden before the first-batch seed comparison.",
+      "COMMAND_OWNER_LOCAL_FACT_TRANSACTION_PATTERN is mandatory: scripts/check/backend-performance-sql-merge-coverage runs after every M1 source or existing-test edit; skipping it fails the implementation check.",
+      "Every command-topology gate rejection must expose WHY, BACKGROUND and PATTERN so a later agent repairs the declared typed owner-local chain instead of bypassing it through a different edge, generic facade or transaction boundary.",
+      "M1-F05 approval-surface admission records the three registry inputs, two generators, root build, Catalog owner and only the seven owner-qualified composition adapter roots; it authorizes neither a generic application layer nor runtime execution.",
+      "M1-F06 corrects the false all-68 resolveCatalog assumption: only catalog's 26 use catalog-scoped resolution; the other 42 receive a workspace-IAM primitive projection and retain concrete owner-local target and grant judgment.",
+      "M1-F07 admits the exact owner API and service files required to replace catalog, inventory and production generic operationId plus ObjectNode command paths with one typed public owner API per M1 operation; P1 wire DTOs are transport types, not owner APIs.",
+      "Asset M1 stage and release use a typed owner API carrying multipart InputStream content unchanged; release preserves asset lock, catalog global no-reference judgment, then receipt order.",
+      "The existing workspace-iam and workspace JUnit sources import Mockito but their modules have no Mockito test dependency; both exact module build declarations are admitted only to restore compilation of the pre-existing unit-test surface, not to add a test environment or runner.",
+      "M1-F09 corrects all five workspace assignment-revoke commands: their required Idempotency-Key must reach an operations-specific owner receipt only after the existing target, capability and scope recheck; historical receipt must never bypass that recheck.",
+      "M1-F10 records 17 unique typed-owner boundary operations with 23 source incidences: 14 generated-wire JsonNode to owner Map crossings and 9 HTTP response-composition gaps. Owner-native command/readback types must close these gaps; adapters may not manufacture a Map, callback or cross-owner response guess.",
+      "M1-F11 corrects the same host-extension request contract drift across the five host types: 8 expectedExtensionRuleRevision properties plus Store update's extensionRuleRevision synonym must be absent from the 10 create/update request boundaries. Current-definition validation and persisted/readback revision remain owner facts; entity expectedVersion and extension-definition management CAS remain untouched."
+      ,"M1-F12 admits exactly WorkspaceOperationsCommandApi, WorkspaceOperationsCommandService and WorkspaceInvitationService for the 20 workspace-IAM operations owner-native typed command/readback boundary; it admits no root facade or generic dispatch."
+    ],
+    "FORBIDDEN_PSEUDO_FIXES": [
+      "endpoint-specific SQL catalog",
+      "global query bus",
+      "cross-owner cache",
+      "cross-schema DML",
+      "new test runner, test environment or dynamic fixture",
+      "generic composition adapter directory outside the seven owner-qualified roots",
+      "numeric SQL-success claim before a fresh r5-full seed report"
+    ],
+    "DETAIL_DESIGN_COMPLETION_AND_CHANGED_PATH_CRITERIA": [
+      "Workspace IAM command facts retain active assignment, enabled role and capability predicates, and WorkspaceUserService consumes the same assignment projection without a second scope lookup.",
+      "Organization path/scope facts retain owner-local capability and ancestor judgment.",
+      "Contract and extension facts retain owner recheck, idempotent receipt and typed failure behavior.",
+      "Existing catalog application command handlers begin REQUIRED before fresh command-context resolution; no operationId dispatcher or callback transaction wrapper is introduced.",
+      "The mandatory gate derives all 113 COMMAND registry rows, requires one explicit topology row for every current or future command, and applies the compiled generated runtime-binding/transaction-adapter chain to every OWNER_COMMAND + REQUIRED + WORKSPACE_EXECUTION_CONTEXT row; generated marker contracts are not runtime evidence.",
+      "Every production or existing-test path changed by implementation must be in the manifest and package-exit changed path set."
+    ],
+    "OWNED_SURFACE_AND_OPERATION_KEYS": [
+      "m1BindingPartition.commandOperationIds = 68",
+      "createOperationsOrganizationStore baseline = 63 JDBC events",
+      "createOperationsContract baseline = 57 JDBC events",
+      "transitionOperationsOrganizationStoreStatus baseline = 56 JDBC events",
+      "invalidateOperationsContract baseline = 52 JDBC events"
+    ],
+    "DUE_STANDARDS_RULE_IDS": [
+      "scripts/check/standards-coverage --phase BACKEND_PERFORMANCE_FINAL_CLOSURE",
+      "scripts/check/backend-performance-sql-merge-coverage",
+      "scripts/check/implementation-design-granularity"
+    ]
+  },
+  "authority": {
+    "implementationAuthority": true,
+    "runtimeAuthority": false,
+    "seedResetAuthority": false
+  },
+  "approvalSurfaceAdmission": {
+    "findingId": "M1-F05",
+    "source": "doc/review/platform/2026-08-10-v2s-backend-performance-m1-topology-gate-recheck-claude.md",
+    "status": "ADMITTED",
+    "exactAddedFiles": [
+      "contracts/registry/backend-performance-command-enforcement-profiles.json",
+      "contracts/registry/backend-performance-command-topology-matrix.json",
+      "contracts/registry/backend-performance-m1-command-execution-matrix.json",
+      "scripts/generate/backend-performance-m1-command-execution-bindings.mjs",
+      "scripts/generate/catalog-inventory-p1.mjs",
+      "apps/backend/catering-business-server/build.gradle.kts",
+      "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java"
+    ],
+    "adapterScopeRoots": 7,
+    "adapterDenominator": 68,
+    "resolverFamilySplit": {"catalogScoped": 26, "operationsPrimitiveContext": 42},
+    "typedOwnerApiFamily": {"catalog": 17, "inventory": 4, "fulfillmentProduction": 3, "platformAsset": 2}
+  },
+  "measurementBoundary": {
+    "basis": "JDBC executions plus CONNECTION and TRANSACTION batches; not a SQL-row count",
+    "baselineEvents": {"total": 3795, "query": 1656, "transaction": 980, "update": 615, "connection": 544},
+    "status": "BP_U07_SQL_MERGE_SUCCESS=BLOCKED_UNMEASURED; BP_U07_SNAPSHOT=NOT_SUPPLIED_UNMEASURED",
+    "rule": "No estimated reduction is a success claim. Only the later fresh r5-full seed report may supply the comparison."
+  }
+}

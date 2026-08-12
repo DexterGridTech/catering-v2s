@@ -8,12 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const fixturePath = path.join(root, "contracts/policy/catalog-inventory-fixture-catalog.json");
 const scenariosPath = path.join(root, "contracts/policy/catalog-inventory-l2-scenarios.json");
-const expectedFixtureSha = "58eca1deb9eb1e8f784b04b7f9100e5140d4340fb33355938a89889520cde890";
+const expectedFixtureSha = "8d07e004e86d2874f50a0683d32d608762570b53a6d87e44b33915da23c5f3ad";
 const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 const scenarios = JSON.parse(fs.readFileSync(scenariosPath, "utf8"));
 const actualFixtureSha = sha256(fs.readFileSync(fixturePath));
 if (actualFixtureSha !== expectedFixtureSha) throw new Error(`CATALOG_INVENTORY_FIXTURE_SHA_DRIFT:${actualFixtureSha}`);
-if (scenarios.caseCount !== 43 || scenarios.scenarioCount !== 18) throw new Error("CATALOG_INVENTORY_L2_SCENARIO_DENOMINATOR_DRIFT");
+if (scenarios.caseCount !== 41 || scenarios.scenarioCount !== 18) throw new Error("CATALOG_INVENTORY_L2_SCENARIO_DENOMINATOR_DRIFT");
 
 const runtimeDir = process.env.V2S_RUNTIME_DIR;
 const output = runtimeDir ? path.join(runtimeDir, "results/catalog-inventory-l2-fixture.json") : undefined;

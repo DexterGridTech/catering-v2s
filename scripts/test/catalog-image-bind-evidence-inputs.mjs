@@ -20,7 +20,7 @@ const targetPaths = {
     'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx',
   ],
   test: [
-    'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/cataloginventory/CatalogInventoryAssetLifecycleTest.java',
+    'apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogAssetGlobalReferenceTest.java',
     'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogManagementPage.test.tsx',
     'apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts',
     'scripts/test/catalog-inventory-api.mjs',

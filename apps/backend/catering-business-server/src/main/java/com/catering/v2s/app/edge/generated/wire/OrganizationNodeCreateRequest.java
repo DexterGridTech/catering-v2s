@@ -5,5 +5,5 @@ public record OrganizationNodeCreateRequest(
     String code,
     String name,
     String notes,
-    tools.jackson.databind.JsonNode extensionValues
+    java.util.List<OrganizationNodeCreateRequestExtensionValuesItem> extensionValues
 ) {}

@@ -1,0 +1,3699 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-optimization-command-operation-catalog",
+  "status": "DESIGN_INPUT_ONLY_NO_RUNTIME_AUTHORITY",
+  "scope": {
+    "count": 113,
+    "exactlyOnce": true,
+    "operationSet": {
+      "path": "contracts/registry/operation-handler-bindings.json",
+      "sha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"
+    }
+  },
+  "registrySources": {
+    "profiles": [
+      "contracts/registry/backend-performance-command-enforcement-profiles.json",
+      "01f44aa7b584ff6c17cc077e806b403f86069af2c9e01393a6cac30a29d68e81"
+    ],
+    "topology": [
+      "contracts/registry/backend-performance-command-topology-matrix.json",
+      "8cefb6724da3a1ebbbfe2349abefcbff02f095ae8f34b55123f8a7fb317b92cd"
+    ],
+    "m1": [
+      "contracts/registry/backend-performance-m1-command-execution-matrix.json",
+      "1733c192673aa9a674e740ef105e84b3bdb7f17367e0932f298dcea3c550c141"
+    ],
+    "sql": [
+      "contracts/registry/backend-performance-sql-merge-applicability.json",
+      "3b5bb80cbc1cbf7eec9b1ea245fbefbfb6e6fd0021ffb24d98b3aef8d42a3ab1"
+    ]
+  },
+  "rowAnchors": {
+    "binding": "contracts/registry/operation-handler-bindings.json#operations[operationId={id}]",
+    "topology": "contracts/registry/backend-performance-command-topology-matrix.json#rows[operationId={id}]",
+    "m1": "contracts/registry/backend-performance-m1-command-execution-matrix.json#rows[operationId={id}]",
+    "sql": "contracts/registry/backend-performance-sql-merge-applicability.json#operationApplicability[operationId={id}]"
+  },
+  "adapterFieldSemantics": {
+    "adapter": "DECLARED_OPERATION_TYPE_ONLY: this field is an operation identity, never proof of a physical Java source path or method.",
+    "physicalSourceEvidence": "The 196-row operation-source-read ledger records current path#method evidence or GAP_ADAPTER_SOURCE_ANCHOR. The future generated operation-source inventory, not this catalogue, is the only machine source-path authority.",
+    "nonM1CurrentState": "All 45 non-M1 declared operation types are explicit GAP_ADAPTER_SOURCE_ANCHOR until a real source path#method exists; a future source inventory/shape row must not admit a synthetic adapter path."
+  },
+  "codes": {
+    "A": "one named application REQUIRED transaction origin; edge has none; nested owner work joins REQUIRED",
+    "B": "one fresh request-local context/auth fact load; reuse its in-memory projection only; no cross-request cache",
+    "C": "audit owner-local prewrite reads; fold only semantic-equivalent validation; preserve owner recheck/CAS/audit/lock/typed failure/readback",
+    "A_NA_PUBLIC_PROTOCOL": "NOT_APPLICABLE: §4.1 excludes A; public protocol is already near observed floor",
+    "B_NA_PUBLIC_PROTOCOL": "NOT_APPLICABLE: §4.1 excludes B",
+    "C_NA_WORKSPACE_PROTOCOL": "NOT_APPLICABLE: §4.1 selects A+B only; no C may be inferred",
+    "C_NA_PLATFORM_PROTOCOL": "NOT_APPLICABLE: §4.1 selects A+B only; no C may be inferred",
+    "C_LIGHT": "light C audit only; preserve public protocol floor",
+    "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED": "SOURCE_GAP: source-reopen adapter/owner before target choice",
+    "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED": "SOURCE_GAP: source-reopen adapter/owner before target choice"
+  },
+  "templates": {
+    "M1_OWNER": {
+      "floor": "conn=1;tx=2;facts=1;receipt=1;readback=0|1;cross-owner facts=1..3 only declared",
+      "accept": "exact tuple/route/edge/adapter; one origin/no edge tx; facts once/request; receipt/readback unchanged",
+      "red": "second origin|edge tx|same-request fact load>1|removed correctness"
+    },
+    "PLATFORM_OWNER": {
+      "floor": "conn=1;tx=2;facts=1;receipt=1;readback=0|1",
+      "accept": "same plus enabled platform session recheck",
+      "red": "second origin|edge tx|fact repeat|removed correctness"
+    },
+    "WORKSPACE_PROTOCOL": {
+      "floor": "conn=1;tx=2;facts=1;receipt/readback source-reopen",
+      "accept": "one protocol origin; session-entry/auth facts once; semantics preserved",
+      "red": "second origin|edge tx|fact repeat|C inferred"
+    },
+    "PLATFORM_PROTOCOL": {
+      "floor": "conn=1;tx=2;facts=1;receipt/readback source-reopen",
+      "accept": "one protocol origin; platform auth facts once; semantics preserved",
+      "red": "second origin|edge tx|fact repeat|C inferred"
+    },
+    "PUBLIC_PROTOCOL": {
+      "floor": "preserve observed public floor; receipt/readback source-reopen",
+      "accept": "C-light audit only; no A/B claim; protocol semantics preserved",
+      "red": "A/B inferred|C removes correctness"
+    }
+  },
+  "rows": [
+    {
+      "id": "acceptPublicInvitation",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#accept",
+      "adapter": "com.catering.v2s.workspace.iam.application.AcceptPublicInvitationOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#acceptPublic"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#acceptPublic"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#add",
+      "adapter": "com.catering.v2s.organization.application.AddOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "NO_CONTENT"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "adjustOperationsInventoryTarget",
+      "own": "inventory",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/inventory-targets/{targetRef}/adjust",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#adjustInventoryTarget",
+      "adapter": "com.catering.v2s.inventory.application.AdjustOperationsInventoryTargetOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M6"
+      ]
+    },
+    {
+      "id": "cancelOperationsWorkspaceGroupInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "cancelOperationsWorkspaceHeadCompanyInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "cancelOperationsWorkspaceProjectInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "cancelOperationsWorkspaceRegionInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "cancelOperationsWorkspaceStoreInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "cancelWorkspaceInvitation",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#cancel",
+      "adapter": "com.catering.v2s.workspace.iam.application.CancelWorkspaceInvitationOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#cancel"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#cancel"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "changeCurrentPlatformPassword",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#changePassword",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.ChangeCurrentPlatformPasswordOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#changeCurrentPassword"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#changeCurrentPassword"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "changeCurrentWorkspacePassword",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#changePassword",
+      "adapter": "com.catering.v2s.workspace.iam.application.ChangeCurrentWorkspacePasswordOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#changeCurrentPassword"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#changeCurrentPassword"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "completeOperationsPasswordRecovery",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#complete",
+      "adapter": "com.catering.v2s.workspace.iam.application.CompleteOperationsPasswordRecoveryOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#complete"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#complete"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "completePlatformPasswordRecovery",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password-recovery/complete",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#completePasswordRecovery",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.CompletePlatformPasswordRecoveryOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#completePasswordRecovery"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#completePasswordRecovery"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "completePublicInvitation",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#complete",
+      "adapter": "com.catering.v2s.workspace.iam.application.CompletePublicInvitationOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#completePublic"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#completePublic"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "countOperationsInventoryTarget",
+      "own": "inventory",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/inventory-targets/{targetRef}/count",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#countInventoryTarget",
+      "adapter": "com.catering.v2s.inventory.application.CountOperationsInventoryTargetOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M6"
+      ]
+    },
+    {
+      "id": "createOperationsCatalogCategory",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/categories",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogCategory",
+      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogCategoryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "createOperationsCatalogDictionaryEntry",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogDictionaryEntry",
+      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogDictionaryEntryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "createOperationsCatalogItem",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/items",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogItem",
+      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogItemOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "createOperationsContract",
+      "own": "contract",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#create",
+      "adapter": "com.catering.v2s.store.contract.application.CreateOperationsContractOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationBrand",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createBrand",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationBrandOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationHeadCompany",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createHeadCompany",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationHeadCompanyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationProject",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createProject",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationProjectOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationRegion",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createRegion",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationRegionOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationStore",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#create",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationStoreOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "createOperationsOrganizationTenant",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createTenant",
+      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationTenantOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsProductionTag",
+      "own": "fulfillment-production",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/production-tags",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createProductionTag",
+      "adapter": "com.catering.v2s.fulfillment.production.application.CreateOperationsProductionTagOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsWorkspaceGroupInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCreate",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsWorkspaceHeadCompanyInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCreate",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsWorkspaceProjectInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCreate",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsWorkspaceRegionInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCreate",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createOperationsWorkspaceStoreInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCreate",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "createPlatformAdmin",
+      "own": "platform-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/admin-users",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#create",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.CreatePlatformAdminOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#createAdministrator"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#createAdministrator"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "createPlatformGroupWorkspace",
+      "own": "platform-workspace",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#create",
+      "adapter": "com.catering.v2s.platform.workspace.application.CreatePlatformGroupWorkspaceOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#create"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#create"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "createWorkspaceInvitation",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#create",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateWorkspaceInvitationOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#create"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#create"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "createWorkspaceRole",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#create",
+      "adapter": "com.catering.v2s.workspace.iam.application.CreateWorkspaceRoleOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#createForPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#createForPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "deleteOperationsCatalogCategory",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "DELETE",
+        "/operations/catalog-inventory/categories/{categoryRef}",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#deleteCatalogCategory",
+      "adapter": "com.catering.v2s.catalog.application.DeleteOperationsCatalogCategoryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "executeOperationsBrandCatalogCopy",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/copy/brand/execute",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeBrandCatalogCopy",
+      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "executeOperationsLocalCatalogCopy",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/copy/local/execute",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeLocalCatalogCopy",
+      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsLocalCatalogCopyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "executeOperationsTemporaryCatalogItemPromotion",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeTemporaryCatalogPromotion",
+      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsTemporaryCatalogItemPromotionOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "increaseOperationsInventoryTarget",
+      "own": "inventory",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/inventory-targets/{targetRef}/increase",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#increaseInventoryTarget",
+      "adapter": "com.catering.v2s.inventory.application.IncreaseOperationsInventoryTargetOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M6"
+      ]
+    },
+    {
+      "id": "initializeCommercialGroup",
+      "own": "organization",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java#initialize",
+      "adapter": "com.catering.v2s.organization.application.InitializeCommercialGroupOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/PlatformWorkspaceCoordinator.java#initializeCommercialGroup"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/PlatformWorkspaceCoordinator.java#initializeCommercialGroup"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "invalidateOperationsContract",
+      "own": "contract",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#invalidate",
+      "adapter": "com.catering.v2s.store.contract.application.InvalidateOperationsContractOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "moveOperationsCatalogCategory",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/categories/{categoryRef}/move",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#moveCatalogCategory",
+      "adapter": "com.catering.v2s.catalog.application.MoveOperationsCatalogCategoryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "operationsWorkspaceLogout",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#logout",
+      "adapter": "com.catering.v2s.workspace.iam.application.OperationsWorkspaceLogoutOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#logout"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#logout"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "operationsWorkspacePasswordLogin",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#login",
+      "adapter": "com.catering.v2s.workspace.iam.application.OperationsWorkspacePasswordLoginOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#loginWithSessionEntry"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#loginWithSessionEntry"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "platformLogout",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/logout",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#logout",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.PlatformLogoutOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#logout"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#logout"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "platformPasswordLogin",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password-login",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#login",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.PlatformPasswordLoginOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#login"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#login"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "preflightOperationsBrandCatalogCopy",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/copy/brand/preflight",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightBrandCatalogCopy",
+      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsBrandCatalogCopyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "preflightOperationsLocalCatalogCopy",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/copy/local/preflight",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightLocalCatalogCopy",
+      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsLocalCatalogCopyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "preflightOperationsTemporaryCatalogItemPromotion",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightTemporaryCatalogPromotion",
+      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsTemporaryCatalogItemPromotionOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "reissueOperationsWorkspaceGroupInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupReissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reissueOperationsWorkspaceHeadCompanyInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyReissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reissueOperationsWorkspaceProjectInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectReissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reissueOperationsWorkspaceRegionInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionReissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reissueOperationsWorkspaceStoreInvitation",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeReissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reissueWorkspaceInvitation",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#reissue",
+      "adapter": "com.catering.v2s.workspace.iam.application.ReissueWorkspaceInvitationOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#reissue"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#reissue"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "releaseOperationsCatalogStagedAsset",
+      "own": "asset",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/assets/{assetRef}/release",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#releaseCatalogAsset",
+      "adapter": "com.catering.v2s.platform.asset.application.ReleaseOperationsCatalogStagedAssetOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "releasePlatformStagedAsset",
+      "own": "platform-asset",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/assets/staging/{assetRef}/release",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java#releaseStaged",
+      "adapter": "com.catering.v2s.platform.asset.application.ReleasePlatformStagedAssetOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#releaseStaged"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#releaseStaged"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "DELETE",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#remove",
+      "adapter": "com.catering.v2s.organization.application.RemoveOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "NO_CONTENT"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "reorderOperationsCatalogDictionaryEntry",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/reorder",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#reorderCatalogDictionaryEntry",
+      "adapter": "com.catering.v2s.catalog.application.ReorderOperationsCatalogDictionaryEntryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "replaceExtensionDefinition",
+      "own": "extension",
+      "prof": "PO",
+      "http": [
+        "PUT",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java#replace",
+      "adapter": "com.catering.v2s.extension.application.ReplaceExtensionDefinitionOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#replaceDraft"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#replaceDraft"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "requestWorkspaceCredentialReset",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#requestCredentialReset",
+      "adapter": "com.catering.v2s.workspace.iam.application.RequestWorkspaceCredentialResetOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java#requestPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java#requestPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "resetPlatformAdminCredential",
+      "own": "platform-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/admin-users/{platformAdminId}/credential-reset",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#resetCredential",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.ResetPlatformAdminCredentialOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#resetAdministratorCredential"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#resetAdministratorCredential"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "revokeOperationsWorkspaceGroupUserAssignment",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#groupRevoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#headCompanyRevoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "revokeOperationsWorkspaceProjectUserAssignment",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#projectRevoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "revokeOperationsWorkspaceRegionUserAssignment",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#regionRevoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "revokeOperationsWorkspaceStoreUserAssignment",
+      "own": "workspace-iam",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#storeRevoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "revokePlatformWorkspaceAssignment",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#revoke",
+      "adapter": "com.catering.v2s.workspace.iam.application.RevokePlatformWorkspaceAssignmentOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#revokeAssignmentForPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#revokeAssignmentForPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "saveOperationsCatalogItem",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/operations/catalog-inventory/items/{itemCode}",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#saveCatalogItem",
+      "adapter": "com.catering.v2s.catalog.application.SaveOperationsCatalogItemOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "savePublicInvitationCredentials",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#credentials",
+      "adapter": "com.catering.v2s.workspace.iam.application.SavePublicInvitationCredentialsOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#savePublicCredentials"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#savePublicCredentials"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "selectOperationsWorkspaceSessionContext",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#selectContext",
+      "adapter": "com.catering.v2s.workspace.iam.application.SelectOperationsWorkspaceSessionContextOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectContext"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectContext"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": [
+        "SQL-M2"
+      ]
+    },
+    {
+      "id": "selectOperationsWorkspaceSessionDataNode",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#selectDataNode",
+      "adapter": "com.catering.v2s.workspace.iam.application.SelectOperationsWorkspaceSessionDataNodeOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectDataNode"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectDataNode"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": [
+        "SQL-M2"
+      ]
+    },
+    {
+      "id": "sendOperationsPasswordRecoveryOtp",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#sendOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.SendOperationsPasswordRecoveryOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#sendOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#sendOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "sendOperationsWorkspaceOtp",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#sendOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.SendOperationsWorkspaceOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sendLoginOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sendLoginOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "sendPlatformLoginOtp",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/login-otp/send",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendLoginOtp",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.SendPlatformLoginOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendLoginOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendLoginOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "sendPlatformPasswordRecoveryOtp",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password-recovery/otp/send",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendPasswordRecoveryOtp",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.SendPlatformPasswordRecoveryOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendPasswordRecoveryOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendPasswordRecoveryOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "sendPublicInvitationOtp",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#sendOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.SendPublicInvitationOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#sendPublicOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#sendPublicOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "stageOperationsCatalogAsset",
+      "own": "asset",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/assets/stage",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#stageAsset",
+      "adapter": "com.catering.v2s.platform.asset.application.StageOperationsCatalogAssetMultipartOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "stagePlatformAsset",
+      "own": "platform-asset",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/assets/staging",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java#stage",
+      "adapter": "com.catering.v2s.platform.asset.application.StagePlatformAssetOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#stageContent"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#stageContent"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "startOperationsPasswordRecovery",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#start",
+      "adapter": "com.catering.v2s.workspace.iam.application.StartOperationsPasswordRecoveryOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#start"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#start"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "startPlatformPasswordRecovery",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password-recovery/start",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#startPasswordRecovery",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.StartPlatformPasswordRecoveryOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#startPasswordRecovery"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#startPasswordRecovery"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "transitionOperationsCatalogDictionaryEntryStatus",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogDictionaryEntryStatus",
+      "adapter": "com.catering.v2s.catalog.application.TransitionOperationsCatalogDictionaryEntryStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "transitionOperationsCatalogItemStatus",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/items/{itemCode}/status",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogItemStatus",
+      "adapter": "com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "transitionOperationsOrganizationBrandStatus",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#brandStatus",
+      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationBrandStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "transitionOperationsOrganizationHeadCompanyStatus",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#headCompanyStatus",
+      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationHeadCompanyStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "transitionOperationsOrganizationNodeStatus",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#transition",
+      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationNodeStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "transitionOperationsOrganizationStoreStatus",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#transitionStatus",
+      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationStoreStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "transitionOperationsOrganizationTenantStatus",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#tenantStatus",
+      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationTenantStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "transitionOperationsProductionTagStatus",
+      "own": "fulfillment-production",
+      "prof": "M1",
+      "http": [
+        "POST",
+        "/operations/catalog-inventory/production-tags/{tagCode}/status",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionProductionTagStatus",
+      "adapter": "com.catering.v2s.fulfillment.production.application.TransitionOperationsProductionTagStatusOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "transitionPlatformAdminStatus",
+      "own": "platform-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/admin-users/{platformAdminId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#transition",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.TransitionPlatformAdminStatusOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#transitionAdministratorStatus"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#transitionAdministratorStatus"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+  "id": "transitionPlatformGroupWorkspaceStatus",
+      "own": "platform-workspace",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#status",
+      "adapter": "com.catering.v2s.platform.workspace.application.TransitionPlatformGroupWorkspaceStatusOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#transitionStatus"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#transitionStatus"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+  "id": "transitionWorkspaceAccountStatus",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#status",
+      "adapter": "com.catering.v2s.workspace.iam.application.TransitionWorkspaceAccountStatusOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#transitionStatusForPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#transitionStatusForPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "transitionWorkspaceRoleStatus",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "POST",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#status",
+      "adapter": "com.catering.v2s.workspace.iam.application.TransitionWorkspaceRoleStatusOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#transitionStatusForPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#transitionStatusForPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "updateOperationsCatalogCategory",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/operations/catalog-inventory/categories/{categoryRef}",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogCategory",
+      "adapter": "com.catering.v2s.catalog.application.UpdateOperationsCatalogCategoryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "updateOperationsCatalogDictionaryEntry",
+      "own": "catalog",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogDictionaryEntry",
+      "adapter": "com.catering.v2s.catalog.application.UpdateOperationsCatalogDictionaryEntryOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M3"
+      ]
+    },
+    {
+      "id": "updateOperationsCommercialGroup",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#updateCommercialGroup",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsCommercialGroupOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "updateOperationsContract",
+      "own": "contract",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#update",
+      "adapter": "com.catering.v2s.store.contract.application.UpdateOperationsContractOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "updateOperationsInventoryTargetConfiguration",
+      "own": "inventory",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/operations/catalog-inventory/inventory-targets/{targetRef}/configuration",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateInventoryTargetConfiguration",
+      "adapter": "com.catering.v2s.inventory.application.UpdateOperationsInventoryTargetConfigurationOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M6"
+      ]
+    },
+    {
+      "id": "updateOperationsOrganizationBrand",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateBrand",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationBrandOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "updateOperationsOrganizationHeadCompany",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateHeadCompany",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationHeadCompanyOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "updateOperationsOrganizationNode",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#update",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationNodeOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "updateOperationsOrganizationStore",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#update",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationStoreOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1",
+        "SQL-M5"
+      ]
+    },
+    {
+      "id": "updateOperationsOrganizationTenant",
+      "own": "organization",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateTenant",
+      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationTenantOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "updateOperationsProductionTag",
+      "own": "fulfillment-production",
+      "prof": "M1",
+      "http": [
+        "PATCH",
+        "/operations/catalog-inventory/production-tags/{tagCode}",
+        "catalog-inventory"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateProductionTag",
+      "adapter": "com.catering.v2s.fulfillment.production.application.UpdateOperationsProductionTagOperation",
+      "cur": {
+        "tx": "M1_HANDLER_EXECUTE_REQUIRED",
+        "chain": "M1_NAMED_OWNER_API",
+        "idem": "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK",
+        "readback": "OWNER_READBACK"
+      },
+      "select": {
+        "template": "M1_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "M1_OWNER_FLOOR",
+        "accept": "M1_OWNER_ACCEPT",
+        "red": "M1_OWNER_RED"
+      },
+      "sqlMerge": [
+        "SQL-M1"
+      ]
+    },
+    {
+      "id": "updatePlatformAdminProfile",
+      "own": "platform-iam",
+      "prof": "PO",
+      "http": [
+        "PATCH",
+        "/api/platform/admin-users/{platformAdminId}/profile",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#updateProfile",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.UpdatePlatformAdminProfileOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#updateAdministratorProfile"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#updateAdministratorProfile"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+  "id": "updatePlatformGroupWorkspaceDisplay",
+      "own": "platform-workspace",
+      "prof": "PO",
+      "http": [
+        "PATCH",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#update",
+      "adapter": "com.catering.v2s.platform.workspace.application.UpdatePlatformGroupWorkspaceDisplayOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#updateDisplay"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+      "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#updateDisplay"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "updateWorkspaceRole",
+      "own": "workspace-iam",
+      "prof": "PO",
+      "http": [
+        "PATCH",
+        "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#update",
+      "adapter": "com.catering.v2s.workspace.iam.application.UpdateWorkspaceRoleOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#updateForPlatform"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#updateForPlatform"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_OWNER",
+        "A": "A",
+        "B": "B",
+        "C": "C",
+        "floor": "PLATFORM_OWNER_FLOOR",
+        "accept": "PLATFORM_OWNER_ACCEPT",
+        "red": "PLATFORM_OWNER_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "verifyOperationsPasswordRecoveryOtp",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#verifyOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.VerifyOperationsPasswordRecoveryOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#verifyOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#verifyOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "verifyOperationsWorkspaceOtp",
+      "own": "workspace-iam",
+      "prof": "WP",
+      "http": [
+        "POST",
+        "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#verifyOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.VerifyOperationsWorkspaceOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#verifyLoginOtpWithSessionEntry"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#verifyLoginOtpWithSessionEntry"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "WORKSPACE_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_WORKSPACE_PROTOCOL",
+        "floor": "WORKSPACE_PROTOCOL_FLOOR",
+        "accept": "WORKSPACE_PROTOCOL_ACCEPT",
+        "red": "WORKSPACE_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "verifyPlatformLoginOtp",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/login-otp/verify",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyLoginOtp",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.VerifyPlatformLoginOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyLoginOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyLoginOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "verifyPlatformPasswordRecoveryOtp",
+      "own": "platform-iam",
+      "prof": "PP",
+      "http": [
+        "POST",
+        "/api/platform/auth/password-recovery/otp/verify",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyPasswordRecoveryOtp",
+      "adapter": "com.catering.v2s.platform.admin.iam.application.VerifyPlatformPasswordRecoveryOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyPasswordRecoveryOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyPasswordRecoveryOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PLATFORM_PROTOCOL",
+        "A": "A",
+        "B": "B",
+        "C": "C_NA_PLATFORM_PROTOCOL",
+        "floor": "PLATFORM_PROTOCOL_FLOOR",
+        "accept": "PLATFORM_PROTOCOL_ACCEPT",
+        "red": "PLATFORM_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    },
+    {
+      "id": "verifyPublicInvitationOtp",
+      "own": "workspace-iam",
+      "prof": "PU",
+      "http": [
+        "POST",
+        "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
+        "edge-face"
+      ],
+      "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#verifyOtp",
+      "adapter": "com.catering.v2s.workspace.iam.application.VerifyPublicInvitationOtpOperation",
+      "cur": {
+        "tx": [
+          "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#verifyPublicOtp"
+        ],
+        "chain": [
+          "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#verifyPublicOtp"
+        ],
+        "idem": "GAP_OPERATION_LEVEL_IDEMPOTENCY_NOT_DECLARED",
+        "readback": "GAP_OPERATION_LEVEL_READBACK_NOT_DECLARED"
+      },
+      "select": {
+        "template": "PUBLIC_PROTOCOL",
+        "A": "A_NA_PUBLIC_PROTOCOL",
+        "B": "B_NA_PUBLIC_PROTOCOL",
+        "C": "C_LIGHT",
+        "floor": "PUBLIC_PROTOCOL_FLOOR",
+        "accept": "PUBLIC_PROTOCOL_ACCEPT",
+        "red": "PUBLIC_PROTOCOL_RED"
+      },
+      "sqlMerge": []
+    }
+  ]
+}

@@ -47,7 +47,6 @@ class WorkspaceAuthenticationContextVersionTest {
         UUID regionId = hierarchy.create(workspaceId, "context-version-test", "REGION", null, "context-region", "Context region").id();
         UUID accountId = UUID.randomUUID();
         UUID roleId = roles.create(workspaceId, "context-version-test", "Context operator", "REGION", null, Set.of(), Set.of()).id();
-        UUID invitationId = UUID.randomUUID();
         UUID assignmentId = UUID.randomUUID();
         String token = "context-version-token";
         jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', '13800000111', 'context-user', 'Context user', 'ENABLED', 1, ?, ?)", accountId, workspaceId, NOW, NOW);
@@ -55,7 +54,7 @@ class WorkspaceAuthenticationContextVersionTest {
         // fixture must still satisfy the production constraint so it remains independent of
         // all other Testcontainers test class fixtures.
         jdbc.update("INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, changed_at_epoch_millis, failed_attempts, version) VALUES (?, ?, 'fixture', ?, 0, 1)", accountId, "not-used-by-context-test-" + accountId, NOW);
-        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, '13800000111', 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, sha256("context-invitation-token-" + accountId), NOW + 60_000L, NOW);
+        UUID invitationId = insertCompletedInvitation(accountId);
         jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, invitationId, regionId, NOW, NOW);
         jdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, 1, 1, 'ACTIVE', ?)", UUID.randomUUID(), workspaceId, accountId, sha256(token), NOW + 60_000L);
 
@@ -82,7 +81,8 @@ class WorkspaceAuthenticationContextVersionTest {
         UUID assignmentId = UUID.randomUUID();
         String token = "identity-selection-token";
         insertAccountAndCredential(accountId, "identity-user", false);
-        jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, regionId, NOW, NOW);
+        UUID invitationId = insertCompletedInvitation(accountId);
+        jdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)", assignmentId, workspaceId, accountId, roleId, invitationId, regionId, NOW, NOW);
         insertSession(accountId, token);
 
         var entry = authentication(regionId).sessionEntry(token, "context-version-test");
@@ -108,6 +108,12 @@ class WorkspaceAuthenticationContextVersionTest {
     private static void insertAccountAndCredential(UUID accountId, String loginName, boolean passwordChangeRequired) {
         jdbc.update("INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, display_name, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, ?, 'ENABLED', 1, ?, ?)", accountId, workspaceId, "138" + Math.abs(accountId.hashCode()), loginName, loginName, NOW, NOW);
         jdbc.update("INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, changed_at_epoch_millis, failed_attempts, version, password_change_required) VALUES (?, ?, 'fixture', ?, 0, 1, ?)", accountId, "session-entry-fixture-" + accountId, NOW, passwordChangeRequired);
+    }
+
+    private static UUID insertCompletedInvitation(UUID accountId) {
+        UUID invitationId = UUID.randomUUID();
+        jdbc.update("INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, mobile_normalized, status, expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, 'context-version-test', ?, ?, 'COMPLETED', ?, 1, ?)", invitationId, workspaceId, sha256("context-invitation-token-" + accountId), "138" + Math.abs(accountId.hashCode()), NOW + 60_000L, NOW);
+        return invitationId;
     }
 
     private static void insertSession(UUID accountId, String token) {

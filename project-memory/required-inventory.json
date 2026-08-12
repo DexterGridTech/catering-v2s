@@ -131,11 +131,12 @@
       "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
       "layer": "routed",
       "route": {"taskKinds":["design","implementation","review","testing"],"domains":["backend","contract","platform","admin-ui"],"consumerFaces":["all"],"owners":["backend","platform","contract","frontend-platform","product"],"impacts":["architecture","database","contract","evidence"],"triggers":["task-start","implementation","review"]},
-      "requiredAssertions": ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","SET_BASED_COLLECTION_READS","OWNER_LOCAL_EFFICIENCY_REPAIR","COMMAND_CORRECTNESS_COST_PRESERVED","TASK_READ_BUDGET_REQUIRES_EXPLANATION","MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","CONTRACT_ROUTE_CLOSURE","GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS","DIAGNOSTIC_SECRET_FLOW_EXPLICIT","EXECUTION_EVIDENCE_TAXONOMY"],
+      "requiredAssertions": ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","SET_BASED_COLLECTION_READS","OWNER_LOCAL_EFFICIENCY_REPAIR","EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY","COMMAND_CORRECTNESS_COST_PRESERVED","TASK_READ_BUDGET_REQUIRES_EXPLANATION","MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","CONTRACT_ROUTE_CLOSURE","GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS","DIAGNOSTIC_SECRET_FLOW_EXPLICIT","EXECUTION_EVIDENCE_TAXONOMY"],
       "assertionSources": [
         {"assertionKey":"HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"# 1. 决策与目标"},
         {"assertionKey":"SET_BASED_COLLECTION_READS","path":"PLATFORM-BLUEPRINT.md","anchor":"## HTTP CRUD 效率设计红线"},
         {"assertionKey":"OWNER_LOCAL_EFFICIENCY_REPAIR","path":"PLATFORM-BLUEPRINT.md","anchor":"## HTTP CRUD 效率设计红线"},
+        {"assertionKey":"EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY","path":"doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md","anchor":"## Decided owner-boundary pattern"},
         {"assertionKey":"COMMAND_CORRECTNESS_COST_PRESERVED","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"# 6. 明确不做"},
         {"assertionKey":"TASK_READ_BUDGET_REQUIRES_EXPLANATION","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### B.6 性能"},
         {"assertionKey":"MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 3.3 两层指标"},
@@ -144,7 +145,7 @@
         {"assertionKey":"DIAGNOSTIC_SECRET_FLOW_EXPLICIT","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 5.1 受管执行分类与敏感数据流"},
         {"assertionKey":"EXECUTION_EVIDENCE_TAXONOMY","path":"doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","anchor":"## 5.1 受管执行分类与敏感数据流"}
       ],
-      "sourceRefs": ["PLATFORM-BLUEPRINT.md","doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+      "sourceRefs": ["PLATFORM-BLUEPRINT.md","doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md","doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md","doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
     },
     {
       "id": "decisions.distributed-topology-is-not-current",
@@ -196,7 +197,7 @@
       "path": "project-memory/operations/dev-command-separation.md",
       "layer": "routed",
       "route": {"taskKinds":["runtime-management","testing"],"domains":["platform","backend"],"consumerFaces":["all"],"owners":["platform"],"impacts":["runtime","database","cleanup"],"triggers":["runtime","failure"]},
-      "requiredAssertions": ["START_RESTART_MIGRATE","START_RESTART_NO_SEED","RESET_SEPARATE_DESTRUCTIVE","LOCAL_EXECUTION_REMOTE_MIDDLEWARE","CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP","UAT_ALL_REMOTE_EXECUTION","REMOTE_TESTCONTAINERS_NOT_BROWSER_L2"],
+      "requiredAssertions": ["START_RESTART_MIGRATE","START_RESTART_NO_SEED","RESET_SEPARATE_DESTRUCTIVE","LOCAL_EXECUTION_REMOTE_MIDDLEWARE","CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP","UAT_ALL_REMOTE_EXECUTION","REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS"],
       "assertionSources": [
         {"assertionKey":"START_RESTART_MIGRATE","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"},
         {"assertionKey":"START_RESTART_NO_SEED","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"},
@@ -204,9 +205,11 @@
         {"assertionKey":"LOCAL_EXECUTION_REMOTE_MIDDLEWARE","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"UAT_ALL_REMOTE_EXECUTION","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
-        {"assertionKey":"REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"}
+        {"assertionKey":"REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
+        {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"},
+        {"assertionKey":"TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS","path":"scripts/README.md","anchor":"### 日常 Testcontainers 发现与进度"}
       ],
-      "sourceRefs": ["AGENTS.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+      "sourceRefs": ["AGENTS.md","doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","scripts/README.md"]
     },
     {
       "id": "operations.roadmap-control-transfer",
@@ -327,6 +330,38 @@
         {"assertionKey":"BOUNDED_PREPARATION_FOR_CURRENT_CHANGE","path":"doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md","anchor":"## 5. 2026-07-30 逐点实施与复核纪律"}
       ],
       "sourceRefs": ["doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"]
+    },
+    {
+      "id": "operations.test-closed-loop",
+      "path": "project-memory/operations/test-closed-loop.md",
+      "layer": "routed",
+      "route": {"taskKinds":["implementation","testing","review"],"domains":["platform","backend","contract","admin-ui"],"consumerFaces":["all"],"owners":["platform","backend","frontend-platform"],"impacts":["evidence","governance","runtime","cleanup"],"triggers":["implementation","review","failure"]},
+      "requiredAssertions": ["TESTS_MUST_HAVE_EXECUTION_RECEIPT","STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION"],
+      "assertionSources": [
+        {"assertionKey":"TESTS_MUST_HAVE_EXECUTION_RECEIPT","path":"doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","anchor":"### THCL-04｜测试入口与自满足假绿"},
+        {"assertionKey":"STATIC_PASS_NOT_DYNAMIC_PASS","path":"doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","anchor":"本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器 / UAT / 部署；不得据此宣称任何动态、业务、cleanup 或性能结果。Java 测试、Testcontainers、L2 三层本次未执行，相关判断均为静态。"},
+        {"assertionKey":"FAILURE_TAXONOMY_IS_TYPED","path":"doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","anchor":"- heartbeat 进入 stall discriminator；readiness progress、terminal/preflight evidence、JSON `Content-Type` materialization 和 firstFailure 原码逐层透传都以 run manifest/report 为唯一事实。"},
+        {"assertionKey":"LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","path":"project-memory/operations/verification-governance.md","anchor":"- `TEST_HEALTH_CLOSED_LOOP`: 测试健康闭环以有限执行分母、真实 receipt、断言级 oracle、typed first failure、前置迁移后退役和静态/动态边界分离为 review checklist；它不改变 `rules[]`、不替代语义 review，也不授权动态环境。"},
+        {"assertionKey":"LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","path":"scripts/check/backend-performance-sql-merge-coverage","anchor":"const hostExtensionFixturePaths = ["},
+        {"assertionKey":"TESTS_MUST_HAVE_EXECUTION_RECEIPT","path":"scripts/test/test-health-entry-runner.mjs","anchor":"  const discoveredSet = new Set(discovered);"},
+        {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"}
+      ],
+      "sourceRefs": ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","project-memory/operations/verification-governance.md","scripts/check/backend-performance-sql-merge-coverage","scripts/test/test-health-entry-runner.mjs"]
+    },
+    {
+      "id": "pitfalls.green-by-existence-check",
+      "path": "project-memory/pitfalls/green-by-existence-check.md",
+      "layer": "routed",
+      "route": {"taskKinds":["implementation","testing","review"],"domains":["platform","backend","contract","admin-ui"],"consumerFaces":["all"],"owners":["platform","backend","frontend-platform"],"impacts":["evidence","governance"],"triggers":["implementation","review","failure"]},
+      "requiredAssertions": ["EXISTENCE_IS_NOT_EXECUTION","EXACT_DENOMINATOR_REQUIRED","EMPTY_GLOB_MUST_FAIL"],
+      "assertionSources": [
+        {"assertionKey":"EXISTENCE_IS_NOT_EXECUTION","path":"doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","anchor":"## 3. C3 · 绿了是真的好"},
+        {"assertionKey":"EXACT_DENOMINATOR_REQUIRED","path":"doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","anchor":"### THCL-02｜ACTIVE 执行 exact-set 与 orphan disposition"},
+        {"assertionKey":"EXACT_DENOMINATOR_REQUIRED","path":"project-memory/operations/verification-governance.md","anchor":"- `TEST_HEALTH_CLOSED_LOOP`: 测试健康闭环以有限执行分母、真实 receipt、断言级 oracle、typed first failure、前置迁移后退役和静态/动态边界分离为 review checklist；它不改变 `rules[]`、不替代语义 review，也不授权动态环境。"},
+        {"assertionKey":"EXACT_DENOMINATOR_REQUIRED","path":"scripts/check/backend-performance-sql-merge-coverage","anchor":"function validateHostExtensionFixtureSet(fixturePaths = hostExtensionFixturePaths) {"},
+        {"assertionKey":"EMPTY_GLOB_MUST_FAIL","path":"scripts/test/test-health-entry-runner.mjs","anchor":"  const broadNodeGlob = [\"**\", \"/*.test.mjs\"].join(\"\");"}
+      ],
+      "sourceRefs": ["doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","project-memory/operations/verification-governance.md","scripts/check/backend-performance-sql-merge-coverage","scripts/test/test-health-entry-runner.mjs"]
     }
   ]
 }

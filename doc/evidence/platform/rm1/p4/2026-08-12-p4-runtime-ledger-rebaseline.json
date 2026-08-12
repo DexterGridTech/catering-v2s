@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "p4-runtime-ledger-rebaseline",
+  "status": "PASS",
+  "problemFamilyId": "P4_LEDGER_EXECUTION_AUTHORITY",
+  "rootCauseClass": "DUPLICATED_PERFORMANCE_CONTRACT_WITHOUT_EXECUTABLE_AUTHORITY_BINDING",
+  "authority": {
+    "canonicalLedger": "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+    "executableTest": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+    "scanner": "tools/performance/canonical-ledger-scanner.mjs",
+    "ownerSources": [
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main",
+      "apps/backend/catering-business-server/modules/organization/src/main"
+    ]
+  },
+  "denominator": {
+    "canonicalRows": 25,
+    "exactSqlCases": 49,
+    "namedExecutableOperations": 25,
+    "candidateScanCount": 721,
+    "candidateScanFingerprint": "86515aa2e1af801e1aa561447d0f5f50b00a1e6d8267a994891b36fb0dbecddf"
+  },
+  "firstFailure": {
+    "runId": "r5-tc-1786466923397-4238",
+    "business": "FAIL",
+    "cleanup": "PASS",
+    "signal": "S6#FIRST_CALL expected=11 actual=8; S6#SECOND_CALL expected=11 actual=8",
+    "evidence": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1786466923397-4238/TEST-database.P4SqlOperationBudgetTest.xml"
+  },
+  "rootCause": {
+    "confirmed": true,
+    "summary": "The executable test and canonical ledger had independently maintained numeric budgets. Current owner implementations had already removed bounded duplicate reads, but the ledger retained historical exact values, so the real-call test correctly exposed stale expectations.",
+    "repair": [
+      "Removed local numeric budget parameters from assertFixed and assertExactLedgerBudget; expectedStatements now comes only from the canonical ledger.",
+      "Reopened the affected owner source paths and updated exact budgets only after real SQL measurement and semantic assertions remained valid.",
+      "Rebound the candidate-scan count and fingerprint to the current deterministic source/test roots, preserving fail-closed drift detection."
+    ]
+  },
+  "affectedRows": [
+    {"id": "M12", "oldExact": 2, "newExact": 1, "ownerBoundary": "OrganizationCommandService#describeCommercialGroup", "semanticInvariant": "fixed <= 1 SQL"},
+    {"id": "S1", "caseId": "SELECT_A100", "oldExact": 12, "newExact": 11, "ownerBoundary": "WorkspaceAuthenticationService#login", "semanticInvariant": "SELECT A=100 <= 11 SQL; direct remains <= 14 SQL"},
+    {"id": "S2", "oldExact": 9, "newExact": 8, "ownerBoundary": "WorkspaceAuthenticationService#sessionEntry", "semanticInvariant": "fixed <= 8 SQL"},
+    {"id": "S3", "oldExact": 7, "newExact": 5, "ownerBoundary": "WorkspaceInvitationService#managementPage", "semanticInvariant": "fixed owner page budget with no record-count or page-size amplification"},
+    {"id": "S4", "oldExact": 5, "newExact": 3, "ownerBoundary": "WorkspaceInvitationService#managementView", "semanticInvariant": "fixed <= 3 SQL"},
+    {"id": "S5", "oldExact": 22, "newExact": 16, "ownerBoundary": "WorkspaceUserService#candidates", "semanticInvariant": "fixed <= 16 SQL"},
+    {"id": "S6", "oldExact": 11, "newExact": 8, "ownerBoundary": "WorkspaceInvitationService#managementPageForOperations", "semanticInvariant": "fixed owner page budget with no record-count or page-size amplification"},
+    {"id": "O1", "oldExact": 17, "newExact": 12, "ownerBoundary": "WorkspaceUserService#page operations scope", "semanticInvariant": "fixed <= 12 SQL"},
+    {"id": "O2", "oldExact": 12, "newExact": 8, "ownerBoundary": "WorkspaceUserService#page platform scope", "semanticInvariant": "fixed <= 8 SQL"},
+    {"id": "O5", "oldExact": 5, "newExact": 4, "ownerBoundary": "OrganizationAssignmentCandidateService#listEnabled", "semanticInvariant": "fixed <= 4 SQL"}
+  ],
+  "verification": {
+    "static": [
+      "node tools/performance/canonical-ledger-scanner.mjs check => PASS",
+      "node tools/performance/canonical-ledger-scanner.mjs --self-test => PASS",
+      "canonical ledger JSON parse => PASS"
+    ],
+    "focusedRun": {
+      "runId": "r5-tc-1786467145676-4950",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "durationMs": 144510,
+      "tests": "4/4",
+      "sqlCases": "49/49",
+      "evidence": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1786467145676-4950"
+    }
+  },
+  "prevention": {
+    "canonicalLedgerIsSoleExpectedBudgetSource": true,
+    "exactCaseSetIsDerivedFromLedger": true,
+    "realProductionCallRequired": true,
+    "candidateScanDriftIsFailClosed": true,
+    "sameFamilyRule": "Any future P4 owner read change must reopen the affected source family, rescan the finite denominator, preserve semantic assertions, and update this ledger only from measured source-backed evidence."
+  }
+}

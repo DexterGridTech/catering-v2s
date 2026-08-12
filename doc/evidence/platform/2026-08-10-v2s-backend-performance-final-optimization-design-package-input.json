@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-optimization-design-package-input",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-OPTIMIZATION-DESIGN-20260810",
+  "status": "ACTIVE_NOT_EXIT",
+  "authorization": "Dexter authorized implementation-facing design only on 2026-08-10; all implementation and dynamic authority remain false.",
+  "authoritativeInput": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+    "sha256": "fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b"
+  },
+  "scope": {
+    "includedUnits": [
+      "one permanent declaration-and-topology standard for current and future backend operations",
+      "all 196 current operation shapes and implementation sequencing",
+      "Claude M-01/M-02/S-01/S-02 remediation evidence, global closed mandatory-gate design and 45-row current-anchor rederivation",
+      "two-report seed comparison design and immutable snapshot structural proof design",
+      "independent DESIGN review and Claude review handoff",
+      "implementation-session handoff only; no static implementation package admission or source implementation",
+      "Roadmap CURRENT_* status correction after the design GO; no implementation or dynamic action"
+    ],
+    "excludedUnits": [
+      "production implementation", "runtime", "DEV", "reset", "seed", "L2", "Testcontainers", "UAT", "deployment", "manual SQL", "SSH"
+    ]
+  },
+  "denominators": {
+    "operationBindings": 196,
+    "commands": 113,
+    "reads": 83,
+    "m1WorkspaceExecutionCommands": 68,
+    "platformOwnerCommands": 20,
+    "platformProtocolCommands": 9,
+    "workspaceProtocolCommands": 7,
+    "publicProtocolCommands": 9,
+    "taskReads": 78,
+    "protocolReadExemptions": 5
+  },
+  "forbidden": [
+    "treating an estimate as a performance result",
+    "removing correctness controls to reduce database operations",
+    "global numeric caps for task reads",
+    "request or global cache as a substitute for fresh authorization facts",
+    "cross-owner direct query or cross-schema broad query",
+    "altering BP-U06"
+  ]
+}

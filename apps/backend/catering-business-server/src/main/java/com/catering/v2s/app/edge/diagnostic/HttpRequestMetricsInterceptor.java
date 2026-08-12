@@ -220,6 +220,7 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                     if (operation.callSite() != null) value.put("callSite", operation.callSite());
                     if (operation.statementId() != null) value.put("statementId", operation.statementId());
                     if (operation.paramsHash() != null) value.put("paramsHash", operation.paramsHash());
+                    if (mode == Mode.BACKEND_PERFORMANCE_FINAL) value.put("serverOperationHmac", serverOperationHmac(state, operation));
                     lines.append(mapper.writeValueAsString(value)).append('\n');
                 }
                 Files.writeString(databaseOperationsPath, lines.toString(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -340,6 +341,17 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception failure) {
             throw new IllegalStateException("final evidence HMAC unavailable", failure);
+        }
+    }
+
+    private String serverOperationHmac(State state, DatabaseOperationTracker.Operation operation) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(databaseOperationHmacKey, "HmacSHA256"));
+            String canonical = String.join("\u0000", runId, state.context().correlationId(), state.context().requestId(), state.context().operationId(), Long.toString(operation.seq()), operation.section().name(), operation.kind(), operation.action(), operation.statementId() == null ? "" : operation.statementId());
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception failure) {
+            throw new IllegalStateException("final database operation HMAC unavailable", failure);
         }
     }
 

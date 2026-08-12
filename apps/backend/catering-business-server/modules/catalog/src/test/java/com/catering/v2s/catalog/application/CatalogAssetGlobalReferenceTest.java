@@ -70,6 +70,11 @@ class CatalogAssetGlobalReferenceTest {
         assertFalse(catalog.assetReferencedAnywhere(SHARED_ASSET));
     }
 
+    @Test void batchGlobalReferenceJudgmentKeepsCrossScopeSemantics() {
+        String absent = UUID.randomUUID().toString();
+        assertEquals(java.util.Set.of(SHARED_ASSET), catalog.assetRefsStillReferenced(java.util.Set.of(SHARED_ASSET, absent)));
+    }
+
     @Test void releaseAndCrossScopeReuseSerializeOnTheSameAssetRef() throws Exception {
         UUID assetRef = UUID.randomUUID();
         String suffix = assetRef.toString().substring(0, 8);
@@ -110,7 +115,7 @@ class CatalogAssetGlobalReferenceTest {
             allowRelease.countDown();
             remover.get(3, TimeUnit.SECONDS);
             ExecutionException rejected = assertThrows(ExecutionException.class, () -> reuser.get(3, TimeUnit.SECONDS));
-            assertTrue(rejected.getCause() instanceof PlatformAssetService.AssetClaimRejectedException);
+            assertTrue(hasCause(rejected, PlatformAssetService.AssetClaimRejectedException.class), () -> "unexpected concurrent reuser failure chain: " + causeChain(rejected));
             assertFalse(catalog.assetReferencedAnywhere(assetRef.toString()));
             assertEquals("RELEASED", assets.require(assetRef).status());
         } finally {
@@ -134,8 +139,8 @@ class CatalogAssetGlobalReferenceTest {
     }
 
     private static com.fasterxml.jackson.databind.node.ObjectNode saveRequest(String itemCode, UUID assetRef) {
-        ObjectNode request = new ObjectMapper().createObjectNode().put("itemCode", itemCode).put("expectedVersion", 1L);
-        request.putObject("sections").putObject("catalogDraft").putArray("images").addObject().put("assetRef", assetRef.toString());
+        ObjectNode request = new ObjectMapper().createObjectNode().put("itemCode", itemCode);
+        request.putObject("sections").put("expectedCatalogVersion", 1L).putObject("catalogDraft").putArray("images").addObject().put("assetRef", assetRef.toString());
         return request;
     }
 
@@ -150,6 +155,22 @@ class CatalogAssetGlobalReferenceTest {
             Thread.currentThread().interrupt();
             throw new AssertionError(failure);
         }
+    }
+
+    private static boolean hasCause(Throwable failure, Class<? extends Throwable> expected) {
+        for (Throwable current = failure; current != null && current.getCause() != current; current = current.getCause()) {
+            if (expected.isInstance(current)) return true;
+        }
+        return false;
+    }
+
+    private static String causeChain(Throwable failure) {
+        StringBuilder chain = new StringBuilder();
+        for (Throwable current = failure; current != null && current.getCause() != current; current = current.getCause()) {
+            if (!chain.isEmpty()) chain.append(" -> ");
+            chain.append(current.getClass().getSimpleName());
+        }
+        return chain.toString();
     }
 
     private static final class NoopObjects implements AssetObjectStorage {

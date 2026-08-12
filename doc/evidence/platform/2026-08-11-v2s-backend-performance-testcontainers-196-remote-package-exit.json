@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-TESTCONTAINERS-196-REMOTE-20260811",
+  "kind": "backend-performance-testcontainers-196-remote-package-exit",
+  "status": "PENDING_RUNNER_PREPARATION",
+  "staticProofStatus": "PENDING",
+  "dynamicAdmission": "NOT_ADMITTED",
+  "businessStatus": "NOT_RUN",
+  "cleanupStatus": "NOT_RUN",
+  "reportStatus": "NOT_CREATED",
+  "reviewStatus": "PENDING_FINAL_DYNAMIC_EVIDENCE",
+  "observedInputState": {
+    "semantics": "CURRENT_PACKAGE_EXIT_INPUT_BYTES",
+    "semanticsDetail": "exitSha256 is the exact current byte state for every input descriptor; it must equal both the current file and the package input current-state hash, while legal entry drift remains explicitly documented rather than rebased.",
+    "entries": {
+      "bindings": {"path": "contracts/registry/operation-handler-bindings.json", "exitSha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"},
+      "sourceInventory": {"path": "contracts/registry/backend-performance-operation-source-inventory.json", "exitSha256": "80bb1575a621eada962c5b933bdd22002f8f53f630bc99814d525c419afb7daf"},
+      "shapeMatrix": {"path": "contracts/registry/backend-performance-operation-database-shape-matrix.json", "exitSha256": "318edda959bf0e50250c209b9f77fab783104959a1b356be0659151e11bec7ce"},
+      "loaderCatalogue": {"path": "contracts/registry/backend-performance-fact-loader-catalog.json", "exitSha256": "49b9254d8db1e320c82c0f83f84cc7d8fa4422c2f630595e079ab4db81bf2fea"},
+      "fixtureCatalog": {"path": "contracts/policy/backend-performance-final-fixture-catalog.json", "exitSha256": "3ed047efd573acfe567a42dc358c8a4967cfe6fc535097450b9bd17f8365742f"},
+      "testcontainersPlan": {"path": "contracts/policy/backend-performance-testcontainers-plan.json", "exitSha256": "8ecd9c3e13ad30bbcb9453c268056145e6b823fb4eb62f2dce8909fcb324c7bb"}
+    },
+    "legalEntryDriftDispositions": [
+      {
+        "inputId": "sourceInventory",
+        "path": "contracts/registry/backend-performance-operation-source-inventory.json",
+        "entrySha256": "3b4e7c91e64e27a32d7f4bce89319c327f2118592e77e8cf7fe067fb773bab61",
+        "exitSha256": "80bb1575a621eada962c5b933bdd22002f8f53f630bc99814d525c419afb7daf",
+        "disposition": "ALLOWED_IN_PACKAGE_SCOPE_CHANGE",
+        "reason": "BPF-U01 static remediation updated the authoritative 196-row source inventory within this package approved change surface; the immutable entry snapshot remains retained for reviewer comparison."
+      },
+      {
+        "inputId": "shapeMatrix",
+        "path": "contracts/registry/backend-performance-operation-database-shape-matrix.json",
+        "entrySha256": "e6168feb40695caf3ae09a4cf7adbc8e52b2b501e86040bc9c0a15ea92d50a90",
+        "exitSha256": "318edda959bf0e50250c209b9f77fab783104959a1b356be0659151e11bec7ce",
+        "disposition": "ALLOWED_IN_PACKAGE_SCOPE_CHANGE",
+        "reason": "BPF-U01 static remediation regenerated the database-shape matrix from the corrected authoritative inventory within this package approved change surface; the immutable entry snapshot remains retained for reviewer comparison."
+      }
+    ]
+  },
+  "changedPaths": [],
+  "requiredTerminalEvidence": {
+    "reportKind": "REMOTE_TESTCONTAINERS",
+    "business": "196/196 request/event-joined operation rows and all 14 grouped scenarios PASS",
+    "cleanup": "owned remote containers, volumes, process identity, scratch root and terminal manifest PASS",
+    "runtime": "managed runner manifest/log first-failure fields read and retained"
+  },
+  "nonClaims": [
+    "not browser L2",
+    "not UAT",
+    "not DEV",
+    "not seed",
+    "not reset",
+    "not final implementation review"
+  ]
+}

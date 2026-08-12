@@ -9,8 +9,10 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -24,7 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class OrganizationHierarchyService implements OrganizationNodeLookup {
+public class OrganizationHierarchyService implements OrganizationNodeLookup, OperationsOrganizationHierarchyCommandApi {
     /** The commercial group is the logical root. Only its REGION and PROJECT descendants are organization nodes. */
     private static final List<String> NODE_TYPES = List.of(OrganizationNodeTypes.REGION, OrganizationNodeTypes.PROJECT);
     private final JdbcTemplate jdbc;
@@ -52,6 +54,45 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
     /** Compatibility construction only; post-auth hierarchy commands no longer read workspace status. */
     public OrganizationHierarchyService(JdbcTemplate jdbc, TimeProvider time, OrganizationHierarchyCommandReceiptService receipts, WorkspaceStatusLookup ignoredWorkspaceStatus, CommercialGroupLookup commercialGroups, ExtensionDefinitionLookup definitions) {
         this(jdbc, time, receipts, commercialGroups, definitions);
+    }
+
+    @Override
+    @Transactional
+    public OrganizationNodeReadback createRegion(CreateRegionCommand command) {
+        requireCommercialGroup(command.workspaceUuid(), command.groupWorkspaceKey(), command.ownerScopeGrant());
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical(
+            "createRegion", command.workspaceUuid(), command.groupWorkspaceKey(), command.code(), command.name(), command.notes(), extensionCanonical(command.extensionSubmission())
+        ), () -> create(
+            command.workspaceUuid(), command.groupWorkspaceKey(), OrganizationNodeTypes.REGION, null,
+            command.code(), command.name(), command.notes(), List.of(), command.extensionSubmission(), command.actor()
+        ));
+    }
+
+    @Override
+    @Transactional
+    public OrganizationNodeReadback createProject(CreateProjectCommand command) {
+        requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), command.regionId(), OrganizationNodeTypes.REGION, command.ownerScopeGrant());
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical(
+            "createProject", command.workspaceUuid(), command.groupWorkspaceKey(), command.regionId(), command.code(), command.name(), command.notes(), command.phaseNames(), extensionCanonical(command.extensionSubmission())
+        ), () -> create(
+            command.workspaceUuid(), command.groupWorkspaceKey(), OrganizationNodeTypes.PROJECT, command.regionId(),
+            command.code(), command.name(), command.notes(), command.phaseNames(), command.extensionSubmission(), command.actor(), true
+        ));
+    }
+
+    @Override
+    @Transactional
+    public OrganizationNodeReadback updateNode(UpdateNodeCommand command) {
+        OrganizationNodeReadback current = requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), null, command.ownerScopeGrant());
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical(
+            "update", command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), command.code(), command.name(), command.parentId(), command.notes(), command.phaseNames(), command.expectedVersion(), extensionCanonical(command.extensionSubmission())
+        ), () -> updateWithSubmission(command, current));
+    }
+
+    @Override
+    @Transactional
+    public OrganizationNodeReadback transitionNodeStatus(TransitionNodeStatusCommand command) {
+        return transitionStatus(command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), command.expectedVersion(), command.targetStatus(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
     }
 
     @Transactional
@@ -83,6 +124,35 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         validateParent(workspaceUuid, groupWorkspaceKey, type, parentId);
         List<String> phases = normalizedPhases(type, phaseNames);
         ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, type, "{}", extensionValues);
+        UUID id = UUID.randomUUID();
+        long now = time.currentEpochMillis();
+        jdbc.update(
+            "INSERT INTO organization.organization_node (id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, phase_names, status, version, created_at_epoch_millis, updated_at_epoch_millis, extension_values, extension_rule_revision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST('[]' AS JSONB), 'ENABLED', 1, ?, ?, CAST(? AS JSONB), ?)",
+            id, workspaceUuid, groupWorkspaceKey, parentId, type, requiredText(code, 64), requiredText(name, 120), optionalNotes(notes), now, now, extensions.json(), extensions.revision()
+        );
+        replacePhases(id, phases);
+        OrganizationNodeReadback created = requireNode(workspaceUuid, groupWorkspaceKey, id, type);
+        audit(workspaceUuid, groupWorkspaceKey, id, "ORGANIZATION_NODE_CREATED", now, actor, "[{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"}]");
+        return created;
+    }
+
+    /** Typed owner-boundary variant; legacy map-shaped entry points remain only for migration callers. */
+    private OrganizationNodeReadback create(
+        UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name,
+        String notes, List<String> phaseNames, ExtensionSubmission extensionSubmission, AuditActor actor
+    ) {
+        return create(workspaceUuid, groupWorkspaceKey, nodeType, parentId, code, name, notes, phaseNames, extensionSubmission, actor, false);
+    }
+
+    /** The typed project command has already bound this parent in the owner before receipt replay. */
+    private OrganizationNodeReadback create(
+        UUID workspaceUuid, String groupWorkspaceKey, String nodeType, UUID parentId, String code, String name,
+        String notes, List<String> phaseNames, ExtensionSubmission extensionSubmission, AuditActor actor, boolean parentAlreadyValidated
+    ) {
+        String type = requiredType(nodeType);
+        if (!parentAlreadyValidated) validateParent(workspaceUuid, groupWorkspaceKey, type, parentId);
+        List<String> phases = normalizedPhases(type, phaseNames);
+        ExtensionValues extensions = extensionValues(workspaceUuid, groupWorkspaceKey, type, "{}", extensionSubmission);
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         jdbc.update(
@@ -291,6 +361,20 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
         return updated;
     }
 
+    private OrganizationNodeReadback updateWithSubmission(UpdateNodeCommand command, OrganizationNodeReadback current) {
+        ExtensionValues extensions = extensionValues(
+            command.workspaceUuid(), command.groupWorkspaceKey(), current.nodeType(), valuesJson(current.extensionValues()), command.extensionSubmission()
+        );
+        if (!Objects.equals(current.parentId(), command.parentId()) || current.version() != command.expectedVersion() || jdbc.update(
+            "UPDATE organization.organization_node SET code=?, name=?, notes=?, extension_values=CAST(? AS JSONB), extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?",
+            requiredText(command.code(), 64), requiredText(command.name(), 120), optionalNotes(command.notes()), extensions.json(), extensions.revision(), time.currentEpochMillis(), command.nodeId(), command.workspaceUuid(), command.groupWorkspaceKey(), command.expectedVersion()
+        ) != 1) throw new OrganizationConflictException();
+        replacePhases(command.nodeId(), normalizedPhases(current.nodeType(), command.phaseNames()));
+        OrganizationNodeReadback updated = requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), null);
+        audit(command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), "ORGANIZATION_NODE_UPDATED", time.currentEpochMillis(), command.actor(), "[{\"fieldKey\":\"name\",\"before\":\"" + json(current.name()) + "\",\"after\":\"" + json(updated.name()) + "\"}]");
+        return updated;
+    }
+
     @Transactional
     public OrganizationNodeReadback update(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String code, String name, UUID parentId, String notes, List<String> phaseNames, long expectedVersion, String idempotencyKey) {
         return receipts.execute(workspaceUuid, idempotencyKey, canonical("update", workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion), () -> update(workspaceUuid, groupWorkspaceKey, nodeId, code, name, parentId, notes, phaseNames, expectedVersion));
@@ -445,6 +529,23 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
             throw new OrganizationValidationException();
         }
     }
+
+    private ExtensionValues extensionValues(UUID workspaceUuid, String groupWorkspaceKey, String hostType, String currentValuesJson, ExtensionSubmission submission) {
+        ExtensionSubmission requested = submission == null ? new ExtensionSubmission(List.of()) : submission;
+        if (definitions == null) {
+            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationValidationException();
+        }
+        try {
+            ExtensionDefinitionReadback definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+            return new ExtensionValues(ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested), definition.version());
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
+            throw new OrganizationValidationException();
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException();
+        }
+    }
     private static String valuesJson(Map<String, String> values) {
         try {
             com.fasterxml.jackson.databind.node.ObjectNode object = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
@@ -454,6 +555,12 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup {
             });
             return object.toString();
         } catch (OrganizationValidationException failure) { throw failure; }
+    }
+    private static String extensionCanonical(ExtensionSubmission submission) {
+        return submission.fields().stream()
+            .sorted(java.util.Comparator.comparing(ExtensionSubmission.ExtensionFieldValue::fieldKey))
+            .map(value -> value.fieldKey() + "=" + value.mode() + "=" + value.valueJson())
+            .collect(java.util.stream.Collectors.joining("\\u001f"));
     }
     private void audit(UUID workspaceUuid, String key, UUID nodeId, String action, long occurredAt, AuditActor actor, String changesJson) {
         jdbc.update("INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'ORGANIZATION_NODE', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, key, nodeId.toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, occurredAt, AuditChangeJson.write(AuditChangeJson.read(changesJson)));

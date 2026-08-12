@@ -4,6 +4,7 @@ import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 
 import com.catering.v2s.app.edge.catalog.OrganizationEntityType;
 import com.catering.v2s.app.edge.generated.wire.Brand;
+import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.BrandCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.BrandPage;
 import com.catering.v2s.app.edge.generated.wire.BrandPageMetadata;
@@ -26,16 +27,25 @@ import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.extension.api.ExtensionSubmission;
+import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.CreateOperationsOrganizationBrandOperation;
+import com.catering.v2s.organization.application.CreateOperationsOrganizationHeadCompanyOperation;
+import com.catering.v2s.organization.application.CreateOperationsOrganizationTenantOperation;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
+import com.catering.v2s.organization.application.TransitionOperationsOrganizationHeadCompanyStatusOperation;
+import com.catering.v2s.organization.application.UpdateOperationsOrganizationBrandOperation;
+import com.catering.v2s.organization.application.UpdateOperationsOrganizationHeadCompanyOperation;
+import com.catering.v2s.organization.application.UpdateOperationsOrganizationTenantOperation;
+import com.catering.v2s.organization.application.TransitionOperationsOrganizationBrandStatusOperation;
+import com.catering.v2s.organization.application.TransitionOperationsOrganizationTenantStatusOperation;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
-import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,10 +66,29 @@ public final class OperationsBusinessEntityController {
     private final BusinessEntityService entities;
     private final WorkspaceCapabilityScopeResolver capabilityScopes;
     private final OperationsOrganizationTaskReadService reads;
+    private final CreateOperationsOrganizationBrandOperation createBrandOperation;
+    private final UpdateOperationsOrganizationBrandOperation updateBrandOperation;
+    private final CreateOperationsOrganizationTenantOperation createTenantOperation;
+    private final UpdateOperationsOrganizationTenantOperation updateTenantOperation;
+    private final CreateOperationsOrganizationHeadCompanyOperation createHeadCompanyOperation;
+    private final UpdateOperationsOrganizationHeadCompanyOperation updateHeadCompanyOperation;
+    private final TransitionOperationsOrganizationHeadCompanyStatusOperation transitionHeadCompanyStatusOperation;
+    private final TransitionOperationsOrganizationBrandStatusOperation transitionBrandStatusOperation;
+    private final TransitionOperationsOrganizationTenantStatusOperation transitionTenantStatusOperation;
+    private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
 
     /** Legacy focused-test constructor; production uses the explicit GET-only task reader. */
     public OperationsBusinessEntityController(OperationsSessionResolver sessions, BusinessEntityService entities, WorkspaceCapabilityScopeResolver capabilityScopes) {
-        this(sessions, entities, capabilityScopes, new OperationsOrganizationTaskReadService(entities, null));
+        this(sessions, entities, capabilityScopes, new OperationsOrganizationTaskReadService(entities, null),
+            new CreateOperationsOrganizationBrandOperation(entities), new UpdateOperationsOrganizationBrandOperation(entities),
+            new CreateOperationsOrganizationTenantOperation(entities), new UpdateOperationsOrganizationTenantOperation(entities),
+            new CreateOperationsOrganizationHeadCompanyOperation(entities), new UpdateOperationsOrganizationHeadCompanyOperation(entities),
+            new TransitionOperationsOrganizationHeadCompanyStatusOperation(entities), new TransitionOperationsOrganizationBrandStatusOperation(entities), new TransitionOperationsOrganizationTenantStatusOperation(entities),
+            BackendPerformanceM1CommandExecutionBindings.forBusinessEntity(
+                new CreateOperationsOrganizationBrandOperation(entities), new UpdateOperationsOrganizationBrandOperation(entities),
+                new CreateOperationsOrganizationTenantOperation(entities), new UpdateOperationsOrganizationTenantOperation(entities),
+                new CreateOperationsOrganizationHeadCompanyOperation(entities), new UpdateOperationsOrganizationHeadCompanyOperation(entities),
+                new TransitionOperationsOrganizationHeadCompanyStatusOperation(entities), new TransitionOperationsOrganizationBrandStatusOperation(entities), new TransitionOperationsOrganizationTenantStatusOperation(entities)));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -67,33 +96,53 @@ public final class OperationsBusinessEntityController {
         OperationsSessionResolver sessions,
         BusinessEntityService entities,
         WorkspaceCapabilityScopeResolver capabilityScopes,
-        OperationsOrganizationTaskReadService reads
+        OperationsOrganizationTaskReadService reads,
+        CreateOperationsOrganizationBrandOperation createBrandOperation,
+        UpdateOperationsOrganizationBrandOperation updateBrandOperation,
+        CreateOperationsOrganizationTenantOperation createTenantOperation,
+        UpdateOperationsOrganizationTenantOperation updateTenantOperation,
+        CreateOperationsOrganizationHeadCompanyOperation createHeadCompanyOperation,
+        UpdateOperationsOrganizationHeadCompanyOperation updateHeadCompanyOperation,
+        TransitionOperationsOrganizationHeadCompanyStatusOperation transitionHeadCompanyStatusOperation,
+        TransitionOperationsOrganizationBrandStatusOperation transitionBrandStatusOperation,
+        TransitionOperationsOrganizationTenantStatusOperation transitionTenantStatusOperation,
+        BackendPerformanceM1CommandExecutionBindings m1Bindings
     ) {
         this.sessions = sessions;
         this.entities = entities;
         this.capabilityScopes = capabilityScopes;
         this.reads = reads;
+        this.createBrandOperation = createBrandOperation;
+        this.updateBrandOperation = updateBrandOperation;
+        this.createTenantOperation = createTenantOperation;
+        this.updateTenantOperation = updateTenantOperation;
+        this.createHeadCompanyOperation = createHeadCompanyOperation;
+        this.updateHeadCompanyOperation = updateHeadCompanyOperation;
+        this.transitionHeadCompanyStatusOperation = transitionHeadCompanyStatusOperation;
+        this.transitionBrandStatusOperation = transitionBrandStatusOperation;
+        this.transitionTenantStatusOperation = transitionTenantStatusOperation;
+        this.m1Bindings = m1Bindings;
     }
 
     @PostMapping("/brands")
     ResponseEntity<Brand> createBrand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BrandCreateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        OrganizationEntityReadback result = create(session, groupWorkspaceKey, OrganizationEntityType.BRAND, body.code(), body.name(), null, null, body.alias(), body.remark(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey);
+        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationEntityReadback result = m1Bindings.bindCreateOperationsOrganizationBrand(new OperationsBusinessEntityCommandApi.BrandCreateCommand(session.workspaceUuid(), groupWorkspaceKey, body.code(), body.name(), body.alias(), body.remark(), brandCreateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
         return ResponseEntity.status(HttpStatus.CREATED).body(BusinessEntityWireMapper.brand(result));
     }
 
     @PostMapping("/tenants")
     ResponseEntity<Tenant> createTenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody TenantCreateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        OrganizationEntityReadback result = create(session, groupWorkspaceKey, OrganizationEntityType.TENANT, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), null, body.remark(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey);
+        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationEntityReadback result = m1Bindings.bindCreateOperationsOrganizationTenant(new OperationsBusinessEntityCommandApi.TenantCreateCommand(session.workspaceUuid(), groupWorkspaceKey, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), body.remark(), tenantCreateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
         return ResponseEntity.status(HttpStatus.CREATED).body(BusinessEntityWireMapper.tenant(result));
     }
 
     @PostMapping("/head-companies")
     ResponseEntity<HeadCompany> createHeadCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody HeadCompanyCreateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey);
-        OrganizationEntityReadback result = create(session, groupWorkspaceKey, OrganizationEntityType.HEAD_COMPANY, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), null, body.remark(), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey);
-        return ResponseEntity.status(HttpStatus.CREATED).body(headCompany(session, groupWorkspaceKey, result));
+        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        var result = m1Bindings.bindCreateOperationsOrganizationHeadCompany(new OperationsBusinessEntityCommandApi.HeadCompanyCreateCommand(session.workspaceUuid(), groupWorkspaceKey, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), body.remark(), headCompanyCreateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
+        return ResponseEntity.status(HttpStatus.CREATED).body(BusinessEntityWireMapper.headCompany(result.entity(), result.authorizedBrands()));
     }
 
     @GetMapping("/brands")
@@ -121,20 +170,16 @@ public final class OperationsBusinessEntityController {
     @GetMapping("/tenants/{tenantId}") Tenant tenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return BusinessEntityWireMapper.tenant(reads.tenant(session.workspaceUuid(), groupWorkspaceKey, tenantId)); }
     @GetMapping("/head-companies/{headCompanyId}") HeadCompany headCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion); return headCompany(reads.headCompany(session.workspaceUuid(), groupWorkspaceKey, headCompanyId)); }
 
-    @PatchMapping("/brands/{brandId}") Brand updateBrand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BrandUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.brand(update(session, groupWorkspaceKey, OrganizationEntityType.BRAND, brandId, body.code(), body.name(), null, null, body.alias(), body.remark(), required(body.expectedVersion()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey)); }
-    @PatchMapping("/tenants/{tenantId}") Tenant updateTenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody TenantUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.tenant(update(session, groupWorkspaceKey, OrganizationEntityType.TENANT, tenantId, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), null, body.remark(), required(body.expectedVersion()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey)); }
-    @PatchMapping("/head-companies/{headCompanyId}") HeadCompany updateHeadCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody HeadCompanyUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); OrganizationEntityReadback result = update(session, groupWorkspaceKey, OrganizationEntityType.HEAD_COMPANY, headCompanyId, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), null, body.remark(), required(body.expectedVersion()), BusinessEntityWireMapper.requestValues(body.extensionValues()), idempotencyKey); return headCompany(session, groupWorkspaceKey, result); }
+    @PatchMapping("/brands/{brandId}") Brand updateBrand(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BrandUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); return BusinessEntityWireMapper.brand(m1Bindings.bindUpdateOperationsOrganizationBrand(new OperationsBusinessEntityCommandApi.BrandUpdateCommand(session.workspaceUuid(), groupWorkspaceKey, brandId, body.code(), body.name(), body.alias(), body.remark(), required(body.expectedVersion()), brandUpdateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))))); }
+    @PatchMapping("/tenants/{tenantId}") Tenant updateTenant(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody TenantUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); return BusinessEntityWireMapper.tenant(m1Bindings.bindUpdateOperationsOrganizationTenant(new OperationsBusinessEntityCommandApi.TenantUpdateCommand(session.workspaceUuid(), groupWorkspaceKey, tenantId, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), body.remark(), required(body.expectedVersion()), tenantUpdateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))))); }
+    @PatchMapping("/head-companies/{headCompanyId}") HeadCompany updateHeadCompany(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody HeadCompanyUpdateRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); var result = m1Bindings.bindUpdateOperationsOrganizationHeadCompany(new OperationsBusinessEntityCommandApi.HeadCompanyUpdateCommand(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, body.code(), body.name(), body.legalName(), body.unifiedSocialCreditCode(), body.remark(), required(body.expectedVersion()), headCompanyUpdateSubmission(body.extensionValues()), idempotencyKey, actor(session), requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", ServiceNodeTypes.HEAD_COMPANY, headCompanyId))); return BusinessEntityWireMapper.headCompany(result.entity(), result.authorizedBrands()); }
 
-    @PostMapping("/brands/{brandId}/status") Brand brandStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.brand(transition(session, groupWorkspaceKey, OrganizationEntityType.BRAND, brandId, body, idempotencyKey)); }
-    @PostMapping("/tenants/{tenantId}/status") Tenant tenantStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return BusinessEntityWireMapper.tenant(transition(session, groupWorkspaceKey, OrganizationEntityType.TENANT, tenantId, body, idempotencyKey)); }
-    @PostMapping("/head-companies/{headCompanyId}/status") HeadCompany headCompanyStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { WorkspaceSessionReadback session = sessions.requireWorkspace(request, groupWorkspaceKey); return headCompany(session, groupWorkspaceKey, transition(session, groupWorkspaceKey, OrganizationEntityType.HEAD_COMPANY, headCompanyId, body, idempotencyKey)); }
+    @PostMapping("/brands/{brandId}/status") Brand brandStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID brandId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { if (body.targetStatus() == null) throw new InvalidEdgeRequestException("target status is required"); WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); return BusinessEntityWireMapper.brand(m1Bindings.bindTransitionOperationsOrganizationBrandStatus(new OperationsBusinessEntityCommandApi.BrandStatusCommand(session.workspaceUuid(), groupWorkspaceKey, brandId, body.targetStatus().wire(), required(body.expectedVersion()), idempotencyKey, actor(session), requireStatusTransitionCapability(session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))))); }
+    @PostMapping("/tenants/{tenantId}/status") Tenant tenantStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID tenantId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { if (body.targetStatus() == null) throw new InvalidEdgeRequestException("target status is required"); WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); return BusinessEntityWireMapper.tenant(m1Bindings.bindTransitionOperationsOrganizationTenantStatus(new OperationsBusinessEntityCommandApi.TenantStatusCommand(session.workspaceUuid(), groupWorkspaceKey, tenantId, body.targetStatus().wire(), required(body.expectedVersion()), idempotencyKey, actor(session), requireStatusTransitionCapability(session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS", ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))))); }
+    @PostMapping("/head-companies/{headCompanyId}/status") HeadCompany headCompanyStatus(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID headCompanyId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody BusinessEntityStatusRequest body) { if (body.targetStatus() == null) throw new InvalidEdgeRequestException("target status is required"); WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey); var result = m1Bindings.bindTransitionOperationsOrganizationHeadCompanyStatus(new OperationsBusinessEntityCommandApi.HeadCompanyStatusCommand(session.workspaceUuid(), groupWorkspaceKey, headCompanyId, body.targetStatus().wire(), required(body.expectedVersion()), idempotencyKey, actor(session), requireStatusTransitionCapability(session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS", ServiceNodeTypes.HEAD_COMPANY, headCompanyId))); return BusinessEntityWireMapper.headCompany(result.entity(), result.authorizedBrands()); }
 
-    private OrganizationEntityReadback create(WorkspaceSessionReadback session, String key, OrganizationEntityType type, String code, String name, String legalName, String creditCode, String alias, String remark, Map<String, String> extensionValues, String idempotencyKey) { return entities.createEntity(type.wire(), session.workspaceUuid(), key, code, name, legalName, creditCode, alias, remark, extensionValues, idempotencyKey, actor(session), requireCapability(session, createRequirement(type), ServiceNodeTypes.GROUP, entities.requireCommercialGroupId(session.workspaceUuid(), key))); }
-    private OrganizationEntityReadback update(WorkspaceSessionReadback session, String key, OrganizationEntityType type, UUID id, String code, String name, String legalName, String creditCode, String alias, String remark, long expectedVersion, Map<String, String> extensionValues, String idempotencyKey) { String targetType = type == OrganizationEntityType.HEAD_COMPANY ? ServiceNodeTypes.HEAD_COMPANY : ServiceNodeTypes.GROUP; UUID targetId = type == OrganizationEntityType.HEAD_COMPANY ? id : entities.requireCommercialGroupId(session.workspaceUuid(), key); return entities.updateEntity(type.wire(), session.workspaceUuid(), key, id, code, name, legalName, creditCode, alias, remark, expectedVersion, extensionValues, idempotencyKey, actor(session), requireCapability(session, updateRequirement(type), targetType, targetId)); }
     private OrganizationEntityReadback transition(WorkspaceSessionReadback session, String key, OrganizationEntityType type, UUID id, BusinessEntityStatusRequest body, String idempotencyKey) { if (body.targetStatus() == null) throw new InvalidEdgeRequestException("target status is required"); String targetType = type == OrganizationEntityType.HEAD_COMPANY ? ServiceNodeTypes.HEAD_COMPANY : ServiceNodeTypes.GROUP; UUID targetId = type == OrganizationEntityType.HEAD_COMPANY ? id : entities.requireCommercialGroupId(session.workspaceUuid(), key); return entities.transitionEntityStatus(type.wire(), session.workspaceUuid(), key, id, body.targetStatus().wire(), required(body.expectedVersion()), idempotencyKey, actor(session), requireStatusTransitionCapability(session, statusRequirement(type), targetType, targetId)); }
     private static AuditActor actor(WorkspaceSessionReadback session) { return new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()); }
-    private OrganizationEntityReadback require(WorkspaceSessionReadback session, String key, OrganizationEntityType type, UUID id) { return entities.requireEntity(type.wire(), session.workspaceUuid(), key, id); }
-    private HeadCompany headCompany(WorkspaceSessionReadback session, String key, OrganizationEntityReadback value) { return BusinessEntityWireMapper.headCompany(value, entities.authorizedBrands(session.workspaceUuid(), key, value.id())); }
     private HeadCompany headCompany(OperationsOrganizationTaskReadService.HeadCompany value) { return BusinessEntityWireMapper.headCompany(value.entity(), value.authorizedBrands()); }
     private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expectedContextVersion) { return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion); }
 
@@ -148,11 +193,16 @@ public final class OperationsBusinessEntityController {
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return resolution.ownerScopeGrant(requirementId);
     }
-    private static String createRequirement(OrganizationEntityType type) { return switch (type) { case BRAND -> "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND"; case TENANT -> "REQ_CREATE_OPERATIONS_ORGANIZATION_TENANT"; case HEAD_COMPANY -> "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY"; default -> throw new InvalidEdgeRequestException("unsupported entity type"); }; }
-    private static String updateRequirement(OrganizationEntityType type) { return switch (type) { case BRAND -> "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND"; case TENANT -> "REQ_UPDATE_OPERATIONS_ORGANIZATION_TENANT"; case HEAD_COMPANY -> "REQ_UPDATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY"; default -> throw new InvalidEdgeRequestException("unsupported entity type"); }; }
     private static String statusRequirement(OrganizationEntityType type) { return switch (type) { case BRAND -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS"; case TENANT -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS"; case HEAD_COMPANY -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS"; default -> throw new InvalidEdgeRequestException("unsupported entity type"); }; }
 
     private static long required(Long value) { if (value == null) throw new InvalidEdgeRequestException("expected version is required"); return value; }
+    private static ExtensionSubmission brandCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.BrandCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission brandUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.BrandUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission tenantCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.TenantCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission tenantUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.TenantUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission headCompanyCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.HeadCompanyCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission headCompanyUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.HeadCompanyUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission submission(List<ExtensionSubmission.ExtensionFieldValue> values) { return new ExtensionSubmission(values); }
     private static BusinessEntitySortKey sortKey(String value) { try { return BusinessEntitySortKey.valueOf(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid sort"); } }
     private static BusinessEntitySortDirection sortDirection(String value) { try { return BusinessEntitySortDirection.valueOf(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid direction"); } }
 }

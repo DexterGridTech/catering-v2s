@@ -66,7 +66,7 @@ const sectionRefs = (value) => [...String(value).matchAll(/IA §([0-9.]+)/g)].ma
 function assertBindings(scenarios, bindings, controls) {
   const caseIds = scenarioCaseIds(scenarios);
   const boundIds = bindings.bindings.map((entry) => entry.caseId);
-  if (bindings.caseCount !== 43 || bindings.bindings.length !== 43 || new Set(boundIds).size !== boundIds.length || [...caseIds].sort().join("\n") !== [...boundIds].sort().join("\n")) fail("P4_L2_CASE_EXACT_SET_INVALID");
+  if (bindings.caseCount !== scenarios.caseCount || bindings.bindings.length !== scenarios.caseCount || new Set(caseIds).size !== scenarios.caseCount || new Set(boundIds).size !== boundIds.length || [...caseIds].sort().join("\n") !== [...boundIds].sort().join("\n")) fail("P4_L2_CASE_EXACT_SET_INVALID");
   const controlMap = new Map(controls.map((entry) => [entry.id, entry]));
   for (const binding of bindings.bindings) {
     if (!binding.caseId || !binding.scenarioId || !binding.locator || !binding.position || !binding.wireframe || !binding.fixtureRef || !binding.expectedBusinessResult || !binding.activation || !Array.isArray(binding.controlIds) || binding.controlIds.length === 0 || !Array.isArray(binding.controlSourceFiles) || binding.controlSourceFiles.length === 0 || !Array.isArray(binding.sourceFiles) || binding.sourceFiles.length === 0) fail("P4_L2_CONTROL_BINDING_METADATA_MISSING", binding.caseId || "unknown");
@@ -92,12 +92,23 @@ function assertBindings(scenarios, bindings, controls) {
 
 function assertApiExpectationBindings(apiScenarios, assertionMatrix) {
   const cases = apiScenarios.scenarios.flatMap((scenario) => scenario.cases);
-  if (apiScenarios.scenarioCount !== 26 || apiScenarios.caseCount !== 100 || cases.length !== 100 || new Set(cases.map((entry) => entry.caseId)).size !== 100) fail("P4_API_CASE_DENOMINATOR_INVALID");
+  if (apiScenarios.scenarioCount !== 26 || apiScenarios.caseCount !== cases.length || new Set(cases.map((entry) => entry.caseId)).size !== apiScenarios.caseCount || apiScenarios.scenarios.some((scenario) => scenario.caseCount !== scenario.cases.length)) fail("P4_API_CASE_DENOMINATOR_INVALID");
   const negative = cases.filter((entry) => entry.polarity === "NEGATIVE");
   const positive = cases.filter((entry) => entry.polarity === "POSITIVE");
   const typed = cases.filter((entry) => entry.expectationKind === "TYPED_FAILURE");
   const fact = cases.filter((entry) => entry.expectationKind === "FACT");
-  if (negative.length !== 38 || positive.length !== 62 || typed.length !== 13 || fact.length !== 87) fail("P4_API_EXPECTATION_DENOMINATOR_INVALID");
+  const declared = apiScenarios.caseBindingSets;
+  const exactSet = (actual, expected, code) => {
+    if (!Array.isArray(expected) || expected.length !== actual.length || new Set(expected).size !== expected.length || [...actual].sort().join("\n") !== [...expected].sort().join("\n")) fail(code);
+  };
+  // The P1 generator owns the policy classification.  Preserve an exact
+  // case-level cross-check here rather than carrying stale aggregate counts
+  // after a legitimate public-journey correction changes a case from a typed
+  // failure to a successful owner readback.
+  exactSet(negative.map((entry) => entry.caseId), declared?.negativeCaseIds, "P4_API_NEGATIVE_SET_INVALID");
+  exactSet(positive.map((entry) => entry.caseId), declared?.positiveCaseIds, "P4_API_POSITIVE_SET_INVALID");
+  exactSet(typed.map((entry) => entry.caseId), declared?.typedFailureCaseIds, "P4_API_TYPED_FAILURE_SET_INVALID");
+  exactSet(fact.map((entry) => entry.caseId), declared?.factCaseIds, "P4_API_FACT_SET_INVALID");
   const operationCodes = new Map(assertionMatrix.operations.map((operation) => [operation.operationId, new Set(operation.conditionToProblem.map((entry) => entry.problemCode))]));
   for (const entry of cases) {
     if (!entry.polarity || !entry.expectationKind) fail("P4_API_EXPECTATION_FIELDS_MISSING", entry.caseId);
@@ -108,7 +119,7 @@ function assertApiExpectationBindings(apiScenarios, assertionMatrix) {
   }
   const byId = new Map(cases.map((entry) => [entry.caseId, entry]));
   if (byId.get("CI-API-022-01")?.polarity !== "POSITIVE" || byId.get("CI-API-022-01")?.expectationKind !== "FACT" || byId.get("CI-API-022-02")?.polarity !== "NEGATIVE" || byId.get("CI-API-022-02")?.expectationKind !== "TYPED_FAILURE" || byId.get("CI-API-012-01")?.polarity !== "NEGATIVE" || byId.get("CI-API-012-01")?.expectationKind !== "FACT") fail("P4_API_BOUNDARY_SEMANTICS_INVALID");
-  return {negative: negative.length, positive: positive.length, typedFailure: typed.length, fact: fact.length};
+  return {scenarioCount: apiScenarios.scenarioCount, caseCount: apiScenarios.caseCount, negative: negative.length, positive: positive.length, typedFailure: typed.length, fact: fact.length};
 }
 
 function assertSessionWireFieldUsage(sourceTexts = Object.fromEntries(SESSION_WIRE_CLIENT_PATHS.map((relative) => [relative, readText(relative)]))) {
@@ -212,10 +223,10 @@ function buildEvidence(reconciliation, scenarios, bindings, controls, apiCounts)
       apiScenarios: {path: API_SCENARIOS_PATH, sha256: hashFile(API_SCENARIOS_PATH)},
       assertionMatrix: {path: ASSERTION_MATRIX_PATH, sha256: hashFile(ASSERTION_MATRIX_PATH)},
     },
-    counts: {iaControls: controls.length, apiScenarios: 26, apiCases: 100, apiNegative: apiCounts.negative, apiPositive: apiCounts.positive, apiTypedFailure: apiCounts.typedFailure, apiFact: apiCounts.fact, l2Scenarios: scenarios.scenarioCount, l2Cases: scenarios.caseCount, l2Bindings: bindings.bindings.length, eligibleBindings: bindings.bindings.length, statusCounts},
+    counts: {iaControls: controls.length, apiScenarios: apiCounts.scenarioCount, apiCases: apiCounts.caseCount, apiNegative: apiCounts.negative, apiPositive: apiCounts.positive, apiTypedFailure: apiCounts.typedFailure, apiFact: apiCounts.fact, l2Scenarios: scenarios.scenarioCount, l2Cases: scenarios.caseCount, l2Bindings: bindings.bindings.length, eligibleBindings: bindings.bindings.length, statusCounts},
     controlRule: "每个 L2 case 必须先绑定真实 IA controlIds，再以 control 的 sourceFile/locator/wireframe 形成闭环；NOT_IMPLEMENTED/BLOCKED 控件不得进入 L2。",
     nativeControlDomRule: NATIVE_CONTROL_CONTRACTS.map(({testId, host, componentPath}) => ({testId, host, componentPath, assertion: "testId is forwarded to the native host; L2 must address the testId directly"})),
-    l2ProgressRule: "每个 L2 case 在开始与结束均输出 completed=X/43、current=CI-L2-*、status=START|PASS|FAIL|TIMED_OUT，并写入 run-scoped evidence log。",
+    l2ProgressRule: `每个 L2 case 在开始与结束均输出 completed=X/${scenarios.caseCount}、current=CI-L2-*、status=START|PASS|FAIL|TIMED_OUT，并写入 run-scoped evidence log。`,
     l2ErrorScenarioRule: "CI-L2-017 的错误断言必须由目标详情 GET 的受控失败触发，并验证持久错误面、焦点、重试与恢复；不得只断言一个正常路径永远不会出现的错误控件。",
     brandCopyFixtureRule: "复制向导的 L2 fixture 必须以 HEAD_COMPANY 登录/节点建立来源商品，并通过 brand-candidates HTTP 回读证明候选可见；不得只在门店目标范围造同名商品。",
     controls: controls.map((entry) => ({id: entry.id, implementationStatus: entry.implementationStatus, sourceFile: entry.sourceFile, locator: entry.locator, wireframe: entry.wireframe})),
@@ -230,6 +241,10 @@ function buildEvidence(reconciliation, scenarios, bindings, controls, apiCounts)
 function selfTest(reconciliation, scenarios, bindings) {
   const controls = assertControlSet(reconciliation);
   const baseline = JSON.parse(JSON.stringify(bindings));
+  const l2DenominatorMutation = JSON.parse(JSON.stringify(baseline));
+  l2DenominatorMutation.caseCount += 1;
+  try { assertBindings(scenarios, l2DenominatorMutation, controls); fail("P4_SELF_TEST_L2_DENOMINATOR_MUTATION_NOT_REJECTED"); }
+  catch (error) { if (error.code !== "P4_L2_CASE_EXACT_SET_INVALID") throw error; process.stdout.write("P4_RED_MUTATION=L2_CASE_DENOMINATOR\n"); }
   const missingControl = JSON.parse(JSON.stringify(baseline));
   delete missingControl.bindings[0].controlIds;
   try { assertBindings(scenarios, missingControl, controls); fail("P4_SELF_TEST_CONTROL_BINDING_MUTATION_NOT_REJECTED"); } catch (error) { if (error.code !== "P4_L2_CONTROL_BINDING_METADATA_MISSING") throw error; process.stdout.write("P4_RED_MUTATION=CONTROL_BINDING_METADATA\n"); }
@@ -251,6 +266,10 @@ function selfTest(reconciliation, scenarios, bindings) {
   try { assertControlSet(controlSetMutation); fail("P4_SELF_TEST_CONTROL_SET_MUTATION_NOT_REJECTED"); } catch (error) { if (error.code !== "P4_IA_CONTROL_EXACT_SET_INVALID") throw error; process.stdout.write("P4_RED_MUTATION=CONTROL_EXACT_SET\n"); }
   const apiScenarios = readJson(API_SCENARIOS_PATH);
   const apiMatrix = readJson(ASSERTION_MATRIX_PATH);
+  const apiDenominatorMutation = JSON.parse(JSON.stringify(apiScenarios));
+  apiDenominatorMutation.caseCount += 1;
+  try { assertApiExpectationBindings(apiDenominatorMutation, apiMatrix); fail("P4_SELF_TEST_API_DENOMINATOR_MUTATION_NOT_REJECTED"); }
+  catch (error) { if (error.code !== "P4_API_CASE_DENOMINATOR_INVALID") throw error; process.stdout.write("P4_RED_MUTATION=API_CASE_DENOMINATOR\n"); }
   const apiMutation = JSON.parse(JSON.stringify(apiScenarios));
   delete apiMutation.scenarios.find((scenario) => scenario.scenarioId === "CI-API-021").cases[0].conditionToProblemRef;
   try { assertApiExpectationBindings(apiMutation, apiMatrix); fail("P4_SELF_TEST_API_EXPECTATION_MUTATION_NOT_REJECTED"); } catch (error) { if (error.code !== "P4_API_CONDITION_REF_INVALID") throw error; process.stdout.write("P4_RED_MUTATION=API_CONDITION_REF\n"); }

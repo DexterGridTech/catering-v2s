@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-FINAL-DYNAMIC-ACCEPTANCE-20260810",
+  "kind": "backend-performance-final-dynamic-package-input",
+  "authorization": "Dexter authorized one isolated managed final workload; no reset.",
+  "runtimeAuthority": true,
+  "minimalFixtureAuthority": true,
+  "resetAuthority": false,
+  "prerequisites": [
+    "static implementation Round2 GO",
+    "resource ownership preflight",
+    "remote Testcontainers business+cleanup PASS"
+  ],
+  "denominators": {
+    "taskReads": 78,
+    "protocolCompletions": 5,
+    "numeric": 79,
+    "parity": 38,
+    "routes": 196,
+    "m1": 126,
+    "m2": 60,
+    "m3": 25,
+    "m6": 11
+  },
+  "forbidden": [
+    "unmanaged runtime",
+    "reset",
+    "browser L2",
+    "UAT",
+    "deployment",
+    "historic snapshot reuse"
+  ]
+}

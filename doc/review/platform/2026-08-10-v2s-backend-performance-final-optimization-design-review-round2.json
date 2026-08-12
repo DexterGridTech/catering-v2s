@@ -1,0 +1,131 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_DESIGN_20260810",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-review-round2-input-checklist.md",
+    "sha256": "a3c06b65557bd74ac3455d2e6ca00e7ff7317775713d3c41b5afb0c73191efc2"
+  },
+  "manifestSha256": "add591f2b6daff0ad95541a310a9f784a3e58e29f5b1d9ebf83889d1fe469b49",
+  "inputs": [
+    {"path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-optimization-design-authorization.md", "sha256": "9b0d3a2fe0e59be1aa4bb04b8697341b91309168eaf25f9cf28d57a1d28d4bbf"},
+    {"path": "doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md", "sha256": "a06dd1ca12dcfcd8e1c996b98ebab633ec5c253c9f166303efa78ce8f4fefad8"},
+    {"path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-granularity-manifest.json", "sha256": "add591f2b6daff0ad95541a310a9f784a3e58e29f5b1d9ebf83889d1fe469b49"},
+    {"path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-review-round1.json", "sha256": "29579deff5e801250641223952430c21b7ec92611cd9dda6d5d0b75ea507a5b0"},
+    {"path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-author-intake.md", "sha256": "f46c4d01c37139bc9b274612ead7e38c15ba8ef92c0767784e0dd6c51285ca51"},
+    {"path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md", "sha256": "fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b"},
+    {"path": "contracts/registry/operation-handler-bindings.json", "sha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"},
+    {"path": "contracts/registry/backend-performance-command-topology-matrix.json", "sha256": "8cefb6724da3a1ebbbfe2349abefcbff02f095ae8f34b55123f8a7fb317b92cd"},
+    {"path": "contracts/registry/backend-performance-m1-command-execution-matrix.json", "sha256": "1733c192673aa9a674e740ef105e84b3bdb7f17367e0932f298dcea3c550c141"},
+    {"path": "contracts/registry/task-read-surface-policy.json", "sha256": "992e686d35c3579542b5a6e17374418c91e0c00a08651f8d54f93d10505684d9"},
+    {"path": "scripts/generate/task-read-surface-policy.mjs", "sha256": "c517df7301f80783315eee86e947d83b50d3beb24c81f8a5e9da2f0f5a73b24f"},
+    {"path": "scripts/check/backend-performance-read-budget", "sha256": "0faef014a3e4acd84be140fa8f4e08586fae023e9d9c0286352073db979c36cd"},
+    {"path": "doc/decisions/2026-08-10-v2s-backend-performance-final-closure-authorization.md", "sha256": "719d022d406814644d4eb5e57b902dfc54959634f2afacd09306e50a93336473"}
+  ],
+  "blindReviewDeclaration": "Fresh v2s-rooted independent-subagent Round-2 review. I derived this verdict from the current authorization, design, manifest, original requirements, canonical registry/topology/read-policy sources, source-control counterexamples and final-closure boundary before reading the author intake. The intake was used only afterwards to compare its assertions with the current bytes. No production/control/design source was edited and no dynamic resource was started.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "dynamicEnvironmentStarted": false,
+    "staticEvidence": [
+      "scripts/check/standards-coverage --phase R5: PASS (150 rules)",
+      "scripts/check/backend-performance-read-budget --self-test: FAIL with BP_U05_READ_SOURCE_ANCHOR_MISSING for the stale singular revoke anchor, as the current source and the design precondition predict",
+      "scripts/check/implementation-design-granularity --manifest <current> --review <current Round-2 JSON>: FAIL with UNIT_DETAIL_DESIGN_BPF-U01_ANCHOR_NOT_UNIQUE:0"
+    ]
+  },
+  "expectedBehavior": [
+    "A source-verified inventory, not the shape matrix, is the only physical-path admission authority for every current and future operation.",
+    "The final technical Testcontainers plan covers each of the 196 canonical operation IDs exactly once across compatible grouped scenarios, emits exactly one joined report row per operation, requires every scenario to pass, and never upgrades browser L2 or UAT.",
+    "All six units remain one serial package with 196/113/83/68/78/5 accounting, no global task-read cap, no cache and no weakened owner correctness."
+  ],
+  "findings": [
+    {
+      "id": "BPF-D2-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U01", "BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05"],
+      "title": "The corrected design still grants the shape matrix a contradictory physical source-admission role.",
+      "evidence": "Design lines 120-130 correctly make the generated source inventory the pre-matrix, source-verified denominator and restrict matrix consumption to inventory IDs and hashes. But lines 138-140 define literal matrix edge.sourceAnchor and transactionOrigin.sourceAnchor fields; lines 217-225 require the matrix anchor to resolve to actual source; lines 260-265 make a matrix source anchor a gate requirement; and lines 364-368 say all Java/controller/owner paths are admitted only from the matrix and that it is the finite source list. The promised inventory/checker does not exist in current bytes because it is the future BPF-U01 change, so no current constraint resolves the conflicting authorities.",
+      "risk": "A later matrix edit can substitute or broaden a Java helper/path while nominal inventory coverage still exists, restoring the self-authorizing source-admission bypass Round 1 found.",
+      "minimalRemedy": "Make the inventory the sole physical-anchor owner. Replace matrix literal sourceAnchor fields with closed inventory-record references and digests; move loader path/caller anchors into inventory records; make every source/reachability predicate resolve through those records; and red-mutate literal matrix paths, reference substitution and orphan inventory paths. This is a bounded schema/control clarification, not a new framework.",
+      "preventionDestination": "BPF-U01 inventory generator/checker, shape validator and their real red fixtures"
+    },
+    {
+      "id": "BPF-D2-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U01", "BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05", "BPF-U06"],
+      "title": "The implementation-facing manifest cannot locate any of its six declared design anchors, so its required package-exit proof is mechanically invalid.",
+      "evidence": "Every manifest detailDesign.anchor starts with '##' (BPF-U01 through BPF-U06), while the current design uses the actual headings '### 2.2' through '### 2.9'. The mandatory implementation-design-granularity command fails immediately with UNIT_DETAIL_DESIGN_BPF-U01_ANCHOR_NOT_UNIQUE:0; the same heading-level mismatch exists for all six entries. A manifest whose unit design locations cannot be resolved cannot establish the declared six-unit source denominator.",
+      "risk": "The required implementation-facing design gate cannot prove a unit's owning design section before any package implementation or exit, and an unresolved anchor makes review/material binding non-auditable.",
+      "minimalRemedy": "Update only the six manifest detailDesign anchors to the unique current H3 headings, then rerun the mandatory manifest/review gate and preserve its real red fixtures. Do not paper over this by weakening anchor uniqueness.",
+      "preventionDestination": "Current design-granularity manifest and existing implementation-design-granularity gate"
+    },
+    {
+      "id": "BPF-D2-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U06"],
+      "title": "The new grouped Testcontainers rule contradicts its terminal acceptance predicate by requiring 196 successful scenarios.",
+      "evidence": "Design lines 43-57 correctly allow compatible operations to share a scenario, require each scenario to declare its complete operationId set, require one joined report row per operation, and define business PASS as 196/196 covered operation rows. But lines 338-353 then say the grouped plan invokes 196/196 operations while 'business=PASS requires 196/196 successful technical scenarios' and each operation has one test-plan scenario. The latter rule reintroduces one scenario per operation (or makes grouped scenarios incapable of satisfying the stated pass predicate), which conflicts with the explicit no-one-test-per-operation rule. The manifest and author intake require exact operation coverage, not scenario count, so they do not disambiguate the design text.",
+      "risk": "The future formal report can reject a safely grouped plan despite 196 exact operation rows, or implementation can redefine scenario accounting to make grouping vacuous. Either result breaks the requested exact-coverage gate before reset/seed admission.",
+      "minimalRemedy": "Use one formal relation everywhere: each canonical operationId occurs exactly once across the union of scenario operationId sets; each scenario may contain one or more operations and must pass; business PASS requires exactly 196 successful, request/event-joined operation report rows plus all referenced scenarios PASS. Replace '196 successful technical scenarios' and clarify 'one scenario' as exactly-one scenario membership, not one scenario per operation.",
+      "preventionDestination": "BPF-U06 Testcontainers plan/report schema plus grouped-scenario overlap, missing-ID, duplicate-ID and failed-scenario red fixtures"
+    },
+    {
+      "id": "BPF-D2-N-001",
+      "severity": "N",
+      "status": "VERIFIED",
+      "unitIds": ["BPF-U05"],
+      "title": "The stale revoke-anchor family is correctly restored as a finite precondition rather than hidden by a new shape check.",
+      "evidence": "The current generator still names the nonexistent OperationsWorkspaceUserController#revoke and its self-test fails with BP_U05_READ_SOURCE_ANCHOR_MISSING. The actual controller has groupRevoke, regionRevoke, projectRevoke, headCompanyRevoke and storeRevoke. Design lines 275-281 names precisely those five methods, requires a lost-member red mutation and requires the existing checker to pass before any shape join.",
+      "disposition": "Round-1 BPF-D-M-002 remains closed at design level; implementation must prove the stated current baseline before extension."
+    },
+    {
+      "id": "BPF-D2-N-002",
+      "severity": "N",
+      "status": "VERIFIED",
+      "unitIds": ["BPF-U06"],
+      "title": "The technical lifecycle remains distinct from browser L2 and UAT.",
+      "evidence": "Design lines 41-57 and 335-353 classify Testcontainers as remote managed technical proof only, retain separate cleanup, and require separately authorized browser L2 after the technical and seed stages. This matches the final-closure authorization's technical-workload boundary. The remaining finding is only the grouped-scenario acceptance contradiction, not an execution-class leak.",
+      "disposition": "Round-1 BPF-D-M-003 is closed at design level."
+    },
+    {
+      "id": "BPF-D2-N-003",
+      "severity": "N",
+      "status": "VERIFIED",
+      "unitIds": ["BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05", "BPF-U06"],
+      "title": "The one-package denominator and correctness counterexamples are retained.",
+      "evidence": "Independent registry recomputation gives 196 unique operations: 113 COMMAND and 83 READ; command topology has 113 rows, M1 has 68 rows, and read policy has 78 task reads plus five exemptions. The design retains row-local above-floor explanation rather than a global cap, preserves no-content/protocol distinctions, forbids cache and cross-owner shortcuts, and retains owner rechecks, receipt, CAS, audit, locks, typed failures and required readback.",
+      "disposition": "Retain these properties when correcting the three M findings."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "BPF-U01", "verdict": "NO_GO", "findingIds": ["BPF-D2-M-001", "BPF-D2-M-002"]},
+    {"id": "BPF-U02", "verdict": "NO_GO_BLOCKED_BY_U01_AND_MANIFEST", "findingIds": ["BPF-D2-M-001", "BPF-D2-M-002", "BPF-D2-N-003"]},
+    {"id": "BPF-U03", "verdict": "NO_GO_BLOCKED_BY_U01_AND_MANIFEST", "findingIds": ["BPF-D2-M-001", "BPF-D2-M-002", "BPF-D2-N-003"]},
+    {"id": "BPF-U04", "verdict": "NO_GO_BLOCKED_BY_U01_AND_MANIFEST", "findingIds": ["BPF-D2-M-001", "BPF-D2-M-002", "BPF-D2-N-003"]},
+    {"id": "BPF-U05", "verdict": "NO_GO_BLOCKED_BY_U01_AND_MANIFEST", "findingIds": ["BPF-D2-M-001", "BPF-D2-M-002", "BPF-D2-N-001", "BPF-D2-N-003"]},
+    {"id": "BPF-U06", "verdict": "NO_GO", "findingIds": ["BPF-D2-M-002", "BPF-D2-M-003", "BPF-D2-N-002", "BPF-D2-N-003"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "A source-verified operation shape, operation-specific task-read formulas and immutable same-basis evidence are proportionate ways to prevent redundant database work without weakening ownership or correctness. The present conflicting source admission, unresolved manifest anchors and grouped-scenario contradiction leave that permanent prevention unprovable.",
+    "simplerAlternativeAssessment": "All three remedies are bounded wording/schema/manifest corrections. They are smaller than a broad call-graph framework, a per-operation container rule or a universal SQL cap, and retain safe grouping.",
+    "costFit": "The six ordered units remain a coherent one-package delivery only after their design anchors resolve, physical source authority has one owner, and Testcontainers acceptance counts operations rather than scenarios.",
+    "verdict": "NO_GO until the three confirmed M findings are closed by bounded design/manifest correction and independently externally rechecked; this is the final Codex adversarial round for the cycle."
+  },
+  "verdict": "NO_GO",
+  "conclusion": {
+    "verdict": "NO_GO",
+    "severityCounts": {"M": 3, "S": 0, "N": 3},
+    "summary": "The design correctly retains exact 196/113/83/68/78/5 accounting, the five-anchor BPF-U05 repair, separate technical evidence and owner-correctness constraints. It is not admissible because its matrix still self-admits literal physical sources, its manifest fails its required anchor validator for every unit, and its new grouped Testcontainers text both permits grouping and requires 196 successful scenarios. No runtime or dynamic resource was started.",
+    "authorizationBoundary": "This final independent DESIGN Round-2 verdict authorizes no implementation, production/control/design-source change, runtime, DEV, reset, seed, Testcontainers, tunnel, browser L2, Journey acceptance, UAT, deployment, manual SQL/SSH or measured performance-success claim. ROUND_FINAL_DECISION=SELF_DECIDED and no further Codex adversarial round is allowed for this REVIEW_CYCLE_ID."
+  }
+}

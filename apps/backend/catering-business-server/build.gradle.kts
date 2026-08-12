@@ -5,6 +5,59 @@ plugins {
 apply(plugin = "org.springframework.boot")
 apply(plugin = "io.spring.dependency-management")
 
+val catalogInventoryP1BackendWireOutput = layout.buildDirectory.dir("generated/sources/catalog-inventory-p1/main/java")
+val backendPerformanceM1CommandExecutionOutput = layout.buildDirectory.dir("generated/sources/backend-performance-m1-command-execution/main/java")
+val catalogInventoryP1BackendWireInputs = listOf(
+    "scripts/generate/catalog-inventory-p1.mjs",
+    "contracts/registry/catalog-inventory-p1-backend-wire-inputs.json",
+    "contracts/registry/backend-performance-m1-command-execution-matrix.json",
+    "contracts/policy/catalog-inventory-copy-policy.json",
+    "contracts/policy/catalog-inventory-design-byte-coverage.json",
+    "contracts/policy/catalog-inventory-media-assets.json",
+    "contracts/policy/catalog-inventory-reference-path-matrix.json",
+    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
+    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
+    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
+    "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
+    "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
+    "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md"
+).map { rootProject.file(it) }
+val generateCatalogInventoryP1BackendWire = tasks.register<Exec>("generateCatalogInventoryP1BackendWire") {
+    group = "build"
+    description = "Generates the matrix-admitted catalog-family backend P1 wire DTOs."
+    inputs.files(catalogInventoryP1BackendWireInputs)
+    inputs.dir(rootProject.file("contracts/policy/catalog-inventory-p1-media"))
+    inputs.property("catalogInventoryP1BackendWireSourceRoot", catalogInventoryP1BackendWireOutput.get().asFile.absolutePath)
+    outputs.dir(catalogInventoryP1BackendWireOutput)
+    workingDir(rootProject.projectDir)
+    commandLine("node", rootProject.file("scripts/generate/catalog-inventory-p1.mjs").absolutePath)
+}
+
+val generateBackendPerformanceM1CommandExecutionBindings = tasks.register<Exec>("generateBackendPerformanceM1CommandExecutionBindings") {
+    group = "build"
+    description = "Generates source-anchored M1 command edge bindings."
+    dependsOn(generateCatalogInventoryP1BackendWire)
+    inputs.files(
+        rootProject.file("scripts/generate/backend-performance-m1-command-execution-bindings.mjs"),
+        rootProject.file("contracts/registry/backend-performance-m1-command-execution-matrix.json"),
+        rootProject.file("contracts/registry/operation-handler-bindings.json")
+    )
+    inputs.dir(catalogInventoryP1BackendWireOutput)
+    outputs.dir(backendPerformanceM1CommandExecutionOutput)
+    workingDir(rootProject.projectDir)
+    commandLine("node", rootProject.file("scripts/generate/backend-performance-m1-command-execution-bindings.mjs").absolutePath, "--emit")
+}
+
+sourceSets.named("main") {
+    java.srcDir(catalogInventoryP1BackendWireOutput)
+    java.srcDir(backendPerformanceM1CommandExecutionOutput)
+}
+
+tasks.named("compileJava") {
+    dependsOn(generateCatalogInventoryP1BackendWire)
+    dependsOn(generateBackendPerformanceM1CommandExecutionBindings)
+}
+
 dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:execution-context"))
     implementation(project(":apps:backend:catering-business-server:modules:foundation"))
@@ -33,6 +86,23 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// The architecture selector is a static Java test surface, while the app-level
+// test task also contains Docker-backed tests and is therefore remote-gated.
+// Keep this selector on a JavaExec lane without weakening the root
+// Testcontainers guard or pretending that a local JVM is remote.
+val foundationProject = project(":apps:backend:catering-business-server:modules:foundation")
+val backendTestClasses = tasks.named("testClasses")
+val foundationTestClasses = foundationProject.tasks.named("testClasses")
+val foundationTestOutput = foundationProject.extensions
+    .getByType<org.gradle.api.tasks.SourceSetContainer>()["test"].output
+tasks.register<JavaExec>("backendModuleBoundariesArchunitSelector") {
+    group = "verification"
+    description = "Runs only the backend ArchUnit module-boundary selector without Docker-backed tests."
+    dependsOn(backendTestClasses, foundationTestClasses)
+    classpath = sourceSets["test"].runtimeClasspath + foundationTestOutput
+    mainClass.set("architecture.BackendModuleBoundariesSelector")
 }
 
 tasks.register<JavaExec>("managedInvitationBootstrap") {

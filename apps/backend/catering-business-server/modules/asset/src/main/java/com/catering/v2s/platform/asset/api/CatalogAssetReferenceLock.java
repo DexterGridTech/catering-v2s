@@ -9,4 +9,7 @@ import java.util.UUID;
  */
 public interface CatalogAssetReferenceLock {
     void lockCatalogReferences(Collection<UUID> assetRefs);
+
+    /** One-asset lifecycle operations take this serialization point before catalog's global judgment. */
+    void lockCatalogReference(UUID assetRef);
 }

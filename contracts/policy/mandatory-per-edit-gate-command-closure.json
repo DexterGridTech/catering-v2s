@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "mandatory-per-edit-gate-command-closure",
+  "status": "PASS",
+  "authority": "BPF-U01 closed profile control; profile bytes are control-plane authority and are not package-mutable.",
+  "profiles": [
+    {
+      "profileId": "BACKEND_PERFORMANCE_TOPOLOGY_BOOTSTRAP",
+      "status": "ACTIVE_BOOTSTRAP_COMPATIBILITY",
+      "command": "scripts/check/backend-performance-sql-merge-coverage",
+      "argv": [],
+      "commandSha256": "cdffd9264c0f99286b445e0faff247966f1f89062c7c98735e479087d2f85a1e",
+      "compatiblePackageArchetypes": [
+        "backend-performance-static",
+        "backend-source",
+        "control-plane",
+        "design-only",
+        "frontend-source",
+        "runner-evidence"
+      ],
+      "independentReviewBinding": {
+        "kind": "CLAUDE_POST_REMEDIATION_IMPLEMENTATION_ADMISSION",
+        "path": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-post-remediation-recheck-claude.md",
+        "sha256": "1ebe84c9f9af14bd13dd904afe6056ac30f6dc92e9ac4f1170e2e9d65884bf56",
+        "verdict": "GO",
+        "M": 0,
+        "S": 0,
+        "N": 1,
+        "scope": "new static implementation package admission only; no dynamic evidence admission"
+      },
+      "compatibilityNote": "The existing passing topology gate is retained only as the bootstrap profile while BPF-U01 builds the closed static control set. It does not stand in for inventory, shape, runtime, L2 or seed gates."
+    }
+  ],
+  "redMutations": [
+    "missing profileId",
+    "unknown profileId",
+    "changed command argv or commandSha256",
+    "missing/non-GO independent review binding",
+    "incompatible packageArchetype"
+  ]
+}

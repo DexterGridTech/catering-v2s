@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-optimization-cur-anchor-rederivation",
+  "status": "SOURCE_REDERIVATION_COMPLETE",
+  "authority": "Design-remediation evidence only; future machine source authority remains the BPF-U01 generated source inventory.",
+  "input": {
+    "commandCatalog": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-command-operation-catalog.json",
+      "sha256BeforeCorrection": "c6fb5bbfaa45b8d6af80403e035935a7d9a9c7fd6daa7f6a303a4e48d892f927",
+      "sha256AfterCorrection": "5870e8df94c24c12d7b0ee728adcff5c79f3007a566095193079a4fc9b7f1381"
+    },
+    "applicability": "exactly the 45 non-M1 COMMAND rows whose cur.tx and cur.chain are path anchors"
+  },
+  "deterministicRule": {
+    "id": "EDGE_DECLARED_OWNER_PROTOCOL_FIELD_CALL_V1",
+    "rule": "For each row, reopen the declared edge method, select the invocation of its declared source-ledger action on an injected com.catering.v2s owner/protocol API or application field, and derive path#method from that field type. Never use the final arbitrary method reference in an argument expression.",
+    "rejections": [
+      "A derived cur anchor under apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/ is invalid.",
+      "A derived cur anchor outside an owner/protocol application or API package is invalid.",
+      "An ambiguous or absent declared owner/protocol field invocation is invalid and must remain an explicit GAP, never inferred."
+    ],
+    "boundary": "This derives the edge dispatch/current chain anchor. The future source inventory separately resolves concrete transaction origin versus JOIN_EXISTING_REQUIRED_PARTICIPANT; an interface dispatch or owner-local delegating overload is not falsely rejected merely because it is not a concrete implementation body."
+  },
+  "summary": {
+    "denominator": 45,
+    "currentTxChainDivergence": 0,
+    "derivedInAppEdge": 0,
+    "derivedOutsideOwnerOrProtocolPackage": 0,
+    "mismatchCount": 4,
+    "matchCount": 41
+  },
+  "mismatches": [
+    {
+      "operationId": "createPlatformGroupWorkspace",
+      "old": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor",
+      "derived": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#create",
+      "edgeEvidence": "PlatformWorkspaceAdministrationController.java#create line 88: workspaces.create(...)"
+    },
+    {
+      "operationId": "transitionPlatformGroupWorkspaceStatus",
+      "old": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor",
+      "derived": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#transitionStatus",
+      "edgeEvidence": "PlatformWorkspaceAdministrationController.java#status line 123: workspaces.transitionStatus(...)"
+    },
+    {
+      "operationId": "transitionWorkspaceAccountStatus",
+      "old": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java#detail",
+      "derived": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#transitionStatusForPlatform",
+      "edgeEvidence": "PlatformWorkspaceAccountController.java#status line 44: accounts.transitionStatusForPlatform(...)"
+    },
+    {
+      "operationId": "updatePlatformGroupWorkspaceDisplay",
+      "old": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor",
+      "derived": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java#updateDisplay",
+      "edgeEvidence": "PlatformWorkspaceAdministrationController.java#update line 109: workspaces.updateDisplay(...)"
+    }
+  ],
+  "matchingOperationIds": [
+    "acceptPublicInvitation", "cancelWorkspaceInvitation", "changeCurrentPlatformPassword", "changeCurrentWorkspacePassword", "completeOperationsPasswordRecovery", "completePlatformPasswordRecovery", "completePublicInvitation", "createPlatformAdmin", "createWorkspaceInvitation", "createWorkspaceRole", "initializeCommercialGroup", "operationsWorkspaceLogout", "operationsWorkspacePasswordLogin", "platformLogout", "platformPasswordLogin", "reissueWorkspaceInvitation", "releasePlatformStagedAsset", "replaceExtensionDefinition", "requestWorkspaceCredentialReset", "resetPlatformAdminCredential", "revokePlatformWorkspaceAssignment", "savePublicInvitationCredentials", "selectOperationsWorkspaceSessionContext", "selectOperationsWorkspaceSessionDataNode", "sendOperationsPasswordRecoveryOtp", "sendOperationsWorkspaceOtp", "sendPlatformLoginOtp", "sendPlatformPasswordRecoveryOtp", "sendPublicInvitationOtp", "stagePlatformAsset", "startOperationsPasswordRecovery", "startPlatformPasswordRecovery", "transitionPlatformAdminStatus", "transitionWorkspaceRoleStatus", "updatePlatformAdminProfile", "updateWorkspaceRole", "verifyOperationsPasswordRecoveryOtp", "verifyOperationsWorkspaceOtp", "verifyPlatformLoginOtp", "verifyPlatformPasswordRecoveryOtp", "verifyPublicInvitationOtp"
+  ],
+  "claudeStrictConcreteBodyReconciliation": {
+    "initializeCommercialGroup": "MATCH under EDGE_DECLARED_OWNER_PROTOCOL_FIELD_CALL_V1 because the edge dispatches its declared PlatformWorkspaceCoordinator API field; BPF-U01 must later resolve the concrete origin/participant implementation separately.",
+    "stagePlatformAsset": "MATCH under EDGE_DECLARED_OWNER_PROTOCOL_FIELD_CALL_V1 because the edge dispatches its declared PlatformAssetService field; BPF-U01 must later classify the owner-local overload/implementation separately.",
+    "reason": "The requested deterministic rule prevents arbitrary trailing-argument capture without misclassifying valid public API dispatch as an edge anchor."
+  },
+  "requiredPermanentControls": [
+    "The BPF-U01 source inventory rederives every non-M1 current chain with this rule and rejects an app/edge derived anchor.",
+    "It emits an exact mismatch report before any origin convergence source edit and fails on absent, ambiguous or out-of-owner/protocol dispatch.",
+    "It separately classifies concrete transactional methods as ORIGIN or JOIN_EXISTING_REQUIRED_PARTICIPANT; the cur dispatch anchor is never treated as runtime transaction proof."
+  ]
+}

@@ -20,11 +20,30 @@ const expectedKinds = new Map([["OPERATIONS_SCOPED", 58], ["PLATFORM_WORKSPACE",
 const componentVocabulary = ["CONTEXT_WORKSPACE_IAM", "CONTEXT_ORGANIZATION", "CONTEXT_PLATFORM_IAM", "CONTEXT_PLATFORM_WORKSPACE", "PRIMARY_QUERY", "OPTIONAL_COUNT", "UNCLASSIFIED"];
 const auditEnabledTypes = ["EXTENSION_DEFINITION", "GROUP_WORKSPACE", "STORE_CONTRACT", "WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION", "WORKSPACE_ROLE"];
 const catalogInventoryControllerPath = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java";
+const requiredWorkspaceTaskReadCommandAnchors = Object.freeze([
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#groupRevoke",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#regionRevoke",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#projectRevoke",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#headCompanyRevoke",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#storeRevoke",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCreate",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCreate",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCreate",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCreate",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCreate",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCancel",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCancel",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCancel",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCancel",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCancel",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupReissue",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionReissue",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectReissue",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyReissue",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeReissue",
+]);
 const workspaceTaskReadCommandAnchors = [
-  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#revoke",
-  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#create",
-  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#cancel",
-  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#reissue",
+  ...requiredWorkspaceTaskReadCommandAnchors,
 ];
 const sessionEntryFactSet = ["SessionEntryAuthenticationFacts", "VisibleOrganizationFacts"];
 const sessionEntryPolicy = {
@@ -242,7 +261,7 @@ function validateSessionEntrySource(policy, row, source, method, overrides) {
     || !ownerBody.includes("passwordChangeRequired")
     || !policy.sessionEntryAuthentication.requiredOutcomes.every((outcome) => owner.source.includes(`WorkspaceSessionEntryReadback.Outcome.${outcome}`))) fail("BP_U05_SESSION_ENTRY_OWNER_FACT_SOURCE_MISSING");
 }
-function validateReadSources(policy, taskRows, overrides = new Map()) {
+function validateReadSources(policy, taskRows, overrides = new Map(), commandAnchors = workspaceTaskReadCommandAnchors) {
   for (const row of taskRows) {
     const {source, method} = anchorSource(row.sourceAnchor, overrides);
     if (row.operationId === sessionEntryPolicy.operationId) validateSessionEntrySource(policy, row, source, method, overrides);
@@ -252,7 +271,8 @@ function validateReadSources(policy, taskRows, overrides = new Map()) {
       validateAudit(row);
     } else validatePlatformSource(row, source, method);
   }
-  for (const anchor of workspaceTaskReadCommandAnchors) {
+  exactSet(commandAnchors, workspaceTaskReadCommandAnchors, "BP_U05_READ_COMMAND_ANCHOR_SET_DRIFT");
+  for (const anchor of commandAnchors) {
     const command = anchorSource(anchor, overrides);
     if (/\breads\.[A-Za-z_$][\w$]*\s*\(/.test(command.bodies.join("\n"))) fail("BP_U05_TASK_READER_COMMAND_USAGE", anchor);
   }
@@ -734,6 +754,15 @@ function selfTest() {
   withScratch((value) => value.rows.find((row) => row.operationId === "getPlatformContractOverviewDetail").optionalCountCapBasis = "BRANCH_CAPS", "BP_U05_READ_BUDGET_AUDIT_BRANCH_DRIFT");
   withScratch((value) => value.rows.find((row) => row.readContextKind === "PLATFORM_AUDIT_BRANCHED").optionalCountCap = 1, "BP_U05_READ_BUDGET_AUDIT_BRANCH_DRIFT");
   withScratch((value) => value.rows.find((row) => row.readContextKind === "OPERATIONS_SCOPED").sourceAnchor = "missing#route", "BP_U05_READ_BUDGET_SOURCE_ANCHOR_MISSING");
+  for (const lostAnchor of requiredWorkspaceTaskReadCommandAnchors) {
+    const remainingAnchors = workspaceTaskReadCommandAnchors.filter((anchor) => anchor !== lostAnchor);
+    try {
+      validateReadSources(readJson(policyPath), readJson(policyPath).rows.filter((row) => row.disposition === "TASK_READ"), new Map(), remainingAnchors);
+      fail("BP_U05_READ_BUDGET_RED_MUTATION_ACCEPTED", "BP_U05_READ_COMMAND_ANCHOR_SET_DRIFT");
+    } catch (error) {
+      if (String(error.message).split(":", 1)[0] !== "BP_U05_READ_COMMAND_ANCHOR_SET_DRIFT") throw error;
+    }
+  }
   withScratch((value) => value.rows.find((row) => row.operationId === sessionEntryPolicy.operationId).requiredFactSet = ["WorkspaceReadAuthorizationFacts", "VisibleOrganizationFacts"], "BP_U05_READ_BUDGET_CONTEXT_CONTRACT_DRIFT");
   withScratch((value) => value.sessionEntryAuthentication.requiredOutcomes.pop(), "BP_U05_SESSION_ENTRY_AUTHENTICATION_POLICY_DRIFT");
   withScratch((value) => value.rows.find((row) => row.primaryReader === "TASK_READER").primaryBoundary = `${value.primaryReaderSchema.taskReaderApis[0].sourcePath}#readCatalogItems`, "BP_U05_PRIMARY_READER_SOURCE_MISMATCH");
@@ -743,7 +772,7 @@ function selfTest() {
   withScratch((value) => { const reader = value.primaryReaderSchema.taskReaderApis.find((candidate) => candidate.api === "PlatformAuthenticationService"); value.rows.find((row) => row.operationId === "getPlatformAdminDetail").primaryBoundary = `${reader.sourcePath}#platformAdministratorPage`; }, "BP_U05_PRIMARY_READER_SOURCE_MISMATCH");
   withScratch((value) => value.rows.find((row) => row.operationId === "getOperationsEntityAuditHistory").primaryBoundary = "UNCLASSIFIED_BLOCKED", "BP_U05_PRIMARY_READER_BOUNDARY_INVALID");
   sourceMutation(readJson(policyPath), "getOperationsCatalogWorkbenchContext", (source) => source.replace("ReadRequest read = readRequest(", "operationRegistry.resolve(\"GET\", http.getRequestURI()); ReadRequest read = readRequest("), "BP_U05_READ_SOURCE_OPERATION_DISPATCH");
-  sourceMutation(readJson(policyPath), "getOperationsWorkspaceGroupUser", (source) => source.replace("UUID accountId = accounts.revokeAssignmentForOperations(", "reads.userDetail(null); UUID accountId = accounts.revokeAssignmentForOperations("), "BP_U05_TASK_READER_COMMAND_USAGE");
+  sourceMutation(readJson(policyPath), "getOperationsWorkspaceGroupUser", (source) => source.replace("return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceGroupUserAssignment(", "reads.userDetail(null); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceGroupUserAssignment("), "BP_U05_TASK_READER_COMMAND_USAGE");
   sourceMutation(readJson(policyPath), "getOperationsContractCandidates", (source) => source.replace("sessions.requireWorkspaceReadAtContextVersion(", "sessions.requireWorkspaceAtContextVersion("), "BP_U05_READ_SOURCE_LEGACY_SESSION");
   sourceMutation(readJson(policyPath), "getExtensionDefinition", (source) => source.replace("sessions.requireRead(", "sessions.require("), "BP_U05_READ_SOURCE_LEGACY_SESSION");
   sourceMutation(readJson(policyPath), sessionEntryPolicy.operationId, (source) => source.replace("reads.sessionEntry(", "reads.session("), "BP_U05_SESSION_ENTRY_CONTROLLER_SOURCE_MISSING");
@@ -774,7 +803,7 @@ function selfTest() {
   futureReaderOwnerSourceAssertionMutation(readJson(policyPath), "getPlatformGroupWorkspaceDetail", "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java", (source) => source.replace("return jdbc.query(\"SELECT 1\");", "jdbc.query(\"SELECT 1\"); return jdbc.query(\"SELECT 2\");"), "BP_U05_R5_SUMMARY_LOGICAL_CAP_DRIFT");
   futureReaderOwnerSourceAssertionMutation(readJson(policyPath), "getPlatformGroupWorkspaceDetail", "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamSummaryReadService.java", (source) => source.replace("return jdbc.query(\"SELECT 1\");", "return accountCount() + roleCount();"), "BP_U05_R5_SUMMARY_LEGACY_COUNT_DELEGATION");
   futureReaderOwnerSourceAssertionMutation(readJson(policyPath), "listPlatformGroupWorkspaces", "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationGroupWorkspaceInitializationLookup.java", (source) => source.replace("boolean commercialGroupInitialized", "boolean commercialGroupInitialized, String workspaceName"), "BP_U05_R5_INITIALIZATION_OUTPUT_DRIFT");
-  console.log("BP_U05_READ_BUDGET_SELF_TEST=PASS\nRED_FIXTURES=59\nREAD_BUDGET_CAP_BASIS=LOGICAL_STATEMENT\nOPTIONAL_COUNT_CAP_BASIS=BRANCH_CAPS\nTWO_OWNER_PRIMARY_PROJECTION_EXCEPTIONS=5\nTWO_OWNER_REMAINING_EXCEPTIONS=5\nMULTI_OWNER_EXCEPTION_EXACT_SET=10\nMULTI_OWNER_EXCEPTION_LIMIT=10\nFUTURE_READER_FORBIDDEN_EDGE_SETS=5\nFUTURE_READER_FORBIDDEN_EDGE_RULES=15\nFUTURE_READER_FORBIDDEN_EDGE_PROSPECTIVE=1\nOPERATIONS_AUDIT_TARGET_TYPES=9\nTWO_OWNER_BOUNDARY_LOGICAL_STATEMENT_CAP=1\nTWO_OWNER_CANDIDATE_ORGANIZATION_BRANCHES=2\nTWO_OWNER_PRIMARY_PROJECTION_STATUS=SOURCE_IMPLEMENTED_UNMEASURED\nTWO_OWNER_REMAINING_STATUS=SOURCE_IMPLEMENTED_UNMEASURED\nBP_U05_READ_BUDGET_STATUS=BLOCKED_UNMEASURED");
+  console.log(`BP_U05_READ_BUDGET_SELF_TEST=PASS\nRED_FIXTURES=79\nWORKSPACE_HTTP_COMMAND_ANCHORS=${workspaceTaskReadCommandAnchors.length}\nREVOKE_HTTP_ANCHOR_MEMBER_RED_MUTATIONS=${requiredWorkspaceTaskReadCommandAnchors.filter((anchor) => anchor.includes("OperationsWorkspaceUserController.java#")).length}\nREAD_BUDGET_CAP_BASIS=LOGICAL_STATEMENT\nOPTIONAL_COUNT_CAP_BASIS=BRANCH_CAPS\nTWO_OWNER_PRIMARY_PROJECTION_EXCEPTIONS=5\nTWO_OWNER_REMAINING_EXCEPTIONS=5\nMULTI_OWNER_EXCEPTION_EXACT_SET=10\nMULTI_OWNER_EXCEPTION_LIMIT=10\nFUTURE_READER_FORBIDDEN_EDGE_SETS=5\nFUTURE_READER_FORBIDDEN_EDGE_RULES=15\nFUTURE_READER_FORBIDDEN_EDGE_PROSPECTIVE=1\nOPERATIONS_AUDIT_TARGET_TYPES=9\nTWO_OWNER_BOUNDARY_LOGICAL_STATEMENT_CAP=1\nTWO_OWNER_CANDIDATE_ORGANIZATION_BRANCHES=2\nTWO_OWNER_PRIMARY_PROJECTION_STATUS=SOURCE_IMPLEMENTED_UNMEASURED\nTWO_OWNER_REMAINING_STATUS=SOURCE_IMPLEMENTED_UNMEASURED\nBP_U05_READ_BUDGET_STATUS=BLOCKED_UNMEASURED`);
 }
 
 try {

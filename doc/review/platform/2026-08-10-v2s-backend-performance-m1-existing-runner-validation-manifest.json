@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "existing-managed-runner-validation-manifest",
+  "packageId": "BACKEND-PERFORMANCE-M1-EXISTING-RUNNER-VALIDATION-20260810",
+  "purpose": "First repair the source-bound M1 transaction proxyability defect found by the first managed DEV start, then use only five existing managed entries in one fixed sequence. Managed DEV start is the reset-required provision/readiness predecessor of seed, not a new runner or environment. This manifest is an authorization boundary, not a runner or a replacement test plan.",
+  "sourceBindings": [
+    {
+      "path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-m1-implementation-package-exit.json",
+      "sha256": "a5bec0efb5b3d4b64af74011723f059c0ef2048ee33383213e164508d6c3f9da",
+      "assertion": "M1 static proof has passed before any dynamic command"
+    },
+    {
+      "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+      "assertion": "BACKEND_PERFORMANCE_FINAL_CLOSURE_RESET_AUTHORIZED=true records Dexter's explicit destructive reset authorization"
+    }
+  ],
+  "orderedEntrypointSet": [
+    "node scripts/test/catalog-inventory-backend-unit.mjs",
+    "R5_RESET_CONFIRMATION=EXPLICIT_R5_RESET node scripts/dev/r5-reset.mjs",
+    "V2S_R5_REQUIRE_FRESH_DATABASE=true scripts/dev/start",
+    "R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full",
+    "node scripts/test/catalog-inventory-l2.mjs --managed"
+  ],
+  "exactSetControl": {
+    "denominator": 5,
+    "policy": "The active package allowlist contains no runner or environment source path. It additionally contains exactly seven previously-approved M1 adapter roots, the mandatory topology gate and its existing topology generator, the single workspace-IAM owner service reached by the 20 invitation/revoke adapters, the P1 wire generator, and the finite existing API/L2 policy and fixture consumers. These paths solely make all REQUIRED transaction beans transaction-proxyable, reject a future final transactional bean, align generated JSON transport with the actual Spring MVC Jackson 3 stack, preserve an owner detail's image references across the fixture's subsequent whole-save BOM update, and prevent public test requests from fabricating AUTO_SYNC or EXTERNAL_ORDER_TEMPORARY facts where the approved phase explicitly lacks both ingress chains. The retained source model and smart view remain independently asserted. Any other attempted source edit is rejected by UNAUTHORIZED_CHANGED_PATH; no unlisted entry may substitute for an orderedEntrypointSet member."
+  },
+  "runtimeReadinessRepair": {
+    "denominator": 68,
+    "triggerEvidence": ".runtime/r5/business-server.log: Spring CGLIB cannot subclass final CountOperationsInventoryTargetOperation",
+    "pattern": "non-final @Component class with public @Transactional(REQUIRED) execute",
+    "gate": "scripts/check/backend-performance-sql-merge-coverage validates all selected adapters and has a real final-class red mutation"
+  },
+  "l2ExecutionPlane": {
+    "applicationProcesses": "local-only",
+    "browserAndFixture": "local-only",
+    "remoteRole": "managed tunnel to non-production dependencies and remote Testcontainers technical verification only",
+    "acceptanceRule": "A terminal L2 report must evidence local managed process identities, local logs, business result, and cleanup; remote Testcontainers is not browser L2."
+  },
+  "formalSeedContractAlignment": {
+    "denominator": 7,
+    "paths": ["scripts/dev/owner-command-seed-executor.mjs", "scripts/dev/owner-command-seed-executor.test.mjs"],
+    "counterexample": "initializeCommercialGroup remains an object-shaped extension request and must not be converted",
+    "gate": "scripts/check/backend-performance-sql-merge-coverage rejects any of the seven changed host-create seed requests that does not use explicit ExtensionSubmission SET serialization"
+  },
+  "canonicalJsonRuntimeAlignment": {
+    "triggerEvidence": ".runtime/r5/joint-local-l2 latest business-server.log: createOperationsCatalogItem returns HTTP 400 because a Jackson 2 CanonicalJsonDocument deserializer is invisible to the Jackson 3 Spring MVC converter and the record is constructed without canonical JSON for an otherwise valid object request",
+    "pattern": "CanonicalJsonDocument.Deserializer uses the Spring MVC Jackson 3 tools.jackson JsonDeserialize and ValueDeserializer types, consumes its current Jackson value through readValueAsTree, requires an object result, and captures the object text without changing the OpenAPI object shape",
+    "generator": "scripts/generate/catalog-inventory-p1.mjs",
+    "redProof": "the mandatory topology gate rejects a synthetic CanonicalJsonDocument source that regresses from tools.jackson ValueDeserializer to the retired Jackson 2 JsonDeserializer"
+  },
+  "managedL2UnimplementedIngressFixtureAlignment": {
+    "pattern": "P1 derives explicit NOT_APPLICABLE_WITH_REASON fixture/scenario rows for AUTO_SYNC and EXTERNAL_ORDER_TEMPORARY, excludes only those impossible public-command cases from API/L2 execution and locator bindings, and leaves the retained source enum/model/smart view in its independent scenario.",
+    "counterexample": "A public operations request must not accept source ownership fields merely to populate a test fixture.",
+    "gate": "scripts/check/backend-performance-sql-merge-coverage rejects fabricated public-source request payloads and absent N/A policy reasons."
+  },
+  "managedL2UnitOrderingRepair": {
+    "triggerEvidence": ".runtime/r5/joint-local-l2 latest terminal report: CATALOG_INVENTORY_BACKEND_UNIT_TESTS fails before private namespace creation because the prior ordinal-3 local managed DEV is alive during the remote-Testcontainers resource preflight",
+    "pattern": "the existing combined local L2 runner stops only the default manifest-owned DEV tree through r5-dev-runner before its catalog backend-unit stage, then retains its own isolated local application/browser lifecycle",
+    "counterexamples": ["catalog L2-only does not run the backend-unit stage", "no default managed DEV returns R5_DEV_STOP=NO_MANAGED_PROCESS"],
+    "redProof": "the L2 runner self-test rejects a synthetic pre-existing DEV stop result that is neither PASS nor NO_MANAGED_PROCESS"
+  },
+  "managedL2WholeSaveFixtureAlignment": {
+    "triggerEvidence": "The local managed L2 reached the VOID_ASSET_CLAIM and VOID_BOM_PARENT_SAVE owner commands successfully, then failed VOID_ASSET_FACT_READY because the second whole-save omitted the image readback that the owner therefore removed.",
+    "pattern": "The existing catalog API fixture derives the later BOM draft image array solely from the immediately preceding owner detail readback and asserts that the final detail retains the staged asset reference alongside the BOM.",
+    "counterexample": "A command that does not use whole-save catalog draft semantics must not be forced to carry unrelated readback fields.",
+    "redProof": "the catalog API fixture self-test rejects a synthetic whole-save draft that drops an existing image reference."
+  },
+  "managedL2ActiveCatalogImageReuseAlignment": {
+    "triggerEvidence": "The repaired local managed L2 retained the ACTIVE image readback but VOID_BOM_PARENT_SAVE returned HTTP 422 before asset owner settlement because CatalogInventoryCoordinator required a matching second bind grant for every image.",
+    "pattern": "The catalog save composition passes a matching submitted grant when one exists or an explicit null grant when it does not; the existing asset owner performs the fresh catalog authorization recheck and accepts only ACTIVE catalog-image reuse without a grant, retaining STAGED proof consumption owner-side.",
+    "counterexample": "A new STAGED image has no ACTIVE lifecycle state and therefore must still be rejected owner-side when it lacks a scope-bound bind grant.",
+    "redProof": "the mandatory topology gate rejects a synthetic catalog save composition that restores the pre-owner matching-grant requirement."
+  },
+  "managedL2CatalogVoidDependencyAlignment": {
+    "triggerEvidence": "The local managed L2's VOID_DEPENDENT fixture created an inventory StockTarget then transitionOperationsCatalogItemStatus returned HTTP 200. The old coordinator had a correct inventory dependency gate, but the M1 typed adapter bypassed it.",
+    "pattern": "A typed inventory owner readback declares only dependent-fact existence and counts after fresh catalog-context validation. The named REQUIRED catalog-status adapter checks it only for VOIDED before invoking the catalog owner command.",
+    "counterexample": "A non-VOID status transition does not need inventory void-dependency judgement.",
+    "redProof": "the mandatory topology gate rejects a synthetic typed status adapter with the inventory void-dependency call removed."
+  },
+  "resultBoundary": {
+    "unit": "technical module/application proof only; does not establish seed or browser behavior",
+    "reset": "destructive non-production database/asset cleanup only; does not seed",
+    "start": "existing local-app/remote-middleware managed provision and readiness only; it must be invoked with V2S_R5_REQUIRE_FRESH_DATABASE=true so its manifest can be accepted by r5-full seed; it does not seed",
+    "seed": "owner-HTTP workload/report; may establish measured JDBC-event comparison but not browser proof",
+    "l2": "managed browser acceptance with separate business and cleanup verdicts; is not UAT"
+  }
+}

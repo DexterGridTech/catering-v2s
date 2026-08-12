@@ -8,6 +8,7 @@ import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
@@ -261,6 +262,41 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             }
             if (!validJsonValue(field, entry.getValue())) throw new DefinitionInvalidException();
             try { merged.set(entry.getKey(), JSON.readTree(entry.getValue())); }
+            catch (java.io.IOException failure) { throw new DefinitionInvalidException(); }
+        }
+        if (fields.values().stream().filter(field -> "ENABLED".equals(field.status()) && field.required())
+            .anyMatch(field -> !merged.hasNonNull(field.fieldKey()) || !validJsonValue(field, merged.get(field.fieldKey()).toString()))) {
+            throw new DefinitionInvalidException();
+        }
+        return merged.toString();
+    }
+
+    /**
+     * Applies an explicit owner-native submission.  Unlike the legacy map form, CLEAR is carried
+     * by the mode rather than by a null-shaped value; only this owner interprets the JSON text.
+     */
+    public static String mergeValues(ExtensionDefinitionReadback definition, String currentValuesJson, ExtensionSubmission submission) {
+        if (definition == null) throw new DefinitionInvalidException();
+        ObjectNode merged;
+        try {
+            JsonNode parsed = JSON.readTree(currentValuesJson == null ? "{}" : currentValuesJson);
+            if (!parsed.isObject()) throw new DefinitionInvalidException();
+            merged = (ObjectNode) parsed;
+        } catch (java.io.IOException failure) {
+            throw new DefinitionInvalidException();
+        }
+        Map<String, ExtensionDefinitionReadback.Field> fields = definition.fields().stream()
+            .collect(java.util.stream.Collectors.toMap(ExtensionDefinitionReadback.Field::fieldKey, field -> field));
+        for (ExtensionSubmission.ExtensionFieldValue value : submission == null ? java.util.List.<ExtensionSubmission.ExtensionFieldValue>of() : submission.fields()) {
+            ExtensionDefinitionReadback.Field field = fields.get(value.fieldKey());
+            if (field == null) throw new DefinitionInvalidException();
+            if ("DISABLED".equals(field.status())) continue;
+            if (value.mode() == ExtensionSubmission.Mode.CLEAR) {
+                merged.remove(value.fieldKey());
+                continue;
+            }
+            if (!validJsonValue(field, value.valueJson())) throw new DefinitionInvalidException();
+            try { merged.set(value.fieldKey(), JSON.readTree(value.valueJson())); }
             catch (java.io.IOException failure) { throw new DefinitionInvalidException(); }
         }
         if (fields.values().stream().filter(field -> "ENABLED".equals(field.status()) && field.required())

@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortDirection;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
@@ -18,6 +19,7 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
@@ -27,7 +29,6 @@ import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
-import tools.jackson.databind.node.JsonNodeFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -202,21 +203,12 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         selectedProject(fixture, scopedProjectId);
         when(fixture.capabilityScopes.resolve(fixture.session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
             .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-STORE-CREATE", new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(fixture.workspaceId, KEY, "PROJECT", scopedProjectId, "PROJECT", scopedProjectId, List.of(scopedProjectId))));
-        when(fixture.entities.createStore(
-            fixture.workspaceId,
-            KEY,
-            scopedProjectId,
-            tenantId,
-            brandId,
-            headCompanyId,
-            "STORE-01",
-            "门店一",
-            "备注",
-            Map.of(),
-            IDEMPOTENCY_KEY,
-            fixture.actor,
-            grant
-        )).thenReturn(new OrganizationEntityReadback(storeId, "STORE", fixture.workspaceId, KEY, "STORE-01", "门店一", null, null, "ENABLED", 3L, null, null, "备注", 0L, 10L, 11L, Map.of()));
+        var command = new OperationsStoreCommandApi.CreateStoreCommand(
+            fixture.workspaceId, KEY, scopedProjectId, tenantId, brandId, headCompanyId,
+            "STORE-01", "门店一", "备注", new com.catering.v2s.extension.api.ExtensionSubmission(List.of()),
+            IDEMPOTENCY_KEY, fixture.actor, grant
+        );
+        when(fixture.entities.createStore(command)).thenReturn(new OrganizationEntityReadback(storeId, "STORE", fixture.workspaceId, KEY, "STORE-01", "门店一", null, null, "ENABLED", 3L, null, null, "备注", 0L, 10L, 11L, Map.of()));
         when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId)).thenReturn(new OrganizationOverviewTaskReadService.Item(
             storeId,
             KEY,
@@ -254,7 +246,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 "STORE-01",
                 "门店一",
                 "备注",
-                JsonNodeFactory.instance.objectNode()
+                List.of(new OrganizationStoreCreateRequestExtensionValuesItem("remark", "\"test\"", "SET"))
             )
         );
 
@@ -263,21 +255,11 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         assertEquals(scopedProjectId.toString(), response.getBody().project().id());
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.capabilityScopes).resolve(fixture.session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId));
-        verify(fixture.entities).createStore(
-            fixture.workspaceId,
-            KEY,
-            scopedProjectId,
-            tenantId,
-            brandId,
-            headCompanyId,
-            "STORE-01",
-            "门店一",
-            "备注",
-            Map.of(),
-            IDEMPOTENCY_KEY,
-            fixture.actor,
-            grant
-        );
+        verify(fixture.entities).createStore(new OperationsStoreCommandApi.CreateStoreCommand(
+            fixture.workspaceId, KEY, scopedProjectId, tenantId, brandId, headCompanyId,
+            "STORE-01", "门店一", "备注", new com.catering.v2s.extension.api.ExtensionSubmission(List.of(new com.catering.v2s.extension.api.ExtensionSubmission.ExtensionFieldValue("remark", "\"test\"", com.catering.v2s.extension.api.ExtensionSubmission.Mode.SET))),
+            IDEMPOTENCY_KEY, fixture.actor, grant
+        ));
     }
 
     @Test

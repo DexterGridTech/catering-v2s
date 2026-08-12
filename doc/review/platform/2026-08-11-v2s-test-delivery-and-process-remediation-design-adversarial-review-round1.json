@@ -1,0 +1,113 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TEST_DELIVERY_PROCESS_REMEDIATION_DESIGN_20260811",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-review-round1-input-checklist.md",
+    "sha256": "8dedda556a96f30cde443b0e79961d8da611fe79d1b0edbed0be4f1707335409"
+  },
+  "blindReviewDeclaration": "I received this checklist in a fresh subagent context, tried to falsify the design, and formed findings and verdict before reading author self-review or author finding disposition.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "cc08acf3a797a95a785b25c785002be62ff7058efc080efb0b528d45d4cd894d",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["execution-receipt-integrity", "cryptographic-evidence-authenticity", "scope-and-runtime-boundary", "assertion-truth-preservation", "retirement-ordering"]
+  },
+  "expectedBehavior": [
+    "validate-only selects and executes only the declared static set, never Testcontainers, DEV, seed, L2, browser, reset, UAT, or deployment work.",
+    "scripts/verify is root metadata only; its eleven GATE leaves and the separate ArchUnit selector have finite, non-recursive, actual-execution receipts.",
+    "ACTIVE GATE admission consumes the same successful leaf receipts produced by the root run and rejects missing, extra, substituted, stale, or marker-incomplete receipts.",
+    "Assertion disposition occurs per assertion, preserving value and structural truth while retiring only source-text false-red assertions.",
+    "A valid-format forged HMAC fails by recomputation at the existing secret-holding boundary without exposing the key, and legacy fixtures are migrated before deletion.",
+    "This package remains static-only: it cannot claim dynamic, business, cleanup, performance, Testcontainers, DEV, L2, seed, browser, UAT, or deployment success."
+  ],
+  "findings": [
+    {
+      "id": "THCL-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["THCL-U01", "THCL-U02", "THCL-U03", "THCL-U04", "THCL-U05", "THCL-U06"],
+      "title": "The reviewed design is not machine-readable as design-only authority",
+      "claim": "The manifest correctly declares implementationAuthority=false, but the referenced Markdown design has no parseable implementationAuthority field. Its code-style text is not the authority field required by the existing granularity validator, so the reviewed manifest/design pair cannot pass its declared control.",
+      "evidence": "scripts/check/implementation-design-granularity --manifest doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json --review doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-adversarial-review-round1.json -> DESIGN_IMPLEMENTATION_AUTHORITY_NOT_FALSE; doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md:1-8; doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json:3-10",
+      "impact": "The design-only boundary is not mechanically bound to the reviewed design. The declared implementation-facing control fails before any delivery unit can be admitted, so no unit can receive a design GO.",
+      "minimalRepair": "Add the exact parseable design-level implementationAuthority=false declaration required by the existing checker to the design document, preserve the design-only authorization, update the manifest design hash, then rerun the manifest-plus-review checker. Do not weaken the checker or replace this with prose.",
+      "denominator": "The single design document hash-bound by this manifest and all six THCL delivery units that depend on its design-only authority.",
+      "sourceReopened": [
+        "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-granularity-manifest.json",
+        "tools/implementation-design-granularity/cli.mjs",
+        "scripts/check/implementation-design-granularity"
+      ],
+      "risk": "The package's authorization boundary is not enforceable by its already-declared mechanical control.",
+      "disposition": "Design must be corrected and re-hash-bound before any implementation or downstream review admission."
+    },
+    {
+      "id": "THCL-S-001",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": ["THCL-U01", "THCL-U02"],
+      "title": "The proposed ACTIVE exact-set has no single-execution receipt transport",
+      "claim": "The design requires U12 to consume actual root-child receipts, but it does not specify a producer-to-consumer contract or one execution owner. The current verify loop has no receipt collection, while standards-coverage.executeActive independently spawns selected catalog commands and returns only an in-process ref array. Implementing the text as written can either execute the eleven leaves twice or certify a second execution instead of the root run that U12 is meant to admit.",
+      "evidence": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md:42-48, 80-94, 125; tools/verify-gates/verify.mjs:12-36; scripts/check/standards-coverage:334-365, 589-593",
+      "impact": "C3 remains false-green-prone: a root run can omit, substitute, or fail a child while an independent U12 re-run supplies a matching ref set. It also violates the required serial first-failure discipline by permitting redundant execution after an earlier leaf result.",
+      "minimalRepair": "Before implementation, choose and document one receipt owner and one transport: either the root executes every VERIFY_CHILD exactly once and passes immutable per-child {ref, dependency digest, marker result, exit result} receipts to a pure standards-coverage validator, or standards-coverage is the sole leaf executor invoked once by root and returns that exact receipt set. State root receipt consumption, ARCHUNIT_SELECTOR separation, fail-fast behavior, and red mutations for duplicate execution, root-as-child, missing, extra, substituted, stale, and marker-missing receipts.",
+      "denominator": "43 ACTIVE GATE rules -> 16 refs: VERIFY_ROOT scripts/verify, 11 VERIFY_CHILD leaf gates, and the separately admitted ARCHUNIT_SELECTOR; no command may be counted twice.",
+      "sourceReopened": [
+        "tools/verify-gates/verify.mjs",
+        "contracts/policy/standards-enforcement-execution-catalog.json",
+        "scripts/check/standards-coverage",
+        "contracts/policy/standards-coverage-matrix.json",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md"
+      ],
+      "risk": "The core C3 receipt semantics are underspecified at the producer/consumer boundary.",
+      "disposition": "Design must be amended before implementation; retain the existing catalog as the sole map and do not create a parallel control."
+    },
+    {
+      "id": "THCL-S-002",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": ["THCL-U04"],
+      "title": "HMAC reuse is not executable from the identified change surface",
+      "claim": "The design correctly prohibits format-only HMAC validation and calls for reuse of evidenceHmac plus timingSafeEqual, but the only confirmed existing evidenceHmac/databaseEvidenceHmac implementation is private to backend-performance-final-acceptance.mjs. THCL-U04 neither declares that file nor a shared helper as a change surface, and does not bind a canonical payload/domain for the 196 receipt. A direct import is impossible; copying the private implementation would create the prohibited second implementation.",
+      "evidence": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md:60-66, 100-103, 119-123; scripts/test/backend-performance-final-acceptance.mjs:6, 22-26, 105-142; scripts/test/backend-performance-testcontainers-196.mjs:65-70, 250-258, 327-331; doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md:92, 115",
+      "impact": "The B3 forged-but-valid-shape mutation may be addressed by a new divergent HMAC implementation or only at a report-reader layer, leaving the intended secret-holding verification boundary and C3 authenticity claim unclosed.",
+      "minimalRepair": "Amend THCL-U04 to name the sole reusable HMAC owner and its exact canonical inputs. Declare the smallest source change that exposes a shared, domain-separated verifier or moves the 196 verification to that existing owner; declare the key-owning boundary and a non-secret verification receipt. Add the existing owner and the chosen shared helper, if extracted, to the manifest change surfaces and exact-set red tests for wrong MAC, wrong key, and changed canonical payload.",
+      "denominator": "Every completion.serverEvidenceHmac and database serverOperationHmac admitted into the 196-row Testcontainers report, plus their existing final-acceptance verifier counterpart.",
+      "sourceReopened": [
+        "scripts/test/backend-performance-final-acceptance.mjs",
+        "scripts/test/backend-performance-testcontainers-196.mjs",
+        "scripts/test/backend-performance-testcontainers-196.test.mjs",
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md"
+      ],
+      "risk": "The required authenticity repair lacks a declared reuse boundary and can regress into a second format-adjacent implementation.",
+      "disposition": "Design must be amended before implementation; reuse or minimally extract the existing implementation rather than copying it."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "THCL-U01", "verdict": "NO_GO", "findingIds": ["THCL-M-001", "THCL-S-001"]},
+    {"id": "THCL-U02", "verdict": "NO_GO", "findingIds": ["THCL-M-001", "THCL-S-001"]},
+    {"id": "THCL-U03", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]},
+    {"id": "THCL-U04", "verdict": "NO_GO", "findingIds": ["THCL-M-001", "THCL-S-002"]},
+    {"id": "THCL-U05", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]},
+    {"id": "THCL-U06", "verdict": "NO_GO", "findingIds": ["THCL-M-001"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The design directly targets C1-C4 through the existing verify, catalog, standards checker, test sources, and runners; its refusal to treat static checks as dynamic success fits the authorization boundary.",
+    "simplerAlternativeAssessment": "A new test-governance framework or broad test glob would add scope and preserve empty-glob or duplicate-control risk. Reusing the catalog and one explicit receipt flow is smaller, but the receipt flow must be made concrete. Likewise, one extracted/reused HMAC verifier is smaller than a second verifier.",
+    "costFit": "The single serial package is justified by shared C1-C4 control roots and the required migrate-before-delete ordering, but it is only cost-fit after the two cross-unit contracts are made implementation-executable.",
+    "verdict": "NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "One confirmed M and two confirmed S findings block design acceptance: the reviewed design is not machine-readable as design-only authority; the C3 exact-set does not yet bind one root execution to one consumed receipt set; and the C3 HMAC repair does not declare an executable reuse boundary for the existing implementation.",
+    "authorizationBoundary": "This is a static DESIGN review only. It neither authorizes nor demonstrates dynamic, business, cleanup, performance, Testcontainers, DEV, L2, reset, seed, browser, UAT, deployment, contract, production, or runner success.",
+    "severityCounts": {"M": 1, "S": 2, "N": 0}
+  }
+}

@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_20260810",
+  "design": {
+    "path": "doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md",
+    "sha256": "73cba79dcce8971a96efc8b233c83c989ba65c4f814f975b64d24f4417718bbd"
+  },
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-optimization-design-authorization.md",
+    "sha256": "bdfec05e197e81b34d164c5814309c3b46af654efdbc7bd917a727524ec5a221",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "independentReview": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-cycle2-review-round2.json",
+    "sha256": "4b98a679548edd08e822a83ce00260cc5bc80cf7f80252267ce2bbaf05ed718b"
+  },
+  "independentReviewResolution": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-cycle2-author-intake.md",
+    "sha256": "b3fc3b542505cb5df447c65fefd3ef4746e230499940278e91070806035f8e9b"
+  },
+  "operationCatalogues": {
+    "commands": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-command-operation-catalog.json",
+      "sha256": "5870e8df94c24c12d7b0ee728adcff5c79f3007a566095193079a4fc9b7f1381",
+      "rows": 113,
+      "purpose": "per-operation command change, owner/transaction/fact/receipt/readback constraints, acceptance and red discriminator"
+    },
+    "reads": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-read-operation-catalog.json",
+      "sha256": "265b3785146ea3f845f96a9d3e8781093599f9066a085b5ee5b866052d07bce9",
+      "rows": 83,
+      "purpose": "per-operation read shape, policy/reader/fact/budget explanation, acceptance and red discriminator"
+    },
+    "exactTotal": 196,
+    "sourceGapRule": "Rows marked source gap are mandatory source-reopen/explicit declaration work before implementation; no template or agent may infer them."
+  },
+  "sourceReadLedger": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-operation-source-read-ledger.json",
+    "sha256": "dbeaa7d9e81a5e4d6195102ba47c5e576967d1c4dfda6e8879e290b2d6c7d864",
+    "rows": 196,
+    "authorityBoundary": "DESIGN_REVIEW_SOURCE_READING_EVIDENCE_NOT_FUTURE_MACHINE_SOURCE_AUTHORITY",
+    "purpose": "review receipt: each operation maps to source reread evidence, business/task meaning or explicit non-inference gap, boundary, memory/redline application and acceptance constraints"
+  },
+  "curAnchorRederivation": {
+    "path": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-cur-anchor-rederivation.json",
+    "sha256": "2332572ab364bcd39098973ba96dbed118605799c8f4c66a48180bc963792e03",
+    "denominator": 45,
+    "mismatchCount": 4,
+    "purpose": "deterministic declared owner/protocol field-call rederivation; permanent source-inventory rejection boundary, not runtime-origin proof"
+  },
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_DESIGN_20260811",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-cycle2-review-round2.json",
+    "reviewedManifestSha256": "e308a0d65417d1cec2bccf46f0d26eb88e61a8e6624905a78ad11d6100ad3ab8",
+    "reviewSha256": "4b98a679548edd08e822a83ce00260cc5bc80cf7f80252267ce2bbaf05ed718b",
+    "intake": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-cycle2-author-intake.md",
+      "sha256": "b3fc3b542505cb5df447c65fefd3ef4746e230499940278e91070806035f8e9b"
+    },
+    "reason": "Claude recheck identified M-01/M-02/S-01/S-02 after the two-round independent cycle. This bounded remediation corrects four of 45 deterministic cur anchors, adds a 45-row rederivation report, designs globally required independently reviewed closed mandatory-gate profiles, corrects update/create and existing-gate topology, and adds GAP/fold guardrails without granting implementation or adding delivery units. Claude must independently recheck the rebound bytes.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  },
+  "claudeRecheckRemediationIntake": {
+    "path": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-design-remediation-intake.md",
+    "sha256": "797e82ed4b4937a0b67f85e7401b9e219a1b296f76d07c16a39b52b5d7be4037"
+  },
+  "dexterPostGoDeliverySequenceAmendment": {
+    "source": "Dexter direct instruction, 2026-08-11",
+    "approvedSequence": "static 196 closure and row-by-row design-conformance reconciliation, then managed Testcontainers, local managed L2, reset/DEV/r5-full seed comparison, then one independent IMPLEMENTATION review and Dexter/Claude final review",
+    "supersedes": "the prior wording that put independent IMPLEMENTATION review before dynamic validation",
+    "handoff": {
+      "path": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-implementation-handoff-codex.md",
+      "sha256": "d296ee5d2f4d0fb8c7530e6bdcf3027ef3b8845685010340394ca266b64428d5"
+    },
+    "n01Disposition": "OUT_OF_SCOPE_HANDOFF_DEBT: remove the generic inverse update-path checker from this six-unit implementation package; register it separately rather than silently implementing or ignoring it.",
+    "reviewBoundary": "This direct delivery-sequence amendment is verified by the final independent IMPLEMENTATION review and Dexter/Claude review after dynamic evidence; it does not grant the current design-only package runtime authority."
+  },
+  "candidateJourney": {
+    "id": "BACKEND-PERFORMANCE-FINAL-OPTIMIZATION",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering",
+    "task": "declare and implement one permanent database-shape discipline for every backend operation",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_FINAL_OPTIMIZATION",
+    "ownerReadback": "source-bound shape matrix, immutable measurement comparison and independent cleanup evidence",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "BPF-U01",
+      "title": "196-operation database-shape declaration and standards registration",
+      "approvedAssertions": [
+        "Every present and future canonical operation binding has an independently source-verified inventory row and one complete shape row before source admission.",
+        "The inventory, not the shape matrix, is the source-path authority; shape class, transaction origin, fact loaders and budget components consume it rather than infer paths.",
+        "Five protocol/content exemptions remain declared with completion evidence and cannot disappear from the denominator.",
+        "Every active package names a compatible member of an independently reviewed closed mandatory-per-edit gate profile; package bytes cannot substitute or weaken that command."
+      ],
+      "approvedSources": [{
+        "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256": "fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor": "### 7.3 门（fail-closed，必须管住未来）"
+      }],
+      "detailDesign": {
+        "path": "doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md",
+        "anchor": "### 2.2 Fixed denominator and source of truth"
+      },
+      "currentDeviation": "Current command/read matrices partition today’s operations but no independently source-verified 196-row inventory constrains a shape declaration or future source admission.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/backend-performance-operation-source-inventory.json","disposition":"create","target":"independently generated and source-verified 196-row edge/binding/origin/owner admission denominator"},
+        {"path":"scripts/generate/backend-performance-operation-source-inventory.mjs","disposition":"create","target":"derive exact inventory from canonical bindings, route registries and actual source anchors without consulting shape rows"},
+        {"path":"scripts/check/backend-performance-operation-source-inventory","disposition":"create","target":"reject orphaned, substituted or undeclared source paths before shape admission"},
+        {"path":"scripts/check/backend-performance-operation-source-inventory.test.mjs","disposition":"create","target":"real exact-set and source substitution red fixtures"},
+        {"path":"contracts/policy/mandatory-per-edit-gate-command-closure.json","disposition":"create","target":"closed independently reviewed gate-profile command map plus package-archetype compatibility matrix"},
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"make mandatoryPerEditGate required, resolve only closed profile IDs and red-prove missing, weak, changed or incompatible gate selection"},
+        {"path":"scripts/check/database-operation-budget","disposition":"update","target":"retain a compatibility wrapper while explicitly retiring duplicate performance-shape ownership into the new shape gate"},
+        {"path":"scripts/check/backend-performance-gate-dispositions","disposition":"update","target":"register the three new controls and prove executable/verify denominator drift"},
+        {"path":"doc/evidence/platform/2026-08-09-v2s-backend-performance-phase1-gate-dispositions.json","disposition":"update","target":"finite disposition rows for source inventory, shape and request-fact-once controls"},
+        {"path":"tools/authority-source-ledger/cli.mjs","disposition":"update","target":"repair or explicitly retire the current ST-11 invalid authority row before implementation exit"},
+        {"path":"contracts/registry/backend-performance-operation-database-shape-matrix.json","disposition":"create","target":"hash-bound 196-row shape and fact-loader declaration consuming source inventory IDs only"},
+        {"path":"project-memory/decisions/http-crud-efficiency-design-redlines.md","disposition":"update","target":"append the three permanent database-shape assertions"},
+        {"path":"contracts/policy/standards-coverage-matrix.json","disposition":"update","target":"register GATE and review-checklist coverage without pseudo-automation"},
+        {"path":"scripts/generate/backend-performance-sql-merge-applicability.mjs","disposition":"update","target":"join canonical bindings to the shape declaration"},
+        {"path":"scripts/check/backend-performance-operation-database-shape","disposition":"create","target":"fail-closed static shape validator and diagnostic catalogue"},
+        {"path":"scripts/check/backend-performance-operation-database-shape.test.mjs","disposition":"create","target":"real matrix/floor/source red fixtures"}
+      ],
+      "orderedChain":["correct/rederive all 45 non-M1 cur dispatch anchors and close the 87 idempotency, 45 readback and 45 origin-participation decisions under one independent receipt","create and compatibility-prove the required closed mandatory-per-edit gate profile control","generate and source-verify the independent inventory","create matrix schema consuming its hash/IDs","add standards/redline and existing-gate dispositions","implement static validators and red fixtures","admit derived source surfaces only after all prior closures"],
+      "dependencyAndSerialBoundaries":["No runtime source is admitted before the inventory and matrix both close exactly at 196.","No BPF-U02 source is admitted before the explicit GAP and ORIGIN/JOIN catalogue review closes.","The matrix cannot create, replace or broaden its own source authority.","A mandatory-gate profile is global control-plane data, never feature-package mutable data.","Semantic owner-readback necessity stays review-owned, not a numeric checker."],
+      "dataEvolution":{"notApplicableReason":"Registry/control-plane data only; no persistence schema change."},
+      "uiAndTerms":{"notApplicableReason":"No UI delivery or public terminology change.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"196-row exact-set and static red mutations","l2":"not run until separately authorized managed validation","l3":"future immutable snapshot structure only","business":"NOT_RUN_DESIGN","cleanup":"NOT_RUN_DESIGN"},
+      "forbiddenPseudoFixes":["route-name inference","arbitrary trailing-argument cur anchor extraction","missing-row exemption","global count cap","broad application-path admission","allowing a package to name an unreviewed or incompatible mandatory gate"],
+      "discriminator":{"fixture":"Remove one operation row or its floor component; choose an app/edge helper as a cur anchor; remove mandatoryPerEditGate; or mark a nonexistent core file as update. The respective static checker must fail with WHY, BACKGROUND and PATTERN."}
+    },
+    {
+      "id": "BPF-U02",
+      "title": "Single command transaction origin and universal M1 binding reachability",
+      "approvedAssertions":["A command HTTP path has one declared origin and edge code cannot start a transaction.","All 68 M1 HTTP entries invoke their declared generated binding and no declared binding is dead.","Owner recheck remains before receipt replay while participants share the required origin."],
+      "approvedSources":[{
+        "path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256":"fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor":"### 机制 A｜事务与连接边界未收敛（横跨四个桶）"
+      }],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md","anchor":"### 2.5 A — transaction and connection origin convergence"},
+      "currentDeviation":"M1 review found 42 declared binding methods without a matching controller invocation, and requests may still have two transaction/connection boundaries.",
+      "changeSurfaces":[
+        {"path":"contracts/registry/backend-performance-command-topology-matrix.json","disposition":"update","target":"source-anchor one valid command origin per command row"},
+        {"path":"contracts/registry/backend-performance-m1-command-execution-matrix.json","disposition":"update","target":"make all 68 edge-binding declarations and HTTP anchors exact"},
+        {"path":"scripts/generate/backend-performance-m1-command-execution-bindings.mjs","disposition":"update","target":"emit reachability-auditable binding bridge for all M1 entries"},
+        {"path":"scripts/check/backend-performance-sql-merge-coverage","disposition":"update","target":"reject edge transactions, second origins and unreferenced bindings"}
+      ],
+      "orderedChain":["close BPF-U01 matrix anchors","migrate 68 M1 controllers to declared bindings","consolidate remaining command origins","prove source reachability and compile"],
+      "dependencyAndSerialBoundaries":["No direct adapter bypass remains at a declared binding edge.","No cross-owner direct read is introduced to reduce a transaction count."],
+      "dataEvolution":{"notApplicableReason":"Transaction topology/source refactor only."},
+      "uiAndTerms":{"notApplicableReason":"HTTP contract and UI behavior are preserved.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"68/68 binding references plus transaction-origin red mutations","l2":"focused managed technical validation after static review","l3":"immutable event topology evidence","business":"future same-contract command proof","cleanup":"future managed cleanup proof"},
+      "forbiddenPseudoFixes":["edge @Transactional","removing receipt","removing final readback","dead generated binding declaration"],
+      "discriminator":{"fixture":"Replace a declared controller binding call with a direct adapter call; the command coverage gate must fail."}
+    },
+    {
+      "id":"BPF-U03",
+      "title":"Fresh request-local fact loading once across command shapes",
+      "approvedAssertions":["Every loader has an exhaustive caller catalogue and stable event call-site prefix.","Fresh facts can traverse the request immutably but do not replace owner rechecks.","Duplicate same-request loader events are rejected from immutable evidence."],
+      "approvedSources":[{
+        "path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256":"fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor":"### 机制 B｜请求内上下文事实重复解析（横跨三个桶）"
+      }],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md","anchor":"### 2.6 B — fresh facts loaded once per request"},
+      "currentDeviation":"Event evidence exposes repeated session/path/commercial-group fact loading, but no full loader/caller declaration or runtime duplicate gate exists.",
+      "changeSurfaces":[
+        {"path":"scripts/check/backend-performance-request-fact-load-once","disposition":"create","target":"immutable snapshot requestId/call-site duplicate validator"},
+        {"path":"scripts/check/backend-performance-request-fact-load-once.test.mjs","disposition":"create","target":"duplicate, unknown attribution and different-request red fixtures"},
+        {"path":"scripts/check/backend-performance-evidence-snapshot","disposition":"update","target":"expose only validated snapshot event input needed by structural checker"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"update","target":"preserve source-bound loader event attribution when needed by exact matrix catalogue"}
+      ],
+      "orderedChain":["complete loader catalogue in BPF-U01","consolidate fact minting at each named origin","add immutable event checker and red fixtures","review owner recheck preservation"],
+      "dependencyAndSerialBoundaries":["No request/global cache may substitute for a fresh fact load.","No runtime gate reads a live runtime directory."],
+      "dataEvolution":{"notApplicableReason":"In-memory immutable request facts and evidence schema only."},
+      "uiAndTerms":{"notApplicableReason":"No UI delivery.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"source caller catalogue and static caller mutation","l2":"future managed fact-loader proof","l3":"HMAC-validated immutable snapshot","business":"future authorization-preservation proof","cleanup":"future managed cleanup proof"},
+      "forbiddenPseudoFixes":["global cache","line-number-only identifier","unlisted helper path","replay-before-recheck"],
+      "discriminator":{"fixture":"Duplicate one declared loader event under one requestId; snapshot validator must fail."}
+    },
+    {
+      "id":"BPF-U04",
+      "title":"Owner-local validation-read folding with typed outcome preservation",
+      "approvedAssertions":["Only matrix-approved owner-local folds are implemented.","Folded validation preserves target, CAS, lock, audit, receipt order and typed failure outcome.","Cross-owner/schema direct reads and broad joins are forbidden."],
+      "approvedSources":[{
+        "path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256":"fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor":"### 机制 C｜校验读未折进写语句（命令侧）"
+      }],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md","anchor":"### 2.7 C — fold validation reads into owner writes only when equivalent"},
+      "currentDeviation":"Candidate validation reads are measured but lack a finite per-operation equivalence declaration that preserves error and owner semantics.",
+      "changeSurfaces":[
+        {"path":"contracts/registry/backend-performance-operation-database-shape-matrix.json","disposition":"update","target":"record foldedJudgment, originalObservableSemantics, executable failingCounterexample and outcome obligations per approved operation"},
+        {"path":"scripts/check/backend-performance-operation-database-shape","disposition":"update","target":"require all four fold declaration fields while leaving semantic equivalence to review checklist"},
+        {"path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-owner-fold-review-checklist.md","disposition":"create","target":"source-first equivalence checklist for owner-local SQL/predicate folds"}
+      ],
+      "orderedChain":["classify candidate read/write pairs","review owner-local equivalence","implement only approved folds","prove typed outcomes and final readback"],
+      "dependencyAndSerialBoundaries":["SQL form follows proof; it does not define proof.","A fold cannot be used to delete owner authorization/state recheck or final readback."],
+      "dataEvolution":{"notApplicableReason":"Owner implementation-level query refinement; no persistence model change."},
+      "uiAndTerms":{"notApplicableReason":"HTTP field and response shape unchanged.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"per-operation source/review checklist and typed negative proof","l2":"future owner integration proof","l3":"future immutable operation profile evidence","business":"future same-shape response proof","cleanup":"future managed cleanup proof"},
+      "forbiddenPseudoFixes":["cross-schema join","repository shortcut","lossy affected-row mapping","readback deletion"],
+      "discriminator":{"fixture":"A candidate lacking conflict/not-found/readback preservation cannot be admitted as a fold."}
+    },
+    {
+      "id":"BPF-U05",
+      "title":"78 task-read and five exemption shape closure",
+      "approvedAssertions":["All 83 reads join to the 196-row matrix.","Task-read budgets are shape declarations with above-floor explanation, never universal caps.","Protocol exemptions retain a concrete completion-evidence reason."],
+      "approvedSources":[{
+        "path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256":"fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor":"### 5.3 任务型读取"
+      }],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md","anchor":"### 2.3 Shape floor: components, not a global cap"},
+      "currentDeviation":"The existing read policy has 78 task rows and five exemptions but no common 196-row declaration of origin, facts and formula components.",
+      "changeSurfaces":[
+        {"path":"contracts/registry/task-read-surface-policy.json","disposition":"update","target":"join task rows and exemptions to exact shape references and explanations"},
+        {"path":"scripts/generate/task-read-surface-policy.mjs","disposition":"update","target":"replace stale single revoke anchor with the five exact controller entry anchors before deriving shape joins"},
+        {"path":"scripts/check/backend-performance-read-budget","disposition":"update","target":"enforce the five-anchor baseline, declaration/explanation structure and no numeric global cap"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java","disposition":"retain","target":"source of the five finite revoke HTTP entry anchors; no route behavior change"}
+      ],
+      "orderedChain":["repair and prove five-anchor read-budget baseline","bind 83 read rows to BPF-U01 inventory/shape IDs","state task/exemption formula components","add declaration red mutations","review read-only owner boundaries"],
+      "dependencyAndSerialBoundaries":["The existing read-budget checker must pass before its shape extension.","Read paths do not inherit command receipt/write transaction rules.","Exemption denotes evidence obligation, not omission."],
+      "dataEvolution":{"notApplicableReason":"Read policy/control-plane only."},
+      "uiAndTerms":{"notApplicableReason":"No UI delivery.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"83-row exact join and explanation fixtures","l2":"future managed read evidence","l3":"future immutable profile evidence","business":"future task-read behavior proof","cleanup":"future managed cleanup proof"},
+      "forbiddenPseudoFixes":["global count cap","turning reads into commands","hiding exemption","cross-schema write inference"],
+      "discriminator":{"fixture":"Remove an exemption reason or above-floor explanation; read-budget checker must fail."}
+    },
+    {
+      "id":"BPF-U06",
+      "title":"Same-basis before/after seed comparison without premature acceptance",
+      "approvedAssertions":["Remote Testcontainers is an exact 196/196 technical-validation gate with formal same-kind reports and cleanup PASS before local L2 or any seed package may start.","Local L2 owns a private fixture and closes before destructive reset/DEV seed; seed and remote Testcontainers each emit immutable same-kind reports with shared basis and exact coverage before deltas are emitted.","UPDATE totals never fall; fewer writes is a failure, not a saving; Testcontainers evidence never upgrades L2 or UAT."],
+      "approvedSources":[{
+        "path":"doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-requirements-claude.md",
+        "sha256":"fa668d34da496dc6435b566dd80f496219bfc1844141f82f5bb3adbfce576d1b",
+        "anchor":"## 6. 验收要求"
+      }],
+      "detailDesign":{"path":"doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md","anchor":"### 2.9 Measurement comparison, not premature success"},
+      "currentDeviation":"Seed reports contain aggregate operations but no durable kind totals or automatic two-report comparator, so prior comparison required manual arithmetic.",
+      "changeSurfaces":[
+        {"path":"contracts/policy/backend-performance-final-fixture-catalog.json","disposition":"update","target":"first reconcile the exact 196 owner-HTTP/OpenAPI/fixture denominator, then declare grouped scenario membership and formal report linkage"},
+        {"path":"scripts/check/backend-performance-final-fixture-catalog","disposition":"update","target":"repair BP_FINAL_FIXTURE_PLAN_OWNER_HTTP_OPENAPI_DRIFT and retain an exact owner HTTP/OpenAPI mismatch red mutation before runner admission"},
+        {"path":"scripts/test/backend-performance-final-fixtures.mjs","disposition":"update","target":"keep fixture materialization and checker self-test source aligned with the repaired exact fixture denominator"},
+        {"path":"scripts/test/seed-report.mjs","disposition":"update","target":"persist per-operation and aggregate physical kind totals including UPDATE"},
+        {"path":"scripts/test/seed-report.test.mjs","disposition":"update","target":"measurement-basis and kind-total fixtures"},
+        {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update","target":"require 196/196 plan coverage before seed admission and emit a report bound to plan, fixture, request/event join, kind totals and cleanup"},
+        {"path":"scripts/test/r5-remote-testcontainers.test.mjs","disposition":"update","target":"196 coverage, report completeness, cross-kind rejection, stale-resource and cleanup red fixtures"},
+        {"path":"scripts/test/compare-backend-performance-seed-reports.mjs","disposition":"create","target":"same-basis per-operation/profile delta comparator"},
+        {"path":"scripts/test/compare-backend-performance-seed-reports.test.mjs","disposition":"create","target":"coverage, basis, UPDATE and malformed-report red fixtures"}
+      ],
+      "orderedChain":["repair BP_FINAL_FIXTURE_PLAN_OWNER_HTTP_OPENAPI_DRIFT and prove the fixture catalog's exact OpenAPI red mutation","extend report schema without changing current measurement basis","add 196-row grouped Testcontainers plan/report and red fixtures bound to the repaired fixture denominator","prove remote Testcontainers technical business+cleanup PASS","only then admit a local managed L2 package with private fixture, isolated namespace and independent business+cleanup evidence","only after that L2 closure admit destructive reset → managed DEV start → same-basis seed comparator package"],
+      "dependencyAndSerialBoundaries":["No local L2 package begins before 196/196 Testcontainers business and cleanup PASS; its runtime state is private and is not seed input.","No seed/reset package begins before that local L2 package's separate business and cleanup PASS.","No report comparison uses live runtime data.","No dynamic result or success bit is changed during static implementation."],
+      "dataEvolution":{"notApplicableReason":"Run evidence/report schema only; no business persistence change."},
+      "uiAndTerms":{"notApplicableReason":"No UI delivery.","termSource":"AGENTS.md"},
+      "evidence":{"l1":"comparator red fixtures and immutable input contract","l2":"future managed same-basis seed sequence","l3":"two immutable reports plus delta artifact","business":"future seed business status only","cleanup":"future reset/seed cleanup proof"},
+      "forbiddenPseudoFixes":["manual arithmetic only","lower UPDATE accepted","live jsonl comparison","claiming L2/UAT from seed"],
+      "discriminator":{"fixture":"Lower aggregate UPDATE in the candidate report; comparator must fail even if total operations decrease."}
+    }
+  ]
+}

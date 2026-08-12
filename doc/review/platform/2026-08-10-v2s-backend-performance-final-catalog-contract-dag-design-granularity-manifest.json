@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG_20260810",
+  "design": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-intake.md",
+    "sha256": "898fcd19b36aaed040fc73bb4e4269077b3e901cb96f53553f86b995ea8c2b4e"
+  },
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-input.md",
+    "sha256": "d91040b09efed953d69ed33d9df5a00c43a1036551de0a0439cd2cf2c2b1f022",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"
+    ]
+  },
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "candidateJourney": {
+    "id": "BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG",
+    "status": "DESIGN_ONLY_TECHNICAL_MAINTENANCE",
+    "actor": "Dexter-directed backend engineering",
+    "task": "repair catalog owner response correctness before a separate executable fixture-DAG design",
+    "pageKey": "NON_UI_BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG",
+    "ownerReadback": "typed catalog owner responses, private fixture capability and immutable final snapshot",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "FINAL-U02",
+      "title": "Catalog owner response correctness and governed promotion handoff",
+      "approvedAssertions": [
+        "Final temporary-item promotion is prepared only through normal final-run owner HTTP create, save, detail, preflight and execute with same-item private state.",
+        "Category delete emits its canonical declared subtree readback and promotion preflight emits one canonical outer envelope.",
+        "Operations writes retain selected data node, live catalog capability, server grant, owner recheck and REQUIRED transaction; platform administration never substitutes workspace capability.",
+        "The exact 396/592/113 baseline remains pre/post accounting only; a later, separately designed literal-DAG unit owns catalog/materializer/workload conversion.",
+        "All canonical contract/generator/generated artifacts are reproducibility-checked and remain unchanged by the owner/edge/consumer repair."
+      ],
+      "approvedSources": [
+        {
+          "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-intake.md",
+          "sha256": "898fcd19b36aaed040fc73bb4e4269077b3e901cb96f53553f86b995ea8c2b4e",
+          "anchor": "## Finite executable-DAG follow-on boundary"
+        },
+        {
+          "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-intake.md",
+          "sha256": "898fcd19b36aaed040fc73bb4e4269077b3e901cb96f53553f86b995ea8c2b4e",
+          "anchor": "## Owner-contract correction delivery unit"
+        }
+      ],
+      "detailDesign": {
+        "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-intake.md",
+        "anchor": "## Owner-contract correction delivery unit"
+      },
+      "currentDeviation": "Catalog delete and promotion-preflight responses diverge from their canonical contract; the literal fixture DAG remains separately unimplemented and is not an assertion of this delivery unit.",
+      "changeSurfaces": [
+        {
+          "path": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+          "disposition": "update",
+          "target": "canonical delete subtree readback, canonical single promotion envelope and declared delete replay behavior"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogCategoryOwnerIntegrationTest.java",
+          "disposition": "update",
+          "target": "exact delete subtree and replay/stale/reference red proof"
+        },
+        {
+          "path": "scripts/test/catalog-inventory-backend-unit.mjs",
+          "disposition": "update",
+          "target": "retain the existing backend-unit entry while classifying every Testcontainers-owning module on the repository-required remote execution plane and removing stale reports before a failed rerun"
+        },
+        {
+          "path": "scripts/test/r5-remote-testcontainers.mjs",
+          "disposition": "update",
+          "target": "preserve the existing remote Testcontainers runner and use the installed Gradle distribution path without changing its task allowlist or execution topology"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+          "disposition": "update",
+          "target": "single-envelope promotion preflight consumer decode"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogManagementPage.test.tsx",
+          "disposition": "update",
+          "target": "single-envelope consumer regression proof with selected-node/capability behavior retained"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java",
+          "disposition": "update",
+          "target": "typed catalog-only coordinated-copy preflight judgment"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+          "disposition": "update",
+          "target": "owner-local digest handoff and complete opaque cross-owner copy plan"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+          "disposition": "update",
+          "target": "consume only inventory-owned rows from the complete coordinator copy plan and accept the contract-required action scope field"
+        },
+        {
+          "path": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java",
+          "disposition": "update",
+          "target": "typed forbidden catalog scope mapping for an authenticated selected data node"
+        },
+        {
+          "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+          "disposition": "update",
+          "target": "preserve catalog SCOPE_FORBIDDEN without changing common unauthenticated denial"
+        },
+        {
+          "path": "scripts/dev/r5-dev-runner.mjs",
+          "disposition": "update",
+          "target": "nonsecret non-production catalog fault-admission propagation"
+        },
+        {
+          "path": "tools/catalog-inventory-p4/cli.mjs",
+          "disposition": "update",
+          "target": "derive pre-L2 API classification exact sets from the canonical P1 caseBindingSets instead of stale aggregate polarity counts"
+        },
+        {
+          "path": "tools/catalog-inventory-p2/cli.mjs",
+          "disposition": "update",
+          "target": "validate typed catalog copy-source policy and preflight boundary rather than retired request-derived scope text"
+        },
+        {
+          "path": "scripts/test/r5-joint-remote-l2-fixture.mjs",
+          "disposition": "update",
+          "target": "retain redacted nonterminating bootstrap failure diagnostics before the existing command failure path"
+        }
+      ],
+      "orderedChain": [
+        "prove canonical contracts and owner response defects",
+        "repair owner and consumer shapes with the existing focused proof",
+        "run the existing backend-unit entry on its repository-required remote Testcontainers plane, then the existing managed reset, r5-full seed and catalog L2 entries",
+        "design the literal fixture DAG separately before its own static implementation"
+      ],
+      "dependencyAndSerialBoundaries": [
+        "No final assembler or dynamic resource before this design receives independent DESIGN GO and Claude recheck.",
+        "Canonical OpenAPI, generators and generated artifacts are read-only hash-bound inputs; generated output must remain byte-identical.",
+        "The later catalog/checker/materializer/workload conversion is excluded from this delivery unit and needs a new exact-surface design.",
+        "No new RM1/R5 runtime topology, terminal fixture, direct SQL, new product API or platform-to-workspace capability substitution; verification may use only the named existing managed reset, r5-full seed and catalog L2 entries."
+      ],
+      "dataEvolution": {
+        "notApplicableReason": "The repair changes response correctness and private run-scoped fixture state only; it adds no persistent schema or migration."
+      },
+      "uiAndTerms": {
+        "pageKey": "OPERATIONS_CATALOG_ITEM_DRAWER",
+        "interactionArtifact": {
+          "path": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx",
+          "anchor": "export function CatalogItemDrawer"
+        },
+        "termSource": "project-memory/decisions/confirmed-business-language-corpus.md"
+      },
+      "evidence": {
+        "l1": "owner/consumer source and exact red mutation proof",
+        "l2": "existing managed reset, r5-full seed and catalog L2 runner evidence only",
+        "l3": "future immutable final snapshot only after static implementation review",
+        "business": "future normal owner-HTTP temporary promotion lifecycle",
+        "cleanup": "future final managed cleanup only; no resource created in this unit"
+      },
+      "forbiddenPseudoFixes": [
+        "terminal fixture expansion",
+        "manual SQL or SSH",
+        "new product API or capability",
+        "generic operation/body dispatch",
+        "schema/generated artifact hand edit",
+        "platform session as operations catalog authority"
+      ],
+      "discriminator": {
+        "fixture": "A legacy deletedCount field, response.data.data promotion payload, unrelated node output, cross-item digest or platform-session recovery path must fail before any final evidence can be produced."
+      }
+    }
+  ],
+  "postRemediationDeclaration": {
+    "version": "POST_REMEDIATION_V1",
+    "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG_DESIGN_20260810",
+    "reviewRound": 2,
+    "reviewPath": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-review-round2.json",
+    "reviewedManifestSha256": "33c3d9c69d8b722e8839ec326c5119a9ca5ad36f22d97f3a4df42371c296be00",
+    "reviewSha256": "20525a8d00774356478f07c1197cbfe9236970abce3bc08a51239d4f31cbf5be",
+    "intake": {
+      "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-author-intake.md",
+      "sha256": "b56018bb51b56fbdf393c56f2e1945d9a9d399409f862bc6b5035c2c3adda2de"
+    },
+    "reason": "Dexter narrowed verification to existing test and managed runner entries: the two never-created focused test files are replaced by the existing backend-unit and remote-Testcontainers runner surfaces. This does not add a delivery unit, target, environment or product capability.",
+    "currentBytesNotReviewedByAdversarialReviewer": true,
+    "claudeRecheckRequired": true,
+    "implementationAuthority": false
+  }
+}

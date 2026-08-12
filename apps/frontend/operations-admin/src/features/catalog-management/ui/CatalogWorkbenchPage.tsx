@@ -6,7 +6,7 @@ import {useCallback, useEffect, useMemo, useRef, useState, type Key, type ReactN
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {HeadCompany} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
-import type {CatalogInventoryEnvelope, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
+import type {JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {decodeDetail, decodeItems, decodeNavigation, decodeWorkbenchContext, type CatalogItemSummary, type CatalogNavigation} from '../model/catalogModel';
@@ -135,14 +135,14 @@ function CatalogWorkbenchPage({queryContext, actionCapabilityKeys, surface}: Ope
   // `currentData` is bound to the current RTK query arguments. Using `data`
   // here can keep the previous brand/tree response visible while a new
   // request is pending, which defeats the scope generation boundary.
-  const context = decodeWorkbenchContext(contextQuery.currentData as CatalogInventoryEnvelope | undefined);
-  const navigation = decodeNavigation(navigationQuery.currentData as CatalogInventoryEnvelope | undefined);
+  const context = decodeWorkbenchContext(contextQuery.currentData);
+  const navigation = decodeNavigation(navigationQuery.currentData);
   useEffect(() => {
     listRequestGeneration.current = generation.begin();
     setAcceptedPage(undefined);
   }, [generation, itemsRequest]);
   useEffect(() => {
-    const next = decodeItems(itemsQuery.currentData as CatalogInventoryEnvelope | undefined);
+    const next = decodeItems(itemsQuery.currentData);
     if (!next || !itemsQuery.currentData || next.queryGeneration !== queryGeneration || !generation.isCurrent(listRequestGeneration.current)) return;
     setAcceptedPage(next);
   }, [generation, itemsQuery.currentData, queryGeneration]);
@@ -288,7 +288,7 @@ function CatalogWorkbenchPage({queryContext, actionCapabilityKeys, surface}: Ope
 function CatalogSkuExpandedRow({itemCode, dataNodeRef, brandRef}: {itemCode: string; dataNodeRef: string; brandRef?: string}) {
   const request = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItem({itemCode}, {query: {dataNodeRef}, headers: brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined}), [brandRef, dataNodeRef, itemCode]);
   const query = operationsRtk.useGetOperationsCatalogItemQuery(request, {skip: !dataNodeRef || !itemCode});
-  const detail = decodeDetail(query.data as CatalogInventoryEnvelope | undefined);
+  const detail = decodeDetail(query.data);
   if (query.isLoading && !query.data) return <div {...testId(`catalog-inventory-sku-expand-${itemCode}`)}><Skeleton active paragraph={{rows: 2}}/></div>;
   if (query.error) return <Alert type="error" showIcon title="SKU 明细加载失败" description="当前行的 SKU 明细未覆盖列表上下文，请重试。" action={<Button size="small" onClick={() => void query.refetch()}>重试</Button>} {...testId(`catalog-inventory-sku-expand-${itemCode}-error`)}/>;
   const rows = detail?.item.skus ?? [];

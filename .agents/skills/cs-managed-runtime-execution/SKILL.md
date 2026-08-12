@@ -9,6 +9,55 @@ does not grant authority. `AGENTS.md`, the active package, the current Roadmap a
 the applicable plan, `scripts/README.md`, and routed project memory decide whether the action
 is permitted.
 
+## 0. Routine-command classification
+
+Dexter's 2026-08-11 operational ruling is explicit: focused Testcontainers, managed DEV
+start/restart, managed reset, and explicit `r5-full` seed are routine managed runtime
+commands, not implementation work. Focused Testcontainers is independently invokable: it has
+no active implementation-package, BPF/static-predecessor, implementation-design,
+implementation-review, or historical-report prerequisite. It derives its finite denominator
+from the current authoritative test contract inside the run. Invoking any of these commands
+does not, by itself, require an implementation or source-change package.
+
+This classification does not waive the execution boundary. Each command still uses its
+existing managed entrypoint, explicit authorization and run-scoped manifest/logs, and still
+reports separate `business` and `cleanup` status. A runtime failure is diagnosed from its
+first-failure evidence; a confirmed runner or production-source defect is repaired in the
+smallest authorized source scope, then the routine command may be rerun without acquiring an
+implementation-package or historical-predecessor prerequisite. A timeout extension, retry,
+fixture deletion, or status rewrite is never a routine-command fix.
+
+The ordinary whole-suite entry is `scripts/test/r5-remote-testcontainers.mjs --all`. It derives
+every Java source carrying `@Testcontainers` into its owning Gradle `:test` task and fully-qualified
+selector at run time, starts exactly three isolated remote Docker-daemon lanes, and runs one test at
+a time within each lane. It initially partitions the current sorted denominator as evenly as possible
+(22 becomes 7/7/8); when a lane exhausts its own queue it deterministically takes an unstarted member
+from the longest remaining lane queue, so a healthy lane does not idle. A lane stops at its own first
+failure, while surviving lanes continue and the parent collects up to three lane first failures. Each
+lane initializes its source workspace once; the suite workspace is then reclaimed only after all lanes
+finish. A fresh `--all` run never reuses an earlier PASS target: after root-cause repair it reruns the
+entire current denominator. A newly annotated test is therefore admitted on the next normal `--all`
+run without editing a fixed count or a hand-maintained allowlist; an unparseable annotated source,
+duplicate task/selector, shared Engine ID, or incomplete suite execution is fail-closed.
+The same source discovery derives container image references before lanes begin: the managed warmup
+uses the default daemon cache once and imports exact images into all three isolated daemons. A cached
+image must not recontact its registry; an image reference that cannot be resolved from the annotated
+source fails closed rather than causing an unreported lane-time pull.
+`--discover` is a read-only audit of the current derived target set. The BPF 196 selector remains a
+separate, exact performance contract and must not be weakened to make the general suite extensible.
+
+Every discovered Docker-backed Gradle `Test` task must execute fresh for the current invocation.
+The build configuration may keep compilation and dependency preparation cacheable, but must disable
+up-to-date and build-cache reuse for the Docker-backed `Test` task itself. After collection, the
+managed runner reads the target Gradle log and rejects `FROM-CACHE`, `UP-TO-DATE`, `NO-SOURCE`,
+`SKIPPED`, or a missing target task line. The target is matched as an exact task token; a similarly
+named task such as `testClasses` cannot satisfy `test`. A skipped task is a runner failure, not a
+business PASS, and must not be repaired with a timeout, retry, or result-file fabrication.
+
+For the current backend-performance run, the authorized operational sequence is
+Testcontainers business+cleanup PASS, then reset, managed DEV start, and explicit `r5-full`
+seed. Browser L2 is not part of this sequence.
+
 ## 1. Recover the execution truth before touching an environment
 
 Read the governing source and classify the requested action exactly. Do not infer the execution

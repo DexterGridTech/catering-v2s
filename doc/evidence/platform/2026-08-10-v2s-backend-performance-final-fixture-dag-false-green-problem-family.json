@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "FINAL_FIXTURE_DAG_FALSE_GREEN_AND_CONTEXT_OMISSION",
+  "genericProblem": "A structurally complete fixture catalog can appear executable when predecessor outputs, secret/session lifecycle and materializer consumption were never reopened or mechanically connected.",
+  "rootCauseClass": "DESIGN_OMISSION_AND_STATIC_CONTROL_FALSE_GREEN",
+  "finiteDenominator": [
+    "396 final fixture rows",
+    "462 path binding occurrences",
+    "92 query rows and 130 query occurrences",
+    "113 command builder declarations",
+    "9 session declarations",
+    "14 predecessor declarations",
+    "managed local-runtime bootstrap credential handoff",
+    "final fixture materializer and workload transport paths",
+    "six catalog category-delete/temporary-promotion final rows"
+  ],
+  "searchedSurfaces": [
+    "contracts/policy/backend-performance-final-fixture-catalog.json",
+    "scripts/check/backend-performance-final-fixture-catalog",
+    "scripts/test/backend-performance-final-fixtures.mjs",
+    "scripts/test/backend-performance-workload.mjs",
+    "scripts/dev/managed-isolated-local-runtime.mjs",
+    "scripts/dev/backend-performance-final-managed-adapter.mjs",
+    "scripts/test/http-diagnostic-workload.mjs",
+    "scripts/test/catalog-inventory-l2-test-fixture.mjs",
+    "modules/catalog CatalogOwnerService and owner integration/contract tests",
+    "catalog-inventory design byte coverage, generated OpenAPI/wire projections and operations catalog consumer",
+    "project-memory kernels and six-dimension routed implementation/evidence memory"
+  ],
+  "searchQueries": [
+    "fixturePlan pathBindings producerReadbackKey stateKey",
+    "sessionPlanId materializeFinalFixtureRequest queryBindings",
+    "V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL platform password-login Set-Cookie",
+    "prepareFinalFixtureState BP_FINAL_ADAPTER_FIXTURE_ASSEMBLER_MISSING",
+    "EXTERNAL_ORDER_TEMPORARY GOVERNANCE_TODO createOperationsCatalogItem saveOperationsCatalogItem",
+    "CatalogCategoryDeleteReadback deletedSubtreeSize deletedCategoryCodes",
+    "TemporaryPromotionPreflight response.data.data envelope",
+    "scripts/context/recall-memory --task-kind implementation --domain platform --consumer-face backend --owner platform --impact evidence --trigger implementation"
+  ],
+  "counterexamples": [
+    {
+      "id": "CE-01",
+      "description": "Static recipe/catalog denominator validation is legitimate for structural route and OpenAPI drift, but it is not evidence that owner-derived session/body/path facts are executable."
+    },
+    {
+      "id": "CE-02",
+      "description": "The final measurement secret may authenticate observation headers but must never act as a user credential, cookie, OTP, grant or default identity."
+    },
+    {
+      "id": "CE-03",
+      "description": "A temporary mocked owner HTTP test may prove fail-closed materializer behavior, but it is not final managed dynamic evidence."
+    },
+    {
+      "id": "CE-04",
+      "description": "An R5-only terminal SQL fixture is valid only for its explicit inv-expired exception; using it for a reachable temporary catalog item would bypass the normal owner/session/capability lifecycle."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "FFDG-01",
+      "fact": "A path binding may name a nonexistent stateKey and an unrelated existing producer readback without current checker failure; query/session declarations are likewise not consumed by the materializer.",
+      "applicability": "All 396 final fixture rows and their 462 path / 130 query occurrences."
+    },
+    {
+      "findingId": "FFDG-02",
+      "fact": "Managed runtime creates an ephemeral platform bootstrap credential but exposes no adapter-only capability; final fixture preparation cannot derive an authenticated session without reading private.env or misusing the measurement secret.",
+      "applicability": "Final managed local-runtime start, adapter fixture phase, and all authenticated fixture families."
+    },
+    {
+      "findingId": "FFDG-03",
+      "fact": "Before resuming source mutation after the user warning, the implementation/evidence project-memory route and its controlling source references had to be reopened; source-only reasoning is insufficient.",
+      "applicability": "Every fixture-DAG design/implementation point in the final acceptance package."
+    },
+    {
+      "findingId": "FFDG-04",
+      "fact": "A reusable algorithm name or family-level response is not a field-level authority: twenty template-generated operation variants need their exact variant source span, and five assignment-revocation entries currently point to the wrong source procedure.",
+      "applicability": "All 103 reused command algorithms / 210 command rows, with 20 template variants and 5 known source-selector drift entries requiring explicit correction."
+    },
+    {
+      "findingId": "FFDG-05",
+      "fact": "The ten final-only builders need real predicate-producing predecessor nodes (for example deletable category, immediately preceding promotion digest for the same item, and sortable dictionary pair); a generic list readback cannot safely supply their body, CAS or postcondition fields.",
+      "applicability": "10 new command algorithms / 20 command rows and the owner-HTTP preparation nodes that make their requests meaningful."
+    },
+    {
+      "findingId": "FFDG-06",
+      "fact": "Eight public platform-password-recovery fixture rows are misclassified as ordinary platform-session work while the declared public recovery plan is unused; recovery uses its own flow cookie and must never inherit V2S_PLATFORM_SESSION.",
+      "applicability": "The four U04 parity and four U07 route platform-password-recovery rows plus all nine final session-plan declarations."
+    },
+    {
+      "findingId": "FFDG-07",
+      "fact": "A final graph may follow a structurally named OpenAPI response while the catalog owner emits a different field or envelope shape. Category delete omits the declared subtree fields, and temporary-promotion preflight emits a double envelope that has leaked into its UI consumer.",
+      "applicability": "deleteOperationsCatalogCategory plus temporary promotion preflight/execute across their U04 and U07 rows (six rows total)."
+    },
+    {
+      "findingId": "FFDG-08",
+      "fact": "A catalog state can be falsely classified as unreachable when the final catalog cites only generic predecessor labels. The temporary external-order state is reachable through normal create, save and detail owner HTTP operations and must not be diverted to a terminal fixture, SQL or a new product API.",
+      "applicability": "Temporary-promotion preflight/execute and their final-only run-scoped preparation chain."
+    },
+    {
+      "findingId": "FFDG-09",
+      "fact": "A declared replay policy can be dishonest when a command's receipt lookup and typed grant/context owner recheck occur in an order that makes same-key replay either bypass authorization or reach a deleted/mutated fact before receipt resolution.",
+      "applicability": "The 230 non-GET final fixture rows: 202 IDEMPOTENT_SAME_KEY, 8 SAME_KEY_ONLY and 20 OTP_GRANT_ONE_TIME rows. The immediate six-path correction proves the two catalog-delete rows explicitly; the later executable fixture-DAG design must classify every sibling from its owner receipt/recheck ordering."
+    },
+    {
+      "findingId": "FFDG-10",
+      "fact": "An existing managed API runner can falsely model a normal owner-HTTP fixture by attempting to persist a state that the same owner correctly rejects, or can mask an owner/OpenAPI drift by dropping a contract-required edge scope field; retrying that setup then obscures the first business failure with idempotency mismatch. Brand-copy preflight is a canonical compatibility readback, while execute applies supplied referenceMappings validation; the runner must preserve that sequence rather than inventing an invalid persisted source state.",
+      "applicability": "The finite CI-API-018 structural compatibility matrix: six rows, including the reference-mapping case, plus the CI-API-012 count/increase/adjust owner commands. Valid source state must be created through normal owner HTTP; reference mapping conflict is exercised by a contradictory request mapping against an existing target fact; owner action validation must accept all and only OpenAPI-required transport fields."
+    },
+    {
+      "findingId": "FFDG-11",
+      "fact": "A coordinated command can pass a complete opaque cross-owner plan or a combined digest to an owner with a narrower vocabulary or owner-local digest; treating that as a runner defect conceals a product boundary error. Likewise, a valid authenticated request outside an operation's allowed data-node type must retain its typed catalog scope problem rather than being collapsed into a generic platform denial.",
+      "applicability": "The finite first-failure family discovered by the existing catalog L2: CI-API-015 copy edge kind/preflight behavior, CI-API-017 and CI-API-020 cross-owner mapping consumption, CI-API-022 combined digest plus non-production fault admission, and CI-API-025 catalog scope problem mapping."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "FFDG-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-final-fixture-catalog",
+      "evidence": "Add finite execution-node/output references, DAG reachability and real red mutations for unknown/unrelated producer, missing predecessor, cycle and selector drift."
+    },
+    {
+      "findingId": "FFDG-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "managed-isolated-local-runtime plus final-managed-adapter focused tests",
+      "evidence": "Use a one-time opaque WeakMap capability; red-test forged, wrong-run, reused, leaked and measurement-secret-as-login paths."
+    },
+    {
+      "findingId": "FFDG-03",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "project-memory/operations/implementation-source-reread-discipline.md",
+      "evidence": "Record six-dimension routed-memory and owning-source reread before each bounded fixture-DAG change and verify it in the independent review checklist."
+    },
+    {
+      "findingId": "FFDG-04",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-final-fixture-catalog",
+      "evidence": "Require each reused algorithm to name its exact operation, function/span selector and variant; red-test a wrong procedure and a template target-type mismatch."
+    },
+    {
+      "findingId": "FFDG-05",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-final-fixture-catalog",
+      "evidence": "Require every body/CAS/postcondition field to reference a reachable typed node output with its selection predicate; red-test unrelated list output and cross-item preflight digest."
+    },
+    {
+      "findingId": "FFDG-06",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-final-fixture-catalog",
+      "evidence": "Require the exact eight public platform-recovery rows to consume PUBLIC_PLATFORM_RECOVERY and validate the private recovery-cookie chain, rolling context replacement and no ordinary session aliasing."
+    },
+    {
+      "findingId": "FFDG-07",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "catalog owner focused tests, catalog-inventory generator checks and scripts/check/backend-performance-final-fixture-catalog",
+      "evidence": "Assert canonical owner response fields/envelope at raw HTTP boundary and reject a legacy category delete field or response.data.data promotion selector before final graph admission."
+    },
+    {
+      "findingId": "FFDG-08",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "final fixture graph design/review checklist",
+      "evidence": "For every claimed terminal or special fixture, reopen source policy and normal owner HTTP lifecycle; require an explicit no-normal-lifecycle proof before any terminal exception or new product capability is allowed."
+    },
+    {
+      "findingId": "FFDG-09",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "later executable fixture-DAG design and implementation review checklist",
+      "evidence": "For each of the 202/8/20 replay-policy rows, reopen the owner receipt and typed grant/context recheck ordering; prove same-key replay is either authorization-safe or classify it truthfully without globally moving receipt lookup ahead of owner recheck."
+    },
+    {
+      "findingId": "FFDG-10",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/catalog-inventory-api.mjs existing managed catalog L2 API stage",
+      "evidence": "Use only normal owner-HTTP fixture creation; preserve the preflight compatibility readback and assert execute-time referenceMappings validation against an owner-existing target reference, so a missing persisted relation is never required. Reconcile every closed owner action field set to the canonical edge/OpenAPI transport contract."
+    },
+    {
+      "findingId": "FFDG-11",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "existing catalog/inventory module integration tests, command-context/problem mapping tests, r5-dev runner test and managed catalog L2",
+      "evidence": "Require owner-local digest derivation before coordinated execute, owner-specific consumption of full opaque plans, typed scope-denial mapping for a forbidden authenticated catalog request, and nonsecret fault admission propagation; retain normal owner HTTP fixtures and existing managed topology."
+    }
+  ]
+}

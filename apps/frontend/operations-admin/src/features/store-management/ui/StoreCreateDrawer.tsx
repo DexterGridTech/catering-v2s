@@ -1,12 +1,12 @@
 import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
 import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
-import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type JsonValue, type OrganizationStore} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type OrganizationStore} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
+import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type Values = {
   brandId?: string;
@@ -15,13 +15,8 @@ type Values = {
   code: string;
   name: string;
   notes?: string;
-  extensionValues?: Record<string, JsonValue | Dayjs>;
+  extensionValues?: OrganizationExtensionFormValues;
 };
-
-function serializedExtensionValues(definition: ExtensionDefinition | undefined, values?: Values['extensionValues']): Record<string, JsonValue> {
-  const dateKeys = new Set((definition?.definitions ?? []).filter((field) => field.type === 'DATE').map((field) => field.key));
-  return Object.fromEntries(Object.entries(values ?? {}).map(([key, value]) => [key, dateKeys.has(key) && dayjs.isDayjs(value) ? value.format('YYYY-MM-DD') : value])) as Record<string, JsonValue>;
-}
 
 function extensionFields(definition?: ExtensionDefinition) {
   return (definition?.definitions ?? [])
@@ -101,7 +96,7 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     try {
       const store = await operationsClient.createOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onCreated(store);

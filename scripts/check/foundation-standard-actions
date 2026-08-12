@@ -46,6 +46,20 @@ set -e
 [[ "$provider_status" -ne 0 ]] || { echo "PROVIDER_EXECUTABLE_PATH_RED=FAIL"; exit 2; }
 echo "PROVIDER_EXECUTABLE_PATH_RED=PASS"
 
+node - "$provider_fixture/tools/verify-gates/cli.mjs" <<'NODE'
+const fs = require("node:fs");
+const file = process.argv[2];
+const source = fs.readFileSync(file, "utf8");
+if (!source.includes('from "typescript"')) process.exit(2);
+fs.writeFileSync(file, source.replace('from "typescript"', 'from "semantic-index"'));
+NODE
+set +e
+V2S_CHECK_ROOT="$provider_fixture" scripts/check/provider-free-context >/dev/null 2>&1
+dependency_status=$?
+set -e
+[[ "$dependency_status" -ne 0 ]] || { echo "PROVIDER_UNDECLARED_DEPENDENCY_RED=FAIL"; exit 2; }
+echo "PROVIDER_UNDECLARED_DEPENDENCY_RED=PASS"
+
 set +e
 scripts/memory/query \
   --task-kind unknown --domain platform --consumer-face backend \

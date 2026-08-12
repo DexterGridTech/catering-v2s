@@ -532,8 +532,17 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "object",
-            "additionalProperties": true
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fieldKey", "valueJson", "mode"],
+              "properties": {
+                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
+                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
+                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
+              }
+            }
           }
         }
       },
@@ -670,7 +679,6 @@
         "required": [
           "name",
           "extensionValues",
-          "extensionRuleRevision",
           "expectedVersion"
         ],
         "properties": {
@@ -690,13 +698,17 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "extensionRuleRevision": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fieldKey", "valueJson", "mode"],
+              "properties": {
+                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
+                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
+                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
+              }
+            }
           },
           "expectedVersion": {
             "type": "integer",

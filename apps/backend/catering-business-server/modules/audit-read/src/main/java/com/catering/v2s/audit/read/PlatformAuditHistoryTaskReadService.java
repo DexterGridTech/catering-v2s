@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Closed platform-audit task reader with seven compile-time target branches. */
 @Service
-public final class PlatformAuditHistoryTaskReadService {
+public class PlatformAuditHistoryTaskReadService {
     private final PlatformWorkspaceAuditHistoryService groupWorkspaceAudit;
     private final WorkspaceAdministrationService workspaces;
     private final PlatformIamAuditHistoryService platformIamAudit;

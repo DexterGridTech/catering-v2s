@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend", "platform", "contract", "frontend-platform", "product"]
 impacts: ["architecture", "database", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review"]
-assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY"]
-sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY"]
+sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
 ---
 
 # HTTP CRUD efficiency design redlines
@@ -66,6 +66,51 @@ is operation-specific, not a global performance threshold.
   retain their own writes; no cross-schema DML, repository/entity import or convenience BFF is allowed.
   Before moving a typed failure, scan every cross-owner consumer, edge problem mapper and owner-internal
   direct reference; a partial migration leaves a second public contract.
+- Command transaction form for `OWNER_LOCAL_EFFICIENCY_REPAIR`: every operations command first enters
+  its existing `REQUIRED` application-handler transaction, then obtains each owner-local command fact
+  exactly once:
+  workspace-IAM produces the authenticated active-assignment, enabled-role and capability projection;
+  organization produces the selected target/path-and-range judgment; contract produces only its own
+  derived state. A typed immutable projection may cross an owner API boundary, but no owner may rebuild
+  another owner’s facts, use a request/global cache to evade fresh command authorization, or receive a
+  generic fact map/callback. Command-following owner readback stays in that same transaction when it is
+  needed for the response. Receipt claim, owner recheck, CAS, audit and typed denial remain intact.
+  The exact applicable operation set and the source anchors for this pattern must be guarded by the
+  existing `scripts/check/backend-performance-sql-merge-coverage` gate after **every** source or test
+  change in its implementation package; a skipped gate is a failed implementation check, not a later
+  package-exit omission. The gate derives every `OWNER_COMMAND + REQUIRED +
+  WORKSPACE_EXECUTION_CONTEXT` row from the operation-handler registry on each run: each row has one
+  exact named application handler, its own `REQUIRED` entry and in-transaction context resolution, while
+  edge has neither transaction nor command-context resolution. A future matching registry row without
+  that exact handler must fail rather than inheriting a controller count or a shared facade. The gate must
+  reject generic operation-id/map/callback dispatch and retain real source red mutations, including a
+  missing handler, duplicated handler, wrong handler operation, edge transaction and pre-transaction
+  context resolution. Per-operation validation folding into `EXISTS`/CTE is a separate, explicitly
+  measured batch and must not be smuggled into this shared-context pattern.
+- `EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY`: a typed public owner command carries dynamic
+  extension data only as an owner-native immutable submission list whose entries have `fieldKey`,
+  canonical JSON text and explicit `SET` or `CLEAR` intent. An omitted field is not submitted;
+  `CLEAR` must never be inferred from Java `null` or literal JSON text `"null"`. Only the extension
+  owner interprets the JSON text against the current definition, and the definition revision remains
+  owner-generated persistence/readback evidence rather than a client CAS. New owner command APIs,
+  adapters and generated runtime bindings must not expose `Map`, `JsonNode` or `ObjectNode` for this
+  boundary. Legacy map-shaped paths are a migration counterexample, not a reusable implementation
+  pattern. When a command response needs cross-owner facts, its one-operation composition producer
+  remains inside the same `REQUIRED` transaction, calls only declared typed readbacks, reuses the
+  authoritative existing mapper, and may not add JDBC/repository access, a convenience BFF or an
+  owner-truth copy. The mechanical prevention is the command topology gate with real red mutations
+  for mode/null confusion, generic extension escape, an extra composition query and mapper drift.
+- `EXPLAINABLE_COMMAND_GATE_REJECTION`: every failure emitted by that command-topology gate must
+  contain three stable fields: `WHY` (the mechanically violated invariant), `BACKGROUND` (the
+  owner/transaction/security reason that makes the invariant necessary), and `PATTERN` (the
+  bounded compliant repair). The finite denominator is every gate failure code, including unknown
+  command profile, missing or extra topology/execution rows, unanchored source, pending closure,
+  duplicate or wrong handler, edge transaction/context resolution and generic-dispatch/JDBC escape.
+  A terse code-only error is a failure because it invites bypass through a different controller,
+  `Map`/callback facade or an unrelated transaction boundary. This remains a mechanical diagnostic:
+  it explains the already-declared rule, never invents business authorization or a new route. Its
+  prevention is the same gate's diagnostic-catalog self-test, which mutates representative failures
+  and rejects a message missing any of the three fields.
 - `COMMAND_CORRECTNESS_COST_PRESERVED`: never reduce statement count by deleting idempotency, CAS,
   audit, rate limiting/locks, owner authorization/state recheck, typed failure precision or required
   final owner readback. First remove repeated load/compose/write work only after proving every success,
@@ -92,6 +137,10 @@ controlled measurement demanded by `MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT`.
   integration, approved-Journey browser L2, or controlled performance study. Each reports only its
   own coverage/business/performance and cleanup evidence; raw HTTP coverage is never browser L2 or
   business PASS.
+
+- `ONE_REQUEST_ONE_TRANSACTION_ORIGIN`: every HTTP command path declares exactly one transaction origin; edge code never creates a transaction and participating owner calls never create a second origin.
+- `REQUEST_LOCAL_FACT_LOADED_ONCE`: fresh authorization, session and path facts are minted once at a named request-local origin and passed as immutable facts without bypassing a current owner recheck.
+- `OPERATION_DATABASE_SHAPE_DECLARED`: every canonical operation has one source-inventory-bound shape class, transaction origin, fact-loader set, component formula, evidence obligation and red discriminator before source admission.
 
 ## Review questions
 

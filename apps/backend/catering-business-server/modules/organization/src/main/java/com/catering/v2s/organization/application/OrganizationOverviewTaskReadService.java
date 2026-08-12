@@ -10,6 +10,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Array;
@@ -26,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Platform organization overview read model. Cross-owner reads are absent: every fact is organization-owned. */
 @Service
-public class OrganizationOverviewTaskReadService {
+public class OrganizationOverviewTaskReadService implements OperationsStoreCommandApi.StoreDetailReadbackApi {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final JdbcTemplate jdbc;
     private final ExtensionDefinitionLookup definitions;
@@ -108,13 +109,13 @@ public class OrganizationOverviewTaskReadService {
                   FROM organization.project_phase_name phase JOIN nodes node ON node.id=phase.project_id
                  GROUP BY phase.project_id
             ), business_rows AS (
-                SELECT id, code, name, NULL::text AS legal_name, NULL::text AS credit_code, alias, remark AS notes, status, version, created_at_epoch_millis, updated_at_epoch_millis, 'BRAND'::text AS type
+                SELECT b.id, b.code, b.name, NULL::text AS legal_name, NULL::text AS credit_code, b.alias, b.remark AS notes, b.status, b.version, b.created_at_epoch_millis, b.updated_at_epoch_millis, 'BRAND'::text AS type
                   FROM organization.brand b, params p WHERE b.workspace_uuid=p.workspace_uuid AND b.group_workspace_key=p.workspace_key
                 UNION ALL
-                SELECT id, code, name, legal_name, credit_code, NULL::text, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis, 'TENANT'::text
+                SELECT t.id, t.code, t.name, t.legal_name, t.credit_code, NULL::text, t.remark, t.status, t.version, t.created_at_epoch_millis, t.updated_at_epoch_millis, 'TENANT'::text
                   FROM organization.tenant t, params p WHERE t.workspace_uuid=p.workspace_uuid AND t.group_workspace_key=p.workspace_key
                 UNION ALL
-                SELECT id, code, name, legal_name, credit_code, NULL::text, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis, 'HEAD_COMPANY'::text
+                SELECT h.id, h.code, h.name, h.legal_name, h.credit_code, NULL::text, h.remark, h.status, h.version, h.created_at_epoch_millis, h.updated_at_epoch_millis, 'HEAD_COMPANY'::text
                   FROM organization.head_company h, params p WHERE h.workspace_uuid=p.workspace_uuid AND h.group_workspace_key=p.workspace_key
             ), all_items AS (
                 SELECT n.id, 'HIERARCHY'::text AS category, n.node_type AS type, n.code, n.name, n.status, 'MANUAL'::text AS source,
@@ -166,7 +167,7 @@ public class OrganizationOverviewTaskReadService {
                    AND (p.head_company_id IS NULL OR item.head_filter_id=p.head_company_id)
             ), paged AS (
                 SELECT * FROM filtered
-                 ORDER BY """ + platformOrder(safe) + """
+                 ORDER BY""" + " " + platformOrder(safe) + """
                  LIMIT ? OFFSET ?
             ), filter_options AS (
                 SELECT COALESCE(jsonb_agg(jsonb_build_object('kind', kind, 'id', id, 'code', code, 'name', name) ORDER BY kind, code), '[]'::jsonb) AS value
@@ -186,7 +187,7 @@ public class OrganizationOverviewTaskReadService {
                        'legalName', legal_name, 'unifiedSocialCreditCode', credit_code, 'alias', alias,
                        'project', project, 'brand', brand, 'tenant', tenant, 'headCompany', head_company,
                        'projectPhases', project_phases
-                   ) ORDER BY """ + platformOrder(safe) + ") FROM paged), '[]'::jsonb)::text,\n" + """
+                   ) ORDER BY""" + " " + platformOrder(safe) + ") FROM paged), '[]'::jsonb)::text,\n" + """
                    filter_options.value::text
               FROM filter_options
             """), statement -> {
@@ -215,6 +216,19 @@ public class OrganizationOverviewTaskReadService {
             case ServiceNodeTypes.STORE -> storeDetail(workspaceUuid, key, itemId);
             default -> throw new IllegalArgumentException("unsupported overview category");
         };
+    }
+
+    /** Organization-owned typed command readback; it does not expose an application task-view type. */
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsStoreCommandApi.StoreOrganizationDetailReadback readStoreDetail(OperationsStoreCommandApi.StoreDetailQuery query) {
+        Item item = detail(query.workspaceUuid(), query.groupWorkspaceKey(), ServiceNodeTypes.STORE, query.storeId());
+        return new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
+            reference(item.project()),
+            reference(item.brand()),
+            reference(item.tenant()),
+            reference(item.headCompany())
+        );
     }
 
     /**
@@ -361,6 +375,10 @@ public class OrganizationOverviewTaskReadService {
         });
         Item required = required(item);
         return withExtensionFields(required, extensionFields(workspaceUuid, key, ExtensionHostTypes.STORE, required.id()));
+    }
+
+    private static OperationsStoreCommandApi.Reference reference(Reference value) {
+        return value == null ? null : new OperationsStoreCommandApi.Reference(value.id(), value.code(), value.name());
     }
 
     private long count(UUID workspaceUuid, String key, String category, Query query) {

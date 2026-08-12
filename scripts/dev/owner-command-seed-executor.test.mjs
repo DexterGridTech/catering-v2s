@@ -158,4 +158,7 @@ test('formal seed defines and reads back every extension host before creating ow
   assert.match(source, /resolveExtensionValues\(definitionFixture, ids\.extensionDefinition/);
   assert.match(source, /assertExtensionValueReadback\(created, extensionValues\)/);
   assert.ok(source.indexOf('for (const definition of fixture.stableFixtures.extensionDefinitions)') < source.indexOf('for (const group of fixture.stableFixtures.organization.commercialGroups)'));
+  assert.match(source, /function extensionSubmission\(values\)[\s\S]*valueJson: JSON\.stringify\(value\)[\s\S]*mode: 'SET'/);
+  assert.equal((source.match(/extensionValues: extensionSubmission\(extensionValues\)/g) ?? []).length, 7);
+  assert.match(source, /initializeCommercialGroup[\s\S]*body: \{groupCode: group\.code, groupName: group\.name, extensionValues,/);
 });

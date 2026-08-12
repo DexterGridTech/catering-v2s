@@ -78,6 +78,11 @@
       "id": "ASSERTION_SCENARIO_SEMANTIC_TRACE_REVIEW",
       "owner": "Codex + Claude",
       "requiredEvidence": "For requirement or IA assertions mapped to scenarios, review the observable precondition-action-result behavior rather than trusting exact-set coverage alone. Sample the scenarios with the highest IA binding count, at least one assertion per delivery unit, and every high-risk copy, authorization or inventory-write assertion; compare owning requirement or IA, fixture input and expected result. A generic success scenario carrying unrelated IA IDs is a finding. This is semantic review and must not be converted into a keyword checker."
+    },
+    {
+      "id": "TEST_HEALTH_CLOSED_LOOP_REVIEW",
+      "owner": "Codex + Claude",
+      "requiredEvidence": "Review the finite test-health denominator and actual execution receipts, assertion-level value versus source-text dispositions, typed failure propagation, legacy test retirement proof, and explicit separation of static evidence from dynamic Testcontainers/DEV/seed/L2/browser/business/cleanup evidence. This checklist is a review pointer only; it does not alter rules[] or authorize a dynamic environment."
     }
   ],
   "rules": [

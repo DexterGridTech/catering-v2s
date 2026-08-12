@@ -3,7 +3,7 @@ import {adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps, NameCodeT
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {CatalogInventoryEnvelope, CatalogItemSaveRequest, JsonValue, ProductionTagPage, TemporaryPromotionExecuteRequest, TemporaryPromotionPreflight, TemporaryPromotionPreflightRequest} from '../../../app/api/generated/catalog-inventory-edge';
+import type {CatalogItemSaveRequest, JsonValue, TemporaryPromotionExecuteRequest, TemporaryPromotionPreflight, TemporaryPromotionPreflightRequest} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import type {CatalogCompositeComponent, CatalogCompositeGroup, CatalogDetail, CatalogInventoryBomEntry, CatalogOrderOptionGroup, CatalogOrderOptionValue, CatalogSkuRow, CatalogSkuVariantDimension} from '../model/catalogModel';
 import {decodeDetail, decodeItems, decodeNavigation, displayValue} from '../model/catalogModel';
@@ -110,10 +110,10 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   const headers = useMemo(() => brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined, [brandRef]);
   const request = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItem({itemCode: itemCode ?? ''}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, itemCode, queryContext.scopeRef]);
   const detailQuery = operationsRtk.useGetOperationsCatalogItemQuery(request, {skip: !itemCode});
-  const detail = useMemo(() => decodeDetail(detailQuery.data as CatalogInventoryEnvelope | undefined), [detailQuery.data]);
+  const detail = useMemo(() => decodeDetail(detailQuery.data), [detailQuery.data]);
   const productionTagsRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsProductionTags({}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, queryContext.scopeRef]);
   const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {skip: !itemCode || !canWriteCatalog});
-  const availableProductionTags = (((productionTagsQuery.data as CatalogInventoryEnvelope | undefined)?.data as ProductionTagPage['data'] | undefined)?.entries ?? []).map((entry) => ({code: entry.code, name: entry.name, owner: 'fulfillment-production'}));
+  const availableProductionTags = (productionTagsQuery.data?.data.entries ?? []).map((entry) => ({code: entry.code, name: entry.name, owner: 'fulfillment-production'}));
   const [save] = operationsRtk.useSaveOperationsCatalogItemMutation();
   const [stageAsset] = operationsRtk.useStageOperationsCatalogAssetMutation();
   const [releaseAsset] = operationsRtk.useReleaseOperationsCatalogStagedAssetMutation();
@@ -348,7 +348,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
         expectedSourceVersion: detail.item.version,
       };
       const response = await preflightPromotion(catalogInventoryRtkRequest.preflightOperationsTemporaryCatalogItemPromotion({itemCode}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
-      const value = (response as CatalogInventoryEnvelope<TemporaryPromotionPreflight>)?.data?.data;
+      const value = response.data;
       if (!value) throw new Error('TEMPORARY_PROMOTION_PREFLIGHT_MISSING');
       setPromotion(value);
     } catch (error) {
@@ -415,9 +415,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       const dataNodeRef = requireOperationsScopeRef(queryContext);
       const body = {dataNodeRef, fileName: file.name, content: file, mediaType: file.type || 'application/octet-stream', contentDigest: digest};
       const response = await stageAsset(catalogInventoryRtkRequest.stageOperationsCatalogAsset({}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
-      const responseEnvelope = response as CatalogInventoryEnvelope;
-      const result = responseEnvelope.result as CatalogInventoryEnvelope['result'];
-      const readback = (result && typeof result === 'object' && 'result' in result ? result.result : result) as {assetRef?: string; bindGrant?: string; mediaType?: string; version?: number} | undefined;
+      const readback = response.result;
       if (!readback?.assetRef || !readback.bindGrant) throw new Error('CATALOG_ASSET_STAGE_READBACK_MISSING');
       stagedMedia = {id, assetRef: readback.assetRef, bindGrant: readback.bindGrant, fileName: file.name, mediaType: readback.mediaType ?? file.type, status: 'READY', version: readback.version, staged: true};
       const previousAsset = previous ? {assetRef: previous.assetRef, version: previous.version, staged: previous.staged} : undefined;
@@ -478,8 +476,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       const dataNodeRef = requireOperationsScopeRef(queryContext);
       const body = {dataNodeRef, fileName: file.name, content: file, mediaType: file.type || 'application/octet-stream', contentDigest: await contentDigest(file)};
       const response = await stageAsset(catalogInventoryRtkRequest.stageOperationsCatalogAsset({}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body})).unwrap();
-      const result = (response as CatalogInventoryEnvelope).result as CatalogInventoryEnvelope['result'];
-      const readback = (result && typeof result === 'object' && 'result' in result ? result.result : result) as {assetRef?: string; bindGrant?: string; mediaType?: string; version?: number} | undefined;
+      const readback = response.result;
       if (!readback?.assetRef || !readback.bindGrant) throw new Error('CATALOG_ASSET_STAGE_READBACK_MISSING');
       stagedMedia = {...pending, assetRef: readback.assetRef, bindGrant: readback.bindGrant, mediaType: readback.mediaType ?? file.type, status: 'READY', version: readback.version};
       const readyMedia = stagedMedia;
@@ -872,8 +869,8 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
   const itemRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItems({}, {query: {dataNodeRef: queryContext.scopeRef ?? '', ...(keyword.trim() ? {keyword: keyword.trim()} : {}), ...(categoryRef ? {categoryRef, includeSubCategories: true} : {}), ...(cursor ? {cursor} : {}), pageSize: 20}, headers}), [categoryRef, cursor, headers, keyword, queryContext.scopeRef]);
   const navigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !open});
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
-  const navigation = decodeNavigation(navigationQuery.data as CatalogInventoryEnvelope | undefined);
-  const page = decodeItems(itemsQuery.data as CatalogInventoryEnvelope | undefined);
+  const navigation = decodeNavigation(navigationQuery.data);
+  const page = decodeItems(itemsQuery.data);
   const treeData = useMemo(() => buildCategoryTree(navigation.tree), [navigation.tree]);
   useEffect(() => { if (!open) { setKeyword(''); setCategoryRef(undefined); setCursor(''); } }, [open]);
   return <>

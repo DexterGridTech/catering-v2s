@@ -8,8 +8,8 @@
     "catalogId",
     "revision",
     "sourceBindings",
-    "seedBusinessLabels",
     "seedDatasets",
+    "seedBusinessLabels",
     "testDatasets",
     "scenarioCatalog",
     "denominators",
@@ -113,21 +113,60 @@
     "seedBusinessLabels": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["categories", "productionTags", "dictionary", "optionGroups", "units"],
+      "required": [
+        "categories",
+        "productionTags",
+        "dictionary",
+        "optionGroups",
+        "units"
+      ],
       "properties": {
-        "categories": {"type": "object", "additionalProperties": {"type": "string"}},
-        "productionTags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "categories": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "productionTags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "dictionary": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"],
+          "required": [
+            "SKU_ATTRIBUTE",
+            "SKU_ATTRIBUTE_VALUE"
+          ],
           "properties": {
-            "SKU_ATTRIBUTE": {"type": "object", "additionalProperties": {"type": "string"}},
-            "SKU_ATTRIBUTE_VALUE": {"type": "object", "additionalProperties": {"type": "string"}}
+            "SKU_ATTRIBUTE": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "SKU_ATTRIBUTE_VALUE": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
           }
         },
-        "optionGroups": {"type": "object", "additionalProperties": {"type": "string"}},
-        "units": {"type": "object", "additionalProperties": {"type": "string"}}
+        "optionGroups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "units": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
       }
     },
     "scenarioCatalog": {
@@ -1275,6 +1314,17 @@
               }
             }
           }
+        },
+        "executionApplicability": {
+          "type": "string",
+          "enum": [
+            "NOT_APPLICABLE_WITH_REASON"
+          ],
+          "description": "execution applicability disposition"
+        },
+        "notApplicableReason": {
+          "type": "string",
+          "description": "reason why this fixture is not applicable to the current execution plane"
         }
       }
     }

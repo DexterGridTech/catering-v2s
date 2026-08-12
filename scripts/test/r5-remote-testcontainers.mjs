@@ -5,35 +5,251 @@
  */
 import {createHash, randomUUID} from 'node:crypto';
 import {spawn, spawnSync} from 'node:child_process';
-import {appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync} from 'node:fs';
+import {appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from '../dev/r5-remote-host-trust.mjs';
+import {buildDynamicReport, deriveScenarioResults, loadAuthoritativeContract} from './backend-performance-testcontainers-196.mjs';
+import {warmTestcontainersImages} from './r5-testcontainers-daemon-lanes.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const gradleArguments = process.argv.slice(2);
-const task = gradleArguments[0] ?? ':apps:backend:catering-business-server:modules:asset:test';
+const allTestcontainers = gradleArguments.length === 1 && gradleArguments[0] === '--all';
+const discoverTestcontainers = gradleArguments.length === 1 && gradleArguments[0] === '--discover';
+const task = gradleArguments[0] ?? null;
 const extraGradleArguments = gradleArguments.slice(1);
+const backendPerformance196Task = ':apps:backend:catering-business-server:test';
+const backendPerformance196Selector = 'dynamic.BackendPerformanceTestcontainers196Test';
+const isBackendPerformance196Run = task === backendPerformance196Task
+  && extraGradleArguments.length === 2
+  && extraGradleArguments[0] === '--tests'
+  && extraGradleArguments[1] === backendPerformance196Selector;
+const backendPerformance196ManagedReportName = 'backend-performance-testcontainers-196-managed-report.json';
+const backendPerformance196ManagedManifestName = 'backend-performance-testcontainers-196-managed-run-manifest.json';
+const backendPerformance196WorkloadResultName = 'backend-performance-196-workload-result.json';
+const backendPerformance196WorkloadCleanupStatus = 'NOT_OWNED_BY_WORKLOAD';
+const backendPerformance196WorkloadCleanupOwner = 'TESTCONTAINERS_AND_MANAGED_RUNNER';
+const stableFailureCode = /^(?:[A-Z][A-Z0-9_]*|ENOENT)(?::[A-Za-z0-9_-]+)*$/;
+export const backendPerformance196SourcePaths = Object.freeze([
+  'scripts/test/backend-performance-testcontainers-196-remote-workload.mjs',
+  'apps/backend/catering-business-server/src/test/java/dynamic/BackendPerformanceTestcontainers196Test.java',
+]);
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const evidence = path.join(runtime, 'evidence', 'remote-testcontainers');
-const gradleHome = process.env.V2S_GRADLE_HOME ?? '/opt/homebrew/Cellar/gradle/9.6.1/libexec';
+// A normal managed invocation may use an explicit immutable distribution, but
+// must not fail merely because the caller did not re-export that path.  The
+// only fallback resolves the actual PATH executable then walks its own
+// <gradle-home>/bin/gradle structure; there is no machine-specific literal and
+// an unavailable/ambiguous installation still fails closed below.
+export const resolveGradleHome = ({environment = process.env, execute = spawnSync, resolvePath = realpathSync, exists = existsSync} = {}) => {
+  if (typeof environment.V2S_GRADLE_HOME === 'string' && environment.V2S_GRADLE_HOME.trim() !== '') {
+    return {path: environment.V2S_GRADLE_HOME, source: 'V2S_GRADLE_HOME'};
+  }
+  const result = execute('sh', ['-lc', 'command -v gradle'], {cwd: root, encoding: 'utf8'});
+  const executable = result.status === 0 ? String(result.stdout ?? '').trim().split(/\r?\n/).at(-1) : undefined;
+  if (!executable || !path.isAbsolute(executable)) return {path: undefined, source: 'UNRESOLVED'};
+  try {
+    const resolved = resolvePath(executable);
+    const packageRoot = path.dirname(path.dirname(resolved));
+    // Homebrew exposes the launcher at <cellar-version>/bin/gradle but keeps
+    // the actual Gradle distribution at <cellar-version>/libexec. Other
+    // installations use the package root directly.
+    const home = exists(path.join(packageRoot, 'libexec', 'bin', 'gradle')) ? path.join(packageRoot, 'libexec') : packageRoot;
+    return {path: home, source: 'PATH_GRADLE_EXECUTABLE'};
+  } catch { return {path: undefined, source: 'UNRESOLVED'}; }
+};
+const gradleHomeResolution = resolveGradleHome();
+const gradleHome = gradleHomeResolution.path;
 const remoteHostTrust = resolveTrustedRemoteHost(process.env);
 const remoteHost = remoteHostTrust.host;
+const laneDockerHost = process.env.V2S_TESTCONTAINERS_DOCKER_HOST;
+const laneWorkspace = process.env.V2S_TESTCONTAINERS_LANE_WORKSPACE;
+if (laneDockerHost !== undefined && !/^unix:\/\/\/run\/catering-v2s-testcontainers\/daemon-[1-3]\/docker\.sock$/.test(laneDockerHost)) {
+  throw new Error('TESTCONTAINERS_LANE_DOCKER_HOST_INVALID');
+}
+if (laneWorkspace !== undefined && !/^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+\/lane-[1-3]\/workspace$/.test(laneWorkspace)) {
+  throw new Error('TESTCONTAINERS_LANE_WORKSPACE_INVALID');
+}
+const finalAdapterParentRunId = process.env.V2S_FINAL_ADAPTER_PARENT_RUN_ID;
+const finalAdapterRuntime = process.env.V2S_FINAL_ADAPTER_RUNTIME;
 const runId = `r5-tc-${Date.now()}-${process.pid}`;
+const finalPerformanceRunId = isBackendPerformance196Run ? `backend-performance-final-${Date.now()}-${randomUUID().slice(0, 8)}` : undefined;
+const finalPerformanceNamespace = finalPerformanceRunId ? `v2s-backend-performance-${finalPerformanceRunId.slice(-8)}` : undefined;
+const bootstrapLogin = finalPerformanceRunId ? `performance-admin-${finalPerformanceRunId.slice(-8)}` : undefined;
 const remoteRoot = `/tmp/${runId}`;
-const remoteWorkspace = `${remoteRoot}/workspace`;
-const remoteGradle = `${remoteRoot}/gradle`;
+const remoteWorkspace = laneWorkspace ?? `${remoteRoot}/workspace`;
 const remoteResults = `${remoteRoot}/results`;
 const remoteDependencyCache = '/tmp/catering-v2s-r5-gradle-cache';
+const remoteGradleDistributionPrefix = '/tmp/catering-v2s-r5-gradle-distribution-';
 const requiredPhases = ['PREPARED', 'SOURCE_SYNCED', 'GRADLE_SYNCED', 'PROCESS_STARTED', 'RUNNING', 'COLLECTED', 'CLEANUP'];
 const requiredLifecycleEvents = ['LAUNCHED', 'RECONNECTED_CONTROL', 'COLLECTED_ARTIFACTS'];
 const resourceLimits = {maxPreviousLive: 0, maxPreviousRssMiB: 2048};
+// Gradle can legitimately be quiet while it creates a single-use daemon or
+// loads a warm image.  We diagnose after one minute of identical observable
+// state and terminate only after three minutes; this is a bounded evidence
+// window, not a test timeout or retry policy.
+const stallDiagnosticSamples = 6;
+const stallTerminationSamples = 18;
 const now = () => new Date().toISOString();
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-const workloadObservationKey = ({logBytes, workloadSha256, testResultBytes}) => `${logBytes}:${workloadSha256}:${testResultBytes}`;
+export const workloadObservationKey = ({logBytes, workloadSha256, testResultBytes, runtimeEvidenceSha256 = 'NONE', runtimeEvidenceBytes = 0, childHeartbeatSequence = 0}) => `${logBytes}:${workloadSha256}:${testResultBytes}:${runtimeEvidenceSha256}:${runtimeEvidenceBytes}:${childHeartbeatSequence}`;
 const quote = (value) => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = (value, limit = 240) => String(value || 'FAILED').trim().replace(/\s+/g, '_').slice(0, limit);
 const script = (...lines) => lines.join('\n');
+const runnerEvent = (event, fields = {}) => process.stdout.write(`R5_TESTCONTAINERS_${event} ${Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
+
+const testSourcePrefix = 'apps/backend/catering-business-server/';
+const suiteTargetBindingEnvironment = 'V2S_TESTCONTAINERS_SUITE_TARGET';
+const suiteTargetFields = ['sourcePath', 'task', 'selector', 'inputSha256'];
+export function testcontainersTargetForSource(relativePath, source) {
+  if (typeof relativePath !== 'string' || typeof source !== 'string' || !source.includes('@Testcontainers')) return null;
+  const sourceMatch = relativePath.match(/^apps\/backend\/catering-business-server\/(?:modules\/([a-z0-9-]+)\/)?src\/test\/java\/.+\.java$/);
+  const packageName = source.match(/^\s*package\s+([A-Za-z_][A-Za-z0-9_.]*);/m)?.[1];
+  const className = source.match(/^\s*(?:public\s+)?(?:abstract\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)\b/m)?.[1];
+  if (!sourceMatch || !packageName || !className) throw new Error(`TESTCONTAINERS_DISCOVERY_SOURCE_INVALID:${relativePath}`);
+  const moduleName = sourceMatch[1];
+  return Object.freeze({
+    sourcePath: relativePath,
+    task: moduleName ? `:apps:backend:catering-business-server:modules:${moduleName}:test` : ':apps:backend:catering-business-server:test',
+    selector: `${packageName}.${className}`,
+  });
+}
+
+const walkJavaSources = (directory, relative = '') => readdirSync(directory, {withFileTypes: true}).flatMap((entry) => {
+  const childRelative = path.posix.join(relative, entry.name);
+  const child = path.join(directory, entry.name);
+  if (entry.isDirectory()) return walkJavaSources(child, childRelative);
+  return entry.isFile() && entry.name.endsWith('.java') ? [childRelative] : [];
+});
+
+export function discoverTestcontainersTargets(sourceRoot = root) {
+  const backendRoot = path.join(sourceRoot, testSourcePrefix);
+  const targets = walkJavaSources(backendRoot).map((suffix) => {
+    const sourcePath = `${testSourcePrefix}${suffix}`;
+    return testcontainersTargetForSource(sourcePath, readFileSync(path.join(backendRoot, suffix), 'utf8'));
+  }).filter(Boolean).sort((left, right) => left.sourcePath.localeCompare(right.sourcePath));
+  if (targets.length === 0 || new Set(targets.map((entry) => `${entry.task}\u0000${entry.selector}`)).size !== targets.length) {
+    throw new Error('TESTCONTAINERS_DISCOVERY_DENOMINATOR_INVALID');
+  }
+  return Object.freeze(targets);
+}
+
+const walkFiles = (directory, relative = '') => readdirSync(directory, {withFileTypes: true}).flatMap((entry) => {
+  const childRelative = path.posix.join(relative, entry.name);
+  const child = path.join(directory, entry.name);
+  if (entry.isDirectory()) return walkFiles(child, childRelative);
+  return entry.isFile() ? [childRelative] : [];
+});
+
+const targetInputPaths = (target, sourceRoot = root) => {
+  const appRoot = 'apps/backend/catering-business-server';
+  const appPath = path.join(sourceRoot, appRoot);
+  const contractsPath = path.join(sourceRoot, 'contracts');
+  const moduleName = target.sourcePath.match(/^apps\/backend\/catering-business-server\/modules\/([a-z0-9-]+)\//)?.[1];
+  const targetBuildPath = moduleName ? `modules/${moduleName}/build.gradle.kts` : 'build.gradle.kts';
+  const requiredRoots = [appPath, contractsPath];
+  for (const required of requiredRoots) if (!existsSync(required)) throw new Error(`TESTCONTAINERS_TARGET_INPUT_ROOT_MISSING:${path.relative(sourceRoot, required)}`);
+  const appInputs = walkFiles(appPath).filter((relative) => relative === targetBuildPath
+    || relative.startsWith('src/main/')
+    || /^modules\/[^/]+\/src\/main\//.test(relative))
+    .map((relative) => path.posix.join(appRoot, relative));
+  const rootGradleInputs = ['settings.gradle.kts', 'build.gradle.kts', 'gradle.properties', 'gradle/libs.versions.toml']
+    .filter((relativePath) => existsSync(path.join(sourceRoot, relativePath)));
+  const staticInputs = [target.sourcePath, 'scripts/test/r5-remote-testcontainers.mjs', ...rootGradleInputs, ...appInputs, ...walkFiles(contractsPath).map((relative) => path.posix.join('contracts', relative))];
+  if (target.task === backendPerformance196Task && target.selector === backendPerformance196Selector) staticInputs.push(...backendPerformance196SourcePaths);
+  return [...new Set(staticInputs)].sort();
+};
+
+export function testcontainersTargetInputFingerprint(target, sourceRoot = root) {
+  if (!target?.sourcePath || !target?.task || !target?.selector) throw new Error('TESTCONTAINERS_TARGET_IDENTITY_INVALID');
+  const digest = createHash('sha256');
+  for (const relativePath of targetInputPaths(target, sourceRoot)) {
+    const file = path.join(sourceRoot, relativePath);
+    if (!existsSync(file)) throw new Error(`TESTCONTAINERS_TARGET_INPUT_MISSING:${relativePath}`);
+    digest.update(relativePath).update('\0').update(readFileSync(file)).update('\0');
+  }
+  return digest.digest('hex');
+}
+
+const suiteTargetFromEnvironment = () => {
+  const encoded = process.env[suiteTargetBindingEnvironment];
+  if (encoded === undefined) return null;
+  try {
+    const target = JSON.parse(encoded);
+    if (!target || Object.keys(target).length !== suiteTargetFields.length || suiteTargetFields.some((field) => typeof target[field] !== 'string' || target[field].trim() === '') || !/^[a-f0-9]{64}$/.test(target.inputSha256)) {
+      throw new Error();
+    }
+    return Object.freeze(Object.fromEntries(suiteTargetFields.map((field) => [field, target[field]])));
+  } catch {
+    fail('TESTCONTAINERS_SUITE_TARGET_BINDING_INVALID', 'ENVIRONMENT_BOUNDARY');
+  }
+};
+export function isReusableSuiteTargetPass(manifest, target) {
+  try { parseAndValidateRunManifest(manifest); } catch { return false; }
+  const binding = manifest.suiteTarget;
+  return manifest.business.status === 'PASS'
+    && manifest.cleanup.status === 'PASS'
+    && binding != null
+    && suiteTargetFields.every((field) => binding[field] === target[field]);
+}
+
+/**
+ * Testcontainers tasks observe external Docker/database state and must not be accepted
+ * from Gradle's cached or up-to-date result. This is a second execution-time proof in
+ * addition to the build-level cache opt-out, so a skipped task cannot silently become a
+ * business PASS with no fresh workload evidence.
+ */
+export function classifyGradleTestExecution(log, expectedTask) {
+  if (typeof log !== 'string' || typeof expectedTask !== 'string' || expectedTask.trim() === '') {
+    return {status: 'FAIL', reason: 'TESTCONTAINERS_TARGET_EXECUTION_LOG_INVALID'};
+  }
+  const taskPrefix = `> Task ${expectedTask}`;
+  const taskLine = log.split(/\r?\n/).map((line) => line.trim()).find((line) => line === taskPrefix || line.startsWith(`${taskPrefix} `));
+  if (!taskLine) return {status: 'FAIL', reason: 'TESTCONTAINERS_TARGET_TASK_NOT_OBSERVED'};
+  const skippedMarker = ['FROM-CACHE', 'UP-TO-DATE', 'NO-SOURCE', 'SKIPPED'].find((marker) => taskLine.endsWith(` ${marker}`));
+  if (skippedMarker) return {status: 'FAIL', reason: `TESTCONTAINERS_TARGET_NOT_EXECUTED:${skippedMarker}`, taskLine};
+  return {status: 'PASS', taskLine};
+}
+
+export function validateGradleHome(value, distributionAvailable) {
+  if (typeof value !== 'string' || value.trim() === '') throw new Error('ENV_GRADLE_HOME_REQUIRED');
+  if (!path.isAbsolute(value)) throw new Error('ENV_GRADLE_HOME_INVALID');
+  if (!distributionAvailable) throw new Error('ENV_GRADLE_DISTRIBUTION_UNAVAILABLE');
+  return value;
+}
+
+export function remoteGradleDistributionPath(distributionSha256) {
+  if (typeof distributionSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(distributionSha256)) throw new Error('GRADLE_DISTRIBUTION_SHA256_INVALID');
+  return `${remoteGradleDistributionPrefix}${distributionSha256}`;
+}
+
+export function validateGradleDistribution(distribution) {
+  if (!distribution || typeof distribution !== 'object' || typeof distribution.sha256 !== 'string' || !['PENDING', 'SYNCED', 'REUSED', 'REUSED_AFTER_RACE'].includes(distribution.status)) {
+    throw new Error('GRADLE_DISTRIBUTION_RECORD_INVALID');
+  }
+  if (distribution.path !== remoteGradleDistributionPath(distribution.sha256)) throw new Error('GRADLE_DISTRIBUTION_PATH_INVALID');
+  return distribution;
+}
+
+const gradleDistributionSha256 = (distributionHome) => {
+  const digest = createHash('sha256');
+  for (const relativePath of walkFiles(distributionHome).sort()) {
+    const file = path.join(distributionHome, relativePath);
+    const mode = statSync(file).mode & 0o777;
+    digest.update(relativePath).update('\0').update(String(mode)).update('\0').update(readFileSync(file)).update('\0');
+  }
+  return digest.digest('hex');
+};
+const gradleDistributionSha = gradleHome && existsSync(gradleHome) ? gradleDistributionSha256(gradleHome) : null;
+const remoteGradleDistribution = gradleDistributionSha ? remoteGradleDistributionPath(gradleDistributionSha) : null;
+
+const validateInvocation = () => {
+  if (!task) fail('TASK_REQUIRED', 'ENVIRONMENT_BOUNDARY');
+  if (!/^:[a-z0-9:-]+:test$/.test(task)) fail('TASK_MUST_BE_A_SINGLE_TEST_TASK', 'ENVIRONMENT_BOUNDARY');
+  if (extraGradleArguments.includes(backendPerformance196Selector) && !isBackendPerformance196Run) {
+    fail('BP_U06_REMOTE_INVOCATION_INVALID', 'ENVIRONMENT_BOUNDARY');
+  }
+};
 
 class RunnerFailure extends Error {
   constructor(reason, boundary = 'RUNNER') {
@@ -44,6 +260,19 @@ class RunnerFailure extends Error {
 }
 
 const fail = (reason, boundary) => { throw new RunnerFailure(reason, boundary); };
+const suiteTarget = suiteTargetFromEnvironment();
+export const validateBackendPerformance196SourcePaths = (presentPaths) => {
+  if (!Array.isArray(presentPaths)) throw new Error('BP_U06_REMOTE_SOURCE_PATHS_INVALID');
+  const present = new Set(presentPaths);
+  const missing = backendPerformance196SourcePaths.filter((sourcePath) => !present.has(sourcePath));
+  if (missing.length > 0) throw new Error(`BP_U06_REMOTE_SOURCE_MISSING:${missing.join(',')}`);
+  return [...backendPerformance196SourcePaths];
+};
+const finalAdapterBinding = () => {
+  if (finalAdapterParentRunId === undefined && finalAdapterRuntime === undefined) return undefined;
+  if (!/^backend-performance-final-\d+-[a-f0-9]{8}$/.test(finalAdapterParentRunId ?? '') || path.resolve(finalAdapterRuntime ?? '') !== runtime || task !== ':apps:backend:catering-business-server:test') fail('FINAL_ADAPTER_CHILD_BINDING_INVALID', 'ENVIRONMENT_BOUNDARY');
+  return {parentRunId: finalAdapterParentRunId, runtime, task, remoteHostFingerprint: remoteHostTrust.fingerprint};
+};
 const commandResult = (binary, args, options = {}) => spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
 const waitForClose = (child) => new Promise((resolve) => {
   let settled = false;
@@ -56,7 +285,9 @@ const command = (binary, args, options = {}) => {
   if (result.status !== 0) fail(`${binary}:${compact(result.stderr || result.stdout)}`, 'ENVIRONMENT_BOUNDARY');
   return result.stdout;
 };
-const remoteResult = (body) => commandResult('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', remoteHost, 'bash', '-s'], {input: body});
+const remoteResult = (body) => commandResult('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', remoteHost, 'bash', '-s'], {
+  input: laneDockerHost ? `export DOCKER_HOST=${quote(laneDockerHost)}\n${body}` : body,
+});
 const remote = (body) => {
   const result = remoteResult(body);
   if (result.status !== 0) fail(`SSH:${compact(result.stderr || result.stdout)}`, 'ENVIRONMENT_BOUNDARY');
@@ -68,7 +299,12 @@ const atomicWrite = (target, value) => {
   renameSync(temporary, target);
 };
 const previousControls = () => existsSync(evidence) ? readdirSync(evidence).flatMap((entry) => {
-  try { const manifest = JSON.parse(readFileSync(path.join(evidence, entry, 'run-manifest.json'), 'utf8')); const value = manifest.controlRecord?.value; return manifest.remote?.hostAlias === remoteHost && value?.pid && value?.bootId && value?.processStartTicks ? [{runId: manifest.runId, ...value}] : []; } catch { return []; }
+  try {
+    const manifest = JSON.parse(readFileSync(path.join(evidence, entry, 'run-manifest.json'), 'utf8'));
+    const value = manifest.controlRecord?.value;
+    const sameExecutionPlane = laneDockerHost ? manifest.testcontainersLane?.dockerHost === laneDockerHost : !manifest.testcontainersLane;
+    return manifest.remote?.hostAlias === remoteHost && sameExecutionPlane && value?.pid && value?.bootId && value?.processStartTicks ? [{runId: manifest.runId, ...value}] : [];
+  } catch { return []; }
 }) : [];
 const preflightResources = () => {
   const candidates = previousControls();
@@ -95,9 +331,11 @@ const validateControlRecord = (control, expected) => {
 
 export const parseAndValidateRunManifest = (manifest) => {
   if (!manifest || manifest.schemaVersion !== 1 || manifest.kind !== 'r5-managed-testcontainers-run') throw new Error('RUN_MANIFEST_INVALID');
-  for (const key of ['runId', 'task', 'startedAt', 'remote', 'sourceSha256', 'logPath', 'phaseEvents', 'heartbeats', 'logInspection', 'controlRecord', 'business', 'cleanup', 'firstFailure', 'lastKnownGood', 'brokenBoundary']) {
+  for (const key of ['runId', 'task', 'startedAt', 'remote', 'sourceSha256', 'sourceSync', 'logPath', 'phaseEvents', 'heartbeats', 'logInspection', 'controlRecord', 'business', 'cleanup', 'firstFailure', 'lastKnownGood', 'brokenBoundary']) {
     if (!(key in manifest)) throw new Error(`RUN_MANIFEST_FIELD_MISSING:${key}`);
   }
+  if (!manifest.sourceSync || !['PENDING', 'PASS', 'FAIL'].includes(manifest.sourceSync.status) || !Array.isArray(manifest.sourceSync.requiredPaths)) throw new Error('RUN_MANIFEST_SOURCE_SYNC_INVALID');
+  validateGradleDistribution(manifest.gradleDistribution);
   const phases = manifest.phaseEvents.map((event) => event.phase);
   for (const phase of requiredPhases) if (!phases.includes(phase)) throw new Error(`MISSING_PHASE:${phase}`);
   if (!Array.isArray(manifest.lifecycleEvents)) throw new Error('MISSING_LIFECYCLE_EVENTS');
@@ -112,10 +350,60 @@ export const parseAndValidateRunManifest = (manifest) => {
   if (!manifest.controlRecord.reconnect?.readAt) throw new Error('CONTROL_RECORD_RECONNECT_NOT_RECORDED');
   if (!identity || ['pid', 'pgid', 'bootId', 'processStartTicks', 'commandSha256'].some((key) => String(identity[key]) !== String(manifest.controlRecord.value[key]))) throw new Error('CONTROL_RECORD_RECONNECT_IDENTITY_MISMATCH');
   if (manifest.logInspection.readCount < 1 || !manifest.logInspection.lastReadAt || manifest.logInspection.status === 'LOG_NOT_AVAILABLE') throw new Error('LOG_NOT_AVAILABLE');
-  if (manifest.cleanup.status !== 'PASS' || manifest.cleanup.reaped !== true) throw new Error('CLEANUP_NOT_PASS');
+  validateCleanupReceipt(manifest.cleanup);
   if (!['PASS', 'FAIL', 'NOT_APPLICABLE'].includes(manifest.business.status)) throw new Error('BUSINESS_STATUS_INVALID');
   return manifest;
 };
+export const validateCleanupReceipt = (cleanup) => {
+  if (cleanup?.status !== 'PASS' || cleanup.reaped !== true) throw new Error('CLEANUP_NOT_PASS');
+  for (const component of ['process', 'scratch', 'containers', 'volumes']) if (cleanup[component] !== 'PASS') throw new Error(`CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:${component}`);
+  return cleanup;
+};
+const reusableSuiteTargetManifest = (target) => {
+  if (!existsSync(evidence)) return null;
+  const candidates = readdirSync(evidence).flatMap((entry) => {
+    try {
+      const manifest = JSON.parse(readFileSync(path.join(evidence, entry, 'run-manifest.json'), 'utf8'));
+      return isReusableSuiteTargetPass(manifest, target) ? [manifest] : [];
+    } catch { return []; }
+  }).sort((left, right) => String(right.completedAt ?? '').localeCompare(String(left.completedAt ?? '')));
+  return candidates[0] ?? null;
+};
+export const validateBackendPerformance196WorkloadResult = (workloadResult) => {
+  if (workloadResult?.kind !== 'backend-performance-testcontainers-196-workload-result'
+      || workloadResult.status !== 'PASS'
+      || workloadResult.businessStatus !== 'PASS'
+      || workloadResult.completedOperations !== 196) throw new Error('BP_U06_WORKLOAD_RESULT_NOT_PASS');
+  if (workloadResult.cleanupStatus !== backendPerformance196WorkloadCleanupStatus
+      || workloadResult.cleanupOwner !== backendPerformance196WorkloadCleanupOwner) {
+    throw new Error('BP_U06_WORKLOAD_CLEANUP_OWNER_INVALID');
+  }
+  return workloadResult;
+};
+export const deriveBackendPerformance196ChildFailure = ({workloadResult, gradleStatus}) => {
+  if (workloadResult !== undefined && workloadResult !== null) {
+    if (workloadResult.kind !== 'backend-performance-testcontainers-196-workload-result'
+        || !['PASS', 'FAIL'].includes(workloadResult.status)
+        || !['PASS', 'FAIL'].includes(workloadResult.businessStatus)) throw new Error('BP_U06_WORKLOAD_RESULT_INVALID');
+    if (workloadResult.status === 'FAIL') {
+      if (workloadResult.businessStatus !== 'FAIL' || !stableFailureCode.test(workloadResult.firstFailure ?? '')) throw new Error('BP_U06_WORKLOAD_RESULT_FIRST_FAILURE_INVALID');
+      return workloadResult.firstFailure;
+    }
+  }
+  return gradleStatus === 0 ? null : 'REMOTE_GRADLE_EXIT_NONZERO';
+};
+export const finalizeCleanupAfterCollection = (cleanup, artifactCollectionFailure) => artifactCollectionFailure
+  ? {...cleanup, status: 'FAIL', reaped: false, reason: 'ARTIFACT_COLLECTION_FAILED'}
+  : cleanup;
+
+/** The final adapter may consume this runner only as a parent-bound technical child. */
+export function validateFinalAdapterChildManifest(manifest, {parentRunId, runtime, task: expectedTask, remoteHostFingerprint}) {
+  parseAndValidateRunManifest(manifest);
+  const binding = manifest.finalAdapterBinding;
+  if (!binding || binding.parentRunId !== parentRunId || binding.runtime !== runtime || binding.task !== expectedTask || binding.remoteHostFingerprint !== remoteHostFingerprint) throw new Error('R5_FINAL_ADAPTER_CHILD_BINDING_INVALID');
+  if (manifest.task !== expectedTask || manifest.business.status !== 'PASS' || manifest.cleanup.status !== 'PASS') throw new Error('R5_FINAL_ADAPTER_CHILD_EVIDENCE_INVALID');
+  return manifest;
+}
 
 class ManagedRun {
   constructor(directory, expected) {
@@ -124,20 +412,29 @@ class ManagedRun {
     this.manifest = {
       schemaVersion: 1, kind: 'r5-managed-testcontainers-run', runId, task, startedAt: now(),
       remote: {hostAlias: remoteHost, hostTrust: remoteHostTrust, root: remoteRoot, dependencyCache: remoteDependencyCache},
-      sourceSha256: sha256(readFileSync(process.argv[1], 'utf8')), logPath: expected.logPath,
-      phaseEvents: [], lifecycleEvents: [], heartbeats: [], stallDiagnostics: [], logInspection: {readCount: 0, observedBytes: 0, status: 'PENDING'},
+      ...(laneDockerHost ? {testcontainersLane: {dockerHost: laneDockerHost, workspace: remoteWorkspace}} : {}),
+      ...(finalAdapterBinding() ? {finalAdapterBinding: finalAdapterBinding()} : {}),
+      ...(suiteTarget ? {suiteTarget} : {}),
+      sourceSha256: sha256(readFileSync(process.argv[1], 'utf8')),
+      sourceSync: {status: 'PENDING', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : []},
+      gradleDistribution: {path: remoteGradleDistribution, sha256: gradleDistributionSha, localHome: gradleHome, localHomeSource: gradleHomeResolution.source, status: 'PENDING'},
+      logPath: expected.logPath,
+      phaseEvents: [], lifecycleEvents: [], heartbeats: [], childHeartbeatSequence: 0, stallDiagnostics: [], logInspection: {readCount: 0, observedBytes: 0, status: 'PENDING'},
       controlRecord: {expected, verified: false, reusedAfterReconnect: false},
       resourceBudget: {preflight: {status: 'PENDING'}, samples: []},
       firstFailure: null, lastKnownGood: 'PREPARED', brokenBoundary: null,
       business: {status: 'NOT_APPLICABLE'}, cleanup: {status: 'NOT_ATTEMPTED', reaped: false},
     };
+    this.startedEpochMillis = Date.now();
     this.phase('PREPARED', 'PASS');
+    runnerEvent('STARTED', {RUN_ID: runId, TASK: task, STARTED_AT: this.manifest.startedAt, MODE: isBackendPerformance196Run ? 'BACKEND_PERFORMANCE_196' : 'FOCUSED'});
   }
   persist() { atomicWrite(this.manifestPath, `${JSON.stringify(this.manifest, null, 2)}\n`); }
   phase(phase, outcome, detail) {
     this.manifest.phaseEvents.push({sequence: this.manifest.phaseEvents.length + 1, phase, outcome, timestamp: now(), ...(detail ? {detail} : {})});
     if (outcome === 'PASS') this.manifest.lastKnownGood = phase;
     this.persist();
+    runnerEvent('PHASE', {RUN_ID: runId, PHASE: phase, OUTCOME: outcome, ELAPSED_MS: Date.now() - this.startedEpochMillis});
   }
   lifecycle(event, outcome = 'PASS', detail) {
     this.manifest.lifecycleEvents.push({sequence: this.manifest.lifecycleEvents.length + 1, event, outcome, timestamp: now(), ...(detail ? {detail} : {})});
@@ -159,7 +456,36 @@ class ManagedRun {
   }
 }
 
+const backendPerformanceProgress = () => {
+  if (!isBackendPerformance196Run) return undefined;
+  const result = remoteResult(script(
+    'set -euo pipefail',
+    `events=${quote(`${remoteResults}/http-request-events.jsonl`)}`,
+    `catalog_events=${quote(`${remoteResults}/backend-performance-196/catalog-runtime/results/catalog-inventory-api/events.jsonl`)}`,
+    `run_id=${quote(finalPerformanceRunId)}`,
+    'completed=0; if [ -f "$events" ]; then completed=$(awk -v run_id="$run_id" \'index($0, "\\\"runId\\\":\\\"" run_id "\\\"") && index($0, "\\\"performanceArea\\\":\\\"U07_ROUTE\\\"") { count++ } END { print count + 0 }\' "$events"); fi',
+    'phase=CATALOG_NOT_STARTED; if [ -f "$catalog_events" ]; then phase=$(tail -n 1 "$catalog_events" | sed -n \'s/.*"phase":"\\([A-Z0-9_]*\\)".*/\\1/p\'); fi',
+    'printf "%s\\t%s\\n" "$completed" "${phase:-CATALOG_EVENT_UNPARSEABLE}"',
+  ));
+  const [completedText, phase = 'CATALOG_PHASE_UNKNOWN'] = result.stdout.trim().split('\t');
+  if (result.status !== 0 || !/^\d+$/.test(completedText || '')) fail('TESTCONTAINERS_PROGRESS_UNAVAILABLE', 'ENVIRONMENT_BOUNDARY');
+  const completed = Number(completedText);
+  if (!Number.isSafeInteger(completed) || completed < 0 || completed > 196) fail('TESTCONTAINERS_PROGRESS_INVALID', 'ENVIRONMENT_BOUNDARY');
+  return {completed, total: 196, phase: phase || 'CATALOG_PHASE_UNKNOWN'};
+};
+
 const uploadSource = async () => {
+  if (laneWorkspace) {
+    const initialized = remoteResult(script(
+      'set -euo pipefail',
+      `workspace=${quote(remoteWorkspace)}`,
+      'case "$workspace" in /tmp/r5-tc-suite-[0-9]*-[0-9]*/lane-[1-3]/workspace) ;; *) exit 64 ;; esac',
+      'if test -f "$workspace/.v2s-suite-source-ready"; then printf "REUSED\\n"; else mkdir -p "$workspace"; printf "SYNC_REQUIRED\\n"; fi',
+    ));
+    if (initialized.status !== 0) fail('SUITE_LANE_WORKSPACE_CHECK_FAILED', 'SOURCE_SYNC');
+    if (initialized.stdout.trim() === 'REUSED') return {status: 'PASS', workspace: remoteWorkspace, requiredPaths: [], reusedLaneInitialization: true};
+    if (initialized.stdout.trim() !== 'SYNC_REQUIRED') fail('SUITE_LANE_WORKSPACE_CHECK_INVALID', 'SOURCE_SYNC');
+  }
   const source = spawn('tar', ['--exclude=.git', '--exclude=.runtime', '--exclude=.gradle', '--exclude=.yarn', '--exclude=node_modules', '--exclude=build', '--exclude=*/build', '-C', root, '-czf', '-', '.'], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']});
   const upload = spawn('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', remoteHost, `tar -xzf - -C ${quote(remoteWorkspace)}`], {cwd: root, stdio: ['pipe', 'ignore', 'pipe']});
   // Register close observers before piping: a fast connection failure must not lose the close event
@@ -172,12 +498,44 @@ const uploadSource = async () => {
   source.stdout.pipe(upload.stdin);
   const [sourceCode, uploadCode] = await Promise.all([sourceExit, uploadExit]);
   if (sourceCode !== 0 || uploadCode !== 0) fail(`SOURCE_UPLOAD_FAILED:${compact(sourceError || uploadError || 'UNKNOWN', 180)}`, 'SOURCE_SYNC');
+  if (laneWorkspace) {
+    const marked = remoteResult(script('set -euo pipefail', `workspace=${quote(remoteWorkspace)}`, 'touch "$workspace/.v2s-suite-source-ready"'));
+    if (marked.status !== 0) fail('SUITE_LANE_WORKSPACE_MARK_FAILED', 'SOURCE_SYNC');
+  }
+  if (isBackendPerformance196Run) {
+    const sourceCheck = remoteResult(script(
+      'set -euo pipefail',
+      `workspace=${quote(remoteWorkspace)}`,
+      ...backendPerformance196SourcePaths.map((sourcePath) => `test -f "$workspace/${sourcePath}" || { printf 'BP_U06_REMOTE_SOURCE_MISSING:${sourcePath}\\n' >&2; exit 73; }`),
+      `printf 'SOURCE_SYNC_REQUIRED_PATHS=%s\\n' ${quote(backendPerformance196SourcePaths.join(','))}`,
+    ));
+    if (sourceCheck.status !== 0) fail(`SOURCE_SYNC_REQUIRED_FILE_MISSING:${compact(sourceCheck.stderr || sourceCheck.stdout, 180)}`, 'SOURCE_SYNC');
+  }
+  return {status: 'PASS', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : []};
 };
 
 const syncGradle = async (run) => {
   const syncLog = path.join(run.directory, 'gradle-sync.log');
-  appendFileSync(syncLog, `${now()} event=GRADLE_SYNC_STARTED remote=${remoteHost}\n`);
-  const sync = spawn('rsync', ['-a', '--delete', '--timeout=30', '--progress', `${gradleHome}/`, `${remoteHost}:${remoteGradle}/`], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']});
+  const distribution = validateGradleDistribution(run.manifest.gradleDistribution);
+  appendFileSync(syncLog, `${now()} event=GRADLE_DISTRIBUTION_CHECK_STARTED remote=${remoteHost} sha256=${distribution.sha256}\n`);
+  const reusable = remoteResult(script(
+    'set -euo pipefail',
+    `distribution=${quote(distribution.path)}`,
+    `expected=${quote(distribution.sha256)}`,
+    'marker="$distribution/.v2s-gradle-distribution.sha256"',
+    'if test -x "$distribution/bin/gradle" && test -f "$marker" && test "$(cat \"$marker\")" = "$expected"; then printf "REUSED\\n"; else printf "SYNC_REQUIRED\\n"; fi',
+  ));
+  if (reusable.status !== 0) fail('GRADLE_DISTRIBUTION_CHECK_FAILED', 'SOURCE_SYNC');
+  if (reusable.stdout.trim() === 'REUSED') {
+    run.manifest.gradleDistribution = {...distribution, status: 'REUSED'};
+    run.persist();
+    appendFileSync(syncLog, `${now()} event=GRADLE_DISTRIBUTION_REUSED remote=${remoteHost}\n`);
+    return;
+  }
+  if (reusable.stdout.trim() !== 'SYNC_REQUIRED') fail('GRADLE_DISTRIBUTION_CHECK_INVALID', 'SOURCE_SYNC');
+  const staging = `${remoteRoot}/gradle-distribution-staging`;
+  appendFileSync(syncLog, `${now()} event=GRADLE_DISTRIBUTION_SYNC_STARTED remote=${remoteHost} staging=${staging}\n`);
+  const sync = spawn('rsync', ['-a', '--delete', '--timeout=30', '--progress', `${gradleHome}/`, `${remoteHost}:${staging}/`], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']});
   let output = '';
   const capture = (chunk) => {
     const text = String(chunk);
@@ -189,25 +547,71 @@ const syncGradle = async (run) => {
   const exitCode = await waitForClose(sync);
   if (exitCode !== 0) fail(`GRADLE_SYNC_FAILED:${compact(output || 'NO_TRANSFER_OUTPUT', 180)}`, 'SOURCE_SYNC');
   if (!existsSync(syncLog)) fail('GRADLE_SYNC_LOG_NOT_AVAILABLE', 'SOURCE_SYNC');
+  const published = remoteResult(script(
+    'set -euo pipefail',
+    `distribution=${quote(distribution.path)}`,
+    `staging=${quote(staging)}`,
+    `expected=${quote(distribution.sha256)}`,
+    'test -x "$staging/bin/gradle"',
+    'if test -x "$distribution/bin/gradle" && test -f "$distribution/.v2s-gradle-distribution.sha256" && test "$(cat \"$distribution/.v2s-gradle-distribution.sha256\")" = "$expected"; then rm -rf "$staging"; printf "REUSED_AFTER_RACE\\n"; else test ! -e "$distribution"; printf "%s\\n" "$expected" > "$staging/.v2s-gradle-distribution.sha256"; mv "$staging" "$distribution"; printf "SYNCED\\n"; fi',
+  ));
+  if (published.status !== 0) fail('GRADLE_DISTRIBUTION_PUBLISH_FAILED', 'SOURCE_SYNC');
+  const status = published.stdout.trim();
+  if (!['SYNCED', 'REUSED_AFTER_RACE'].includes(status)) fail('GRADLE_DISTRIBUTION_PUBLISH_INVALID', 'SOURCE_SYNC');
+  run.manifest.gradleDistribution = {...distribution, status};
+  run.persist();
+  appendFileSync(syncLog, `${now()} event=GRADLE_DISTRIBUTION_${status} remote=${remoteHost}\n`);
 };
 
 const remoteRunScript = (commandSha256) => script(
-  '#!/usr/bin/env bash', 'set -uo pipefail', `root=${quote(remoteRoot)}`, `task=${quote(task)}`,
+  '#!/usr/bin/env bash', 'set -uo pipefail', `root=${quote(remoteRoot)}`, `workspace=${quote(remoteWorkspace)}`, `task=${quote(task)}`,
   `command_sha=${quote(commandSha256)}`, 'phase_file="$root/results/phase.jsonl"', 'log_file="$root/results/gradle.log"',
   `emit() { printf '{"timestamp":"%s","phase":"%s","outcome":"%s","pid":%s,"pgid":%s,"bootId":"%s","processStartTicks":%s,"commandSha256":"%s","logBytes":%s}\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" "$$" "$(ps -o pgid= -p $$ | tr -d ' ')" "$(cat /proc/sys/kernel/random/boot_id)" "$(awk '{print $22}' /proc/$$/stat)" "$command_sha" "$(wc -c < "$log_file" 2>/dev/null || printf 0)" >> "$phase_file"; }`,
   'emit PROCESS_STARTED PASS', `export GRADLE_USER_HOME=${quote(remoteDependencyCache)}`,
   // The remote JVM must opt in before Gradle loads any Testcontainers class. This prevents the
   // repository build guard from falling back to the developer's local DockerClientProviderStrategy.
   'export V2S_TESTCONTAINERS_EXECUTION_PLANE=remote', `export V2S_TESTCONTAINERS_REMOTE_HOST=${quote(remoteHost)}`,
-  'export TESTCONTAINERS_RYUK_DISABLED=true', 'cd "$root/workspace"',
-  `"$root/gradle/bin/gradle" "$task" ${extraGradleArguments.map(quote).join(' ')} --no-daemon > "$log_file" 2>&1 &`, 'gradle_pid=$!', 'emit RUNNING PASS',
+  'export TESTCONTAINERS_RYUK_DISABLED=true',
+  ...(isBackendPerformance196Run ? [
+    'export V2S_RUNTIME_ENVIRONMENT=non-production',
+    'export V2S_DEV_PROFILE=backend-performance-final-acceptance',
+    `export V2S_DEV_NAMESPACE=${quote(finalPerformanceNamespace)}`,
+    `export V2S_BACKEND_PERFORMANCE_FINAL_RUN_ID=${quote(finalPerformanceRunId)}`,
+    `export V2S_HTTP_DIAGNOSTIC_RUN_ID=${quote(finalPerformanceRunId)}`,
+    `export V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN=${quote(bootstrapLogin)}`,
+    'final_secret=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    'db_hmac_key=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    'bootstrap_credential=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    'export V2S_BACKEND_PERFORMANCE_FINAL_SECRET="$final_secret"',
+    'export V2S_DB_OPERATIONS_HMAC_KEY="$db_hmac_key"',
+    'export V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL="$bootstrap_credential"',
+    'export V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_ENABLED=true',
+    'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
+    'export V2S_BACKEND_PERFORMANCE_FINAL_EVENTS="$root/results/http-request-events.jsonl"',
+    'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operations.jsonl"',
+    'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
+    'export V2S_RUNTIME_DIR="$root/results/backend-performance-196"',
+    'export V2S_BPF_OWNER_FIXTURE_REQUEST="$root/results/backend-performance-owner-fixture-request.json"',
+    'export V2S_BPF_OWNER_FIXTURE_RESPONSE="$root/results/backend-performance-owner-fixture-response.json"',
+    `export V2S_BPF_WORKLOAD_RESULT="$root/results/${backendPerformance196WorkloadResultName}"`,
+    `export V2S_BACKEND_PERFORMANCE_REPORT_PATH="$root/results/backend-performance-testcontainers-196-report.json"`,
+    'export V2S_REMOTE_WORKSPACE="$workspace"',
+  ] : []),
+  `gradle=${quote(remoteGradleDistribution)}`,
+  'test -x "$gradle/bin/gradle"',
+  'cd "$workspace"',
+  `"$gradle/bin/gradle" "$task" ${extraGradleArguments.map(quote).join(' ')} --no-daemon > "$log_file" 2>&1 &`, 'gradle_pid=$!', 'emit RUNNING PASS',
   'while kill -0 "$gradle_pid" 2>/dev/null; do emit RUNNING HEARTBEAT; sleep 15; done', 'wait "$gradle_pid"; gradle_status=$?',
-    `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"`,
+  `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"`,
+  `docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"`,
   'comm -13 "$root/before-container-ids" "$root/after-container-ids" > "$root/results/uncollected-container-ids"',
+  'comm -13 "$root/before-volume-ids" "$root/after-volume-ids" > "$root/results/uncollected-volume-ids"',
   'container_status=PASS; if [ -s "$root/results/uncollected-container-ids" ]; then container_status=FAIL; fi',
-  `find "$root/workspace" -type f -path '*/build/test-results/test/TEST-*.xml' -exec cp {} "$root/results/" \\; 2>/dev/null || true`,
-  `printf '{"gradleStatus":%s,"containerCleanup":"%s","commandSha256":"%s"}\\n' "$gradle_status" "$container_status" ${quote(commandSha256)} > "$root/results/remote-result.json"`,
-  'emit COLLECTED "$container_status"', 'exit "$gradle_status"',
+  'volume_status=PASS; if [ -s "$root/results/uncollected-volume-ids" ]; then volume_status=FAIL; fi',
+  `find "$workspace" -type f -path '*/build/test-results/test/TEST-*.xml' -exec cp {} "$root/results/" \\; 2>/dev/null || true`,
+  `printf '{"gradleStatus":%s,"containerCleanup":"%s","volumeCleanup":"%s","commandSha256":"%s"}\\n' "$gradle_status" "$container_status" "$volume_status" ${quote(commandSha256)} > "$root/results/remote-result.json"`,
+  'collect_status=PASS; if [ "$container_status" != PASS ] || [ "$volume_status" != PASS ]; then collect_status=FAIL; fi',
+  'emit COLLECTED "$collect_status"', 'exit "$gradle_status"',
 );
 
 const expectedControl = (commandSha256) => ({runId, remoteRoot, commandSha256, logPath: `${remoteResults}/gradle.log`, phasePath: `${remoteResults}/phase.jsonl`});
@@ -239,8 +643,12 @@ const remoteIdentity = (control) => {
     "record_pid=$(grep -o '\"pid\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_pgid=$(grep -o '\"pgid\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_boot=$(grep -o '\"bootId\":\"[^\"]*\"' \"$control\" | head -n1 | cut -d'\"' -f4); record_start=$(grep -o '\"processStartTicks\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_sha=$(grep -o '\"commandSha256\":\"[a-f0-9]*\"' \"$control\" | head -n1 | cut -d'\"' -f4)",
     'if [ "$record_pid" != "$pid" ] || [ "$record_pgid" != "$pgid" ] || [ "$record_boot" != "$boot" ] || [ "$record_start" != "$start" ] || ! printf "%s" "$record_sha" | grep -Eq "^[a-f0-9]{64}$"; then printf \'{"state":"MISMATCH"}\\n\'; exit 0; fi',
     "workload=$(ps -eo pgid=,pid=,stat=,time= | awk -v expected_pgid=\"$pgid\" '$1 == expected_pgid {print $2 \"/\" $3 \"/\" $4}' | sort | sha256sum | awk '{print $1}')",
-    "test_result_bytes=$(find \"$root/workspace\" -type f -path '*/build/test-results/test/TEST-*.xml' -printf '%s\\n' 2>/dev/null | awk '{total += $1} END {print total + 0}')",
-    'printf \'{"state":"MATCH","pid":%s,"pgid":%s,"bootId":"%s","processStartTicks":%s,"commandSha256":"%s","workloadSha256":"%s","testResultBytes":%s}\\n\' "$pid" "$pgid" "$boot" "$start" "$record_sha" "$workload" "$test_result_bytes"',
+    `workspace=${quote(remoteWorkspace)}`, "test_result_bytes=$(find \"$workspace\" -type f -path '*/build/test-results/test/TEST-*.xml' -printf '%s\\n' 2>/dev/null | awk '{total += $1} END {print total + 0}')",
+    ...(isBackendPerformance196Run ? [
+      `runtime_evidence=${quote(`${remoteResults}/backend-performance-196/catalog-runtime/results/catalog-inventory-api/events.jsonl`)}`,
+      'runtime_evidence_bytes=0; runtime_evidence_sha256=NONE; if [ -f "$runtime_evidence" ]; then runtime_evidence_bytes=$(wc -c < "$runtime_evidence" | tr -d " "); runtime_evidence_sha256=$(sha256sum "$runtime_evidence" | awk \'{print $1}\'); fi',
+    ] : ['runtime_evidence_bytes=0; runtime_evidence_sha256=NONE']),
+    'printf \'{"state":"MATCH","pid":%s,"pgid":%s,"bootId":"%s","processStartTicks":%s,"commandSha256":"%s","workloadSha256":"%s","testResultBytes":%s,"runtimeEvidenceSha256":"%s","runtimeEvidenceBytes":%s}\\n\' "$pid" "$pgid" "$boot" "$start" "$record_sha" "$workload" "$test_result_bytes" "$runtime_evidence_sha256" "$runtime_evidence_bytes"',
   ));
   if (result.status !== 0) fail('CONTROL_IDENTITY_READ_FAILED', 'ENVIRONMENT_BOUNDARY');
   let readback; try { readback = JSON.parse(result.stdout); } catch { fail('CONTROL_IDENTITY_INVALID_JSON', 'ENVIRONMENT_BOUNDARY'); }
@@ -249,7 +657,7 @@ const remoteIdentity = (control) => {
   if (!['MATCH', 'REAPED'].includes(state)) fail('CONTROL_IDENTITY_UNKNOWN', 'ENVIRONMENT_BOUNDARY');
   const identityReadback = state === 'MATCH' ? Object.fromEntries(['pid', 'pgid', 'bootId', 'processStartTicks', 'commandSha256'].map((key) => [key, readback[key]])) : null;
   if (identityReadback && ['pid', 'pgid', 'bootId', 'processStartTicks', 'commandSha256'].some((key) => String(identityReadback[key]) !== String(control[key]))) fail('CONTROL_IDENTITY_MISMATCH', 'ENVIRONMENT_BOUNDARY');
-  return {state, identityReadback, workloadSha256: readback.workloadSha256 ?? 'REAPED', testResultBytes: Number(readback.testResultBytes ?? 0)};
+  return {state, identityReadback, workloadSha256: readback.workloadSha256 ?? 'REAPED', testResultBytes: Number(readback.testResultBytes ?? 0), runtimeEvidenceSha256: readback.runtimeEvidenceSha256 ?? 'REAPED', runtimeEvidenceBytes: Number(readback.runtimeEvidenceBytes ?? 0)};
 };
 
 const reconnectControl = (expected) => {
@@ -294,7 +702,8 @@ const collectPhase = (run, offset) => {
     if (event.outcome === 'HEARTBEAT') {
       const control = run.manifest.controlRecord.value;
       if (!control || ['pid', 'pgid', 'bootId', 'processStartTicks', 'commandSha256'].some((key) => String(event[key]) !== String(control[key]))) fail('PHASE_HEARTBEAT_IDENTITY_MISMATCH', 'ENVIRONMENT_BOUNDARY');
-      run.heartbeat(event);
+      run.manifest.childHeartbeatSequence += 1;
+      run.heartbeat({...event, childHeartbeatSequence: run.manifest.childHeartbeatSequence});
     }
     else if (event.phase && !run.manifest.phaseEvents.some((phase) => phase.phase === event.phase)) run.phase(event.phase, event.outcome ?? 'PASS');
   }
@@ -343,10 +752,17 @@ const reap = (run, control) => {
     "boot=$(cat /proc/sys/kernel/random/boot_id); start=$(awk '{print $22}' \"/proc/$pid/stat\"); pgid=$(ps -o pgid= -p \"$pid\" | tr -d \" \")",
     'test "$boot" = "$expected_boot" && test "$start" = "$expected_start" && test "$pgid" = "$expected_pgid" || exit 70',
     'kill -TERM -- "-$pgid" 2>/dev/null || true', 'for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done', 'if kill -0 "$pid" 2>/dev/null; then kill -KILL -- "-$pgid" 2>/dev/null || true; fi', 'fi',
-    'if kill -0 "$pid" 2>/dev/null; then exit 71; fi', 'rm -rf -- "$root"', 'printf "REAPED=PASS\\nREMOTE_SCRATCH_CLEANUP=PASS\\n"',
+    'if kill -0 "$pid" 2>/dev/null; then exit 71; fi',
+    'container_status=PASS; volume_status=PASS',
+    'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/results/reap-container-ids"', 'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/results/reap-volume-ids"',
+    'test ! -s "$root/results/reap-container-ids" || container_status=FAIL', 'test ! -s "$root/results/reap-volume-ids" || volume_status=FAIL',
+    'rm -rf -- "$root"', 'scratch_status=PASS; test ! -e "$root" || scratch_status=FAIL',
+    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status"',
+    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS', 'printf "REAPED=PASS\\n"',
   ));
-  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') ? 'PASS' : 'FAIL';
-  run.manifest.cleanup = {status, reaped: status === 'PASS', completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
+  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL'};
+  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.values(receipt).every((value) => value === 'PASS') ? 'PASS' : 'FAIL';
+  run.manifest.cleanup = {status, reaped: status === 'PASS', ...receipt, completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
   run.phase('CLEANUP', status);
   run.persist();
 };
@@ -354,31 +770,80 @@ const reapUnlaunched = (run) => {
   const result = remoteResult(script(
     'set -euo pipefail', `root=${quote(remoteRoot)}`,
     'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
-    'rm -rf -- "$root"', 'test ! -e "$root"', 'printf "REMOTE_SCRATCH_CLEANUP=PASS\\n"',
+    'container_status=PASS; volume_status=PASS',
+    'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/reap-container-ids"', 'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/reap-volume-ids"',
+    'test ! -s "$root/reap-container-ids" || container_status=FAIL', 'test ! -s "$root/reap-volume-ids" || volume_status=FAIL',
+    'rm -rf -- "$root"', 'scratch_status=PASS; test ! -e "$root" || scratch_status=FAIL',
+    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status"',
+    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS', 'printf "REAPED=PASS\\n"',
   ));
-  const status = result.status === 0 && result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL';
-  run.manifest.cleanup = {status, reaped: status === 'PASS', completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
+  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL'};
+  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.values(receipt).every((value) => value === 'PASS') ? 'PASS' : 'FAIL';
+  run.manifest.cleanup = {status, reaped: status === 'PASS', ...receipt, completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
   run.phase('CLEANUP', status);
   run.persist();
 };
 
+const readJsonLines = (file) => {
+  if (!existsSync(file)) fail('BP_U06_DYNAMIC_EVIDENCE_FILE_MISSING', 'REPORT');
+  return readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean).map((line, index) => {
+    try { return JSON.parse(line); }
+    catch { fail('BP_U06_DYNAMIC_EVIDENCE_JSONL_INVALID', `${path.basename(file)}:${index + 1}`); }
+  });
+};
+
+const buildBackendPerformance196Report = (directory, remoteResult) => {
+  const contract = loadAuthoritativeContract(root);
+  const managedReportPath = path.join(directory, backendPerformance196ManagedReportName);
+  const managedManifestPath = path.join(directory, backendPerformance196ManagedManifestName);
+  const workloadResultPath = path.join(directory, backendPerformance196WorkloadResultName);
+  if (!existsSync(workloadResultPath)) fail('BP_U06_WORKLOAD_RESULT_MISSING', 'REPORT');
+  const workloadResult = JSON.parse(readFileSync(workloadResultPath, 'utf8'));
+  try { validateBackendPerformance196WorkloadResult(workloadResult); }
+  catch (failure) { fail(failure.message, 'REPORT'); }
+  const completionEvents = readJsonLines(path.join(directory, 'http-request-events.jsonl'))
+    .filter((event) => event?.runId === finalPerformanceRunId && event?.performanceArea === 'U07_ROUTE');
+  const databaseOperations = readJsonLines(path.join(directory, 'db-operations.jsonl'))
+    .filter((row) => row?.runId === finalPerformanceRunId);
+  const scenarioResults = deriveScenarioResults(contract, completionEvents);
+  const cleanup = {
+    status: remoteResult.containerCleanup === 'PASS' && remoteResult.volumeCleanup === 'PASS' ? 'PASS' : 'FAIL',
+    ownedRemoteResources: remoteResult.containerCleanup === 'PASS' && remoteResult.volumeCleanup === 'PASS',
+    terminalManifestVerified: true,
+    runManifestPath: managedManifestPath,
+  };
+  const report = buildDynamicReport({
+    contract,
+    runId: finalPerformanceRunId,
+    completionEvents,
+    databaseOperations,
+    scenarioResults,
+    cleanup,
+    runtime: {manifestPath: managedManifestPath},
+  });
+  atomicWrite(managedReportPath, `${JSON.stringify(report, null, 2)}\n`);
+  return {report, managedReportPath, managedManifestPath};
+};
+
 const execute = async () => {
-  if (!/^:[a-z0-9:-]+:test$/.test(task)) fail('TASK_MUST_BE_A_SINGLE_TEST_TASK');
-  if (!existsSync(path.join(gradleHome, 'bin', 'gradle'))) fail('LOCAL_GRADLE_DISTRIBUTION_UNAVAILABLE', 'ENVIRONMENT_BOUNDARY');
-  const commandSha256 = sha256(JSON.stringify({executable: 'gradle', task, args: ['--no-daemon']}));
+  validateInvocation();
+  try { validateGradleHome(gradleHome, typeof gradleHome === 'string' && existsSync(path.join(gradleHome, 'bin', 'gradle'))); }
+  catch (error) { fail(error.message, 'ENVIRONMENT_BOUNDARY'); }
+  const commandSha256 = sha256(JSON.stringify({executable: 'gradle', task, args: [...extraGradleArguments, '--no-daemon'], mode: isBackendPerformance196Run ? 'BACKEND_PERFORMANCE_196' : 'GENERIC'}));
   const expected = expectedControl(commandSha256);
   const directory = path.join(evidence, runId);
   mkdirSync(directory, {recursive: true});
   const run = new ManagedRun(directory, expected);
-  let control; let lifecycle; let artifactsCollected = false; let remotePrepared = false; let failure;
+  let control; let lifecycle; let artifactsCollected = false; let artifactCollectionFailure = false; let remotePrepared = false; let launchAttempted = false; let failure; let remoteResult;
   try {
     const localBudget = spawnSync(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')], {cwd: root, encoding: 'utf8'});
     if (localBudget.status !== 0) fail('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED', 'ENVIRONMENT_BOUNDARY');
     const preflight = preflightResources(); run.manifest.resourceBudget.preflight = {status: 'PASS', ...preflight}; run.manifest.resourceBudget.samples.push({observedAt: now(), memoryAvailableMiB: preflight.memoryAvailableMiB, previousRssMiB: preflight.previousRssMiB}); run.persist();
-    remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"`)); remotePrepared = true;
-    await uploadSource(); run.phase('SOURCE_SYNCED', 'PASS');
+    remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"`, `docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/before-volume-ids"`)); remotePrepared = true;
+    run.manifest.sourceSync = await uploadSource(); run.persist(); run.phase('SOURCE_SYNCED', 'PASS');
     await syncGradle(run); run.phase('GRADLE_SYNCED', 'PASS');
     lifecycle = createLifecycleHarness(run, {launch, reconnect: reconnectControl, collect: () => collectArtifacts(run)});
+    launchAttempted = true;
     const launched = lifecycle.launch(remoteRunScript(commandSha256), expected);
     control = lifecycle.reconnect(expected);
     if (!launched.acknowledged) fail('REMOTE_LAUNCH_ACK_MISSING', 'ENVIRONMENT_BOUNDARY');
@@ -388,35 +853,186 @@ const execute = async () => {
       const log = incrementalRead(run, expected.logPath, 'gradle.log', logOffset, 'log'); logOffset = log.size;
       run.manifest.logInspection = {readCount: run.manifest.logInspection.readCount + 1, observedBytes: logOffset, lastReadAt: now(), status: 'READ'}; run.persist();
       phaseOffset = collectPhase(run, phaseOffset);
-      const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, resource: {}});
+      const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes, resource: {}});
+      const progress = backendPerformanceProgress();
+      if (progress) {
+        run.manifest.progress = {...progress, observedAt: now()};
+        run.persist();
+      }
+      runnerEvent('HEARTBEAT', {RUN_ID: runId, ELAPSED_MS: Date.now() - run.startedEpochMillis, LOG_BYTES: logOffset, ...(progress ? {COMPLETED: progress.completed, TOTAL: progress.total, PHASE: progress.phase} : {PROGRESS: 'TASK_RUNNING'})});
       if (identity.state === 'REAPED') break;
-      const observation = workloadObservationKey({logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes});
+      // A child heartbeat proves that the wrapper shell is alive, not that Gradle
+      // or a Testcontainers pull is advancing.  Only observable workload output
+      // may reset the no-progress diagnosis interval.
+      const observation = workloadObservationKey({logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes});
       stalls = observation === previousObservation ? stalls + 1 : 0; previousObservation = observation;
-      if (stalls === 1) { diagnoseStall(run, control); run.phase('STALL_DIAGNOSING', 'PASS'); }
-      if (stalls >= 2) { run.phase('TERMINATING', 'PASS'); break; }
+      if (stalls === stallDiagnosticSamples) { diagnoseStall(run, control); run.phase('STALL_DIAGNOSING', 'PASS'); }
+      if (stalls >= stallTerminationSamples) { diagnoseStall(run, control); run.phase('TERMINATING', 'PASS'); break; }
       await sleep(10_000);
     }
-    lifecycle.collect(); artifactsCollected = true;
-    const result = JSON.parse(readFileSync(path.join(directory, 'remote-result.json'), 'utf8'));
-    if (result.gradleStatus !== 0 || result.containerCleanup !== 'PASS') {
-      run.manifest.residualTestcontainers = result.containerCleanup !== 'PASS'; run.persist();
+    try { lifecycle.collect(); artifactsCollected = true; }
+    catch (error) { artifactCollectionFailure = true; throw error; }
+    remoteResult = JSON.parse(readFileSync(path.join(directory, 'remote-result.json'), 'utf8'));
+    if (remoteResult.gradleStatus === 0) {
+      const testExecution = classifyGradleTestExecution(readFileSync(path.join(directory, 'gradle.log'), 'utf8'), task);
+      run.manifest.testExecution = testExecution;
+      run.persist();
+      if (testExecution.status !== 'PASS') fail(testExecution.reason, 'REMOTE_TEST');
+    }
+    if (isBackendPerformance196Run) {
+      const workloadResultPath = path.join(directory, backendPerformance196WorkloadResultName);
+      if (!existsSync(workloadResultPath)) fail('BP_U06_WORKLOAD_RESULT_MISSING', 'REMOTE_TEST');
+      let workloadResult;
+      try { workloadResult = JSON.parse(readFileSync(workloadResultPath, 'utf8')); }
+      catch { fail('BP_U06_WORKLOAD_RESULT_INVALID', 'REMOTE_TEST'); }
+      const childFailure = deriveBackendPerformance196ChildFailure({workloadResult, gradleStatus: remoteResult.gradleStatus});
+      if (childFailure) {
+        run.manifest.childWorkload = {status: 'FAIL', firstFailure: childFailure};
+        run.persist();
+        fail(childFailure, 'REMOTE_TEST');
+      }
+      run.manifest.childWorkload = {status: 'PASS', firstFailure: null};
+      run.persist();
+    }
+    if (remoteResult.gradleStatus !== 0 || remoteResult.containerCleanup !== 'PASS' || remoteResult.volumeCleanup !== 'PASS') {
+      run.manifest.residualTestcontainers = remoteResult.containerCleanup !== 'PASS' || remoteResult.volumeCleanup !== 'PASS'; run.persist();
       fail('REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED', 'REMOTE_TEST');
     }
-    run.manifest.business = {status: 'PASS', remoteGradleStatus: result.gradleStatus};
+    if (!isBackendPerformance196Run) run.manifest.business = {status: 'PASS', remoteGradleStatus: remoteResult.gradleStatus};
   } catch (error) {
     failure = error instanceof Error ? error : new RunnerFailure(String(error));
     run.failure(failure); run.manifest.business = {status: 'FAIL', reason: failure.message};
-    try { if (control && !artifactsCollected) { lifecycle?.collect(); artifactsCollected = true; } } catch (collectionError) { run.failure(collectionError); }
+    try { if (control && !artifactsCollected) { lifecycle?.collect(); artifactsCollected = true; } } catch (collectionError) { artifactCollectionFailure = true; run.failure(collectionError); }
   } finally {
-    if (control) reap(run, control); else if (remotePrepared) reapUnlaunched(run); else run.manifest.cleanup = {status: 'FAIL', reaped: false, reason: 'REMOTE_SCRATCH_NOT_PREPARED'};
+    if (control) reap(run, control); else if (remotePrepared && !launchAttempted) reapUnlaunched(run); else run.manifest.cleanup = {status: 'FAIL', reaped: false, process: 'FAIL', scratch: 'FAIL', containers: 'FAIL', volumes: 'FAIL', reason: remotePrepared ? 'CONTROL_RECORD_UNAVAILABLE_AFTER_LAUNCH' : 'REMOTE_SCRATCH_NOT_PREPARED'};
+    run.manifest.cleanup = finalizeCleanupAfterCollection(run.manifest.cleanup, artifactCollectionFailure);
     if (run.manifest.residualTestcontainers === true) run.manifest.cleanup = {...run.manifest.cleanup, status: 'FAIL', reaped: false, reason: 'TESTCONTAINERS_RESIDUAL_RESOURCE'};
+    run.manifest.completedAt = now();
+    run.manifest.durationMillis = Date.now() - run.startedEpochMillis;
     run.persist();
   }
+  let managedReportPath; let managedManifestPath;
+  if (isBackendPerformance196Run && !failure && run.manifest.cleanup.status === 'PASS') {
+    try {
+      parseAndValidateRunManifest(run.manifest);
+      const managedReport = buildBackendPerformance196Report(directory, remoteResult);
+      managedReportPath = managedReport.managedReportPath;
+      managedManifestPath = managedReport.managedManifestPath;
+      const report = managedReport.report;
+      run.manifest.business = {status: 'PASS', remoteGradleStatus: remoteResult.gradleStatus, reportStatus: report.status, reportPath: path.relative(root, managedReportPath), operations: report.business.completedOperations};
+      run.manifest.dynamicReport = {status: 'PASS', reportKind: report.reportKind, testPlanId: report.testPlanId, operationCount: report.business.completedOperations, reportPath: path.relative(root, managedReportPath)};
+      run.persist();
+    } catch (error) {
+      failure = error instanceof Error ? error : new RunnerFailure(String(error), 'REPORT');
+      run.failure(failure);
+      run.manifest.business = {status: 'FAIL', reason: failure.message};
+      run.persist();
+    }
+  }
   try { parseAndValidateRunManifest(run.manifest); } catch (error) { if (!failure) failure = error; }
+  if (isBackendPerformance196Run && managedManifestPath) atomicWrite(managedManifestPath, `${JSON.stringify(run.manifest, null, 2)}\n`);
   if (failure || run.manifest.business.status !== 'PASS' || run.manifest.cleanup.status !== 'PASS') {
     process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || 'BUSINESS_OR_CLEANUP_NOT_PASS')}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=${run.manifest.business.status}; CLEANUP=${run.manifest.cleanup.status}\n`);
     process.exitCode = 2;
   } else process.stdout.write(`R5_REMOTE_TESTCONTAINERS=PASS; TASK=${task}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=PASS; CLEANUP=PASS\n`);
+  runnerEvent('FINISHED', {RUN_ID: runId, TASK: task, DURATION_MS: run.manifest.durationMillis, BUSINESS: run.manifest.business.status, CLEANUP: run.manifest.cleanup.status, EVIDENCE: path.relative(root, directory)});
+};
+
+const suiteLaneSockets = Object.freeze([1, 2, 3].map((lane) => `unix:///run/catering-v2s-testcontainers/daemon-${lane}/docker.sock`));
+export const initialLaneQueues = (targets, laneCount = 3) => {
+  if (!Array.isArray(targets) || !Number.isInteger(laneCount) || laneCount !== 3) throw new Error('TESTCONTAINERS_LANE_PARTITION_INVALID');
+  const base = Math.floor(targets.length / laneCount); const remainder = targets.length % laneCount;
+  let offset = 0;
+  return Object.freeze(Array.from({length: laneCount}, (_, index) => {
+    const size = base + (index >= laneCount - remainder ? 1 : 0);
+    const queue = targets.slice(offset, offset + size); offset += size;
+    return queue;
+  }));
+};
+export const createDynamicLaneScheduler = (targets) => {
+  const queues = initialLaneQueues(targets).map((queue) => [...queue]);
+  return Object.freeze({
+    next(laneIndex) {
+      if (!Number.isInteger(laneIndex) || laneIndex < 0 || laneIndex >= queues.length) throw new Error('TESTCONTAINERS_LANE_INDEX_INVALID');
+      if (queues[laneIndex].length) return {target: queues[laneIndex].shift(), originLane: laneIndex};
+      const donors = queues.map((queue, index) => ({index, size: queue.length})).filter(({size}) => size > 0)
+        .sort((left, right) => right.size - left.size || right.index - left.index);
+      if (!donors.length) return null;
+      const donor = donors[0];
+      return {target: queues[donor.index].shift(), originLane: donor.index};
+    },
+    remaining() { return queues.reduce((sum, queue) => sum + queue.length, 0); },
+  });
+};
+const resolveSuiteLanes = () => {
+  const output = remote(script(
+    'set -euo pipefail',
+    ...suiteLaneSockets.map((socket, index) => `printf 'LANE_${index + 1}_ENGINE_ID=%s\\n' "$(docker --host ${quote(socket)} info --format '{{.ID}}')"`),
+  ));
+  const facts = Object.fromEntries(output.trim().split('\n').filter(Boolean).map((line) => line.split('=')));
+  const lanes = suiteLaneSockets.map((dockerHost, index) => ({lane: index + 1, dockerHost, engineId: facts[`LANE_${index + 1}_ENGINE_ID`]}));
+  if (lanes.some(({engineId}) => !/^[a-f0-9-]{36}$/i.test(engineId ?? '')) || new Set(lanes.map(({engineId}) => engineId)).size !== lanes.length) fail('TESTCONTAINERS_LANE_ENGINE_ID_NOT_DISTINCT', 'ENVIRONMENT_BOUNDARY');
+  return lanes;
+};
+const newestTargetManifest = (target) => {
+  if (!existsSync(evidence)) return null;
+  const matches = readdirSync(evidence).flatMap((entry) => {
+    try { const manifest = JSON.parse(readFileSync(path.join(evidence, entry, 'run-manifest.json'), 'utf8')); return manifest.suiteTarget && suiteTargetFields.every((field) => manifest.suiteTarget[field] === target[field]) ? [manifest] : []; }
+    catch { return []; }
+  }).sort((left, right) => String(right.completedAt ?? '').localeCompare(String(left.completedAt ?? '')));
+  return matches[0] ?? null;
+};
+const suiteWorkspaceCleanup = (suiteRoot) => remote(script(
+  'set -euo pipefail', `suite_root=${quote(suiteRoot)}`,
+  'case "$suite_root" in /tmp/r5-tc-suite-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
+  'rm -rf "$suite_root"', 'test ! -e "$suite_root"',
+));
+const executeAll = async () => {
+  const targets = discoverTestcontainersTargets().map((target) => Object.freeze({...target, inputSha256: testcontainersTargetInputFingerprint(target)}));
+  const imageWarmup = warmTestcontainersImages();
+  const lanes = resolveSuiteLanes(); const scheduler = createDynamicLaneScheduler(targets); const started = Date.now();
+  const suiteRunId = `r5-tc-suite-${Date.now()}-${process.pid}`; const suiteRoot = `/tmp/${suiteRunId}`;
+  const suiteDirectory = path.join(evidence, suiteRunId); mkdirSync(suiteDirectory, {recursive: true});
+  const manifest = {schemaVersion: 1, kind: 'r5-managed-testcontainers-suite', runId: suiteRunId, startedAt: now(), total: targets.length, execution: 'THREE_ISOLATED_DAEMONS_DYNAMIC_WORK_STEALING', imageWarmup, lanes: lanes.map((lane) => ({...lane, initialized: false, firstFailure: null, targets: []})), business: {status: 'NOT_RUN'}, cleanup: {status: 'NOT_RUN'}};
+  const persistSuite = () => atomicWrite(path.join(suiteDirectory, 'run-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  persistSuite();
+  runnerEvent('ALL_STARTED', {RUN_ID: suiteRunId, TOTAL: targets.length, LANES: lanes.length, STARTED_AT: now()});
+  const completed = {value: 0};
+  const runLane = async (lane) => {
+    const laneRecord = manifest.lanes[lane.lane - 1];
+    for (;;) {
+      const assignment = scheduler.next(lane.lane - 1); if (!assignment) return;
+      const target = assignment.target; const ordinal = completed.value + 1;
+      laneRecord.initialized = true; laneRecord.targets.push({target, originLane: assignment.originLane + 1, status: 'RUNNING', startedAt: now()}); persistSuite();
+      runnerEvent('ALL_CURRENT', {RUN_ID: suiteRunId, LANE: lane.lane, ORIGIN_LANE: assignment.originLane + 1, CURRENT: ordinal, TOTAL: targets.length, TASK: target.task, SELECTOR: target.selector});
+      const child = spawn(process.execPath, [new URL(import.meta.url).pathname, target.task, '--tests', target.selector], {
+        cwd: root,
+        env: {...process.env, [suiteTargetBindingEnvironment]: JSON.stringify(target), V2S_TESTCONTAINERS_DOCKER_HOST: lane.dockerHost, V2S_TESTCONTAINERS_LANE_WORKSPACE: `${suiteRoot}/lane-${lane.lane}/workspace`},
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr);
+      const exitCode = await waitForClose(child); completed.value += 1;
+      const outcome = laneRecord.targets.at(-1); const childManifest = newestTargetManifest(target);
+      outcome.completedAt = now(); outcome.status = exitCode === 0 ? 'PASS' : 'FAIL'; outcome.evidence = childManifest ? path.relative(root, path.join(evidence, childManifest.runId)) : null;
+      outcome.business = childManifest?.business?.status ?? 'FAIL'; outcome.cleanup = childManifest?.cleanup?.status ?? 'FAIL'; outcome.firstFailure = childManifest?.firstFailure ?? (exitCode === 0 ? null : 'CHILD_RUNNER_FAILURE');
+      if (exitCode !== 0) { laneRecord.firstFailure = {target, reason: outcome.firstFailure, evidence: outcome.evidence}; persistSuite(); runnerEvent('ALL_LANE_FIRST_FAILURE', {RUN_ID: suiteRunId, LANE: lane.lane, CURRENT: completed.value, TOTAL: targets.length, FIRST_FAILURE: `${target.task}:${target.selector}`}); return; }
+      persistSuite(); runnerEvent('ALL_COMPLETED', {RUN_ID: suiteRunId, LANE: lane.lane, CURRENT: completed.value, TOTAL: targets.length, TASK: target.task, SELECTOR: target.selector});
+    }
+  };
+  try {
+    await Promise.all(lanes.map(runLane));
+    const failed = manifest.lanes.filter((lane) => lane.firstFailure);
+    const completedTargets = manifest.lanes.flatMap((lane) => lane.targets);
+    manifest.business = {status: failed.length ? 'FAIL' : (completedTargets.length === targets.length ? 'PASS' : 'FAIL'), firstFailures: failed.map((lane) => lane.firstFailure)};
+    if (completedTargets.length !== targets.length) manifest.business = {...manifest.business, reason: 'TESTCONTAINERS_SUITE_TARGETS_NOT_ALL_EXECUTED'};
+  } finally {
+    try { suiteWorkspaceCleanup(suiteRoot); manifest.cleanup = {status: 'PASS', workspace: 'PASS'}; }
+    catch (error) { manifest.cleanup = {status: 'FAIL', workspace: 'FAIL', reason: error instanceof Error ? error.message : String(error)}; }
+    manifest.completedAt = now(); manifest.durationMillis = Date.now() - started; persistSuite();
+  }
+  const status = manifest.business.status === 'PASS' && manifest.cleanup.status === 'PASS' ? 'PASS' : 'FAIL';
+  runnerEvent('ALL_FINISHED', {RUN_ID: suiteRunId, CURRENT: completed.value, TOTAL: targets.length, DURATION_MS: manifest.durationMillis, STATUS: status, FAILED_LANES: manifest.lanes.filter((lane) => lane.firstFailure).length, EVIDENCE: path.relative(root, suiteDirectory)});
+  if (status !== 'PASS') process.exitCode = 2;
 };
 
 const selfTest = async () => {
@@ -424,6 +1040,8 @@ const selfTest = async () => {
   const immediateExitCode = await waitForClose(immediateExit);
   if (immediateExitCode !== 0) throw new Error('FAST_CHILD_CLOSE_OBSERVER_INVALID');
   if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-b', testResultBytes: 0})) throw new Error('WORKLOAD_PROGRESS_TREATED_AS_STALL');
+  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, runtimeEvidenceSha256: 'evidence-a', runtimeEvidenceBytes: 10}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, runtimeEvidenceSha256: 'evidence-b', runtimeEvidenceBytes: 20})) throw new Error('RUNTIME_EVIDENCE_PROGRESS_TREATED_AS_STALL');
+  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 1}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 2})) throw new Error('HEARTBEAT_PROGRESS_TREATED_AS_STALL');
   const expected = {runId: 'r5-tc-12345678-123', remoteRoot: '/tmp/r5-tc-12345678-123', commandSha256: 'a'.repeat(64), logPath: '/tmp/r5-tc-12345678-123/results/gradle.log', phasePath: '/tmp/r5-tc-12345678-123/results/phase.jsonl'};
   const value = {...expected, pid: 1, pgid: 1, bootId: 'boot', processStartTicks: 1, phase: 'PROCESS_STARTED'};
   const lifecycleEvents = [];
@@ -441,7 +1059,7 @@ const selfTest = async () => {
   harness.collect();
   if (lifecycleEvents.map((event) => event.event).join(',') !== requiredLifecycleEvents.join(',') || reconnectRecord?.control !== value) throw new Error('LIFECYCLE_HARNESS_TRANSITION_INVALID');
   if (parseStallDiagnostics('TAIL_BEGIN\nprogress\nTAIL_END\nPROCESS_BEGIN\n1 1 S 00:01\nPROCESS_END\nCONTAINERS_BEGIN\nabc false\nCONTAINERS_END').tail !== 'progress') throw new Error('STALL_DIAGNOSTICS_PARSE_INVALID');
-  const valid = {schemaVersion: 1, kind: 'r5-managed-testcontainers-run', runId: expected.runId, task: ':apps:test', startedAt: now(), remote: {}, sourceSha256: 'b'.repeat(64), logPath: expected.logPath, phaseEvents: requiredPhases.map((phase, index) => ({sequence: index + 1, phase, outcome: 'PASS'})), lifecycleEvents, heartbeats: [{phase: 'RUNNING'}], logInspection: {readCount: 1, observedBytes: 1, lastReadAt: now(), status: 'READ'}, controlRecord: {expected, value, reconnect: {readAt: now(), identityReadback: reconnectRecord.identityReadback}, verified: true, reusedAfterReconnect: true}, firstFailure: null, lastKnownGood: 'CLEANUP', brokenBoundary: null, business: {status: 'PASS'}, cleanup: {status: 'PASS', reaped: true}};
+  const valid = {schemaVersion: 1, kind: 'r5-managed-testcontainers-run', runId: expected.runId, task: ':apps:test', startedAt: now(), remote: {}, sourceSha256: 'b'.repeat(64), sourceSync: {status: 'PASS', workspace: '/tmp/r5-tc-12345678-123/workspace', requiredPaths: []}, gradleDistribution: {sha256: 'c'.repeat(64), path: remoteGradleDistributionPath('c'.repeat(64)), status: 'REUSED'}, logPath: expected.logPath, phaseEvents: requiredPhases.map((phase, index) => ({sequence: index + 1, phase, outcome: 'PASS'})), lifecycleEvents, heartbeats: [{phase: 'RUNNING'}], logInspection: {readCount: 1, observedBytes: 1, lastReadAt: now(), status: 'READ'}, controlRecord: {expected, value, reconnect: {readAt: now(), identityReadback: reconnectRecord.identityReadback}, verified: true, reusedAfterReconnect: true}, firstFailure: null, lastKnownGood: 'CLEANUP', brokenBoundary: null, business: {status: 'PASS'}, cleanup: {status: 'PASS', reaped: true, process: 'PASS', scratch: 'PASS', containers: 'PASS', volumes: 'PASS'}};
   parseAndValidateRunManifest(valid);
   const red = (mutate, reason) => {
     const fixture = structuredClone(valid); mutate(fixture);
@@ -455,11 +1073,28 @@ const selfTest = async () => {
   red((fixture) => { fixture.controlRecord.reusedAfterReconnect = false; }, 'CONTROL_RECORD_NOT_VERIFIED');
   red((fixture) => { fixture.logInspection.status = 'LOG_NOT_AVAILABLE'; }, 'LOG_NOT_AVAILABLE');
   red((fixture) => { fixture.cleanup.status = 'FAIL'; }, 'CLEANUP_NOT_PASS');
+  red((fixture) => { delete fixture.cleanup.process; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:process');
+  red((fixture) => { fixture.cleanup.scratch = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:scratch');
+  red((fixture) => { fixture.cleanup.containers = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:containers');
+  red((fixture) => { fixture.cleanup.volumes = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:volumes');
+  if (finalizeCleanupAfterCollection(valid.cleanup, true).status !== 'FAIL') throw new Error('ARTIFACT_COLLECTION_FAILURE_NOT_CLEANUP_FAIL');
   try { parseStallDiagnostics('TAIL_BEGIN\nTAIL_END'); throw new Error('SELF_TEST_RED_NOT_DETECTED:STALL_DIAGNOSTICS_INVALID'); }
   catch (error) { if (error.message === 'SELF_TEST_RED_NOT_DETECTED:STALL_DIAGNOSTICS_INVALID' || error.message !== 'STALL_DIAGNOSTICS_INVALID') throw error; }
-  process.stdout.write('R5_REMOTE_RUNNER_SELF_TEST=PASS\nRED_MISSING_HEARTBEAT=PASS\nRED_CONTROL_RECORD_RECONNECT_IDENTITY_MISMATCH=PASS\nRED_MISSING_RECONNECT_LIFECYCLE=PASS\nRED_LAUNCH_ACK_FAILURE=PASS\nRED_CONTROL_RECORD_RECONNECT_FLAG=PASS\nRED_LOG_NOT_AVAILABLE=PASS\nRED_CLEANUP_FAILURE=PASS\nRED_STALL_DIAGNOSTICS_INVALID=PASS\nRED_WORKLOAD_PROGRESS_NOT_TREATED_AS_STALL=PASS\nFAST_CHILD_CLOSE_OBSERVER=PASS\nLIFECYCLE_HARNESS_PRODUCTION_PATH=PASS\nCLEANUP=PASS\n');
+  const cacheOutcome = classifyGradleTestExecution('> Task :apps:test FROM-CACHE\nBUILD SUCCESSFUL', ':apps:test');
+  if (cacheOutcome.status !== 'FAIL' || cacheOutcome.reason !== 'TESTCONTAINERS_TARGET_NOT_EXECUTED:FROM-CACHE') throw new Error('GRADLE_CACHE_EXECUTION_RED_NOT_DETECTED');
+  const similarlyNamedTask = classifyGradleTestExecution('> Task :apps:testClasses UP-TO-DATE\nBUILD SUCCESSFUL', ':apps:test');
+  if (similarlyNamedTask.status !== 'FAIL' || similarlyNamedTask.reason !== 'TESTCONTAINERS_TARGET_TASK_NOT_OBSERVED') throw new Error('GRADLE_TASK_NAME_BOUNDARY_RED_NOT_DETECTED');
+  const missingOutcome = classifyGradleTestExecution('BUILD SUCCESSFUL', ':apps:test');
+  if (missingOutcome.status !== 'FAIL' || missingOutcome.reason !== 'TESTCONTAINERS_TARGET_TASK_NOT_OBSERVED') throw new Error('GRADLE_TASK_EXECUTION_RED_NOT_DETECTED');
+  process.stdout.write('R5_REMOTE_RUNNER_SELF_TEST=PASS\nRED_MISSING_HEARTBEAT=PASS\nRED_CONTROL_RECORD_RECONNECT_IDENTITY_MISMATCH=PASS\nRED_MISSING_RECONNECT_LIFECYCLE=PASS\nRED_LAUNCH_ACK_FAILURE=PASS\nRED_CONTROL_RECORD_RECONNECT_FLAG=PASS\nRED_LOG_NOT_AVAILABLE=PASS\nRED_CLEANUP_FAILURE=PASS\nRED_CLEANUP_RECEIPT_FIELDS=PASS\nRED_STALL_DIAGNOSTICS_INVALID=PASS\nRED_WORKLOAD_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_HEARTBEAT_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_GRADLE_CACHE_EXECUTION=PASS\nRED_GRADLE_TASK_NAME_BOUNDARY=PASS\nRED_GRADLE_TASK_EXECUTION_MISSING=PASS\nFAST_CHILD_CLOSE_OBSERVER=PASS\nLIFECYCLE_HARNESS_PRODUCTION_PATH=PASS\nCLEANUP=PASS\n');
 };
 
-if (process.argv[2] === '--self-test') {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;
+if (isMain && process.argv[2] === '--self-test') {
   selfTest().catch((error) => { process.stderr.write(`R5_REMOTE_RUNNER_SELF_TEST=FAIL; REASON=${error instanceof Error ? error.message : String(error)}\n`); process.exitCode = 1; });
-} else execute().catch((error) => { process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(error?.message)}; CLEANUP=NOT_ATTEMPTED\n`); process.exitCode = 2; });
+} else if (isMain && discoverTestcontainers) {
+  try { process.stdout.write(`${JSON.stringify({kind: 'r5-testcontainers-discovery', targets: discoverTestcontainersTargets()}, null, 2)}\n`); }
+  catch (error) { process.stderr.write(`R5_TESTCONTAINERS_DISCOVERY=FAIL; REASON=${compact(error?.message)}\n`); process.exitCode = 2; }
+} else if (isMain && allTestcontainers) {
+  executeAll().catch((error) => { process.stderr.write(`R5_TESTCONTAINERS_ALL=FAIL; REASON=${compact(error?.message)}\n`); process.exitCode = 2; });
+} else if (isMain) execute().catch((error) => { process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(error?.message)}; CLEANUP=NOT_ATTEMPTED\n`); process.exitCode = 2; });

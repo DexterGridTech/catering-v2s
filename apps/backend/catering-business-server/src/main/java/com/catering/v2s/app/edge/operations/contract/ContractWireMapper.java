@@ -14,16 +14,21 @@ import com.catering.v2s.app.edge.generated.wire.StoreContractStore;
 import com.catering.v2s.app.edge.generated.wire.StoreContractStoreCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreContractTenant;
 import com.catering.v2s.contract.application.ContractTaskReadService;
+import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 final class ContractWireMapper {
     private static final ObjectMapper JSON = new ObjectMapper();
     private ContractWireMapper() { }
     static StoreContract wire(ContractTaskReadService.StoreContractView value) {
+        return wire(new OperationsStoreContractCommandApi.StoreContractTaskReadback(value.id(), value.groupWorkspaceKey(), reference(value.project()), reference(value.store()), reference(value.tenant()), value.phaseName(), value.contractNo(), value.effectiveFrom(), value.effectiveTo(), value.note(), value.extensionValues().entrySet().stream().map(entry -> new OperationsStoreContractCommandApi.ExtensionValue(entry.getKey(), entry.getValue())).toList(), value.extensionRuleRevision(), value.status(), value.revision(), value.source(), value.createdAt(), value.updatedAt(), value.items().stream().map(item -> new OperationsStoreContractCommandApi.ItemReadback(item.code(), item.name())).toList(), value.phaseNameSnapshot()));
+    }
+    static StoreContract wire(OperationsStoreContractCommandApi.StoreContractTaskReadback value) {
         return new StoreContract(value.id().toString(), value.groupWorkspaceKey(), project(value.project()), store(value.store()), tenant(value.tenant()), value.phaseName(), value.contractNo(), value.effectiveFrom().toString(), value.effectiveTo() == null ? null : value.effectiveTo().toString(), value.note(), extensionValues(value.extensionValues()), value.extensionRuleRevision(), StoreContractStatus.valueOf(value.status()), value.revision(), value.source(), value.createdAt(), value.updatedAt(), value.items().stream().map(item -> new StoreContractItem(item.code(), item.name())).toList(), value.phaseNameSnapshot());
     }
     static StoreContractCandidatePage candidates(ContractTaskReadService.CandidatePage value) {
@@ -40,6 +45,11 @@ final class ContractWireMapper {
     private static StoreContractProject project(ContractTaskReadService.Reference value) { return new StoreContractProject(value.id().toString(), value.code(), value.name()); }
     private static StoreContractStore store(ContractTaskReadService.Reference value) { return new StoreContractStore(value.id().toString(), value.code(), value.name()); }
     private static StoreContractTenant tenant(ContractTaskReadService.Reference value) { return new StoreContractTenant(value.id().toString(), value.code(), value.name()); }
+    private static StoreContractProject project(OperationsStoreContractCommandApi.Reference value) { return new StoreContractProject(value.id().toString(), value.code(), value.name()); }
+    private static StoreContractStore store(OperationsStoreContractCommandApi.Reference value) { return new StoreContractStore(value.id().toString(), value.code(), value.name()); }
+    private static StoreContractTenant tenant(OperationsStoreContractCommandApi.Reference value) { return new StoreContractTenant(value.id().toString(), value.code(), value.name()); }
+    private static OperationsStoreContractCommandApi.Reference reference(ContractTaskReadService.Reference value) { return new OperationsStoreContractCommandApi.Reference(value.id(), value.code(), value.name()); }
+    static JsonNode extensionValues(List<OperationsStoreContractCommandApi.ExtensionValue> values) { ObjectNode result = JSON.createObjectNode(); values.forEach(value -> { try { result.set(value.fieldKey(), JSON.readTree(value.valueJson())); } catch (Exception exception) { throw new IllegalStateException("contract owner emitted invalid extension JSON", exception); } }); return result; }
     static JsonNode extensionValues(Map<String, String> values) { ObjectNode result = JSON.createObjectNode(); values.forEach((key, raw) -> { try { result.set(key, JSON.readTree(raw)); } catch (Exception exception) { throw new IllegalStateException("contract owner emitted invalid extension JSON", exception); } }); return result; }
     static Map<String, String> requestValues(JsonNode values) { if (values == null || values.isNull()) return Map.of(); if (!values.isObject()) throw new IllegalArgumentException("contract extension values must be a JSON object"); Map<String, String> result = new LinkedHashMap<>(); values.properties().forEach(entry -> { try { result.put(entry.getKey(), JSON.writeValueAsString(entry.getValue())); } catch (Exception exception) { throw new IllegalArgumentException("contract extension value is not JSON serializable", exception); } }); return Map.copyOf(result); }
 }

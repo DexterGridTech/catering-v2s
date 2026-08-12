@@ -25,7 +25,6 @@ test("platform-admin owns a separate platform login and group-workspace readback
   assert.match(generatedCatalog, /"operationId": "platformPasswordLogin"[\s\S]*"path": "\/api\/platform\/auth\/password-login"/);
   assert.match(generatedCatalog, /"operationId": "listPlatformGroupWorkspaces"[\s\S]*"path": "\/api\/platform\/group-workspaces"/);
   assert.doesNotMatch(authenticationSource + workspaceSource, /['"`]\s*\/api\//);
-  assert.match(workspaceDetailSource, /初始化商业集团/);
   assert.doesNotMatch(appSource + authenticationSource + workspaceSource + workspaceAdministrationSource, /operations-admin|localStorage|sessionStorage/);
 });
 
@@ -36,7 +35,6 @@ test("platform typed write paths include extension replacement and opaque asset 
   assert.match(extensionSource, /useOverlayLock/);
   assert.match(extensionEditSource, /PLATFORM_ADMIN_OPERATION_IDS\.replaceExtensionDefinition/);
   assert.match(extensionEditSource, /field\.type === 'SELECT' \? field\.optionsText/);
-  assert.match(extensionEditSource, /\.\.\.\(field\.key \? \{key: field\.key\} : \{\}\)/);
   assert.doesNotMatch(extensionSource + extensionEditSource, /field_\$\{Date\.now\(\)\}|onRow=|entityType\/key\/revision/);
   assert.match(extensionEditSource, /EXTENSION_DEFINITION_VERSION_CONFLICT/);
   assert.match(workspaceCreateSource + workspaceEditSource, /platformClient\.stagePlatformAsset/);

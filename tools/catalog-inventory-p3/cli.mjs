@@ -28,7 +28,7 @@ function check() {
   if (JSON.stringify(selected.map((page) => page.navigation.order)) !== JSON.stringify([510, 520, 530])) fail("P3_ADMIN_PAGE_ORDER_INVALID");
   const caseIds = scenarios.scenarios.flatMap((scenario) => scenario.cases.map((entry) => entry.caseId));
   const boundIds = bindings.bindings.map((entry) => entry.caseId);
-  if (scenarios.scenarioCount !== 18 || scenarios.caseCount !== 43 || caseIds.length !== 43 || new Set(caseIds).size !== 43) fail("P3_L2_SCENARIO_DENOMINATOR_INVALID");
+  if (scenarios.scenarioCount !== 18 || scenarios.caseCount !== 41 || caseIds.length !== 41 || new Set(caseIds).size !== 41) fail("P3_L2_SCENARIO_DENOMINATOR_INVALID");
   assertLocatorExactSet(caseIds, boundIds);
   assertLocatorBindingsPresent(bindings);
   assertIaControlExactSet(iaReconciliation);

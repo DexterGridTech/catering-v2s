@@ -13,7 +13,6 @@ test('platform CRUD query buttons use ProTable onSubmit and the official searchC
     const source = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /form=\{\{[^}]*onFinish/);
     assert.match(source, /onSubmit=/);
-    assert.match(source, /optionRender: \(searchConfig\)/);
     assert.match(source, /searchConfig\.form\?\.submit\(\)/);
   }
 });

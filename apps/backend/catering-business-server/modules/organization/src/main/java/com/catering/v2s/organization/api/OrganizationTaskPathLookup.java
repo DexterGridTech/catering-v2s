@@ -19,6 +19,26 @@ public interface OrganizationTaskPathLookup {
     }
 
     /**
+     * One organization-owner command judgment: resolve the persisted target path and decide
+     * whether the already-authenticated assignment may act on it. Production implementations
+     * must keep both facts in one owner transaction; the default preserves existing test doubles.
+     */
+    default CommandTaskPathFacts commandTaskPathFacts(
+        UUID workspaceUuid,
+        String groupWorkspaceKey,
+        String assignmentType,
+        UUID assignmentId,
+        String targetType,
+        UUID targetId,
+        boolean statusTransition
+    ) {
+        TaskPath taskPath = statusTransition
+            ? requireStatusTransitionTaskPath(workspaceUuid, groupWorkspaceKey, targetType, targetId)
+            : requireTaskPath(workspaceUuid, groupWorkspaceKey, targetType, targetId);
+        return new CommandTaskPathFacts(taskPath, isScopeAllowed(workspaceUuid, groupWorkspaceKey, assignmentType, assignmentId, taskPath));
+    }
+
+    /**
      * Resolves display and ancestry facts for a bounded set of persisted task targets.
      * This is a display/read API only: it neither grants authority nor replaces
      * {@link #isScopeAllowed(UUID, String, String, UUID, TaskPath)}.
@@ -68,4 +88,6 @@ public interface OrganizationTaskPathLookup {
     }
 
     record TaskPathRef(String targetType, UUID targetId) { }
+
+    record CommandTaskPathFacts(TaskPath taskPath, boolean assignmentScopeAllowed) { }
 }

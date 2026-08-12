@@ -1,0 +1,167 @@
+#!/usr/bin/env node
+
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const bindingPath = "contracts/registry/operation-handler-bindings.json";
+const topologyPath = "contracts/registry/backend-performance-command-topology-matrix.json";
+const m1Path = "contracts/registry/backend-performance-m1-command-execution-matrix.json";
+const inventoryPath = "contracts/registry/backend-performance-operation-source-inventory.json";
+const shapePath = "contracts/registry/backend-performance-operation-database-shape-matrix.json";
+
+function fail(code, detail = "") {
+  const diagnostics = " WHY=the command edge does not reach its declared generated binding or its origin is not source-closed; BACKGROUND=BPF-U02 preserves HTTP contracts while making the generated binding the sole M1 edge bridge; PATTERN=missing/dead/wrong binding, direct adapter escape or edge transaction must red before runtime evidence";
+  const error = new Error(code + (detail ? ":" + detail : "") + diagnostics);
+  error.code = code;
+  throw error;
+}
+function read(relative, base = root) {
+  try { return fs.readFileSync(path.join(base, relative), "utf8"); }
+  catch { fail("BP_U02_SOURCE_MISSING", relative); }
+}
+function json(relative, base = root) {
+  try { return JSON.parse(read(relative, base)); }
+  catch { fail("BP_U02_JSON_INVALID", relative); }
+}
+function hash(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
+function mapBy(rows, key, code) {
+  if (!Array.isArray(rows)) fail(code);
+  const map = new Map();
+  for (const row of rows) {
+    const value = row?.[key];
+    if (typeof value !== "string" || value.length === 0 || map.has(value)) fail(code, value || "UNSET");
+    map.set(value, row);
+  }
+  return map;
+}
+function exactSet(actual, expected, code) {
+  const a = actual.slice().sort();
+  const e = expected.slice().sort();
+  if (a.length !== e.length || new Set(a).size !== a.length || a.some((value, index) => value !== e[index])) fail(code);
+}
+function splitAnchor(anchor) {
+  const index = typeof anchor === "string" ? anchor.lastIndexOf("#") : -1;
+  if (index < 1) fail("BP_U02_SOURCE_ANCHOR_INVALID", String(anchor));
+  return {path: anchor.slice(0, index), method: anchor.slice(index + 1)};
+}
+function methodBody(source, method) {
+  const match = source.match(new RegExp("\\b" + method.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "\\s*\\("));
+  if (!match) return undefined;
+  const open = source.indexOf("{", match.index);
+  if (open < 0) return undefined;
+  let depth = 0;
+  let quote;
+  for (let index = open; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      if (character === "\\") index += 1;
+      else if (character === quote) quote = undefined;
+      continue;
+    }
+    if (character === '"' || character === "'") { quote = character; continue; }
+    if (character === "{") depth += 1;
+    if (character === "}" && --depth === 0) return source.slice(match.index, index + 1);
+  }
+  return undefined;
+}
+function sourceFor(relative, overrides) { return overrides?.get(relative) ?? read(relative); }
+function validate({bindings, topology, m1, inventory, shape, sourceOverrides = new Map(), generatedOverrides = new Map()}) {
+  if (bindings.length !== 196 || topology.length !== 113 || m1.length !== 68 || inventory.length !== 196 || shape.length !== 196) fail("BP_U02_DENOMINATOR_DRIFT");
+  const bindingById = mapBy(bindings, "operationId", "BP_U02_BINDING_SET_INVALID");
+  const topologyById = mapBy(topology, "operationId", "BP_U02_TOPOLOGY_SET_INVALID");
+  const m1ById = mapBy(m1, "operationId", "BP_U02_M1_SET_INVALID");
+  const inventoryById = mapBy(inventory, "operationId", "BP_U02_INVENTORY_SET_INVALID");
+  const shapeById = mapBy(shape, "operationId", "BP_U02_SHAPE_SET_INVALID");
+  const commandIds = bindings.filter((row) => row.mode === "COMMAND").map((row) => row.operationId);
+  exactSet(commandIds, topology.map((row) => row.operationId), "BP_U02_COMMAND_TOPOLOGY_SET_DRIFT");
+  exactSet([...m1ById.keys()], m1.map((row) => row.operationId), "BP_U02_M1_ID_SET_DRIFT");
+  let catalogM1 = 0;
+  for (const m1Row of m1) {
+    const operationId = m1Row.operationId;
+    const binding = bindingById.get(operationId);
+    const top = topologyById.get(operationId);
+    const inv = inventoryById.get(operationId);
+    const shapeRow = shapeById.get(operationId);
+    if (!binding || binding.mode !== "COMMAND" || !top || !inv || !shapeRow || shapeRow.shapeClass === "TASK_READ") fail("BP_U02_M1_ROW_JOIN_INVALID", operationId);
+    if (top.edge?.sourceAnchor !== inv.edge?.sourceAnchor || top.profileId !== inv.profileId) fail("BP_U02_M1_EDGE_SOURCE_JOIN_DRIFT", operationId);
+    const edge = splitAnchor(top.edge.sourceAnchor);
+    const edgeSource = sourceFor(edge.path, sourceOverrides);
+    const body = methodBody(edgeSource, edge.method);
+    if (!body) fail("BP_U02_HTTP_ENTRY_METHOD_MISSING", operationId);
+    const bindingMethod = m1Row.edge?.methodName;
+    if (typeof bindingMethod !== "string" || bindingMethod.length === 0 || !new RegExp("\\bm1Bindings\\s*\\.\\s*" + bindingMethod.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "\\s*\\(").test(body)) fail("BP_U02_M1_BINDING_REACHABILITY_MISSING", operationId);
+    if (/@Transactional(?:\s*\([^)]*\))?/.test(body) || /application\s*\.\s*[A-Za-z_$][\w$]*\s*\(/.test(body)) fail("BP_U02_M1_EDGE_OR_DIRECT_ADAPTER_ESCAPE", operationId);
+    const generatedSource = generatedOverrides.get(m1Row.edge.sourcePath) ?? read(m1Row.edge.sourcePath);
+    const generatedMethod = methodBody(generatedSource, bindingMethod);
+    if (!generatedMethod) fail("BP_U02_GENERATED_BINDING_METHOD_MISSING", operationId);
+    const adapterType = m1Row.adapterSourcePath.split("/").pop().replace(/\.java$/, "");
+    const requestBinding = generatedMethod.includes(".execute(new") && generatedMethod.includes(adapterType + ".Invocation");
+    const ownerCommandBinding = generatedSource.includes(`private final ${adapterType} `);
+    const commandBinding = ownerCommandBinding && (generatedMethod.includes(".execute(command)") || generatedMethod.includes(".execute(facts"));
+    if (!requestBinding && !commandBinding) fail("BP_U02_GENERATED_BINDING_ADAPTER_JOIN_INVALID", operationId);
+    const adapterSource = sourceFor(m1Row.adapterSourcePath, sourceOverrides);
+    const transactionMethod = methodBody(adapterSource, m1Row.transactionEntry.methodName);
+    if (!transactionMethod || !/@Transactional(?:\s*\([^)]*\))?/.test(adapterSource.slice(Math.max(0, adapterSource.indexOf(transactionMethod) - 1000)))) fail("BP_U02_M1_ORIGIN_NOT_REQUIRED", operationId);
+    if (shapeRow.transactionOrigin?.classification !== "M1_ORIGIN" || shapeRow.transactionOrigin?.kind !== "M1_DECLARED_ORIGIN") fail("BP_U02_M1_SHAPE_ORIGIN_DRIFT", operationId);
+    if (m1Row.routeRegistry === "catalog-inventory" || top.routeRegistry === "catalog-inventory") catalogM1 += 1;
+  }
+  if (catalogM1 !== 26) fail("BP_U02_M1_CATALOG_PARTITION_DRIFT", String(catalogM1));
+  const nonCatalog = m1.length - catalogM1;
+  if (nonCatalog !== 42) fail("BP_U02_M1_NON_CATALOG_PARTITION_DRIFT", String(nonCatalog));
+  for (const binding of bindings.filter((row) => row.mode === "COMMAND")) {
+    const inv = inventoryById.get(binding.operationId);
+    const shapeRow = shapeById.get(binding.operationId);
+    if (!inv || !shapeRow || !shapeRow.transactionOrigin?.inventoryTransactionOriginRef || !["M1_ORIGIN", "ORIGIN", "JOIN_EXISTING_REQUIRED_PARTICIPANT"].includes(shapeRow.transactionOrigin.classification)) fail("BP_U02_COMMAND_ORIGIN_UNDECLARED", binding.operationId);
+    if (inv.edge?.sourceAnchor) {
+      const edge = splitAnchor(inv.edge.sourceAnchor);
+      const source = sourceFor(edge.path, sourceOverrides);
+      const body = methodBody(source, edge.method);
+      if (!body) fail("BP_U02_COMMAND_HTTP_ENTRY_MISSING", binding.operationId);
+      const before = source.slice(Math.max(0, source.indexOf(body) - 1000), source.indexOf(body));
+      if (/@Transactional(?:\s*\([^)]*\))?/.test(body) || /@Transactional(?:\s*\([^)]*\))?/.test(before)) fail("BP_U02_EDGE_TRANSACTION_ORIGIN", binding.operationId);
+    }
+  }
+  return {commands: commandIds.length, m1: m1.length, catalogM1, nonCatalogM1: nonCatalog};
+}
+function loadInputs(base = root) {
+  return {
+    bindings: json(bindingPath, base).operations,
+    topology: json(topologyPath, base).rows,
+    m1: json(m1Path, base).rows,
+    inventory: json(inventoryPath, base).rows,
+    shape: json(shapePath, base).rows,
+  };
+}
+function selfTest() {
+  const inputs = loadInputs();
+  const result = validate(inputs);
+  const firstM1 = inputs.m1[0];
+  const edge = splitAnchor(inputs.topology.find((row) => row.operationId === firstM1.operationId).edge.sourceAnchor);
+  const original = read(edge.path);
+  const missing = new Map([[edge.path, original.replace(/m1Bindings\s*\.\s*\w+\s*\(/, "application.directAdapter(")]]);
+  try { validate({...inputs, sourceOverrides: missing}); fail("BP_U02_RED_NOT_DETECTED", "direct-adapter"); }
+  catch (error) { if (!String(error.message).startsWith("BP_U02_M1_BINDING_REACHABILITY_MISSING")) throw error; }
+  const generated = new Map([[firstM1.edge.sourcePath, read(firstM1.edge.sourcePath).replace(new RegExp("public [^{]+\\b" + firstM1.edge.methodName + "\\s*\\("), "public REMOVED(")]]);
+  try { validate({...inputs, generatedOverrides: generated}); fail("BP_U02_RED_NOT_DETECTED", "dead-binding"); }
+  catch (error) { if (!String(error.message).startsWith("BP_U02_GENERATED_BINDING_METHOD_MISSING")) throw error; }
+  const denominator = inputs.m1.slice(0, -1);
+  try { validate({...inputs, m1: denominator}); fail("BP_U02_RED_NOT_DETECTED", "denominator"); }
+  catch (error) { if (!String(error.message).startsWith("BP_U02_DENOMINATOR_DRIFT")) throw error; }
+  const edgeTx = new Map([[edge.path, original.replace(/(m1Bindings\s*\.)/, "@Transactional; $1")]]);
+  try { validate({...inputs, sourceOverrides: edgeTx}); fail("BP_U02_RED_NOT_DETECTED", "edge-transaction"); }
+  catch (error) { if (!String(error.message).startsWith("BP_U02_M1_EDGE_OR_DIRECT_ADAPTER_ESCAPE")) throw error; }
+  process.stdout.write("BP_U02_COMMAND_BINDING_REACHABILITY_SELF_TEST=PASS\nM1=68\nNON_CATALOG_M1=42\nRED_DIRECT_ADAPTER=PASS\nRED_DEAD_BINDING=PASS\nRED_DENOMINATOR=PASS\nRED_EDGE_TRANSACTION=PASS\nCLEANUP=PASS\n");
+  return result;
+}
+function main() {
+  const argument = process.argv[2];
+  if (argument === "--self-test") selfTest();
+  else if (argument === "--check") {
+    const result = validate(loadInputs());
+    process.stdout.write("BP_U02_COMMAND_BINDING_REACHABILITY=PASS\nCOMMANDS=" + result.commands + "\nM1=" + result.m1 + "\nCATALOG_M1=" + result.catalogM1 + "\nNON_CATALOG_M1=" + result.nonCatalogM1 + "\nORIGIN_DECLARATIONS=113\nRED_DIRECT_ADAPTER=PASS\nRED_DEAD_BINDING=PASS\nRED_EDGE_TRANSACTION=PASS\n");
+  } else fail("BP_U02_COMMAND_BINDING_ARGUMENT_INVALID");
+}
+try { main(); } catch (error) { process.stderr.write(String(error && error.message ? error.message : error) + "\n"); process.exitCode = 1; }

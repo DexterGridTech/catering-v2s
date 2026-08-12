@@ -3,7 +3,7 @@ import {adminWideDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycl
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {BrandCopyCandidatePage, CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
+import type {CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {catalogCopyVersionRows, decodeBrandCopyReadback, decodeBrandCopyScopes, decodeCandidates, decodePreflight, type BrandCopyReadback, type BrandCopyScope, type CatalogCopyReferenceMapping, type CopyPreflight} from '../model/catalogModel';
 
@@ -21,8 +21,8 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
   const headers = useMemo(() => brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined, [brandRef]);
   const candidatesRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsBrandCatalogCopyCandidates({}, {query: {dataNodeRef: queryContext.scopeRef ?? '', ...(keyword.trim() ? {keyword: keyword.trim()} : {})}, headers}), [headers, keyword, queryContext.scopeRef]);
   const candidatesQuery = operationsRtk.useGetOperationsBrandCatalogCopyCandidatesQuery(candidatesRequest, {skip: !open});
-  const candidates = decodeCandidates(candidatesQuery.data as CatalogInventoryEnvelope | undefined);
-  const scopes = decodeBrandCopyScopes(candidatesQuery.data as CatalogInventoryEnvelope<BrandCopyCandidatePage> | undefined);
+  const candidates = decodeCandidates(candidatesQuery.data);
+  const scopes = decodeBrandCopyScopes(candidatesQuery.data);
   const [preflightCopy, preflightState] = operationsRtk.usePreflightOperationsBrandCatalogCopyMutation();
   const [executeCopy, executeState] = operationsRtk.useExecuteOperationsBrandCatalogCopyMutation();
   const lifecycle = useDrawerFormLifecycle({open, onOpenChange: (next) => { if (!next) onClose(); }, dirtyMessage: '复制预检和已选择商品尚未提交。', dirtyGuardTestIds: {confirm: testId('catalog-copy-dirty-discard'), cancel: testId('catalog-copy-dirty-continue')}, diagnosticOperationId: 'brand-catalog-copy'});

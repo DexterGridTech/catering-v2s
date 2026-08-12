@@ -3,8 +3,12 @@ package com.catering.v2s.app.edge.operations.context;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,7 +19,12 @@ import com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeRequest;
 import com.catering.v2s.app.edge.generated.wire.SortDirection;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserSortKey;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
-import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
+import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
+import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import java.util.List;
@@ -63,6 +72,18 @@ class OperationsWorkspaceUserServerScopeTest {
     }
 
     @Test
+    void userRevokeForwardsTheHeaderIdempotencyKeyWithoutFabricatingOwnerScope() {
+        Fixture fixture = fixture();
+        UUID assignmentId = UUID.randomUUID(); UUID accountId = UUID.randomUUID(); String idempotencyKey = "operations-assignment-revoke-edge-001";
+        WorkspaceUserService.User user = new WorkspaceUserService.User(accountId, "Operations tester", "13800000000", "138****0000", "operations-tester", "ENABLED", "SET", 0, List.of(), List.of(), null, List.of(), 1L, 1L, 1L);
+        when(fixture.commands.revokeAssignment(any())).thenReturn(new WorkspaceOperationsCommandApi.OperationsAssignmentRevokeReadback(assignmentId, accountId, fixture.session.contextVersion(), user));
+
+        fixture.controller.storeRevoke(fixture.request, KEY, assignmentId, idempotencyKey, new WorkspaceUserRevokeRequest(1L));
+
+        verify(fixture.commands).revokeAssignment(argThat(command -> command.facts().sessionReadback() == fixture.session && "STORE".equals(command.expectedTargetType()) && assignmentId.equals(command.assignmentId()) && command.expectedVersion() == 1L && idempotencyKey.equals(command.idempotencyKey())));
+    }
+
+    @Test
     void staleContextVersionIsAnOptimisticConflictInsteadOfAnAuthenticationFailure() {
         Fixture fixture = fixture();
 
@@ -81,11 +102,16 @@ class OperationsWorkspaceUserServerScopeTest {
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
+        var commandFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(commandFacts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
-        OperationsWorkspaceUserController controller = new OperationsWorkspaceUserController(new OperationsSessionResolver(authentication), user, mock(WorkspaceAccountService.class), new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, null, authentication));
+        WorkspaceOperationsCommandApi commands = mock(WorkspaceOperationsCommandApi.class);
+        OperationsWorkspaceUserController controller = new OperationsWorkspaceUserController(new OperationsSessionResolver(authentication), user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, null, authentication),
+            new RevokeOperationsWorkspaceGroupUserAssignmentOperation(commands), new RevokeOperationsWorkspaceRegionUserAssignmentOperation(commands), new RevokeOperationsWorkspaceProjectUserAssignmentOperation(commands), new RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation(commands), new RevokeOperationsWorkspaceStoreUserAssignmentOperation(commands));
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
-        return new Fixture(controller, user, request, session, authentication);
+        return new Fixture(controller, user, commands, request, session, authentication);
     }
 
-    private record Fixture(OperationsWorkspaceUserController controller, WorkspaceUserService user, EdgeRequestContext request, WorkspaceSessionReadback session, WorkspaceAuthenticationService authentication) { }
+    private record Fixture(OperationsWorkspaceUserController controller, WorkspaceUserService user, WorkspaceOperationsCommandApi commands, EdgeRequestContext request, WorkspaceSessionReadback session, WorkspaceAuthenticationService authentication) { }
 }

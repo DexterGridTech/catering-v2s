@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-FINAL-RUNNER-IMPLEMENTATION-20260810",
+  "purpose": "Repair the final performance runner only when it can be connected to an existing managed execution boundary without broadening runtime authority.",
+  "authority": {
+    "implementationAuthority": true,
+    "runtimeAuthority": false,
+    "seedResetAuthority": false
+  },
+  "requiredOutcome": [
+    "A final workload must be invocable through a concrete managed adapter, rather than an injected callback.",
+    "Fixture materialization must be a named, source-bound contract; it must not be inferred from generated routes or fabricated from generic request data.",
+    "Canonical evidence must come from the owned final run root and retain final-run provenance."
+  ],
+  "nonNegotiable": [
+    "Do not call historical RM1 HTTP-diagnostic start/run/stop as a final-performance adapter.",
+    "Do not reuse r5-dev-runner because it is a DEV/seed boundary, uses a persistent R5 root, and has different ownership semantics.",
+    "Do not add network, SSH, process, database, object-storage, or fixture lifecycle management without an existing approved exported contract.",
+    "Do not run any dynamic command from this package."
+  ],
+  "sourceReopened": [
+    "scripts/dev/backend-performance-runtime-runner.mjs",
+    "scripts/test/backend-performance-workload.mjs",
+    "scripts/test/backend-performance-final-acceptance.mjs",
+    "scripts/dev/http-diagnostic-runner.mjs",
+    "scripts/dev/r5-dev-runner.mjs",
+    "scripts/test/r5-remote-testcontainers.mjs",
+    "contracts/policy/backend-performance-final-workload.json",
+    "doc/plans/platform/2026-08-08-v2s-backend-performance-refactor-implementation-design-codex.md"
+  ],
+  "knownAdmissionGap": "No existing public managed adapter accepts a final plan/run root, owns only the final local application+tunnel+isolated remote namespace lifecycle, materializes the 396 source-bound fixtures, or supplies the final server evidence paths. The historical diagnostic runner is hard-coded to its RM1 kind/root/headers/workload set; the R5 runner is a DEV+seed boundary."
+}

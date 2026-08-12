@@ -3,6 +3,7 @@ package com.catering.v2s.workspace.iam.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -65,6 +66,50 @@ class CommandExecutionContextResolverTest {
         assertNull(promotionContext.ownerScope().copySourceDataNodeId());
     }
 
+    @Test
+    void mapsAuthenticatedCatalogScopeOutsideTheGeneratedTokenToTypedForbidden() {
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup());
+        WorkspaceCommandOperationToken token = CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS;
+
+        assertThrows(CommandExecutionContextResolver.CatalogScopeForbiddenException.class, () -> resolver.resolveCatalogFromResolvedSession(
+            session(token.capabilityFor("STORE")), token, "PROJECT", UUID.randomUUID(),
+            CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(BRAND.toString()), "correlation", "request"
+        ));
+    }
+
+    @Test
+    void resolvesNonCatalogOperationsFromOneFreshCommandFactLoad() {
+        WorkspaceSessionReadback session = session("EDIT_STORE_CATALOG");
+        RecordingAuthenticationService authentication = new RecordingAuthenticationService(commandFacts(session));
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+
+        WorkspaceCommandAuthorizationFacts facts = resolver.resolveOperations("fresh-session-credential", GROUP);
+
+        assertEquals(session, facts.sessionReadback());
+        assertEquals(1, authentication.commandFactsCalls());
+        assertEquals("fresh-session-credential", authentication.lastCredential());
+    }
+
+    @Test
+    void rejectsMismatchedWorkspaceBeforeAnyTargetOrCatalogJudgment() {
+        RecordingAuthenticationService authentication = new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+
+        assertThrows(WorkspaceAuthenticationService.SessionInvalidException.class,
+            () -> resolver.resolveOperations("fresh-session-credential", "other-workspace"));
+        assertEquals(1, authentication.commandFactsCalls());
+    }
+
+    @Test
+    void rejectsStaleContextVersionAfterExactlyOneFreshCommandFactLoad() {
+        RecordingAuthenticationService authentication = new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+
+        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class,
+            () -> resolver.resolveOperationsAtContextVersion("fresh-session-credential", GROUP, 8L));
+        assertEquals(1, authentication.commandFactsCalls());
+    }
+
     private static CommandExecutionContextResolver resolver(CatalogScopeLookup lookup) {
         return new CommandExecutionContextResolver(capabilities(), lookup);
     }
@@ -87,6 +132,33 @@ class CommandExecutionContextResolverTest {
         return new WorkspaceSessionReadback(UUID.randomUUID(), WORKSPACE, GROUP, UUID.randomUUID(), ASSIGNMENT,
             WorkspaceSessionEntryReadback.ScopeContext.empty(),
             7L, 11L, Set.of(), Set.of(capability), "命令上下文测试人员");
+    }
+
+    private static WorkspaceCommandAuthorizationFacts commandFacts(WorkspaceSessionReadback session) {
+        return new WorkspaceCommandAuthorizationFacts(session, UUID.randomUUID(), "STORE", STORE);
+    }
+
+    private static final class RecordingAuthenticationService extends WorkspaceAuthenticationService {
+        private final WorkspaceCommandAuthorizationFacts facts;
+        private int commandFactsCalls;
+        private String lastCredential;
+
+        private RecordingAuthenticationService(WorkspaceCommandAuthorizationFacts facts) {
+            super(null, null, null, null, null, null, null, null, null, null, null,
+                new WorkspaceSessionRequestCache(false), null,
+                new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false));
+            this.facts = facts;
+        }
+
+        @Override
+        public WorkspaceCommandAuthorizationFacts commandAuthorizationFacts(String rawToken) {
+            commandFactsCalls++;
+            lastCredential = rawToken;
+            return facts;
+        }
+
+        private int commandFactsCalls() { return commandFactsCalls; }
+        private String lastCredential() { return lastCredential; }
     }
 
     private static CatalogScopeLookup lookup() {

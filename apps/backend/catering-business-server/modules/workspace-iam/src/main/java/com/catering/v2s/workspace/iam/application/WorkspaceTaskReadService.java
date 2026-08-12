@@ -49,7 +49,7 @@ public final class WorkspaceTaskReadService {
 
     /** Session entry is task read but has its own authentication-facts contract, not WRA. */
     public WorkspaceSessionEntryReadback sessionEntry(String rawToken, String groupWorkspaceKey) {
-        return primary(() -> authentication.sessionEntry(rawToken, groupWorkspaceKey));
+        return authentication.sessionEntry(rawToken, groupWorkspaceKey);
     }
 
     private static <T> T primary(java.util.function.Supplier<T> read) {

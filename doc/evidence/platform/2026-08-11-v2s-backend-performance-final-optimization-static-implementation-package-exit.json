@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-optimization-static-implementation-package-exit",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-OPTIMIZATION-STATIC-IMPLEMENTATION-20260811",
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_IMPLEMENTATION_20260811",
+  "status": "PASS",
+  "staticProofStatus": "PASS",
+  "exitMode": "TRIM_OBSERVATION_PATH_LIST_ONLY",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    ".runtime/compliance-control/package-baseline-BACKEND-PERFORMANCE-FINAL-OPTIMIZATION-STATIC-IMPLEMENTATION-20260811.json",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+    "contracts/policy/backend-performance-request-fact-load-once.json",
+    "contracts/policy/backend-performance-standards-registration.json",
+    "contracts/policy/backend-performance-testcontainers-plan.json",
+    "contracts/policy/mandatory-per-edit-gate-command-closure.json",
+    "contracts/registry/backend-performance-fact-loader-catalog.json",
+    "contracts/registry/backend-performance-m1-f10-owner-boundaries.json",
+    "contracts/registry/backend-performance-operation-database-shape-matrix.json",
+    "contracts/registry/backend-performance-operation-source-inventory.json",
+    "doc/evidence/platform/2026-08-09-v2s-backend-performance-phase1-gate-dispositions.json",
+    "doc/evidence/platform/2026-08-11-v2s-backend-performance-final-optimization-static-implementation-package-exit.json",
+    "doc/evidence/platform/2026-08-11-v2s-backend-performance-final-optimization-static-implementation-package-input.json",
+    "doc/evidence/platform/rm1/p1/authority-ledger.json",
+    "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json",
+    "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+    "scripts/check/authority-source-ledger",
+    "scripts/check/backend-performance-command-binding-reachability",
+    "scripts/check/backend-performance-final-fixture-catalog",
+    "scripts/check/backend-performance-gate-dispositions",
+    "scripts/check/backend-performance-operation-database-shape",
+    "scripts/check/backend-performance-operation-source-inventory",
+    "scripts/check/backend-performance-request-fact-load-once",
+    "scripts/check/backend-performance-standards-registration",
+    "scripts/check/backend-performance-static-196-reconciliation",
+    "scripts/check/database-operation-budget",
+    "scripts/generate/backend-performance-m1-command-execution-bindings.mjs",
+    "scripts/generate/backend-performance-operation-database-shape.mjs",
+    "scripts/generate/backend-performance-operation-database-shape.test.mjs",
+    "scripts/generate/backend-performance-operation-source-inventory.mjs",
+    "scripts/generate/backend-performance-operation-source-inventory.test.mjs",
+    "scripts/generate/edge-codegen.mjs",
+    "scripts/generate/task-read-surface-policy.mjs",
+    "scripts/test/compare-backend-performance-seed-reports.mjs",
+    "scripts/test/compare-backend-performance-seed-reports.test.mjs",
+    "scripts/test/seed-report.mjs",
+    "scripts/test/seed-report.test.mjs",
+    "tools/authority-source-ledger/cli.mjs",
+    "tools/compliance-control/cli.mjs",
+    "tools/verify-gates/cli.mjs"
+  ],
+  "harnessTrimObservation": {
+    "pathListRetained": true,
+    "prewriteBaseline": "NOT_USED_RETIRED_BY_DEXTER_DECISION",
+    "afterSha256AndReceiptExactSet": "NOT_USED_RETIRED_BY_DEXTER_DECISION"
+  },
+  "businessStatus": "NOT_RUN_STATIC_IMPLEMENTATION",
+  "cleanupStatus": "NOT_RUN_STATIC_IMPLEMENTATION",
+  "business": "NOT_APPLICABLE_STATIC_ONLY",
+  "cleanup": "NOT_APPLICABLE_STATIC_ONLY",
+  "reviewStatus": "PENDING_FINAL_DYNAMIC_EVIDENCE",
+  "denominator": {
+    "canonicalOperations": 196,
+    "commands": 113,
+    "reads": 83,
+    "m1WorkspaceExecutionCommands": 68,
+    "taskReads": 78,
+    "protocolReadExemptions": 5,
+    "sourceInventoryRows": 196,
+    "shapeRows": 196,
+    "loaderRows": 10,
+    "fixtureCatalogRows": 396,
+    "derivedScenarios": 14,
+    "reconciledOperations": 196,
+    "nonM1CurrentChainRederivation": 45,
+    "idempotencyPredecisions": 87,
+    "readbackPredecisions": 45,
+    "originParticipantPredecisions": 45
+  },
+  "controls": [
+    {
+      "ruleId": "BP_U01_GATE_RUNTIME_DENOMINATOR_DRIFT",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "gate-dispositions self-test/default PASS; 44 baseline + 4 phase-one + 10 later additions = 58; all denominator red mutations PASS"
+    },
+    {
+      "ruleId": "R4_DATABASE_SELECT_STAR",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "database-operation-budget self-test PASS; compatibility wrapper delegates shape ownership and preserves explicit historical SELECT_STAR red disposition"
+    },
+    {
+      "ruleId": "P1_LEDGER_ROW_INVALID:ST-11",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "authority-source-ledger check-rows ST-11 and self-test-rows PASS; full historical ledger remains explicit ST-2 consumer debt and is not attributed to ST-11"
+    },
+    {
+      "ruleId": "BPF-U01_SOURCE_INVENTORY_196",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "source inventory PASS; 196 rows, 45/87/45/45 decisions, 10 loaders; missing/source-substitution/loader-orphan red mutations PASS"
+    },
+    {
+      "ruleId": "BPF-U01_DATABASE_SHAPE_196",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "database shape PASS; 196 rows; source/fold/formula red mutations PASS"
+    },
+    {
+      "ruleId": "BPF-U01_PERMANENT_REDLINES",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "standards registration PASS; 3 controls/3 redlines and real red mutations PASS"
+    },
+    {
+      "ruleId": "BPF-U02_COMMAND_BINDING_REACHABILITY",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "113 commands/68 M1 generated bindings PASS; direct-adapter/dead-binding/denominator/edge-transaction red mutations PASS"
+    },
+    {
+      "ruleId": "BPF-U03_REQUEST_FACT_LOAD_ONCE",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "static fact-load-once PASS; 196 operations/10 loaders; runtime snapshot is NOT_RUN_STATIC_ONLY"
+    },
+    {
+      "ruleId": "BPF-U05_READ_BUDGET_REVOKE_ANCHORS",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "78 TASK_READ + 5 exemptions and five real revoke members PASS; missing-member red mutations PASS; measurement remains BLOCKED_UNMEASURED"
+    },
+    {
+      "ruleId": "BPF-U06_FIXTURE_CONTRACT_196",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "fixture catalog PASS; 396 rows and U07=196; owner/HTTP/OpenAPI missing-member red mutation PASS"
+    },
+    {
+      "ruleId": "BPF-U06_SEED_REPORT_COMPARATOR",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "seed-report tests/comparator tests PASS; cross-kind/basis/profile/coverage/missing-UPDATE/lower-UPDATE red mutations PASS"
+    },
+    {
+      "ruleId": "BPF-U07_STATIC_196_RECONCILIATION",
+      "state": "ACTIVE_RED_VERIFIED",
+      "evidence": "static reconciliation PASS; 196 operations/14 scenarios/10 loaders; source/shape/loader/fixture/plan/redline mutations PASS"
+    },
+    {
+      "ruleId": "DYNAMIC_TESTCONTAINERS_L2_RESET_DEV_SEED",
+      "state": "OUT_OF_SCOPE_THIS_PACKAGE",
+      "evidence": "runtimeAuthority=false; seedResetAuthority=false; dynamic admission not authorized"
+    },
+    {
+      "ruleId": "INDEPENDENT_IMPLEMENTATION_REVIEW",
+      "state": "OUT_OF_SCOPE_THIS_PACKAGE",
+      "evidence": "scheduled only after dynamic business and cleanup evidence close"
+    }
+  ],
+  "staticEvidence": {
+    "gateDisposition": "58/58 executable denominator PASS with explicit baseline and later additions",
+    "databaseBudget": "COMPATIBILITY_PASS with explicit historical SELECT_STAR red disposition",
+    "authoritySourceLedger": "ST-11 selected-row PASS with authority-hash red mutation; full historical failure is ST-2 BrandManagementPage consumer debt",
+    "sourceInventory": "196/196 source rows with 45/87/45/45 decisions and 10 loaders",
+    "shapeMatrix": "196/196 source-anchored shape rows with fold proof and component formulas",
+    "readBudget": "83 GET = 78 TASK_READ + 5 protocol exemptions; 20 workspace command anchors; 5 revoke anchors",
+    "fixtureCatalog": "396 fixture rows: U05=78+5, U04=79+38, U07=196",
+    "redlines": "three permanent redlines source-hash registered and red-tested",
+    "reconciliation": "196/196 row-by-row source/shape/loader/fixture/acceptance/redline reconciliation PASS"
+  },
+  "dynamicAdmission": "NOT_ADMITTED",
+  "dynamicEvidence": [],
+  "scopeStatement": "Static implementation exit for BPF-U01 through BPF-U06. It closes static controls and exact 196/196 reconciliation only; it does not claim Testcontainers, local managed L2, reset, managed DEV, seed comparison, numeric performance success, UAT, or final implementation review. Dynamic business and cleanup evidence remain open until the separately authorized managed sequence."
+}

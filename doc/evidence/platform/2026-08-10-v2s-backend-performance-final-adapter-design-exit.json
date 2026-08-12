@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-FINAL-ADAPTER-DESIGN-20260810",
+  "staticProofStatus": "POST_REMEDIATION_DECLARED_AWAITING_CLAUDE",
+  "businessStatus": "NOT_RUN_DESIGN",
+  "cleanupStatus": "NOT_RUN_DESIGN",
+  "implementationAuthority": false,
+  "runtimeAuthority": false,
+  "result": "The final callback gap has one finite approved repair: a final-only managed adapter, closed 396-row source-bound fixture catalog, and final snapshot admission extension. Round-2 authority-input corrections are declared POST_REMEDIATION_V1 and await Claude recheck. No dynamic command ran.",
+  "requiredNextPackage": "BACKEND-PERFORMANCE-FINAL-ADAPTER-IMPLEMENTATION-20260810",
+  "requiredSourceSurfaces": [
+    "scripts/dev/backend-performance-runtime-runner.mjs",
+    "scripts/dev/backend-performance-final-managed-adapter.mjs",
+    "scripts/dev/managed-isolated-local-runtime.mjs",
+    "scripts/dev/http-diagnostic-runner.mjs",
+    "scripts/test/backend-performance-final-fixtures.mjs",
+    "contracts/policy/backend-performance-final-fixture-catalog.json",
+    "scripts/check/backend-performance-final-fixture-catalog",
+    "scripts/test/backend-performance-workload.mjs",
+    "scripts/test/backend-performance-final-acceptance.mjs",
+    "contracts/policy/backend-performance-final-workload.json"
+  ],
+  "forbidden": [
+    "manual SSH or SQL orchestration",
+    "RM1 or R5 runtime/workload/snapshot reuse",
+    "reset",
+    "browser L2/UAT/deployment",
+    "unowned process termination",
+    "runtime execution before static implementation review"
+  ]
+}

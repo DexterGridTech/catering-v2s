@@ -2,13 +2,46 @@
 import {existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {diagnosticTuple} from './http-diagnostic-inventory.mjs';
 import {assertNoSensitiveDiagnosticValue, buildHttpDiagnosticReport} from './http-diagnostic-report.mjs';
 import {declareSourceBoundDiagnosticScenarios} from './http-diagnostic-scenarios.mjs';
 import {loadGeneratedDiagnosticRegistry} from './http-diagnostic-inventory.mjs';
 import {executeOperationsAccessWorkload, executeOperationsOrganizationWorkload, executeOperationsRecoveryWorkload, executeOperationsStatusTerminalWorkload, executeOperationsStoreProfileWorkload, executeOperationsUserReadbackWorkload, executePlatformAccountFinalization, executePlatformFinalization, executePlatformFoundationWorkload, executePlatformMaintenanceWorkload, executePublicInvitationWorkload, executeRemainingDenominatorWorkload} from './http-diagnostic-workload.mjs';
+import {normalizeEdgePath} from './seed-report.mjs';
+
+/**
+ * Catalog HTTP fixtures are written and read in the STORE owner scope.  The
+ * organization workload intentionally returns with the operator's visible
+ * node on PROJECT, so VISIBLE_DATA_NODE is not a valid catalog scope fact.
+ * The store profile captures the owner-readback node in STORE_DATA_NODE;
+ * require that fact instead of silently accepting a cross-scope node.
+ */
+export function requireOperationsStoreDataNode(state) {
+  const storeRef = String(state.requirePrivate('STORE')?.id ?? '');
+  const node = state.requirePrivate('STORE_DATA_NODE');
+  if (node?.dataNodeType !== 'STORE' || !node?.dataNodeRef || String(node.storeRef ?? '') !== storeRef) {
+    throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_STORE_DATA_NODE_OWNER_READBACK_INVALID');
+  }
+  return node;
+}
 
 const SAFE_HANDLE = /^[A-Za-z0-9._:-]{8,128}$/;
+const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const BACKEND_PERFORMANCE_FIXTURE_PATH = path.join(REPOSITORY_ROOT, 'contracts/policy/backend-performance-final-fixture-catalog.json');
+const BACKEND_PERFORMANCE_FIXTURES = new Map(JSON.parse(readFileSync(BACKEND_PERFORMANCE_FIXTURE_PATH, 'utf8')).rows.filter((row) => row?.area === 'U07_ROUTE').map((row) => [row.operationId, row]));
+
+function normalizeBackendPerformanceRoute(value) {
+  return typeof value === 'string' ? normalizeEdgePath(value) : value;
+}
+
+export function loadBackendPerformanceFixture(operationId) {
+  const fixture = BACKEND_PERFORMANCE_FIXTURES.get(operationId);
+  if (!fixture || fixture.area !== 'U07_ROUTE' || typeof fixture.fixtureId !== 'string' || typeof fixture.method !== 'string' || typeof fixture.routeTemplate !== 'string') {
+    throw new Error(`BACKEND_PERFORMANCE_FINAL_FIXTURE_MISSING:${operationId}`);
+  }
+  return fixture;
+}
 
 /**
  * Executes one declared operation against the locally managed diagnostic backend.  Credentials and
@@ -20,7 +53,7 @@ const SAFE_HANDLE = /^[A-Za-z0-9._:-]{8,128}$/;
  * cookies, opaque IDs, versions and typed errors into the next owner-backed request, but it must
  * never be passed to report/manifest/log surfaces.
  */
-export async function executeDiagnosticInteraction({manifestPath, scenario, baseUrl, path, body, headers = {}, secret, fetchImpl = fetch}) {
+export async function executeDiagnosticInteraction({manifestPath, scenario, baseUrl, path, body, headers = {}, secret, performanceCanonical, fetchImpl = fetch}) {
   const manifest = readManagedManifest(manifestPath);
   if (!scenario || typeof scenario !== 'object' || typeof scenario.operationId !== 'string' || typeof scenario.method !== 'string' || typeof scenario.path !== 'string') throw new Error('HTTP_DIAGNOSTIC_SCENARIO_INVALID');
   if (typeof baseUrl !== 'string' || !/^http:\/\/127\.0\.0\.1:\d{2,5}$/.test(baseUrl)) throw new Error('HTTP_DIAGNOSTIC_LOCAL_BACKEND_REQUIRED');
@@ -30,15 +63,38 @@ export async function executeDiagnosticInteraction({manifestPath, scenario, base
   const correlationId = `corr-${crypto.randomUUID()}`;
   const startedAt = performance.now();
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const useFinalPerformance = performanceCanonical === undefined
+    ? Boolean(process.env.V2S_BACKEND_PERFORMANCE_FINAL_RUN_ID)
+    : performanceCanonical;
+  const finalPerformanceRunId = useFinalPerformance ? process.env.V2S_BACKEND_PERFORMANCE_FINAL_RUN_ID : undefined;
+  const finalPerformanceFixture = finalPerformanceRunId ? loadBackendPerformanceFixture(scenario.operationId) : null;
+  if (finalPerformanceRunId && (!process.env.V2S_BACKEND_PERFORMANCE_FINAL_SECRET
+    || scenario.method !== finalPerformanceFixture.method
+    || normalizeBackendPerformanceRoute(scenario.path) !== normalizeBackendPerformanceRoute(finalPerformanceFixture.routeTemplate)
+    || (scenario.performanceFixtureId !== undefined && scenario.performanceFixtureId !== finalPerformanceFixture.fixtureId)
+    || (scenario.performanceArea !== undefined && scenario.performanceArea !== 'U07_ROUTE'))) {
+    throw new Error(`BACKEND_PERFORMANCE_FINAL_FIXTURE_METADATA_INVALID:${scenario.operationId}`);
+  }
   const response = await fetchImpl(`${baseUrl}${path}`, {
     method: scenario.method,
     headers: {
       ...headers,
       'X-Correlation-Id': correlationId,
-      'X-Http-Diagnostic-Run-Id': manifest.runId,
-      'X-Http-Diagnostic-Secret': secret,
-      'X-Http-Diagnostic-Operation-Id': scenario.operationId,
-      'X-Http-Diagnostic-Route-Template': scenario.path,
+      ...(useFinalPerformance
+        ? {
+          'X-Backend-Performance-Run-Id': process.env.V2S_BACKEND_PERFORMANCE_FINAL_RUN_ID,
+          'X-Backend-Performance-Secret': process.env.V2S_BACKEND_PERFORMANCE_FINAL_SECRET,
+          'X-Backend-Performance-Operation-Id': scenario.operationId,
+          'X-Backend-Performance-Route-Template': finalPerformanceFixture.routeTemplate,
+          'X-Backend-Performance-Fixture-Id': finalPerformanceFixture.fixtureId,
+          'X-Backend-Performance-Area': finalPerformanceFixture.area,
+        }
+        : {
+          'X-Http-Diagnostic-Run-Id': manifest.runId,
+          'X-Http-Diagnostic-Secret': secret,
+          'X-Http-Diagnostic-Operation-Id': scenario.operationId,
+          'X-Http-Diagnostic-Route-Template': scenario.path,
+        }),
       ...(body === undefined || isFormData ? {} : {'Content-Type': 'application/json'}),
     },
     ...(body === undefined ? {} : {body: isFormData ? body : JSON.stringify(body)}),
@@ -196,11 +252,11 @@ function createManagedInvitation(manifest, credentials, {workspaceKey, mobile, t
         CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credentials.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET,
         CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credentials.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET,
         CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
-        CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:29001',
-        CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: credentials.CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY,
-        CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: credentials.CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY,
-        CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets',
-        CATERING_ASSET_PUBLIC_BASE_URL: 'http://127.0.0.1:29001',
+        CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: process.env.CATERING_ASSET_OBJECT_STORAGE_ENDPOINT || 'http://127.0.0.1:29001',
+        CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: process.env.CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY || credentials.CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY,
+        CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: process.env.CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY || credentials.CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY,
+        CATERING_ASSET_OBJECT_STORAGE_BUCKET: process.env.CATERING_ASSET_OBJECT_STORAGE_BUCKET || 'catering-v2s-r5-assets',
+        CATERING_ASSET_PUBLIC_BASE_URL: process.env.CATERING_ASSET_PUBLIC_BASE_URL || process.env.CATERING_ASSET_OBJECT_STORAGE_ENDPOINT || 'http://127.0.0.1:29001',
         CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/http-diagnostic/${manifest.plan.namespace}/`,
       },
     });
@@ -243,7 +299,7 @@ export async function executePlatformPublicInvitation(manifestPath, {fetchImpl =
 }
 
 /** Extends the real platform/public chain with source-bound operations organization setup. */
-export async function executeOperationsOrganization(manifestPath, {fetchImpl = fetch, uniqueSuffix = crypto.randomUUID().replaceAll('-', '').slice(0, 12)} = {}) {
+export async function executeOperationsOrganization(manifestPath, {fetchImpl = fetch, uniqueSuffix = crypto.randomUUID().replaceAll('-', '').slice(0, 12), stopBeforeTerminal = false, preserveCatalogUsers = false, performanceCanonicalOperationIds = []} = {}) {
   const manifest = readManagedManifest(manifestPath);
   const secrets = readPrivateEnvironment(manifest.credentialPath);
   const registryPath = new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url);
@@ -251,7 +307,7 @@ export async function executeOperationsOrganization(manifestPath, {fetchImpl = f
   const scenarios = declareSourceBoundDiagnosticScenarios(registryOperations);
   const foundation = await executePlatformFoundationWorkload({
     manifestPath, baseUrl: `http://127.0.0.1:${manifest.plan.backendPort}`, secret: secrets.V2S_HTTP_DIAGNOSTIC_SECRET, scenarios,
-    bootstrapLogin: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN, bootstrapCredential: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL, uniqueSuffix, fetchImpl,
+    bootstrapLogin: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_LOGIN, bootstrapCredential: secrets.V2S_HTTP_DIAGNOSTIC_BOOTSTRAP_CREDENTIAL, uniqueSuffix, performanceCanonicalOperationIds, fetchImpl,
   });
   const platformMaintenance = await executePlatformMaintenanceWorkload({foundation, uniqueSuffix});
   const mobile = `139${uniqueSuffix.replace(/\D/g, '').padEnd(8, '0').slice(0, 8)}`;
@@ -276,24 +332,48 @@ export async function executeOperationsOrganization(manifestPath, {fetchImpl = f
       workspaceKey: operations.workspaceKey, mobile: targetMobile, targetType, targetRef: operations.state.requirePrivate(targetHandle).id, roleId: operations.state.requirePrivate(roleHandle).id,
     });
     await executePublicInvitationWorkload({foundation: operations, invitationToken: targetToken, mobile: targetMobile, loginName: targetLogin, userName: `诊断${targetType}用户${uniqueSuffix}`, password: targetPassword, uniqueSuffix: `${uniqueSuffix}${index}`, replayPrefix: `public-${targetType.toLowerCase()}`});
-    userTargets.push({targetType, scopeRef: operations.state.requirePrivate(targetHandle).id, storeId: targetType === 'STORE' ? operations.state.requirePrivate('STORE').id : undefined, loginName: targetLogin, password: targetPassword, deferRevoke: targetType === 'STORE'});
+    userTargets.push({targetType, scopeRef: operations.state.requirePrivate(targetHandle).id, storeId: targetType === 'STORE' ? operations.state.requirePrivate('STORE').id : undefined, loginName: targetLogin, password: targetPassword, deferRevoke: preserveCatalogUsers || targetType === 'STORE'});
     operations.state.setPrivate('OPERATIONS_CREDENTIAL', originalCredential);
     operations.state.setPrivate('MOBILE', originalMobile);
   }
   const users = await executeOperationsUserReadbackWorkload({operationsFlow: operations, targets: userTargets, uniqueSuffix});
   const storeTarget = userTargets.find((target) => target.targetType === 'STORE');
   const storeProfile = await executeOperationsStoreProfileWorkload({operationsFlow: operations, target: storeTarget, uniqueSuffix});
-  const storeRevoke = await executeOperationsUserReadbackWorkload({operationsFlow: operations, targets: [{...storeTarget, deferRevoke: false}], uniqueSuffix: `${uniqueSuffix}x`});
+  const storeRevoke = preserveCatalogUsers ? {calls: []} : await executeOperationsUserReadbackWorkload({operationsFlow: operations, targets: [{...storeTarget, deferRevoke: false}], uniqueSuffix: `${uniqueSuffix}x`});
   const access = await executeOperationsAccessWorkload({operationsFlow: operations, uniqueSuffix});
+  const calls = [...foundation.calls, ...platformMaintenance.calls, ...publicFlow.calls, ...operations.calls, ...users.calls, ...storeProfile.calls, ...storeRevoke.calls, ...access.calls];
+  if (stopBeforeTerminal) {
+    const catalogStoreDataNode = requireOperationsStoreDataNode(operations.state);
+    return {
+      kind: 'http-diagnostic-deferred-terminal',
+      manifestPath,
+      registryOperations,
+      scenarios,
+      operationsFlow: operations,
+      userTargets: userTargets.map((target) => ({...target})),
+      calls,
+      performanceContext: {
+        workspaceKey: operations.workspaceKey,
+        brandRef: operations.state.requirePrivate('BRAND').id,
+        groupRef: operations.state.requirePrivate('COMMERCIAL_GROUP').id,
+        regionRef: operations.state.requirePrivate('REGION').id,
+        projectRef: operations.state.requirePrivate('PROJECT').id,
+        headCompanyRef: operations.state.requirePrivate('HEAD_COMPANY').id,
+        storeRef: operations.state.requirePrivate('STORE').id,
+        dataNodeType: catalogStoreDataNode.dataNodeType,
+        dataNodeRef: catalogStoreDataNode.dataNodeRef,
+      },
+    };
+  }
   const terminal = await executeOperationsStatusTerminalWorkload({operationsFlow: operations, uniqueSuffix});
   const remaining = await executeRemainingDenominatorWorkload({operationsFlow: operations, uniqueSuffix});
   const recovery = await executeOperationsRecoveryWorkload({operationsFlow: operations, uniqueSuffix});
   const accountFinalization = await executePlatformAccountFinalization({operationsFlow: operations, uniqueSuffix});
   const platformFinalization = await executePlatformFinalization({operationsFlow: operations, uniqueSuffix});
-  const calls = [...foundation.calls, ...platformMaintenance.calls, ...publicFlow.calls, ...operations.calls, ...users.calls, ...storeProfile.calls, ...storeRevoke.calls, ...access.calls, ...remaining.calls, ...terminal.calls, ...recovery.calls, ...accountFinalization.calls, ...platformFinalization.calls];
-  const executed = new Set(calls.map(diagnosticTuple));
+  const completedCalls = [...calls, ...remaining.calls, ...terminal.calls, ...recovery.calls, ...accountFinalization.calls, ...platformFinalization.calls];
+  const executed = new Set(completedCalls.map(diagnosticTuple));
   return finalizeHttpDiagnostic({
-    manifestPath, registryOperations, scenarios, calls, events: await waitForDiagnosticCompletions(manifestPath, calls),
+    manifestPath, registryOperations, scenarios, calls: completedCalls, events: await waitForDiagnosticCompletions(manifestPath, completedCalls),
     unexecuted: scenarios.filter((value) => !executed.has(diagnosticTuple(value))).map((value) => ({operationId: value.operationId, method: value.method, path: value.path, owner: value.owner, consumerFace: value.consumerFace, reasonId: 'C15_ROUTE_FAMILY_NOT_EXECUTED', disposition: 'DEFERRED_TO_SOURCE_BOUND_ROUTE_FAMILY'})),
   });
 }

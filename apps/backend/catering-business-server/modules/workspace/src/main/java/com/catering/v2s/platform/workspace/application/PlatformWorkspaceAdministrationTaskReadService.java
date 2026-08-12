@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Typed GET projection: platform base, organization fact, asset batch, and IAM aggregate. */
 @Service
-public final class PlatformWorkspaceAdministrationTaskReadService {
+public class PlatformWorkspaceAdministrationTaskReadService {
     private final WorkspaceAdministrationService workspaces;
     private final OrganizationGroupWorkspaceInitializationLookup initializationFacts;
     private final PlatformAssetService assets;

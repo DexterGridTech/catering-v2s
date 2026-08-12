@@ -1,14 +1,1107 @@
-#!/usr/bin/env zsh
-set -euo pipefail
+#!/usr/bin/env node
+import {spawnSync} from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
 
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
-if [[ "${1:-}" == "--self-test" ]]; then
-  node "$repo_root/scripts/generate/backend-performance-sql-merge-applicability.mjs" --self-test
-else
-  node "$repo_root/scripts/generate/backend-performance-sql-merge-applicability.mjs" --check "$@"
-fi
-if [[ " ${*:-} " == *" --snapshot "* ]]; then
-  printf 'BP_U07_SQL_MERGE_SUCCESS=MEASURED_FINAL_SNAPSHOT_ADMITTED\n'
-else
-  printf 'BP_U07_SQL_MERGE_SUCCESS=BLOCKED_UNMEASURED\n'
-fi
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const generator = path.join(root, "scripts/generate/backend-performance-sql-merge-applicability.mjs");
+const catalogP1GeneratorPath = "scripts/generate/catalog-inventory-p1.mjs";
+const catalogP1Generator = path.join(root, "scripts/generate/catalog-inventory-p1.mjs");
+const unimplementedIngressFixtureCatalogPath = "contracts/policy/catalog-inventory-fixture-catalog.json";
+const unimplementedIngressApiScenarioPath = "contracts/policy/catalog-inventory-api-scenarios.json";
+const unimplementedIngressL2ScenarioPath = "contracts/policy/catalog-inventory-l2-scenarios.json";
+const unimplementedIngressLocatorPath = "contracts/policy/catalog-inventory-l2-locator-bindings.json";
+const unimplementedIngressApiFixturePath = "scripts/test/catalog-inventory-api.mjs";
+const unimplementedIngressL2FixturePath = "scripts/test/catalog-inventory-l2-test-fixture.mjs";
+const executionMatrixPath = path.join(root, "contracts/registry/backend-performance-m1-command-execution-matrix.json");
+const f10BoundaryPath = path.join(root, "contracts/registry/backend-performance-m1-f10-owner-boundaries.json");
+const formalSeedExecutorPath = "scripts/dev/owner-command-seed-executor.mjs";
+const resolverPath = path.join(root, "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java");
+const resolverFqcn = "com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver";
+const factsFqcn = "com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts";
+const resolverSourceAnchor = "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java";
+const ownerReceiptPolicy = "HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK";
+const ownerReceiptBodyPolicy = "HEADER_AND_BODY_OWNER_RECEIPT_AFTER_OWNER_RECHECK";
+const invitationOperationIds = new Set([
+  "cancelOperationsWorkspaceGroupInvitation", "cancelOperationsWorkspaceHeadCompanyInvitation", "cancelOperationsWorkspaceProjectInvitation", "cancelOperationsWorkspaceRegionInvitation", "cancelOperationsWorkspaceStoreInvitation",
+  "createOperationsWorkspaceGroupInvitation", "createOperationsWorkspaceHeadCompanyInvitation", "createOperationsWorkspaceProjectInvitation", "createOperationsWorkspaceRegionInvitation", "createOperationsWorkspaceStoreInvitation",
+  "reissueOperationsWorkspaceGroupInvitation", "reissueOperationsWorkspaceHeadCompanyInvitation", "reissueOperationsWorkspaceProjectInvitation", "reissueOperationsWorkspaceRegionInvitation", "reissueOperationsWorkspaceStoreInvitation",
+]);
+const revokeOperationIds = new Set([
+  "revokeOperationsWorkspaceGroupUserAssignment", "revokeOperationsWorkspaceHeadCompanyUserAssignment", "revokeOperationsWorkspaceProjectUserAssignment", "revokeOperationsWorkspaceRegionUserAssignment", "revokeOperationsWorkspaceStoreUserAssignment",
+]);
+const revokeOwnerSourceAnchor = "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#revokeAssignmentForOperations";
+const revokeOwnerSourcePath = revokeOwnerSourceAnchor.split("#")[0];
+const revokeTypedOwnerSourceAnchor = "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/api/WorkspaceOperationsCommandApi.java#revokeAssignment";
+const catalogContextKeys = ["contextKind", "resolverFqcn", "resolverVariant", "sourceAnchor", "tokenPolicy"].sort();
+const operationsContextKeys = [
+  ...catalogContextKeys,
+  "contextResolverMethod", "contextFactsFqcn", "contextVersionPolicy", "sessionCredentialSource",
+  "groupWorkspaceKeySource", "requirementId", "targetSelectionKind", "targetSelectionSourceAnchor",
+  "targetResourceType", "targetResourceValueSource", "idempotencyPolicy", "readbackProducer",
+  "readbackMapper", "negativeCatalogScope",
+].sort();
+
+const diagnostics = {
+  BP_U07_M1_F06_INPUT_INVALID: [
+    "the M1 execution matrix cannot be read as the declared 68-operation topology input",
+    "the mandatory gate must establish the catalog/non-catalog authorization partition before source edits can rely on it",
+    "restore the admitted execution matrix bytes and rerun the gate; do not hand-maintain a side list",
+  ],
+  BP_U07_M1_F06_PARTITION_INVALID: [
+    "the M1 matrix does not split exactly into 26 catalog and 42 non-catalog operations",
+    "catalog authorization carries brand/copy judgments, while other operations must use workspace command facts without catalog scope",
+    "derive the exact partition from the route registry and keep every M1 operation in exactly one partition",
+  ],
+  BP_U07_M1_CATALOG_CONTEXT_VOCABULARY_INVALID: [
+    "a catalog row carries non-catalog context fields or omits the closed catalog context vocabulary",
+    "catalog commands are the only M1 paths allowed to resolve a CatalogAuthorizationScope",
+    "use only the declared catalog context fields and leave operations-only facts, target and readback declarations off catalog rows",
+  ],
+  BP_U07_M1_CATALOG_RESOLVER_INVALID: [
+    "a catalog operation does not enter through the typed resolveCatalog resolver and catalog authorization scope",
+    "brand and copy judgments belong to the catalog owner path and must not be reconstructed by a generic operations resolver",
+    "bind the catalog row to CommandExecutionContextResolver#resolveCatalog and its typed CatalogAuthorizationScope result",
+  ],
+  BP_U07_M1_NON_CATALOG_CONTEXT_VOCABULARY_INVALID: [
+    "a non-catalog operation omits or adds context fields outside the closed operations command-facts vocabulary",
+    "the shared 42-operation path is safe only when credential, workspace, requirement, target and readback facts remain explicit and reviewable",
+    "restore the exact declared operations context fields; do not add catalog scope, brand, copy or generic-dispatch metadata",
+  ],
+  BP_U07_M1_NON_CATALOG_FACTS_INVALID: [
+    "a non-catalog operation does not name WorkspaceCommandAuthorizationFacts from the typed CommandExecutionContextResolver",
+    "operations authorization reuses one fresh workspace projection, not catalog scope and not an untyped session object",
+    "declare the exact facts FQCN, resolver FQCN and source anchor for the operation-specific resolver method",
+  ],
+  BP_U07_M1_NON_CATALOG_CATALOG_RESOLVER_FORBIDDEN: [
+    "a non-catalog operation uses resolveCatalog or carries catalog/brand/copy scope metadata",
+    "catalog brand and copy judgments are owner-specific and would leak catalog authorization semantics into unrelated owners",
+    "use resolveOperations or resolveOperationsAtContextVersion with WorkspaceCommandAuthorizationFacts and negativeCatalogScope=true",
+  ],
+  BP_U07_M1_NON_CATALOG_RESOLVER_CONTEXT_PAIRING_INVALID: [
+    "a non-catalog resolver method and context-version policy are not one of the two approved pairs",
+    "only cancellation/reissue contracts carry an exact body context version; all other operations must not invent that requirement",
+    "pair resolveOperations with NO_EXPLICIT_CONTEXT_VERSION_CHECK, or resolveOperationsAtContextVersion with BODY_REQUIRED_EXACT_MATCH",
+  ],
+  BP_U07_M1_NON_CATALOG_REQUIRED_FACT_INVALID: [
+    "a required operations command fact is empty, unresolved, or not anchored to a reviewed edge/owner source",
+    "the adapter may not guess requirement, target, idempotency or readback behavior from an operation name",
+    "supply the concrete source-bound field from the admitted matrix; do not use placeholders or inferred defaults",
+  ],
+  BP_U07_M1_F06_RESOLVER_SOURCE_INVALID: [
+    "the declared CommandExecutionContextResolver source no longer exposes the typed catalog and operations entry points",
+    "the matrix is only trustworthy while its declared authorization abstractions still exist with their reviewed return types",
+    "restore resolveCatalog, resolveOperations and resolveOperationsAtContextVersion with their declared typed results before editing adapters",
+  ],
+  BP_U07_M1_RECEIPT_POLICY_MISSING_OR_WEAK: [
+    "an M1 operation has no closed receipt policy or retains the old header-only idempotency declaration",
+    "same-key replay is only safe after the owner has rechecked the current target and capability; a header alone cannot prove that ordering",
+    "declare HEADER_OWNER_RECEIPT_AFTER_OWNER_RECHECK or the reviewed header-and-body variant at the partition's approved field",
+  ],
+  BP_U07_M1_RECEIPT_POLICY_PARTITION_INVALID: [
+    "an M1 receipt policy is on the wrong catalog/operations field or uses the wrong closed policy for its operation family",
+    "catalog keeps authorization metadata on the owner invocation, while non-catalog commands keep workspace facts and replay policy in their typed context",
+    "put catalog policy only on ownerInvocation, non-catalog policy only on context, and use the exact invitation or normal owner-recheck variant",
+  ],
+  BP_U07_M1_REVOKE_RECEIPT_RECHECK_INVALID: [
+    "a revoke operation does not bind receipt replay to WorkspaceAccountService after owner target and capability recheck",
+    "revoking an assignment can otherwise replay a historical receipt before the current assignment target and authorization are verified",
+    "preserve the exact owner invocation mapping, receipt anchor and OWNER_RECHECK_BEFORE_RECEIPT_REPLAY order for all five revoke operations",
+  ],
+  BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID: [
+    "a declared typed owner API is missing, exposes JSON at its public boundary, or falls back to the legacy generic write path",
+    "the adapter-to-owner boundary must carry named module-native command and readback records so an agent cannot satisfy the topology by recreating ObjectNode or operation-id dispatch",
+    "declare the exact API and implementation anchors, keep JSON only inside private receipt persistence, and call the named owner helper directly",
+  ],
+  BP_U07_M1_FORMAL_SEED_EXTENSION_SUBMISSION_INVALID: [
+    "the formal r5 seed sends one of the seven migrated operations extension hosts as the retired object map instead of an explicit typed submission",
+    "M1 changed these operations to ExtensionSubmission: the extension owner alone interprets canonical JSON text, while SET and CLEAR must remain explicit and CommercialGroup initialization remains the reviewed object-shaped counterexample",
+    "serialize each of REGION, PROJECT, BRAND, TENANT, HEAD_COMPANY, STORE and CONTRACT through extensionSubmission with JSON.stringify(value) and mode SET; keep owner readback assertions as maps and do not convert initializeCommercialGroup",
+  ],
+  BP_U07_M1_CANONICAL_JSON_TRANSPORT_INVALID: [
+    "the P1-generated CanonicalJsonDocument transport does not use the Jackson runtime stack that Spring MVC actually uses",
+    "catalog attributes remain an OpenAPI object while the typed composition chain transports only canonical JSON text; a Jackson 2 annotation/deserializer is invisible to the Jackson 3 Spring converter and turns that valid object into a pre-owner HTTP 400",
+    "generate tools.jackson JsonDeserialize and ValueDeserializer together, consume the current value through readValueAsTree, require an object result, and reject only non-object or absent content; do not change the OpenAPI object shape or expose JSON trees at a public owner API",
+  ],
+  BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT: [
+    "a host extension create or update request still carries a superseded definition-revision field",
+    "the current extension definition is an owner-time validation fact; carrying a revision in the host request invites an obsolete CAS path that neither edge nor owner honors",
+    "remove expectedExtensionRuleRevision or the Store-update extensionRuleRevision synonym from the exact request schema, generated request type, edge mapping and existing fixture call; retain readback revision",
+  ],
+  BP_U07_M1_HOST_EXTENSION_FIXTURE_SET_INVALID: [
+    "the host-extension fixture denominator is not the exact current owner/HTTP fixture set",
+    "a retired legacy L2 fixture or an added fixture can keep stale request-shape assertions alive while the active joint fixture is omitted",
+    "keep StoreEditDrawer.tsx and r5-joint-remote-l2-fixture.mjs as the two exact entries; reject missing, duplicate, unknown and legacy substitutions",
+  ],
+  BP_U07_M1_HOST_EXTENSION_OWNER_VALIDATION_INVALID: [
+    "the owner no longer proves current-definition validation and persistence of the resulting definition revision",
+    "removing the request field must not weaken extension key, required, type or option validation at submission time",
+    "restore the owner-local requireDefinition, value validation and definition.version persistence anchors; never recreate request-side definition CAS",
+  ],
+  BP_U07_M1_F10_BOUNDARY_MATRIX_INVALID: [
+    "the F10 owner-boundary registry does not exactly declare the 17-command / 23-incidence typed extension and response-composition scope",
+    "without this closed denominator an adapter can bypass owner-native extension handling or recreate an HTTP response in edge while the M1 gate still passes",
+    "restore the exact declared rows and invariants; keep the registry runtime-pending until each row has a compiled typed owner and adapter chain",
+  ],
+  BP_U07_M1_F10_SOURCE_ANCHOR_INVALID: [
+    "an F10 typed edge, public owner API or owner implementation no longer matches its declared source anchor",
+    "the closed F10 denominator is only safe when every dynamic extension write reaches a named owner command instead of falling back to a controller helper or inferred dispatch",
+    "restore the exact named edge call, public API signature and REQUIRED owner implementation; do not replace the boundary with a Map, JSON tree or generic operation switch",
+  ],
+  BP_U07_M1_F10_EXTENSION_API_INVALID: [
+    "an F10 public command boundary does not carry ExtensionSubmission or exposes Map, JsonNode or ObjectNode",
+    "only the extension owner may interpret canonical JSON, while callers must express SET or CLEAR without null or JSON-null ambiguity",
+    "keep ExtensionSubmission on the named command record and remove generic JSON/map types from the public boundary and adapter method",
+  ],
+  BP_U07_M1_F10_RESPONSE_COMPOSITION_INVALID: [
+    "a satisfied F10 response composition no longer reuses the declared owner readback and authoritative wire mapper",
+    "a command response must preserve its HTTP shape inside the REQUIRED transaction without an edge-side convenience BFF, extra repository/JDBC query or copied owner fact",
+    "restore the declared typed owner readback and existing mapper call; keep composition operation-specific and inside the command transaction",
+  ],
+  BP_U07_M1_F10_PENDING_MISMATCH: [
+    "an F10 row is marked pending without the current source evidence, or a pending row was silently completed without updating its declared topology",
+    "runtime-pending is an honest state, not a bypass: it prevents a partial adapter migration from being reported as an owner-local command response repair",
+    "either restore the documented current edge evidence, or change the row to SATISFIED only with the full typed in-transaction composition anchors and review evidence",
+  ],
+  BP_U07_M1_F10_CLOSURE_PENDING: [
+    "F10 runtime closure was requested while one or more response compositions remain pending",
+    "Store and Contract must retain their current HTTP response shapes, which requires the final owner readback before the REQUIRED command transaction exits",
+    "finish each listed operation-specific composition producer and update its source-anchored row; do not close the package by deleting or moving the final readback",
+  ],
+  BP_U07_M1_P1_BACKEND_WIRE_INPUT_INVALID: [
+    "the generated catalog-family P1 backend-wire input set or its source hash no longer validates",
+    "the M1 typed catalog binding must use only DTOs generated from the reviewed P1 authority; stale, missing or untracked inputs would let an adapter compile against a shadow request shape",
+    "repair the canonical P1 backend-wire input manifest or its owning source, rerun the P1 checker, then rerun this mandatory gate; do not hand-write a substitute DTO",
+  ],
+  BP_U07_M1_LOCAL_COPY_SECTION_PRESERVATION_INVALID: [
+    "the local-copy execute contract or typed owner chain drops the selected sections fixed by preflight",
+    "the combined preflight digest and the inventory owner judgement are defined over the selected sections; omitting them can turn an inventory copy into a catalog-only write",
+    "keep selectedSections required in the P1 request schema and pass it unchanged through the operation, catalog owner and inventory execution boundary; do not infer it from a digest or default it to an empty list",
+  ],
+  BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID: [
+    "a selected M1 REQUIRED transaction adapter is final, non-component, or no longer exposes its named public transaction entry",
+    "Spring uses a proxy for the adapter transaction boundary; a final class compiles but cannot be subclassed at application startup, causing the managed business process to exit before readiness",
+    "keep every selected adapter as a non-final @Component with its named public @Transactional(REQUIRED) execute entry; do not move the transaction to edge or replace the one-operation adapter with a generic dispatcher",
+  ],
+  BP_U07_M1_ACTIVE_CATALOG_IMAGE_REUSE_INVALID: [
+    "the catalog save composition rejects a retained image before the asset owner can distinguish ACTIVE reuse from STAGED claim",
+    "an ACTIVE CATALOG_ITEM_IMAGE is reusable after the fresh catalog authorization recheck without a second bind proof; only the asset owner may consume or require the proof for a STAGED asset",
+    "pass the submitted bind grant when present, otherwise an explicit null binding to CatalogAssetCommandApi; do not add an edge/catalog lifecycle lookup or make the fixture replay a retired grant",
+  ],
+  BP_U07_M1_CATALOG_VOID_DEPENDENCY_INVALID: [
+    "the M1 catalog status adapter can VOID an item without the inventory owner deciding whether StockTarget or ProductBom facts remain",
+    "the typed adapter replaced a legacy coordinator path, so it must retain the same cross-owner lifecycle protection inside its REQUIRED transaction rather than letting catalog infer inventory state",
+    "use the typed InventoryOwnerApi dependency readback only for VOIDED, reject dependent facts before CatalogOwnerApi, and keep non-VOID transitions free of this extra judgement",
+  ],
+  BP_U07_M1_BRAND_COPY_PREFLIGHT_ENVELOPE_INVALID: [
+    "the typed brand-copy preflight adapter maps the coordinator's response envelope directly into a flat generated response",
+    "the composition keeps revision/requestId metadata in its owner readback envelope while the HTTP preflight contract exposes the flat data projection; direct mapping turns a valid preflight into RESULT_UNKNOWN",
+    "parse the named coordinator readback, require its object data member, then map only that member to BrandCatalogCopyPreflight; do not change the owner readback or flatten unrelated copy responses",
+  ],
+  BP_U07_M1_CROSS_OWNER_CANONICAL_READBACK_INVALID: [
+    "a finite cross-owner canonical JSON readback consumer accepts a non-envelope shape, binds the whole envelope, or silently persists an absent required owner field",
+    "CanonicalJsonDocument is an intentional opaque transport, but every consumer must first prove the response envelope shape and any value persisted into another owner must be bound to a named local readback",
+    "keep the seven copy-preflight paths behind the guarded parser, bind the catalog-save inventory response from envelope.data to its named record, and reject an absent or blank targetRef; do not use readValue or an empty-string fallback",
+  ],
+  BP_U07_M1_UNIMPLEMENTED_INGRESS_FIXTURE_INVALID: [
+    "a fixture or executable scenario manufactures an AUTO_SYNC or external-order source fact through the operations public command surface, or fails to declare that its ingress is absent this phase",
+    "the source model and smart views remain contractually visible, but the approved phase explicitly excludes sync and external-order intake chains; letting a test create those facts would convert an ownership boundary into a test-only backdoor",
+    "keep the two fixture definitions and their source/view coverage, mark CI-API-007 and CI-L2-009 NOT_APPLICABLE_WITH_REASON with zero executable cases, remove their HTTP creation code and locator bindings, and do not add source fields to public command DTOs",
+  ],
+};
+
+function fail(code, detail = "") {
+  const [why, background, pattern] = diagnostics[code] ?? [
+    "an M1 F06 authorization-topology invariant failed",
+    "each operations command must preserve a typed authorization path without generic dispatch or cross-owner scope leakage",
+    "repair the declared matrix/source relationship and rerun this mandatory gate; do not bypass it",
+  ];
+  throw new Error(`${code}: WHY=${why}; BACKGROUND=${background}; PATTERN=${pattern}${detail ? `; DETAIL=${detail}` : ""}`);
+}
+
+function sameKeys(value, expected) {
+  return value && JSON.stringify(Object.keys(value).sort()) === JSON.stringify(expected);
+}
+
+function nonEmptySourceFact(value) {
+  return typeof value === "string" && value.length > 0 && !value.includes("UNRESOLVED_REQUIRES_SOURCE");
+}
+
+function validateResolverSource() {
+  const source = fs.readFileSync(resolverPath, "utf8");
+  if (!/WorkspaceExecutionContext<CatalogAuthorizationScope>\s+resolveCatalog\s*\(/.test(source)
+      || !/WorkspaceCommandAuthorizationFacts\s+resolveOperations\s*\(/.test(source)
+      || !/WorkspaceCommandAuthorizationFacts\s+resolveOperationsAtContextVersion\s*\(/.test(source)) {
+    fail("BP_U07_M1_F06_RESOLVER_SOURCE_INVALID", path.relative(root, resolverPath));
+  }
+}
+
+function validateF06(matrix) {
+  if (matrix?.schemaVersion !== 1 || matrix.kind !== "backend-performance-m1-command-execution-matrix" || !Array.isArray(matrix.rows) || matrix.rows.length !== 68) {
+    fail("BP_U07_M1_F06_INPUT_INVALID");
+  }
+  validateResolverSource();
+  const catalogRows = matrix.rows.filter((row) => row?.routeRegistry === "catalog-inventory");
+  const operationsRows = matrix.rows.filter((row) => row?.routeRegistry === "edge-face");
+  if (catalogRows.length !== 26 || operationsRows.length !== 42 || catalogRows.length + operationsRows.length !== matrix.rows.length) {
+    fail("BP_U07_M1_F06_PARTITION_INVALID", `catalog=${catalogRows.length};operations=${operationsRows.length}`);
+  }
+  for (const row of catalogRows) {
+    const context = row.context;
+    if (!sameKeys(context, catalogContextKeys)) fail("BP_U07_M1_CATALOG_CONTEXT_VOCABULARY_INVALID", row.operationId);
+    if (context.resolverFqcn !== resolverFqcn || context.resolverVariant !== "DECLARED_TYPED_COMMAND_RESOLUTION"
+        || context.sourceAnchor !== `${resolverSourceAnchor}#resolveCatalog`) {
+      fail("BP_U07_M1_CATALOG_RESOLVER_INVALID", row.operationId);
+    }
+  }
+  let direct = 0;
+  let versioned = 0;
+  for (const row of operationsRows) {
+    const context = row.context;
+    if (!sameKeys(context, operationsContextKeys)) fail("BP_U07_M1_NON_CATALOG_CONTEXT_VOCABULARY_INVALID", row.operationId);
+    if (context.resolverFqcn !== resolverFqcn || context.resolverVariant !== "WORKSPACE_COMMAND_AUTHORIZATION_FACTS"
+        || context.contextFactsFqcn !== factsFqcn || context.negativeCatalogScope !== true) {
+      fail("BP_U07_M1_NON_CATALOG_FACTS_INVALID", row.operationId);
+    }
+    if (context.contextResolverMethod === "resolveCatalog" || context.sourceAnchor.includes("resolveCatalog")
+        || Object.entries(context).some(([key, value]) => key !== "negativeCatalogScope"
+          && /CatalogAuthorizationScope|CatalogScopeLookup|CatalogInventoryWorkspaceCommandTokens|CatalogBrand|copyRole|copySource/.test(`${key}:${value}`))) {
+      fail("BP_U07_M1_NON_CATALOG_CATALOG_RESOLVER_FORBIDDEN", row.operationId);
+    }
+    const isDirect = context.contextResolverMethod === "resolveOperations"
+      && context.contextVersionPolicy === "NO_EXPLICIT_CONTEXT_VERSION_CHECK";
+    const isVersioned = context.contextResolverMethod === "resolveOperationsAtContextVersion"
+      && context.contextVersionPolicy === "BODY_REQUIRED_EXACT_MATCH";
+    if (!isDirect && !isVersioned || context.sourceAnchor !== `${resolverSourceAnchor}#${context.contextResolverMethod}`) {
+      fail("BP_U07_M1_NON_CATALOG_RESOLVER_CONTEXT_PAIRING_INVALID", row.operationId);
+    }
+    direct += Number(isDirect);
+    versioned += Number(isVersioned);
+    for (const field of ["sessionCredentialSource", "groupWorkspaceKeySource", "requirementId", "targetSelectionKind", "targetSelectionSourceAnchor", "targetResourceType", "targetResourceValueSource", "idempotencyPolicy", "readbackProducer", "readbackMapper"]) {
+      if (!nonEmptySourceFact(context[field])) fail("BP_U07_M1_NON_CATALOG_REQUIRED_FACT_INVALID", `${row.operationId}:${field}`);
+    }
+  }
+  if (direct !== 32 || versioned !== 10) fail("BP_U07_M1_NON_CATALOG_RESOLVER_CONTEXT_PAIRING_INVALID", `resolveOperations=${direct};resolveOperationsAtContextVersion=${versioned}`);
+  return {catalog: catalogRows.length, operations: operationsRows.length, direct, versioned};
+}
+
+function revokeSourceIsRecheckedBeforeReceipt() {
+  const source = fs.readFileSync(path.join(root, revokeOwnerSourcePath), "utf8");
+  const start = source.indexOf("revokeAssignmentForOperations(");
+  const end = source.indexOf("\n    private void audit", start);
+  const body = start >= 0 && end > start ? source.slice(start, end) : "";
+  const target = body.indexOf("AssignmentTarget target =");
+  const recheck = body.indexOf("commandAuthorization.requireUserManagementAction(");
+  const receipt = body.indexOf("receipts.execute(");
+  return target >= 0 && target < recheck && recheck < receipt;
+}
+
+function validateReceiptPolicies(matrix) {
+  let normal = 0;
+  let bodyBound = 0;
+  for (const row of matrix.rows) {
+    const isCatalog = row.routeRegistry === "catalog-inventory";
+    const policy = isCatalog ? row.ownerInvocation?.idempotencyPolicy : row.context?.idempotencyPolicy;
+    const policyOnWrongField = isCatalog ? "idempotencyPolicy" in (row.context ?? {}) : "idempotencyPolicy" in (row.ownerInvocation ?? {});
+    if (!policy || policy === "HEADER_IDEMPOTENCY_KEY_REQUIRED") fail("BP_U07_M1_RECEIPT_POLICY_MISSING_OR_WEAK", row.operationId);
+    if (policyOnWrongField) fail("BP_U07_M1_RECEIPT_POLICY_PARTITION_INVALID", row.operationId);
+    const invitation = invitationOperationIds.has(row.operationId);
+    if (policy !== (invitation ? ownerReceiptBodyPolicy : ownerReceiptPolicy)) fail("BP_U07_M1_RECEIPT_POLICY_PARTITION_INVALID", row.operationId);
+    normal += Number(policy === ownerReceiptPolicy);
+    bodyBound += Number(policy === ownerReceiptBodyPolicy);
+    if (revokeOperationIds.has(row.operationId)) {
+      const invocation = row.ownerInvocation;
+      const expectedParameterKeys = ["workspaceUuid", "groupWorkspaceKey", "actorAssignmentId", "expectedTargetType", "assignmentId", "expectedVersion", "idempotencyKey", "actor"];
+      if (policy !== ownerReceiptPolicy || invocation?.kind !== "TYPED_OWNER_API" || invocation.sourceAnchor !== revokeTypedOwnerSourceAnchor
+          || invocation.receiptSourceAnchor !== revokeOwnerSourceAnchor || invocation.receiptReplayOrder !== "OWNER_RECHECK_BEFORE_RECEIPT_REPLAY"
+          || JSON.stringify(Object.keys(invocation.parameterMapping ?? {}).sort()) !== JSON.stringify(expectedParameterKeys.sort())) {
+        fail("BP_U07_M1_REVOKE_RECEIPT_RECHECK_INVALID", row.operationId);
+      }
+    }
+  }
+  if (normal !== 53 || bodyBound !== 15 || !revokeSourceIsRecheckedBeforeReceipt()) {
+    fail("BP_U07_M1_REVOKE_RECEIPT_RECHECK_INVALID", `normal=${normal};headerAndBody=${bodyBound}`);
+  }
+  return {normal, bodyBound};
+}
+
+const f07TypedOwnerBoundaryOperationIds = new Set([
+  "countOperationsInventoryTarget", "increaseOperationsInventoryTarget", "adjustOperationsInventoryTarget", "updateOperationsInventoryTargetConfiguration",
+  "createOperationsProductionTag", "updateOperationsProductionTag", "transitionOperationsProductionTagStatus",
+]);
+
+function simpleTypeName(value) { return value.split(".").at(-1); }
+
+function typedMethodBody(source, methodName) {
+  const start = source.indexOf(` ${methodName}(`);
+  if (start < 0) return "";
+  const openingBrace = source.indexOf("{", start);
+  if (openingBrace < 0) return "";
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}" && --depth === 0) return source.slice(start, index + 1);
+  }
+  return "";
+}
+
+function validateTypedOwnerBoundaries(matrix) {
+  const rows = matrix.rows.filter((row) => row.implementationStatus === "IMPLEMENTED_SOURCE_ANCHORED" && row.typedOwnerBoundary);
+  const undeclared = matrix.rows.filter((row) => row.implementationStatus === "IMPLEMENTED_SOURCE_ANCHORED" && !row.typedOwnerBoundary && f07TypedOwnerBoundaryOperationIds.has(row.operationId));
+  if (undeclared.length > 0 || rows.some((row) => row.implementationStatus !== "IMPLEMENTED_SOURCE_ANCHORED")) {
+    fail("BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID", `implemented typed owner boundary missing:${undeclared.map((row) => row.operationId).join(",")}`);
+  }
+  for (const row of rows) {
+    const boundary = row.typedOwnerBoundary;
+    const required = ["apiFqcn", "apiSourcePath", "implementationFqcn", "implementationSourcePath", "methodName", "commandType", "readbackType", "sourceAnchor"];
+    if (!boundary || required.some((field) => !nonEmptySourceFact(boundary[field]))
+        || boundary.sourceAnchor !== `${boundary.apiSourcePath}#${boundary.methodName}`
+        || !boundary.commandType.startsWith(`${simpleTypeName(boundary.apiFqcn)}.`)
+        || !boundary.readbackType.startsWith(`${simpleTypeName(boundary.apiFqcn)}.`)) {
+      fail("BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID", `${row.operationId}:matrix`);
+    }
+    const apiPath = path.join(root, boundary.apiSourcePath), implementationPath = path.join(root, boundary.implementationSourcePath);
+    if (!fs.existsSync(apiPath) || !fs.existsSync(implementationPath)) fail("BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID", `${row.operationId}:source-missing`);
+    const apiSource = fs.readFileSync(apiPath, "utf8"), implementationSource = fs.readFileSync(implementationPath, "utf8");
+    const readbackType = simpleTypeName(boundary.readbackType), commandType = simpleTypeName(boundary.commandType);
+    const signature = new RegExp(`\\b${readbackType}\\s+${boundary.methodName}\\s*\\([^)]*${commandType}`);
+    const body = typedMethodBody(implementationSource, boundary.methodName);
+    const commandRecord = typedApiRecordBlock(apiSource, commandType);
+    const readbackRecord = typedApiRecordBlock(apiSource, readbackType);
+    if (!signature.test(apiSource) || !signature.test(implementationSource) || /\b(writeCore|write)\s*\(/.test(body)
+        || /\b(?:JsonNode|Map|ObjectNode)\b/.test(commandRecord) || /\b(?:JsonNode|Map|ObjectNode)\b/.test(readbackRecord)) {
+      fail("BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID", row.operationId);
+    }
+  }
+  return {implementedTypedOwnerBoundaries: rows.length, f07TypedOwnerBoundaries: rows.filter((row) => f07TypedOwnerBoundaryOperationIds.has(row.operationId)).length};
+}
+
+const hostExtensionRequestSpecs = [
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "BrandCreateRequest", field: "expectedExtensionRuleRevision", javaType: "BrandCreateRequest", tsType: "BrandCreateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "BrandUpdateRequest", field: "expectedExtensionRuleRevision", javaType: "BrandUpdateRequest", tsType: "BrandUpdateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "TenantCreateRequest", field: "expectedExtensionRuleRevision", javaType: "TenantCreateRequest", tsType: "TenantCreateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "TenantUpdateRequest", field: "expectedExtensionRuleRevision", javaType: "TenantUpdateRequest", tsType: "TenantUpdateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "HeadCompanyCreateRequest", field: "expectedExtensionRuleRevision", javaType: "HeadCompanyCreateRequest", tsType: "HeadCompanyCreateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/business-entity.schemas.yaml", schema: "HeadCompanyUpdateRequest", field: "expectedExtensionRuleRevision", javaType: "HeadCompanyUpdateRequest", tsType: "HeadCompanyUpdateRequest"},
+  {schemaPath: "contracts/openapi/components/organization/store.schemas.yaml", schema: "OrganizationStoreUpdateRequest", field: "extensionRuleRevision", javaType: "OrganizationStoreUpdateRequest", tsType: "OrganizationStoreUpdateRequest"},
+  {schemaPath: "contracts/openapi/components/contract/contract.schemas.yaml", schema: "StoreContractCreateRequest", field: "expectedExtensionRuleRevision", javaType: "StoreContractCreateRequest", tsType: "StoreContractCreateRequest"},
+  {schemaPath: "contracts/openapi/components/contract/contract.schemas.yaml", schema: "StoreContractUpdateRequest", field: "expectedExtensionRuleRevision", javaType: "StoreContractUpdateRequest", tsType: "StoreContractUpdateRequest"},
+];
+const hostExtensionOperationIds = [
+  "createOperationsOrganizationBrand", "updateOperationsOrganizationBrand", "createOperationsOrganizationTenant", "updateOperationsOrganizationTenant",
+  "createOperationsOrganizationHeadCompany", "updateOperationsOrganizationHeadCompany", "createOperationsOrganizationStore", "updateOperationsOrganizationStore",
+  "createOperationsContract", "updateOperationsContract",
+];
+const organizationExtensionOwnerPath = "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java";
+const contractExtensionOwnerPath = "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java";
+const hostExtensionEdgePaths = [
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+  "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+];
+const hostExtensionFixturePaths = [
+  "apps/frontend/operations-admin/src/features/store-management/ui/StoreEditDrawer.tsx",
+  "scripts/test/r5-joint-remote-l2-fixture.mjs",
+];
+const hostExtensionTsPath = "apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts";
+const hostExtensionJavaRoot = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire";
+
+function validateHostExtensionFixtureSet(fixturePaths = hostExtensionFixturePaths) {
+  const expected = new Set(hostExtensionFixturePaths);
+  const actual = Array.isArray(fixturePaths) ? fixturePaths.map((value) => String(value)) : [];
+  const duplicates = actual.filter((value, index) => actual.indexOf(value) !== index);
+  const unknown = actual.filter((value) => !expected.has(value));
+  const missing = [...expected].filter((value) => !actual.includes(value));
+  if (!Array.isArray(fixturePaths) || duplicates.length > 0 || unknown.length > 0 || missing.length > 0 || actual.length !== expected.size) {
+    fail("BP_U07_M1_HOST_EXTENSION_FIXTURE_SET_INVALID", `expected=${[...expected].join(",")};actual=${actual.join(",")}`);
+  }
+  return Object.freeze({count: actual.length, paths: Object.freeze([...actual])});
+}
+
+function hostExtensionInputs(base = root, fixturePaths = hostExtensionFixturePaths) {
+  validateHostExtensionFixtureSet(fixturePaths);
+  const schemaDocuments = {};
+  for (const spec of hostExtensionRequestSpecs) {
+    if (!schemaDocuments[spec.schemaPath]) schemaDocuments[spec.schemaPath] = JSON.parse(fs.readFileSync(path.join(base, spec.schemaPath), "utf8"));
+  }
+  const javaSources = Object.fromEntries(hostExtensionRequestSpecs.map((spec) => [spec.javaType, fs.readFileSync(path.join(base, hostExtensionJavaRoot, `${spec.javaType}.java`), "utf8")]));
+  const edgeSources = Object.fromEntries(hostExtensionEdgePaths.map((relative) => [relative, fs.readFileSync(path.join(base, relative), "utf8")]));
+  const fixtureSources = Object.fromEntries(fixturePaths.map((relative) => [relative, fs.readFileSync(path.join(base, relative), "utf8")]));
+  return {
+    schemaDocuments,
+    javaSources,
+    edgeSources,
+    fixtureSources,
+    fixturePaths: [...fixturePaths],
+    tsSource: fs.readFileSync(path.join(base, hostExtensionTsPath), "utf8"),
+    organizationOwnerSource: fs.readFileSync(path.join(base, organizationExtensionOwnerPath), "utf8"),
+    contractOwnerSource: fs.readFileSync(path.join(base, contractExtensionOwnerPath), "utf8"),
+  };
+}
+
+function exportedTypeBlock(source, typeName) {
+  const start = source.indexOf(`export type ${typeName} =`);
+  const end = source.indexOf("\nexport type ", start + 1);
+  return start < 0 ? "" : source.slice(start, end < 0 ? source.length : end);
+}
+
+function validateHostExtensionRequestRevision(inputs = hostExtensionInputs()) {
+  validateHostExtensionFixtureSet(inputs.fixturePaths ?? Object.keys(inputs.fixtureSources ?? {}));
+  if (hostExtensionRequestSpecs.length !== 9 || new Set(hostExtensionOperationIds).size !== 10) {
+    fail("BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT", "closed denominator");
+  }
+  for (const spec of hostExtensionRequestSpecs) {
+    const schema = inputs.schemaDocuments[spec.schemaPath]?.components?.schemas?.[spec.schema];
+    if (!schema || Object.hasOwn(schema.properties ?? {}, spec.field) || (schema.required ?? []).includes(spec.field)) {
+      fail("BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT", `${spec.schemaPath}:${spec.schema}:${spec.field}`);
+    }
+    const fieldPattern = new RegExp(`\\b${spec.field}\\b`);
+    if (fieldPattern.test(inputs.javaSources[spec.javaType] ?? "") || fieldPattern.test(exportedTypeBlock(inputs.tsSource, spec.tsType))) {
+      fail("BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT", `generated:${spec.javaType}`);
+    }
+  }
+  for (const source of [...Object.values(inputs.edgeSources), ...Object.values(inputs.fixtureSources)]) {
+    if (/\b(expectedExtensionRuleRevision|extensionRuleRevision)\b/.test(source)) {
+      fail("BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT", "edge-or-fixture request consumer");
+    }
+  }
+  const organizationAnchors = ["private void validateValues(", "definitions.requireDefinition(workspaceUuid, key, type)", "extension_rule_revision=?", "definition.version()"];
+  const contractAnchors = ["private void validateValues(", "definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT)", "extension_rule_revision=?", "definition.version()"];
+  if (organizationAnchors.some((anchor) => !inputs.organizationOwnerSource.includes(anchor)) || contractAnchors.some((anchor) => !inputs.contractOwnerSource.includes(anchor))) {
+    fail("BP_U07_M1_HOST_EXTENSION_OWNER_VALIDATION_INVALID");
+  }
+  return {requestFields: hostExtensionRequestSpecs.length, hostOperations: hostExtensionOperationIds.length};
+}
+
+const f10OperationIds = new Set([
+  "createOperationsOrganizationBrand", "updateOperationsOrganizationBrand", "createOperationsOrganizationTenant", "updateOperationsOrganizationTenant",
+  "createOperationsOrganizationHeadCompany", "updateOperationsOrganizationHeadCompany", "transitionOperationsOrganizationHeadCompanyStatus",
+  "createOperationsOrganizationStore", "updateOperationsOrganizationStore", "transitionOperationsOrganizationStoreStatus",
+  "createOperationsOrganizationRegion", "createOperationsOrganizationProject", "updateOperationsOrganizationNode", "updateOperationsCommercialGroup",
+  "createOperationsContract", "updateOperationsContract", "invalidateOperationsContract",
+]);
+const f10ExtensionApiPath = "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/api/ExtensionSubmission.java";
+
+function sourceAt(relative, overrides = {}) {
+  return overrides[relative] ?? fs.readFileSync(path.join(root, relative), "utf8");
+}
+
+const localCopyExecuteOpenApiPath = "contracts/openapi/catalog-inventory.openapi.yaml";
+const localCopyExecuteOperationPath = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsLocalCatalogCopyOperation.java";
+const localCopyCoordinatorPath = "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java";
+const localCopyP1GeneratorPath = "scripts/generate/catalog-inventory-p1.mjs";
+const catalogSaveCoordinatorPath = "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java";
+function validateLocalCopySectionPreservation(overrides = {}) {
+  const schema = JSON.parse(sourceAt(localCopyExecuteOpenApiPath, overrides)).components?.schemas?.LocalCopyExecuteRequest;
+  const operation = sourceAt(localCopyExecuteOperationPath, overrides);
+  const coordinator = sourceAt(localCopyCoordinatorPath, overrides);
+  const generatorSource = sourceAt(localCopyP1GeneratorPath, overrides);
+  if (!schema?.required?.includes("selectedSections") || !schema.properties?.selectedSections
+      || !generatorSource.includes("LocalCopyExecuteRequest: {sourceItemCode: stringField(\"source item\"), targetItemCode: stringField(\"target item\"), selectedSections: arrayField")
+      || !operation.includes("request.selectedSections()")
+      || !coordinator.includes("new CatalogOwnerApi.LocalCopyPreflightCommand(command.sourceItemCode(), command.targetItemCode(), command.selectedSections())")
+      || !coordinator.includes("new InventoryOwnerApi.LocalCopyExecuteCommand(command.sourceItemCode(), command.targetItemCode(), command.selectedSections()")
+      || !coordinator.includes("inventory.executeLocalCopy")) {
+    fail("BP_U07_M1_LOCAL_COPY_SECTION_PRESERVATION_INVALID", "executeOperationsLocalCatalogCopy");
+  }
+}
+
+function validateActiveCatalogImageReuse(overrides = {}) {
+  const coordinator = sourceAt(catalogSaveCoordinatorPath, overrides);
+  const required = [
+    "for (String ref : nextAssetRefs) bindings.add(optionalAssetBinding(ref, submittedBindings));",
+    "private static CatalogAssetCommandApi.AssetBinding optionalAssetBinding(String assetRef, List<CatalogAssetCommandApi.AssetBinding> submittedBindings)",
+    "orElse(new CatalogAssetCommandApi.AssetBinding(ref, null));",
+  ];
+  if (required.some((anchor) => !coordinator.includes(anchor)) || coordinator.includes("images requires a matching bind grant")) {
+    fail("BP_U07_M1_ACTIVE_CATALOG_IMAGE_REUSE_INVALID", "saveOperationsCatalogItem");
+  }
+  return 1;
+}
+
+const catalogVoidAdapterPath = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperation.java";
+const inventoryVoidApiPath = "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/api/InventoryOwnerApi.java";
+const inventoryVoidServicePath = "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java";
+const productionTagOwnerServicePath = "apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java";
+const brandCopyPreflightAdapterPath = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsBrandCatalogCopyOperation.java";
+const copyPreflightWireShapePath = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CopyPreflightWireShape.java";
+function validateCatalogVoidDependency(overrides = {}) {
+  const adapter = sourceAt(catalogVoidAdapterPath, overrides);
+  const api = sourceAt(inventoryVoidApiPath, overrides);
+  const service = sourceAt(inventoryVoidServicePath, overrides);
+  const required = [
+    "record CatalogItemVoidDependencyReadback(boolean hasDependentFacts, long stockTargetCount, long productBomCount)",
+    "CatalogItemVoidDependencyReadback catalogItemVoidDependencies(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemRef);",
+    "CatalogItemVoidDependencyReadback catalogItemVoidDependencies(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemRef)",
+    'requireTypedContext(context, "catalog", null)',
+    '"VOIDED".equals(request.targetStatus())',
+    "catalog.resolveCatalogItemRef(context, invocation.itemCode()).toString()",
+    "inventory.catalogItemVoidDependencies(context, catalog.resolveCatalogItemRef(context, invocation.itemCode()).toString()).hasDependentFacts()",
+    'new CatalogOwnerApi.Problem("DEPENDENT_FACTS_BLOCK_VOID", 422',
+  ];
+  if (!api.includes(required[0]) || !api.includes(required[1]) || !service.includes(required[2]) || !service.includes(required[3])
+      || !adapter.includes(required[4]) || !adapter.includes(required[5]) || !adapter.includes(required[6]) || /record CatalogItemVoidDependencyReadback\([^)]*(?:JsonNode|ObjectNode|Map)/.test(api)) {
+    fail("BP_U07_M1_CATALOG_VOID_DEPENDENCY_INVALID", "transitionOperationsCatalogItemStatus");
+  }
+  return 1;
+}
+
+function validateBrandCopyPreflightEnvelope(overrides = {}) {
+  const adapter = sourceAt(brandCopyPreflightAdapterPath, overrides);
+  const wireShape = sourceAt(copyPreflightWireShapePath, overrides);
+  const adapterRequired = [
+    "CopyPreflightWireShape.contractEnvelope(mapper, readback.canonicalJson(), context.requestId())",
+    'mapper.treeToValue(envelope.path("data"), BrandCatalogCopyPreflight.class)',
+  ];
+  const helperRequired = [
+    "parsed = mapper.readTree(canonicalJson);",
+    'if (!data.isObject()) throw new IllegalArgumentException("copy preflight data is required");',
+  ];
+  if (adapterRequired.some((anchor) => !adapter.includes(anchor)) || helperRequired.some((anchor) => !wireShape.includes(anchor))
+      || adapter.includes("mapper.readValue(readback.canonicalJson(), BrandCatalogCopyPreflight.class)")) {
+    fail("BP_U07_M1_BRAND_COPY_PREFLIGHT_ENVELOPE_INVALID", "preflightOperationsBrandCatalogCopy");
+  }
+  return 1;
+}
+
+function validateCrossOwnerCanonicalReadbacks(overrides = {}) {
+  const coordinator = sourceAt(catalogSaveCoordinatorPath, overrides);
+  const inventoryOwner = sourceAt(inventoryVoidServicePath, overrides);
+  const productionOwner = sourceAt(productionTagOwnerServicePath, overrides);
+  const guardedCopyParser = [
+    "private JsonNode parseLocalCopyJson(String canonicalJson)",
+    "var envelope = mapper.readTree(canonicalJson);",
+    'if (!envelope.path("data").isObject())',
+    "owner copy readback data is invalid",
+    "return envelope;",
+  ];
+  const saveReadback = [
+    "private record InventoryTargetEnsureReadback(String targetRef, long version, boolean created) { }",
+    "private InventoryTargetEnsureReadback parseCatalogSaveOwnerReadback(String canonicalJson)",
+    'JsonNode data = envelope.path("data");',
+    '!data.hasNonNull("targetRef") || !data.path("version").canConvertToLong() || !data.path("created").isBoolean()',
+    'mapper.treeToValue(data, InventoryTargetEnsureReadback.class)',
+    "readback.targetRef() == null || readback.targetRef().isBlank()",
+    'node.put("targetRef", ensured.targetRef());',
+    "private String requiredInventoryTargetRef(JsonNode readback)",
+    "String targetRef = readback.path(\"targetRef\").asText();",
+    "targetRef = requiredInventoryTargetRef(ensured);",
+  ];
+  const copyConsumers = [
+    "catalog.preflightLocalCopy(context, command).canonicalJson()",
+    "catalog.preflightLocalCopy(context, current).canonicalJson()",
+    "readback.canonicalJson()",
+    "catalog.preflightBrandCopy(context, command).canonicalJson()",
+    "catalog.preflightBrandCopy(context, current).canonicalJson()",
+    "inventoryReadback.canonicalJson()",
+    "productionReadback.canonicalJson()",
+  ];
+  const inventoryProducers = [
+    "public InventoryOwnerApi.LocalCopyPreflightReadback preflightLocalCopy",
+    "public InventoryOwnerApi.LocalCopyPreflightReadback preflightBrandCopy",
+    "ObjectNode envelope = envelope(context.requestId(), result);",
+    "envelope.path(\"data\").path(\"digest\").asText(), mapper.writeValueAsString(envelope)",
+  ];
+  const productionProducers = [
+    "public ProductionTagOwnerApi.BrandCopyPreflightReadback preflightBrandCopy",
+    "ObjectNode envelope = envelope(context.requestId(), result);",
+    "envelope.path(\"data\").path(\"digest\").asText(), canonical(envelope)",
+  ];
+  const inventoryEnvelopeProducerCount = inventoryOwner.split("envelope.path(\"data\").path(\"digest\").asText(), mapper.writeValueAsString(envelope)").length - 1;
+  if (guardedCopyParser.some((anchor) => !coordinator.includes(anchor))
+      || saveReadback.some((anchor) => !coordinator.includes(anchor))
+      || copyConsumers.some((anchor) => !coordinator.includes(anchor))
+      || inventoryProducers.some((anchor) => !inventoryOwner.includes(anchor))
+      || productionProducers.some((anchor) => !productionOwner.includes(anchor))
+      || inventoryEnvelopeProducerCount !== 2
+      || coordinator.includes('ensured.path("targetRef").asText("")')
+      || coordinator.includes("mapper.readValue(canonicalJson,")) {
+    fail("BP_U07_M1_CROSS_OWNER_CANONICAL_READBACK_INVALID", "7 copy-preflight consumers, 3 envelope-producing owner paths, plus typed and legacy catalog-save inventory readbacks");
+  }
+  return 12;
+}
+
+function validateUnimplementedIngressFixtures(overrides = {}) {
+  const generatorSource = sourceAt(catalogP1GeneratorPath, overrides);
+  const fixtureCatalog = JSON.parse(sourceAt(unimplementedIngressFixtureCatalogPath, overrides));
+  const apiScenarios = JSON.parse(sourceAt(unimplementedIngressApiScenarioPath, overrides));
+  const l2Scenarios = JSON.parse(sourceAt(unimplementedIngressL2ScenarioPath, overrides));
+  const locators = JSON.parse(sourceAt(unimplementedIngressLocatorPath, overrides));
+  const apiFixture = sourceAt(unimplementedIngressApiFixturePath, overrides);
+  const l2Fixture = sourceAt(unimplementedIngressL2FixturePath, overrides);
+  const fixtureIds = new Set(["FIXTURE-AUTO-SYNC", "FIXTURE-TEMPORARY-ITEM"]);
+  const unavailable = (fixtureCatalog.testDatasets ?? []).filter((entry) => fixtureIds.has(entry.fixtureId));
+  const apiScenario = (apiScenarios.scenarios ?? []).find((entry) => entry.scenarioId === "CI-API-007");
+  const l2Scenario = (l2Scenarios.scenarios ?? []).find((entry) => entry.scenarioId === "CI-L2-009");
+  const publicSourceIngress = /source:\s*['"](?:AUTO_SYNC|EXTERNAL_ORDER_TEMPORARY)['"]/.test(apiFixture) || /source:\s*['"](?:AUTO_SYNC|EXTERNAL_ORDER_TEMPORARY)['"]/.test(l2Fixture);
+  if (!generatorSource.includes("unimplementedIngressFixtures")
+      || !generatorSource.includes("NO_APPROVED_INGRESS_THIS_PHASE")
+      || fixtureCatalog.denominators?.apiCases !== 99
+      || fixtureCatalog.denominators?.l2Cases !== 41
+      || unavailable.length !== 2
+      || unavailable.some((entry) => entry.executionApplicability !== "NOT_APPLICABLE_WITH_REASON" || typeof entry.notApplicableReason !== "string" || entry.notApplicableReason.length === 0 || entry.generatorRecipe?.kind !== "NOT_APPLICABLE_WITH_REASON" || entry.setupChannel !== "NO_APPROVED_INGRESS_THIS_PHASE")
+      || apiScenarios.caseCount !== 99
+      || l2Scenarios.caseCount !== 41
+      || apiScenario?.caseCount !== 0
+      || apiScenario?.executionApplicability !== "NOT_APPLICABLE_WITH_REASON"
+      || l2Scenario?.caseCount !== 0
+      || l2Scenario?.executionApplicability !== "NOT_APPLICABLE_WITH_REASON"
+      || (locators.bindings ?? []).some((entry) => String(entry.caseId).startsWith("CI-L2-009"))
+      || locators.caseCount !== 41
+      || !apiFixture.includes("caseCount === 99")
+      || !l2Fixture.includes("fixtureRef: 'L2-RUN-SCOPED-CATALOG'")
+      || publicSourceIngress
+      || !generatorSource.includes('"AUTO_SYNC"')
+      || !generatorSource.includes('"FIXTURE-SMART-VIEWS"')) {
+    fail("BP_U07_M1_UNIMPLEMENTED_INGRESS_FIXTURE_INVALID", "AUTO_SYNC and EXTERNAL_ORDER_TEMPORARY fixture applicability");
+  }
+  return unavailable.length;
+}
+
+function sourceMethodBody(source, methodName) {
+  const start = source.indexOf(` ${methodName}(`);
+  if (start < 0) return "";
+  const openingBrace = source.indexOf("{", start);
+  if (openingBrace < 0) return "";
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}" && --depth === 0) return source.slice(start, index + 1);
+  }
+  return "";
+}
+
+function apiRecordBlock(source, commandType) {
+  const start = source.indexOf(`record ${commandType}(`);
+  if (start < 0) return "";
+  const end = source.indexOf("\n    record ", start + 1);
+  return source.slice(start, end < 0 ? source.length : end);
+}
+
+function typedApiRecordBlock(source, typeName) {
+  const start = source.indexOf(`record ${typeName}(`);
+  if (start < 0) return "";
+  const end = source.indexOf("\n\n    ", start + 1);
+  return source.slice(start, end < 0 ? source.length : end);
+}
+
+function sourceAnchoredF10Boundary(row, overrides) {
+  const boundary = row.typedBoundary;
+  const required = ["edgeSourcePath", "edgeMethod", "edgeTargetAnchor", "apiSourcePath", "apiMethod", "commandType", "readbackType", "implementationSourcePath", "implementationMethod"];
+  if (!boundary || required.some((field) => !nonEmptySourceFact(boundary[field]))) {
+    fail("BP_U07_M1_F10_SOURCE_ANCHOR_INVALID", `${row.operationId}:boundary-matrix`);
+  }
+  const edge = sourceAt(boundary.edgeSourcePath, overrides);
+  const api = sourceAt(boundary.apiSourcePath, overrides);
+  const implementation = sourceAt(boundary.implementationSourcePath, overrides);
+  const edgeBody = sourceMethodBody(edge, boundary.edgeMethod);
+  const apiSignature = new RegExp(`\\b${boundary.readbackType}\\s+${boundary.apiMethod}\\s*\\([^)]*${boundary.commandType}`);
+  const implementationSignature = new RegExp(`\\b${boundary.readbackType}\\s+${boundary.implementationMethod}\\s*\\([^)]*${boundary.commandType}`);
+  const implementationBody = sourceMethodBody(implementation, boundary.implementationMethod);
+  const implementationSignatureAt = implementation.search(implementationSignature);
+  if (!edgeBody.includes(boundary.edgeTargetAnchor) || !apiSignature.test(api) || !implementationSignature.test(implementation)
+      || !implementationBody || !implementation.slice(Math.max(0, implementationSignatureAt - 120), implementationSignatureAt).includes("@Transactional")) {
+    fail("BP_U07_M1_F10_SOURCE_ANCHOR_INVALID", row.operationId);
+  }
+  return {edgeBody, api, implementationBody, boundary};
+}
+
+function validateExtensionSubmissionSource(overrides) {
+  const source = sourceAt(f10ExtensionApiPath, overrides);
+  const required = [
+    "record ExtensionSubmission(List<ExtensionFieldValue> fields)",
+    "record ExtensionFieldValue(String fieldKey, String valueJson, Mode mode)",
+    "SET",
+    "CLEAR",
+    "Mode.SET",
+    "Mode.CLEAR",
+    "\"null\".equals(field.valueJson().trim())",
+    "\"\".equals(field.valueJson())",
+  ];
+  if (required.some((anchor) => !source.includes(anchor))) {
+    fail("BP_U07_M1_F10_EXTENSION_API_INVALID", f10ExtensionApiPath);
+  }
+}
+
+function validateF10BoundaryRegistry(value = JSON.parse(fs.readFileSync(f10BoundaryPath, "utf8")), {overrides = {}, closure = false} = {}) {
+  const rows = value?.rows;
+  const ids = new Set((rows ?? []).map((row) => row.operationId));
+  const incidences = (rows ?? []).flatMap((row) => (row.incidences ?? []).map((incidence) => ({row, incidence})));
+  const extension = incidences.filter(({incidence}) => incidence?.kind === "EXTENSION_INPUT");
+  const response = incidences.filter(({incidence}) => incidence?.kind === "RESPONSE_COMPOSITION");
+  const responseSatisfied = response.filter(({incidence}) => incidence.status === "SATISFIED");
+  const responsePending = response.filter(({incidence}) => incidence.status === "PENDING");
+  const expectedStatus = responsePending.length === 0 ? "SOURCE_ANCHORED_STATIC_IMPLEMENTED_RUNTIME_UNMEASURED" : "SOURCE_ANCHORED_RUNTIME_PENDING";
+  if (value?.schemaVersion !== 2 || value.kind !== "backend-performance-m1-f10-owner-boundaries" || value.status !== expectedStatus
+      || rows?.length !== 17 || ids.size !== 17 || [...f10OperationIds].some((id) => !ids.has(id))
+      || value.denominator?.uniqueOperations !== 17 || value.denominator?.incidences !== 23 || value.denominator?.extensionInput !== 14 || value.denominator?.responseComposition !== 9
+      || extension.length !== 14 || response.length !== 9 || extension.some(({incidence}) => incidence.status !== "SATISFIED")
+      || responseSatisfied.length + responsePending.length !== 9
+      || !value.invariants?.some((invariant) => invariant.includes("StoreWireMapper.store"))
+      || !value.invariants?.some((invariant) => invariant.includes("SET or CLEAR")) || !value.invariants?.some((invariant) => invariant.includes("HTTP shape"))) {
+    fail("BP_U07_M1_F10_BOUNDARY_MATRIX_INVALID");
+  }
+  if (response.some(({incidence}) => !["SATISFIED", "PENDING"].includes(incidence.status))) {
+    fail("BP_U07_M1_F10_BOUNDARY_MATRIX_INVALID", "response status partition");
+  }
+  validateExtensionSubmissionSource(overrides);
+  for (const {row} of extension) {
+    const {edgeBody, api, implementationBody, boundary} = sourceAnchoredF10Boundary(row, overrides);
+    const record = apiRecordBlock(api, boundary.commandType);
+    if (!record.includes("ExtensionSubmission extensionSubmission") || /\\b(?:Map|JsonNode|ObjectNode)\\b/.test(record)
+        || /\\b(?:Map|JsonNode|ObjectNode)\\b/.test(edgeBody) || !implementationBody.includes("command.extensionSubmission()")) {
+      fail("BP_U07_M1_F10_EXTENSION_API_INVALID", row.operationId);
+    }
+  }
+  for (const {row, incidence} of responseSatisfied) {
+    const {edgeBody, implementationBody} = sourceAnchoredF10Boundary(row, overrides);
+    const producer = incidence.producerSourcePath ? sourceAt(incidence.producerSourcePath, overrides) : "";
+    const headCompanyValid = nonEmptySourceFact(incidence.ownerReadbackAnchor)
+      && implementationBody.includes(incidence.ownerReadbackAnchor)
+      && !edgeBody.includes("reads.headCompany(") && !/new\\s+HeadCompany\\s*\(/.test(edgeBody);
+    const composedValid = nonEmptySourceFact(incidence.producerSourcePath)
+      && nonEmptySourceFact(incidence.producerExecuteMethod) && nonEmptySourceFact(incidence.producerOwnerAnchor) && nonEmptySourceFact(incidence.producerReadbackAnchor)
+      && producer.includes(`@Transactional(propagation = Propagation.REQUIRED)`) && sourceMethodBody(producer, incidence.producerExecuteMethod)
+      && producer.includes(incidence.producerOwnerAnchor) && producer.includes(incidence.producerReadbackAnchor)
+      && (!incidence.producerDerivedStateAnchor || producer.includes(incidence.producerDerivedStateAnchor))
+      && Array.isArray(incidence.publicProjectionAnchors) && incidence.publicProjectionAnchors.length > 0
+      && incidence.publicProjectionAnchors.every((projection) => nonEmptySourceFact(projection?.sourcePath) && nonEmptySourceFact(projection?.anchor) && sourceAt(projection.sourcePath, overrides).includes(projection.anchor))
+      && !/\\b(?:JdbcTemplate|Repository|EntityManager|OrganizationOverviewTaskReadService\.Item|ContractTaskReadService\.StoreContractView)\\b/.test(producer);
+    if (!nonEmptySourceFact(incidence.edgeResponseAnchor) || !edgeBody.includes(incidence.edgeResponseAnchor)
+        || (incidence.ownerReadbackAnchor ? !headCompanyValid : !composedValid)) {
+      fail("BP_U07_M1_F10_RESPONSE_COMPOSITION_INVALID", row.operationId);
+    }
+  }
+  for (const {row, incidence} of responsePending) {
+    const boundary = row.typedBoundary ?? row.runtimeBoundary;
+    const pendingEvidence = incidence.pendingEvidence ?? boundary?.pendingEvidence;
+    if (!boundary || !nonEmptySourceFact(boundary.edgeSourcePath) || !nonEmptySourceFact(boundary.edgeMethod)
+        || !nonEmptySourceFact(pendingEvidence) || !nonEmptySourceFact(incidence.requiredPattern) || !nonEmptySourceFact(incidence.plannedProducerSourcePath)
+        || fs.existsSync(path.join(root, incidence.plannedProducerSourcePath))
+        || !sourceMethodBody(sourceAt(boundary.edgeSourcePath, overrides), boundary.edgeMethod).includes(pendingEvidence)) {
+      fail("BP_U07_M1_F10_PENDING_MISMATCH", row.operationId);
+    }
+  }
+  if (closure && responsePending.length > 0) {
+    fail("BP_U07_M1_F10_CLOSURE_PENDING", responsePending.map(({row}) => row.operationId).join(","));
+  }
+  return {operations: rows.length, incidences: incidences.length, extensionSatisfied: extension.length, responseSatisfied: responseSatisfied.length, responsePending: responsePending.length};
+}
+
+function validateM1Admission(matrix) {
+  validateLocalCopySectionPreservation();
+  return {...validateF06(matrix), ...validateReceiptPolicies(matrix), transactionProxyableAdapters: validateM1TransactionProxyability(matrix), typedOwnerBoundaries: validateTypedOwnerBoundaries(matrix), formalSeedExtensionSubmissions: validateFormalSeedExtensionSubmission(), canonicalJsonTransport: validateCanonicalJsonTransport(), activeCatalogImageReuse: validateActiveCatalogImageReuse(), catalogVoidDependency: validateCatalogVoidDependency(), brandCopyPreflightEnvelope: validateBrandCopyPreflightEnvelope(), crossOwnerCanonicalReadbacks: validateCrossOwnerCanonicalReadbacks(), unimplementedIngressFixtures: validateUnimplementedIngressFixtures()};
+}
+
+function validateFormalSeedExtensionSubmission(overrides = {}) {
+  const source = sourceAt(formalSeedExecutorPath, overrides);
+  const requiredHosts = ["REGION", "PROJECT", "BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT"];
+  if (!/function extensionSubmission\(values\)[\s\S]*valueJson:\s*JSON\.stringify\(value\)[\s\S]*mode:\s*'SET'/.test(source)
+      || (source.match(/extensionValues:\s*extensionSubmission\(extensionValues\)/g) ?? []).length !== requiredHosts.length
+      || requiredHosts.some((host) => !new RegExp(`extensionValuesFor\\([^\\n]*'${host}'[\\s\\S]{0,700}?extensionValues:\\s*extensionSubmission\\(extensionValues\\)`).test(source))
+      || !/initializeCommercialGroup[\s\S]{0,500}?extensionValues, idempotencyKey/.test(source)) {
+    fail("BP_U07_M1_FORMAL_SEED_EXTENSION_SUBMISSION_INVALID", "formal r5 extension host request serialization");
+  }
+  return requiredHosts.length;
+}
+
+function validateCanonicalJsonTransport(overrides = {}) {
+  const source = sourceAt(catalogP1GeneratorPath, overrides);
+  const required = [
+    "import tools.jackson.core.JacksonException;",
+    "import tools.jackson.databind.ValueDeserializer;",
+    "import tools.jackson.databind.annotation.JsonDeserialize;",
+    "import tools.jackson.databind.ValueSerializer;",
+    "import tools.jackson.databind.annotation.JsonSerialize;",
+    "public static final class Deserializer extends ValueDeserializer<CanonicalJsonDocument>",
+    "public static final class Serializer extends ValueSerializer<CanonicalJsonDocument>",
+    "throws JacksonException",
+    "var value = parser.readValueAsTree();",
+    "if (value == null || !value.isObject())",
+    "new CanonicalJsonDocument(value.toString())",
+    "generator.writeRawValue(value.canonicalJson());",
+  ];
+  const retiredJackson2Deserializer = "import com.fasterxml.jackson.databind.JsonDeserializer;";
+  const retiredJackson2Tree = "com.fasterxml.jackson.databind.JsonNode";
+  if (required.some((value) => !source.includes(value)) || source.includes(retiredJackson2Deserializer) || source.includes(retiredJackson2Tree)) {
+    fail("BP_U07_M1_CANONICAL_JSON_TRANSPORT_INVALID", "P1 CanonicalJsonDocument Spring-Jackson runtime, object contract and free-object transport");
+  }
+  return "JACKSON3_OBJECT_ONLY";
+}
+
+function validateM1TransactionProxyability(matrix, overrides = {}) {
+  const selected = matrix.rows.filter((row) => row.implementationStatus === "IMPLEMENTED_SOURCE_ANCHORED");
+  if (selected.length !== 68) fail("BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID", `selected=${selected.length}`);
+  for (const row of selected) {
+    const source = sourceAt(row.adapterSourcePath, overrides);
+    const className = row.adapterFqcn.split(".").at(-1);
+    const declaration = new RegExp(`\\bpublic\\s+(final\\s+)?class\\s+${className}\\b`).exec(source);
+    const entry = /@Transactional\s*\(\s*propagation\s*=\s*Propagation\.REQUIRED\s*\)\s+public\s+[^\n{]+\s+execute\s*\(/.test(source);
+    if (!source.includes("@Component") || !declaration || declaration[1] || !entry) {
+      fail("BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID", row.operationId);
+    }
+  }
+  const sourceRoot = "apps/backend/catering-business-server";
+  const transactionalBeans = fs.readdirSync(path.join(root, sourceRoot), {recursive: true})
+    .filter((relative) => typeof relative === "string" && relative.endsWith(".java") && relative.includes("/src/main/java/"))
+    .map((relative) => `${sourceRoot}/${relative}`);
+  for (const relative of transactionalBeans) {
+    const source = sourceAt(relative, overrides);
+    if (!/@(?:Component|Service)\b/.test(source) || !/@Transactional\b/.test(source)) continue;
+    if (/\bpublic\s+final\s+class\s+\w+\b/.test(source)) {
+      fail("BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID", relative);
+    }
+  }
+  return selected.length;
+}
+
+function f06SelfTest() {
+  const matrix = JSON.parse(fs.readFileSync(executionMatrixPath, "utf8"));
+  validateM1Admission(matrix);
+  const localOperation = sourceAt(localCopyExecuteOperationPath);
+  try {
+    validateLocalCopySectionPreservation({[localCopyExecuteOperationPath]: localOperation.replaceAll("request.selectedSections()", "List.of()")});
+    fail("BP_U07_M1_LOCAL_COPY_SECTION_RED_MUTATION_ACCEPTED", "execute selected sections");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_LOCAL_COPY_SECTION_PRESERVATION_INVALID") throw error;
+  }
+  const saveCoordinator = sourceAt(catalogSaveCoordinatorPath);
+  try {
+    validateActiveCatalogImageReuse({[catalogSaveCoordinatorPath]: saveCoordinator.replace("optionalAssetBinding(ref, submittedBindings)", "requiredAssetBinding(ref, submittedBindings)").replace("optionalAssetBinding(String assetRef", "requiredAssetBinding(String assetRef").replace("orElse(new CatalogAssetCommandApi.AssetBinding(ref, null));", "orElseThrow(() -> new CatalogOwnerApi.Problem(\"VALIDATION_ERROR\", 422, \"images requires a matching bind grant\"));")});
+    fail("BP_U07_M1_ACTIVE_CATALOG_IMAGE_REUSE_RED_MUTATION_ACCEPTED", "retained ACTIVE image bind grant");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_ACTIVE_CATALOG_IMAGE_REUSE_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const voidAdapter = sourceAt(catalogVoidAdapterPath);
+  try {
+    validateCatalogVoidDependency({[catalogVoidAdapterPath]: voidAdapter.replace("catalog.resolveCatalogItemRef(context, invocation.itemCode()).toString()", "invocation.itemCode()")});
+    fail("BP_U07_M1_CATALOG_VOID_DEPENDENCY_RED_MUTATION_ACCEPTED", "catalog void dependency");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_CATALOG_VOID_DEPENDENCY_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const brandCopyPreflightAdapter = sourceAt(brandCopyPreflightAdapterPath);
+  try {
+    validateBrandCopyPreflightEnvelope({[brandCopyPreflightAdapterPath]: brandCopyPreflightAdapter.replace('mapper.treeToValue(envelope.path("data"), BrandCatalogCopyPreflight.class)', 'mapper.treeToValue(envelope, BrandCatalogCopyPreflight.class)')});
+    fail("BP_U07_M1_BRAND_COPY_PREFLIGHT_ENVELOPE_RED_MUTATION_ACCEPTED", "brand copy preflight envelope");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_BRAND_COPY_PREFLIGHT_ENVELOPE_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const canonicalReadbackCoordinator = sourceAt(catalogSaveCoordinatorPath);
+  const canonicalReadbackInventoryOwner = sourceAt(inventoryVoidServicePath);
+  const canonicalReadbackProductionOwner = sourceAt(productionTagOwnerServicePath);
+  for (const mutation of [
+    canonicalReadbackCoordinator.replace('mapper.treeToValue(data, InventoryTargetEnsureReadback.class)', 'mapper.treeToValue(envelope, InventoryTargetEnsureReadback.class)'),
+    canonicalReadbackCoordinator.replace('private record InventoryTargetEnsureReadback(String targetRef, long version, boolean created) { }', 'private record InventoryTargetEnsureReadback(String targetRef) { }'),
+    canonicalReadbackCoordinator.replace('!data.hasNonNull("targetRef") || !data.path("version").canConvertToLong() || !data.path("created").isBoolean()', 'false'),
+    canonicalReadbackCoordinator.replace('node.put("targetRef", ensured.targetRef());', 'node.put("targetRef", ensured.targetRef() == null ? "" : ensured.targetRef());'),
+    canonicalReadbackCoordinator.replace("targetRef = requiredInventoryTargetRef(ensured);", 'targetRef = ensured.path("targetRef").asText("");'),
+    canonicalReadbackCoordinator.replace("owner copy readback data is invalid", "owner copy readback shape was ignored"),
+    { [inventoryVoidServicePath]: canonicalReadbackInventoryOwner.replace("mapper.writeValueAsString(envelope)", "mapper.writeValueAsString(result)") },
+    { [productionTagOwnerServicePath]: canonicalReadbackProductionOwner.replace("canonical(envelope)", "canonical(result)") },
+  ]) {
+    try {
+      validateCrossOwnerCanonicalReadbacks(typeof mutation === "string" ? {[catalogSaveCoordinatorPath]: mutation} : mutation);
+      fail("BP_U07_M1_CROSS_OWNER_CANONICAL_READBACK_RED_MUTATION_ACCEPTED", "cross-owner canonical readback");
+    } catch (error) {
+      if (error.message.split(":")[0] !== "BP_U07_M1_CROSS_OWNER_CANONICAL_READBACK_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+    }
+  }
+  const l2FixtureSource = sourceAt(unimplementedIngressL2FixturePath);
+  try {
+    validateUnimplementedIngressFixtures({[unimplementedIngressL2FixturePath]: `${l2FixtureSource}\nconst redMutation = {source: 'AUTO_SYNC'};\n`});
+    fail("BP_U07_M1_UNIMPLEMENTED_INGRESS_FIXTURE_RED_MUTATION_ACCEPTED", "public source ingress fixture");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_UNIMPLEMENTED_INGRESS_FIXTURE_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const mutation = (mutator, expected) => {
+    const scratch = structuredClone(matrix);
+    mutator(scratch);
+    try {
+      validateM1Admission(scratch);
+      fail("BP_U07_M1_F06_RED_MUTATION_ACCEPTED", expected);
+    } catch (error) {
+      if (error.message.split(":")[0] !== expected || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+    }
+  };
+  const proxyable = matrix.rows[0];
+  const proxyableSource = sourceAt(proxyable.adapterSourcePath);
+  try {
+    validateM1TransactionProxyability(matrix, {
+      [proxyable.adapterSourcePath]: proxyableSource.replace(`public class ${proxyable.adapterFqcn.split(".").at(-1)}`, `public final class ${proxyable.adapterFqcn.split(".").at(-1)}`)
+    });
+    fail("BP_U07_M1_TRANSACTION_PROXYABILITY_RED_MUTATION_ACCEPTED", proxyable.operationId);
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const workspaceOperationsCommandServicePath = "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceOperationsCommandService.java";
+  const workspaceOperationsCommandService = sourceAt(workspaceOperationsCommandServicePath);
+  try {
+    validateM1TransactionProxyability(matrix, {
+      [workspaceOperationsCommandServicePath]: workspaceOperationsCommandService.replace("public class WorkspaceOperationsCommandService", "public final class WorkspaceOperationsCommandService")
+    });
+    fail("BP_U07_M1_TRANSACTION_PROXYABILITY_RED_MUTATION_ACCEPTED", "workspace-iam service");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_TRANSACTION_PROXYABILITY_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const formalSeedSource = sourceAt(formalSeedExecutorPath);
+  try {
+    validateFormalSeedExtensionSubmission({[formalSeedExecutorPath]: formalSeedSource.replace("extensionValues: extensionSubmission(extensionValues)", "extensionValues")});
+    fail("BP_U07_M1_FORMAL_SEED_EXTENSION_SUBMISSION_RED_MUTATION_ACCEPTED", "formal seed extension submission");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_FORMAL_SEED_EXTENSION_SUBMISSION_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  const canonicalJsonSource = sourceAt(catalogP1GeneratorPath);
+  try {
+    validateCanonicalJsonTransport({[catalogP1GeneratorPath]: canonicalJsonSource.replace("import tools.jackson.databind.ValueDeserializer;", "import com.fasterxml.jackson.databind.JsonDeserializer;").replace("extends ValueDeserializer<CanonicalJsonDocument>", "extends JsonDeserializer<CanonicalJsonDocument>")});
+    fail("BP_U07_M1_CANONICAL_JSON_TRANSPORT_RED_MUTATION_ACCEPTED", "canonical JSON Jackson runtime");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_CANONICAL_JSON_TRANSPORT_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  try {
+    validateCanonicalJsonTransport({[catalogP1GeneratorPath]: canonicalJsonSource.replace('return "CanonicalJsonDocument";', 'return "com.fasterxml.jackson.databind.JsonNode";')});
+    fail("BP_U07_M1_CANONICAL_JSON_TRANSPORT_RED_MUTATION_ACCEPTED", "free object Jackson 2 tree transport");
+  } catch (error) {
+    if (error.message.split(":")[0] !== "BP_U07_M1_CANONICAL_JSON_TRANSPORT_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error;
+  }
+  mutation((value) => value.rows.find((row) => row.routeRegistry === "edge-face").context.contextResolverMethod = "resolveCatalog", "BP_U07_M1_NON_CATALOG_CATALOG_RESOLVER_FORBIDDEN");
+  mutation((value) => value.rows.find((row) => row.context?.contextResolverMethod === "resolveOperationsAtContextVersion").context.contextVersionPolicy = "NO_EXPLICIT_CONTEXT_VERSION_CHECK", "BP_U07_M1_NON_CATALOG_RESOLVER_CONTEXT_PAIRING_INVALID");
+  mutation((value) => value.rows.find((row) => row.routeRegistry === "edge-face").context.negativeCatalogScope = false, "BP_U07_M1_NON_CATALOG_FACTS_INVALID");
+  mutation((value) => value.rows.find((row) => row.routeRegistry === "catalog-inventory").context.sourceAnchor = `${resolverSourceAnchor}#resolveOperations`, "BP_U07_M1_CATALOG_RESOLVER_INVALID");
+  mutation((value) => value.rows.find((row) => revokeOperationIds.has(row.operationId)).context.idempotencyPolicy = "HEADER_IDEMPOTENCY_KEY_REQUIRED", "BP_U07_M1_RECEIPT_POLICY_MISSING_OR_WEAK");
+  mutation((value) => value.rows.find((row) => revokeOperationIds.has(row.operationId)).ownerInvocation.receiptReplayOrder = "RECEIPT_BEFORE_OWNER_RECHECK", "BP_U07_M1_REVOKE_RECEIPT_RECHECK_INVALID");
+  mutation((value) => value.rows.find((row) => row.typedOwnerBoundary).typedOwnerBoundary.readbackType = "InventoryOwnerApi.JsonNode", "BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID");
+  mutation((value) => value.rows.find((row) => row.operationId === "createOperationsCatalogCategory").typedOwnerBoundary.readbackType = "CatalogOwnerApi.JsonNode", "BP_U07_M1_TYPED_OWNER_BOUNDARY_INVALID");
+  const extensionInputs = hostExtensionInputs();
+  validateHostExtensionRequestRevision(extensionInputs);
+  for (const fixturePaths of [
+    extensionInputs.fixturePaths.slice(0, 1),
+    [...extensionInputs.fixturePaths, extensionInputs.fixturePaths[0]],
+    [...extensionInputs.fixturePaths, "scripts/test/unknown-host-extension-fixture.mjs"],
+    [extensionInputs.fixturePaths[0], "scripts/test/r5-platform-admin-l2-fixture-seed.mjs"],
+  ]) {
+    try {
+      validateHostExtensionRequestRevision({...extensionInputs, fixturePaths});
+      fail("BP_U07_M1_HOST_EXTENSION_FIXTURE_SET_RED_MUTATION_ACCEPTED", fixturePaths.join(","));
+    } catch (error) {
+      if (error.message.split(":")[0] !== "BP_U07_M1_HOST_EXTENSION_FIXTURE_SET_INVALID") throw error;
+    }
+  }
+  const fieldMutation = structuredClone(extensionInputs);
+  fieldMutation.schemaDocuments[hostExtensionRequestSpecs[0].schemaPath].components.schemas.BrandCreateRequest.properties.expectedExtensionRuleRevision = {type: "integer"};
+  try { validateHostExtensionRequestRevision(fieldMutation); fail("BP_U07_M1_HOST_EXTENSION_RED_MUTATION_ACCEPTED", "request field"); }
+  catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_HOST_EXTENSION_REQUEST_REVISION_DRIFT" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error; }
+  const ownerMutation = structuredClone(extensionInputs);
+  ownerMutation.organizationOwnerSource = ownerMutation.organizationOwnerSource.replaceAll("definition.version()", "definitionVersionRemoved()");
+  try { validateHostExtensionRequestRevision(ownerMutation); fail("BP_U07_M1_HOST_EXTENSION_RED_MUTATION_ACCEPTED", "owner anchor"); }
+  catch (error) { if (error.message.split(":")[0] !== "BP_U07_M1_HOST_EXTENSION_OWNER_VALIDATION_INVALID" || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error; }
+  const f10 = JSON.parse(fs.readFileSync(f10BoundaryPath, "utf8"));
+  validateF10BoundaryRegistry(f10);
+  const f10Failure = (action, expected) => {
+    try { action(); fail("BP_U07_M1_F10_RED_MUTATION_ACCEPTED", expected); }
+    catch (error) { if (error.message.split(":")[0] !== expected || !["WHY=", "BACKGROUND=", "PATTERN="].every((marker) => error.message.includes(marker))) throw error; }
+  };
+  const f10Source = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
+  const brand = f10.rows.find((row) => row.operationId === "createOperationsOrganizationBrand");
+  f10Failure(() => validateF10BoundaryRegistry(f10, {overrides: {
+    [brand.typedBoundary.edgeSourcePath]: f10Source(brand.typedBoundary.edgeSourcePath).replace(brand.typedBoundary.edgeTargetAnchor, "entities.genericWrite(")
+  }}), "BP_U07_M1_F10_SOURCE_ANCHOR_INVALID");
+  f10Failure(() => validateF10BoundaryRegistry(f10, {overrides: {
+    [brand.typedBoundary.apiSourcePath]: f10Source(brand.typedBoundary.apiSourcePath).replace("ExtensionSubmission extensionSubmission", "Map<String, String> extensionSubmission")
+  }}), "BP_U07_M1_F10_EXTENSION_API_INVALID");
+  const headCompany = f10.rows.find((row) => row.operationId === "createOperationsOrganizationHeadCompany");
+  f10Failure(() => validateF10BoundaryRegistry(f10, {overrides: {
+    [headCompany.typedBoundary.edgeSourcePath]: f10Source(headCompany.typedBoundary.edgeSourcePath).replace("BusinessEntityWireMapper.headCompany(result.entity(), result.authorizedBrands())", "BusinessEntityWireMapper.headCompany(result.entity(), List.of())")
+  }}), "BP_U07_M1_F10_RESPONSE_COMPOSITION_INVALID");
+  const store = f10.rows.find((row) => row.operationId === "createOperationsOrganizationStore");
+  const storeResponse = store.incidences.find((incidence) => incidence.kind === "RESPONSE_COMPOSITION");
+  f10Failure(() => validateF10BoundaryRegistry(f10, {overrides: {
+    [store.typedBoundary.edgeSourcePath]: f10Source(store.typedBoundary.edgeSourcePath).replace(storeResponse.edgeResponseAnchor, "new OrganizationStore()")
+  }}), "BP_U07_M1_F10_RESPONSE_COMPOSITION_INVALID");
+  const pendingClosure = structuredClone(f10);
+  pendingClosure.status = "SOURCE_ANCHORED_RUNTIME_PENDING";
+  const closureResponse = pendingClosure.rows.find((row) => row.operationId === "createOperationsOrganizationHeadCompany").incidences.find((incidence) => incidence.kind === "RESPONSE_COMPOSITION");
+  closureResponse.status = "PENDING";
+  closureResponse.pendingEvidence = closureResponse.edgeResponseAnchor;
+  closureResponse.plannedProducerSourcePath = "virtual/f10/PendingProducer.java";
+  closureResponse.requiredPattern = "one operation-specific REQUIRED composition producer using declared public owner projections";
+  delete closureResponse.ownerReadbackAnchor;
+  f10Failure(() => validateF10BoundaryRegistry(pendingClosure, {closure: true}), "BP_U07_M1_F10_CLOSURE_PENDING");
+  console.log("BP_U07_M1_F06_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_F09_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_F07_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_F11_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_F10_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_TRANSACTION_PROXYABILITY_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_FORMAL_SEED_EXTENSION_SUBMISSION_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_CANONICAL_JSON_TRANSPORT_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_ACTIVE_CATALOG_IMAGE_REUSE_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_CATALOG_VOID_DEPENDENCY_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_BRAND_COPY_PREFLIGHT_ENVELOPE_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_CROSS_OWNER_CANONICAL_READBACK_RED_MUTATION=PASS");
+  console.log("BP_U07_M1_HOST_EXTENSION_FIXTURE_SET_RED_MUTATIONS=PASS");
+  console.log("BP_U07_M1_UNIMPLEMENTED_INGRESS_FIXTURE_RED_MUTATION=PASS");
+  console.log("RED_F06_F07_F09_F10_F11_PROXY_SEED_JSON_FIXTURES=14");
+}
+
+function invokeGenerator(args) {
+  const result = spawnSync(process.execPath, [generator, ...args], {cwd: root, encoding: "utf8"});
+  process.stdout.write(result.stdout || "");
+  process.stderr.write(result.stderr || "");
+  return result.status ?? 2;
+}
+
+function validateCatalogP1BackendWire() {
+  const result = spawnSync(process.execPath, [catalogP1Generator, "--check"], {cwd: root, encoding: "utf8"});
+  if (result.status !== 0) {
+    const detail = [result.stdout, result.stderr].filter(Boolean).join(" ").trim().replace(/\s+/g, " ");
+    fail("BP_U07_M1_P1_BACKEND_WIRE_INPUT_INVALID", detail);
+  }
+}
+
+try {
+  const args = process.argv.slice(2);
+  const selfTest = args.includes("--self-test");
+  if (selfTest) {
+    validateCatalogP1BackendWire();
+    const status = invokeGenerator(["--self-test"]);
+    if (status !== 0) process.exitCode = status;
+    else f06SelfTest();
+  } else {
+    validateCatalogP1BackendWire();
+    const admission = validateM1Admission(JSON.parse(fs.readFileSync(executionMatrixPath, "utf8")));
+    const hostExtension = validateHostExtensionRequestRevision();
+    const f10Boundary = validateF10BoundaryRegistry();
+    const status = invokeGenerator(["--check", ...args]);
+    if (status !== 0) process.exitCode = status;
+    else {
+      console.log("BP_U07_M1_F06_CONTEXT_ADMISSION=PASS");
+      console.log(`M1_CATALOG_RESOLVE_CATALOG=${admission.catalog}`);
+      console.log(`M1_NON_CATALOG_WORKSPACE_FACTS=${admission.operations}`);
+      console.log(`M1_NON_CATALOG_RESOLVE_OPERATIONS=${admission.direct}`);
+      console.log(`M1_NON_CATALOG_RESOLVE_OPERATIONS_AT_CONTEXT_VERSION=${admission.versioned}`);
+      console.log(`M1_TRANSACTION_PROXYABLE_ADAPTERS=${admission.transactionProxyableAdapters}`);
+      console.log(`M1_FORMAL_SEED_EXTENSION_SUBMISSIONS=${admission.formalSeedExtensionSubmissions}`);
+      console.log(`M1_CANONICAL_JSON_TRANSPORT=${admission.canonicalJsonTransport}`);
+      console.log(`M1_ACTIVE_CATALOG_IMAGE_REUSE=${admission.activeCatalogImageReuse}`);
+      console.log(`M1_CATALOG_VOID_DEPENDENCY=${admission.catalogVoidDependency}`);
+      console.log(`M1_BRAND_COPY_PREFLIGHT_ENVELOPE=${admission.brandCopyPreflightEnvelope}`);
+      console.log(`M1_CROSS_OWNER_CANONICAL_READBACKS=${admission.crossOwnerCanonicalReadbacks}`);
+      console.log(`M1_UNIMPLEMENTED_INGRESS_FIXTURES=${admission.unimplementedIngressFixtures}`);
+      console.log(`M1_RECEIPT_OWNER_RECHECK=${admission.normal}`);
+      console.log(`M1_RECEIPT_HEADER_BODY_OWNER_RECHECK=${admission.bodyBound}`);
+      console.log(`M1_TYPED_OWNER_BOUNDARIES=${admission.typedOwnerBoundaries.implementedTypedOwnerBoundaries}`);
+      console.log(`M1_F07_TYPED_OWNER_BOUNDARIES=${admission.typedOwnerBoundaries.f07TypedOwnerBoundaries}`);
+      console.log(`M1_HOST_EXTENSION_REQUEST_FIELDS_REMOVED=${hostExtension.requestFields}`);
+      console.log(`M1_HOST_EXTENSION_OPERATION_BOUNDARY=${hostExtension.hostOperations}`);
+      console.log(`M1_F10_SOURCE_ANCHORED_OPERATIONS=${f10Boundary.operations}`);
+      console.log(`M1_F10_EXTENSION_INPUT_SATISFIED=${f10Boundary.extensionSatisfied}/14`);
+      console.log(`M1_F10_RESPONSE_COMPOSITION_SATISFIED=${f10Boundary.responseSatisfied}/9`);
+      console.log(`M1_F10_RESPONSE_COMPOSITION_PENDING=${f10Boundary.responsePending}/9`);
+      console.log(`M1_F10_TYPED_OWNER_BOUNDARY_DECLARED=${f10Boundary.operations}/${f10Boundary.incidences}`);
+    }
+  }
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 1;
+}

@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Wires the owner-only first actor command solely for a newly provisioned HTTP diagnostic database. */
+/** Wires the owner-only first actor command solely for an approved empty isolated namespace. */
 @Configuration
 public class HttpDiagnosticBootstrapConfiguration {
     @Bean
@@ -25,8 +25,7 @@ public class HttpDiagnosticBootstrapConfiguration {
     }
 
     static ApplicationRunner ownerBootstrap(PlatformDiagnosticBootstrap bootstrap, String environment, String profile, String runId, String loginName, String credential) {
-        if (!"non-production".equals(environment) || !"rm1-http-diagnostic".equals(profile)
-                || !runId.matches("rm1-http-diagnostic-[A-Za-z0-9-]{8,128}")
+        if (!"non-production".equals(environment) || !isApprovedBootstrapRun(profile, runId)
                 || !loginName.matches("[a-z][a-z0-9-]{2,62}")
                 || credential.length() < 12) {
             throw new IllegalStateException("HTTP_DIAGNOSTIC_BOOTSTRAP_CONFIGURATION_INVALID");
@@ -39,5 +38,11 @@ public class HttpDiagnosticBootstrapConfiguration {
                 Arrays.fill(password, '\0');
             }
         };
+    }
+
+    private static boolean isApprovedBootstrapRun(String profile, String runId) {
+        return ("rm1-http-diagnostic".equals(profile) && runId.matches("rm1-http-diagnostic-[A-Za-z0-9-]{8,128}"))
+                || ("backend-performance-final-acceptance".equals(profile)
+                && runId.matches("backend-performance-final-\\d+-[a-f0-9]{8}"));
     }
 }

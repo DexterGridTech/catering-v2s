@@ -2170,7 +2170,7 @@
       "version"
     ],
     "CatalogShapeManifestView": [
-      "revision",
+      "manifestRevision",
       "manifestDigest",
       "shapeKeys",
       "capabilityValues",
@@ -2184,5 +2184,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "cb81db8d372345aa6732d40f558426b622d2c5428326b243cc1aae194cbcd772"
+  "manifestDigest": "09674d725474d06c7f9bf3c990e7abef82c8367450d0d6b318ed2d2ab65b3eb9"
 }

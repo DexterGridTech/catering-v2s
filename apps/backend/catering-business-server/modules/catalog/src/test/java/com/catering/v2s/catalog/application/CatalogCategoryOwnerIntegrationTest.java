@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -87,9 +88,147 @@ class CatalogCategoryOwnerIntegrationTest {
         JsonNode deletion = write("deleteOperationsCatalogCategory", MAPPER.createObjectNode()
             .put("categoryRef", rootA.path("categoryRef").asText())
             .put("expectedVersion", rootA.path("version").asLong()));
-        assertEquals(1, deletion.path("deletedCount").asInt());
+        assertEquals(rootA.path("categoryRef").asText(), deletion.path("categoryRef").asText());
+        assertEquals(1, deletion.path("deletedSubtreeSize").asInt());
+        assertEquals(List.of("CAT-A"), MAPPER.convertValue(deletion.path("deletedCategoryCodes"), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() { }));
+        assertTrue(!deletion.has("deletedCount"));
         JsonNode recreated = create("CAT-A", "A-recreated", null);
         assertEquals("CAT-A", recreated.path("code").asText());
+    }
+
+    @Test void categoryDeleteReturnsTheCanonicalSubtreeReadbackAndReplaysOnlyAfterOwnerFactRecheck() {
+        JsonNode root = create("DELETE-ROOT", "delete root", null);
+        create("DELETE-CHILD", "delete child", root.path("categoryRef").asText());
+        ObjectNode request = MAPPER.createObjectNode()
+            .put("categoryRef", root.path("categoryRef").asText())
+            .put("expectedVersion", root.path("version").asLong());
+
+        JsonNode first = writeFull("deleteOperationsCatalogCategory", request, "delete-first", "delete-replay-key");
+        JsonNode result = first.path("result");
+        assertEquals(root.path("categoryRef").asText(), result.path("categoryRef").asText());
+        assertEquals(2, result.path("deletedSubtreeSize").asInt());
+        assertEquals(List.of("DELETE-CHILD", "DELETE-ROOT"), MAPPER.convertValue(result.path("deletedCategoryCodes"), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() { }));
+        assertTrue(!result.has("deletedCount"));
+
+        JsonNode replay = writeFull("deleteOperationsCatalogCategory", request, "delete-replay", "delete-replay-key");
+        JsonNode replayResult = replay.path("result");
+        assertEquals(3, replayResult.size());
+        assertEquals(root.path("categoryRef").asText(), replayResult.path("categoryRef").asText());
+        assertEquals(2, replayResult.path("deletedSubtreeSize").asInt());
+        assertEquals(List.of("DELETE-CHILD", "DELETE-ROOT"), MAPPER.convertValue(replayResult.path("deletedCategoryCodes"), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() { }));
+        assertTrue(!replayResult.has("deletedCount"));
+
+        CatalogOwnerApi.Problem mismatchedReplay = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "deleteOperationsCatalogCategory", request.deepCopy().put("expectedVersion", root.path("version").asLong() + 1), "delete-mismatch", "delete-replay-key"));
+        assertEquals("IDEMPOTENCY_MISMATCH", mismatchedReplay.code());
+
+        CatalogOwnerApi.Problem newKeyAfterDelete = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "deleteOperationsCatalogCategory", request, "delete-new-key", "delete-new-key"));
+        assertEquals("NOT_FOUND", newKeyAfterDelete.code());
+
+        JsonNode stale = create("DELETE-STALE", "delete stale", null);
+        JsonNode updated = write("updateOperationsCatalogCategory", MAPPER.createObjectNode()
+            .put("categoryRef", stale.path("categoryRef").asText())
+            .put("expectedVersion", stale.path("version").asLong())
+            .put("name", "delete stale updated"));
+        assertEquals(stale.path("version").asLong() + 1, updated.path("version").asLong());
+        CatalogOwnerApi.Problem staleDelete = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "deleteOperationsCatalogCategory", MAPPER.createObjectNode().put("categoryRef", stale.path("categoryRef").asText()).put("expectedVersion", stale.path("version").asLong()), "delete-stale", "delete-stale-key"));
+        assertEquals("VERSION_CONFLICT", staleDelete.code());
+    }
+
+    @Test void catalogSaveReceiptRejectsAStaleReadbackAfterAnotherSaveButKeepsImmediateReplayAndMismatchRules() {
+        String code = generatedCatalogCode("SAVE-RECEIPT");
+        JsonNode created = write("createOperationsCatalogItem", MAPPER.createObjectNode()
+            .put("code", code).put("name", "receipt item").put("shapeKey", "STANDARD_SALE_COUNTED"));
+        ObjectNode original = MAPPER.createObjectNode().put("itemCode", code);
+        original.putObject("sections").put("expectedCatalogVersion", created.path("version").asLong())
+            .putObject("catalogDraft").put("shortName", "first");
+
+        JsonNode first = writeFull("saveOperationsCatalogItem", original, "save-first", "save-replay-key");
+        assertEquals(2L, first.path("result").path("version").asLong());
+        JsonNode replay = writeFull("saveOperationsCatalogItem", original, "save-immediate-replay", "save-replay-key");
+        assertEquals(4, replay.size());
+        assertEquals(CatalogOwnerTypes.REVISION, replay.path("revision").asText());
+        assertEquals("save-first", replay.path("requestId").asText());
+        assertEquals(2L, replay.path("version").asLong());
+        JsonNode replayResult = replay.path("result");
+        assertEquals(4, replayResult.size());
+        assertEquals("CATALOG_ITEM", replayResult.path("item").path("factType").asText());
+        assertEquals(CatalogOwnerTypes.REVISION, replayResult.path("item").path("revision").asText());
+        assertTrue(replayResult.path("inventoryBom").isArray());
+        assertEquals(0, replayResult.path("inventoryBom").size());
+        assertTrue(replayResult.path("productionTags").isArray());
+        assertEquals(0, replayResult.path("productionTags").size());
+        assertEquals(2L, replayResult.path("version").asLong());
+
+        ObjectNode mismatched = original.deepCopy();
+        ((ObjectNode) mismatched.path("sections").path("catalogDraft")).put("shortName", "different");
+        CatalogOwnerApi.Problem mismatch = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "saveOperationsCatalogItem", mismatched, "save-mismatch", "save-replay-key"));
+        assertEquals("IDEMPOTENCY_MISMATCH", mismatch.code());
+
+        ObjectNode later = MAPPER.createObjectNode().put("itemCode", code);
+        later.putObject("sections").put("expectedCatalogVersion", 2L).putObject("catalogDraft").put("shortName", "later");
+        JsonNode second = writeFull("saveOperationsCatalogItem", later, "save-later", "save-later-key");
+        assertEquals(3L, second.path("result").path("version").asLong());
+
+        CatalogOwnerApi.Problem staleReplay = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "saveOperationsCatalogItem", original, "save-stale-replay", "save-replay-key"));
+        assertEquals("VERSION_CONFLICT", staleReplay.code());
+        assertEquals(3L, jdbc.queryForObject("SELECT version FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code=?", Long.class,
+            SCOPE.toString(), BRAND, code));
+    }
+
+    @Test void temporaryPromotionUsesTheCanonicalEnvelopeAndRejectsStaleOrNonTemporaryItems() {
+        String temporaryCode = generatedCatalogCode("TEMP-PROMOTION");
+        JsonNode created = write("createOperationsCatalogItem", MAPPER.createObjectNode()
+            .put("code", temporaryCode).put("name", "temporary item").put("shapeKey", "STANDARD_SALE_COUNTED"));
+        long createdVersion = created.path("version").asLong();
+        ObjectNode temporarySave = MAPPER.createObjectNode().put("itemCode", temporaryCode);
+        ObjectNode temporaryDraft = temporarySave.putObject("sections")
+            .put("expectedCatalogVersion", createdVersion)
+            .putObject("catalogDraft");
+        temporaryDraft.put("source", "EXTERNAL_ORDER_TEMPORARY").put("governanceStatus", "GOVERNANCE_TODO");
+        temporaryDraft.putObject("externalIdentity")
+            .put("sourceOrderRef", "ORDER-" + temporaryCode)
+            .put("sourceRecordRef", "RECORD-" + temporaryCode)
+            .put("sourceItemRef", "ITEM-" + temporaryCode);
+        long sourceVersion = write("saveOperationsCatalogItem", temporarySave).path("version").asLong();
+
+        ObjectNode preflightRequest = promotionRequest(temporaryCode, sourceVersion, generatedCatalogCode("FORMAL"));
+        JsonNode preflight = writeFull(
+            "preflightOperationsTemporaryCatalogItemPromotion", preflightRequest, "temporary-preflight", "temporary-preflight-key");
+        assertEquals(temporaryCode, preflight.path("data").path("item").path("code").asText());
+        assertEquals(sourceVersion, preflight.path("data").path("sourceVersion").asLong());
+        assertTrue(preflight.path("data").path("canPromote").asBoolean());
+        assertTrue(!preflight.path("data").has("data"));
+
+        ObjectNode mutation = MAPPER.createObjectNode().put("itemCode", temporaryCode);
+        mutation.putObject("sections").put("expectedCatalogVersion", sourceVersion)
+            .putObject("catalogDraft").put("shortName", "changed after preflight");
+        assertEquals(sourceVersion + 1, write("saveOperationsCatalogItem", mutation).path("version").asLong());
+        ObjectNode staleExecute = preflightRequest.deepCopy()
+            .put("expectedVersion", sourceVersion)
+            .put("preflightDigest", preflight.path("data").path("preflightDigest").asText());
+        CatalogOwnerApi.Problem stale = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "executeOperationsTemporaryCatalogItemPromotion", staleExecute, "temporary-stale-execute", "temporary-stale-execute-key"));
+        assertEquals("STALE_COPY_PREFLIGHT", stale.code());
+
+        String normalCode = generatedCatalogCode("NORMAL-PROMOTION");
+        JsonNode normal = write("createOperationsCatalogItem", MAPPER.createObjectNode()
+            .put("code", normalCode).put("name", "normal item").put("shapeKey", "STANDARD_SALE_COUNTED"));
+        long normalVersion = normal.path("version").asLong();
+        ObjectNode normalRequest = promotionRequest(normalCode, normalVersion, generatedCatalogCode("FORMAL"));
+        JsonNode normalPreflight = writeFull(
+            "preflightOperationsTemporaryCatalogItemPromotion", normalRequest, "normal-preflight", "normal-preflight-key");
+        assertTrue(!normalPreflight.path("data").path("canPromote").asBoolean());
+        CatalogOwnerApi.Problem nonTemporary = assertThrows(CatalogOwnerApi.Problem.class, () -> writeFull(
+            "executeOperationsTemporaryCatalogItemPromotion", normalRequest.deepCopy()
+                .put("expectedVersion", normalVersion)
+                .put("preflightDigest", normalPreflight.path("data").path("preflightDigest").asText()),
+            "normal-execute", "normal-execute-key"));
+        assertEquals("VALIDATION_ERROR", nonTemporary.code());
     }
 
     @Test void deleteIsBlockedByAnyReferencedDescendantAndSaveRejectsBusinessCodes() {
@@ -292,9 +431,27 @@ class CatalogCategoryOwnerIntegrationTest {
         return write("createOperationsCatalogCategory", request);
     }
 
+    private static ObjectNode promotionRequest(String itemCode, long expectedSourceVersion, String formalCode) {
+        return MAPPER.createObjectNode()
+            .put("itemCode", itemCode)
+            .put("formalCode", formalCode)
+            .put("shapeKey", "STANDARD_SALE_COUNTED")
+            .put("name", "formal item")
+            .put("expectedSourceVersion", expectedSourceVersion)
+            .set("attributes", MAPPER.createObjectNode());
+    }
+
+    private static String generatedCatalogCode(String prefix) {
+        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+    }
+
     private static JsonNode write(String operation, ObjectNode request) {
         JsonNode response = service.write(operation, SCOPE.toString(), BRAND, request, operation + UUID.randomUUID(), UUID.randomUUID().toString(), WORKSPACE, "catalog-category-test", "STORE", grant());
         return response.path("result");
+    }
+
+    private static JsonNode writeFull(String operation, ObjectNode request, String requestId, String idempotencyKey) {
+        return service.write(operation, SCOPE.toString(), BRAND, request, requestId, idempotencyKey, WORKSPACE, "catalog-category-test", "STORE", grant());
     }
 
     private static JsonNode navigation() {

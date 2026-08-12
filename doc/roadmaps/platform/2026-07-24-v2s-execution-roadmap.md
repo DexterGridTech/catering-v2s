@@ -94,9 +94,9 @@ ROADMAP_REVIEWED=true
 R0_STATUS=GO
 LAST_CLOSED_STEP=RM1-P6-2-STATIC
 CURRENT_STEP=BACKEND_PERFORMANCE_FINAL_CLOSURE
-CURRENT_STATUS=BACKEND_PERFORMANCE_FINAL_CLOSURE_DESIGN_IN_PROGRESS
-CURRENT_ACTIVITY=在 Dexter 2026-08-10 的直接授权下，串行完成 BP-U06 旧布局/dispatcher 退出、BP-U07 immutable-snapshot measurement admission 与独立性能动态验收；RM1-P6-3 暂停但不关闭
-CURRENT_NEXT_ACTION=先完成 BACKEND-PERFORMANCE-FINAL-DESIGN-20260810 的 exact-surface 详设、独立 DESIGN review 与 Claude recheck；随后才可进入静态实施、最终受管 workload、immutable snapshot 与 fresh IMPLEMENTATION review
+CURRENT_STATUS=BACKEND_PERFORMANCE_FINAL_CLOSURE_IMPLEMENTATION_HANDOFF_READY
+CURRENT_ACTIVITY=BACKEND-PERFORMANCE-FINAL-DESIGN-20260810 已经 Claude POST_REMEDIATION GO；新会话须以独立 static implementation package 串行实施 BPF-U01..BPF-U06，完成静态 196-row reconciliation 后再按受管顺序进行 Testcontainers、local managed L2、reset、DEV、r5-full seed comparison，最后做一次 IMPLEMENTATION review；RM1-P6-3 暂停但不关闭
+CURRENT_NEXT_ACTION=打开新的 backend-performance implementation 会话，先读取 doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-implementation-handoff-codex.md，创建 exact-surface static implementation package，并从 BPF-U01 的 87 idempotency/45 readback/45 ORIGIN-JOIN 决策和 196 source inventory 开始；不得在 static reconciliation 前启动动态环境
 R1_STATUS=GO
 R2_STATUS=GO
 TARGET_STATUS=V2S_HANDOFF_READY
@@ -144,7 +144,7 @@ BACKEND_PERFORMANCE_FINAL_CLOSURE_AUTHORIZED_BY=Dexter
 BACKEND_PERFORMANCE_FINAL_CLOSURE_AUTHORIZED_AT=2026-08-10
 BACKEND_PERFORMANCE_FINAL_CLOSURE_RUNTIME_AUTHORIZED_AFTER_STATIC_ADMISSION=true
 BACKEND_PERFORMANCE_FINAL_CLOSURE_MINIMAL_SEED_AUTHORIZED=true
-BACKEND_PERFORMANCE_FINAL_CLOSURE_RESET_AUTHORIZED=false
+BACKEND_PERFORMANCE_FINAL_CLOSURE_RESET_AUTHORIZED=true
 GIT_OWNER=Dexter
 ```
 

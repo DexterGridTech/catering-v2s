@@ -148,10 +148,36 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
             workspaceUuid,
             key
         );
+        // A newly created session has no persisted selector IDs yet.  In that one case the
+        // assignment itself is the locked selector, so derive its fixed context from the same
+        // owner-local rows already loaded above.  This keeps login from reading candidates once
+        // and then rebuilding the same scope context through a second owner pass.
+        UUID effectiveRegionId = regionId;
+        UUID effectiveProjectId = projectId;
+        UUID effectiveStoreId = storeId;
+        UUID effectiveHeadCompanyId = headCompanyId;
+        boolean deriveAssignmentScope = regionId == null && projectId == null && storeId == null && headCompanyId == null
+            && assignmentNodeId != null && !ServiceNodeTypes.GROUP.equals(assignmentNodeType);
+        if (deriveAssignmentScope) {
+            switch (assignmentNodeType) {
+                case ServiceNodeTypes.REGION -> effectiveRegionId = assignmentNodeId;
+                case ServiceNodeTypes.PROJECT -> effectiveProjectId = assignmentNodeId;
+                case ServiceNodeTypes.STORE -> effectiveStoreId = assignmentNodeId;
+                case ServiceNodeTypes.HEAD_COMPANY -> effectiveHeadCompanyId = assignmentNodeId;
+                default -> { }
+            }
+            UUID selectedStoreId = effectiveStoreId;
+            Store selectedStore = selectedStoreId == null ? null : stores.stream().filter(store -> selectedStoreId.equals(store.id())).findFirst().orElse(null);
+            if (effectiveProjectId == null && selectedStore != null) effectiveProjectId = selectedStore.projectId();
+            if (effectiveRegionId == null && effectiveProjectId != null && nodes.containsKey(effectiveProjectId)) {
+                effectiveRegionId = nodes.get(effectiveProjectId).parentId();
+            }
+            if (effectiveHeadCompanyId == null && selectedStore != null) effectiveHeadCompanyId = selectedStore.headCompanyId();
+        }
         Map<UUID, HeadCompany> headCompanies = new LinkedHashMap<>();
         if (ServiceNodeTypes.GROUP.equals(assignmentNodeType)
             || ServiceNodeTypes.HEAD_COMPANY.equals(assignmentNodeType)
-            || headCompanyId != null) {
+            || effectiveHeadCompanyId != null) {
             jdbc.query(
                 "SELECT id, code, name FROM organization.head_company WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' ORDER BY code",
                 (row, index) -> new HeadCompany(row.getObject(1, UUID.class), row.getString(2), row.getString(3)),
@@ -162,10 +188,10 @@ public class OrganizationVisibilityService implements OrganizationVisibilityLook
         return new VisibleOrganizationFacts(
             visibleCandidates(assignmentNodeType, assignmentNodeId, hierarchy, nodes, stores, headCompanies),
             new ScopeContext(
-                hierarchyContext(nodes, ServiceNodeTypes.REGION, regionId),
-                hierarchyContext(nodes, ServiceNodeTypes.PROJECT, projectId),
-                storeContext(nodes, stores, storeId),
-                headCompanyContext(headCompanies, headCompanyId)
+                hierarchyContext(nodes, ServiceNodeTypes.REGION, effectiveRegionId),
+                hierarchyContext(nodes, ServiceNodeTypes.PROJECT, effectiveProjectId),
+                storeContext(nodes, stores, effectiveStoreId),
+                headCompanyContext(headCompanies, effectiveHeadCompanyId)
             )
         );
     }

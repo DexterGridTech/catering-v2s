@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-m1-existing-runner-validation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-M1-EXISTING-RUNNER-VALIDATION-20260810",
+  "status": "ACTIVE_RUNTIME_READINESS_REMEDIATION_THEN_EXISTING_RUNNER_VALIDATION",
+  "authorization": "Dexter explicitly authorized the existing managed sequence and the minimal runtime-readiness repairs discovered by its managed local evidence: backend unit, destructive reset, source-only repairs for the exact 68 M1 REQUIRED composition adapters and the P1-generated CanonicalJsonDocument transport, then the existing managed DEV start/readiness, r5-full seed, and managed catalog L2. The adapter repair may remove only the Java final modifier that prevents Spring transaction proxying and add its exact fail-closed checker; the transport repair may only align its generated deserializer with Spring MVC's Jackson 3 runtime without changing the OpenAPI object shape or owner boundary. The existing catalog API fixture may retain owner-readback image references when it performs its later whole-save BOM assertion, because omitting them is an incorrect fixture payload rather than a production command defect. Where the approved catalog requirements explicitly retain AUTO_SYNC and EXTERNAL_ORDER_TEMPORARY models/views while excluding both ingress execution chains, the existing P1 generator, policy, fixture and locator consumers may record the two owner-fact fixtures as NOT_APPLICABLE_WITH_REASON and reject public-command attempts to fabricate either server-owned source fact. No repair may alter command semantics, create a runner/environment, deploy, use manual SSH, or use manual SQL.",
+  "authority": {
+    "implementationAuthority": true,
+    "runtimeAuthority": true,
+    "seedResetAuthority": true
+  },
+  "l2ExecutionPlane": "Managed browser L2 runs the Spring Boot business server, both admin applications, fixture execution, and Playwright locally. Remote infrastructure is limited to managed tunnels to non-production dependencies and remote Testcontainers technical verification; it must never host the L2 Java service, Vite, or browser runner.",
+  "predecessorStaticExit": {
+    "packageId": "BACKEND-PERFORMANCE-M1-IMPLEMENTATION-20260810",
+    "path": "doc/evidence/platform/2026-08-10-v2s-backend-performance-m1-implementation-package-exit.json",
+    "sha256": "a5bec0efb5b3d4b64af74011723f059c0ef2048ee33383213e164508d6c3f9da",
+    "requiredStatus": "PASS",
+    "requiredStaticControls": [
+      "scripts/check/backend-performance-sql-merge-coverage => M1_RUNTIME_SOURCES_PENDING=0",
+      "node scripts/generate/catalog-inventory-p1.mjs --check => PASS",
+      "scripts/check/standards-coverage --phase BACKEND_PERFORMANCE_FINAL_CLOSURE => PASS"
+    ]
+  },
+  "executionOrder": [
+    {
+      "ordinal": 1,
+      "entrypoint": "scripts/test/catalog-inventory-backend-unit.mjs",
+      "command": "node scripts/test/catalog-inventory-backend-unit.mjs",
+      "requires": ["predecessorStaticExit"],
+      "produces": "existing unit runner evidence with separate business and cleanup status"
+    },
+    {
+      "ordinal": 2,
+      "entrypoint": "scripts/dev/r5-reset.mjs",
+      "command": "R5_RESET_CONFIRMATION=EXPLICIT_R5_RESET node scripts/dev/r5-reset.mjs",
+      "requires": ["ordinal-1 business=PASS", "ordinal-1 cleanup=PASS"],
+      "produces": "existing reset manifest and reset cleanup readback"
+    },
+    {
+      "ordinal": 3,
+      "entrypoint": "scripts/dev/start",
+      "command": "V2S_R5_REQUIRE_FRESH_DATABASE=true scripts/dev/start",
+      "requires": ["ordinal-2 business=PASS", "ordinal-2 cleanup=PASS"],
+      "produces": "existing managed local DEV provision/readiness manifest required before r5-full seed"
+    },
+    {
+      "ordinal": 4,
+      "entrypoint": "scripts/dev/seed --profile r5-full",
+      "command": "R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full",
+      "requires": ["ordinal-3 business=PASS", "ordinal-3 cleanup=PASS"],
+      "produces": "fresh r5-full seed report; this is the only permitted SQL-event comparison evidence"
+    },
+    {
+      "ordinal": 5,
+      "entrypoint": "scripts/test/catalog-inventory-l2.mjs --managed",
+      "command": "node scripts/test/catalog-inventory-l2.mjs --managed",
+      "requires": ["ordinal-4 business=PASS", "ordinal-4 cleanup=PASS"],
+      "produces": "existing managed catalog L2 manifest, browser evidence, and local/remote cleanup evidence"
+    }
+  ],
+  "runtimeReadinessRepair": {
+    "trigger": "The first managed DEV start reached Spring application construction and failed because every selected M1 composition adapter is a final @Component with a REQUIRED transaction entry; CGLIB cannot proxy a final class. The runner correctly reports the child exit as BUSINESS_SERVER_IDENTITY_DRIFT.",
+    "denominator": 68,
+    "sourceRoots": [
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/store/contract/application",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application"
+    ],
+    "additionalExactSourcePaths": [
+      "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceOperationsCommandService.java"
+    ],
+    "requiredPattern": "Every selected M1 adapter and every M1-required owner service remains a non-final Spring component/service when it has a public @Transactional(REQUIRED) entry, so Spring can create the transaction proxy. The mandatory topology gate must reject a final transactional bean and prove both adapter and service cases with real red mutations. Its underlying topology generator self-test must likewise create a synthetic pending row before asserting that closure rejects pending work; it must not rely on the old implementation-time pending state.",
+    "forbidden": ["adapter aggregation", "transaction-origin move", "owner API change", "edge contract change", "runner change", "manual process control"]
+  },
+  "formalSeedContractAlignment": {
+    "trigger": "The first fresh r5-full seed reached createOperationsOrganizationRegion and received HTTP 400 before database work because the M1 ExtensionSubmission OpenAPI change converted seven seeded host-create request fields from object maps to typed SET/CLEAR lists while the existing seed still sent a map.",
+    "exactSeededHostTypes": ["REGION", "PROJECT", "BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT"],
+    "allowedPaths": ["scripts/dev/owner-command-seed-executor.mjs", "scripts/dev/owner-command-seed-executor.test.mjs"],
+    "requiredPattern": "The existing seed retains owner readback comparison as a map but serializes each of the seven changed request fields as ExtensionSubmission SET entries with canonical JSON text. CommercialGroup initialize remains the documented object-shape counterexample and is not converted.",
+    "forbidden": ["new seed runner", "manual HTTP substitute", "map-shaped changed-host request", "null clear sentinel", "seed report reuse"]
+  },
+  "canonicalJsonRuntimeAlignment": {
+    "trigger": "The isolated local catalog L2 owner fixture reached createOperationsCatalogItem and received HTTP 400 before owner/database work although its attributes value was a valid OpenAPI object. The generated CanonicalJsonDocument used Jackson 2 annotations and a Jackson 2 JsonDeserializer while the Spring MVC runtime uses Jackson 3 (tools.jackson), so MVC ignored the custom deserializer and record construction received no canonical JSON.",
+    "allowedPaths": ["scripts/generate/catalog-inventory-p1.mjs"],
+    "requiredPattern": "The generated CanonicalJsonDocument must use the Spring MVC Jackson 3 tools.jackson JsonDeserialize and ValueDeserializer types, consume its current Jackson value through readValueAsTree, require an object result, then preserve it as canonical JSON text. The object-shaped OpenAPI contract remains unchanged; only generated transport deserialization is repaired.",
+    "forbidden": ["OpenAPI shape change", "owner API change", "runner change", "manual HTTP substitute", "JSON tree public owner boundary"]
+  },
+  "managedL2UnitOrderingRepair": {
+    "trigger": "After ordinal-4 r5-full seed PASS, the managed local L2 combined API stage invoked the existing remote-Testcontainers unit runner while the ordinal-3 managed local DEV tree was still live. The remote runner's resource-budget control correctly refused the overlapping managed tree before the L2 private environment was created.",
+    "allowedPaths": ["scripts/test/r5-joint-remote-l2.mjs"],
+    "denominator": "combined catalog managed L2 invocations following a live ordinal-3 managed DEV manifest; catalog L2-only invocations and runs with no default managed DEV are counterexamples",
+    "requiredPattern": "Before its catalog backend-unit stage, the existing local L2 runner must invoke the existing r5-dev-runner stop entry against only the default manifest-owned DEV tree, record the outcome, then run remote technical tests and create its own isolated local L2 Java/Vite/browser tree. It must never identify or kill a process by port or command name.",
+    "forbidden": ["new runner", "manual process kill", "remote application/browser execution", "skip resource budget", "reuse ordinal-3 runtime as L2"]
+  },
+  "managedL2WholeSaveFixtureAlignment": {
+    "trigger": "The managed local catalog L2 fixture successfully staged and claimed an asset, then issued a later whole-save BOM update without re-submitting the image readback. The catalog owner correctly interpreted that omission as removal; the fixture then incorrectly expected the image to persist.",
+    "allowedPaths": ["scripts/test/catalog-inventory-api.mjs"],
+    "requiredPattern": "The existing fixture must carry the image references returned by the immediately preceding owner detail readback into its later whole-save BOM draft, then assert both the asset reference and BOM facts after the final readback.",
+    "forbidden": ["partial-update interpretation", "manual HTTP substitute", "seed reuse", "runner change"]
+  },
+  "managedL2ActiveCatalogImageReuseAlignment": {
+    "trigger": "The repaired whole-save fixture retained its image readback, but its next save failed HTTP 422 before the asset owner because the M1 catalog composition required a new bind grant for every image. This contradicts PlatformAssetService's existing owner rule that an ACTIVE CATALOG_ITEM_IMAGE is reusable without a second bind proof after the command's fresh catalog authorization recheck.",
+    "allowedPaths": ["apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java", "scripts/check/backend-performance-sql-merge-coverage"],
+    "requiredPattern": "For every retained next image, the catalog composition supplies its submitted bind grant when present and otherwise delegates a null grant to CatalogAssetCommandApi. The asset owner, not edge or catalog, decides ACTIVE reuse versus STAGED bind-grant consumption.",
+    "forbidden": ["fixture resend of a retired grant", "catalog asset-status lookup", "edge lifecycle decision", "OpenAPI change", "manual HTTP substitute", "runner change"]
+  },
+  "managedL2CatalogVoidDependencyAlignment": {
+    "trigger": "The managed local L2 created inventory-owned StockTarget facts then transitioned the catalog item to VOIDED with HTTP 200. The legacy CatalogInventoryCoordinator correctly queried inventory's dependency judgement, but the M1 typed status adapter bypassed that coordinator and directly called CatalogOwnerApi.",
+    "allowedPaths": ["apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/api/InventoryOwnerApi.java", "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperation.java", "scripts/check/backend-performance-sql-merge-coverage"],
+    "requiredPattern": "Inventory exposes an immutable typed dependency readback and performs its fresh catalog-context recheck. The named M1 catalog-status adapter rejects VOIDED when that owner readback says dependent facts exist, before calling CatalogOwnerApi; non-VOID transitions are the counterexample.",
+    "forbidden": ["JsonNode or Map public owner boundary", "catalog-side inventory query", "edge judgement", "fixture expectation change", "generic dispatcher", "runner change"]
+  },
+  "managedL2UnimplementedIngressFixtureAlignment": {
+    "trigger": "Managed local L2 reached the source-ownership fixture and found that both AUTO_SYNC and EXTERNAL_ORDER_TEMPORARY were submitted through public operations commands. Those request DTOs intentionally do not accept source ownership fields, so the server correctly creates SELF_MANAGED facts and any assertion of AUTO_SYNC/TEMPORARY is fabricated rather than a test of the approved phase.",
+    "requirementAnchor": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md §5.6.8 retains the models, enums and smart views but explicitly excludes both the sync execution chain and the external-order ingress chain for this phase.",
+    "allowedPaths": ["scripts/generate/catalog-inventory-p1.mjs", "tools/catalog-inventory-p3/bind-l2-locators.mjs", "tools/catalog-inventory-p3/cli.mjs", "scripts/test/catalog-inventory-api.mjs", "scripts/test/catalog-inventory-l2-fixture.mjs", "scripts/test/catalog-inventory-l2-test-fixture.mjs", "contracts/policy/catalog-inventory-fixture-catalog.json", "contracts/policy/catalog-inventory-fixture-catalog.schema.json", "contracts/policy/catalog-inventory-api-scenarios.json", "contracts/policy/catalog-inventory-l2-scenarios.json", "contracts/policy/catalog-inventory-l2-locator-bindings.json", "contracts/policy/catalog-inventory-assertion-matrix.json", "scripts/check/backend-performance-sql-merge-coverage"],
+    "requiredPattern": "The generated fixture catalog and its API/L2 scenarios retain an explicit NOT_APPLICABLE_WITH_REASON record for both unimplemented ingress facts, remove both fabricated fixture bindings from executable API/L2 case sets, and preserve the AUTO_SYNC smart-view/model assertion independently. The mandatory gate rejects a public request body that attempts to set either owner-owned source value or a regression that removes the N/A reason.",
+    "forbidden": ["public AUTO_SYNC or EXTERNAL_ORDER_TEMPORARY request field", "test-only ingress endpoint", "manual SQL fixture", "removal of source enum/model/smart view", "runner change", "deleting the N/A reason"]
+  },
+  "authorizedExistingEntrypoints": [
+    "scripts/test/catalog-inventory-backend-unit.mjs",
+    "scripts/dev/r5-reset.mjs",
+    "V2S_R5_REQUIRE_FRESH_DATABASE=true scripts/dev/start",
+    "scripts/dev/seed --profile r5-full",
+    "scripts/test/catalog-inventory-l2.mjs --managed"
+  ],
+  "failClosed": {
+    "wrongOrder": "REFUSE: a later ordinal has no authority until the immediately preceding existing runner has fresh business=PASS and cleanup=PASS evidence.",
+    "newRunnerOrEnvironment": "REFUSE: this package admits no runner, environment, fixture creation or deployment source path. Its fixture repair surfaces are limited to preserving a current owner readback across a whole-save update and removing the two fabricated unimplemented-ingress fixture facts while retaining their model/view declarations; its only production source surfaces are the exact seven M1 adapter roots for transaction proxyability, the single workspace-IAM service reached by the 20 invitation/revoke adapters, and the P1 generator for transport and fixture-policy compatibility repair; a hook rejects every other source path.",
+    "missingConfirmation": "REFUSE: reset requires R5_RESET_CONFIRMATION=EXPLICIT_R5_RESET and r5-full seed requires R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED.",
+    "measurementClaim": "REFUSE: static or unit evidence cannot claim SQL optimization; only the fresh ordinal-4 seed report may populate BP_U07_SQL_MERGE_SUCCESS or BP_U07_SNAPSHOT.",
+    "freshSeedPrecondition": "REFUSE: r5-full seed requires the ordinal-3 managed DEV manifest to declare freshDatabase=true. If a non-fresh managed start was made, stop only that manifest-owned process tree before one corrected fresh start; do not seed or reuse its manifest."
+  },
+  "forbidden": [
+    "new test target",
+    "new runner",
+    "new environment",
+    "new runtime topology",
+    "manual SSH",
+    "manual SQL",
+    "DEV shortcut",
+    "UAT",
+    "deployment",
+    "historic snapshot reuse",
+    "SQL numeric success claim before ordinal-3 fresh seed report"
+  ]
+}

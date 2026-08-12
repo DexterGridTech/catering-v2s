@@ -19,109 +19,6 @@
       "path": "contracts/policy/catalog-inventory-media-assets.json"
     }
   },
-  "seedBusinessLabels": {
-    "categories": {
-      "APPETIZER": "开胃小食",
-      "BENEFIT": "权益商品",
-      "BEVERAGE": "饮品",
-      "COMBO": "套餐",
-      "DESSERT": "甜品",
-      "MAIN": "主菜",
-      "MATERIAL": "原材料",
-      "PASTA_RICE": "意面饭食",
-      "PIZZA": "披萨",
-      "SALAD": "沙拉",
-      "SERVICE": "服务",
-      "SOUP": "汤品"
-    },
-    "productionTags": {
-      "DINNER": "晚餐推荐",
-      "LUNCH": "午市推荐",
-      "SIGNATURE": "招牌推荐",
-      "TAKEOUT": "外带适用"
-    },
-    "dictionary": {
-      "SKU_ATTRIBUTE": {
-        "DONENESS": "熟度",
-        "DRINK_SIZE": "饮品规格",
-        "PIZZA_SIZE": "披萨尺寸",
-        "PORTION_SIZE": "份量",
-        "SIZE": "规格"
-      },
-      "SKU_ATTRIBUTE_VALUE": {
-        "BURRATA_SAUCE_BALSAMIC": "意式黑醋",
-        "BURRATA_SAUCE_OLIVE": "橄榄油",
-        "CAESAR_ADDON_BACON": "培根",
-        "CAESAR_ADDON_CHICKEN": "鸡胸肉",
-        "CAESAR_ADDON_EGG": "鸡蛋",
-        "CAESAR_CUTLERY_NO": "不需要餐具",
-        "CAESAR_CUTLERY_YES": "需要餐具",
-        "CAESAR_SAUCE_CLASSIC": "经典凯撒酱",
-        "CAESAR_SAUCE_LIGHT": "轻盈凯撒酱",
-        "CAESAR_SAUCE_VINAIGRETTE": "油醋汁",
-        "COFFEE_BEAN_COLOMBIA": "哥伦比亚",
-        "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚",
-        "COFFEE_PROCESS_NATURAL": "日晒处理",
-        "COFFEE_PROCESS_WASHED": "水洗处理",
-        "COFFEE_SERVE_HOT": "热饮",
-        "COFFEE_SERVE_ICEBALL": "冰球",
-        "COFFEE_SERVE_ICED": "加冰",
-        "DRESSING-CLASSIC": "经典酱汁",
-        "FRIES_ADDON_BACON": "培根",
-        "FRIES_ADDON_LARGE": "加大份",
-        "FRIES_ADDON_PARMESAN": "帕玛森芝士",
-        "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱",
-        "FRIES_DIP_KETCHUP": "番茄酱",
-        "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱",
-        "HQ_CAESAR_ADDON_CHICKEN": "鸡胸肉",
-        "LARGE": "大杯",
-        "LEMONADE_FLAVOR_BERRY": "莓果风味",
-        "LEMONADE_FLAVOR_MINT": "薄荷风味",
-        "LEMONADE_ICE_LESS": "少冰",
-        "LEMONADE_ICE_NONE": "去冰",
-        "LEMONADE_ICE_NORMAL": "正常冰",
-        "LEMONADE_SWEETNESS_LESS": "少糖",
-        "LEMONADE_SWEETNESS_REGULAR": "标准糖",
-        "LEMONADE_SWEETNESS_ZERO": "无糖",
-        "MEDIUM": "中杯",
-        "MEDIUM_RARE": "七分熟",
-        "NINE_INCH": "九寸",
-        "REGULAR": "常规份",
-        "SIZE-LARGE": "大份",
-        "SMALL": "小杯",
-        "TOMATO_PASTA_ADDON_CHEESE": "芝士",
-        "TOMATO_PASTA_ADDON_CHICKEN": "鸡胸肉",
-        "TOMATO_PASTA_ADDON_MUSHROOM": "蘑菇",
-        "TOMATO_PASTA_COOK_AL_DENTE": "弹牙",
-        "TOMATO_PASTA_COOK_NORMAL": "正常熟度",
-        "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
-        "TOMATO_PASTA_SPICY_MILD": "微辣",
-        "TOMATO_PASTA_SPICY_NONE": "不辣",
-        "TOPPING-BACON": "培根",
-        "TWELVE_INCH": "十二寸",
-        "WELL_DONE": "全熟"
-      }
-    },
-    "optionGroups": {
-      "CAESAR-DRESSING": "酱汁选择",
-      "CAESAR-SIZE": "份量选择",
-      "CAESAR-TOPPING": "加料选择"
-    },
-    "units": {
-      "EACH": "个",
-      "GRAM": "克",
-      "KILOGRAM": "千克",
-      "BOX": "盒",
-      "g": "克",
-      "pack": "包",
-      "piece": "个",
-      "case": "箱",
-      "ml": "毫升",
-      "bottle": "瓶",
-      "套": "套",
-      "个": "个"
-    }
-  },
   "seedDatasets": [
     {
       "fixtureId": "SEED-LATTE",
@@ -788,6 +685,109 @@
       ]
     }
   ],
+  "seedBusinessLabels": {
+    "categories": {
+      "APPETIZER": "前菜",
+      "SALAD": "沙拉",
+      "SOUP": "汤品",
+      "PASTA_RICE": "意面与饭",
+      "MAIN": "主菜",
+      "PIZZA": "披萨",
+      "DESSERT": "甜品",
+      "BEVERAGE": "饮品",
+      "COMBO": "套餐",
+      "MATERIAL": "物料",
+      "SERVICE": "服务",
+      "BENEFIT": "权益"
+    },
+    "productionTags": {
+      "SIGNATURE": "招牌推荐",
+      "LUNCH": "午餐常用",
+      "DINNER": "晚餐常用",
+      "TAKEOUT": "适合外卖"
+    },
+    "dictionary": {
+      "SKU_ATTRIBUTE": {
+        "SIZE": "杯型",
+        "PORTION_SIZE": "份量",
+        "DONENESS": "熟度",
+        "PIZZA_SIZE": "披萨尺寸",
+        "DRINK_SIZE": "饮品杯型"
+      },
+      "SKU_ATTRIBUTE_VALUE": {
+        "BURRATA_SAUCE_BALSAMIC": "黑醋汁",
+        "BURRATA_SAUCE_OLIVE": "橄榄油海盐",
+        "CAESAR_ADDON_BACON": "加培根",
+        "CAESAR_ADDON_CHICKEN": "加鸡胸肉",
+        "CAESAR_ADDON_EGG": "加溏心蛋",
+        "CAESAR_CUTLERY_NO": "不需要餐具",
+        "CAESAR_CUTLERY_YES": "需要餐具",
+        "CAESAR_SAUCE_CLASSIC": "标准凯撒酱",
+        "CAESAR_SAUCE_LIGHT": "少酱",
+        "CAESAR_SAUCE_VINAIGRETTE": "油醋汁",
+        "COFFEE_BEAN_COLOMBIA": "哥伦比亚",
+        "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚",
+        "COFFEE_PROCESS_NATURAL": "日晒",
+        "COFFEE_PROCESS_WASHED": "水洗",
+        "COFFEE_SERVE_HOT": "热手冲",
+        "COFFEE_SERVE_ICEBALL": "加冰球",
+        "COFFEE_SERVE_ICED": "冰手冲",
+        "DRESSING-CLASSIC": "标准凯撒酱",
+        "FRIES_ADDON_BACON": "培根碎",
+        "FRIES_ADDON_LARGE": "升级大份",
+        "FRIES_ADDON_PARMESAN": "帕玛森芝士",
+        "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱",
+        "FRIES_DIP_KETCHUP": "番茄酱",
+        "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱",
+        "HQ_CAESAR_ADDON_CHICKEN": "加鸡胸肉",
+        "LARGE": "大份",
+        "LEMONADE_FLAVOR_BERRY": "加莓果",
+        "LEMONADE_FLAVOR_MINT": "加薄荷",
+        "LEMONADE_ICE_LESS": "少冰",
+        "LEMONADE_ICE_NONE": "去冰",
+        "LEMONADE_ICE_NORMAL": "正常冰",
+        "LEMONADE_SWEETNESS_LESS": "少甜",
+        "LEMONADE_SWEETNESS_REGULAR": "标准甜",
+        "LEMONADE_SWEETNESS_ZERO": "无糖",
+        "MEDIUM": "七分熟",
+        "MEDIUM_RARE": "五分熟",
+        "NINE_INCH": "9 寸",
+        "REGULAR": "标准份",
+        "SIZE-LARGE": "大份",
+        "SMALL": "小杯",
+        "TOMATO_PASTA_ADDON_CHEESE": "加马苏里拉芝士",
+        "TOMATO_PASTA_ADDON_CHICKEN": "加烤鸡胸",
+        "TOMATO_PASTA_ADDON_MUSHROOM": "加蘑菇",
+        "TOMATO_PASTA_COOK_AL_DENTE": "偏硬口感",
+        "TOMATO_PASTA_COOK_NORMAL": "标准口感",
+        "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
+        "TOMATO_PASTA_SPICY_MILD": "微辣",
+        "TOMATO_PASTA_SPICY_NONE": "不辣",
+        "TOPPING-BACON": "加培根",
+        "TWELVE_INCH": "12 寸",
+        "WELL_DONE": "全熟"
+      }
+    },
+    "optionGroups": {
+      "CAESAR-DRESSING": "酱汁",
+      "CAESAR-SIZE": "份量",
+      "CAESAR-TOPPING": "配料"
+    },
+    "units": {
+      "GRAM": "克",
+      "KILOGRAM": "千克",
+      "EACH": "个",
+      "BOX": "箱",
+      "g": "克",
+      "ml": "毫升",
+      "bottle": "瓶",
+      "case": "箱",
+      "pack": "包",
+      "piece": "个",
+      "个": "个",
+      "套": "套"
+    }
+  },
   "testDatasets": [
     {
       "fixtureId": "FIXTURE-MISSING-HEAD-COMPANY",
@@ -1726,7 +1726,7 @@
     {
       "fixtureId": "FIXTURE-REFERENCE-MAPPING-MISSING",
       "class": "TEST",
-      "purpose": "删除一个映射导致整体阻断",
+      "purpose": "受控 owner 输入中的缺映射阻断；公开复制路径只验证真实可构造的完整映射",
       "scenarioIds": [
         "CI-API-020"
       ],
@@ -2224,10 +2224,10 @@
       ],
       "edges": [],
       "generatorRecipe": {
-        "kind": "OWNER_COMMAND_FIXTURE",
+        "kind": "NOT_APPLICABLE_WITH_REASON",
         "fixtureId": "FIXTURE-AUTO-SYNC"
       },
-      "setupChannel": "P2_OWNER_COMMANDS",
+      "setupChannel": "NO_APPROVED_INGRESS_THIS_PHASE",
       "readbackSelectors": [
         "ownerScopes",
         "objects",
@@ -2238,6 +2238,8 @@
         "ownership": "source-owned"
       },
       "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "executionApplicability": "NOT_APPLICABLE_WITH_REASON",
+      "notApplicableReason": "AUTO_SYNC is an ERP-owned ingress fact; this phase retains its model and smart view but explicitly excludes the sync execution chain.",
       "entities": {
         "constructedAt": "test-run",
         "source": "fixture-catalog",
@@ -2311,10 +2313,10 @@
       ],
       "edges": [],
       "generatorRecipe": {
-        "kind": "OWNER_COMMAND_FIXTURE",
+        "kind": "NOT_APPLICABLE_WITH_REASON",
         "fixtureId": "FIXTURE-TEMPORARY-ITEM"
       },
-      "setupChannel": "P2_OWNER_COMMANDS",
+      "setupChannel": "NO_APPROVED_INGRESS_THIS_PHASE",
       "readbackSelectors": [
         "ownerScopes",
         "objects",
@@ -2325,6 +2327,8 @@
         "requiresPromotionPreflight": true
       },
       "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "executionApplicability": "NOT_APPLICABLE_WITH_REASON",
+      "notApplicableReason": "EXTERNAL_ORDER_TEMPORARY is an external-order ingress fact; this phase retains its model and smart view but explicitly excludes the external-order intake chain.",
       "entities": {
         "constructedAt": "test-run",
         "source": "fixture-catalog",
@@ -2369,6 +2373,7 @@
       "purpose": "当前门店内五步复制配置",
       "scenarioIds": [
         "CI-API-014",
+        "CI-API-020",
         "CI-L2-010"
       ],
       "ownerScopes": [
@@ -4067,9 +4072,9 @@
     "seed": 5,
     "test": 39,
     "apiDefinitions": 26,
-    "apiCases": 100,
+    "apiCases": 99,
     "l2Definitions": 18,
-    "l2Cases": 43
+    "l2Cases": 41
   },
   "consumerBindings": {
     "P2_API": {
@@ -4159,5 +4164,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "4ff0154c950e20d103e249619e89ef16f9568a16ba81f75e1d090ea15e3c21c9"
+  "fixtureDigest": "f4c75f6ed8571a2a56161933c88ba459947cb59807df02d176c23e7bae9908ba"
 }

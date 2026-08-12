@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -17,14 +18,18 @@ public final class ContractCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
     private final JdbcTemplate jdbc; private final TimeProvider time;
     public ContractCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) { this.jdbc = jdbc; this.time = time; }
-    public StoreContractReadback execute(String key, String canonicalRequest, Supplier<StoreContractReadback> command) {
-        if (key == null || key.length() < 16 || key.length() > 128) throw new ContractCommandService.ContractValidationException();
-        String hash = hash(canonicalRequest); jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)))", key);
-        Receipt prior = jdbc.query("SELECT request_hash, response_json::text FROM contract.contract_command_receipt WHERE idempotency_key=?", statement -> statement.setString(1, key), result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+    public StoreContractReadback execute(UUID workspaceUuid, String key, String canonicalRequest, Supplier<StoreContractReadback> command) {
+        if (workspaceUuid == null || key == null || key.length() < 16 || key.length() > 128) throw new ContractCommandService.ContractValidationException();
+        String hash = hash(canonicalRequest);
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))", workspaceUuid.toString(), key);
+        Receipt prior = jdbc.query("SELECT request_hash, response_json::text FROM contract.contract_command_receipt WHERE workspace_uuid=? AND idempotency_key=?", statement -> {
+            statement.setObject(1, workspaceUuid);
+            statement.setString(2, key);
+        }, result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
         if (prior != null) { if (!hash.equals(prior.hash())) throw new ContractIdempotencyConflictException(); return read(prior.json()); }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             StoreContractReadback result = command.get();
-            jdbc.update("INSERT INTO contract.contract_command_receipt (idempotency_key, contract_id, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?::jsonb, ?)", key, result.id(), hash, write(result), time.currentEpochMillis());
+            jdbc.update("INSERT INTO contract.contract_command_receipt (workspace_uuid, idempotency_key, contract_id, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, ?)", workspaceUuid, key, result.id(), hash, write(result), time.currentEpochMillis());
             return result;
         }
     }

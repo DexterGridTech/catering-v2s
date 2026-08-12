@@ -45,6 +45,7 @@ function walk(candidate) {
   }
 }
 for (const candidate of process.argv.slice(2)) walk(candidate);
+const allowedDeterministicDependencies = new Set(["typescript"]);
 for (const file of files) {
   const text = fs.readFileSync(file, "utf8");
   const specs = text.split("\n").flatMap((line) => {
@@ -52,8 +53,9 @@ for (const file of files) {
     const requireMatch = line.match(/^\s*(?:const|let|var)\s+[^=]+?=\s*require\(["']([^"']+)["']\)/);
     return [importMatch?.[1], requireMatch?.[1]].filter(Boolean);
   });
-  if (specs.some((spec) => !spec.startsWith("node:"))) {
-    process.stderr.write(`non-built-in dependency in ${file}\n`);
+  const disallowed = specs.find((spec) => !spec.startsWith("node:") && !allowedDeterministicDependencies.has(spec));
+  if (disallowed) {
+    process.stderr.write(`non-deterministic dependency in ${file}: ${disallowed}\n`);
     process.exit(2);
   }
 }

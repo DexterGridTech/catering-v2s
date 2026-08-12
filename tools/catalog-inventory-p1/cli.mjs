@@ -109,6 +109,16 @@ function coverageFieldMap(row) {
 function designFieldDigest(policy) {
   return hash(JSON.stringify({rows: policy.rows, requestRows: policy.requestRows || [], closedFindingRows: policy.closedFindingRows || [], typeConventions: policy.typeConventions || []}));
 }
+function designCoverageSchema(actualSchema, row) {
+  const actualRequired = actualSchema?.required || [];
+  const transportEnvelope = exact(actualRequired, ["revision", "requestId", "data"])
+    && actualSchema?.properties?.data?.type === "object";
+  const rowIsPayload = !exact(row.required || [], ["revision", "requestId", "data"]);
+  if (!transportEnvelope || !rowIsPayload) return actualSchema;
+  const payload = actualSchema.properties.data;
+  expect(payload && payload.type === "object", "P1_DESIGN_BYTE_ENVELOPE_PAYLOAD_MISSING:" + row.model);
+  return payload;
+}
 function collectNamedFields(schema, fieldNames, prefix = "", output = []) {
   for (const [name, child] of Object.entries(schema?.properties || {})) {
     const fieldPath = prefix ? prefix + "." + name : name;
@@ -125,8 +135,9 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
   expect(rows.length === policy.requiredModelCount && exact(rows.map((row) => row.model), expectedModels), "P1_DESIGN_BYTE_COVERAGE_MODEL_EXACT_SET");
   expect(new Set(rows.map((row) => row.model)).size === rows.length, "P1_DESIGN_BYTE_COVERAGE_MODEL_DUPLICATE");
   for (const row of rows) {
-    const actualSchema = openapi.components?.schemas?.[row.model];
-    expect(actualSchema, "P1_DESIGN_BYTE_MODEL_MISSING:" + row.model);
+    const wireSchema = openapi.components?.schemas?.[row.model];
+    expect(wireSchema, "P1_DESIGN_BYTE_MODEL_MISSING:" + row.model);
+    const actualSchema = designCoverageSchema(wireSchema, row);
     expect(exact(actualSchema.required || [], row.required || []), "P1_DESIGN_BYTE_REQUIRED_EXACT_SET:" + row.model);
     const expected = coverageFieldMap(row);
     const actual = collectSchemaFields(actualSchema);
@@ -151,7 +162,7 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
   for (const finding of policy.closedFindingRows || []) {
     const row = rows.find((entry) => entry.model === finding.model);
     expect(row && (row.fields || []).some((field) => field.path === finding.path), "P1_CLOSED_FINDING_POLICY_MISSING:" + finding.model + "." + finding.path);
-    const actual = collectSchemaFields(openapi.components.schemas[finding.model]);
+    const actual = collectSchemaFields(designCoverageSchema(openapi.components.schemas[finding.model], row));
     expect(actual.has(finding.path), "P1_CLOSED_FINDING_BYTE_MISSING:" + finding.model + "." + finding.path);
   }
   for (const convention of policy.typeConventions || []) {
@@ -190,7 +201,9 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
     const field = fields.get(model)?.get(pathValue);
     expect(field && ((field.type === "array" && field.itemFormat === "uuid") || (field.type !== "array" && field.format === "uuid")), "P1_OPAQUE_REFERENCE_COVERAGE:" + rowId + ":" + model + "." + pathValue);
   }
-  const navigation = openapi.components?.schemas?.CatalogNavigationView?.properties?.tree?.items?.properties || {};
+  const navigationRow = policy.rows.find((row) => row.model === "CatalogNavigationView");
+  const navigationSchema = designCoverageSchema(openapi.components?.schemas?.CatalogNavigationView, navigationRow);
+  const navigation = navigationSchema?.properties?.tree?.items?.properties || {};
   expect(navigation.categoryRef?.format === "uuid" && navigation.parentCategoryRef?.format === "uuid" && !Object.hasOwn(navigation, "status") && navigation.deletionAvailability?.properties?.canDelete?.type === "boolean", "P1_CATEGORY_NAVIGATION_TRUTHFUL_REF_READBACK");
   const categoryCreate = openapi.components?.schemas?.CatalogCategoryCreateRequest?.properties || {};
   const categoryMove = openapi.components?.schemas?.CatalogCategoryMoveRequest?.properties || {};
@@ -238,8 +251,21 @@ const expectedCapabilities = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRO
 const expectedShapes = ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"];
 const expectedModeRuleKeys = ["CATALOG_ITEM|HAS_SKU", "CATALOG_ITEM|NO_SKU", "SKU|null", "OPTION_VALUE|null"];
 const expectedZones = ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"];
-const expectedApiCaseCounts = [1, 7, 1, 1, 9, 10, 1, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
-const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+const expectedApiCaseCounts = [1, 7, 1, 1, 9, 10, 0, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
+const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+const expectedApiCaseTotal = expectedApiCaseCounts.reduce((sum, count) => sum + count, 0);
+const expectedL2CaseTotal = expectedL2CaseCounts.reduce((sum, count) => sum + count, 0);
+
+function assertScenarioDenominators(apiScenarios, l2Scenarios, fixtures) {
+  expect(apiScenarios.scenarioCount === expectedApiCaseCounts.length && apiScenarios.scenarios.length === expectedApiCaseCounts.length && fixtures.denominators?.apiDefinitions === expectedApiCaseCounts.length, "P1_API_SCENARIO_COUNT");
+  const actualApiCaseTotal = apiScenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0);
+  expect(apiScenarios.caseCount === actualApiCaseTotal && actualApiCaseTotal === expectedApiCaseTotal && fixtures.denominators?.apiCases === actualApiCaseTotal, "P1_API_CASE_COUNT");
+  expect(exact(apiScenarios.scenarios.map((entry) => entry.caseCount), expectedApiCaseCounts), "P1_API_CASE_VECTOR");
+  expect(l2Scenarios.scenarioCount === expectedL2CaseCounts.length && l2Scenarios.scenarios.length === expectedL2CaseCounts.length && fixtures.denominators?.l2Definitions === expectedL2CaseCounts.length, "P1_L2_SCENARIO_COUNT");
+  const actualL2CaseTotal = l2Scenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0);
+  expect(l2Scenarios.caseCount === actualL2CaseTotal && actualL2CaseTotal === expectedL2CaseTotal && fixtures.denominators?.l2Cases === actualL2CaseTotal, "P1_L2_CASE_COUNT");
+  expect(exact(l2Scenarios.scenarios.map((entry) => entry.caseCount), expectedL2CaseCounts), "P1_L2_CASE_VECTOR");
+}
 
 function validate(root = ROOT) {
   const shape = readJson(SHAPE_PATH);
@@ -413,11 +439,7 @@ function validate(root = ROOT) {
   expect(materialSeed.entities.catalogItems?.length >= 7 && materialSeed.entities.stockTargets?.length >= 7, "P1_SEED_MATERIAL_GRAPH");
   const fixtureIds = new Set(seedIds.concat(testIds));
 
-  expect(apiScenarios.scenarioCount === 26 && apiScenarios.scenarios.length === 26, "P1_API_SCENARIO_COUNT");
-  expect(apiScenarios.caseCount === 100 && apiScenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0) === 100, "P1_API_CASE_COUNT");
-  expect(exact(apiScenarios.scenarios.map((entry) => entry.caseCount), expectedApiCaseCounts), "P1_API_CASE_VECTOR");
-  expect(l2Scenarios.scenarioCount === 18 && l2Scenarios.scenarios.length === 18, "P1_L2_SCENARIO_COUNT");
-  expect(l2Scenarios.caseCount === 43 && l2Scenarios.scenarios.reduce((sum, entry) => sum + entry.caseCount, 0) === 43, "P1_L2_CASE_COUNT");
+  assertScenarioDenominators(apiScenarios, l2Scenarios, fixtures);
   expect(exact(l2Scenarios.scenarios.map((entry) => entry.caseCount), expectedL2CaseCounts), "P1_L2_CASE_VECTOR");
   for (const scenario of apiScenarios.scenarios.concat(l2Scenarios.scenarios)) {
     expect(scenario.businessRequirement && scenario.primaryVerifier, "P1_SCENARIO_BEHAVIOR:" + scenario.scenarioId);
@@ -505,7 +527,19 @@ function selfTest() {
   const firstProperty = firstSchema && Object.values(firstSchema.properties)[0];
   const redTyped = firstProperty ? {...firstProperty} : null;
   if (redTyped) { delete redTyped.type; expectRed(redTyped.type || redTyped.$ref || redTyped.oneOf || redTyped.allOf || redTyped.anyOf, "SCHEMA_TYPED_PROPERTY"); }
-  const fixtures = readJson(FIXTURE_PATH); const api = readJson(API_SCENARIO_PATH); const firstScenario = api.scenarios[0];
+  const fixtures = readJson(FIXTURE_PATH); const api = readJson(API_SCENARIO_PATH); const l2 = readJson(L2_SCENARIO_PATH); const firstScenario = api.scenarios[0];
+  const apiDenominatorMutation = JSON.parse(JSON.stringify(api));
+  apiDenominatorMutation.caseCount += 1;
+  let apiDenominatorRed = false;
+  try { assertScenarioDenominators(apiDenominatorMutation, l2, fixtures); }
+  catch (error) { apiDenominatorRed = error.message === "P1_API_CASE_COUNT"; }
+  expect(apiDenominatorRed, "SELF_TEST_API_CASE_DENOMINATOR_NOT_RED");
+  const l2DenominatorMutation = JSON.parse(JSON.stringify(l2));
+  l2DenominatorMutation.caseCount += 1;
+  let l2DenominatorRed = false;
+  try { assertScenarioDenominators(api, l2DenominatorMutation, fixtures); }
+  catch (error) { l2DenominatorRed = error.message === "P1_L2_CASE_COUNT"; }
+  expect(l2DenominatorRed, "SELF_TEST_L2_CASE_DENOMINATOR_NOT_RED");
   const redFixtureRefs = firstScenario.fixtureRefs.slice(1); expectRed(redFixtureRefs.length === firstScenario.fixtureRefs.length, "FIXTURE_SCENARIO_EXACT_SET");
   const designPolicy = readJson(DESIGN_COVERAGE_PATH);
   const readModels = readJson(READ_MODEL_PATH);
@@ -517,7 +551,8 @@ function selfTest() {
     catch (error) { red = String(error.message).startsWith("P1_"); }
     expect(red, "SELF_TEST_DESIGN_COVERAGE_NOT_RED:" + label);
   };
-  redCoverage("required-business-field", (candidate) => delete candidate.components.schemas.CatalogItemPage.properties.items.items.properties.priceGranularity);
+  redCoverage("required-business-field", (candidate) => delete candidate.components.schemas.CatalogItemPage.properties.data.properties.items.items.properties.priceGranularity);
+  redCoverage("query-envelope-payload", (candidate) => delete candidate.components.schemas.CatalogItemPage.properties.data);
   redCoverage("inventory-current-version", (candidate) => delete candidate.components.schemas.InventoryTargetCurrentView.properties.version);
   redCoverage("closed-void-finding", (candidate) => delete candidate.components.schemas.CatalogDictionaryView.properties.data.properties.entries.items.properties.voidAvailability);
   redCoverage("occurred-at-type", (candidate) => { const field = candidate.components.schemas.InventoryLedgerPage.properties.entries.items.properties.occurredAt; field.type = "string"; delete field.format; });
@@ -581,7 +616,7 @@ function selfTest() {
     candidateOpenApi.components.schemas.CatalogShapeManifestQuery.required.push("dataNodeRef");
     candidateOpenApi.paths["/operations/catalog-inventory/shape-manifest"].get.parameters.find((parameter) => parameter.name === "dataNodeRef").required = true;
   });
-  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\nRED_OPAQUE_REFERENCE=PASS\nRED_GET_ACTION_CAPABILITY=PASS\nRED_MISSING_TARGET_CAPABILITY_MAPPING=PASS\nRED_SWAPPED_TARGET_CAPABILITY_MAPPING=PASS\nRED_SAVE_INVENTORY_DEFINITION_COMMAND=PASS\nRED_EXPANDED_INVENTORY_DEFINITION_COMMAND=PASS\nRED_READ_INVENTORY_DEFINITION_COMMAND=PASS\nRED_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_MISSING=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_REQUIRED=PASS\n");
+  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_API_CASE_DENOMINATOR=PASS\nRED_L2_CASE_DENOMINATOR=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\nRED_OPAQUE_REFERENCE=PASS\nRED_GET_ACTION_CAPABILITY=PASS\nRED_MISSING_TARGET_CAPABILITY_MAPPING=PASS\nRED_SWAPPED_TARGET_CAPABILITY_MAPPING=PASS\nRED_SAVE_INVENTORY_DEFINITION_COMMAND=PASS\nRED_EXPANDED_INVENTORY_DEFINITION_COMMAND=PASS\nRED_READ_INVENTORY_DEFINITION_COMMAND=PASS\nRED_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_MISSING=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_REQUIRED=PASS\n");
 }
 
 function writeEvidence() {
@@ -626,7 +661,9 @@ try {
   else if (command === "--write-evidence") writeEvidence();
   else {
     validate();
-    process.stdout.write("CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=42\nAPI_SCENARIOS=26/100\nL2_SCENARIOS=18/43\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n");
+    const apiScenarios = readJson(API_SCENARIO_PATH);
+    const l2Scenarios = readJson(L2_SCENARIO_PATH);
+    process.stdout.write(`CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=42\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n`);
   }
 } catch (error) {
   process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n");

@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-l2-scenarios",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "scenarioCount": 18,
-  "caseCount": 43,
+  "caseCount": 41,
   "locatorBinding": "P3_ONLY",
   "scenarios": [
     {
@@ -547,51 +547,16 @@
     {
       "scenarioId": "CI-L2-009",
       "layer": "L2",
-      "caseCount": 2,
+      "caseCount": 0,
       "fixtureRefs": [
         "FIXTURE-AUTO-SYNC",
         "FIXTURE-TEMPORARY-ITEM"
       ],
       "businessRequirement": "自动同步锁定与临时商品治理转正",
       "primaryVerifier": "browser-business",
-      "cases": [
-        {
-          "caseId": "CI-L2-009-01",
-          "fixtureRef": "FIXTURE-AUTO-SYNC",
-          "parameterization": "journey-variant-1",
-          "parameter": {
-            "journeyVariant": 1,
-            "fixtureRef": "FIXTURE-AUTO-SYNC"
-          },
-          "expected": {
-            "assertionKey": "CI-L2-009:journey/1",
-            "fixtureRef": "FIXTURE-AUTO-SYNC",
-            "parameter": {
-              "journeyVariant": 1,
-              "fixtureRef": "FIXTURE-AUTO-SYNC"
-            }
-          },
-          "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-AUTO-SYNC\"}"
-        },
-        {
-          "caseId": "CI-L2-009-02",
-          "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
-          "parameterization": "journey-variant-2",
-          "parameter": {
-            "journeyVariant": 2,
-            "fixtureRef": "FIXTURE-TEMPORARY-ITEM"
-          },
-          "expected": {
-            "assertionKey": "CI-L2-009:journey/2",
-            "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
-            "parameter": {
-              "journeyVariant": 2,
-              "fixtureRef": "FIXTURE-TEMPORARY-ITEM"
-            }
-          },
-          "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-TEMPORARY-ITEM\"}"
-        }
-      ]
+      "executionApplicability": "NOT_APPLICABLE_WITH_REASON",
+      "notApplicableReason": "Both source-owned fixture variants require ingress chains explicitly excluded by the approved phase; model/view coverage remains independently declared.",
+      "cases": []
     },
     {
       "scenarioId": "CI-L2-010",

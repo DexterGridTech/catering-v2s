@@ -5,6 +5,7 @@ import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryGrantCredential;
+import java.util.UUID;
 
 /**
  * Controller-visible request facts. Browser credentials are opaque values: raw session cookie extraction is
@@ -18,8 +19,17 @@ public final class EdgeRequestContext {
     private final PasswordRecoveryFlowCredential platformRecoveryFlow;
     private final RecoveryFlowCredential operationsRecoveryFlow;
     private final RecoveryGrantCredential operationsRecoveryGrant;
+    private final String requestId;
+    private final String requestedBrandRef;
+    private final String catalogTestFailurePoint;
+    private final String catalogAssetBindGrants;
 
     public EdgeRequestContext(String rateLimitSourceFingerprint, String correlationId, PlatformSessionCookie platformSessionCookie, OperationsSessionCookie operationsSessionCookie, PasswordRecoveryFlowCredential platformRecoveryFlow, RecoveryFlowCredential operationsRecoveryFlow, RecoveryGrantCredential operationsRecoveryGrant) {
+        this(rateLimitSourceFingerprint, correlationId, platformSessionCookie, operationsSessionCookie, platformRecoveryFlow,
+            operationsRecoveryFlow, operationsRecoveryGrant, null, null, null, null);
+    }
+
+    public EdgeRequestContext(String rateLimitSourceFingerprint, String correlationId, PlatformSessionCookie platformSessionCookie, OperationsSessionCookie operationsSessionCookie, PasswordRecoveryFlowCredential platformRecoveryFlow, RecoveryFlowCredential operationsRecoveryFlow, RecoveryGrantCredential operationsRecoveryGrant, String requestId, String requestedBrandRef, String catalogTestFailurePoint, String catalogAssetBindGrants) {
         this.rateLimitSourceFingerprint = rateLimitSourceFingerprint;
         this.correlationId = correlationId;
         this.platformSessionCookie = platformSessionCookie;
@@ -27,6 +37,10 @@ public final class EdgeRequestContext {
         this.platformRecoveryFlow = platformRecoveryFlow;
         this.operationsRecoveryFlow = operationsRecoveryFlow;
         this.operationsRecoveryGrant = operationsRecoveryGrant;
+        this.requestId = requestId == null || requestId.isBlank() ? UUID.randomUUID().toString() : requestId;
+        this.requestedBrandRef = requestedBrandRef;
+        this.catalogTestFailurePoint = catalogTestFailurePoint;
+        this.catalogAssetBindGrants = catalogAssetBindGrants;
     }
 
     public String rateLimitSourceFingerprint() { return rateLimitSourceFingerprint; }
@@ -36,4 +50,8 @@ public final class EdgeRequestContext {
     public PasswordRecoveryFlowCredential platformRecoveryFlow() { return platformRecoveryFlow; }
     public RecoveryFlowCredential operationsRecoveryFlow() { return operationsRecoveryFlow; }
     public RecoveryGrantCredential operationsRecoveryGrant() { return operationsRecoveryGrant; }
+    public String requestId() { return requestId; }
+    public String requestedBrandRef() { return requestedBrandRef; }
+    public String catalogTestFailurePoint() { return catalogTestFailurePoint; }
+    public String catalogAssetBindGrants() { return catalogAssetBindGrants; }
 }

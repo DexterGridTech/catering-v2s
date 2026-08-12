@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-owner-scope-baseline-addendum",
+  "status": "ACTIVE_RED_VERIFIED",
+  "packageId": "TEST-HEALTH-CLOSED-LOOP-IMPLEMENTATION-20260811",
+  "reason": "ACCEPTED_OWNER_SCOPE_CORRECTION",
+  "correctionClass": "PREEXISTING_FILES_OMITTED_FROM_PACKAGE_BASELINE",
+  "observedAt": "2026-08-11",
+  "finiteDenominator": [
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapper.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/ContractSortKey.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/OrganizationEntityType.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/OrganizationNodeType.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/SortDirection.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/WorkspaceSessionState.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/asset/PublicAssetController.java"
+  ],
+  "evidence": {
+    "packageBaseline": ".runtime/compliance-control/package-baseline-TEST-HEALTH-CLOSED-LOOP-IMPLEMENTATION-20260811.json",
+    "baselineEntrySetResult": "The seven paths are absent from the package baseline; they are not newly written by this package.",
+    "preexistingTimestampResult": "All seven files have filesystem modification times in 2026-07-26, before this package baseline was created on 2026-08-11.",
+    "receiptResult": "The remaining package delta paths have hook post receipts; these seven have no package receipt because they predate this package.",
+    "preservationRule": "Treat these exact current bytes as inherited baseline only; do not delete, rewrite, or claim implementation ownership."
+  },
+  "entries": [
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/audit/AuditHistoryWireMapper.java",
+      "kind": "FILE",
+      "sha256": "07ad058a17a89d0a89ced9564c80c45ada7eba3a97eea29cd209d76ddd320a79"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/ContractSortKey.java",
+      "kind": "FILE",
+      "sha256": "0e2216b0de89b838eda91b7c8ba2c38444c09d4cc5a35c60faeb7dee56d71a1f"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/OrganizationEntityType.java",
+      "kind": "FILE",
+      "sha256": "882e44758e285954ffad0ff2127d56d86d9f3450fd811a0990bcd0b3197f78f7"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/OrganizationNodeType.java",
+      "kind": "FILE",
+      "sha256": "0e50086d9109ddbfb0b515115868c259f1ce809239c39540bfbd03a9213aa6b3"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/SortDirection.java",
+      "kind": "FILE",
+      "sha256": "3580bac59110dbc6ffe0e9859767043dc0c688878503753c24220f442100a64a"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/catalog/WorkspaceSessionState.java",
+      "kind": "FILE",
+      "sha256": "6ce42d832f6f8f90cffa364162ac982ab64139746d0f655b60fadb6b67306733"
+    },
+    {
+      "path": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/asset/PublicAssetController.java",
+      "kind": "FILE",
+      "sha256": "ff3898760174ad031bcbab3ac0f0ac1ec7a03a5f5051b127bc09c15c6d42f670"
+    }
+  ]
+}

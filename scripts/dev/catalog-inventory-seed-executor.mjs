@@ -307,24 +307,38 @@ const assertSeedBusinessLabels = (seedPlan) => {
 
 async function execute() {
   launcherLog("EXECUTE_STARTED", {profile: profile.profile, hasPlan: Boolean(plan)});
-  if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
-  if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== 5 || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
-  assertSeedBusinessLabels(plan);
-  if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
-  const {manifest, credentials} = loadManagedRun();
-  launcherLog("MANAGED_RUN_LOADED", {runId: manifest.runId});
-  if (process.env.V2S_DEV_PROFILE && process.env.V2S_DEV_PROFILE !== "r5-full") fail("SEED_DEV_PROFILE_MUST_REUSE_MANAGED_DEV");
   const runId = `catalog-seed-${randomUUID()}`;
   const directory = path.join(runtimeRoot, "catalog-inventory", "seed", runId);
   fs.mkdirSync(directory, {recursive: true, mode: 0o700});
   const runManifestPath = path.join(directory, "run-manifest.json");
   const reportPath = path.join(directory, "seed-report.json");
   const eventsPath = path.join(directory, "events.jsonl");
-  const phases = []; const calls = []; let firstFailure = null; let business = "RUNNING"; let cleanup = "NOT_RUN";
-  const measurement = measurementMetadataForReport(manifest);
-  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest.runId, measurement, profile: profile.profile, planDigest: plan.planDigest, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
+  const phases = []; const calls = []; let firstFailure = null; let business = "NOT_RUN"; let cleanup = "NOT_RUN";
+  let manifest = null; let credentials = null; let measurement = null;
+  const startedAt = new Date().toISOString();
+  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest?.runId ?? null, measurement, profile: profile.profile, planDigest: plan?.planDigest ?? null, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, detail = {}) => { const event = {at: new Date().toISOString(), stage, status, ...detail}; phases.push(event); fs.appendFileSync(eventsPath, `${JSON.stringify(event)}\n`, {mode: 0o600}); persist(); };
-  const startedAt = new Date().toISOString(); persist();
+  persist();
+  try {
+    if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
+    if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== 5 || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+    assertSeedBusinessLabels(plan);
+    if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
+    ({manifest, credentials} = loadManagedRun());
+    measurement = measurementMetadataForReport(manifest);
+    launcherLog("MANAGED_RUN_LOADED", {runId: manifest.runId});
+    if (process.env.V2S_DEV_PROFILE && process.env.V2S_DEV_PROFILE !== "r5-full") fail("SEED_DEV_PROFILE_MUST_REUSE_MANAGED_DEV");
+    phase("PREFLIGHT", "PASS", {managedDevRunId: manifest.runId});
+  } catch (error) {
+    firstFailure = error.code || compact(error.message);
+    business = "FAIL";
+    phase("PREFLIGHT", "FAIL", {reason: firstFailure});
+    const report = {schemaVersion: 2, kind: "catalog-inventory-seed-report", runId, managedDevRunId: manifest?.runId ?? null, startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business: "FAIL", cleanup, phases, calls, firstFailure, noDirectDatabaseWrites: true, preflight: true};
+    try { writeSeedReportPair(reportPath, report); } catch { /* preserve the primary preflight failure */ }
+    process.stderr.write(`CATALOG_INVENTORY_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${runManifestPath}; REPORT=${reportPath}\n`);
+    process.exitCode = 2;
+    return;
+  }
   const combined = registry;
   const baseUrl = (process.env.CATALOG_INVENTORY_EDGE_BASE_URL || "http://127.0.0.1:8080").replace(/\/$/, "");
   const cookies = (value) => value?.split(",").map((part) => part.split(";", 1)[0].trim()).filter(Boolean).join("; ") || null;

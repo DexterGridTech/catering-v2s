@@ -3,6 +3,7 @@ package com.catering.v2s.catalog.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -10,6 +11,8 @@ import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +75,45 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         CatalogOwnerApi.Problem failure = assertThrows(CatalogOwnerApi.Problem.class, () -> service.enforceMergedClosureLimit(data));
 
         assertEquals("COPY_CLOSURE_TOO_LARGE", failure.code());
+    }
+
+    @Test
+    void catalogSaveInventoryReadbackRequiresEnvelopeDataAndNonBlankTargetRef() {
+        CatalogInventoryCoordinator service = new CatalogInventoryCoordinator(
+            null, null, null, null, new ObjectMapper(), null, null
+        );
+
+        Object result = parseCatalogSaveOwnerReadback(service, "{\"revision\":\"v1\",\"requestId\":\"req-1\",\"data\":{\"targetRef\":\"target-1\",\"version\":1,\"created\":true}}");
+        assertFalse(result == null);
+
+        CatalogOwnerApi.Problem absentData = assertThrows(CatalogOwnerApi.Problem.class,
+            () -> parseCatalogSaveOwnerReadback(service, "{\"targetRef\":\"target-1\"}"));
+        assertEquals("RESULT_UNKNOWN", absentData.code());
+
+        CatalogOwnerApi.Problem blankTargetRef = assertThrows(CatalogOwnerApi.Problem.class,
+            () -> parseCatalogSaveOwnerReadback(service, "{\"data\":{\"targetRef\":\"\",\"version\":1,\"created\":true}}"));
+        assertEquals("RESULT_UNKNOWN", blankTargetRef.code());
+
+        CatalogOwnerApi.Problem incompleteOwnerPayload = assertThrows(CatalogOwnerApi.Problem.class,
+            () -> parseCatalogSaveOwnerReadback(service, "{\"data\":{\"targetRef\":\"target-1\"}}"));
+        assertEquals("RESULT_UNKNOWN", incompleteOwnerPayload.code());
+
+        CatalogOwnerApi.Problem unknownOwnerPayload = assertThrows(CatalogOwnerApi.Problem.class,
+            () -> parseCatalogSaveOwnerReadback(service, "{\"data\":{\"targetRef\":\"target-1\",\"version\":1,\"created\":true,\"unexpected\":true}}"));
+        assertEquals("RESULT_UNKNOWN", unknownOwnerPayload.code());
+    }
+
+    private static Object parseCatalogSaveOwnerReadback(CatalogInventoryCoordinator service, String canonicalJson) {
+        try {
+            Method method = CatalogInventoryCoordinator.class.getDeclaredMethod("parseCatalogSaveOwnerReadback", String.class);
+            method.setAccessible(true);
+            return method.invoke(service, canonicalJson);
+        } catch (InvocationTargetException failure) {
+            if (failure.getCause() instanceof RuntimeException runtime) throw runtime;
+            throw new AssertionError(failure.getCause());
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError(failure);
+        }
     }
 
     private static final class FixedCatalogScopeLookup implements CatalogScopeLookup {

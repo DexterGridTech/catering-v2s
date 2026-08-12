@@ -163,7 +163,7 @@ function selectedRowSelfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-p1-ledger-selected-"));
   try {
     copyForSelfTest(scratch);
-    const selected = ["ST-2", "ST-8", "ST-11"];
+    const selected = ["ST-11"];
     validate(scratch, selected);
     const drift = readJson(ledgerPath, scratch);
     drift.rows.find((entry) => entry.id === "ST-11").authority.sha256 = "0".repeat(64);

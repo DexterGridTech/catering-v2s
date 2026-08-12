@@ -2,13 +2,14 @@ import {Alert, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, 
 import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
-import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type JsonValue, type StoreContract} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type StoreContract} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
+import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type ContractItemValues = {code: string; name: string};
-type Values = {storeId?: string; phaseName?: string; contractNo: string; effectiveFrom: string; effectiveTo?: string; note?: string; items: ContractItemValues[]; extensionValues?: Record<string, JsonValue>};
+type Values = {storeId?: string; phaseName?: string; contractNo: string; effectiveFrom: string; effectiveTo?: string; note?: string; items: ContractItemValues[]; extensionValues?: OrganizationExtensionFormValues};
 
 function extensionFields(definition?: ExtensionDefinition) {
   return (definition?.definitions ?? []).filter((field) => field.status !== 'DISABLED').sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0)).map((field) => {
@@ -35,7 +36,7 @@ export function ContractCreateDrawer({open, queryContext, onClose, onCreated}: {
     if (!projectId || !value.storeId || lifecycle.submitting) return;
     lifecycle.setSubmitting(true); setProblem(undefined);
     try {
-      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: value.extensionValues ?? {}}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.setDirty(false); onCreated(contract); lifecycle.closeAfterSuccess();
     } catch { setProblem('合同创建未完成，请检查后重试。'); } finally { lifecycle.setSubmitting(false); }
   };

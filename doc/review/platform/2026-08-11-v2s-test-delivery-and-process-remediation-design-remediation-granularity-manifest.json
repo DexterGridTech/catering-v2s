@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "TEST_HEALTH_CLOSED_LOOP_DESIGN_REMEDIATION_20260811",
+  "adversarialReviewPolicy": {"version": "INDEPENDENT_SUBAGENT_V1", "reviewerKindRequired": "INDEPENDENT_SUBAGENT", "blindReviewRequired": true},
+  "design": {"path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md", "sha256": "61e88d3c1a1adf5cc45c1e1a5b8afa14a3b151b28a81a68dabbe207504a9f421"},
+  "authorization": {"path": "doc/evidence/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-authorization.md", "sha256": "cf25b5a5b0aaa61694825fce8fc36fd1e58b036b7e8b04c9cd1ebf7477f03539", "scope": "design-only"},
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path": "scripts/check/implementation-design-granularity", "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool": {"path": "tools/implementation-design-granularity/cli.mjs", "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT", "MISSING_BUSINESS_EVIDENCE", "SEVERITY_COUNT_MISMATCH", "ROUND_THREE", "MISSING_FINDING_UNIT_LINK", "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT", "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"]
+  },
+  "candidateJourney": {"id": "THCL-J01", "status": "PROPOSED_STATIC_ENGINEERING", "actor": "engineering maintainer", "task": "mechanically bind the design-only authorization and root receipt to one current verify invocation", "pageKey": "NO_UI_JOURNEY_STATIC_TEST_HEALTH", "ownerReadback": "static source and receipt readback", "mutations": []},
+  "sourceComplianceDenominators": [
+    {"id": "AUTHORIZATION_PAIR", "owner": "Dexter authorization + checker", "sources": ["design markdown", "design authorization", "granularity manifest"]},
+    {"id": "CURRENT_ROOT_RECEIPT", "owner": "verify/catalog/standards coverage", "sources": ["VERIFY_ROOT", "11 VERIFY_CHILD", "ARCHUNIT_SELECTOR", "43 ACTIVE GATE rules -> 16 refs"]}
+  ],
+  "deliveryUnits": [
+    {
+      "id": "THCL-U01", "title": "Machine-readable design-only authority", "approvedAssertions": ["design and authorization use checker-required colon form", "manifest binds current hashes", "no implementation authority is implied"],
+      "approvedSources": [{"path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-adversarial-review-round2.json", "sha256": "8870526bfe6df3b23309a53aaa640db6fefb6b79bcf45f578e62a892eb7442c2", "anchor": "The hash-bound authorization is still not machine-readable as design-only authority"}],
+      "detailDesign": {"path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md", "anchor": "## 1. 目标、取舍与边界"}, "currentDeviation": "the prior authorization used an equals-form field that the checker rejects.",
+      "changeSurfaces": [{"path": "doc/evidence/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-authorization.md", "disposition": "update", "target": "exact implementationAuthority colon declaration"},{"path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-granularity-manifest.json", "disposition": "update", "target": "new-cycle hash binding"}],
+      "orderedChain": ["write checker-exact authorization field", "recompute authorization hash", "bind manifest", "run existing checker"], "dependencyAndSerialBoundaries": ["authority change precedes receipt admission", "checker is not weakened"], "dataEvolution": {"notApplicableReason": "design control only"}, "uiAndTerms": {"notApplicableReason": "no UI behavior change", "termSource": "AGENTS.md"}, "evidence": {"l1": "existing checker exact-field failure/pass", "l2": "NOT_RUN_SEPARATE_AUTHORIZATION", "l3": "NOT_RUN_SEPARATE_AUTHORIZATION", "business": "NOT_RUN_STATIC_PACKAGE", "cleanup": "NOT_RUN_STATIC_PACKAGE"}, "forbiddenPseudoFixes": ["equals-form declaration", "checker relaxation", "prose-only authority"], "discriminator": {"fixture": "missing colon-form authorization fails existing checker"}
+    },
+    {
+      "id": "THCL-U02", "title": "Current-root-bound ACTIVE receipt", "approvedAssertions": ["root generates expected rootRunId before child execution", "U12 receives expected identity with receipt path", "valid prior receipt is rejected"],
+      "approvedSources": [{"path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-adversarial-review-round2.json", "sha256": "8870526bfe6df3b23309a53aaa640db6fefb6b79bcf45f578e62a892eb7442c2", "anchor": "Stale root receipt is not bound to the current root invocation"}],
+      "detailDesign": {"path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md", "anchor": "### 3.1 唯一 execution map 与 receipt"}, "currentDeviation": "a receipt self-reported run identity without a caller-supplied expected identity.",
+      "changeSurfaces": [{"path": "tools/verify-gates/verify.mjs", "disposition": "update", "target": "generate rootRunId once, derive receipt path and pass expected identity"},{"path": "scripts/check/standards-coverage", "disposition": "update", "target": "pure receipt validation requiring expected root run id"},{"path": "contracts/policy/standards-enforcement-execution-catalog.json", "disposition": "update", "target": "kind-compatible root/child metadata only"}],
+      "orderedChain": ["generate rootRunId before selection execution", "atomic-write only successful root receipt", "pure U12 validates path plus expected rootRunId", "run prior-receipt red mutation"], "dependencyAndSerialBoundaries": ["root remains sole child executor", "U12 never spawns child", "ARCHUNIT_SELECTOR remains separate"], "dataEvolution": {"notApplicableReason": "static receipt control only"}, "uiAndTerms": {"notApplicableReason": "no UI behavior change", "termSource": "AGENTS.md"}, "evidence": {"l1": "prior-receipt replay red fixture plus exact-set red fixtures", "l2": "NOT_RUN_SEPARATE_AUTHORIZATION", "l3": "NOT_RUN_SEPARATE_AUTHORIZATION", "business": "NOT_RUN_STATIC_PACKAGE", "cleanup": "NOT_RUN_STATIC_PACKAGE"}, "forbiddenPseudoFixes": ["timestamp heuristic", "receipt self-attestation", "U12 re-execution", "new execution map or gate"], "discriminator": {"fixture": "structurally valid prior receipt fails expected-root-run-id comparison"}
+    }
+  ]
+}

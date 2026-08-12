@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-adapter-implementation-manifest",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-ADAPTER-IMPLEMENTATION-20260810",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_ADAPTER_IMPLEMENTATION_20260810",
+  "designAdmission": {
+    "manifest": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-granularity-manifest.json",
+    "sha256": "4a055f3b5be0307aaeb4f8f6842f5335861840d54abf462efcbf0811285c4068",
+    "claudeVerdict": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-recheck-claude.md",
+    "claudeVerdictSha256": "4b3465666a93637fe3d9df4dd120b064276f737026556d10019b9abf8701eee3"
+  },
+  "fixturePlanDesignAmendment": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-implementation-design-amendment.md",
+    "sha256": "b2c6c1729e650006ef0662d6653b8c6eed63dca40c84a34e4f9ffbf4af12316b",
+    "catalog": "contracts/policy/backend-performance-final-fixture-catalog.json",
+    "catalogSha256": "f3afba7d7c8c8c626f8a4d5d6fdc6a3d8d11ecc56a4784dd98e05efb9e151f1a",
+    "denominators": {
+      "fixtureRows": 396,
+      "getRows": 166,
+      "commandRows": 230,
+      "jsonCommandRows": 216,
+      "noBodyCommandRows": 12,
+      "multipartCommandRows": 2,
+      "pathBindingOccurrences": 462,
+      "requiredQueryOperationIds": 46,
+      "requiredQueryRows": 92,
+      "commandFamilies": 13,
+      "commandOperations": 113,
+      "reusableAlgorithms": 103,
+      "newAlgorithms": 10
+    },
+    "reviewRequiredBeforeFixtureAssemblerImplementation": true
+  },
+  "denominators": {
+    "fixtureRows": 396,
+    "taskReads": 78,
+    "protocolReadExempt": 5,
+    "numericBaselines": 79,
+    "contextParity": 38,
+    "routes": 196,
+    "surfaces": 21
+  },
+  "changeSurfaces": [
+    {"path":"scripts/dev/backend-performance-runtime-runner.mjs","disposition":"update"},
+    {"path":"scripts/dev/backend-performance-runtime-runner.test.mjs","disposition":"update"},
+    {"path":"scripts/dev/backend-performance-final-managed-adapter.mjs","disposition":"create"},
+    {"path":"scripts/dev/backend-performance-final-managed-adapter.test.mjs","disposition":"create"},
+    {"path":"scripts/dev/managed-isolated-local-runtime.mjs","disposition":"create"},
+    {"path":"scripts/dev/managed-isolated-local-runtime.test.mjs","disposition":"create"},
+    {"path":"scripts/dev/http-diagnostic-runner.mjs","disposition":"update"},
+    {"path":"scripts/dev/http-diagnostic-runner.test.mjs","disposition":"update"},
+    {"path":"scripts/test/backend-performance-final-fixtures.mjs","disposition":"create"},
+    {"path":"scripts/test/backend-performance-final-fixtures.test.mjs","disposition":"create"},
+    {"path":"contracts/policy/backend-performance-final-fixture-catalog.json","disposition":"create"},
+    {"path":"scripts/check/backend-performance-final-fixture-catalog","disposition":"create"},
+    {"path":"scripts/test/backend-performance-workload.mjs","disposition":"update"},
+    {"path":"scripts/test/backend-performance-workload.test.mjs","disposition":"update"},
+    {"path":"scripts/test/backend-performance-final-acceptance.mjs","disposition":"update"},
+    {"path":"scripts/test/backend-performance-final-acceptance.test.mjs","disposition":"update"},
+    {"path":"contracts/policy/backend-performance-final-workload.json","disposition":"update"},
+    {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update"},
+    {"path":"scripts/test/r5-remote-testcontainers.test.mjs","disposition":"create"},
+    {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfiguration.java","disposition":"update"},
+    {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfigurationTest.java","disposition":"update"}
+  ],
+  "forbidden": [
+    "callback injection",
+    "manual SSH or SQL",
+    "RM1/R5 runtime reuse",
+    "runtime before independent static implementation GO",
+    "receipt or after-hash set equality claim in trim admission"
+  ]
+}

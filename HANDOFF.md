@@ -35,3 +35,11 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 
 本登记只保留归因与激活事实，不把 baseline 变成当前 P3/P4 的完成条件，也不授权
 修改这些旧页面。若未来要清理，必须另开 owning page 的静态修复与独立证据。
+
+## Test-health closed-loop deferred behavior coverage
+
+本节是测试健康闭环整改的范围交接，不是生产化欠账，也不授权下一 Roadmap step：
+
+- `COMPLEX_UI_BEHAVIOR`：`CatalogItemDrawer`、`StoreCreateDrawer` 等 AntD + RTK Query + Redux + router 业务组件没有被 `renderToStaticMarkup` 冒充行为覆盖。本次不引入 jsdom 或 L2；未来如需关闭，必须另有获批的真实行为证据。
+- `L2_UNCOVERED_SURFACES`：audit-history、platform-admin 的密码找回/改密、workspace-administration 的源码文本断言已按本包规则删除；本次不得据此宣称这些 UI 行为已由日常回归覆盖，缺口保留为未来行为验证范围。
+- `STATIC_ONLY_BOUNDARY`：本包的静态 checker、Node/Vitest/foundation proof、fixture contract cross-check 和 `--validate-only` 均不等于 Testcontainers、DEV、seed、受管 L2、浏览器、业务、cleanup 或性能成功；这些状态仍须独立授权与各自 runner evidence。

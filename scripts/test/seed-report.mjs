@@ -101,6 +101,27 @@ function isScalar(value) { return typeof value === 'string' || typeof value === 
 
 function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
+function normalizeKindCounts(value, databaseOperationCount) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('SEED_REPORT_KIND_COUNTS_MISSING');
+  const entries = Object.entries(value);
+  if (entries.some(([kind, count]) => !/^[A-Z_]{1,48}$/.test(kind) || !Number.isInteger(count) || count < 0)) throw new Error('SEED_REPORT_KIND_COUNTS_INVALID');
+  const result = Object.fromEntries(entries.sort(([left], [right]) => left.localeCompare(right)));
+  if (!Object.hasOwn(result, 'UPDATE')) result.UPDATE = 0;
+  const total = Object.values(result).reduce((sum, count) => sum + count, 0);
+  if (!Number.isInteger(databaseOperationCount) || databaseOperationCount < 0 || total !== databaseOperationCount) throw new Error('SEED_REPORT_KIND_COUNTS_TOTAL_MISMATCH');
+  return Object.fromEntries(Object.entries(result).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function aggregateKindCounts(events) {
+  const aggregate = {};
+  for (const event of events) {
+    const counts = normalizeKindCounts(event.kindCounts, event.databaseOperationCount);
+    for (const [kind, count] of Object.entries(counts)) aggregate[kind] = (aggregate[kind] ?? 0) + count;
+  }
+  if (!Object.hasOwn(aggregate, 'UPDATE')) aggregate.UPDATE = 0;
+  return Object.fromEntries(Object.entries(aggregate).sort(([left], [right]) => left.localeCompare(right)));
+}
+
 export function buildSeedReport({runId, managedDevRunId = runId, measurement = null, seedProfile, startedAt, finishedAt, status, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
   const effectiveManagedDevRunId = nonEmpty(managedDevRunId, 'SEED_REPORT_MANAGED_DEV_RUN_ID_INVALID');
   const eventRun = (event) => event?.managedDevRunId ?? event?.runId;
@@ -110,6 +131,8 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
   // belongs to this report; same-run activity from another executor is preserved as out of scope.
   const scopedEvents = events.filter((event) => eventRun(event) === effectiveManagedDevRunId && expectedRequestKeys.has(keyFor(event)));
   const outOfScopeEvents = events.filter((event) => !scopedEvents.includes(event));
+  const inferredMeasurements = [...new Map(scopedEvents.map((event) => [JSON.stringify({schemaVersion: event.measurementSchemaVersion, basis: event.measurementBasis}), {schemaVersion: event.measurementSchemaVersion, basis: event.measurementBasis}])).values()];
+  const effectiveMeasurement = measurement ?? (inferredMeasurements.length === 1 && Number.isInteger(inferredMeasurements[0].schemaVersion) && typeof inferredMeasurements[0].basis === 'string' ? inferredMeasurements[0] : null);
   const byRequest = new Map(scopedEvents.filter((event) => event?.correlationId && event.requestId).map((event) => [keyFor(event), event]));
   const unmatchedHttpEvents = [];
   const unmatchedDatabaseEvents = [];
@@ -147,6 +170,7 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
       httpDurationMs: extrema(http),
       databaseOperationCount: extrema(dbCount),
       databaseDurationMs: extrema(dbDuration),
+      kindCounts: aggregateKindCounts(group.events),
       outcomes: outcomes(group.events),
     };
   });
@@ -159,9 +183,9 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
   const nonApiStagesMatch = !expectedStages || JSON.stringify(actualNonApiStageIds) === JSON.stringify(expectedStages);
   const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === scopedEvents.length && calls.every((call) => (call.managedDevRunId ?? effectiveManagedDevRunId) === effectiveManagedDevRunId && call.correlationId && call.requestId) && nonApiStagesMatch;
   const report = {
-    kind: 'r5-full-seed-report', schemaVersion: 2, runId, managedDevRunId: effectiveManagedDevRunId, measurement, seedProfile, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
+    kind: 'r5-full-seed-report', reportKind: 'SEED', schemaVersion: 3, runId, managedDevRunId: effectiveManagedDevRunId, measurement: effectiveMeasurement, seedProfile, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
     startedAt, finishedAt, durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
-    apiEndpoints, nonApiStages,
+    apiEndpoints, kindCounts: aggregateKindCounts(scopedEvents), nonApiStages,
     completeness: {apiCallCount: calls.length, reportedApiCallCount: scopedEvents.length, outOfScopeDatabaseEventCount: outOfScopeEvents.length, endpointGroupCount: apiEndpoints.length, unmatchedHttpEvents, unmatchedDatabaseEvents, nonApiStageIds: actualNonApiStageIds, expectedNonApiStageIds: expectedStages},
     firstFailure: firstFailure ? safeFailure(firstFailure) : (nonApiStagesMatch ? (complete ? null : 'SEED_REPORT_INCOMPLETE') : 'SEED_REPORT_NON_API_STAGE_SET_MISMATCH'),
   };
@@ -205,6 +229,7 @@ export function renderSeedReportMarkdown(report) {
     formatMetric(endpoint.httpDurationMs),
     formatMetric(endpoint.databaseOperationCount),
     formatMetric(endpoint.databaseDurationMs),
+    JSON.stringify(endpoint.kindCounts),
     `${endpoint.outcomes?.success ?? 0}/${endpoint.outcomes?.rejected ?? 0}/${endpoint.outcomes?.error ?? 0}`,
   ]);
   const stageRows = (report.nonApiStages ?? []).map((stage) => [stage.stageId, stage.status, stage.durationMs === undefined ? '-' : `${formatNumber(stage.durationMs)} ms`]);
@@ -218,6 +243,7 @@ export function renderSeedReportMarkdown(report) {
     `- Seed profile：\`${escapeMarkdown(report.seedProfile)}\``,
     `- Run ID：\`${escapeMarkdown(report.runId)}\``,
     `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
+    `- 报告类型：\`${escapeMarkdown(report.reportKind)}\``,
     `- 计量口径：${report.measurement ? `v${report.measurement.schemaVersion} / \`${escapeMarkdown(report.measurement.basis)}\`` : '未声明'}`,
     `- 开始：${escapeMarkdown(report.startedAt)}`,
     `- 结束：${escapeMarkdown(report.finishedAt)}`,
@@ -241,9 +267,9 @@ export function renderSeedReportMarkdown(report) {
     '',
     '## API 与数据库统计',
     '',
-    'HTTP 与数据库列均为“平均 / 最低 / 最高”；结果列为“成功 / 拒绝 / 错误”。',
+    'HTTP 与数据库列均为“平均 / 最低 / 最高”；结果列为“成功 / 拒绝 / 错误”；kindCounts 是物理交互种类总数。',
     '',
-    markdownTable(['Owner', 'Consumer face', 'Operation', 'Method', 'Route', '次数', 'HTTP ms（均/低/高）', 'DB 次数（均/低/高）', 'DB ms（均/低/高）', '结果'], endpointRows),
+    markdownTable(['Owner', 'Consumer face', 'Operation', 'Method', 'Route', '次数', 'HTTP ms（均/低/高）', 'DB 次数（均/低/高）', 'DB ms（均/低/高）', 'kindCounts', '结果'], endpointRows),
     '',
     '## 非 API 阶段',
     '',

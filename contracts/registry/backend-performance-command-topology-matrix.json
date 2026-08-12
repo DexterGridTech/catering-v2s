@@ -1,0 +1,3265 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-command-topology-matrix",
+  "admissionPhase": "STATIC_RUNTIME_ADMISSION",
+  "source": {
+    "operationHandlerBindings": {
+      "path": "contracts/registry/operation-handler-bindings.json",
+      "sha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"
+    },
+    "performanceBaselines": {
+      "path": "contracts/registry/performance-refactor-command-baselines.json",
+      "sha256": "a105b8b484d87da71c6920dcddd1d8bcad7baa10e1c32ed86549ce954a9de7cb"
+    },
+    "routeRegistries": [
+      {
+        "path": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json",
+        "sha256": "1f7900fb24b930dfb41fd5c73659a094c75f7e4e827de1ecd2e763596d7e2824"
+      },
+      {
+        "path": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json",
+        "sha256": "fe3c3f7bbc5dda2b1289d4ce81b61d93f9ac52d94845acae7fb3505180117118"
+      }
+    ]
+  },
+  "denominators": {
+    "commandRows": 113,
+    "workspaceOwnerCommands": 68,
+    "workspaceProtocolCommands": 7,
+    "platformOwnerCommands": 20,
+    "platformProtocolCommands": 9,
+    "publicProtocolCommands": 9
+  },
+  "rows": [
+    {
+      "operationId": "acceptPublicInvitation",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#accept"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.AcceptPublicInvitationOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#accept"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#acceptPublic"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#acceptPublic"
+      }
+    },
+    {
+      "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#add"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.AddOperationsOrganizationHeadCompanyBrandAuthorizationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/AddOperationsOrganizationHeadCompanyBrandAuthorizationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "addOperationsOrganizationHeadCompanyBrandAuthorization"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "adjustOperationsInventoryTarget",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "inventory",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/adjust",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#adjustInventoryTarget"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.inventory.application.AdjustOperationsInventoryTargetOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/AdjustOperationsInventoryTargetOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "adjustOperationsInventoryTarget"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "cancelOperationsWorkspaceGroupInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CancelOperationsWorkspaceGroupInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "cancelOperationsWorkspaceGroupInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CancelOperationsWorkspaceHeadCompanyInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "cancelOperationsWorkspaceHeadCompanyInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "cancelOperationsWorkspaceProjectInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CancelOperationsWorkspaceProjectInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "cancelOperationsWorkspaceProjectInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "cancelOperationsWorkspaceRegionInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CancelOperationsWorkspaceRegionInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "cancelOperationsWorkspaceRegionInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "cancelOperationsWorkspaceStoreInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CancelOperationsWorkspaceStoreInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "cancelOperationsWorkspaceStoreInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "cancelWorkspaceInvitation",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#cancel"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CancelWorkspaceInvitationOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#cancel"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#cancel"
+      }
+    },
+    {
+      "operationId": "changeCurrentPlatformPassword",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#changePassword"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.ChangeCurrentPlatformPasswordOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#changeCurrentPassword"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#changeCurrentPassword"
+      }
+    },
+    {
+      "operationId": "changeCurrentWorkspacePassword",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#changePassword"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ChangeCurrentWorkspacePasswordOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#changeCurrentPassword"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#changeCurrentPassword"
+      }
+    },
+    {
+      "operationId": "completeOperationsPasswordRecovery",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#complete"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CompleteOperationsPasswordRecoveryOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#complete"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#complete"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#complete"
+      }
+    },
+    {
+      "operationId": "completePlatformPasswordRecovery",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password-recovery/complete",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#completePasswordRecovery"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.CompletePlatformPasswordRecoveryOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#completePasswordRecovery"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#completePasswordRecovery"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#completePasswordRecovery"
+      }
+    },
+    {
+      "operationId": "completePublicInvitation",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#complete"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CompletePublicInvitationOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#complete"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#completePublic"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#completePublic"
+      }
+    },
+    {
+      "operationId": "countOperationsInventoryTarget",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "inventory",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/count",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#countInventoryTarget"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.inventory.application.CountOperationsInventoryTargetOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/CountOperationsInventoryTargetOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "countOperationsInventoryTarget"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogCategory",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/categories",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogCategory"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.CreateOperationsCatalogCategoryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogCategoryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsCatalogCategory"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogDictionaryEntry",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogDictionaryEntry"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.CreateOperationsCatalogDictionaryEntryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogDictionaryEntryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsCatalogDictionaryEntry"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsCatalogItem",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/items",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogItem"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.CreateOperationsCatalogItemOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogItemOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsCatalogItem"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsContract",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "contract",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.store.contract.application.CreateOperationsContractOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/store/contract/application/CreateOperationsContractOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsContract"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationBrand",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createBrand"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationBrandOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationBrandOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationBrand"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationHeadCompany",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createHeadCompany"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationHeadCompanyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationHeadCompanyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationHeadCompany"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationProject",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createProject"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationProjectOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationProjectOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationProject"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationRegion",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createRegion"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationRegionOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationRegionOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationRegion"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationStore",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationStoreOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationStoreOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationStore"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsOrganizationTenant",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createTenant"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.CreateOperationsOrganizationTenantOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/CreateOperationsOrganizationTenantOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsOrganizationTenant"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createOperationsProductionTag",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "fulfillment-production",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/production-tags",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createProductionTag"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.fulfillment.production.application.CreateOperationsProductionTagOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/CreateOperationsProductionTagOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsProductionTag"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "createOperationsWorkspaceGroupInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupCreate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CreateOperationsWorkspaceGroupInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsWorkspaceGroupInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyCreate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CreateOperationsWorkspaceHeadCompanyInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsWorkspaceHeadCompanyInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "createOperationsWorkspaceProjectInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectCreate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CreateOperationsWorkspaceProjectInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsWorkspaceProjectInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "createOperationsWorkspaceRegionInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionCreate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CreateOperationsWorkspaceRegionInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsWorkspaceRegionInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+  {
+    "operationId": "createOperationsWorkspaceStoreInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeCreate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/CreateOperationsWorkspaceStoreInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "createOperationsWorkspaceStoreInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "createPlatformAdmin",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/admin-users",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.CreatePlatformAdminOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireActor"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#createAdministrator"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#createAdministrator"
+      }
+    },
+    {
+      "operationId": "createPlatformGroupWorkspace",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-workspace",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.workspace.application.CreatePlatformGroupWorkspaceOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      }
+    },
+    {
+      "operationId": "createWorkspaceInvitation",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateWorkspaceInvitationOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#create"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#create"
+      }
+    },
+    {
+      "operationId": "createWorkspaceRole",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#create"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.CreateWorkspaceRoleOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#createForPlatform"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#createForPlatform"
+      }
+    },
+    {
+      "operationId": "deleteOperationsCatalogCategory",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/categories/{categoryRef}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#deleteCatalogCategory"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.DeleteOperationsCatalogCategoryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/DeleteOperationsCatalogCategoryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "deleteOperationsCatalogCategory"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "executeOperationsBrandCatalogCopy",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/copy/brand/execute",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeBrandCatalogCopy"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsBrandCatalogCopyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "executeOperationsBrandCatalogCopy"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "executeOperationsLocalCatalogCopy",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/copy/local/execute",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeLocalCatalogCopy"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.ExecuteOperationsLocalCatalogCopyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsLocalCatalogCopyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "executeOperationsLocalCatalogCopy"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/execute",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeTemporaryCatalogPromotion"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.ExecuteOperationsTemporaryCatalogItemPromotionOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsTemporaryCatalogItemPromotionOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "executeOperationsTemporaryCatalogItemPromotion"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "increaseOperationsInventoryTarget",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "inventory",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/increase",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#increaseInventoryTarget"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.inventory.application.IncreaseOperationsInventoryTargetOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/IncreaseOperationsInventoryTargetOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "increaseOperationsInventoryTarget"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "initializeCommercialGroup",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java#initialize"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.InitializeCommercialGroupOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/PlatformWorkspaceCoordinator.java#initializeCommercialGroup"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/api/PlatformWorkspaceCoordinator.java#initializeCommercialGroup"
+      }
+    },
+    {
+      "operationId": "invalidateOperationsContract",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "contract",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#invalidate"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.store.contract.application.InvalidateOperationsContractOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/store/contract/application/InvalidateOperationsContractOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "invalidateOperationsContract"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "moveOperationsCatalogCategory",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/categories/{categoryRef}/move",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#moveCatalogCategory"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.MoveOperationsCatalogCategoryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/MoveOperationsCatalogCategoryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "moveOperationsCatalogCategory"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "operationsWorkspaceLogout",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#logout"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.OperationsWorkspaceLogoutOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#logout"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#logout"
+      }
+    },
+    {
+      "operationId": "operationsWorkspacePasswordLogin",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#login"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.OperationsWorkspacePasswordLoginOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#login"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#loginWithSessionEntry"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#loginWithSessionEntry"
+      }
+    },
+    {
+      "operationId": "platformLogout",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/logout",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#logout"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.PlatformLogoutOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#logout"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#logout"
+      }
+    },
+    {
+      "operationId": "platformPasswordLogin",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password-login",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#login"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.PlatformPasswordLoginOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#login"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#login"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#login"
+      }
+    },
+    {
+      "operationId": "preflightOperationsBrandCatalogCopy",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/copy/brand/preflight",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightBrandCatalogCopy"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.PreflightOperationsBrandCatalogCopyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsBrandCatalogCopyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "preflightOperationsBrandCatalogCopy"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "preflightOperationsLocalCatalogCopy",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/copy/local/preflight",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightLocalCatalogCopy"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.PreflightOperationsLocalCatalogCopyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsLocalCatalogCopyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "preflightOperationsLocalCatalogCopy"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "preflightOperationsTemporaryCatalogItemPromotion",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/items/{itemCode}/temporary-promotion/preflight",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightTemporaryCatalogPromotion"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.PreflightOperationsTemporaryCatalogItemPromotionOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsTemporaryCatalogItemPromotionOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "preflightOperationsTemporaryCatalogItemPromotion"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceGroupInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#groupReissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/ReissueOperationsWorkspaceGroupInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reissueOperationsWorkspaceGroupInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#headCompanyReissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/ReissueOperationsWorkspaceHeadCompanyInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reissueOperationsWorkspaceHeadCompanyInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceProjectInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#projectReissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/ReissueOperationsWorkspaceProjectInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reissueOperationsWorkspaceProjectInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceRegionInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#regionReissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/ReissueOperationsWorkspaceRegionInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reissueOperationsWorkspaceRegionInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueOperationsWorkspaceStoreInvitation",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#storeReissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/ReissueOperationsWorkspaceStoreInvitationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reissueOperationsWorkspaceStoreInvitation"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reissueWorkspaceInvitation",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java#reissue"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.ReissueWorkspaceInvitationOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#reissue"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#reissue"
+      }
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "asset",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/assets/{assetRef}/release",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#releaseCatalogAsset"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.asset.application.ReleaseOperationsCatalogStagedAssetOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application/ReleaseOperationsCatalogStagedAssetOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "releaseOperationsCatalogStagedAsset"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "releasePlatformStagedAsset",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-asset",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/assets/staging/{assetRef}/release",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java#releaseStaged"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.asset.application.ReleasePlatformStagedAssetOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#releaseStaged"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#releaseStaged"
+      }
+    },
+    {
+      "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "DELETE",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#remove"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.RemoveOperationsOrganizationHeadCompanyBrandAuthorizationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/RemoveOperationsOrganizationHeadCompanyBrandAuthorizationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "reorderOperationsCatalogDictionaryEntry",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/reorder",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#reorderCatalogDictionaryEntry"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.ReorderOperationsCatalogDictionaryEntryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ReorderOperationsCatalogDictionaryEntryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "reorderOperationsCatalogDictionaryEntry"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "replaceExtensionDefinition",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "extension",
+      "route": {
+        "method": "PUT",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java#replace"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.extension.application.ReplaceExtensionDefinitionOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireActor"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#replaceDraft"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application/ExtensionDefinitionService.java#replaceDraft"
+      }
+    },
+    {
+      "operationId": "requestWorkspaceCredentialReset",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#requestCredentialReset"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RequestWorkspaceCredentialResetOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java#requestPlatform"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordResetService.java#requestPlatform"
+      }
+    },
+    {
+      "operationId": "resetPlatformAdminCredential",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/admin-users/{platformAdminId}/credential-reset",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#resetCredential"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.ResetPlatformAdminCredentialOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireActor"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#resetAdministratorCredential"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#resetAdministratorCredential"
+      }
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#groupRevoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/RevokeOperationsWorkspaceGroupUserAssignmentOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "revokeOperationsWorkspaceGroupUserAssignment"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#headCompanyRevoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#projectRevoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/RevokeOperationsWorkspaceProjectUserAssignmentOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "revokeOperationsWorkspaceProjectUserAssignment"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#regionRevoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/RevokeOperationsWorkspaceRegionUserAssignmentOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "revokeOperationsWorkspaceRegionUserAssignment"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#storeRevoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/workspace/iam/application/RevokeOperationsWorkspaceStoreUserAssignmentOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "revokeOperationsWorkspaceStoreUserAssignment"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "revokePlatformWorkspaceAssignment",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#revoke"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.RevokePlatformWorkspaceAssignmentOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#revokeAssignmentForPlatform"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java#revokeAssignmentForPlatform"
+      }
+    },
+    {
+      "operationId": "saveOperationsCatalogItem",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/items/{itemCode}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#saveCatalogItem"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.SaveOperationsCatalogItemOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/SaveOperationsCatalogItemOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "saveOperationsCatalogItem"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "savePublicInvitationCredentials",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#credentials"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SavePublicInvitationCredentialsOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#credentials"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#savePublicCredentials"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#savePublicCredentials"
+      }
+    },
+    {
+      "operationId": "selectOperationsWorkspaceSessionContext",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#selectContext"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SelectOperationsWorkspaceSessionContextOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectContext"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectContext"
+      }
+    },
+    {
+      "operationId": "selectOperationsWorkspaceSessionDataNode",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#selectDataNode"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SelectOperationsWorkspaceSessionDataNodeOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#token"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectDataNode"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#selectDataNode"
+      }
+    },
+    {
+      "operationId": "sendOperationsPasswordRecoveryOtp",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#sendOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SendOperationsPasswordRecoveryOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#sendOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#sendOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#sendOtp"
+      }
+    },
+    {
+      "operationId": "sendOperationsWorkspaceOtp",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#sendOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SendOperationsWorkspaceOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#sendOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sendLoginOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sendLoginOtp"
+      }
+    },
+    {
+      "operationId": "sendPlatformLoginOtp",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/login-otp/send",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendLoginOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.SendPlatformLoginOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendLoginOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendLoginOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendLoginOtp"
+      }
+    },
+    {
+      "operationId": "sendPlatformPasswordRecoveryOtp",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password-recovery/otp/send",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendPasswordRecoveryOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.SendPlatformPasswordRecoveryOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#sendPasswordRecoveryOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendPasswordRecoveryOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#sendPasswordRecoveryOtp"
+      }
+    },
+    {
+      "operationId": "sendPublicInvitationOtp",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#sendOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.SendPublicInvitationOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#sendOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#sendPublicOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#sendPublicOtp"
+      }
+    },
+    {
+      "operationId": "stageOperationsCatalogAsset",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "asset",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/assets/stage",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#stageAsset"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.asset.application.StageOperationsCatalogAssetMultipartOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application/StageOperationsCatalogAssetMultipartOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "stageOperationsCatalogAsset"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "stagePlatformAsset",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-asset",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/assets/staging",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java#stage"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.asset.application.StagePlatformAssetOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#stageContent"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java#stageContent"
+      }
+    },
+    {
+      "operationId": "startOperationsPasswordRecovery",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#start"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.StartOperationsPasswordRecoveryOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#start"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#start"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#start"
+      }
+    },
+    {
+      "operationId": "startPlatformPasswordRecovery",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password-recovery/start",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#startPasswordRecovery"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.StartPlatformPasswordRecoveryOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#startPasswordRecovery"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#startPasswordRecovery"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#startPasswordRecovery"
+      }
+    },
+    {
+      "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogDictionaryEntryStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.TransitionOperationsCatalogDictionaryEntryStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogDictionaryEntryStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsCatalogDictionaryEntryStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/items/{itemCode}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogItemStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsCatalogItemStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsOrganizationBrandStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#brandStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.TransitionOperationsOrganizationBrandStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/TransitionOperationsOrganizationBrandStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsOrganizationBrandStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#headCompanyStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.TransitionOperationsOrganizationHeadCompanyStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/TransitionOperationsOrganizationHeadCompanyStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsOrganizationHeadCompanyStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsOrganizationNodeStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#transition"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.TransitionOperationsOrganizationNodeStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/TransitionOperationsOrganizationNodeStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsOrganizationNodeStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsOrganizationStoreStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#transitionStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.TransitionOperationsOrganizationStoreStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/TransitionOperationsOrganizationStoreStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsOrganizationStoreStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsOrganizationTenantStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#tenantStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.TransitionOperationsOrganizationTenantStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/TransitionOperationsOrganizationTenantStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsOrganizationTenantStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionOperationsProductionTagStatus",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "fulfillment-production",
+      "route": {
+        "method": "POST",
+        "path": "/operations/catalog-inventory/production-tags/{tagCode}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionProductionTagStatus"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.fulfillment.production.application.TransitionOperationsProductionTagStatusOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/TransitionOperationsProductionTagStatusOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "transitionOperationsProductionTagStatus"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "transitionPlatformAdminStatus",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/admin-users/{platformAdminId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#transition"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.TransitionPlatformAdminStatusOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireActor"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#transitionAdministratorStatus"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#transitionAdministratorStatus"
+      }
+    },
+    {
+      "operationId": "transitionPlatformGroupWorkspaceStatus",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-workspace",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#status"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.workspace.application.TransitionPlatformGroupWorkspaceStatusOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      }
+    },
+    {
+      "operationId": "transitionWorkspaceAccountStatus",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java#status"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.TransitionWorkspaceAccountStatusOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java#detail"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java#detail"
+      }
+    },
+    {
+      "operationId": "transitionWorkspaceRoleStatus",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#status"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.TransitionWorkspaceRoleStatusOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#transitionStatusForPlatform"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#transitionStatusForPlatform"
+      }
+    },
+    {
+      "operationId": "updateOperationsCatalogCategory",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/categories/{categoryRef}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogCategory"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.UpdateOperationsCatalogCategoryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/UpdateOperationsCatalogCategoryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsCatalogCategory"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsCatalogDictionaryEntry",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "catalog",
+      "route": {
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogDictionaryEntry"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.catalog.application.UpdateOperationsCatalogDictionaryEntryOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/UpdateOperationsCatalogDictionaryEntryOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsCatalogDictionaryEntry"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsCommercialGroup",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#updateCommercialGroup"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsCommercialGroupOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsCommercialGroupOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsCommercialGroup"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsContract",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "contract",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java#update"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.store.contract.application.UpdateOperationsContractOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/store/contract/application/UpdateOperationsContractOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsContract"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "inventory",
+      "route": {
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/inventory-targets/{targetRef}/configuration",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateInventoryTargetConfiguration"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.inventory.application.UpdateOperationsInventoryTargetConfigurationOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/UpdateOperationsInventoryTargetConfigurationOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsInventoryTargetConfiguration"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsOrganizationBrand",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateBrand"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsOrganizationBrandOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsOrganizationBrandOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsOrganizationBrand"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsOrganizationHeadCompany",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateHeadCompany"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsOrganizationHeadCompanyOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsOrganizationHeadCompanyOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsOrganizationHeadCompany"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsOrganizationNode",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#update"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsOrganizationNodeOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsOrganizationNodeOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsOrganizationNode"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsOrganizationStore",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#update"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsOrganizationStoreOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsOrganizationStoreOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsOrganizationStore"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsOrganizationTenant",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "organization",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateTenant"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.organization.application.UpdateOperationsOrganizationTenantOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/UpdateOperationsOrganizationTenantOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsOrganizationTenant"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updateOperationsProductionTag",
+      "profileId": "WORKSPACE_OWNER_COMMAND",
+      "owner": "fulfillment-production",
+      "route": {
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/production-tags/{tagCode}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateProductionTag"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.fulfillment.production.application.UpdateOperationsProductionTagOperation"
+      },
+      "implementationStatus": "IMPLEMENTED_SOURCE_ANCHORED",
+      "m1Runtime": {
+        "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/UpdateOperationsProductionTagOperation.java",
+        "entryMethod": "execute",
+        "executionMatrixOperationId": "updateOperationsProductionTag"
+      },
+      "workspaceGrantAssertion": {
+        "status": "APPLICABLE_IN_M1_EXECUTION_MATRIX"
+      }
+    },
+    {
+      "operationId": "updatePlatformAdminProfile",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-iam",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/platform/admin-users/{platformAdminId}/profile",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java#updateProfile"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.UpdatePlatformAdminProfileOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireActor"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#updateAdministratorProfile"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#updateAdministratorProfile"
+      }
+    },
+    {
+      "operationId": "updatePlatformGroupWorkspaceDisplay",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "platform-workspace",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java#update"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.workspace.application.UpdatePlatformGroupWorkspaceDisplayOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#actor"
+      }
+    },
+    {
+      "operationId": "updateWorkspaceRole",
+      "profileId": "PLATFORM_OWNER_COMMAND",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "PATCH",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java#update"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.UpdateWorkspaceRoleOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#updateForPlatform"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java#updateForPlatform"
+      }
+    },
+    {
+      "operationId": "verifyOperationsPasswordRecoveryOtp",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#verifyOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.VerifyOperationsPasswordRecoveryOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java#verifyOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#verifyOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java#verifyOtp"
+      }
+    },
+    {
+      "operationId": "verifyOperationsWorkspaceOtp",
+      "profileId": "WORKSPACE_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#verifyOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.VerifyOperationsWorkspaceOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java#verifyOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#verifyLoginOtpWithSessionEntry"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#verifyLoginOtpWithSessionEntry"
+      }
+    },
+    {
+      "operationId": "verifyPlatformLoginOtp",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/login-otp/verify",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyLoginOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.VerifyPlatformLoginOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyLoginOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyLoginOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyLoginOtp"
+      }
+    },
+    {
+      "operationId": "verifyPlatformPasswordRecoveryOtp",
+      "profileId": "PLATFORM_PROTOCOL",
+      "owner": "platform-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/platform/auth/password-recovery/otp/verify",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyPasswordRecoveryOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.platform.admin.iam.application.VerifyPlatformPasswordRecoveryOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "CURRENT_EDGE_CONTEXT_ORIGIN",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java#verifyPasswordRecoveryOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyPasswordRecoveryOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java#verifyPasswordRecoveryOtp"
+      }
+    },
+    {
+      "operationId": "verifyPublicInvitationOtp",
+      "profileId": "PUBLIC_PROTOCOL",
+      "owner": "workspace-iam",
+      "route": {
+        "method": "POST",
+        "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
+        "routeRegistry": "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json"
+      },
+      "edge": {
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#verifyOtp"
+      },
+      "declaredRegistryAdapter": {
+        "fqcn": "com.catering.v2s.workspace.iam.application.VerifyPublicInvitationOtpOperation"
+      },
+      "implementationStatus": "SOURCE_IMPLEMENTED_NON_M1",
+      "m1Runtime": null,
+      "workspaceGrantAssertion": {
+        "status": "NOT_APPLICABLE_WITH_REASON",
+        "reason": "operation profile does not select WORKSPACE_OWNER_COMMAND"
+      },
+      "contextOrigin": {
+        "kind": "PUBLIC_PROTOCOL_NO_AUTHENTICATED_OWNER_CONTEXT",
+        "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java#verifyOtp"
+      },
+      "transactionOwner": {
+        "kind": "CURRENT_OWNER_OR_PROTOCOL_ENTRY",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#verifyPublicOtp"
+      },
+      "ownerOrProtocolApi": {
+        "kind": "CURRENT_PUBLIC_OWNER_OR_PROTOCOL_API",
+        "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java#verifyPublicOtp"
+      }
+    }
+  ]
+}

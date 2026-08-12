@@ -36,10 +36,10 @@ public class WorkspaceUserService {
     @Transactional(readOnly = true)
     public OrganizationTaskPathLookup.TaskPath resolveCurrentTaskScope(WorkspaceSessionReadback session) {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
-        OrganizationTaskPathLookup.TaskPath target = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId());
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), target)) throw new TaskScopeDeniedException();
-        return target;
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
+        OrganizationTaskPathLookup.CommandTaskPathFacts facts = commandTaskPathFacts(session, assignment, assignment.serviceNodeType(), assignment.serviceNodeId());
+        if (!facts.assignmentScopeAllowed()) throw new TaskScopeDeniedException();
+        return facts.taskPath();
     }
 
     /**
@@ -49,7 +49,7 @@ public class WorkspaceUserService {
     @Transactional(readOnly = true)
     public OrganizationTaskPathLookup.TaskPath resolveTaskScope(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedScopeRef) {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
         String requiredDataNodeType = requiredDataNodeType(expectedTargetType);
         if ("NONE".equals(requiredDataNodeType)) {
             if (ServiceNodeTypes.GROUP.equals(assignment.serviceNodeType()) && ServiceNodeTypes.HEAD_COMPANY.equals(expectedTargetType)) {
@@ -65,33 +65,33 @@ public class WorkspaceUserService {
         UUID effectiveScopeRef = selected == null ? null : selected.dataNodeId();
         if (requestedScopeRef != null && !requestedScopeRef.equals(effectiveScopeRef)) throw new TaskScopeDeniedException();
         if (effectiveScopeRef == null) throw new TaskScopeDeniedException();
-        OrganizationTaskPathLookup.TaskPath requested = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, effectiveScopeRef);
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), requested)) throw new TaskScopeDeniedException();
-        return requested;
+        OrganizationTaskPathLookup.CommandTaskPathFacts facts = commandTaskPathFacts(session, assignment, expectedTargetType, effectiveScopeRef);
+        if (!facts.assignmentScopeAllowed()) throw new TaskScopeDeniedException();
+        return facts.taskPath();
     }
 
     /** Resolves the project explicitly selected for project-context business pages. */
     @Transactional(readOnly = true)
     public OrganizationTaskPathLookup.TaskPath resolveSelectedProjectScope(WorkspaceSessionReadback session, UUID requestedProjectRef) {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
         var selected = session.scopeContext() == null ? null : session.scopeContext().selectionFor(ServiceNodeTypes.PROJECT);
         UUID effectiveProjectRef = selected == null ? null : selected.dataNodeId();
         if (requestedProjectRef != null && !requestedProjectRef.equals(effectiveProjectRef)) throw new TaskScopeDeniedException();
         if (effectiveProjectRef == null) throw new TaskScopeDeniedException();
-        OrganizationTaskPathLookup.TaskPath project = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), ServiceNodeTypes.PROJECT, effectiveProjectRef);
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), project)) throw new TaskScopeDeniedException();
-        return project;
+        OrganizationTaskPathLookup.CommandTaskPathFacts facts = commandTaskPathFacts(session, assignment, ServiceNodeTypes.PROJECT, effectiveProjectRef);
+        if (!facts.assignmentScopeAllowed()) throw new TaskScopeDeniedException();
+        return facts.taskPath();
     }
 
     /** Resolves a command target from the explicit target selected in the approved form. */
     @Transactional(readOnly = true)
     public OrganizationTaskPathLookup.TaskPath resolveCommandTarget(WorkspaceSessionReadback session, String expectedTargetType, UUID requestedTargetRef) {
         if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null || expectedTargetType == null || requestedTargetRef == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignments.requireActiveScope(session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId());
-        OrganizationTaskPathLookup.TaskPath target = taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), expectedTargetType, requestedTargetRef);
-        if (!taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), target)) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        return target;
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
+        OrganizationTaskPathLookup.CommandTaskPathFacts facts = commandTaskPathFacts(session, assignment, expectedTargetType, requestedTargetRef);
+        if (!facts.assignmentScopeAllowed()) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        return facts.taskPath();
     }
 
     private static String requiredDataNodeType(String expectedTargetType) {
@@ -100,6 +100,34 @@ public class WorkspaceUserService {
         return WorkspaceAuthorizationCatalog.page(pageDesignKey)
             .map(WorkspaceAuthorizationCatalog.PageAccessCatalogEntry::requiredDataNodeType)
             .orElseThrow(WorkspaceAuthenticationService.SessionInvalidException::new);
+    }
+
+    /**
+     * A command-minted session already contains the fresh active-assignment projection.  Legacy
+     * and task-read sessions intentionally retain their owner lookup rather than inheriting a
+     * command optimization across an unrelated invocation.
+     */
+    private WorkspaceAssignmentScopeLookup.AssignmentScope assignmentScope(WorkspaceSessionReadback session) {
+        if (session.assignmentNodeType() != null && session.assignmentNodeId() != null) {
+            return new WorkspaceAssignmentScopeLookup.AssignmentScope(
+                session.assignmentNodeType(), session.assignmentNodeId()
+            );
+        }
+        return assignments.requireActiveScope(
+            session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId()
+        );
+    }
+
+    private OrganizationTaskPathLookup.CommandTaskPathFacts commandTaskPathFacts(
+        WorkspaceSessionReadback session,
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment,
+        String targetType,
+        UUID targetId
+    ) {
+        return taskPaths.commandTaskPathFacts(
+            session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(),
+            targetType, targetId, false
+        );
     }
 
     /** One candidate interface; only invitation-target candidates carry task-range restriction. */

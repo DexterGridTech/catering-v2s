@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "kind": "r5-managed-testcontainers-run",
+  "runId": "r5-tc-1786410303189-73113",
+  "task": ":apps:backend:catering-business-server:test",
+  "startedAt": "2026-08-11T01:05:03.190Z",
+  "remote": {
+    "hostAlias": "catering-remote-dev",
+    "hostTrust": {
+      "host": "catering-remote-dev",
+      "fingerprint": "416201af7e30f6fb2d8b1de9e0492dca889f90a095619d60f78a267145e8d2eb",
+      "maintainer": "Dexter",
+      "rotatedAt": "2026-08-05",
+      "allowlistVersion": "r5-dev-remote-v1"
+    },
+    "root": "/tmp/r5-tc-1786410303189-73113",
+    "dependencyCache": "/tmp/catering-v2s-r5-gradle-cache"
+  },
+  "sourceSha256": "5101f6fc0c82d291dbc166b0df9da7b912b739bf57d9e34bcbc4b8fb0bfead07",
+  "sourceSync": {
+    "status": "PASS",
+    "workspace": "/tmp/r5-tc-1786410303189-73113/workspace",
+    "requiredPaths": [
+      "scripts/test/backend-performance-testcontainers-196-remote-workload.mjs",
+      "apps/backend/catering-business-server/src/test/java/dynamic/BackendPerformanceTestcontainers196Test.java"
+    ]
+  },
+  "logPath": "/tmp/r5-tc-1786410303189-73113/results/gradle.log",
+  "phaseEvents": [
+    {
+      "sequence": 1,
+      "phase": "PREPARED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:03.191Z"
+    },
+    {
+      "sequence": 2,
+      "phase": "SOURCE_SYNCED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:08.474Z"
+    },
+    {
+      "sequence": 3,
+      "phase": "GRADLE_SYNCED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:41.844Z"
+    },
+    {
+      "sequence": 4,
+      "phase": "PROCESS_STARTED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:43.586Z"
+    },
+    {
+      "sequence": 5,
+      "phase": "RUNNING",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:44.718Z"
+    },
+    {
+      "sequence": 6,
+      "phase": "STALL_DIAGNOSING",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:07:13.471Z"
+    },
+    {
+      "sequence": 7,
+      "phase": "COLLECTED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:08:38.013Z"
+    },
+    {
+      "sequence": 8,
+      "phase": "CLEANUP",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:08:46.293Z"
+    }
+  ],
+  "lifecycleEvents": [
+    {
+      "sequence": 1,
+      "event": "LAUNCHED",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:42.372Z",
+      "detail": {
+        "acknowledged": true
+      }
+    },
+    {
+      "sequence": 2,
+      "event": "RECONNECTED_CONTROL",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:05:43.586Z"
+    },
+    {
+      "sequence": 3,
+      "event": "COLLECTED_ARTIFACTS",
+      "outcome": "PASS",
+      "timestamp": "2026-08-11T01:08:45.232Z"
+    }
+  ],
+  "heartbeats": [
+    {
+      "timestamp": "2026-08-11T01:05:43Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 0,
+      "observedAt": "2026-08-11T01:05:44.718Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 233,
+      "workloadSha256": "00ec785739679b512dcb54637e2d06e46fbd8c57ca39623552b9715b40c0ed6f",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:05:45.352Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 2835,
+      "workloadSha256": "a92224c3faab2e01c5ffb5234e5c79353c5a0b457ba8bedf89ee18af8f720f5c",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:05:57.985Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:05:58Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 5930,
+      "observedAt": "2026-08-11T01:06:09.915Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6195,
+      "workloadSha256": "a92224c3faab2e01c5ffb5234e5c79353c5a0b457ba8bedf89ee18af8f720f5c",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:06:10.913Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:06:13Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6195,
+      "observedAt": "2026-08-11T01:06:22.213Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6325,
+      "workloadSha256": "30a63e10b69695332e55a2f7030928e09a7e866a3e67a9f5bf06a6a45d86a80f",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:06:23.221Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:06:28Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6325,
+      "observedAt": "2026-08-11T01:06:35.021Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "fe4269f6fb3fc5b5fbadbe6fba4b0004c1c2631ad71be72ff7570d25900927b6",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:06:36.029Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:06:43Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:06:47.293Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "b0b8e7e05713662a393b9db8b4200a6a1cb2065b8c7031d86cbbd5671e8708da",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:06:48.109Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:06:58Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:06:59.461Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "e40246e61fe54139155c1182f887d73d32de98c46dd789d02d88ed11cb6dc661",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:07:00.301Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "e40246e61fe54139155c1182f887d73d32de98c46dd789d02d88ed11cb6dc661",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:07:12.477Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:07:13Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:07:24.807Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "4300e4b7829adf0f3d517a9cfc34c24fe60aa929b22ff9f400f45cdf60dc6996",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:07:25.400Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:07:28Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:07:37.450Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "87b3091e7aec6611f395cbb21668b99a8c50f111ddd7abf52ca2fcd017750a39",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:07:38.113Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:07:43Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:07:49.347Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "4bb0b8a4db0f9be6a21737a4efee48c3f344be6a2beb5ea37e2dab78967483f6",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:07:50.196Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:07:58Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:08:01.446Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "e4345c2d343f50c2c95e62a1d29557026e7d3b5a5b6f96f8f1564ab41267b431",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:08:02.257Z"
+    },
+    {
+      "timestamp": "2026-08-11T01:08:13Z",
+      "phase": "RUNNING",
+      "outcome": "HEARTBEAT",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logBytes": 6376,
+      "observedAt": "2026-08-11T01:08:13.525Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6376,
+      "workloadSha256": "148a47c5bc9cf8107f585857dda5c1a1d04f3bcb3b40ef9721d0f2303b480553",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:08:14.521Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "MATCH",
+      "logBytes": 6560,
+      "workloadSha256": "0546eb5a4589b4e47ec0ffa12bc386a991e7df9baa8c75e43ece564369ab0fcc",
+      "testResultBytes": 175303,
+      "resource": {},
+      "observedAt": "2026-08-11T01:08:26.470Z"
+    },
+    {
+      "phase": "RUNNING",
+      "identity": "REAPED",
+      "logBytes": 7719,
+      "workloadSha256": "REAPED",
+      "testResultBytes": 0,
+      "resource": {},
+      "observedAt": "2026-08-11T01:08:38.509Z"
+    }
+  ],
+  "stallDiagnostics": [
+    {
+      "observedAt": "2026-08-11T01:07:13.470Z",
+      "tail": {
+        "bytes": 5733,
+        "sha256": "1745d2194a894176c923bafe349c268be759d17743839a5ccd02a3c8a3aae6ce"
+      },
+      "process": "1084054_1_1084054_Ss_01:31_00:00:00_bash_/tmp/r5-tc-1786410303189-73113/results/managed-run.sh_1084079_1084054_1084054_Sl_01:31_00:00:02_java_-Xmx64m_-Xms64m_-javaagent:/tmp/r5-tc-1786410303189-73113/gradle/lib/agents/gradle-instrumentation",
+      "containerLabels": "9a0a3dde4a88_ce438e70c4f4",
+      "lastKnownGood": "RUNNING",
+      "firstFailure": null,
+      "brokenBoundary": null
+    }
+  ],
+  "logInspection": {
+    "readCount": 15,
+    "observedBytes": 7719,
+    "lastReadAt": "2026-08-11T01:08:37.413Z",
+    "status": "READ"
+  },
+  "controlRecord": {
+    "expected": {
+      "runId": "r5-tc-1786410303189-73113",
+      "remoteRoot": "/tmp/r5-tc-1786410303189-73113",
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "logPath": "/tmp/r5-tc-1786410303189-73113/results/gradle.log",
+      "phasePath": "/tmp/r5-tc-1786410303189-73113/results/phase.jsonl"
+    },
+    "verified": true,
+    "reusedAfterReconnect": true,
+    "value": {
+      "runId": "r5-tc-1786410303189-73113",
+      "remoteRoot": "/tmp/r5-tc-1786410303189-73113",
+      "pid": 1084054,
+      "pgid": 1084054,
+      "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+      "processStartTicks": 274072245,
+      "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e",
+      "phase": "PROCESS_STARTED",
+      "logPath": "/tmp/r5-tc-1786410303189-73113/results/gradle.log",
+      "phasePath": "/tmp/r5-tc-1786410303189-73113/results/phase.jsonl"
+    },
+    "reconnect": {
+      "readAt": "2026-08-11T01:05:43.586Z",
+      "identityReadback": {
+        "pid": 1084054,
+        "pgid": 1084054,
+        "bootId": "6f63455d-b375-4978-b6b7-4ae06ae2c5a0",
+        "processStartTicks": 274072245,
+        "commandSha256": "8e3ed70dbce6bb46ac1ba289709c83d2b5fb33d5f09a791b2933fbf48c70148e"
+      }
+    }
+  },
+  "resourceBudget": {
+    "preflight": {
+      "status": "PASS",
+      "limits": {
+        "maxPreviousLive": 0,
+        "maxPreviousRssMiB": 2048
+      },
+      "observedAt": "2026-08-11T01:05:04.512Z",
+      "previousLive": [],
+      "previousRssMiB": 0,
+      "memoryAvailableMiB": 24220,
+      "staleTestcontainers": {
+        "containers": [],
+        "volumes": []
+      }
+    },
+    "samples": [
+      {
+        "observedAt": "2026-08-11T01:05:04.512Z",
+        "memoryAvailableMiB": 24220,
+        "previousRssMiB": 0
+      },
+      {
+        "observedAt": "2026-08-11T01:05:44.719Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:05:45.352Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:05:57.985Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:09.915Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:10.913Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:22.213Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:23.221Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:35.021Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:36.029Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:47.293Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:48.109Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:06:59.461Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:00.301Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:12.477Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:24.807Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:25.400Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:37.450Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:38.113Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:49.347Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:07:50.196Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:01.446Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:02.257Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:13.525Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:14.521Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:26.470Z"
+      },
+      {
+        "observedAt": "2026-08-11T01:08:38.509Z"
+      }
+    ]
+  },
+  "firstFailure": "REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED",
+  "lastKnownGood": "CLEANUP",
+  "brokenBoundary": "REMOTE_TEST",
+  "business": {
+    "status": "FAIL",
+    "reason": "REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED"
+  },
+  "cleanup": {
+    "status": "PASS",
+    "reaped": true,
+    "completedAt": "2026-08-11T01:08:46.293Z",
+    "output": "REAPED=PASS_REMOTE_SCRATCH_CLEANUP=PASS"
+  },
+  "residualTestcontainers": false
+}

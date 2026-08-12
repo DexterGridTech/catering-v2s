@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Platform invitation reads: a workspace-IAM CTE projection plus one persisted-path batch. */
 @Service
-public final class PlatformWorkspaceInvitationTaskReadService {
+public class PlatformWorkspaceInvitationTaskReadService {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final JdbcTemplate jdbc;
     private final OrganizationTaskPathLookup paths;

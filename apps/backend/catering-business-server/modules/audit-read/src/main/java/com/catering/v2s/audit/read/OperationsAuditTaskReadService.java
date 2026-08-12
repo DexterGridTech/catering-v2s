@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Closed operations-audit task reader with nine compile-time target branches. */
 @Service
-public final class OperationsAuditTaskReadService {
+public class OperationsAuditTaskReadService {
     private final WorkspaceIamAuditHistoryService workspaceIamAudit;
     private final OrganizationAuditHistoryService organizationAudit;
     private final ContractAuditHistoryService contractAudit;

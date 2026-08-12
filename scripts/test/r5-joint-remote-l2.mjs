@@ -14,16 +14,27 @@ import {canonicalStartToken, snapshotProcessTree, evaluateCleanupReadback} from 
 import {catalogImageBindEvidenceInputs} from './catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
+const defaultManagedDevRuntime = path.join(root, '.runtime/r5');
 const runId = `rm1p6-joint-local-l2-${Date.now()}-${process.pid}-${randomUUID().slice(0, 8)}`;
 const runtime = path.join(root, '.runtime/r5/joint-local-l2', runId);
 const evidenceDir = path.join(runtime, 'evidence');
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const resultPath = path.join(evidenceDir, 'terminal-report.json');
+const readinessProgressPath = path.join(evidenceDir, 'readiness-progress.jsonl');
 const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
 const namespace = `v2s-dev-${runId.slice(-24)}`.replaceAll('_', '-');
-const catalogStage = process.argv.includes('--catalog-api-only') ? 'API'
-  : process.argv.includes('--catalog-l2-only') ? 'L2'
-    : 'BOTH';
+export function parseCatalogStageArgs(args) {
+  if (!Array.isArray(args)) throw new Error('CATALOG_STAGE_ARGUMENT_INVALID');
+  if (args.length === 1 && args[0] === '--self-test') return 'SELF_TEST';
+  const known = new Set(['--catalog-api-only', '--catalog-l2-only']);
+  if (args.some((arg) => !known.has(arg)) || args.length > 1) throw new Error('CATALOG_STAGE_ARGUMENT_INVALID');
+  if (args.length === 0) return 'BOTH';
+  return args[0] === '--catalog-api-only' ? 'API' : 'L2';
+}
+let catalogStage;
+let catalogStageParseError;
+try { catalogStage = parseCatalogStageArgs(process.argv.slice(2)); }
+catch (error) { catalogStage = 'INVALID'; catalogStageParseError = error; }
 const catalogOnly = catalogStage !== 'BOTH';
 const exactSpecs = [
   'apps/frontend/platform-admin/src/tests/l2/authentication.spec.ts',
@@ -98,11 +109,31 @@ let devManifest;
 let localProcessIdentities = [];
 let localLogInspection = {};
 let plannedRemoteNamespace;
+let readinessAttempts = 0;
+let lastReadinessProbe = null;
 
 class RunnerFailure extends Error {
   constructor(reason, boundary) { super(reason); this.boundary = boundary; }
 }
 const fail = (reason, boundary) => { throw new RunnerFailure(reason, boundary); };
+export const decideManagedDevAdmission = ({manifestExists, manifestValid = true}) => {
+  if (!manifestExists) return 'NO_PREEXISTING_MANAGED_DEV';
+  if (!manifestValid) throw new Error('PREEXISTING_MANAGED_DEV_MANIFEST_INVALID');
+  throw new Error('MANAGED_DEV_RUN_ALREADY_ACTIVE');
+};
+const rejectPreexistingManagedDev = () => {
+  const preexistingManifestPath = path.join(defaultManagedDevRuntime, 'run-manifest.json');
+  if (!existsSync(preexistingManifestPath)) {
+    phase('PREEXISTING_MANAGED_DEV_ADMISSION', 'PASS', {outcome: 'NO_PREEXISTING_MANAGED_DEV'});
+    return;
+  }
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(preexistingManifestPath, 'utf8')); }
+  catch { fail('PREEXISTING_MANAGED_DEV_MANIFEST_INVALID', 'PREEXISTING_MANAGED_DEV_ADMISSION'); }
+  try {
+    decideManagedDevAdmission({manifestExists: true, manifestValid: manifest?.kind === 'r5-dev-run-manifest' && Array.isArray(manifest?.processes)});
+  } catch (error) { fail(error.message, 'PREEXISTING_MANAGED_DEV_ADMISSION'); }
+};
 const localViteUrl = (relativeConfigPath) => {
   const source = readFileSync(path.join(root, relativeConfigPath), 'utf8');
   const port = source.match(/server:\s*\{[\s\S]*?\bport:\s*(\d+)\s*,?\s*strictPort:\s*true/s)?.[1];
@@ -189,7 +220,7 @@ const localBaseEnvironment = () => {
   // The parent owns the fault seam for catalog-only runs. The child receives
   // R5_JOINT_INCLUDE_CATALOG_INVENTORY later, so deriving this only from the
   // parent environment silently disabled typed-failure cases in API-only.
-  const catalogFaultsEnabled = catalogOnly || process.argv.includes('--catalog-inventory');
+  const catalogFaultsEnabled = catalogOnly;
   return {...process.env, V2S_RUNTIME_DIR: runtime, V2S_DEV_NAMESPACE: namespace, V2S_DEV_PROFILE: 'r5-full', V2S_RUNTIME_ENVIRONMENT: 'non-production', V2S_R5_REQUIRE_FRESH_DATABASE: 'true', V2S_R5_L2_OTP_DEBUG_EXPOSURE: 'true', V2S_CATALOG_TEST_FAULTS: catalogFaultsEnabled ? 'true' : (process.env.V2S_CATALOG_TEST_FAULTS || 'false'), V2S_DEV_LOCAL_POSTGRES_PORT: localPostgresPort, V2S_DEV_LOCAL_ASSET_PORT: localAssetPort, V2S_DEV_DATABASE_URL: `jdbc:postgresql://127.0.0.1:${localPostgresPort}/${namespace.replace(/^v2s-dev-/, 'catering_v2s_dev_').replaceAll('-', '_')}`};
 };
 const initializeUniqueCredentials = () => {
@@ -230,15 +261,26 @@ const planRemoteNamespace = () => {
 };
 const readiness = async () => {
   const deadline = Date.now() + 120_000;
-  while (Date.now() < deadline) {
+  const probe = async (name, url, options = {}) => {
     try {
-      const [edge, platform, operations] = await Promise.all([
-        fetch('http://127.0.0.1:8080/api/platform/auth/password-login', {method: 'OPTIONS', signal: AbortSignal.timeout(3_000)}),
-        fetch(`${localUrls.platform}/platform/login`, {signal: AbortSignal.timeout(3_000)}),
-        fetch(`${localUrls.operations}/operations/unknown/login`, {signal: AbortSignal.timeout(3_000)}),
-      ]);
-      if (edge.status >= 100 && platform.ok && operations.ok) { phase('READINESS', 'PASS', {edgeStatus: edge.status, platformStatus: platform.status, operationsStatus: operations.status}); return; }
-    } catch { /* fixed deadline; diagnostics occur once below */ }
+      const response = await fetch(url, options);
+      return {name, status: response.status, ok: response.ok};
+    } catch (error) {
+      return {name, status: null, ok: false, errorType: error?.name || 'REQUEST_FAILED'};
+    }
+  };
+  while (Date.now() < deadline) {
+    readinessAttempts += 1;
+    const [edge, platform, operations] = await Promise.all([
+      probe('edge', 'http://127.0.0.1:8080/api/platform/auth/password-login', {method: 'OPTIONS', signal: AbortSignal.timeout(3_000)}),
+      probe('platform', `${localUrls.platform}/platform/login`, {signal: AbortSignal.timeout(3_000)}),
+      probe('operations', `${localUrls.operations}/operations/unknown/login`, {signal: AbortSignal.timeout(3_000)}),
+    ]);
+    lastReadinessProbe = {attempt: readinessAttempts, elapsedMs: 120_000 - Math.max(0, deadline - Date.now()), edge, platform, operations};
+    mkdirSync(evidenceDir, {recursive: true});
+    writeFileSync(readinessProgressPath, `${JSON.stringify({at: new Date().toISOString(), ...lastReadinessProbe})}\n`, {flag: 'a', mode: 0o600});
+    phase('READINESS_PROBE', 'OBSERVED', lastReadinessProbe);
+    if (edge.status >= 100 && platform.ok && operations.ok) { phase('READINESS', 'PASS', {edgeStatus: edge.status, platformStatus: platform.status, operationsStatus: operations.status, attempts: readinessAttempts}); return; }
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
   fail('READINESS_DEADLINE_EXCEEDED', 'READINESS');
@@ -328,7 +370,8 @@ const writeTerminalReport = (extra = {}) => {
     schemaVersion: 1, kind: 'rm1p6-joint-local-execution-remote-middleware-l2-report', runId, sourceSha256: sha256(readFileSync(path.join(root, 'yarn.lock'))),
     localExecution: {checkout: root, processes: localProcessIdentities, logInspection: localLogInspection},
     exactSpecs: effectiveSpecs, catalogStage, imageBindEvidenceInputs, phases, fixture: existsSync(path.join(runtime, 'results', 'fixture.json')) ? {status: 'CREATED', sha256: sha256(readFileSync(path.join(runtime, 'results', 'fixture.json')))} : {status: 'NOT_CREATED'},
-    business: {status: business}, cleanup: {status: cleanup}, firstFailure, lastKnownGood, brokenBoundary, ...extra,
+    business: {status: business}, cleanup: {status: cleanup}, firstFailure, lastKnownGood, brokenBoundary,
+    readiness: {progressPath: path.relative(root, readinessProgressPath), attempts: readinessAttempts, lastProbe: lastReadinessProbe}, ...extra,
   };
   mkdirSync(evidenceDir, {recursive: true}); writeFileSync(resultPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
 };
@@ -345,13 +388,22 @@ async function main() {
     const redacted = redactCommandOutput(`fixture failed with ${syntheticSecret}`, {R5_L2_OPERATIONS_LOGIN_PASSWORD: syntheticSecret});
     if (redacted.includes(syntheticSecret)) fail('COMMAND_DIAGNOSTIC_SECRET_RED_NOT_DETECTED', 'SELF_TEST');
     if (!redacted.includes('[REDACTED:R5_L2_OPERATIONS_LOGIN_PASSWORD]')) fail('COMMAND_DIAGNOSTIC_REDACTION_MISSING', 'SELF_TEST');
-    process.stdout.write('RM1P6_JOINT_LOCAL_L2_SELF_TEST=PASS\nRED_REMOTE_EXECUTION_SURFACE=PASS\nRED_LOCAL_UI_PORT=PASS\nRED_COMMAND_DIAGNOSTIC_SECRET=PASS\nEXACT_20_SPEC_DENOMINATOR=PASS\n'); return;
+    if (decideManagedDevAdmission({manifestExists: false}) !== 'NO_PREEXISTING_MANAGED_DEV') fail('PREEXISTING_MANAGED_DEV_EMPTY_ADMISSION_INVALID', 'SELF_TEST');
+    try { decideManagedDevAdmission({manifestExists: true, manifestValid: true}); fail('PREEXISTING_MANAGED_DEV_RUN_RED_NOT_DETECTED', 'SELF_TEST'); }
+    catch (error) { if (error.message !== 'MANAGED_DEV_RUN_ALREADY_ACTIVE') throw error; }
+    try { decideManagedDevAdmission({manifestExists: true, manifestValid: false}); fail('PREEXISTING_MANAGED_DEV_INVALID_RED_NOT_DETECTED', 'SELF_TEST'); }
+    catch (error) { if (error.message !== 'PREEXISTING_MANAGED_DEV_MANIFEST_INVALID') throw error; }
+    try { parseCatalogStageArgs(['--catalog-inventory']); fail('CATALOG_STAGE_UNKNOWN_ARGUMENT_FAIL_OPEN', 'SELF_TEST'); }
+    catch (error) { if (error.message !== 'CATALOG_STAGE_ARGUMENT_INVALID') throw error; }
+    process.stdout.write('RM1P6_JOINT_LOCAL_L2_SELF_TEST=PASS\nRED_REMOTE_EXECUTION_SURFACE=PASS\nRED_LOCAL_UI_PORT=PASS\nRED_COMMAND_DIAGNOSTIC_SECRET=PASS\nRED_PREEXISTING_MANAGED_DEV_ADMISSION=PASS\nRED_UNKNOWN_CATALOG_STAGE=PASS\nEXACT_20_SPEC_DENOMINATOR=PASS\n'); return;
   }
   try {
+    if (catalogStageParseError) fail(catalogStageParseError.message, 'STAGE_SELECTION');
     assertLocalExecutionSurface({runtimeDirectory: runtime, localHosts: ['127.0.0.1', '127.0.0.1', '127.0.0.1'], urls: localUrls});
     for (const spec of effectiveSpecs) if (!existsSync(path.join(root, spec)) || statSync(path.join(root, spec)).size === 0) fail(`MISSING_OR_EMPTY_SPEC:${spec}`, 'SPEC_DENOMINATOR');
+    rejectPreexistingManagedDev();
     const uniqueCredentials = initializeUniqueCredentials();
-    if (catalogStage === 'API' || process.argv.includes('--catalog-inventory')) {
+    if (catalogStage === 'API') {
       // API acceptance starts with backend unit/contract tests.  L2-only is
       // intentionally runnable without this stage; the combined mode keeps
       // the required API-unit -> API-HTTP -> L2 ordering.
@@ -366,10 +418,10 @@ async function main() {
     localProcessIdentities = devManifest.processes.map(localProcess);
     phase('LOCAL_PROCESS_IDENTITIES', 'PASS', {processes: localProcessIdentities.map(({name, pid, pgid, commandSha256}) => ({name, pid, pgid, commandSha256}))});
     await readiness();
-    if (catalogOnly || process.argv.includes('--catalog-inventory')) {
+    if (catalogOnly) {
       command('CATALOG_INVENTORY_TEST_INDEPENDENCE', process.execPath, [path.join(root, 'scripts/check/catalog-inventory-test-independence.mjs'), '--self-test'], {env: localBaseEnvironment()});
     }
-      command('OWNER_COMMAND_FIXTURE', process.execPath, [path.join(root, 'scripts/test/r5-joint-remote-l2-fixture.mjs')], {env: {...localBaseEnvironment(), R5_JOINT_INCLUDE_CATALOG_INVENTORY: catalogOnly || process.argv.includes('--catalog-inventory') ? 'true' : 'false', R5_JOINT_CATALOG_STAGE: catalogStage}});
+      command('OWNER_COMMAND_FIXTURE', process.execPath, [path.join(root, 'scripts/test/r5-joint-remote-l2-fixture.mjs')], {env: {...localBaseEnvironment(), R5_JOINT_INCLUDE_CATALOG_INVENTORY: catalogOnly ? 'true' : 'false', R5_JOINT_CATALOG_STAGE: catalogStage}});
     if (catalogStage === 'API') {
       // API-only is a backend interface gate.  The child owns its HTTP fixture
       // and exits before any browser fixture or Playwright process is started.

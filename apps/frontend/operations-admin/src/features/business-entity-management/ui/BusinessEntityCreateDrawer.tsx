@@ -2,11 +2,12 @@ import {Alert, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch} 
 import {adminDrawerSurfaceProps, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
-import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type JsonValue} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {ACTION_CAPABILITIES, adminCatalog, type AdminActionCapabilityKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
+import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type BusinessEntityFormValues = {
   code: string;
@@ -15,7 +16,7 @@ type BusinessEntityFormValues = {
   legalName?: string;
   unifiedSocialCreditCode?: string;
   remark?: string;
-  extensionValues?: Record<string, JsonValue>;
+  extensionValues?: OrganizationExtensionFormValues;
 };
 
 export type BusinessEntityCreateDrawerProps = {
@@ -110,7 +111,7 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
     try {
       const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey};
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const extensionValues = value.extensionValues ?? {};
+      const extensionValues = serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues);
       const entity = kind === 'BRAND'
         ? await operationsClient.createOperationsOrganizationBrand(path, {body: {code: requiredValue(value.code), name: requiredValue(value.name), alias: value.alias?.trim() || null, remark: value.remark?.trim() || null, extensionValues}, headers})
         : kind === 'TENANT'

@@ -1,0 +1,203 @@
+#!/usr/bin/env node
+import {createHash} from "node:crypto";
+import {readFileSync} from "node:fs";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+import YAML from "yaml";
+import {createFinalWorkloadRecipes} from "../test/backend-performance-workload.mjs";
+import {loadFinalFixtureCatalog, validateFinalFixtureCatalog, validateFixtureCatalogAgainstRecipes} from "../test/backend-performance-final-fixtures.mjs";
+
+const fail = (code) => { throw new Error(code); };
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const sha256 = (relative) => createHash("sha256").update(readFileSync(path.join(root, relative))).digest("hex");
+const exact = (actual, expected) => JSON.stringify([...actual].sort()) === JSON.stringify([...expected].sort());
+const commandFamilies = ["INVITATION_LIFECYCLE", "OPERATIONS_SESSION_AUTH", "OPERATIONS_RECOVERY", "PLATFORM_ACCOUNT_AUTH", "PLATFORM_RECOVERY", "PLATFORM_ROLE", "INVENTORY_TARGET", "CATALOG_COPY_PROMOTION", "CATALOG_MUTATION", "ORGANIZATION_UPDATE", "CONTRACT", "PRODUCTION_TAG", "ASSET_RELEASE"];
+const planFamilies = [...commandFamilies, "READ_PROJECTION"];
+const sessionPlans = ["PLATFORM_ADMIN", "PLATFORM_DISPOSABLE", "OPERATIONS_SCOPE", "OPERATIONS_DISPOSABLE", "CATALOG_STORE", "CATALOG_HC", "PUBLIC_RECOVERY", "PUBLIC_PLATFORM_RECOVERY", "PUBLIC_ANONYMOUS"];
+const noBodyFixtures = new Set([
+  "PERF-WORKSPACE-COMMAND-V1:operationsWorkspaceLogout:NORMAL_SUCCESS:NORMAL_SUCCESS",
+  "PERF-WORKSPACE-COMMAND-V1:removeOperationsOrganizationHeadCompanyBrandAuthorization:NORMAL_SUCCESS:NORMAL_SUCCESS",
+  "BP-U04-PARITY:acceptPublicInvitation", "BP-U04-PARITY:completePublicInvitation", "BP-U04-PARITY:platformLogout", "BP-U04-PARITY:releasePlatformStagedAsset",
+  "BP-U07-ROUTE:acceptPublicInvitation", "BP-U07-ROUTE:completePublicInvitation", "BP-U07-ROUTE:operationsWorkspaceLogout", "BP-U07-ROUTE:platformLogout", "BP-U07-ROUTE:releasePlatformStagedAsset", "BP-U07-ROUTE:removeOperationsOrganizationHeadCompanyBrandAuthorization",
+]);
+
+function readOpenApiOperations(entryRelative) {
+  const entry = path.join(root, entryRelative);
+  const document = YAML.parse(readFileSync(entry, "utf8"));
+  const pointer = (value, fragment) => fragment.split("/").slice(1).reduce((current, token) => current?.[token.replaceAll("~1", "/").replaceAll("~0", "~")], value);
+  const operations = [];
+  for (const [routeTemplate, routeValue] of Object.entries(document.paths ?? {})) {
+    let pathItem = routeValue, source = entry;
+    if (pathItem.$ref) {
+      const [relative, fragment = ""] = pathItem.$ref.split("#");
+      source = path.resolve(path.dirname(entry), relative);
+      pathItem = pointer(YAML.parse(readFileSync(source, "utf8")), fragment);
+    }
+    for (const [method, operation] of Object.entries(pathItem ?? {})) {
+      if (!/^(get|post|put|patch|delete)$/.test(method) || !operation?.operationId) continue;
+      const parameters = [...(pathItem.parameters ?? []), ...(operation.parameters ?? [])];
+      const success = Object.keys(operation.responses ?? {}).find((status) => /^2/.test(status));
+      operations.push({
+        operationId: operation.operationId,
+        method: method.toUpperCase(),
+        routeTemplate,
+        transport: operation.requestBody?.content?.["multipart/form-data"] ? "MULTIPART_FORM" : operation.requestBody ? "JSON" : "NONE",
+        successStatus: Number(success),
+        requiredQueryNames: parameters.filter((parameter) => parameter.in === "query" && parameter.required).map((parameter) => parameter.name),
+        sourceAnchor: {path: path.relative(root, source), sha256: createHash("sha256").update(readFileSync(source)).digest("hex"), selector: operation.operationId},
+      });
+    }
+  }
+  return operations;
+}
+
+function openApiOperationContract() {
+  return new Map([
+    ...readOpenApiOperations("contracts/openapi/edge.openapi.yaml"),
+    ...readOpenApiOperations("contracts/openapi/catalog-inventory.openapi.yaml"),
+  ].map((operation) => [operation.operationId, operation]));
+}
+
+function validateFixturePlans(catalog) {
+  const declarations = catalog.fixturePlanDeclarations;
+  if (catalog.fixturePlanSchemaVersion !== 1 || !declarations || typeof declarations !== "object") fail("BP_FINAL_FIXTURE_PLAN_IDENTITY_INVALID");
+  const identifierPattern = (identifier) => new RegExp(`(^|[^A-Za-z0-9_$])${String(identifier).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[^A-Za-z0-9_$])`);
+  const hashMatches = (anchor) => { try { return Boolean(anchor?.path && anchor.sha256 === sha256(anchor.path)); } catch { return false; } };
+  const sourceText = (anchor) => readFileSync(path.join(root, anchor.path), "utf8");
+  const selectorResolves = (anchor) => { try { return Boolean(anchor?.path && anchor?.selector && identifierPattern(anchor.selector).test(sourceText(anchor))); } catch { return false; } };
+  const exportedProcedureResolves = (anchor) => {
+    if (!Object.hasOwn(anchor ?? {}, "exportedProcedure")) return true;
+    try {
+      const name = String(anchor.exportedProcedure);
+      return new RegExp(`export\\s+(?:async\\s+)?function\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b|export\\s*\\{[^}]*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(sourceText(anchor));
+    } catch { return false; }
+  };
+  const validateAnchor = (anchor) => hashMatches(anchor) && selectorResolves(anchor) && exportedProcedureResolves(anchor);
+  if (catalog.rows.some((row) => !selectorResolves(row.sourceAnchor))) fail("BP_FINAL_FIXTURE_PLAN_SOURCE_SELECTOR_UNRESOLVED");
+  if (catalog.rows.some((row) => !exportedProcedureResolves(row.sourceAnchor))) fail("BP_FINAL_FIXTURE_PLAN_EXPORTED_PROCEDURE_UNRESOLVED");
+  const families = new Map((declarations.familyDeclarations ?? []).map((value) => [value.id, value]));
+  if (!exact(families.keys(), planFamilies)) fail("BP_FINAL_FIXTURE_PLAN_FAMILY_VOCABULARY_DRIFT");
+  const commands = [...new Set(catalog.rows.filter((row) => row.method !== "GET").map((row) => row.operationId))];
+  const partition = commandFamilies.flatMap((id) => families.get(id).commandOperationIds ?? []);
+  if (commands.length !== 113 || partition.length !== 113 || !exact(partition, commands)) fail("BP_FINAL_FIXTURE_PLAN_COMMAND_PARTITION_DRIFT");
+  if ((families.get("READ_PROJECTION").commandOperationIds ?? []).length !== 0) fail("BP_FINAL_FIXTURE_PLAN_READ_FAMILY_DRIFT");
+  const procedures = new Map((declarations.preparationProcedures ?? []).map((value) => [value.id, value]));
+  const declaredSessions = new Set((declarations.sessionPlans ?? []).map((value) => value.id));
+  if (!exact(declaredSessions, sessionPlans)) fail("BP_FINAL_FIXTURE_PLAN_SESSION_VOCABULARY_DRIFT");
+  if ([...families.values(), ...procedures.values(), ...(declarations.sessionPlans ?? [])].some((value) => !validateAnchor(value.sourceAnchor))) fail("BP_FINAL_FIXTURE_PLAN_DECLARATION_SOURCE_HASH_DRIFT");
+  const algorithms = new Map((declarations.sourceAlgorithms ?? []).map((value) => [value.id, value]));
+  const builders = new Map((declarations.builderDeclarations ?? []).map((value) => [value.id, value]));
+  const readbacks = new Map((declarations.readbackDeclarations ?? []).map((value) => [value.id, value]));
+  const declaredAnchors = [
+    ...[...families.values(), ...procedures.values(), ...(declarations.sessionPlans ?? [])].map((value) => value.sourceAnchor),
+    ...Object.values(declarations.queryBindingConstraints ?? {}).map((value) => value.sourceAnchor),
+    ...[...algorithms.values(), ...builders.values()].flatMap((value) => value.sourceAnchors ?? []),
+    ...[...readbacks.values()].map((value) => value.sourceAnchor),
+    ...(declarations.ownerHttpOperationDeclarations ?? []).map((value) => value.sourceAnchor),
+  ];
+  if (declaredAnchors.some((anchor) => !selectorResolves(anchor))) fail("BP_FINAL_FIXTURE_PLAN_SOURCE_SELECTOR_UNRESOLVED");
+  if (declaredAnchors.some((anchor) => !exportedProcedureResolves(anchor))) fail("BP_FINAL_FIXTURE_PLAN_EXPORTED_PROCEDURE_UNRESOLVED");
+  const openApi = openApiOperationContract();
+  const ownerOperations = new Map((declarations.ownerHttpOperationDeclarations ?? []).map((value) => [value.id, value]));
+  const expectedOwnerIds = new Set(catalog.rows.map((row) => `OWNER_HTTP_${row.operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()}`));
+  if (ownerOperations.size !== 196 || !exact(ownerOperations.keys(), expectedOwnerIds)) fail("BP_FINAL_FIXTURE_PLAN_OWNER_HTTP_DENOMINATOR_DRIFT");
+  for (const [id, owner] of ownerOperations) {
+    const contract = openApi.get(owner.operationId);
+    if (!contract || id !== `OWNER_HTTP_${owner.operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()}` || owner.method !== contract.method || owner.routeTemplate !== contract.routeTemplate || owner.transport !== contract.transport || owner.successStatus !== contract.successStatus || !exact(owner.producedReadbackKeys ?? [], [`readback.owner.${owner.operationId}.response`]) || !exact(Object.entries(owner.sourceAnchor ?? {}), Object.entries(contract.sourceAnchor))) fail("BP_FINAL_FIXTURE_PLAN_OWNER_HTTP_OPENAPI_DRIFT");
+  }
+  const predecessors = new Map((declarations.predecessorDeclarations ?? []).map((value) => [value.id, value]));
+  if (predecessors.size !== 14 || !exact(predecessors.keys(), planFamilies.map((family) => `PREDECESSOR_${family}`))) fail("BP_FINAL_FIXTURE_PLAN_PREDECESSOR_DENOMINATOR_DRIFT");
+  for (const family of planFamilies) {
+    const predecessor = predecessors.get(`PREDECESSOR_${family}`);
+    if (predecessor?.familyId !== family || !Array.isArray(predecessor.ownerHttpOperationIds) || predecessor.ownerHttpOperationIds.length === 0 || predecessor.ownerHttpOperationIds.some((id) => !ownerOperations.has(id)) || !exact(predecessor.producedReadbackKeys ?? [], predecessor.ownerHttpOperationIds.flatMap((id) => ownerOperations.get(id).producedReadbackKeys))) fail("BP_FINAL_FIXTURE_PLAN_PREDECESSOR_SEQUENCE_DRIFT");
+  }
+  const reusable = [...algorithms.values()].filter((value) => value.kind === "REUSE_FINAL_ONLY_ALGORITHM");
+  const fresh = [...algorithms.values()].filter((value) => value.kind === "NEW_FINAL_TYPED_BUILDER");
+  if (algorithms.size !== 113 || reusable.length !== 103 || fresh.length !== 10 || !exact(fresh.flatMap((value) => value.operationIds), ["deleteOperationsCatalogCategory", "moveOperationsCatalogCategory", "updateOperationsCatalogCategory", "executeOperationsTemporaryCatalogItemPromotion", "preflightOperationsTemporaryCatalogItemPromotion", "reorderOperationsCatalogDictionaryEntry", "transitionOperationsCatalogDictionaryEntryStatus", "updateOperationsCatalogDictionaryEntry", "updateOperationsProductionTag", "updateOperationsCommercialGroup"])) fail("BP_FINAL_FIXTURE_PLAN_SOURCE_ALGORITHM_DENOMINATOR_DRIFT");
+  const constraints = declarations.queryBindingConstraints ?? {};
+  if (Object.keys(constraints).length !== 46) fail("BP_FINAL_FIXTURE_PLAN_QUERY_CONSTRAINT_DENOMINATOR_DRIFT");
+  if (Object.values(constraints).some((value) => !Array.isArray(value.requiredNames) || !validateAnchor(value.sourceAnchor))) fail("BP_FINAL_FIXTURE_PLAN_QUERY_SOURCE_HASH_DRIFT");
+  if ([...readbacks.values()].some((value) => typeof value.selector !== "string" || !value.selector.trim())) fail("BP_FINAL_FIXTURE_PLAN_SELECTOR_MISSING");
+  if ([...procedures.values()].some((value) => value.predecessorDeclarationId !== `PREDECESSOR_${value.familyId}` || !exact(value.producedReadbackKeys ?? [], predecessors.get(value.predecessorDeclarationId)?.producedReadbackKeys ?? [])) || [...(declarations.sessionPlans ?? [])].some((value) => !predecessors.has(value.bootstrapPredecessorDeclarationId) || !exact(value.requiredReadbackKeys ?? [], predecessors.get(value.bootstrapPredecessorDeclarationId).producedReadbackKeys)) || [...builders.values()].some((value) => !Array.isArray(value.sourceAnchors) || value.sourceAnchors.some((anchor) => !validateAnchor(anchor)) || !predecessors.has(value.predecessorDeclarationId) || !exact(value.inputReadbackKeys ?? [], predecessors.get(value.predecessorDeclarationId).producedReadbackKeys)) || [...readbacks.values()].some((value) => !validateAnchor(value.sourceAnchor) || !ownerOperations.has(value.ownerHttpOperationId) || !predecessors.has(value.predecessorDeclarationId) || value.producedReadbackKey !== `readback.owner.${value.operationId}.response`)) fail("BP_FINAL_FIXTURE_PLAN_DECLARATION_SOURCE_HASH_DRIFT");
+  let getRows = 0, jsonRows = 0, noneRows = 0, multipartRows = 0, queryRows = 0, pathBindings = 0;
+  for (const row of catalog.rows) {
+    const plan = row.fixturePlan;
+    if (!plan || !planFamilies.includes(plan.familyId) || plan.preparationProcedureId !== `PREP_${plan.familyId}` || !procedures.has(plan.preparationProcedureId) || !declaredSessions.has(plan.sessionPlanId) || plan.predecessorPlanId !== `PREDECESSOR_${plan.familyId}` || !Array.isArray(plan.pathBindings) || !Array.isArray(plan.queryBindings) || !plan.request || !plan.expected) fail("BP_FINAL_FIXTURE_PLAN_ROW_INVALID");
+    if (plan.pathBindings.length !== row.pathParameters.length || !exact(plan.pathBindings.map((value) => value.name), row.pathParameters.map((value) => value.name)) || plan.pathBindings.some((value) => typeof value.stateKey !== "string" || typeof value.producerReadbackKey !== "string" || !value.producerReadbackKey.startsWith("readback."))) fail("BP_FINAL_FIXTURE_PLAN_PATH_BINDING_DRIFT");
+    const requiredQuery = constraints[row.operationId]?.requiredNames ?? [];
+    if (!exact(plan.queryBindings.map((value) => value.name), requiredQuery) || plan.queryBindings.some((value) => typeof value.stateKey !== "string" || typeof value.producerReadbackKey !== "string")) fail("BP_FINAL_FIXTURE_PLAN_QUERY_BINDING_DRIFT");
+    pathBindings += plan.pathBindings.length; if (plan.queryBindings.length) queryRows += 1;
+    const contract = openApi.get(row.operationId);
+    const readback = readbacks.get(plan.expected.assertionKey);
+    if (!contract || !Number.isInteger(plan.expected.successStatus) || plan.expected.successStatus !== contract.successStatus || readback?.fixtureId !== row.fixtureId || plan.expected.readbackDeclarationId !== plan.expected.assertionKey || plan.expected.ownerHttpOperationId !== `OWNER_HTTP_${row.operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()}` || !readback.selector) fail("BP_FINAL_FIXTURE_PLAN_READBACK_DRIFT");
+    if (plan.predecessorDeclarationId !== plan.predecessorPlanId || !predecessors.has(plan.predecessorDeclarationId) || !exact(procedures.get(plan.preparationProcedureId).producedReadbackKeys, predecessors.get(plan.predecessorDeclarationId).producedReadbackKeys)) fail("BP_FINAL_FIXTURE_PLAN_PREDECESSOR_SEQUENCE_DRIFT");
+    if (["operationIdDispatch", "genericBodyMap", "routeInference", "defaultFixtureValue"].some((key) => Object.hasOwn(plan, key))) fail("BP_FINAL_FIXTURE_PLAN_GENERIC_DISPATCH_FORBIDDEN");
+    if (row.method === "GET") { getRows += 1; if (plan.familyId !== "READ_PROJECTION" || plan.request.transport !== "NONE" || plan.request.builderId !== null || plan.sourceAlgorithmId !== "READ_PROJECTION") fail("BP_FINAL_FIXTURE_PLAN_READ_TRANSPORT_DRIFT"); continue; }
+    if (!commandFamilies.includes(plan.familyId) || !(families.get(plan.familyId).commandOperationIds ?? []).includes(row.operationId) || !algorithms.has(plan.sourceAlgorithmId)) fail("BP_FINAL_FIXTURE_PLAN_COMMAND_ALGORITHM_DRIFT");
+    const algorithm = algorithms.get(plan.sourceAlgorithmId);
+    if (!exact(algorithm.operationIds, [row.operationId]) || algorithm.predecessorDeclarationId !== plan.predecessorDeclarationId || !exact(algorithm.producedReadbackKeys ?? [], predecessors.get(plan.predecessorDeclarationId).producedReadbackKeys) || algorithm.sourceAnchors?.some((anchor) => !hashMatches(anchor))) fail("BP_FINAL_FIXTURE_PLAN_SOURCE_HASH_DRIFT");
+    if (algorithm.sourceAnchors?.some((anchor) => !selectorResolves(anchor))) fail("BP_FINAL_FIXTURE_PLAN_SOURCE_SELECTOR_UNRESOLVED");
+    if (plan.request.transport === "JSON") jsonRows += 1; else if (plan.request.transport === "NONE") noneRows += 1; else if (plan.request.transport === "MULTIPART_FORM") multipartRows += 1; else fail("BP_FINAL_FIXTURE_PLAN_TRANSPORT_INVALID");
+    if (plan.request.transport === "NONE") { if (!noBodyFixtures.has(row.fixtureId) || plan.request.builderId !== null) fail("BP_FINAL_FIXTURE_PLAN_NO_BODY_DRIFT"); }
+    else if (!builders.has(plan.request.builderId) || !exact(builders.get(plan.request.builderId).operationIds, [row.operationId]) || builders.get(plan.request.builderId).predecessorDeclarationId !== plan.predecessorDeclarationId) fail("BP_FINAL_FIXTURE_PLAN_BUILDER_DRIFT");
+  }
+  if (getRows !== 166 || jsonRows !== 216 || noneRows !== 12 || multipartRows !== 2 || queryRows !== 92 || pathBindings !== 462) fail("BP_FINAL_FIXTURE_PLAN_ROW_DENOMINATOR_DRIFT");
+}
+
+export function checkFinalFixtureCatalog({catalog = loadFinalFixtureCatalog(), recipes = createFinalWorkloadRecipes()} = {}) {
+  validateFinalFixtureCatalog(catalog);
+  validateFixtureCatalogAgainstRecipes(catalog, recipes);
+  validateFixturePlans(catalog);
+  const counts = Object.fromEntries(Object.entries(catalog.denominators).filter(([key]) => key !== "total"));
+  if (catalog.denominators.total !== 396 || JSON.stringify(counts) !== JSON.stringify({U05_TASK_READ: 78, U05_PROTOCOL: 5, U04_NUMERIC: 79, U04_CONTEXT_PARITY: 38, U07_ROUTE: 196})) fail("BP_FINAL_FIXTURE_CATALOG_DENOMINATOR_DRIFT");
+  return {rows: catalog.rows.length, counts};
+}
+
+function selfTest() {
+  const catalog = structuredClone(loadFinalFixtureCatalog());
+  const recipes = createFinalWorkloadRecipes();
+  checkFinalFixtureCatalog({catalog, recipes});
+  const duplicate = structuredClone(catalog); duplicate.rows[1] = structuredClone(duplicate.rows[0]);
+  try { checkFinalFixtureCatalog({catalog: duplicate, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_DUPLICATE_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_DUPLICATE")) throw error; }
+  const missingOwnerHttp = structuredClone(catalog); missingOwnerHttp.fixturePlanDeclarations.ownerHttpOperationDeclarations.pop();
+  try { checkFinalFixtureCatalog({catalog: missingOwnerHttp, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_OWNER_HTTP_MISSING_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_OWNER_HTTP_DENOMINATOR_DRIFT")) throw error; }
+  const generic = structuredClone(catalog); generic.rows[0].materializerKind = "GENERIC";
+  try { checkFinalFixtureCatalog({catalog: generic, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_GENERIC_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_BINDING_INVALID")) throw error; }
+  const route = structuredClone(catalog); route.rows[0].routeTemplate = "/api/foreign";
+  try { checkFinalFixtureCatalog({catalog: route, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_ROUTE_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_RECIPE_DRIFT")) throw error; }
+  const prerequisite = structuredClone(catalog); prerequisite.rows[0].prerequisiteReadback = "missing";
+  try { checkFinalFixtureCatalog({catalog: prerequisite, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_PREREQUISITE_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_BINDING_INVALID")) throw error; }
+  const query = structuredClone(catalog); const queryRow = query.rows.find((row) => row.fixturePlan.queryBindings.length); queryRow.fixturePlan.queryBindings = [];
+  try { checkFinalFixtureCatalog({catalog: query, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_QUERY_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_QUERY_BINDING_DRIFT")) throw error; }
+  const noBody = structuredClone(catalog); noBody.rows.find((row) => row.fixtureId === "BP-U04-PARITY:acceptPublicInvitation").fixturePlan.request.builderId = "BUILDER_ACCEPT_PUBLIC_INVITATION";
+  try { checkFinalFixtureCatalog({catalog: noBody, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_NO_BODY_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_NO_BODY_DRIFT")) throw error; }
+  const family = structuredClone(catalog); const command = family.rows.find((row) => row.method !== "GET"); command.fixturePlan.familyId = "CONTRACT"; command.fixturePlan.preparationProcedureId = "PREP_CONTRACT"; command.fixturePlan.predecessorPlanId = "PREDECESSOR_CONTRACT"; command.fixturePlan.predecessorDeclarationId = "PREDECESSOR_CONTRACT";
+  try { checkFinalFixtureCatalog({catalog: family, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_FAMILY_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_COMMAND_ALGORITHM_DRIFT")) throw error; }
+  const algorithm = structuredClone(catalog); algorithm.fixturePlanDeclarations.sourceAlgorithms[0].sourceAnchors[0].sha256 = "0".repeat(64);
+  try { checkFinalFixtureCatalog({catalog: algorithm, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_SOURCE_HASH_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_SOURCE_HASH_DRIFT")) throw error; }
+  const unknownSelector = structuredClone(catalog); unknownSelector.fixturePlanDeclarations.sourceAlgorithms[0].sourceAnchors[0].selector = "e";
+  try { checkFinalFixtureCatalog({catalog: unknownSelector, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_SELECTOR_RESOLUTION_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_SOURCE_SELECTOR_UNRESOLVED")) throw error; }
+  const exportedProcedure = structuredClone(catalog); exportedProcedure.fixturePlanDeclarations.readbackDeclarations[0].sourceAnchor.exportedProcedure = "missingAuthoritativeExport";
+  try { checkFinalFixtureCatalog({catalog: exportedProcedure, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_EXPORTED_PROCEDURE_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_EXPORTED_PROCEDURE_UNRESOLVED")) throw error; }
+  const sequence = structuredClone(catalog); sequence.fixturePlanDeclarations.predecessorDeclarations[0].ownerHttpOperationIds = ["OWNER_HTTP_UNKNOWN"];
+  try { checkFinalFixtureCatalog({catalog: sequence, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_SEQUENCE_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_PREDECESSOR_SEQUENCE_DRIFT")) throw error; }
+  const selector = structuredClone(catalog); selector.fixturePlanDeclarations.readbackDeclarations[0].selector = "";
+  try { checkFinalFixtureCatalog({catalog: selector, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_SELECTOR_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_SELECTOR_MISSING")) throw error; }
+  const status = structuredClone(catalog); status.rows[0].fixturePlan.expected.successStatus = 204;
+  try { checkFinalFixtureCatalog({catalog: status, recipes}); fail("BP_FINAL_FIXTURE_SELF_TEST_STATUS_NOT_REJECTED"); } catch (error) { if (!String(error.message).includes("BP_FINAL_FIXTURE_PLAN_READBACK_DRIFT")) throw error; }
+  return true;
+}
+
+const argument = process.argv[2];
+try {
+  if (argument === "--check") {
+    const result = checkFinalFixtureCatalog();
+    process.stdout.write(`BP_FINAL_FIXTURE_CATALOG=PASS\nROWS=${result.rows}\nU05=78+5\nU04=79+38\nU07=196\n`);
+  } else if (argument === "--self-test") {
+    selfTest();
+    process.stdout.write("BP_FINAL_FIXTURE_CATALOG_SELF_TEST=PASS\n");
+  } else fail("BP_FINAL_FIXTURE_CATALOG_ARGUMENT_INVALID");
+} catch (error) {
+  process.stderr.write(`${error.message}\n`);
+  process.exitCode = 1;
+}

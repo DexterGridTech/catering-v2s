@@ -39,22 +39,13 @@
       },
       "consumers": [
         {
-          "path": "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx"
-        },
-        {
           "path": "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx"
         },
         {
-          "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx"
-        },
-        {
           "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx"
@@ -67,18 +58,6 @@
         },
         {
           "path": "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx"
@@ -105,24 +84,7 @@
           "root": "apps/frontend",
           "glob": "*.{ts,tsx}",
           "pattern": "(?:error|problem)\\.problem\\.errorCode.*(?:error|problem)\\.problem\\.detail|(?:error|problem)\\.errorCode.*(?:error|problem)\\.detail",
-          "expectedPaths": [
-            "apps/frontend/operations-admin/src/features/access-recovery/ui/PublicPasswordRecoveryEntry.tsx",
-            "apps/frontend/operations-admin/src/features/audit-history/ui/OperationsAuditHistoryModal.tsx",
-            "apps/frontend/operations-admin/src/features/authentication/ui/OperationsLoginPage.tsx",
-            "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
-            "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
-            "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx",
-            "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/work-context/ui/ContextSelector.tsx",
-            "apps/frontend/operations-admin/src/features/work-context/ui/OperationsPasswordChangeDrawer.tsx",
-            "apps/frontend/operations-admin/src/features/work-context/ui/RoleAssignmentSelector.tsx",
-            "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceInvitationPanel.tsx",
-            "apps/frontend/operations-admin/src/features/workspace-user/ui/WorkspaceUserPage.tsx"
-          ]
+          "expectedPaths": []
         }
       ]
     },
@@ -133,7 +95,7 @@
         "kind": "CURRENT_CATALOG",
         "path": "contracts/catalog/admin-catalog.json",
         "selector": "platformPages[PLATFORM-WORKSPACE-OVERVIEW].title",
-        "sha256": "5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f"
+        "sha256": "c6dc61e8248a82b2c3aba6401240657051d6c859ef0c7f6042bedc46dc99bccc"
       },
       "generatorRelation": {
         "kind": "EDGE_CODEGEN_CATALOG_PROJECTION",
@@ -167,7 +129,7 @@
         "kind": "CURRENT_CATALOG",
         "path": "contracts/catalog/admin-catalog.json",
         "selector": "platformPages array order",
-        "sha256": "5cf60243f4173eed3f06fd680358b7b1fde5a4cee4246bfb394d45fe0e99589f"
+        "sha256": "c6dc61e8248a82b2c3aba6401240657051d6c859ef0c7f6042bedc46dc99bccc"
       },
       "generatorRelation": {
         "kind": "EDGE_CODEGEN_CATALOG_PROJECTION",
@@ -236,7 +198,7 @@
         "kind": "CURRENT_CARRY_OVER_MANIFEST",
         "path": "contracts/policy/frontend-asset-carryover-manifest.json",
         "selector": "surfaces[*].physicalConsumerPaths (or targetPath for a single physical consumer)",
-        "sha256": "8d53e1ed3b48202b29d3dc3c0dae9c5d740f6685f8760e9b80a661a7a4906eaa"
+    "sha256": "5617b6bc8ce9ed87c160acfd47d78068a7fc3237375f89577a65838033476d99"
       },
       "generatorRelation": {
         "kind": "CARRYOVER_TARGET_PATH_DERIVATION",
@@ -279,28 +241,13 @@
       },
       "consumers": [
         {
-          "path": "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx"
-        },
-        {
           "path": "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx"
         },
         {
           "path": "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx"
-        },
-        {
-          "path": "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx"
         },
         {
           "path": "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx"
@@ -310,9 +257,6 @@
         },
         {
           "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx"
-        },
-        {
-          "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx"
         },
         {
           "path": "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx"
@@ -327,22 +271,7 @@
           "root": "apps/frontend",
           "glob": "*.{ts,tsx}",
           "pattern": "\\breloadVersion\\b|\\bsetReloadVersion\\b|void load\\(\\)|await load\\(\\)",
-          "expectedPaths": [
-            "apps/frontend/operations-admin/src/features/brand-management/ui/BrandManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/head-company-management/ui/HeadCompanyManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/organization-structure/ui/OrganizationStructurePage.tsx",
-            "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/tenant-management/ui/TenantManagementPage.tsx",
-            "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceInvitationPanel.tsx",
-            "apps/frontend/operations-admin/src/features/workspace-membership/ui/WorkspaceMembershipPage.tsx",
-            "apps/frontend/platform-admin/src/features/platform-administration/ui/AdministratorsPage.tsx",
-            "apps/frontend/platform-admin/src/features/workspace-administration/ui/WorkspaceAdministrationPage.tsx",
-            "apps/frontend/platform-admin/src/features/workspace-iam/ui/AccountsPage.tsx",
-            "apps/frontend/platform-admin/src/features/workspace-iam/ui/InvitationsPage.tsx",
-            "apps/frontend/platform-admin/src/features/workspace-iam/ui/RolesPage.tsx",
-            "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceManagementPage.tsx"
-          ]
+          "expectedPaths": []
         }
       ]
     },
@@ -353,7 +282,7 @@
         "kind": "CURRENT_CARRY_OVER_MANIFEST",
         "path": "contracts/policy/frontend-asset-carryover-manifest.json",
         "selector": "surfaces[*].focusedEvidence",
-        "sha256": "8d53e1ed3b48202b29d3dc3c0dae9c5d740f6685f8760e9b80a661a7a4906eaa"
+        "sha256": "5617b6bc8ce9ed87c160acfd47d78068a7fc3237375f89577a65838033476d99"
       },
       "generatorRelation": {
         "kind": "NONE",

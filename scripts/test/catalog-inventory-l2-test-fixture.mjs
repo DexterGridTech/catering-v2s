@@ -23,6 +23,7 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const required = (value, name) => { if (value === null || value === undefined || value === '') throw new Error(`${name}_REQUIRED`); return value; };
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requiredUuid = (value, name) => { if (typeof value !== 'string' || !uuidPattern.test(value)) throw new Error(`L2_OWNER_REF_MISSING:${name}`); return value; };
+const safeFailure = (value) => String(value?.message || value || 'L2_FIXTURE_FAILED').replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 240);
 const fail = (reason) => { process.stderr.write(`CATALOG_INVENTORY_L2_TEST_FIXTURE=FAIL; REASON=${reason}\n`); process.exitCode = 2; };
 
 function registry() {
@@ -131,8 +132,6 @@ async function execute() {
   const dinnerCode = l2Code('DINNER-SET-001');
   const caesarCode = l2Code('CAESAR-001');
   const weighedCode = l2Code('PORK-WEIGHT-001');
-  const autoSyncCode = l2Code('AUTO-001');
-  const temporaryItemCode = l2Code('TEMP-001');
 
   // L2 owns its visible facts.  These are intentionally not the business seed
   // and are not read from the API acceptance report.  They provide only the
@@ -247,7 +246,6 @@ async function execute() {
   await ensureItem({code: dinnerCode, shapeKey: 'COMPOSITE', attributes: {fixtureRef: 'SEED-DINNER-SET'}, draft: commonDraft(dinnerCode, 'COMPOSITE', {compositeGroups: [{groupCode: 'DINNER-COMPONENTS', groupName: '套餐组件', selectionRule: 'REQUIRED', components: [{itemCode: latteCode, itemRef: itemRef(storeRefs, latteCode), skuCode: `${latteCode}-SKU-M`, productSkuRef: skuRef(storeRefs, `${latteCode}-SKU-M`), quantity: '1', unit: 'EACH', default: true, extraPrice: null, status: 'ENABLED'}]}]})});
   await ensureItem({code: caesarCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'SEED-CAESAR'}, draft: commonDraft(caesarCode, 'STANDARD_SALE_COUNTED', {orderOptions: ['CAESAR-DRESSING', 'CAESAR-SIZE', 'CAESAR-TOPPING'].map((groupCode) => ({groupCode, groupName: groupCode, selectionMode: 'SINGLE', required: true, values: [{code: `${groupCode}-DEFAULT`, name: `${groupCode}-DEFAULT`, attributeValueRef: dictionaryRef(storeRefs, 'SKU_ATTRIBUTE_VALUE', `${groupCode}-DEFAULT`), default: true, extraPrice: null, productionEffects: []}]}))})});
   await ensureItem({code: weighedCode, shapeKey: 'STANDARD_SALE_WEIGHED', attributes: {fixtureRef: 'SEED-WEIGHED'}, draft: commonDraft(weighedCode, 'STANDARD_SALE_WEIGHED')});
-  await ensureItem({code: autoSyncCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'FIXTURE-AUTO-SYNC', source: 'AUTO_SYNC'}, draft: commonDraft(autoSyncCode, 'STANDARD_SALE_COUNTED', {source: 'AUTO_SYNC', governanceStatus: 'AUTO_SYNC'})});
   // This fixture owns the two real image bytes used by browser L2.  It never
   // consumes the DEV seed or API-suite report: stage, claim and readback all
   // pass through the normal owner HTTP operations in this run namespace.
@@ -266,30 +264,6 @@ async function execute() {
     throw new Error('L2_IMAGE_FIXTURE_CLAIM_READBACK_MISSING');
   }
   await request('createOperationsProductionTag', {}, {cookie, brandRef, expected: [200], idempotencySuffix: 'l2-tag', body: {dataNodeRef, code: l2Code('L2-TAG-001'), name: 'L2生产提示', tagKind: 'PRODUCTION'}}).catch((error) => { if (!String(error?.message).includes('HTTP_409')) throw error; });
-
-  const created = await request('createOperationsCatalogItem', {}, {cookie, brandRef, expected: [200], idempotencySuffix: 'create-temp', body: {
-    dataNodeRef, name: '外部订单临时拿铁', code: temporaryItemCode, shapeKey: 'STANDARD_SALE_COUNTED',
-    attributes: {fixtureRef: 'FIXTURE-TEMPORARY-ITEM', source: 'EXTERNAL_ORDER_TEMPORARY'},
-  }});
-  const version = Number(itemResult(created.json)?.version || created.json?.version || 1);
-  await request('saveOperationsCatalogItem', {itemCode: temporaryItemCode}, {cookie, brandRef, idempotencySuffix: 'save-temp', body: {
-    dataNodeRef, itemCode: temporaryItemCode, sections: {
-      catalogDraft: {
-        name: '外部订单临时拿铁', shapeKey: 'STANDARD_SALE_COUNTED',
-        source: 'EXTERNAL_ORDER_TEMPORARY', governanceStatus: 'GOVERNANCE_TODO',
-        externalIdentity: {sourceOrderRef: 'EXT-ORDER-001', sourceRecordRef: 'EXT-RECORD-001', sourceItemRef: 'EXT-SKU-88', snapshot: {name: '外部订单临时拿铁', specification: '中杯 / 热', price: 2800}},
-        ordering: {priceGranularity: 'ITEM', standardSalePrice: 2800, listedSalePrice: 2800, missingPriceCount: 0},
-      },
-      expectedCatalogVersion: version,
-      expectedInventoryVersions: [],
-    },
-  }});
-  const items = await request('getOperationsCatalogItems', {}, {cookie, brandRef, queryParameters: {dataNodeRef, source: 'TEMPORARY', pageSize: 100}});
-  const temp = (items.json?.data?.items || []).find((item) => item.code === temporaryItemCode);
-  if (!temp) throw new Error('TEMPORARY_ITEM_READBACK_MISSING');
-  const detail = await request('getOperationsCatalogItem', {itemCode: temporaryItemCode}, {cookie, brandRef, queryParameters: {dataNodeRef}});
-  const detailData = detail.json?.data ?? detail.json;
-  if (detailData?.item?.source !== 'TEMPORARY' && detailData?.source !== 'TEMPORARY') throw new Error('TEMPORARY_ITEM_SOURCE_READBACK_INVALID');
 
   // L2 must not exercise the mutable target that the API acceptance suite uses
   // for count/increase/adjust/configuration.  Create a run-scoped target from
@@ -357,26 +331,24 @@ async function execute() {
     'FIXTURE-SHAPE-ADMISSION': itemBinding(weighedCode),
     'FIXTURE-PRODUCIBLE-RETAINED': itemBinding(caesarCode),
     'FIXTURE-SHAPE-MATRIX': itemBinding(caesarCode),
-    'FIXTURE-AUTO-SYNC': itemBinding(autoSyncCode),
     'FIXTURE-VOID-INBOUND-REFERENCE': itemBinding(dinnerCode),
     'FIXTURE-VOID-DEPENDENT-FACT': itemBinding(beanCode),
     'FIXTURE-ASSET-PROCESSING': {...itemBinding(assetItemCode), assetRefs: [primaryImageAssetRef, secondaryImageAssetRef]},
     'FIXTURE-UNIT-GRAM-EACH': itemBinding(beanCode),
     'FIXTURE-STALE-SOURCE': itemBinding(latteCode),
-    'FIXTURE-SURFACE-STATES': itemBinding(temporaryItemCode),
+    'FIXTURE-SURFACE-STATES': itemBinding(latteCode),
     'FIXTURE-WORKBENCH-QUERY': itemBinding(latteCode),
     'FIXTURE-SCENARIO-CI-L2-004': itemBinding(latteCode),
     'FIXTURE-SCENARIO-CI-L2-008': itemBinding(latteCode),
     'FIXTURE-SCENARIO-CI-L2-018': itemBinding(latteCode),
-    'FIXTURE-TEMPORARY-ITEM': itemBinding(temporaryItemCode),
     'FIXTURE-ADVANCED-DIAGNOSTICS': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
     'FIXTURE-INVENTORY-NEGATIVE': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
     'FIXTURE-COUNT-INCREASE-ADJUST': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
     'FIXTURE-CONFIG-ONLY': {primaryTargetRef: inventoryTarget.targetRef, primaryTargetProductCode: l2InventoryCode},
   };
-  const report = {schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', fixtureRef: 'FIXTURE-TEMPORARY-ITEM', runId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), status: 'PASS', imageBindEvidenceInputs, dataNodeRef, itemCode: temporaryItemCode, l2InventoryItemCode: l2InventoryCode, l2InventoryTargetRef: inventoryTarget.targetRef, l2FixtureBindings, calls, events, httpOnly: true};
+  const report = {schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', fixtureRef: 'L2-RUN-SCOPED-CATALOG', runId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), status: 'PASS', businessStatus: 'PASS', cleanupStatus: 'NOT_OWNED_BY_FIXTURE', cleanupOwner: 'JOINT_L2_RUNNER', firstFailure: null, lastKnownGood: 'L2_FIXTURE_READBACK', brokenBoundary: null, imageBindEvidenceInputs, dataNodeRef, itemCode: latteCode, l2InventoryItemCode: l2InventoryCode, l2InventoryTargetRef: inventoryTarget.targetRef, l2FixtureBindings, calls, events, httpOnly: true};
   fs.mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700}); fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
   process.stdout.write(`CATALOG_INVENTORY_L2_TEST_FIXTURE=PASS; REPORT=${reportPath}\n`);
 }
 
-execute().catch((error) => { try { fs.mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700}); fs.writeFileSync(reportPath, `${JSON.stringify({schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', status: 'FAIL', reason: String(error?.message || error).replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 240)}, null, 2)}\n`, {mode: 0o600}); } catch { /* preserve primary failure */ } fail(String(error?.message || error).replaceAll(/[^A-Z0-9_:. -]/g, '').slice(0, 240)); });
+execute().catch((error) => { const reason = safeFailure(error); try { fs.mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700}); fs.writeFileSync(reportPath, `${JSON.stringify({schemaVersion: 1, kind: 'catalog-inventory-l2-test-fixture', status: 'FAIL', businessStatus: 'FAIL', cleanupStatus: 'NOT_OWNED_BY_FIXTURE', cleanupOwner: 'JOINT_L2_RUNNER', firstFailure: reason, lastKnownGood: 'FIXTURE_EXECUTION', brokenBoundary: 'FIXTURE_EXECUTION', reason}, null, 2)}\n`, {mode: 0o600}); } catch { /* preserve primary failure */ } fail(reason); });

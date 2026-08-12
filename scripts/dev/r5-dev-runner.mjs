@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {spawn, spawnSync} from 'node:child_process';
-import {chmodSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {appendFileSync, chmodSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {canonicalStartToken, evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
@@ -9,6 +9,7 @@ import {catalogImageBindEvidenceInputs} from '../test/catalog-image-bind-evidenc
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const manifestPath = path.join(runtime, 'run-manifest.json');
+const readinessProgressPath = path.join(runtime, `readiness-${process.pid}.jsonl`);
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
 const localPostgresPort = String(process.env.V2S_DEV_LOCAL_POSTGRES_PORT ?? '25432');
 const localAssetPort = String(process.env.V2S_DEV_LOCAL_ASSET_PORT ?? '29000');
@@ -32,6 +33,15 @@ const run = (command, args, options = {}) => {
 const ownedStartToken = (value) => canonicalStartToken(value.startToken);
 const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: ownedStartToken(value)});
 const cleanupStatusFromTree = (treeReadback) => evaluateCleanupReadback(treeReadback) ? 'PASS' : 'FAIL';
+const terminalManifestPathFor = (runId) => path.join(runtime, `terminal-${runId}.json`);
+const safeFailure = (error) => String(error?.code || error?.message || 'R5_DEV_START_FAILED').replaceAll(/[^A-Za-z0-9_:. -]/g, '').slice(0, 256);
+const writeTerminalManifest = (base, fields) => {
+  const target = terminalManifestPathFor(base.runId);
+  const terminal = {schemaVersion: 1, kind: 'r5-dev-terminal-run-manifest', ...base, ...fields, terminalManifestPath: target, terminalAt: new Date().toISOString()};
+  mkdirSync(path.dirname(target), {recursive: true, mode: 0o700});
+  writeFileSync(target, `${JSON.stringify(terminal, null, 2)}\n`, {mode: 0o600});
+  return target;
+};
 async function stopOwnedIdentity(value) {
   if (!Number.isInteger(value.pid) || typeof value.startToken !== 'string') fail(`PROCESS_IDENTITY_INVALID:${value.name}`);
   if (!pidAlive(value.pid)) {
@@ -160,9 +170,13 @@ async function waitForBusinessReady(processValue) {
   let attempts = 0;
   while (Date.now() < deadline) {
     attempts += 1;
-    if (!pidAlive(processValue.pid) || startToken(processValue.pid) !== processValue.startToken) fail('BUSINESS_SERVER_IDENTITY_DRIFT');
+    const alive = pidAlive(processValue.pid);
+    const currentToken = alive ? readStartToken(processValue.pid) : null;
+    const logBytes = existsSync(processValue.log) ? statSync(processValue.log).size : 0;
     const log = existsSync(processValue.log) ? readFileSync(processValue.log, 'utf8') : '';
-    if (log.includes('Started CateringV2sApplication')) return {attempts, readiness: 'SPRING_BOOT_STARTED_AFTER_FLYWAY'};
+    appendFileSync(readinessProgressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'BUSINESS_SERVER_READINESS_PROBE', attempt: attempts, pid: processValue.pid, identityValid: alive && currentToken === processValue.startToken, logBytes, readyMarkerSeen: log.includes('Started CateringV2sApplication')})}\n`, {mode: 0o600});
+    if (!alive || currentToken !== processValue.startToken) fail('BUSINESS_SERVER_IDENTITY_DRIFT');
+    if (log.includes('Started CateringV2sApplication')) return {attempts, readiness: 'SPRING_BOOT_STARTED_AFTER_FLYWAY', progressPath: readinessProgressPath};
     await delay(1_000);
   }
   fail('BUSINESS_SERVER_READINESS_TIMEOUT');
@@ -187,6 +201,13 @@ async function start() {
   }
   mkdirSync(runtime, {recursive: true});
   const env = environment('start');
+  const catalogFaultFlag = process.env.V2S_CATALOG_TEST_FAULTS;
+  if (catalogFaultFlag !== undefined && catalogFaultFlag !== 'true' && catalogFaultFlag !== 'false') fail('CATALOG_TEST_FAULTS_FLAG_INVALID');
+  const catalogTestFaultsAdmitted = catalogFaultFlag === 'true' && env.environment.V2S_RUNTIME_ENVIRONMENT === 'non-production';
+  // This test-only, non-secret flag is admitted explicitly to the local
+  // business server. Do not leak it from the parent environment to either UI.
+  const inheritedProcessEnvironment = {...process.env};
+  delete inheritedProcessEnvironment.V2S_CATALOG_TEST_FAULTS;
   const freshFlag = process.env.V2S_R5_REQUIRE_FRESH_DATABASE;
   if (freshFlag !== undefined && freshFlag !== 'true' && freshFlag !== 'false') fail('FRESH_DATABASE_FLAG_INVALID');
   const requireFreshDatabase = freshFlag === 'true';
@@ -218,14 +239,14 @@ async function start() {
   try {
   const tunnel = openTunnel(env);
   const commands = [
-    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
+    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false', V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
   ];
   processes = [tunnel, ...commands.map((entry) => {
     const log = path.join(runtime, `${entry.name}.log`);
     const logFd = openSync(log, 'w');
-    const child = spawn(entry.command, entry.args, {cwd: root, detached: true, stdio: ['ignore', logFd, logFd], env: {...process.env, ...entry.env}});
+    const child = spawn(entry.command, entry.args, {cwd: root, detached: true, stdio: ['ignore', logFd, logFd], env: {...inheritedProcessEnvironment, ...entry.env}});
     child.unref();
     return {name: entry.name, pid: child.pid, log, command: [entry.command, ...entry.args]};
   })].map((value) => {
@@ -235,14 +256,18 @@ async function start() {
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
   businessServer.runtimeIdentity = readListeningProcessIdentity(8080, 'business-server-runtime');
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, imageBindEvidenceInputs, portLock, processes, readiness}, null, 2) + '\n');
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, imageBindEvidenceInputs, readinessProgressPath, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
+    let cleanupStatus = 'PASS';
     for (const value of processes) {
       if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
-        try { await stopOwnedProcess(value); } catch { /* cleanup status is surfaced by the failed start */ }
+        try { await stopOwnedProcess(value); } catch { cleanupStatus = 'FAIL'; }
       }
     }
+    const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, processes}, {
+      firstFailure: safeFailure(error), lastKnownGood: processes.length > 0 ? 'PROCESS_IDENTITIES' : 'PREPARED', brokenBoundary: 'START', business: {status: 'FAIL'}, cleanup: {status: cleanupStatus},
+    });
     releasePortLock(portLock); throw error;
   }
 }
@@ -255,8 +280,15 @@ async function stop() {
     try { await stopOwnedProcess(value); }
     catch (error) { failures.push(error); }
   }
+  const cleanupStatus = failures.length === 0 ? 'PASS' : 'FAIL';
+  const terminal = writeTerminalManifest(manifest, {
+    firstFailure: failures.length === 0 ? null : safeFailure(failures[0]),
+    lastKnownGood: failures.length === 0 ? 'PROCESS_TREE_EXIT' : 'PROCESS_IDENTITIES',
+    brokenBoundary: failures.length === 0 ? null : 'LOCAL_CLEANUP',
+    business: {status: 'PASS'}, cleanup: {status: cleanupStatus, failedProcessCount: failures.length},
+  });
   if (failures.length > 0) fail(`R5_DEV_STOP_CLEANUP_FAILED:${failures.map((error) => error.message).join('|')}`);
-  releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write('R5_DEV_STOP=PASS\n');
+  releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write(`R5_DEV_STOP=PASS; TERMINAL_MANIFEST=${terminal}\n`);
 }
 const mode = process.argv[2];
 if (mode === '--self-test') {

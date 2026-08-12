@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-api-scenarios",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "scenarioCount": 26,
-  "caseCount": 100,
+  "caseCount": 99,
   "caseBindingSets": {
     "fixtureCandidateCaseIds": [
       "CI-API-006-01",
@@ -24,7 +24,6 @@
       "CI-API-014-05",
       "CI-API-019-01",
       "CI-API-019-02",
-      "CI-API-020-01",
       "CI-API-021-01",
       "CI-API-021-02",
       "CI-API-023-01",
@@ -75,7 +74,6 @@
       "CI-API-018-15",
       "CI-API-019-01",
       "CI-API-019-02",
-      "CI-API-020-01",
       "CI-API-021-01",
       "CI-API-021-02",
       "CI-API-022-02",
@@ -108,7 +106,6 @@
       "CI-API-005-07",
       "CI-API-005-08",
       "CI-API-005-09",
-      "CI-API-007-01",
       "CI-API-008-01",
       "CI-API-008-02",
       "CI-API-008-03",
@@ -144,6 +141,7 @@
       "CI-API-018-16",
       "CI-API-018-17",
       "CI-API-018-18",
+      "CI-API-020-01",
       "CI-API-020-02",
       "CI-API-022-01",
       "CI-API-026-01",
@@ -159,7 +157,6 @@
       "CI-API-009-02",
       "CI-API-016-02",
       "CI-API-017-02",
-      "CI-API-020-01",
       "CI-API-021-01",
       "CI-API-021-02",
       "CI-API-022-02",
@@ -195,7 +192,6 @@
       "CI-API-006-06",
       "CI-API-006-07",
       "CI-API-006-08",
-      "CI-API-007-01",
       "CI-API-008-01",
       "CI-API-008-02",
       "CI-API-008-03",
@@ -243,6 +239,7 @@
       "CI-API-018-18",
       "CI-API-019-01",
       "CI-API-019-02",
+      "CI-API-020-01",
       "CI-API-020-02",
       "CI-API-022-01",
       "CI-API-023-01",
@@ -889,35 +886,16 @@
     {
       "scenarioId": "CI-API-007",
       "layer": "API",
-      "caseCount": 1,
+      "caseCount": 0,
       "fixtureRefs": [
         "FIXTURE-AUTO-SYNC",
         "FIXTURE-TEMPORARY-ITEM"
       ],
       "businessRequirement": "来源 ownership、deniedFields 与临时商品治理",
       "primaryVerifier": "owner-api",
-      "cases": [
-        {
-          "caseId": "CI-API-007-01",
-          "fixtureRef": "FIXTURE-AUTO-SYNC",
-          "parameterization": "canonical",
-          "parameter": {
-            "variant": 1,
-            "fixtureRef": "FIXTURE-AUTO-SYNC"
-          },
-          "expected": {
-            "assertionKey": "CI-API-007:1/FIXTURE-AUTO-SYNC",
-            "fixtureRef": "FIXTURE-AUTO-SYNC",
-            "parameter": {
-              "variant": 1,
-              "fixtureRef": "FIXTURE-AUTO-SYNC"
-            }
-          },
-          "expectedBusinessResult": "来源 ownership、deniedFields 与临时商品治理；case={\"variant\":1,\"fixtureRef\":\"FIXTURE-AUTO-SYNC\"}",
-          "polarity": "POSITIVE",
-          "expectationKind": "FACT"
-        }
-      ]
+      "executionApplicability": "NOT_APPLICABLE_WITH_REASON",
+      "notApplicableReason": "Both source-owned fixture variants require ingress chains explicitly excluded by the approved phase; model/view coverage remains independently declared.",
+      "cases": []
     },
     {
       "scenarioId": "CI-API-008",
@@ -2091,6 +2069,7 @@
       "caseCount": 2,
       "fixtureRefs": [
         "FIXTURE-REFERENCE-MAPPING-MISSING",
+        "FIXTURE-LOCAL-COPY",
         "FIXTURE-BRAND-COPY"
       ],
       "businessRequirement": "全 outbound ref 重写与缺映射阻断",
@@ -2098,45 +2077,41 @@
       "cases": [
         {
           "caseId": "CI-API-020-01",
-          "fixtureRef": "FIXTURE-REFERENCE-MAPPING-MISSING",
+          "fixtureRef": "FIXTURE-LOCAL-COPY",
           "parameterization": "case-1-of-2",
           "parameter": {
             "variant": 1,
-            "fixtureRef": "FIXTURE-REFERENCE-MAPPING-MISSING"
+            "fixtureRef": "FIXTURE-LOCAL-COPY"
           },
           "expected": {
-            "assertionKey": "CI-API-020:1/FIXTURE-REFERENCE-MAPPING-MISSING",
-            "fixtureRef": "FIXTURE-REFERENCE-MAPPING-MISSING",
+            "assertionKey": "CI-API-020:1/FIXTURE-LOCAL-COPY",
+            "fixtureRef": "FIXTURE-LOCAL-COPY",
             "parameter": {
               "variant": 1,
-              "fixtureRef": "FIXTURE-REFERENCE-MAPPING-MISSING"
+              "fixtureRef": "FIXTURE-LOCAL-COPY"
             }
           },
-          "expectedBusinessResult": "全 outbound ref 重写与缺映射阻断；case={\"variant\":1,\"fixtureRef\":\"FIXTURE-REFERENCE-MAPPING-MISSING\"}",
-          "polarity": "NEGATIVE",
-          "expectationKind": "TYPED_FAILURE",
-          "conditionToProblemRef": {
-            "operationId": "executeOperationsLocalCatalogCopy",
-            "problemCode": "REFERENCE_MAPPING_UNRESOLVED"
-          }
+          "expectedBusinessResult": "全 outbound ref 重写与缺映射阻断；case={\"variant\":1,\"fixtureRef\":\"FIXTURE-LOCAL-COPY\"}",
+          "polarity": "POSITIVE",
+          "expectationKind": "FACT"
         },
         {
           "caseId": "CI-API-020-02",
-          "fixtureRef": "FIXTURE-BRAND-COPY",
+          "fixtureRef": "FIXTURE-LOCAL-COPY",
           "parameterization": "case-2-of-2",
           "parameter": {
             "variant": 2,
-            "fixtureRef": "FIXTURE-BRAND-COPY"
+            "fixtureRef": "FIXTURE-LOCAL-COPY"
           },
           "expected": {
-            "assertionKey": "CI-API-020:2/FIXTURE-BRAND-COPY",
-            "fixtureRef": "FIXTURE-BRAND-COPY",
+            "assertionKey": "CI-API-020:2/FIXTURE-LOCAL-COPY",
+            "fixtureRef": "FIXTURE-LOCAL-COPY",
             "parameter": {
               "variant": 2,
-              "fixtureRef": "FIXTURE-BRAND-COPY"
+              "fixtureRef": "FIXTURE-LOCAL-COPY"
             }
           },
-          "expectedBusinessResult": "全 outbound ref 重写与缺映射阻断；case={\"variant\":2,\"fixtureRef\":\"FIXTURE-BRAND-COPY\"}",
+          "expectedBusinessResult": "全 outbound ref 重写与缺映射阻断；case={\"variant\":2,\"fixtureRef\":\"FIXTURE-LOCAL-COPY\"}",
           "polarity": "POSITIVE",
           "expectationKind": "FACT"
         }

@@ -9,7 +9,7 @@
     },
     {
       "path": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json",
-      "sha256": "fe3c3f7bbc5dda2b1289d4ce81b61d93f9ac52d94845acae7fb3505180117118",
+      "sha256": "3b6578c4da35a40c7d8716805003a65e8bd8b0c8a1d89c04f8e6feeacff47230",
       "operationCount": 42
     }
   ],
@@ -3503,5 +3503,127 @@
         "reset"
       ]
     ]
-  }
+  },
+  "m1CommandArchitectureControls": [
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+      "method": "commandAuthorizationFacts",
+      "required": [
+        "activeAuthorizationRow(rawToken)",
+        "commandScopeContext(row)",
+        "new WorkspaceCommandAuthorizationFacts("
+      ],
+      "forbidden": [
+        "sessionCache.",
+        "visibility."
+      ]
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+      "method": "requireWorkspaceCommandFacts",
+      "required": [
+        "sessions.commandAuthorizationFacts(token(request))",
+        "facts.sessionReadback().groupWorkspaceKey()"
+      ],
+      "forbidden": [
+        "sessions.session(token(request))"
+      ]
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java",
+      "method": "resolveWithCapability",
+      "required": [
+        "taskPaths.commandTaskPathFacts(",
+        "pathFacts.assignmentScopeAllowed()"
+      ],
+      "forbidden": [
+        "taskPaths.requireTaskPath(",
+        "taskPaths.isScopeAllowed("
+      ]
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java",
+      "method": "commandTaskPathFacts",
+      "required": [
+        "TaskPath taskPath",
+        "scopeAllowed(assignmentType, assignmentId, taskPath)"
+      ],
+      "forbidden": [
+        "isScopeAllowed("
+      ]
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java",
+      "method": "resolveCommandTarget",
+      "required": [
+        "commandTaskPathFacts(session, assignment, expectedTargetType, requestedTargetRef)",
+        "facts.assignmentScopeAllowed()"
+      ],
+      "forbidden": [
+        "taskPaths.requireTaskPath(",
+        "taskPaths.isScopeAllowed("
+      ]
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+      "method": "catalogWorkspaceCommandHandlers",
+      "required": [
+        "@Transactional public JsonNode createCatalogItem",
+        "@Transactional public JsonNode releaseCatalogAsset"
+      ],
+      "forbidden": [],
+      "requiredOccurrences": {
+        "@Transactional public JsonNode": 25
+      }
+    }
+  ],
+  "m1CommandBoundaryControls": [
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+      "commandCount": 15,
+      "commandSessionMinimum": 1,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java",
+      "commandCount": 5,
+      "commandSessionMinimum": 1,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java",
+      "commandCount": 3,
+      "commandSessionMinimum": 3,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java",
+      "commandCount": 9,
+      "commandSessionMinimum": 9,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java",
+      "commandCount": 5,
+      "commandSessionMinimum": 5,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java",
+      "commandCount": 2,
+      "commandSessionMinimum": 2,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/contract/OperationsContractController.java",
+      "commandCount": 3,
+      "commandSessionMinimum": 1,
+      "edgeTransactionForbidden": true
+    },
+    {
+      "sourcePath": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+      "commandCount": 26,
+      "catalogCoordinator": true
+    }
+  ]
 }

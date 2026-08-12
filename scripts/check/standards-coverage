@@ -308,17 +308,53 @@ function readExecutionCatalog(root, catalogPath) {
   try { return JSON.parse(fs.readFileSync(absolute, "utf8")); } catch { fail(`ENFORCEMENT_CATALOG_INVALID:${catalogPath}`); }
 }
 
+function expectedExecutionKind(entry) {
+  if (entry.ref === "scripts/verify") return "VERIFY_ROOT";
+  if (entry.kinds.includes("ARCHUNIT")) return "ARCHUNIT_SELECTOR";
+  if (entry.kinds.includes("GATE")) return "VERIFY_CHILD";
+  fail(`ENFORCEMENT_EXECUTION_KIND_UNRESOLVED:${entry.ref}`);
+}
+
+function dependencyDigests(root, entry) {
+  const result = {};
+  for (const dependency of entry.dependencies) result[dependency.path] = dependency.sha256;
+  return result;
+}
+
 function validateExecutionCatalog({root, matrix, catalogPath = "contracts/policy/standards-enforcement-execution-catalog.json"}) {
   const catalog = readExecutionCatalog(root, catalogPath);
-  if (catalog.schemaVersion !== 1 || catalog.kind !== "standards-enforcement-execution-catalog" || !Array.isArray(catalog.entries)) fail("ENFORCEMENT_CATALOG_INVALID");
+  if (catalog.schemaVersion !== 2 || catalog.kind !== "standards-enforcement-execution-catalog" || !Array.isArray(catalog.entries)) fail("ENFORCEMENT_CATALOG_INVALID");
   const expected = activeRefDenominator(matrix);
+  const expectedByRef = new Map(expected.map((entry) => [entry.ref, entry]));
   const byRef = new Map();
   for (const entry of catalog.entries) {
-    if (!entry || typeof entry.ref !== "string" || byRef.has(entry.ref) || !Array.isArray(entry.command) || entry.command.length === 0 || entry.command.some((part) => typeof part !== "string" || part.length === 0) || !Array.isArray(entry.successMarkers) || entry.successMarkers.length === 0 || entry.successMarkers.some((marker) => typeof marker !== "string" || marker.length === 0) || !Array.isArray(entry.dependencies) || entry.dependencies.length === 0) fail(`ENFORCEMENT_CATALOG_ENTRY_INVALID:${entry?.ref || "UNSET"}`);
+    if (!entry || typeof entry.ref !== "string" || byRef.has(entry.ref)
+      || !["VERIFY_ROOT", "VERIFY_CHILD", "ARCHUNIT_SELECTOR"].includes(entry.kind)
+      || !Array.isArray(entry.dependencies) || entry.dependencies.length === 0) {
+      fail(`ENFORCEMENT_CATALOG_ENTRY_INVALID:${entry?.ref || "UNSET"}`);
+    }
+    const expectedEntry = expectedByRef.get(entry.ref);
+    if (!expectedEntry) fail("ENFORCEMENT_CATALOG_SET_MISMATCH");
+    const expectedKind = expectedExecutionKind(expectedEntry);
+    if (entry.kind !== expectedKind) fail(`ENFORCEMENT_CATALOG_KIND_MISMATCH:${entry.ref}`);
+    const hasCommand = Object.prototype.hasOwnProperty.call(entry, "command");
+    const hasMarkers = Object.prototype.hasOwnProperty.call(entry, "successMarkers");
+    if (entry.kind === "VERIFY_ROOT") {
+      if (hasCommand || hasMarkers) fail(`ENFORCEMENT_ROOT_COMMAND_FORBIDDEN:${entry.ref}`);
+    } else if (!Array.isArray(entry.command) || entry.command.length === 0
+      || entry.command.some((part) => typeof part !== "string" || part.length === 0)
+      || !Array.isArray(entry.successMarkers) || entry.successMarkers.length === 0
+      || entry.successMarkers.some((marker) => typeof marker !== "string" || marker.length === 0)) {
+      fail(`ENFORCEMENT_CATALOG_ENTRY_INVALID:${entry.ref}`);
+    }
     byRef.set(entry.ref, entry);
   }
   const expectedRefs = expected.map((entry) => entry.ref);
-  if (byRef.size !== expectedRefs.length || expectedRefs.some((ref) => !byRef.has(ref))) fail("ENFORCEMENT_CATALOG_SET_MISMATCH");
+  const actualRefs = [...byRef.keys()];
+  if (catalog.entries.length !== expectedRefs.length || byRef.size !== expectedRefs.length
+    || expectedRefs.some((ref) => !byRef.has(ref)) || actualRefs.some((ref) => !expectedByRef.has(ref))) {
+    fail("ENFORCEMENT_CATALOG_SET_MISMATCH");
+  }
   for (const entry of byRef.values()) {
     const seen = new Set();
     for (const dependency of entry.dependencies) {
@@ -328,11 +364,10 @@ function validateExecutionCatalog({root, matrix, catalogPath = "contracts/policy
       if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile() || sha256(fs.readFileSync(absolute)) !== dependency.sha256) fail(`ENFORCEMENT_DEPENDENCY_HASH_DRIFT:${entry.ref}:${dependency.path}`);
     }
   }
-  return {entries: expected.map((entry) => byRef.get(entry.ref))};
+  return {entries: catalog.entries, expected};
 }
 
 function requestedEntries(entries, refs) {
-  if (refs === undefined) return entries;
   if (!Array.isArray(refs) || refs.length === 0) fail("ENFORCEMENT_REQUESTED_REF_SET_INVALID");
   const byRef = new Map(entries.map((entry) => [entry.ref, entry]));
   const selected = [];
@@ -341,6 +376,7 @@ function requestedEntries(entries, refs) {
     if (typeof ref !== "string" || ref.length === 0 || seen.has(ref)) fail("ENFORCEMENT_REQUESTED_REF_SET_INVALID");
     const entry = byRef.get(ref);
     if (!entry) fail(`ENFORCEMENT_REQUESTED_REF_UNKNOWN:${ref}`);
+    if (entry.kind !== "VERIFY_CHILD") fail(`ENFORCEMENT_REQUESTED_REF_KIND_INVALID:${ref}`);
     seen.add(ref);
     selected.push(entry);
   }
@@ -349,7 +385,9 @@ function requestedEntries(entries, refs) {
 
 function executeActive({root, matrix, catalogPath, refs}) {
   const {entries} = validateExecutionCatalog({root, matrix, catalogPath});
-  const selected = requestedEntries(entries, refs);
+  const selected = refs === undefined
+    ? entries.filter((entry) => entry.kind === "VERIFY_CHILD")
+    : requestedEntries(entries, refs);
   for (const entry of selected) {
     const [command, ...args] = entry.command;
     const executable = command.includes("/") ? path.join(root, command) : command;
@@ -362,6 +400,54 @@ function executeActive({root, matrix, catalogPath, refs}) {
     for (const marker of entry.successMarkers) if (!output.includes(marker)) fail(`ENFORCEMENT_MARKER_MISSING:${entry.ref}:${marker}`);
   }
   return selected.map((entry) => entry.ref);
+}
+
+function readReceipt(root, absolute, reason) {
+  if (!fs.existsSync(absolute)) fail(reason);
+  try { return JSON.parse(fs.readFileSync(absolute, "utf8")); } catch { fail(reason); }
+}
+
+function validateReceiptRecord({root, receipt, entry, expectedRootRunId, sequence}) {
+  if (!receipt || receipt.schemaVersion !== 2 || receipt.rootRef !== "scripts/verify"
+    || receipt.rootRunId !== expectedRootRunId || receipt.ref !== entry.ref
+    || receipt.sequence !== sequence || receipt.exitStatus !== 0
+    || typeof receipt.completedAt !== "string" || receipt.completedAt.length === 0
+    || JSON.stringify(receipt.dependencyDigests) !== JSON.stringify(dependencyDigests(root, entry))) {
+    fail(`ENFORCEMENT_RECEIPT_INVALID:${entry.ref}`);
+  }
+  const expectedMarkers = entry.successMarkers.map((marker) => ({marker, matched: true}));
+  if (JSON.stringify(receipt.markerResults) !== JSON.stringify(expectedMarkers)) fail(`ENFORCEMENT_RECEIPT_MARKER_INVALID:${entry.ref}`);
+}
+
+function validateActiveReceipts({root, matrix, catalogPath, receiptPath, expectedRootRunId}) {
+  if (typeof receiptPath !== "string" || receiptPath.length === 0 || typeof expectedRootRunId !== "string" || expectedRootRunId.length === 0) fail("ENFORCEMENT_RECEIPT_ARGUMENT_INVALID");
+  const {entries} = validateExecutionCatalog({root, matrix, catalogPath});
+  const rootEntry = entries.find((entry) => entry.kind === "VERIFY_ROOT");
+  const selectorEntry = entries.find((entry) => entry.kind === "ARCHUNIT_SELECTOR");
+  const childEntries = entries.filter((entry) => entry.kind === "VERIFY_CHILD");
+  if (!rootEntry || !selectorEntry || childEntries.length !== 15) fail("ENFORCEMENT_KIND_PARTITION_INVALID");
+  const canonicalRootPath = path.resolve(root, ".runtime/verification/test-health", expectedRootRunId, "root-receipt.json");
+  const receivedRootPath = path.resolve(root, receiptPath);
+  if (receivedRootPath !== canonicalRootPath) fail("ENFORCEMENT_RECEIPT_PATH_IDENTITY_MISMATCH");
+  const rootReceipt = readReceipt(root, receivedRootPath, "ENFORCEMENT_ROOT_RECEIPT_MISSING");
+  if (!rootReceipt || rootReceipt.schemaVersion !== 2 || rootReceipt.rootRef !== rootEntry.ref
+    || rootReceipt.rootRunId !== expectedRootRunId || rootReceipt.ref !== rootEntry.ref
+    || rootReceipt.exitStatus !== 0 || typeof rootReceipt.completedAt !== "string"
+    || JSON.stringify(rootReceipt.dependencyDigests) !== JSON.stringify(dependencyDigests(root, rootEntry))
+    || JSON.stringify(rootReceipt.markerResults) !== "[]" || !Array.isArray(rootReceipt.sequence)) {
+    fail("ENFORCEMENT_ROOT_RECEIPT_INVALID");
+  }
+  const expectedChildRefs = childEntries.map((entry) => entry.ref);
+  const actualChildRefs = rootReceipt.sequence.map((entry) => entry?.ref);
+  if (rootReceipt.sequence.length !== childEntries.length
+    || new Set(actualChildRefs).size !== actualChildRefs.length
+    || JSON.stringify(actualChildRefs) !== JSON.stringify(expectedChildRefs)) {
+    fail("ENFORCEMENT_CHILD_RECEIPT_SET_MISMATCH");
+  }
+  rootReceipt.sequence.forEach((receipt, index) => validateReceiptRecord({root, receipt, entry: childEntries[index], expectedRootRunId, sequence: index + 1}));
+  const selectorReceipt = readReceipt(root, path.join(path.dirname(receivedRootPath), "selector-receipt.json"), "ENFORCEMENT_SELECTOR_RECEIPT_MISSING");
+  validateReceiptRecord({root, receipt: selectorReceipt, entry: selectorEntry, expectedRootRunId, sequence: 1});
+  return {successfulChildRefs: expectedChildRefs, selectorRef: selectorEntry.ref};
 }
 function writeFixture(root) {
   fs.mkdirSync(path.join(root, "contracts/policy"), { recursive: true });
@@ -519,7 +605,7 @@ function selfTest() {
     const gate = path.join(root, "scripts/check/existing-gate");
     fs.writeFileSync(gate, "#!/bin/sh\necho FIXTURE_GATE=PASS\n");
     fs.chmodSync(gate, 0o755);
-    const catalog = {schemaVersion: 1, kind: "standards-enforcement-execution-catalog", entries: [{ref: "scripts/check/existing-gate", command: ["scripts/check/existing-gate"], successMarkers: ["FIXTURE_GATE=PASS"], dependencies: [{path: "scripts/check/existing-gate", sha256: sha256(fs.readFileSync(gate))}]}]};
+    const catalog = {schemaVersion: 2, kind: "standards-enforcement-execution-catalog", entries: [{ref: "scripts/check/existing-gate", kind: "VERIFY_CHILD", command: ["scripts/check/existing-gate"], successMarkers: ["FIXTURE_GATE=PASS"], dependencies: [{path: "scripts/check/existing-gate", sha256: sha256(fs.readFileSync(gate))}]}]};
     const catalogPath = "contracts/policy/standards-enforcement-execution-catalog.json";
     fs.writeFileSync(path.join(root, catalogPath), `${JSON.stringify(catalog, null, 2)}\n`);
     assert.deepEqual(executeActive({root, matrix, catalogPath}), ["scripts/check/existing-gate"]);
@@ -557,7 +643,9 @@ function optionRefs(name) {
   return refs;
 }
 
-if (process.argv.includes("--self-test")) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isMain && process.argv.includes("--self-test")) {
   try {
     selfTest();
     console.log("STANDARDS_COVERAGE_SELF_TEST=PASS");
@@ -575,7 +663,30 @@ if (process.argv.includes("--self-test")) {
     console.error(`REASON=${error.message}`);
     process.exit(1);
   }
-} else {
+} else if (isMain && process.argv.includes("--validate-active-receipts")) {
+  try {
+    const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+    const root = path.resolve(scriptDir, "../..");
+    const matrixPath = optionValue("--matrix", "contracts/policy/standards-coverage-matrix.json");
+    const phase = optionValue("--phase", "R5");
+    const matrix = readMatrix(root, matrixPath);
+    validateCoverage({root, matrixPath, matrix, phase});
+    const result = validateActiveReceipts({
+      root,
+      matrix,
+      catalogPath: optionValue("--execution-catalog", "contracts/policy/standards-enforcement-execution-catalog.json"),
+      receiptPath: optionValue("--validate-active-receipts", undefined),
+      expectedRootRunId: optionValue("--expected-root-run-id", undefined),
+    });
+    console.log("ACTIVE_RECEIPTS=PASS");
+    console.log(`SUCCESSFUL_CHILD_REFS=${result.successfulChildRefs.join(",")}`);
+    console.log(`ARCHUNIT_SELECTOR_REF=${result.selectorRef}`);
+  } catch (error) {
+    console.error("ACTIVE_RECEIPTS=FAIL");
+    console.error(`REASON=${error.message}`);
+    process.exit(1);
+  }
+} else if (isMain) {
   try {
     const scriptDir = path.dirname(fileURLToPath(import.meta.url));
     const root = path.resolve(scriptDir, "../..");
@@ -601,3 +712,12 @@ if (process.argv.includes("--self-test")) {
     process.exit(1);
   }
 }
+
+export {
+  activeRefDenominator,
+  dependencyDigests,
+  executeActive,
+  validateActiveReceipts,
+  validateCoverage,
+  validateExecutionCatalog,
+};

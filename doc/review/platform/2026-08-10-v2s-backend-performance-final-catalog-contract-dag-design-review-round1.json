@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "REVIEW_CYCLE_ID": "BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG_DESIGN_20260810",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_CATALOG_CONTRACT_DAG_DESIGN_20260810",
+  "REVIEW_ROUND": 1,
+  "reviewRound": 1,
+  "REVIEW_ROUND_LIMIT": 2,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "verdict": "NO_GO",
+  "manifestSha256": "df68c6e4131f408e40ef8665c032922c72f979213403cb402b8e4f6f81ffc10a",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-catalog-contract-dag-design-review-input-checklist.md",
+    "sha256": "3ee0af078119e6ef297e0b0b93319fcbf784b3a57b0e1ec6f879e41ca3c15c6b"
+  },
+  "blindReviewDeclaration": "Fresh independent reviewer formed the falsification findings from governing sources and current implementation bytes before reading any author conclusions. No separate author-intake artifact existed; the required design-intake was reviewed as the subject under test.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["exact implementation surface", "contract/owner response", "operations authorization propagation", "fixture materialization"]
+  },
+  "expectedBehavior": [
+    "The five-file owner/consumer correction must emit the unchanged canonical delete and temporary-promotion response shapes.",
+    "Any executable literal final DAG must declare every changed catalog, checker, materializer, executor and test source before implementation.",
+    "Operations promotion remains selected-node, live-capability, server-grant and owner-recheck governed; platform sessions never substitute workspace capability."
+  ],
+  "findings": [
+    {
+      "id": "FINAL-CATALOG-DAG-R1-M-000",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["FINAL-U02"],
+      "title": "The bound design cannot pass its declared granularity admission",
+      "evidence": "Fresh scripts/check/implementation-design-granularity --manifest ... --review ... fails DESIGN_IMPLEMENTATION_AUTHORITY_NOT_FALSE. The checker requires a raw implementationAuthority: false line in the bound design; the design intake uses only Markdown inline-code formatting.",
+      "risk": "The design package's declared mechanical admission cannot validate the reviewed bytes, so an apparent self-test PASS could be mistaken for actual package admission.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: make the design declaration checker-recognized, or make a justified compatible checker change with red proof."
+    },
+    {
+      "id": "FINAL-CATALOG-DAG-R1-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["FINAL-U02"],
+      "title": "One five-file delivery unit cannot also materialize the claimed literal 396-row graph",
+      "evidence": "FINAL-U02 lists only five owner/consumer sources but its approved assertion and ordered chain require the literal DAG to replace stateKey/producerReadbackKey and be directly consumed. Current backend-performance-final-fixture-catalog.json still has 1,054 stateKey and 592 producerReadbackKey occurrences; its checker, fixture materializer, workload executor and focused tests are absent from the declared change surfaces.",
+      "risk": "The actual changed-path and incremental-receipt denominator cannot close, and static implementation could either change undeclared runtime-adjacent sources or leave the alleged executable graph unimplemented behind a five-file green package.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: split the five-file response correction from a separately bounded literal-DAG delivery unit, or declare all literal-DAG sources, red fixtures and package-exit denominator."
+    },
+    {
+      "id": "FINAL-CATALOG-DAG-R1-S-001",
+      "severity": "S",
+      "status": "CONFIRMED",
+      "unitIds": ["FINAL-U02"],
+      "title": "Declared proof misses the HTTP authorization-to-owner promotion handoff",
+      "evidence": "The only new backend tests are owner tests. CatalogTemporaryPromotionContractTest checks validation/projection and OperationsCatalogInventoryControllerRouteTest reflects category route annotations; neither proves temporary-promotion itemCode/dataNodeRef/brand handoff, selected-node/capability enforcement, server grant, owner recheck or one-envelope edge response.",
+      "risk": "A local owner-shape test can pass while the governed operations HTTP path drifts, contradicting the design's stated normal owner-HTTP lifecycle and authorization preservation claim.",
+      "disposition": "AUTHOR_ACTION_REQUIRED_BEFORE_GO: add one focused edge integration test source to the exact surface, covering normal lifecycle plus wrong-scope rejection without changing any API or authorization policy."
+    },
+    {
+      "id": "FINAL-CATALOG-DAG-R1-N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": ["FINAL-U02"],
+      "title": "396/592/113 is reproducible baseline accounting, not literal-DAG completion",
+      "evidence": "Independent recount is 396 rows, 462 path + 130 query bindings, 113 unique command operations and 216 JSON + 12 none + 2 multipart command rows. The current static checker and self-test pass while the catalog retains the legacy keys.",
+      "risk": "The correct counts could be misreported as executable fixture or dynamic acceptance evidence.",
+      "disposition": "RETAIN_AS_PRE_POST_DENOMINATOR_ONLY."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "FINAL-U02",
+      "verdict": "NO_GO",
+      "findingIds": ["FINAL-CATALOG-DAG-R1-M-000", "FINAL-CATALOG-DAG-R1-M-001", "FINAL-CATALOG-DAG-R1-S-001", "FINAL-CATALOG-DAG-R1-N-001"]
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Correcting the two response mismatches before final fixture execution is the right problem and preserves the catalog owner and canonical contract.",
+    "simplerAlternativeAssessment": "Split the bounded five-file owner/consumer response correction from later fixture catalog/materializer conversion; this is smaller than expanding an ambiguous unit and avoids generic dispatch or product/API change.",
+    "costFit": "The missing work is limited to exact source denominators and one focused edge proof, not a new telemetry system, query bus, capability, endpoint or runtime environment.",
+    "verdict": "DIRECTION_REASONABLE_BUT_DESIGN_IS_NO_GO"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "Independent Round 1 DESIGN review is NO_GO (M=2, S=1, N=1). The design cannot pass its own bound admission, conflates a five-file owner/consumer repair with an undeclared literal-DAG materialization, and lacks a focused governed HTTP handoff proof.",
+    "severityCounts": {"M": 2, "S": 1, "N": 1},
+    "authorizationBoundary": "DESIGN review only. No implementation, source or contract mutation, generated output, DEV/runtime, seed/reset, Testcontainers, browser L2, UAT, data operation or repository-control action is authorized."
+  }
+}

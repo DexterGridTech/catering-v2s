@@ -4,6 +4,6 @@ package com.catering.v2s.app.edge.generated.wire;
 public record CommercialGroupUpdateRequest(
     String groupCode,
     String groupName,
-    tools.jackson.databind.JsonNode extensionValues,
+    java.util.List<CommercialGroupUpdateRequestExtensionValuesItem> extensionValues,
     Long expectedVersion
 ) {}

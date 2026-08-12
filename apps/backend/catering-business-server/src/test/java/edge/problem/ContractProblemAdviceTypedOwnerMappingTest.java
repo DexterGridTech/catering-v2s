@@ -13,6 +13,7 @@ import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.notFound(new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.notFound(new OrganizationTaskPathService.TaskPathNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.catalogAssetOwnerScopeForbidden(new PlatformAssetService.AssetOwnerScopeForbiddenException(), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
+        assertProblem(advice.catalogScopeForbidden(new CommandExecutionContextResolver.CatalogScopeForbiddenException(new IllegalStateException("scope")), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
         assertProblem(advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request), HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
     }
 
@@ -66,6 +68,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(WorkspaceInvitationService.InvitationStateException.class));
         assertTrue(declared.contains(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class));
         assertTrue(declared.contains(PlatformAssetService.AssetOwnerScopeForbiddenException.class));
+        assertTrue(declared.contains(CommandExecutionContextResolver.CatalogScopeForbiddenException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
         assertTrue(declared.contains(MaxUploadSizeExceededException.class));

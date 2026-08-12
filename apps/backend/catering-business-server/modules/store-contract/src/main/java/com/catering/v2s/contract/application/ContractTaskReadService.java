@@ -1,6 +1,7 @@
 package com.catering.v2s.contract.application;
 
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
 import java.time.LocalDate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
  * intentionally owns neither those facts nor their write invariants.
  */
 @Service
-public class ContractTaskReadService {
+public class ContractTaskReadService implements OperationsStoreContractCommandApi.TaskReadbackApi, OperationsStoreContractCommandApi.StoreStatusReadbackApi {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String VIEW_SELECT = "SELECT c.id, c.group_workspace_key, c.contract_no, p.id, p.code, p.name, c.store_id, s.code, s.name, c.tenant_id, t.code, t.name, c.phase_name_snapshot, c.notes, c.effective_from, c.effective_to, c.status, c.version, c.created_at_epoch_millis, c.updated_at_epoch_millis, c.extension_values::text, c.extension_rule_revision, c.items_json::text";
     private static final String VIEW_FROM = " FROM contract.store_contract c JOIN organization.store s ON s.id=c.store_id JOIN organization.organization_node p ON p.id=s.project_id JOIN organization.tenant t ON t.id=c.tenant_id";
@@ -33,6 +34,12 @@ public class ContractTaskReadService {
     public String derivedStoreStatus(UUID workspaceUuid, String key, UUID storeId) {
         if (businessDate == null) throw new IllegalStateException("business date provider is required");
         return loadDerivedStoreStatusFacts(workspaceUuid, key, List.of(storeId), businessDate.today()).statusOf(storeId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsStoreContractCommandApi.StoreDerivedStatusReadback readDerivedStoreStatus(OperationsStoreContractCommandApi.StoreStatusQuery query) {
+        return new OperationsStoreContractCommandApi.StoreDerivedStatusReadback(derivedStoreStatus(query.workspaceUuid(), query.groupWorkspaceKey(), query.storeId()));
     }
 
     /** Contract-owner bounded batch status read for a caller's already paged stores. */
@@ -192,11 +199,11 @@ public class ContractTaskReadService {
         int page = Math.max(1, safe.page()); int size = Math.min(100, Math.max(1, safe.pageSize())); String contract = like(safe.contractNo()); String phase = like(safe.phaseName()); String item = like(safe.itemCode());
         return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, () -> jdbc.query(("""
             WITH project_meta AS (SELECT id, name FROM organization.organization_node WHERE ?::uuid IS NOT NULL AND id=? AND workspace_uuid=? AND group_workspace_key=? AND node_type='PROJECT'),
-            filtered AS MATERIALIZED (SELECT c.id, c.group_workspace_key, c.contract_no, p.id, p.code, p.name, c.store_id, s.code, s.name, c.tenant_id, t.code, t.name, c.phase_name_snapshot, c.notes, c.effective_from, c.effective_to, c.status, c.version, c.created_at_epoch_millis, c.updated_at_epoch_millis, c.extension_values::text, c.extension_rule_revision, c.items_json::text, COUNT(*) OVER () AS total
+            filtered AS MATERIALIZED (SELECT c.id AS contract_id, c.group_workspace_key, c.contract_no, p.id AS project_id, p.code, p.name, c.store_id, s.code, s.name, c.tenant_id, t.code, t.name, c.phase_name_snapshot, c.notes, c.effective_from, c.effective_to, c.status, c.version, c.created_at_epoch_millis, c.updated_at_epoch_millis, c.extension_values::text, c.extension_rule_revision, c.items_json::text, COUNT(*) OVER () AS total
             FROM contract.store_contract c JOIN organization.store s ON s.id=c.store_id JOIN organization.organization_node p ON p.id=s.project_id JOIN organization.tenant t ON t.id=c.tenant_id
             WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND (?::uuid IS NULL OR s.project_id=?) AND (?::uuid IS NULL OR c.store_id=?) AND (?::uuid IS NULL OR c.tenant_id=?) AND (?::text IS NULL OR c.contract_no ILIKE ? ESCAPE '!') AND (?::text IS NULL OR c.phase_name_snapshot ILIKE ? ESCAPE '!') AND (?::text IS NULL OR EXISTS (SELECT 1 FROM jsonb_array_elements(c.items_json) ci WHERE ci->>'code' ILIKE ? ESCAPE '!')) AND (?::date IS NULL OR c.effective_from>=?) AND (?::date IS NULL OR c.effective_to IS NULL OR c.effective_to<=?) AND (?::text IS NULL OR c.status=?)),
-            paged AS (SELECT * FROM filtered ORDER BY __ORDER__ __DIRECTION__, id ASC LIMIT ? OFFSET ?), page_total AS (SELECT COALESCE(MAX(total), (SELECT COUNT(*) FROM filtered)) AS total FROM paged)
-            SELECT paged.*, page_total.total, project_meta.id, project_meta.name FROM page_total LEFT JOIN paged ON TRUE LEFT JOIN project_meta ON TRUE ORDER BY paged.__ORDER__ __DIRECTION__, paged.id ASC
+            paged AS (SELECT * FROM filtered ORDER BY __ORDER__ __DIRECTION__, contract_id ASC LIMIT ? OFFSET ?), page_total AS (SELECT COALESCE(MAX(total), (SELECT COUNT(*) FROM filtered)) AS total FROM paged)
+            SELECT paged.*, page_total.total, project_meta.id, project_meta.name FROM page_total LEFT JOIN paged ON TRUE LEFT JOIN project_meta ON TRUE ORDER BY paged.__ORDER__ __DIRECTION__, paged.contract_id ASC
             """).replace("__ORDER__", order).replace("__DIRECTION__", direction), statement -> { statement.setObject(1, safe.projectId()); statement.setObject(2, safe.projectId()); statement.setObject(3, workspaceUuid); statement.setString(4, key); statement.setObject(5, workspaceUuid); statement.setString(6, key); statement.setObject(7, safe.projectId()); statement.setObject(8, safe.projectId()); statement.setObject(9, safe.storeId()); statement.setObject(10, safe.storeId()); statement.setObject(11, safe.tenantId()); statement.setObject(12, safe.tenantId()); statement.setString(13, contract); statement.setString(14, contract); statement.setString(15, phase); statement.setString(16, phase); statement.setString(17, item); statement.setString(18, item); statement.setObject(19, safe.dateFrom()); statement.setObject(20, safe.dateFrom()); statement.setObject(21, safe.dateTo()); statement.setObject(22, safe.dateTo()); statement.setString(23, status); statement.setString(24, status); statement.setInt(25, size); statement.setInt(26, (page - 1) * size); }, result -> {
                 List<StoreContractView> items = new java.util.ArrayList<>(); long total = 0; UUID projectId = null; String projectName = null;
                 while (result.next()) { total = result.getLong(25); projectId = result.getObject(26, UUID.class); projectName = result.getString(27); if (result.getObject(1) != null) items.add(readView(result)); }
@@ -208,6 +215,13 @@ public class ContractTaskReadService {
     @Transactional(readOnly = true)
     public StoreContractView view(UUID workspaceUuid, String key, UUID contractId) {
         return queryView(workspaceUuid, key, contractId);
+    }
+
+    /** Contract-owned typed command readback; it does not expose an application task-view type. */
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsStoreContractCommandApi.StoreContractTaskReadback readTaskView(OperationsStoreContractCommandApi.TaskViewQuery query) {
+        return taskReadback(queryView(query.workspaceUuid(), query.groupWorkspaceKey(), query.contractId()));
     }
     private StoreContractView queryView(UUID workspaceUuid, String key, UUID contractId) {
         return jdbc.query(VIEW_SELECT + VIEW_FROM + " WHERE c.id=? AND c.workspace_uuid=? AND c.group_workspace_key=?", statement -> { statement.setObject(1, contractId); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> {
@@ -223,6 +237,34 @@ public class ContractTaskReadService {
     private static StoreContractView readView(java.sql.ResultSet result) throws java.sql.SQLException {
         List<Item> items = jsonItems(result.getString(23));
         return new StoreContractView(result.getObject(1, UUID.class), result.getString(2), new Reference(result.getObject(4, UUID.class), result.getString(5), result.getString(6)), new Reference(result.getObject(7, UUID.class), result.getString(8), result.getString(9)), new Reference(result.getObject(10, UUID.class), result.getString(11), result.getString(12)), result.getString(13), result.getString(3), result.getObject(15, LocalDate.class), result.getObject(16, LocalDate.class), result.getString(14), jsonObject(result.getString(21)), result.getLong(22), "ACTIVE".equals(result.getString(17)) ? "VALID" : "INVALID", result.getLong(18), "MANUAL", result.getLong(19), result.getLong(20), items, result.getString(13));
+    }
+
+    private static OperationsStoreContractCommandApi.StoreContractTaskReadback taskReadback(StoreContractView value) {
+        return new OperationsStoreContractCommandApi.StoreContractTaskReadback(
+            value.id(),
+            value.groupWorkspaceKey(),
+            reference(value.project()),
+            reference(value.store()),
+            reference(value.tenant()),
+            value.phaseName(),
+            value.contractNo(),
+            value.effectiveFrom(),
+            value.effectiveTo(),
+            value.note(),
+            value.extensionValues().entrySet().stream().map(entry -> new OperationsStoreContractCommandApi.ExtensionValue(entry.getKey(), entry.getValue())).toList(),
+            value.extensionRuleRevision(),
+            value.status(),
+            value.revision(),
+            value.source(),
+            value.createdAt(),
+            value.updatedAt(),
+            value.items().stream().map(item -> new OperationsStoreContractCommandApi.ItemReadback(item.code(), item.name())).toList(),
+            value.phaseNameSnapshot()
+        );
+    }
+
+    private static OperationsStoreContractCommandApi.Reference reference(Reference value) {
+        return new OperationsStoreContractCommandApi.Reference(value.id(), value.code(), value.name());
     }
 
     public record CandidatePage(String groupWorkspaceKey, Project project, CandidateMetadata metadata, List<StoreCandidate> stores, List<String> phases, SelectedTenant selectedTenant) { public CandidatePage(String groupWorkspaceKey, Project project, CandidateMetadata metadata, List<StoreCandidate> stores, List<String> phases) { this(groupWorkspaceKey, project, metadata, stores, phases, null); } }

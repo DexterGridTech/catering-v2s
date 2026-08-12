@@ -848,8 +848,11 @@ export type BrandCreateRequest = {
   name: string;
   alias?: (string) | null;
   remark?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
-  expectedExtensionRuleRevision?: (number) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type BrandPage = {
@@ -894,7 +897,11 @@ export type CommercialGroupRoot = {
 export type CommercialGroupUpdateRequest = {
   groupCode: string;
   groupName: string;
-  extensionValues?: (Record<string, JsonValue>) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
   expectedVersion: number;
 };
 
@@ -953,8 +960,11 @@ export type HeadCompanyCreateRequest = {
   legalName: string;
   unifiedSocialCreditCode: string;
   remark?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
-  expectedExtensionRuleRevision?: (number) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type HeadCompanyPage = {
@@ -1042,7 +1052,11 @@ export type OrganizationNodeCreateRequest = {
   code: string;
   name: string;
   notes?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type OrganizationNodeStatusTransitionRequest = {
@@ -1059,12 +1073,21 @@ export type OrganizationNodeUpdateRequest = {
 }>;
   notes?: (string) | null;
   expectedVersion: number;
-  extensionValues?: (Record<string, JsonValue>) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type OrganizationProjectCreateRequest = (OrganizationNodeCreateRequest) & ({
   phases?: Array<{
   name: string;
+}>;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
 }>;
 });
 
@@ -1147,7 +1170,11 @@ export type OrganizationStoreCreateRequest = {
   code: string;
   name: string;
   notes?: (string) | null;
-  extensionValues?: Record<string, JsonValue>;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type OrganizationStorePage = {
@@ -1182,8 +1209,11 @@ export type OrganizationStoreUpdateRequest = {
   name: string;
   headCompanyId?: (string) | null;
   notes?: (string) | null;
-  extensionValues: Record<string, JsonValue>;
-  extensionRuleRevision: number;
+  extensionValues: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
   expectedVersion: number;
 };
 
@@ -1260,8 +1290,11 @@ export type StoreContractCreateRequest = {
   effectiveFrom: string;
   effectiveTo: (string) | null;
   note?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
-  expectedExtensionRuleRevision?: (number) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
   items: Array<StoreContractItem>;
   phaseNameSnapshot?: (string) | null;
 };
@@ -1313,8 +1346,11 @@ export type StoreContractUpdateRequest = {
   effectiveFrom: string;
   effectiveTo: (string) | null;
   note?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
-  expectedExtensionRuleRevision?: (number) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
   expectedVersion: number;
   items: Array<StoreContractItem>;
   phaseNameSnapshot?: (string) | null;
@@ -1344,8 +1380,11 @@ export type TenantCreateRequest = {
   legalName: string;
   unifiedSocialCreditCode: string;
   remark?: (string) | null;
-  extensionValues?: (Record<string, JsonValue>) | null;
-  expectedExtensionRuleRevision?: (number) | null;
+  extensionValues?: Array<{
+  fieldKey: string;
+  valueJson: string;
+  mode: "SET" | "CLEAR";
+}>;
 };
 
 export type TenantPage = {

@@ -16,6 +16,7 @@ const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.yaml";
 const controlledWriteChannel = "EDGE_CODEGEN_CONTROLLED_WRITE";
+const mandatoryPerEditGateClosurePath = "contracts/policy/mandatory-per-edit-gate-command-closure.json";
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -842,6 +843,25 @@ function generatedOutputChanges(base, outputs) {
   }
   return changes.sort((left, right) => left.relative.localeCompare(right.relative));
 }
+function validateControlledWriteMandatoryGate(base, activePackage) {
+  if (typeof activePackage.packageArchetype !== "string"
+    || !activePackage.mandatoryPerEditGate
+    || typeof activePackage.mandatoryPerEditGate.profileId !== "string"
+    || Object.keys(activePackage.mandatoryPerEditGate).some((key) => key !== "profileId")) {
+    fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_INVALID");
+  }
+  let closure;
+  try { closure = read(mandatoryPerEditGateClosurePath, base); } catch { fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_CLOSURE_MISSING"); }
+  const profile = closure?.profiles?.find((entry) => entry?.profileId === activePackage.mandatoryPerEditGate.profileId);
+  if (!profile || profile.status !== "ACTIVE_BOOTSTRAP_COMPATIBILITY"
+    || !Array.isArray(profile.compatiblePackageArchetypes)
+    || !profile.compatiblePackageArchetypes.includes(activePackage.packageArchetype)
+    || typeof profile.command !== "string" || !Array.isArray(profile.argv) || profile.argv.length !== 0
+    || typeof profile.commandSha256 !== "string" || !profile.independentReviewBinding
+    || profile.independentReviewBinding.verdict !== "GO") {
+    fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_PROFILE_INVALID", activePackage.mandatoryPerEditGate.profileId);
+  }
+}
 function controlledWritePackage(base) {
   const activePackagePath = path.join(base, ".runtime/compliance-control/active-package.json");
   if (!fs.existsSync(activePackagePath)) fail("R5_EDGE_CONTROLLED_WRITE_ACTIVE_PACKAGE_MISSING");
@@ -851,6 +871,7 @@ function controlledWritePackage(base) {
     || activePackage.allowedChangeSurfaces.some((surface) => typeof surface !== "string" || surface.length === 0 || path.isAbsolute(surface) || surface.includes(".."))) {
     fail("R5_EDGE_CONTROLLED_WRITE_ACTIVE_PACKAGE_INVALID");
   }
+  validateControlledWriteMandatoryGate(base, activePackage);
   return activePackage;
 }
 function controlledWriteAllowed(activePackage, relative) {
@@ -987,7 +1008,12 @@ function selfTest() {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
     const selfTestActivePath = path.join(scratch, ".runtime/compliance-control/active-package.json");
     const selfTestOutputs = [...expected(scratch).keys()].sort();
-    fs.writeFileSync(selfTestActivePath, `${JSON.stringify({schemaVersion:1, packageId:"R5-EDGE-CODEGEN-SELF-TEST", allowedChangeSurfaces:selfTestOutputs}, null, 2)}\n`);
+    fs.writeFileSync(selfTestActivePath, `${JSON.stringify({schemaVersion:1, packageId:"R5-EDGE-CODEGEN-SELF-TEST", packageArchetype:"backend-performance-static", mandatoryPerEditGate:{profileId:"BACKEND_PERFORMANCE_TOPOLOGY_BOOTSTRAP"}, allowedChangeSurfaces:selfTestOutputs}, null, 2)}\n`);
+    const missingMandatoryGate = JSON.parse(fs.readFileSync(selfTestActivePath, "utf8"));
+    delete missingMandatoryGate.mandatoryPerEditGate;
+    fs.writeFileSync(selfTestActivePath, `${JSON.stringify(missingMandatoryGate, null, 2)}\n`);
+    try { controlledWritePackage(scratch); fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_INVALID") throw error; }
+    fs.writeFileSync(selfTestActivePath, `${JSON.stringify({schemaVersion:1, packageId:"R5-EDGE-CODEGEN-SELF-TEST", packageArchetype:"backend-performance-static", mandatoryPerEditGate:{profileId:"BACKEND_PERFORMANCE_TOPOLOGY_BOOTSTRAP"}, allowedChangeSurfaces:selfTestOutputs}, null, 2)}\n`);
     writeOutputs(scratch);
     const controlledTarget = path.join(scratch, targets.platformRtkTs);
     fs.appendFileSync(controlledTarget, "// controlled-write red fixture\n");

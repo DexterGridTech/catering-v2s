@@ -2,8 +2,8 @@
   "schemaVersion": 2,
   "kind": "canonical-performance-ledger",
   "candidateScan": {
-    "count": 393,
-    "fingerprint": "1744444b8d888122d209d36354a0e3573afc30c423483954a765434ce1ca2074"
+    "count": 721,
+    "fingerprint": "86515aa2e1af801e1aa561447d0f5f50b00a1e6d8267a994891b36fb0dbecddf"
   },
   "rows": [
     {
@@ -395,7 +395,7 @@
       },
       "identity": {
         "callerSymbol": "OrganizationCommandService#describeCommercialGroup",
-        "queryBoundarySymbol": "workspace-status + commercial-group",
+        "queryBoundarySymbol": "commercial-group owner read",
         "mechanism": "FIXED_OWNER_READS"
       },
       "classification": "callback/mapper",
@@ -407,15 +407,15 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 2
+            "expectedStatements": 1
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 2
+            "expectedStatements": 1
           }
         ],
         "semanticInvariants": [
-          "fixed <= 2 SQL"
+          "fixed <= 1 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -481,11 +481,11 @@
           },
           {
             "id": "SELECT_A100",
-            "expectedStatements": 12
+            "expectedStatements": 11
           }
         ],
         "semanticInvariants": [
-          "DIRECT A=1 <= 14 SQL; SELECT A=100 <= 12 SQL"
+          "DIRECT A=1 <= 14 SQL; SELECT A=100 <= 11 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -514,15 +514,15 @@
         "cases": [
           {
             "id": "DIRECT_A1",
-            "expectedStatements": 9
+            "expectedStatements": 8
           },
           {
             "id": "SELECT_A100",
-            "expectedStatements": 9
+            "expectedStatements": 8
           }
         ],
         "semanticInvariants": [
-          "fixed <= 9 SQL"
+          "fixed <= 8 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -551,11 +551,11 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 7
+            "expectedStatements": 5
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 7
+            "expectedStatements": 5
           }
         ],
         "semanticInvariants": [
@@ -588,15 +588,15 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 5
+            "expectedStatements": 3
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 5
+            "expectedStatements": 3
           }
         ],
         "semanticInvariants": [
-          "fixed <= 5 SQL"
+          "fixed <= 3 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -625,15 +625,15 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 22
+            "expectedStatements": 16
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 22
+            "expectedStatements": 16
           }
         ],
         "semanticInvariants": [
-          "fixed <= 22 SQL"
+          "fixed <= 16 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -662,15 +662,15 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 17
+            "expectedStatements": 12
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 17
+            "expectedStatements": 12
           }
         ],
         "semanticInvariants": [
-          "fixed <= 17 SQL"
+          "fixed <= 12 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -699,15 +699,15 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 12
+            "expectedStatements": 8
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 12
+            "expectedStatements": 8
           }
         ],
         "semanticInvariants": [
-          "fixed <= 13 SQL"
+          "fixed <= 8 SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -810,11 +810,11 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 5
+            "expectedStatements": 4
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 5
+            "expectedStatements": 4
           }
         ],
         "semanticInvariants": [
@@ -925,11 +925,11 @@
         "cases": [
           {
             "id": "FIRST_CALL",
-            "expectedStatements": 11
+            "expectedStatements": 8
           },
           {
             "id": "SECOND_CALL",
-            "expectedStatements": 11
+            "expectedStatements": 8
           }
         ],
         "semanticInvariants": [

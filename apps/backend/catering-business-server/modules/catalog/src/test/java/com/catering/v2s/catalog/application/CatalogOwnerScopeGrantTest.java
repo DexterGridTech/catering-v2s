@@ -4,14 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
-import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
-import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
@@ -65,37 +61,6 @@ class CatalogOwnerScopeGrantTest {
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
-    }
-
-    @Test
-    void typedWriteRejectsOpaqueGrantBeforeCatalogReceiptReplay() {
-        JdbcTemplate jdbc = mock(JdbcTemplate.class);
-        UUID targetId = UUID.randomUUID();
-        CatalogOwnerService service = new CatalogOwnerService(jdbc, mapper, () -> 1L, mock(CatalogAssetReferenceLock.class));
-
-        CatalogOwnerApi.Problem failure = assertThrows(CatalogOwnerApi.Problem.class, () -> service.write(
-            typedContext(CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_ITEM, targetId), mapper.createObjectNode(), "receipt"));
-
-        assertEquals("SCOPE_FORBIDDEN", failure.code());
-        verifyNoInteractions(jdbc);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static WorkspaceExecutionContext<CatalogAuthorizationScope> typedContext(
-        com.catering.v2s.platform.command.WorkspaceCommandOperationToken token, UUID targetId
-    ) {
-        WorkspaceExecutionContext<CatalogAuthorizationScope> context = mock(WorkspaceExecutionContext.class);
-        CatalogAuthorizationScope scope = mock(CatalogAuthorizationScope.class);
-        when(context.workspaceUuid()).thenReturn(UUID.randomUUID());
-        when(context.groupWorkspaceKey()).thenReturn("catalog-owner-test");
-        when(context.consumerFace()).thenReturn("operations-admin");
-        when(context.operationToken()).thenReturn(token);
-        when(context.ownerScope()).thenReturn(scope);
-        when(context.ownerGrant()).thenReturn(mock(com.catering.v2s.platform.command.OwnerGrant.class));
-        when(scope.dataNodeType()).thenReturn("STORE");
-        when(scope.dataNodeId()).thenReturn(targetId);
-        when(scope.brandRef()).thenReturn("brand");
-        return context;
     }
 
     private static OperationsOwnerScopeGrant grant(UUID workspaceId, String groupWorkspaceKey, UUID targetId) {

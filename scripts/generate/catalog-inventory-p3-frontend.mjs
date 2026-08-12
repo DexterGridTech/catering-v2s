@@ -5,13 +5,16 @@ import {fileURLToPath} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const sourcePath = path.join(root, "contracts/catalog/catalog-inventory-edge-contract.json");
+const readModelsPath = path.join(root, "contracts/catalog/catalog-inventory-read-models.json");
 const openApiPath = path.join(root, "contracts/openapi/catalog-inventory.openapi.yaml");
 const outputDir = path.join(root, "apps/frontend/operations-admin/src/app/api/generated");
 
 const catalog = JSON.parse(fs.readFileSync(sourcePath, "utf8"));
+const readModels = JSON.parse(fs.readFileSync(readModelsPath, "utf8"));
 const openApi = JSON.parse(fs.readFileSync(openApiPath, "utf8"));
 const schemas = openApi.components?.schemas ?? {};
 const typedProblemCodes = schemas.TypedProblem?.properties?.code?.enum ?? [];
+const readModelRequired = new Map(readModels.models.map((model) => [model.name, model.required]));
 const operations = catalog.operations.map((operation) => ({
   ...operation,
   method: operation.method.toUpperCase(),
@@ -54,6 +57,40 @@ function tsPropertyName(name) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name);
 }
 
+function transportEnvelopeRequired(required) {
+  return required.includes("revision")
+    && required.includes("requestId")
+    && (required.includes("data") || required.includes("result"));
+}
+
+function schemaRequired(response) {
+  const required = schemas[response]?.required;
+  if (!Array.isArray(required)) throw new Error(`P3_RESPONSE_SCHEMA_REQUIRED_MISSING:${response}`);
+  return required;
+}
+
+// Exactly one boundary owns a response envelope: the model, P1's generated GET
+// schema, or P3's strict GET wrapper. A mutation uses the legacy envelope only
+// when its generated response component is transport-flat.
+function responseEnvelopeOwner(operation) {
+  const response = operation.responseType;
+  const wireRequired = schemaRequired(response);
+  if (operation.method !== "GET") return transportEnvelopeRequired(wireRequired) ? "MODEL" : "LEGACY";
+
+  const sourceRequired = readModelRequired.get(response);
+  if (!Array.isArray(sourceRequired)) throw new Error(`P3_GET_READ_MODEL_REQUIRED_MISSING:${response}`);
+  if (transportEnvelopeRequired(sourceRequired)) return "MODEL";
+  return transportEnvelopeRequired(wireRequired) ? "P1" : "P3";
+}
+
+function responseType(operation) {
+  const response = pascal(operation.responseType);
+  const owner = responseEnvelopeOwner(operation);
+  if (owner === "P3") return `CatalogQueryEnvelope<${response}>`;
+  if (owner === "LEGACY") return `CatalogInventoryEnvelope<${response}>`;
+  return response;
+}
+
 function tsType(schema) {
   if (!schema || typeof schema !== "object") return "JsonValue";
   if (schema.format === "binary") return "Blob";
@@ -86,7 +123,7 @@ function generatedSchemaTypes() {
 
 function generatedEdge() {
   const descriptors = operations.map((operation) => `  {operationId: ${JSON.stringify(operation.operationId)}, method: ${JSON.stringify(operation.method)}, path: ${JSON.stringify(operation.path)}, owner: ${JSON.stringify(operation.initiatingOwner)}, requiresSession: true}`).join(",\n");
-  const contracts = operations.map((operation) => `  ${JSON.stringify(operation.operationId)}: {request: ${pascal(operation.requestType)}; response: CatalogInventoryEnvelope<${pascal(operation.responseType)}>; requestRequired: ${operation.method !== "GET"}; requiresSession: true; path: ${pathType(operation)}; query: ${queryType(operation)}; queryRequired: false; headers: ${headerType(operation)}; headersRequired: ${operation.method !== "GET"};}`).join("\n");
+  const contracts = operations.map((operation) => `  ${JSON.stringify(operation.operationId)}: {request: ${pascal(operation.requestType)}; response: ${responseType(operation)}; requestRequired: ${operation.method !== "GET"}; requiresSession: true; path: ${pathType(operation)}; query: ${queryType(operation)}; queryRequired: false; headers: ${headerType(operation)}; headersRequired: ${operation.method !== "GET"};}`).join("\n");
   const methods = operations.map((operation) => `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${JSON.stringify(operation.operationId)}]["path"], options${operation.method === "GET" ? "?" : ""}: CatalogInventoryOperationOptions<${JSON.stringify(operation.operationId)}>) => execute({operationId: ${JSON.stringify(operation.operationId)}, method: ${JSON.stringify(operation.method)}, path: ${JSON.stringify(operation.path)}, pathParameters, requiresSession: true, ...options}),`).join("\n");
   const typedProblemCodes = schemas.TypedProblem?.properties?.code?.enum ?? [];
   return `// Generated from contracts/catalog/catalog-inventory-edge-contract.json and catalog-inventory.openapi.yaml; do not edit.\n\nexport const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;\nexport const CATALOG_INVENTORY_OPERATIONS = [\n${descriptors}\n] as const;\nexport type CatalogInventoryOperationId = (typeof CATALOG_INVENTORY_OPERATIONS)[number]["operationId"];\nexport type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };\nexport type CatalogInventoryEnvelope<T = JsonValue> = {revision?: string; requestId?: string; data?: T; result?: T; version?: number; [key: string]: JsonValue | T | undefined};\n${generatedSchemaTypes()}\nexport type FaceOperationContracts = {\n${contracts}\n};\ntype RequestPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["requestRequired"] extends true ? {body: FaceOperationContracts[I]["request"]} : {body?: never};\ntype QueryPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["queryRequired"] extends true ? {query: FaceOperationContracts[I]["query"]} : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["headersRequired"] extends true ? {headers: FaceOperationContracts[I]["headers"]} : {headers?: never};\nexport type CatalogInventoryOperationOptions<I extends CatalogInventoryOperationId> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends CatalogInventoryOperationId> = CatalogInventoryOperationOptions<I> & {operationId: I; method: string; path: string; pathParameters: FaceOperationContracts[I]["path"]; requiresSession: true};\nexport type FaceExecutor = <I extends CatalogInventoryOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\nexport function createCatalogInventoryClient(execute: FaceExecutor) {\n  return {\n${methods}\n  };\n}\n`;
@@ -94,13 +131,17 @@ function generatedEdge() {
 
 function generatedRtk() {
   const requestHelpers = operations.map((operation) => `  ${operation.operationId}: (pathParameters: FaceOperationContracts[${JSON.stringify(operation.operationId)}]["path"], options${operation.method === "GET" ? "?" : ""}: CatalogInventoryOperationOptions<${JSON.stringify(operation.operationId)}>) => ({operationId: ${JSON.stringify(operation.operationId)}, method: ${JSON.stringify(operation.method)}, path: ${JSON.stringify(operation.path)}, pathParameters, requiresSession: true, ...options} as CatalogInventoryOperationRequest<${JSON.stringify(operation.operationId)}>),`).join("\n");
-  const endpoints = operations.map((operation) => `    ${operation.operationId}: build.${operation.method === "GET" ? "query" : "mutation"}<CatalogInventoryEnvelope<${pascal(operation.responseType)}>, CatalogInventoryOperationRequest<${JSON.stringify(operation.operationId)}>>({query: wire}),`).join("\n");
+  const endpoints = operations.map((operation) => `    ${operation.operationId}: build.${operation.method === "GET" ? "query" : "mutation"}<${responseType(operation)}, CatalogInventoryOperationRequest<${JSON.stringify(operation.operationId)}>>({query: wire}),`).join("\n");
   const responseTypes = [...new Set(operations.map((operation) => pascal(operation.responseType)))].sort().join(", ");
   return `// Generated from contracts/catalog/catalog-inventory-edge-contract.json and catalog-inventory.openapi.yaml; do not edit.\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {CatalogInventoryEnvelope, CatalogInventoryOperationId, CatalogInventoryOperationOptions, FaceOperationContracts, FaceOperationRequest, ${responseTypes}} from "./catalog-inventory-edge";\nexport type CatalogInventoryOperationRequest<I extends CatalogInventoryOperationId> = FaceOperationRequest<I>;\nexport type CatalogInventoryWireRequest = <I extends CatalogInventoryOperationId>(request: CatalogInventoryOperationRequest<I>) => FetchArgs & {requiresSession: true};\nexport const catalogInventoryRtkRequest = {\n${requestHelpers}\n};\nexport function createCatalogInventoryRtkEndpoints(build: EndpointBuilder<BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>, "wire", "operationsApi">, wire: CatalogInventoryWireRequest) {\n  return {\n${endpoints}\n  };\n}\n`;
 }
 
 fs.mkdirSync(outputDir, {recursive: true});
 const generatedEdgeText = generatedEdge()
+  .replace(
+    "export type CatalogInventoryEnvelope<T = JsonValue> = {revision?: string; requestId?: string; data?: T; result?: T; version?: number; [key: string]: JsonValue | T | undefined};",
+    "export type CatalogInventoryEnvelope<T = JsonValue> = {revision?: string; requestId?: string; data?: T; result?: T; version?: number; [key: string]: JsonValue | T | undefined};\nexport type CatalogQueryEnvelope<T> = {revision: string; requestId: string; data: T;};",
+  )
   .replace(
     `export const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;`,
     `export const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;\nexport const CATALOG_INVENTORY_PROBLEM_CODES = ${JSON.stringify(typedProblemCodes)} as const;\nexport type CatalogInventoryProblemCode = (typeof CATALOG_INVENTORY_PROBLEM_CODES)[number];`,
@@ -110,5 +151,9 @@ const generatedEdgeText = generatedEdge()
     `: {headers?: FaceOperationContracts[I]["headers"]};`,
   );
 fs.writeFileSync(path.join(outputDir, "catalog-inventory-edge.ts"), generatedEdgeText);
-fs.writeFileSync(path.join(outputDir, "catalog-inventory-edge.rtk.ts"), generatedRtk());
+const generatedRtkText = generatedRtk().replace(
+  "CatalogInventoryEnvelope, CatalogInventoryOperationId",
+  "CatalogInventoryEnvelope, CatalogQueryEnvelope, CatalogInventoryOperationId",
+);
+fs.writeFileSync(path.join(outputDir, "catalog-inventory-edge.rtk.ts"), generatedRtkText);
 console.log(`CATALOG_INVENTORY_P3_FRONTEND_GENERATED operations=${operations.length} revision=${catalog.revision}`);

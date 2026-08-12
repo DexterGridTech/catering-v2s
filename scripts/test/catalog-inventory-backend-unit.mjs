@@ -8,18 +8,16 @@
  * repository's managed remote Testcontainers runner.
  */
 import {createHash} from 'node:crypto';
-import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, '.runtime/r5'));
 const reportPath = path.join(runtime, 'results', 'catalog-inventory-backend-unit-tests.json');
-const localModuleTasks = [
-  ':apps:backend:catering-business-server:modules:inventory:test',
-];
 const remoteModuleTasks = [
   ':apps:backend:catering-business-server:modules:catalog:test',
+  ':apps:backend:catering-business-server:modules:inventory:test',
 ];
 const remoteApplicationTests = [
   'com.catering.v2s.app.edge.operations.cataloginventory.OperationsCatalogInventoryControllerRouteTest',
@@ -31,19 +29,16 @@ const digest = (value) => createHash('sha256').update(value).digest('hex');
 const summarize = (result) => ({status: result.status, signal: result.signal, stdoutBytes: Buffer.byteLength(result.stdout || ''), stderrBytes: Buffer.byteLength(result.stderr || ''), outputSha256: digest(`${result.stdout || ''}\n${result.stderr || ''}`)});
 
 function selfTest() {
-  if (localModuleTasks.length !== 1 || !localModuleTasks.every((task) => task.includes(':modules:inventory:test'))) fail('LOCAL_TASK_DENOMINATOR_INVALID');
-  if (remoteModuleTasks.length !== 1 || !remoteModuleTasks.every((task) => task.includes(':modules:catalog:test'))) fail('REMOTE_MODULE_TASK_DENOMINATOR_INVALID');
+  if (remoteModuleTasks.length !== 2 || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:catalog:test') || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:inventory:test')) fail('REMOTE_MODULE_TASK_DENOMINATOR_INVALID');
   if (remoteApplicationTests.length !== 2 || remoteApplicationTests.some((name) => !name.endsWith('Test'))) fail('REMOTE_TEST_DENOMINATOR_INVALID');
-  process.stdout.write('CATALOG_INVENTORY_BACKEND_UNIT_SELF_TEST=PASS\nLOCAL_MODULE_TESTS=1\nREMOTE_MODULE_TESTS=1\nREMOTE_APPLICATION_TESTS=2\nSEED_RUNTIME_INPUT=false\n');
+  process.stdout.write('CATALOG_INVENTORY_BACKEND_UNIT_SELF_TEST=PASS\nLOCAL_MODULE_TESTS=0\nREMOTE_MODULE_TESTS=2\nREMOTE_APPLICATION_TESTS=2\nSEED_RUNTIME_INPUT=false\n');
 }
 
 function execute() {
   if (process.argv.includes('--self-test')) return selfTest();
   const phases = [];
   mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700});
-  const local = command('gradle', ['--project-dir', root, ...localModuleTasks, '--no-daemon', '--console=plain']);
-  phases.push({name: 'LOCAL_OWNER_MODULE_TESTS', ...summarize(local), status: local.status === 0 ? 'PASS' : 'FAIL'});
-  if (local.status !== 0) fail('LOCAL_OWNER_MODULE_TESTS_FAILED');
+  rmSync(reportPath, {force: true});
 
   for (const task of remoteModuleTasks) {
     const remoteModule = command(process.execPath, [path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), task]);

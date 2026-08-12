@@ -6,7 +6,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "revision",
+        "manifestRevision",
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
@@ -20,7 +20,7 @@
         "detailSections"
       ],
       "properties": {
-        "revision": {
+        "manifestRevision": {
           "type": "string",
           "description": "design-bound field"
         },

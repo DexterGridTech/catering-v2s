@@ -102,12 +102,14 @@ class HttpRequestMetricsInterceptorTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         interceptor.preHandle(request, response, new Object());
+        executeObservedStatement();
         interceptor.afterCompletion(request, response, new Object(), null);
 
         String event = Files.readString(events);
         assertTrue(event.contains("\"performanceFixtureId\":\"BP-U05-TASK:getPlatformAdminPage\""));
         assertTrue(event.contains("\"performanceArea\":\"U05_TASK_READ\""));
         assertTrue(event.contains("\"serverEvidenceHmac\":"));
+        assertTrue(Files.readString(tempDirectory.resolve("final-performance-db.jsonl")).contains("\"serverOperationHmac\":"));
         assertTrue(event.contains("\"outcome\":\"SUCCEEDED\""));
     }
 

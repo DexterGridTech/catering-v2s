@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-adapter-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-ADAPTER-IMPLEMENTATION-20260810",
+  "status": "ACTIVE_STATIC_IMPLEMENTATION",
+  "authorization": "Dexter authorized the final-adapter static implementation after Claude design GO. This package may implement only the declared adapter surfaces; dynamic acceptance remains a later, separately activated package.",
+  "designAdmission": {
+    "manifest": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-granularity-manifest.json",
+    "manifestSha256": "4a055f3b5be0307aaeb4f8f6842f5335861840d54abf462efcbf0811285c4068",
+    "claudeRecheck": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-design-recheck-claude.md",
+    "claudeRecheckSha256": "4b3465666a93637fe3d9df4dd120b064276f737026556d10019b9abf8701eee3",
+    "verdict": "GO"
+  },
+  "implementationNecessaryDesignAmendment": {
+    "authorizedBy": "Dexter",
+    "reason": "Pointwise source reopening proved five required existing surfaces omitted from the 16-surface design inventory: the RM1/final profile isolation test, nested Testcontainers child-manifest binding and its focused test, and the non-production first-platform-admin bootstrap configuration plus focused test. Without them, the approved parent/task/host child-manifest contract cannot be true and an empty isolated final namespace cannot reach its first authenticated owner command.",
+    "addedSurfaces": [
+      "scripts/dev/http-diagnostic-runner.test.mjs",
+      "scripts/test/r5-remote-testcontainers.mjs",
+      "scripts/test/r5-remote-testcontainers.test.mjs",
+      "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfiguration.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfigurationTest.java"
+    ],
+    "invariants": [
+      "The nested runner accepts only the final adapter parent run, its exact nested runtime directory and its fixed allowlisted task; it remains technical proof only.",
+      "Bootstrap accepts only backend-performance-final-acceptance with backend-performance-final-* run ids and preserves non-production, one-time owner bootstrap and secret-clearing safeguards.",
+      "The final adapter derives eligibility from the static exit and approved surface; the trim CLI stdout/log digest is provenance only, not anti-tamper evidence."
+    ]
+  },
+  "fixturePlanDesignAmendment": {
+    "status": "BOUND_PENDING_INDEPENDENT_DESIGN_REVIEW",
+    "reason": "The original route catalog carried no executable owner-HTTP state, query, body, CAS, readback or transport plan. The amendment now freezes literal plans rather than allowing adapter inference.",
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-adapter-implementation-design-amendment.md",
+    "sha256": "2b1f2d5a157268c8922e9645697c4471e31da557831c2e0d88cd95dc300436c5",
+    "catalog": "contracts/policy/backend-performance-final-fixture-catalog.json",
+    "catalogSha256": "f3afba7d7c8c8c626f8a4d5d6fdc6a3d8d11ecc56a4784dd98e05efb9e151f1a",
+    "denominators": {
+      "fixtureRows": 396,
+      "getRows": 166,
+      "commandRows": 230,
+      "jsonCommandRows": 216,
+      "noBodyCommandRows": 12,
+      "multipartCommandRows": 2,
+      "pathBindingOccurrences": 462,
+      "requiredQueryOperationIds": 46,
+      "requiredQueryRows": 92,
+      "commandFamilies": 13,
+      "commandOperations": 113,
+      "reusableAlgorithms": 103,
+      "newAlgorithms": 10
+    },
+    "implementationBoundary": "The adapter may not implement prepareFinalFixtureState or invoke the MINIMAL_FIXTURE phase until this amendment receives a fresh independent DESIGN review and Claude recheck."
+  },
+  "denominators": {
+    "fixtureRows": 396,
+    "taskReads": 78,
+    "protocolReadExempt": 5,
+    "numericBaselines": 79,
+    "contextParity": 38,
+    "routes": 196,
+    "originalDesignSurfaces": 16,
+    "implementationAmendmentSurfaces": 5
+  },
+  "requiredStaticEvidence": [
+    "catalog checker and all declared red mutations",
+    "node source-level tests and syntax checks",
+    "Java compileJava and compileTestJava for affected application module",
+    "static admission rejects callback injection, false trim equality and unbound nested evidence",
+    "fresh independent IMPLEMENTATION review before any dynamic package activation"
+  ],
+  "forbidden": [
+    "runtime",
+    "DEV",
+    "remote Testcontainers execution",
+    "seed",
+    "reset",
+    "L2",
+    "UAT",
+    "deployment",
+    "manual SSH or SQL",
+    "RM1 or R5 runtime reuse",
+    "SQL numeric success claim"
+  ]
+}

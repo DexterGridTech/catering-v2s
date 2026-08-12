@@ -214,49 +214,33 @@ export type LocalCopyScope = (typeof LOCAL_COPY_SCOPE_OPTIONS)[number]['value'];
 export type LocalCopyCandidatePageData = LocalCopyCandidatePage['data'];
 export type LocalCopyPreflightData = LocalCopyPreflight['data'];
 export type LocalCopyReadbackData = LocalCopyReadback['data'];
+type CatalogDataEnvelope<T = unknown> = {data?: T};
 
 export function decodeLocalCopyCandidatePage(
-  envelope: CatalogInventoryEnvelope<LocalCopyCandidatePage> | undefined,
+  response: LocalCopyCandidatePage | undefined,
 ): LocalCopyCandidatePageData | undefined {
-  const value = localCopyPayload(envelope as unknown as CatalogInventoryEnvelope);
-  return value as unknown as LocalCopyCandidatePageData | undefined;
+  return response?.data;
 }
 
 export function decodeLocalCopyPreflight(
-  envelope: CatalogInventoryEnvelope<LocalCopyPreflight> | undefined,
+  response: LocalCopyPreflight | undefined,
 ): LocalCopyPreflightData | undefined {
-  const value = localCopyPayload(envelope as unknown as CatalogInventoryEnvelope) as unknown as LocalCopyPreflightData | undefined;
+  const value = response?.data;
   return value?.preflightDigest ? value : undefined;
 }
 
 export function decodeLocalCopyReadback(
-  envelope: CatalogInventoryEnvelope<LocalCopyReadback> | undefined,
+  response: LocalCopyReadback | undefined,
 ): LocalCopyReadbackData | undefined {
-  const value = localCopyPayload(envelope as unknown as CatalogInventoryEnvelope) as unknown as LocalCopyReadbackData | undefined;
+  const value = response?.data;
   return value?.preflightDigest ? value : undefined;
 }
 
-/**
- * The generated local-copy read-model currently describes the inner page as an
- * envelope, while the edge actually returns one envelope whose `data` is that
- * page. Accept both forms at the UI boundary so a valid owner response is not
- * silently converted into an empty/loading state.
- */
-function localCopyPayload(envelope: CatalogInventoryEnvelope | undefined): Record<string, JsonValue> | undefined {
-  const outer = envelopeData(envelope);
-  if (!outer) return undefined;
-  return asRecord(outer.data) ?? outer;
+export function envelopeData(envelope: CatalogDataEnvelope | undefined): Record<string, JsonValue> | undefined {
+  return asRecord(envelope?.data);
 }
 
-export function envelopeData(envelope: CatalogInventoryEnvelope | undefined): Record<string, JsonValue> | undefined {
-  // Catalog read paths intentionally expose both typed page envelopes and
-  // raw detail read models (the OpenAPI detail response is CatalogItemDetail,
-  // not an envelope). Keep that boundary tolerant without changing the
-  // owner payload or inventing a second transport shape.
-  return asRecord(envelope?.data) ?? asRecord(envelope?.result) ?? asRecord(envelope);
-}
-
-export function decodeWorkbenchContext(envelope: CatalogInventoryEnvelope | undefined): CatalogWorkbenchContext | undefined {
+export function decodeWorkbenchContext(envelope: CatalogDataEnvelope | undefined): CatalogWorkbenchContext | undefined {
   const value = envelopeData(envelope);
   if (!value) return undefined;
   const availability = asRecord(value.actionAvailability) ?? {};
@@ -268,7 +252,7 @@ export function decodeWorkbenchContext(envelope: CatalogInventoryEnvelope | unde
   };
 }
 
-export function decodeNavigation(envelope: CatalogInventoryEnvelope | undefined): CatalogNavigation {
+export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): CatalogNavigation {
   const value = envelopeData(envelope) ?? {};
   return {
     tree: recordArray(value.tree).map((row) => {
@@ -297,12 +281,12 @@ export function decodeNavigation(envelope: CatalogInventoryEnvelope | undefined)
   };
 }
 
-export function decodeItems(envelope: CatalogInventoryEnvelope | undefined) {
+export function decodeItems(envelope: CatalogDataEnvelope | undefined) {
   const value = envelopeData(envelope) ?? {};
   return {items: recordArray(value.items).map(decodeItemSummary), total: integer(value.total), cursor: text(value.cursor), generation: integer(value.generation), queryGeneration: text(value.queryGeneration)};
 }
 
-export function decodeDetail(envelope: CatalogInventoryEnvelope | undefined): CatalogDetail | undefined {
+export function decodeDetail(envelope: CatalogDataEnvelope | undefined): CatalogDetail | undefined {
   const root = envelopeData(envelope);
   const item = asRecord(root?.item);
   if (!root || !item) return undefined;

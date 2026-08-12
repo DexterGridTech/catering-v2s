@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-l2-locator-bindings",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "locatorBinding": "P3_BOUND_TO_IMPLEMENTATION_SURFACES",
-  "caseCount": 43,
+  "caseCount": 41,
   "bindings": [
     {
       "caseId": "CI-L2-001-01",
@@ -171,7 +171,7 @@
       "locator": "catalog-inventory-brand-switch",
       "assertionKey": "CI-L2-003:journey/1",
       "position": "brand page global toolbar; immediately after view switch",
-      "wireframe": "IA §5.1/§5.2：树表/仅表格右侧品牌切换器",
+      "wireframe": "IA §5.2：树表/仅表格右侧品牌切换器",
       "fixtureRef": "FIXTURE-SMART-VIEWS",
       "expectedBusinessResult": "视图切换最左、品牌切换紧邻且结果域正确；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}",
       "activation": "CI-L2-003",
@@ -364,7 +364,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/1",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "SEED-WEIGHED",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-WEIGHED\"}",
       "activation": "CI-L2-007",
@@ -390,7 +390,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/2",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "FIXTURE-ARCHIVED-ONLY-SKU",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ARCHIVED-ONLY-SKU\"}",
       "activation": "CI-L2-007",
@@ -416,7 +416,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/3",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "FIXTURE-DISABLED-SKU",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":3,\"fixtureRef\":\"FIXTURE-DISABLED-SKU\"}",
       "activation": "CI-L2-007",
@@ -442,7 +442,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/4",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "FIXTURE-SHAPE-ADMISSION",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":4,\"fixtureRef\":\"FIXTURE-SHAPE-ADMISSION\"}",
       "activation": "CI-L2-007",
@@ -468,7 +468,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/5",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "FIXTURE-PRODUCIBLE-RETAINED",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":5,\"fixtureRef\":\"FIXTURE-PRODUCIBLE-RETAINED\"}",
       "activation": "CI-L2-007",
@@ -494,7 +494,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/6",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "FIXTURE-SHAPE-MATRIX",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":6,\"fixtureRef\":\"FIXTURE-SHAPE-MATRIX\"}",
       "activation": "CI-L2-007",
@@ -520,7 +520,7 @@
       "locator": "catalog-item-tabs",
       "assertionKey": "CI-L2-007:journey/7",
       "position": "detail Drawer tab strip; shape-driven visible/disabled tabs",
-      "wireframe": "IA §6.2/§6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
+      "wireframe": "IA §6.3：基础、SKU、条码、点单、属性、生产、库存/BOM、治理、套餐",
       "fixtureRef": "SEED-WEIGHED",
       "expectedBusinessResult": "七形态页签与权益壳可见置灰原因；case={\"journeyVariant\":7,\"fixtureRef\":\"SEED-WEIGHED\"}",
       "activation": "CI-L2-007",
@@ -593,50 +593,6 @@
       "controlSourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
-      ]
-    },
-    {
-      "caseId": "CI-L2-009-01",
-      "scenarioId": "CI-L2-009",
-      "locator": "catalog-item-tabs",
-      "assertionKey": "CI-L2-009:journey/1",
-      "position": "detail Drawer governance/source tab",
-      "wireframe": "IA §5.5/§6.5：自动同步锁定与临时商品治理",
-      "fixtureRef": "FIXTURE-AUTO-SYNC",
-      "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-AUTO-SYNC\"}",
-      "activation": "CI-L2-009",
-      "controlIds": [
-        "IA-CAT-SOURCE-AUTO-001",
-        "IA-CAT-SOURCE-TEMP-001",
-        "IA-CAT-SOURCE-TEMP-002"
-      ],
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
-      ],
-      "controlSourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
-      ]
-    },
-    {
-      "caseId": "CI-L2-009-02",
-      "scenarioId": "CI-L2-009",
-      "locator": "catalog-item-tabs",
-      "assertionKey": "CI-L2-009:journey/2",
-      "position": "detail Drawer governance/source tab",
-      "wireframe": "IA §5.5/§6.5：自动同步锁定与临时商品治理",
-      "fixtureRef": "FIXTURE-TEMPORARY-ITEM",
-      "expectedBusinessResult": "自动同步锁定与临时商品治理转正；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-TEMPORARY-ITEM\"}",
-      "activation": "CI-L2-009",
-      "controlIds": [
-        "IA-CAT-SOURCE-AUTO-001",
-        "IA-CAT-SOURCE-TEMP-001",
-        "IA-CAT-SOURCE-TEMP-002"
-      ],
-      "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
-      ],
-      "controlSourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx"
       ]
     },
@@ -796,7 +752,7 @@
       "locator": "inventory-target-drawer",
       "assertionKey": "CI-L2-013:journey/1",
       "position": "right 1024px inventory detail Drawer",
-      "wireframe": "IA §7.1/§7.2：六区详情与诊断权限",
+      "wireframe": "IA §7.3：六区详情与诊断权限",
       "fixtureRef": "SEED-MATERIALS",
       "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":1,\"fixtureRef\":\"SEED-MATERIALS\"}",
       "activation": "CI-L2-013",
@@ -822,7 +778,7 @@
       "locator": "inventory-target-drawer",
       "assertionKey": "CI-L2-013:journey/2",
       "position": "right 1024px inventory detail Drawer",
-      "wireframe": "IA §7.1/§7.2：六区详情与诊断权限",
+      "wireframe": "IA §7.3：六区详情与诊断权限",
       "fixtureRef": "FIXTURE-ADVANCED-DIAGNOSTICS",
       "expectedBusinessResult": "六区按需加载、诊断权限整区与请求不渲染；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-ADVANCED-DIAGNOSTICS\"}",
       "activation": "CI-L2-013",
@@ -896,7 +852,7 @@
       "locator": "catalog-inventory-copy-preflight",
       "assertionKey": "CI-L2-015:journey/1",
       "position": "brand-copy Drawer step 2 preflight surface",
-      "wireframe": "IA §8.1/§8.2：闭包、映射、兼容、引用重写预检",
+      "wireframe": "IA §7.1：闭包、映射、兼容、引用重写预检",
       "fixtureRef": "FIXTURE-UNIT-GRAM-EACH",
       "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-UNIT-GRAM-EACH\"}",
       "activation": "CI-L2-015",
@@ -925,7 +881,7 @@
       "locator": "catalog-inventory-copy-preflight",
       "assertionKey": "CI-L2-015:journey/2",
       "position": "brand-copy Drawer step 2 preflight surface",
-      "wireframe": "IA §8.1/§8.2：闭包、映射、兼容、引用重写预检",
+      "wireframe": "IA §7.1：闭包、映射、兼容、引用重写预检",
       "fixtureRef": "FIXTURE-STALE-SOURCE",
       "expectedBusinessResult": "预检五页签、阻断与 stale 回到预检；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-STALE-SOURCE\"}",
       "activation": "CI-L2-015",

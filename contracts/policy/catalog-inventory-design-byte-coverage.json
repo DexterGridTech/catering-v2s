@@ -18,7 +18,7 @@
       ],
       "fields": [
         {
-          "path": "revision",
+        "path": "revision",
           "type": "string"
         },
         {
@@ -3601,7 +3601,7 @@
     {
       "model": "CatalogShapeManifestView",
       "required": [
-        "revision",
+        "manifestRevision",
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
@@ -3616,7 +3616,7 @@
       ],
       "fields": [
         {
-          "path": "revision",
+        "path": "manifestRevision",
           "type": "string"
         },
         {

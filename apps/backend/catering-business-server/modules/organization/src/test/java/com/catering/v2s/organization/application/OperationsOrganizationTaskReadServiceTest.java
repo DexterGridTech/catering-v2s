@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,8 +14,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class OperationsOrganizationTaskReadServiceTest {
+    @Test
+    void springWiresTheFullHierarchyTaskReaderConstructor() {
+        var constructors = java.util.Arrays.stream(OperationsOrganizationTaskReadService.class.getDeclaredConstructors())
+            .filter(constructor -> constructor.isAnnotationPresent(Autowired.class))
+            .toList();
+
+        assertEquals(1, constructors.size());
+        assertArrayEquals(new Class<?>[] {
+            BusinessEntityService.class,
+            OrganizationOverviewTaskReadService.class,
+            OrganizationHierarchyService.class,
+            OrganizationCommandService.class
+        }, constructors.get(0).getParameterTypes());
+    }
+
     @Test
     void operationsBusinessEntityReadsUseFixedOwnerTypeMethods() {
         BusinessEntityService entities = mock(BusinessEntityService.class);

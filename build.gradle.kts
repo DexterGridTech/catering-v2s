@@ -43,23 +43,32 @@ subprojects {
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        val dockerMarkers = listOf(
+            "org.testcontainers",
+            "@Testcontainers",
+            "PostgreSQLContainer",
+            "JdbcDatabaseContainer",
+            "GenericContainer",
+        )
+        val dockerBackedTest = fileTree(projectDir) {
+            include("src/test/**/*.java", "src/test/**/*.kt", "src/test/**/*.groovy")
+        }.files.any { source ->
+            val text = source.readText()
+            dockerMarkers.any(text::contains)
+        }
+        if (dockerBackedTest) {
+            // Testcontainers tests observe an external Docker/database state. A Gradle
+            // cached or up-to-date Test task can report success without executing the
+            // selected test, which makes the managed runner lose its business evidence.
+            // Keep compilation/build preparation cacheable, but never reuse the Docker-backed
+            // Test task result itself.
+            outputs.upToDateWhen { false }
+            outputs.cacheIf("Docker-backed tests require a fresh execution") { false }
+        }
         doFirst {
             // Docker-backed tests are a remote technical-validation lane. Never let Gradle/Testcontainers
             // auto-discover a developer's local Docker socket; scripts/test/r5-remote-testcontainers.mjs
             // is the only approved entry and marks the remote JVM explicitly before this task starts.
-            val dockerMarkers = listOf(
-                "org.testcontainers",
-                "@Testcontainers",
-                "PostgreSQLContainer",
-                "JdbcDatabaseContainer",
-                "GenericContainer",
-            )
-            val dockerBackedTest = fileTree(projectDir) {
-                include("src/test/**/*.java", "src/test/**/*.kt", "src/test/**/*.groovy")
-            }.files.any { source ->
-                val text = source.readText()
-                dockerMarkers.any(text::contains)
-            }
             if (dockerBackedTest && System.getenv("V2S_TESTCONTAINERS_EXECUTION_PLANE") != "remote") {
                 throw GradleException(
                     "V2S_TESTCONTAINERS_REMOTE_REQUIRED: Docker-backed tests must run through " +

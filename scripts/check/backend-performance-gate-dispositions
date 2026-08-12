@@ -19,8 +19,15 @@ const phaseOneAdditions = new Set([
 // check instead of silently becoming a final-performance gate.
 const laterPerformanceAdditions = new Set([
   "backend-performance-command-baselines",
+  "backend-performance-command-binding-reachability",
+  "backend-performance-final-fixture-catalog",
+  "backend-performance-operation-source-inventory",
+  "backend-performance-operation-database-shape",
+  "backend-performance-request-fact-load-once",
+  "backend-performance-standards-registration",
   "backend-performance-read-budget",
   "backend-performance-sql-merge-coverage",
+  "backend-performance-static-196-reconciliation",
 ]);
 const statusVocabulary = new Set(["PASS", "FAIL", "USAGE_REQUIRED"]);
 const dispositionVocabulary = new Set([
@@ -28,6 +35,8 @@ const dispositionVocabulary = new Set([
   "STANDALONE_CURRENT",
   "RETIRED_REPLACED_IN_FUTURE_UNIT",
   "DEFERRED_TO_BP_U06",
+  "DEFERRED_TO_BP_U05",
+  "DEFERRED_TO_BP_U02",
   "REQUIRES_MANAGED_RUN",
 ]);
 
@@ -59,7 +68,7 @@ function exactSet(actual, expected, reason) {
 function validate(ledger) {
   if (ledger?.schemaVersion !== 1 || ledger.kind !== "backend-performance-phase1-gate-dispositions"
     || ledger.baselineGateCount !== baselineGateCount || !Array.isArray(ledger.gates)
-    || !Array.isArray(ledger.phaseOneAdditions)) throw new Error("BP_U01_GATE_DISPOSITION_INVALID");
+    || !Array.isArray(ledger.phaseOneAdditions) || !Array.isArray(ledger.laterPerformanceAdditions)) throw new Error("BP_U01_GATE_DISPOSITION_INVALID");
   if (ledger.gates.length !== baselineGateCount) throw new Error("BP_U01_GATE_DISPOSITION_BASELINE_COUNT_DRIFT");
   const ids = ledger.gates.map((entry) => entry?.gate);
   if (new Set(ids).size !== ids.length || ids.some((entry) => typeof entry !== "string" || entry.length === 0)) {
@@ -84,7 +93,20 @@ function validate(ledger) {
   for (const entry of ledger.phaseOneAdditions) {
     if (entry.command !== `scripts/check/${entry.gate}` || !dispositionVocabulary.has(entry.verifyDisposition)
       || typeof entry.standardsMapping !== "string" || entry.standardsMapping.length === 0) {
-      throw new Error(`BP_U01_GATE_ADDITION_ROW_INVALID:${entry?.gate || "UNSET"}`);
+      throw new Error("BP_U01_GATE_ADDITION_ROW_INVALID:" + (entry?.gate || "UNSET"));
+    }
+  }
+  exactSet(ledger.laterPerformanceAdditions.map((entry) => entry?.gate), [...laterPerformanceAdditions].sort(), "BP_U01_GATE_LATER_ADDITION_SET_DRIFT");
+  for (const entry of ledger.laterPerformanceAdditions) {
+    if (!entry || entry.command !== "scripts/check/" + entry.gate
+      || !statusVocabulary.has(entry.currentStatus)
+      || !dispositionVocabulary.has(entry.verifyDisposition)
+      || typeof entry.standardsMapping !== "string" || entry.standardsMapping.length === 0
+      || typeof entry.futureUnit !== "string" || entry.futureUnit.length === 0
+      || typeof entry.currentEvidence !== "string" || entry.currentEvidence.length === 0
+      || !entry.diagnostics || typeof entry.diagnostics.WHY !== "string"
+      || typeof entry.diagnostics.BACKGROUND !== "string" || typeof entry.diagnostics.PATTERN !== "string") {
+      throw new Error("BP_U01_GATE_LATER_ADDITION_ROW_INVALID:" + (entry?.gate || "UNSET"));
     }
   }
   const actual = executableChecks();
@@ -107,6 +129,7 @@ function selfTest() {
   expect("BP_U01_GATE_DISPOSITION_BASELINE_COUNT_DRIFT", (copy) => { copy.gates.pop(); });
   expect("BP_U01_GATE_DISPOSITION_ROW_INVALID:admin-boundaries", (copy) => { copy.gates[0].verifyDisposition = "UNKNOWN"; });
   expect("BP_U01_GATE_ADDITION_SET_DRIFT", (copy) => { copy.phaseOneAdditions.pop(); });
+  expect("BP_U01_GATE_LATER_ADDITION_SET_DRIFT", (copy) => { copy.laterPerformanceAdditions.pop(); });
   const originalVerifySource = fs.readFileSync(path.join(root, "tools/verify-gates/verify.mjs"), "utf8");
   const removed = originalVerifySource.replace("scripts/check/openapi-contracts", "scripts/check/openapi-contracts-removed");
   try {

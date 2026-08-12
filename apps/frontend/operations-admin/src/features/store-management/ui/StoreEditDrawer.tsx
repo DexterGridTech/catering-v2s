@@ -1,24 +1,14 @@
 import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
 import {adminDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
-import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type JsonValue, type OrganizationStore} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type OrganizationStore} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
+import {hydrateOrganizationExtensionValues, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
-type Values = {name: string; headCompanyId?: string; notes?: string; extensionValues?: Record<string, JsonValue | Dayjs>};
-
-function hydratedExtensionValues(definition: ExtensionDefinition | undefined, values: Record<string, JsonValue>) {
-  const dateKeys = new Set((definition?.definitions ?? []).filter((field) => field.type === 'DATE').map((field) => field.key));
-  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, dateKeys.has(key) && typeof value === 'string' ? dayjs(value) : value]));
-}
-
-function serializedExtensionValues(definition: ExtensionDefinition | undefined, values?: Values['extensionValues']): Record<string, JsonValue> {
-  const dateKeys = new Set((definition?.definitions ?? []).filter((field) => field.type === 'DATE').map((field) => field.key));
-  return Object.fromEntries(Object.entries(values ?? {}).map(([key, value]) => [key, dateKeys.has(key) && dayjs.isDayjs(value) ? value.format('YYYY-MM-DD') : value])) as Record<string, JsonValue>;
-}
+type Values = {name: string; headCompanyId?: string; notes?: string; extensionValues?: OrganizationExtensionFormValues};
 
 function extensionFields(definition?: ExtensionDefinition) {
   return (definition?.definitions ?? [])
@@ -54,7 +44,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
 
   useEffect(() => {
     if (!store) return;
-    form.setFieldsValue({name: store.name, headCompanyId: store.headCompany?.id, notes: store.notes ?? undefined, extensionValues: hydratedExtensionValues(definition.data, store.extensionValues)});
+    form.setFieldsValue({name: store.name, headCompanyId: store.headCompany?.id, notes: store.notes ?? undefined, extensionValues: hydrateOrganizationExtensionValues(definition.data, store.extensionValues)});
     setCommandProblem(undefined);
     lifecycle.reset();
   }, [definition.data, form, lifecycle, store]);
@@ -70,7 +60,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
     try {
       const updated = await operationsClient.updateOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeId: store.id},
-        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: serializedExtensionValues(definition.data, value.extensionValues), extensionRuleRevision: store.extensionRuleRevision, expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues, store.extensionValues), expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated(updated);

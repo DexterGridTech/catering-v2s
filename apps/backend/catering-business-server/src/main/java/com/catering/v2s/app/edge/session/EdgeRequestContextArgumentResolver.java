@@ -35,6 +35,7 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
         String correlationId = completion == null
                 ? PublicSecurityDiagnosticRequestState.correlationId(servlet)
                 : completion.correlationId();
+        Object trustedBrand = servlet.getAttribute("v2s.trusted.brandRef");
         return new EdgeRequestContext(
                 rateLimitSourceFingerprint(servlet.getRemoteAddr()),
                 correlationId,
@@ -42,7 +43,11 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
                 OperationsSessionCookie.fromCookie(cookie(servlet, "V2S_OPERATIONS_SESSION")),
                 PasswordRecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_PLATFORM_PASSWORD_RECOVERY")),
                 RecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_FLOW")),
-                RecoveryGrantCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_GRANT")));
+                RecoveryGrantCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_GRANT")),
+                servlet.getHeader("X-Request-Id"),
+                trustedBrand == null ? servlet.getHeader("X-Workspace-Brand-Ref") : trustedBrand.toString(),
+                servlet.getHeader("X-Catalog-Test-Failure-Point"),
+                servlet.getHeader("X-Catalog-Asset-Bind-Grants"));
     }
 
     private static String cookie(HttpServletRequest request, String name) {

@@ -1,0 +1,82 @@
+package com.catering.v2s.catalog.application;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.platform.command.CatalogAuthorizationScope;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+/** M-02: only the catalog owner may turn a business item code into the inventory opaque ref. */
+class TransitionOperationsCatalogItemStatusOperationTest {
+    @Test void commonBusinessCodeWithInventoryFactsIsBlocked() {
+        Fixture fixture = fixture("API-LATTE-001", true);
+
+        CatalogOwnerApi.Problem failure = assertThrows(CatalogOwnerApi.Problem.class, () -> fixture.operation().execute(fixture.invocation()));
+
+        assertEquals("DEPENDENT_FACTS_BLOCK_VOID", failure.code());
+        verify(fixture.catalog()).resolveCatalogItemRef(fixture.context(), "API-LATTE-001");
+        verify(fixture.inventory()).catalogItemVoidDependencies(fixture.context(), fixture.catalogItemRef().toString());
+        verify(fixture.catalog(), never()).transitionCatalogItemStatus(any(), any(), any());
+    }
+
+    @Test void noInventoryFactsAllowsTheResolvedCatalogItemToVoid() {
+        Fixture fixture = fixture("API-LATTE-001", false);
+
+        var response = fixture.operation().execute(fixture.invocation());
+
+        assertEquals("VOIDED", response.result().status());
+        verify(fixture.inventory()).catalogItemVoidDependencies(fixture.context(), fixture.catalogItemRef().toString());
+        verify(fixture.catalog()).transitionCatalogItemStatus(eq(fixture.context()),
+            eq(new CatalogOwnerApi.CatalogItemStatusTransitionCommand("API-LATTE-001", 7L, "VOIDED")), eq("void-key"));
+    }
+
+    @Test void uuidShapedBusinessCodeStillUsesItsCatalogOwnedRefAndCannotBypassDependencies() {
+        String uuidShapedCode = UUID.randomUUID().toString();
+        Fixture fixture = fixture(uuidShapedCode, true);
+
+        CatalogOwnerApi.Problem failure = assertThrows(CatalogOwnerApi.Problem.class, () -> fixture.operation().execute(fixture.invocation()));
+
+        assertEquals("DEPENDENT_FACTS_BLOCK_VOID", failure.code());
+        verify(fixture.inventory()).catalogItemVoidDependencies(fixture.context(), fixture.catalogItemRef().toString());
+        verify(fixture.inventory(), never()).catalogItemVoidDependencies(fixture.context(), uuidShapedCode);
+    }
+
+    private static Fixture fixture(String itemCode, boolean hasDependentFacts) {
+        CommandExecutionContextResolver contexts = mock(CommandExecutionContextResolver.class);
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        @SuppressWarnings("unchecked") WorkspaceExecutionContext<CatalogAuthorizationScope> context = mock(WorkspaceExecutionContext.class);
+        UUID catalogItemRef = UUID.randomUUID();
+        when(context.requestId()).thenReturn("void-request");
+        when(contexts.resolveCatalog(any(), any(), any(), any(), any(), any())).thenReturn(context);
+        when(catalog.resolveCatalogItemRef(context, itemCode)).thenReturn(catalogItemRef);
+        when(inventory.catalogItemVoidDependencies(context, catalogItemRef.toString()))
+            .thenReturn(new InventoryOwnerApi.CatalogItemVoidDependencyReadback(hasDependentFacts, hasDependentFacts ? 1L : 0L, 0L));
+        when(catalog.transitionCatalogItemStatus(any(), any(), any())).thenReturn(new CatalogOwnerApi.CatalogItemCommandReadback(
+            "CATALOG_ITEM", itemCode, "VOIDED", 8L,
+            List.of(new CatalogOwnerApi.CatalogItemOwnerReadback("catalog", "COMMITTED", 8L)),
+            new CatalogOwnerApi.CatalogItemActionAvailability(false, false, false)
+        ));
+        CatalogItemTransitionRequest request = new CatalogItemTransitionRequest(itemCode, 7L, "VOIDED", UUID.randomUUID().toString());
+        TransitionOperationsCatalogItemStatusOperation.Invocation invocation = new TransitionOperationsCatalogItemStatusOperation.Invocation(
+            request, "session", "BRAND", "correlation", "void-request", itemCode, "void-key");
+        return new Fixture(new TransitionOperationsCatalogItemStatusOperation(contexts, catalog, inventory), catalog, inventory, context, catalogItemRef, invocation);
+    }
+
+    private record Fixture(TransitionOperationsCatalogItemStatusOperation operation, CatalogOwnerApi catalog, InventoryOwnerApi inventory,
+                           WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID catalogItemRef,
+                           TransitionOperationsCatalogItemStatusOperation.Invocation invocation) { }
+}

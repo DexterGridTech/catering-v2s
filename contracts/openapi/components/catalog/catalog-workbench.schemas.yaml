@@ -115,163 +115,182 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "tree",
-        "smartViews",
-        "shapeCounts",
-        "uncategorizedCount",
-        "generation"
+        "revision",
+        "requestId",
+        "data"
       ],
       "properties": {
-        "tree": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "categoryRef": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "code": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "name": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "parentCategoryRef": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "version": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "displayOrder": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "count": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "countSemantics": {
-                "type": "string",
-                "description": "design-bound field",
-                "enum": [
-                  "SELF_ONLY",
-                  "SELF_AND_DESCENDANTS"
-                ]
-              },
-              "deletionAvailability": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tree",
+            "smartViews",
+            "shapeCounts",
+            "uncategorizedCount",
+            "generation"
+          ],
+          "properties": {
+            "tree": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
                 "type": "object",
-                "description": "design-bound field",
                 "additionalProperties": false,
                 "properties": {
-                  "canDelete": {
-                    "type": "boolean",
-                    "description": "design-bound field"
-                  },
-                  "subtreeSize": {
-                    "type": "integer",
-                    "description": "design-bound field"
-                  },
-                  "blockingReferenceCount": {
-                    "type": "integer",
-                    "description": "design-bound field"
-                  },
-                  "blockingReferenceLabels": {
-                    "type": "array",
+                  "categoryRef": {
+                    "type": "string",
                     "description": "design-bound field",
-                    "items": {
-                      "type": "string"
-                    }
+                    "format": "uuid"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "parentCategoryRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "countSemantics": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "SELF_ONLY",
+                      "SELF_AND_DESCENDANTS"
+                    ]
+                  },
+                  "deletionAvailability": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": false,
+                    "properties": {
+                      "canDelete": {
+                        "type": "boolean",
+                        "description": "design-bound field"
+                      },
+                      "subtreeSize": {
+                        "type": "integer",
+                        "description": "design-bound field"
+                      },
+                      "blockingReferenceCount": {
+                        "type": "integer",
+                        "description": "design-bound field"
+                      },
+                      "blockingReferenceLabels": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "canDelete",
+                      "subtreeSize",
+                      "blockingReferenceCount",
+                      "blockingReferenceLabels"
+                    ]
                   }
                 },
                 "required": [
-                  "canDelete",
-                  "subtreeSize",
-                  "blockingReferenceCount",
-                  "blockingReferenceLabels"
+                  "categoryRef",
+                  "code",
+                  "name",
+                  "parentCategoryRef",
+                  "version",
+                  "displayOrder",
+                  "count",
+                  "countSemantics",
+                  "deletionAvailability"
                 ]
               }
             },
-            "required": [
-              "categoryRef",
-              "code",
-              "name",
-              "parentCategoryRef",
-              "version",
-              "displayOrder",
-              "count",
-              "countSemantics",
-              "deletionAvailability"
-            ]
-          }
-        },
-        "smartViews": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "viewKey": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "label": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "count": {
-                "type": "integer",
-                "description": "design-bound field"
+            "smartViews": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "viewKey": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "viewKey",
+                  "label",
+                  "count"
+                ]
               }
             },
-            "required": [
-              "viewKey",
-              "label",
-              "count"
-            ]
-          }
-        },
-        "shapeCounts": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "shapeKey": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "count": {
-                "type": "integer",
-                "description": "design-bound field"
+            "shapeCounts": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "shapeKey": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "shapeKey",
+                  "count"
+                ]
               }
             },
-            "required": [
-              "shapeKey",
-              "count"
-            ]
+            "uncategorizedCount": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            }
           }
-        },
-        "uncategorizedCount": {
-          "type": "integer",
-          "description": "design-bound field"
-        },
-        "generation": {
-          "type": "string",
-          "description": "design-bound field"
         }
       }
     },
@@ -279,212 +298,231 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "items",
-        "total",
-        "cursor",
-        "generation",
-        "queryGeneration"
+        "revision",
+        "requestId",
+        "data"
       ],
       "properties": {
-        "items": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "primaryImageAssetRef": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field"
-              },
-              "itemRef": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "code": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "name": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "shortName": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field"
-              },
-              "categoryRefs": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              },
-              "productionTagRefs": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              },
-              "shapeKey": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "status": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "governanceStatus": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "source": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "skuEnabledCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "skuNonArchivedCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "skuTotalCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "skuDimensionSummary": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "standardSalePrice": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "cents"
-              },
-              "listedSalePrice": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "cents"
-              },
-              "standardPriceDelta": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "cents"
-              },
-              "standardExtraPrice": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "cents"
-              },
-              "priceGranularity": {
-                "type": "string",
-                "description": "design-bound field",
-                "enum": [
-                  "ITEM",
-                  "SKU"
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "cursor",
+            "generation",
+            "queryGeneration"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "primaryImageAssetRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "shortName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "categoryRefs": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "productionTagRefs": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "shapeKey": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "governanceStatus": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "source": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "skuEnabledCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "skuNonArchivedCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "skuTotalCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "skuDimensionSummary": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "standardSalePrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "cents"
+                  },
+                  "listedSalePrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "cents"
+                  },
+                  "standardPriceDelta": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "cents"
+                  },
+                  "standardExtraPrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "cents"
+                  },
+                  "priceGranularity": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "ITEM",
+                      "SKU"
+                    ]
+                  },
+                  "missingPriceCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "stockTargetCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "bomCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "riskFlags": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "updatedAt": {
+                    "type": "integer",
+                    "description": "design-bound field",
+                    "format": "epoch-millis"
+                  }
+                },
+                "required": [
+                  "primaryImageAssetRef",
+                  "itemRef",
+                  "code",
+                  "name",
+                  "shortName",
+                  "categoryRefs",
+                  "productionTagRefs",
+                  "shapeKey",
+                  "status",
+                  "governanceStatus",
+                  "source",
+                  "skuEnabledCount",
+                  "skuNonArchivedCount",
+                  "skuTotalCount",
+                  "skuDimensionSummary",
+                  "standardSalePrice",
+                  "listedSalePrice",
+                  "standardPriceDelta",
+                  "standardExtraPrice",
+                  "priceGranularity",
+                  "missingPriceCount",
+                  "stockTargetCount",
+                  "bomCount",
+                  "riskFlags",
+                  "version",
+                  "updatedAt"
                 ]
-              },
-              "missingPriceCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "stockTargetCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "bomCount": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "riskFlags": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "version": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "updatedAt": {
-                "type": "integer",
-                "description": "design-bound field",
-                "format": "epoch-millis"
               }
             },
-            "required": [
-              "primaryImageAssetRef",
-              "itemRef",
-              "code",
-              "name",
-              "shortName",
-              "categoryRefs",
-              "productionTagRefs",
-              "shapeKey",
-              "status",
-              "governanceStatus",
-              "source",
-              "skuEnabledCount",
-              "skuNonArchivedCount",
-              "skuTotalCount",
-              "skuDimensionSummary",
-              "standardSalePrice",
-              "listedSalePrice",
-              "standardPriceDelta",
-              "standardExtraPrice",
-              "priceGranularity",
-              "missingPriceCount",
-              "stockTargetCount",
-              "bomCount",
-              "riskFlags",
-              "version",
-              "updatedAt"
-            ]
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "queryGeneration": {
+              "type": "string",
+              "description": "design-bound field"
+            }
           }
-        },
-        "total": {
-          "type": "integer",
-          "description": "design-bound field"
-        },
-        "cursor": {
-          "type": "string",
-          "description": "design-bound field"
-        },
-        "generation": {
-          "type": "string",
-          "description": "design-bound field"
-        },
-        "queryGeneration": {
-          "type": "string",
-          "description": "design-bound field"
         }
       }
     },
@@ -611,297 +649,878 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "item",
-        "tabs",
-        "references",
-        "inventoryBom",
-        "productionTags",
-        "orderOptions",
-        "compositeGroups",
-        "governance",
-        "actionAvailability",
-        "deniedFields",
-        "fieldOwnership",
-        "queryIdentity"
+        "revision",
+        "requestId",
+        "data"
       ],
       "properties": {
-        "item": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
           "type": "object",
-          "description": "design-bound field",
           "additionalProperties": false,
+          "required": [
+            "item",
+            "tabs",
+            "references",
+            "inventoryBom",
+            "productionTags",
+            "orderOptions",
+            "compositeGroups",
+            "governance",
+            "actionAvailability",
+            "deniedFields",
+            "fieldOwnership",
+            "queryIdentity"
+          ],
           "properties": {
-            "skuVariantDimensions": {
-              "type": "array",
+            "item": {
+              "type": "object",
               "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "attributeRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "attributeCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "attributeName": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "values": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "valueRef": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "valueCode": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "valueLabel": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "displayOrder": {
-                          "type": "integer",
-                          "description": "design-bound field"
-                        },
-                        "status": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        }
+              "additionalProperties": false,
+              "properties": {
+                "skuVariantDimensions": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "attributeRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
                       },
-                      "required": [
-                        "valueRef",
-                        "valueCode",
-                        "valueLabel",
-                        "displayOrder",
-                        "status"
-                      ]
-                    }
+                      "attributeCode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "attributeName": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "values": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "valueRef": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "valueCode": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "valueLabel": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "displayOrder": {
+                              "type": "integer",
+                              "description": "design-bound field"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            }
+                          },
+                          "required": [
+                            "valueRef",
+                            "valueCode",
+                            "valueLabel",
+                            "displayOrder",
+                            "status"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "attributeRef",
+                      "attributeCode",
+                      "attributeName",
+                      "values"
+                    ]
                   }
                 },
-                "required": [
-                  "attributeRef",
-                  "attributeCode",
-                  "attributeName",
-                  "values"
-                ]
-              }
+                "skus": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "productSkuRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "skuCode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "skuName": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "attributeValueRefs": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "attributeRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            },
+                            "attributeCode": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "attributeName": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "attributeValueRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            },
+                            "valueCode": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "valueLabel": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "displayOrder": {
+                              "type": "integer",
+                              "description": "design-bound field"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            }
+                          },
+                          "required": [
+                            "attributeRef",
+                            "attributeCode",
+                            "attributeName",
+                            "attributeValueRef",
+                            "valueCode",
+                            "valueLabel",
+                            "displayOrder",
+                            "status"
+                          ]
+                        }
+                      },
+                      "skuBarcode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "standardSalePrice": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "design-bound field",
+                        "format": "cents"
+                      },
+                      "isDefault": {
+                        "type": "boolean",
+                        "description": "design-bound field"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "design-bound field"
+                      },
+                      "mediaRefs": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "productSkuRef",
+                      "skuCode",
+                      "skuName",
+                      "attributeValueRefs",
+                      "skuBarcode",
+                      "standardSalePrice",
+                      "isDefault",
+                      "status",
+                      "version",
+                      "mediaRefs"
+                    ]
+                  }
+                },
+                "categoryRefs": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "productionTagRefs": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "tagRefs": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "salesUnitRefs": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "itemRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "shortName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "design-bound field"
+                },
+                "shapeKey": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "itemKind": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "measureMode": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "usageCapabilities": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "images": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "identifiers": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "code",
+                      "value"
+                    ]
+                  }
+                },
+                "skuSummary": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabledCount": {
+                      "type": "integer",
+                      "description": "design-bound field"
+                    },
+                    "nonArchivedCount": {
+                      "type": "integer",
+                      "description": "design-bound field"
+                    },
+                    "totalCount": {
+                      "type": "integer",
+                      "description": "design-bound field"
+                    },
+                    "dimensions": {
+                      "type": "array",
+                      "description": "design-bound field",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "enabledCount",
+                    "nonArchivedCount",
+                    "totalCount",
+                    "dimensions"
+                  ]
+                },
+                "ordering": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "priceGranularity": {
+                      "type": "string",
+                      "description": "design-bound field",
+                      "enum": [
+                        "ITEM",
+                        "SKU"
+                      ]
+                    },
+                    "standardSalePrice": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "design-bound field",
+                      "format": "cents"
+                    },
+                    "listedSalePrice": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "design-bound field",
+                      "format": "cents"
+                    },
+                    "missingPriceCount": {
+                      "type": "integer",
+                      "description": "design-bound field"
+                    }
+                  },
+                  "required": [
+                    "priceGranularity",
+                    "standardSalePrice",
+                    "listedSalePrice",
+                    "missingPriceCount"
+                  ]
+                },
+                "attributes": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": true,
+                  "properties": {},
+                  "required": []
+                },
+                "orderOptions": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "groupCode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "groupName": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "selectionMode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "description": "design-bound field"
+                      },
+                      "values": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "attributeValueRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "default": {
+                              "type": "boolean",
+                              "description": "design-bound field"
+                            },
+                            "extraPrice": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "description": "design-bound field",
+                              "format": "cents"
+                            },
+                            "productionEffects": {
+                              "type": "array",
+                              "description": "design-bound field",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "attributeValueRef",
+                            "name",
+                            "default",
+                            "extraPrice",
+                            "productionEffects"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "groupCode",
+                      "groupName",
+                      "selectionMode",
+                      "required",
+                      "values"
+                    ]
+                  }
+                },
+                "compositeGroups": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "groupCode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "groupName": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "selectionRule": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "components": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "itemCode": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "itemRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            },
+                            "productSkuRef": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            },
+                            "skuCode": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "design-bound field"
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "decimal"
+                            },
+                            "unit": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "default": {
+                              "type": "boolean",
+                              "description": "design-bound field"
+                            },
+                            "extraPrice": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "description": "design-bound field",
+                              "format": "cents"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            }
+                          },
+                          "required": [
+                            "itemCode",
+                            "itemRef",
+                            "productSkuRef",
+                            "skuCode",
+                            "quantity",
+                            "unit",
+                            "default",
+                            "extraPrice",
+                            "status"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "groupCode",
+                      "groupName",
+                      "selectionRule",
+                      "components"
+                    ]
+                  }
+                },
+                "inventoryBom": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "nodeType": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "targetRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "decimal"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "design-bound field"
+                      },
+                      "itemCode": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "itemRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "productSkuRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "optionValueRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "skuCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "design-bound field"
+                      },
+                      "optionValueCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "design-bound field"
+                      }
+                    },
+                    "required": [
+                      "nodeType",
+                      "mode",
+                      "targetRef",
+                      "quantity",
+                      "unit",
+                      "version",
+                      "itemCode",
+                      "itemRef",
+                      "productSkuRef",
+                      "optionValueRef",
+                      "skuCode",
+                      "optionValueCode"
+                    ]
+                  }
+                },
+                "productionProfiles": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "item": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    },
+                    "sku": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    },
+                    "optionValue": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    }
+                  },
+                  "required": [
+                    "item",
+                    "sku",
+                    "optionValue"
+                  ]
+                },
+                "lifecycle": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "description": "design-bound field"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "version",
+                    "source"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "externalIdentity": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "sourceOrderRef": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "sourceRecordRef": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "sourceItemRef": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "design-bound field"
+                        },
+                        "specification": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "design-bound field"
+                        },
+                        "price": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "description": "design-bound field",
+                          "format": "cents"
+                        }
+                      },
+                      "required": []
+                    }
+                  },
+                  "required": []
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "updatedAt": {
+                  "type": "integer",
+                  "description": "design-bound field",
+                  "format": "epoch-millis"
+                }
+              },
+              "required": [
+                "skuVariantDimensions",
+                "skus",
+                "categoryRefs",
+                "productionTagRefs",
+                "tagRefs",
+                "salesUnitRefs",
+                "itemRef",
+                "code",
+                "name",
+                "shortName",
+                "shapeKey",
+                "itemKind",
+                "measureMode",
+                "usageCapabilities",
+                "images",
+                "identifiers",
+                "skuSummary",
+                "ordering",
+                "attributes",
+                "orderOptions",
+                "compositeGroups",
+                "inventoryBom",
+                "productionProfiles",
+                "lifecycle",
+                "source",
+                "externalIdentity",
+                "version",
+                "updatedAt"
+              ]
             },
-            "skus": {
+            "tabs": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "productSkuRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "skuCode": {
+                  "tabKey": {
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "skuName": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "attributeValueRefs": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "attributeRef": {
-                          "type": "string",
-                          "description": "design-bound field",
-                          "format": "uuid"
-                        },
-                        "attributeCode": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "attributeName": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "attributeValueRef": {
-                          "type": "string",
-                          "description": "design-bound field",
-                          "format": "uuid"
-                        },
-                        "valueCode": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "valueLabel": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "displayOrder": {
-                          "type": "integer",
-                          "description": "design-bound field"
-                        },
-                        "status": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        }
-                      },
-                      "required": [
-                        "attributeRef",
-                        "attributeCode",
-                        "attributeName",
-                        "attributeValueRef",
-                        "valueCode",
-                        "valueLabel",
-                        "displayOrder",
-                        "status"
-                      ]
-                    }
-                  },
-                  "skuBarcode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "standardSalePrice": {
-                    "type": [
-                      "integer",
-                      "null"
-                    ],
-                    "description": "design-bound field",
-                    "format": "cents"
-                  },
-                  "isDefault": {
+                  "visible": {
                     "type": "boolean",
                     "description": "design-bound field"
                   },
-                  "status": {
-                    "type": "string",
+                  "disabled": {
+                    "type": "boolean",
                     "description": "design-bound field"
                   },
-                  "version": {
-                    "type": "integer",
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "description": "design-bound field"
-                  },
-                  "mediaRefs": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "string"
-                    }
                   }
                 },
                 "required": [
-                  "productSkuRef",
-                  "skuCode",
-                  "skuName",
-                  "attributeValueRefs",
-                  "skuBarcode",
-                  "standardSalePrice",
-                  "isDefault",
-                  "status",
-                  "version",
-                  "mediaRefs"
+                  "tabKey",
+                  "visible",
+                  "disabled",
+                  "reason"
                 ]
               }
             },
-            "categoryRefs": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            },
-            "productionTagRefs": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            },
-            "tagRefs": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            },
-            "salesUnitRefs": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            },
-            "itemRef": {
-              "type": "string",
-              "description": "design-bound field",
-              "format": "uuid"
-            },
-            "code": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "name": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "shortName": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "design-bound field"
-            },
-            "shapeKey": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "itemKind": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "measureMode": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "usageCapabilities": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string"
-              }
-            },
-            "images": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "string"
-              }
-            },
-            "identifiers": {
+            "references": {
               "type": "array",
               "description": "design-bound field",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "kind": {
+                  "referenceKind": {
                     "type": "string",
                     "description": "design-bound field"
                   },
@@ -909,97 +1528,139 @@
                     "type": "string",
                     "description": "design-bound field"
                   },
-                  "value": {
+                  "direction": {
                     "type": "string",
                     "description": "design-bound field"
                   }
                 },
                 "required": [
-                  "kind",
+                  "referenceKind",
                   "code",
-                  "value"
+                  "direction"
                 ]
               }
             },
-            "skuSummary": {
-              "type": "object",
+            "inventoryBom": {
+              "type": "array",
               "description": "design-bound field",
-              "additionalProperties": false,
-              "properties": {
-                "enabledCount": {
-                  "type": "integer",
-                  "description": "design-bound field"
-                },
-                "nonArchivedCount": {
-                  "type": "integer",
-                  "description": "design-bound field"
-                },
-                "totalCount": {
-                  "type": "integer",
-                  "description": "design-bound field"
-                },
-                "dimensions": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "string"
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "nodeType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "itemCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "optionValueRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "skuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "optionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
                   }
-                }
-              },
-              "required": [
-                "enabledCount",
-                "nonArchivedCount",
-                "totalCount",
-                "dimensions"
-              ]
+                },
+                "required": [
+                  "nodeType",
+                  "mode",
+                  "targetRef",
+                  "quantity",
+                  "unit",
+                  "version",
+                  "itemCode",
+                  "itemRef",
+                  "productSkuRef",
+                  "optionValueRef",
+                  "skuCode",
+                  "optionValueCode"
+                ]
+              }
             },
-            "ordering": {
-              "type": "object",
+            "productionTags": {
+              "type": "array",
               "description": "design-bound field",
-              "additionalProperties": false,
-              "properties": {
-                "priceGranularity": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "enum": [
-                    "ITEM",
-                    "SKU"
-                  ]
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "tagRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
                 },
-                "standardSalePrice": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "description": "design-bound field",
-                  "format": "cents"
-                },
-                "listedSalePrice": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "description": "design-bound field",
-                  "format": "cents"
-                },
-                "missingPriceCount": {
-                  "type": "integer",
-                  "description": "design-bound field"
-                }
-              },
-              "required": [
-                "priceGranularity",
-                "standardSalePrice",
-                "listedSalePrice",
-                "missingPriceCount"
-              ]
-            },
-            "attributes": {
-              "type": "object",
-              "description": "design-bound field",
-              "additionalProperties": true,
-              "properties": {},
-              "required": []
+                "required": [
+                  "code",
+                  "tagRef",
+                  "name",
+                  "owner"
+                ]
+              }
             },
             "orderOptions": {
               "type": "array",
@@ -1035,11 +1696,6 @@
                           "type": "string",
                           "description": "design-bound field"
                         },
-                        "attributeValueRef": {
-                          "type": "string",
-                          "description": "design-bound field",
-                          "format": "uuid"
-                        },
                         "name": {
                           "type": "string",
                           "description": "design-bound field"
@@ -1066,7 +1722,6 @@
                       },
                       "required": [
                         "code",
-                        "attributeValueRef",
                         "name",
                         "default",
                         "extraPrice",
@@ -1182,129 +1837,7 @@
                 ]
               }
             },
-            "inventoryBom": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "nodeType": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "mode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "targetRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "quantity": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "decimal"
-                  },
-                  "unit": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "version": {
-                    "type": "integer",
-                    "description": "design-bound field"
-                  },
-                  "itemCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "itemRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "productSkuRef": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "optionValueRef": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "skuCode": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field"
-                  },
-                  "optionValueCode": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field"
-                  }
-                },
-                "required": [
-                  "nodeType",
-                  "mode",
-                  "targetRef",
-                  "quantity",
-                  "unit",
-                  "version",
-                  "itemCode",
-                  "itemRef",
-                  "productSkuRef",
-                  "optionValueRef",
-                  "skuCode",
-                  "optionValueCode"
-                ]
-              }
-            },
-            "productionProfiles": {
-              "type": "object",
-              "description": "design-bound field",
-              "additionalProperties": false,
-              "properties": {
-                "item": {
-                  "type": "object",
-                  "description": "design-bound field",
-                  "additionalProperties": true,
-                  "properties": {},
-                  "required": []
-                },
-                "sku": {
-                  "type": "object",
-                  "description": "design-bound field",
-                  "additionalProperties": true,
-                  "properties": {},
-                  "required": []
-                },
-                "optionValue": {
-                  "type": "object",
-                  "description": "design-bound field",
-                  "additionalProperties": true,
-                  "properties": {},
-                  "required": []
-                }
-              },
-              "required": [
-                "item",
-                "sku",
-                "optionValue"
-              ]
-            },
-            "lifecycle": {
+            "governance": {
               "type": "object",
               "description": "design-bound field",
               "additionalProperties": false,
@@ -1313,483 +1846,159 @@
                   "type": "string",
                   "description": "design-bound field"
                 },
-                "version": {
-                  "type": "integer",
-                  "description": "design-bound field"
+                "deniedFields": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "source": {
-                  "type": "string",
-                  "description": "design-bound field"
-                }
-              },
-              "required": [
-                "status",
-                "version",
-                "source"
-              ]
-            },
-            "source": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "externalIdentity": {
-              "type": [
-                "object",
-                "null"
-              ],
-              "description": "design-bound field",
-              "additionalProperties": false,
-              "properties": {
-                "sourceOrderRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "sourceRecordRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "sourceItemRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "snapshot": {
-                  "type": "object",
+                "externalIdentity": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "description": "design-bound field",
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
+                    "sourceOrderRef": {
                       "type": "string",
                       "description": "design-bound field"
                     },
-                    "specification": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                    "sourceRecordRef": {
+                      "type": "string",
                       "description": "design-bound field"
                     },
-                    "price": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ],
+                    "sourceItemRef": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "snapshot": {
+                      "type": "object",
                       "description": "design-bound field",
-                      "format": "cents"
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "design-bound field"
+                        },
+                        "specification": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "design-bound field"
+                        },
+                        "price": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "description": "design-bound field",
+                          "format": "cents"
+                        }
+                      },
+                      "required": []
                     }
                   },
                   "required": []
                 }
               },
-              "required": []
+              "required": [
+                "status",
+                "deniedFields",
+                "externalIdentity"
+              ]
             },
-            "version": {
-              "type": "integer",
-              "description": "design-bound field"
-            },
-            "updatedAt": {
-              "type": "integer",
+            "actionAvailability": {
+              "type": "object",
               "description": "design-bound field",
-              "format": "epoch-millis"
-            }
-          },
-          "required": [
-            "skuVariantDimensions",
-            "skus",
-            "categoryRefs",
-            "productionTagRefs",
-            "tagRefs",
-            "salesUnitRefs",
-            "itemRef",
-            "code",
-            "name",
-            "shortName",
-            "shapeKey",
-            "itemKind",
-            "measureMode",
-            "usageCapabilities",
-            "images",
-            "identifiers",
-            "skuSummary",
-            "ordering",
-            "attributes",
-            "orderOptions",
-            "compositeGroups",
-            "inventoryBom",
-            "productionProfiles",
-            "lifecycle",
-            "source",
-            "externalIdentity",
-            "version",
-            "updatedAt"
-          ]
-        },
-        "tabs": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "tabKey": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "visible": {
-                "type": "boolean",
-                "description": "design-bound field"
-              },
-              "disabled": {
-                "type": "boolean",
-                "description": "design-bound field"
-              },
-              "reason": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "tabKey",
-              "visible",
-              "disabled",
-              "reason"
-            ]
-          }
-        },
-        "references": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "referenceKind": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "code": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "direction": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "referenceKind",
-              "code",
-              "direction"
-            ]
-          }
-        },
-        "inventoryBom": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "nodeType": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "mode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "targetRef": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "quantity": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "decimal"
-              },
-              "unit": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "version": {
-                "type": "integer",
-                "description": "design-bound field"
-              },
-              "itemCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "itemRef": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "productSkuRef": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "optionValueRef": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "skuCode": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field"
-              },
-              "optionValueCode": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "nodeType",
-              "mode",
-              "targetRef",
-              "quantity",
-              "unit",
-              "version",
-              "itemCode",
-              "itemRef",
-              "productSkuRef",
-              "optionValueRef",
-              "skuCode",
-              "optionValueCode"
-            ]
-          }
-        },
-        "productionTags": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "tagRef": {
-                "type": "string",
-                "description": "design-bound field",
-                "format": "uuid"
-              },
-              "name": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "owner": {
-                "type": "string",
-                "description": "design-bound field"
-              }
-            },
-            "required": [
-              "code",
-              "tagRef",
-              "name",
-              "owner"
-            ]
-          }
-        },
-        "orderOptions": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "groupCode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "groupName": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "selectionMode": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "required": {
-                "type": "boolean",
-                "description": "design-bound field"
-              },
-              "values": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
+              "additionalProperties": false,
+              "properties": {
+                "canEdit": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "canEnable": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "canDisable": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "canArchive": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "voidAvailability": {
                   "type": "object",
+                  "description": "design-bound field",
                   "additionalProperties": false,
                   "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "name": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "default": {
+                    "canVoid": {
                       "type": "boolean",
                       "description": "design-bound field"
                     },
-                    "extraPrice": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ],
-                      "description": "design-bound field",
-                      "format": "cents"
-                    },
-                    "productionEffects": {
+                    "blockingReferences": {
                       "type": "array",
                       "description": "design-bound field",
                       "items": {
-                        "type": "string"
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "referenceKind": {
+                            "type": "string",
+                            "description": "design-bound field"
+                          },
+                          "referenceRef": {
+                            "type": "string",
+                            "description": "design-bound field"
+                          }
+                        },
+                        "required": [
+                          "referenceKind",
+                          "referenceRef"
+                        ]
+                      }
+                    },
+                    "dependentFacts": {
+                      "type": "array",
+                      "description": "design-bound field",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "factKind": {
+                            "type": "string",
+                            "description": "design-bound field"
+                          },
+                          "factRef": {
+                            "type": "string",
+                            "description": "design-bound field"
+                          }
+                        },
+                        "required": [
+                          "factKind",
+                          "factRef"
+                        ]
                       }
                     }
                   },
                   "required": [
-                    "code",
-                    "name",
-                    "default",
-                    "extraPrice",
-                    "productionEffects"
+                    "canVoid",
+                    "blockingReferences",
+                    "dependentFacts"
                   ]
                 }
-              }
-            },
-            "required": [
-              "groupCode",
-              "groupName",
-              "selectionMode",
-              "required",
-              "values"
-            ]
-          }
-        },
-        "compositeGroups": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "groupCode": {
-                "type": "string",
-                "description": "design-bound field"
               },
-              "groupName": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "selectionRule": {
-                "type": "string",
-                "description": "design-bound field"
-              },
-              "components": {
-                "type": "array",
-                "description": "design-bound field",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "itemCode": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "itemRef": {
-                      "type": "string",
-                      "description": "design-bound field",
-                      "format": "uuid"
-                    },
-                    "productSkuRef": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "design-bound field",
-                      "format": "uuid"
-                    },
-                    "skuCode": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "design-bound field"
-                    },
-                    "quantity": {
-                      "type": "string",
-                      "description": "design-bound field",
-                      "format": "decimal"
-                    },
-                    "unit": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "default": {
-                      "type": "boolean",
-                      "description": "design-bound field"
-                    },
-                    "extraPrice": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ],
-                      "description": "design-bound field",
-                      "format": "cents"
-                    },
-                    "status": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    }
-                  },
-                  "required": [
-                    "itemCode",
-                    "itemRef",
-                    "productSkuRef",
-                    "skuCode",
-                    "quantity",
-                    "unit",
-                    "default",
-                    "extraPrice",
-                    "status"
-                  ]
-                }
-              }
-            },
-            "required": [
-              "groupCode",
-              "groupName",
-              "selectionRule",
-              "components"
-            ]
-          }
-        },
-        "governance": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": false,
-          "properties": {
-            "status": {
-              "type": "string",
-              "description": "design-bound field"
+              "required": [
+                "canEdit",
+                "canEnable",
+                "canDisable",
+                "canArchive",
+                "voidAvailability"
+              ]
             },
             "deniedFields": {
               "type": "array",
@@ -1798,202 +2007,50 @@
                 "type": "string"
               }
             },
-            "externalIdentity": {
-              "type": [
-                "object",
-                "null"
-              ],
-              "description": "design-bound field",
-              "additionalProperties": false,
-              "properties": {
-                "sourceOrderRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "sourceRecordRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "sourceItemRef": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "snapshot": {
-                  "type": "object",
-                  "description": "design-bound field",
-                  "additionalProperties": false,
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "specification": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "design-bound field"
-                    },
-                    "price": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ],
-                      "description": "design-bound field",
-                      "format": "cents"
-                    }
-                  },
-                  "required": []
-                }
-              },
-              "required": []
-            }
-          },
-          "required": [
-            "status",
-            "deniedFields",
-            "externalIdentity"
-          ]
-        },
-        "actionAvailability": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": false,
-          "properties": {
-            "canEdit": {
-              "type": "boolean",
-              "description": "design-bound field"
-            },
-            "canEnable": {
-              "type": "boolean",
-              "description": "design-bound field"
-            },
-            "canDisable": {
-              "type": "boolean",
-              "description": "design-bound field"
-            },
-            "canArchive": {
-              "type": "boolean",
-              "description": "design-bound field"
-            },
-            "voidAvailability": {
+            "fieldOwnership": {
               "type": "object",
               "description": "design-bound field",
               "additionalProperties": false,
               "properties": {
-                "canVoid": {
-                  "type": "boolean",
+                "catalog": {
+                  "type": "string",
                   "description": "design-bound field"
                 },
-                "blockingReferences": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "referenceKind": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "referenceRef": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      }
-                    },
-                    "required": [
-                      "referenceKind",
-                      "referenceRef"
-                    ]
-                  }
+                "inventory": {
+                  "type": "string",
+                  "description": "design-bound field"
                 },
-                "dependentFacts": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "factKind": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "factRef": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      }
-                    },
-                    "required": [
-                      "factKind",
-                      "factRef"
-                    ]
-                  }
+                "asset": {
+                  "type": "string",
+                  "description": "design-bound field"
                 }
               },
               "required": [
-                "canVoid",
-                "blockingReferences",
-                "dependentFacts"
+                "catalog",
+                "inventory",
+                "asset"
+              ]
+            },
+            "queryIdentity": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "dataNodeRef": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "generation": {
+                  "type": "string",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "dataNodeRef",
+                "generation"
               ]
             }
-          },
-          "required": [
-            "canEdit",
-            "canEnable",
-            "canDisable",
-            "canArchive",
-            "voidAvailability"
-          ]
-        },
-        "deniedFields": {
-          "type": "array",
-          "description": "design-bound field",
-          "items": {
-            "type": "string"
           }
-        },
-        "fieldOwnership": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": false,
-          "properties": {
-            "catalog": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "inventory": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "asset": {
-              "type": "string",
-              "description": "design-bound field"
-            }
-          },
-          "required": [
-            "catalog",
-            "inventory",
-            "asset"
-          ]
-        },
-        "queryIdentity": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": false,
-          "properties": {
-            "dataNodeRef": {
-              "type": "string",
-              "description": "design-bound field"
-            },
-            "generation": {
-              "type": "string",
-              "description": "design-bound field"
-            }
-          },
-          "required": [
-            "dataNodeRef",
-            "generation"
-          ]
         }
       }
     },
@@ -2199,7 +2256,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "revision",
+        "manifestRevision",
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
@@ -2213,7 +2270,7 @@
         "detailSections"
       ],
       "properties": {
-        "revision": {
+        "manifestRevision": {
           "type": "string",
           "description": "design-bound field"
         },

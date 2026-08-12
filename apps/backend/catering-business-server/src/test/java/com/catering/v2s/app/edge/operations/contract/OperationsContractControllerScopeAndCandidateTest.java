@@ -9,14 +9,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.generated.wire.StoreContractInvalidateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreContractItem;
 import com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequest;
+import com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.contract.api.StoreContractReadback;
+import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
 import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
@@ -38,7 +41,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.JsonNodeFactory;
 
 class OperationsContractControllerScopeAndCandidateTest {
     private static final String KEY = "operations-contract-scope-test";
@@ -46,10 +48,10 @@ class OperationsContractControllerScopeAndCandidateTest {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Test
-    void parsesObjectExtensionValuesWithTheGeneratedJackson3RequestType() throws Exception {
-        StoreContractCreateRequest request = JSON.readValue("{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"contractNo\":\"HT-001\",\"effectiveFrom\":\"2026-08-01\",\"extensionValues\":{\"remark\":\"test\"},\"items\":[{\"code\":\"SKU-1\",\"name\":\"商品一\"}]}", StoreContractCreateRequest.class);
+    void parsesExplicitExtensionSubmissionWithTheGeneratedJackson3RequestType() throws Exception {
+        StoreContractCreateRequest request = JSON.readValue("{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"contractNo\":\"HT-001\",\"effectiveFrom\":\"2026-08-01\",\"extensionValues\":[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}],\"items\":[{\"code\":\"SKU-1\",\"name\":\"商品一\"}]}", StoreContractCreateRequest.class);
 
-        assertEquals(Map.of("remark", "\"test\""), ContractWireMapper.requestValues(request.extensionValues()));
+        assertEquals(new StoreContractCreateRequestExtensionValuesItem("remark", "\"test\"", "SET"), request.extensionValues().getFirst());
     }
 
     @Test
@@ -102,22 +104,13 @@ class OperationsContractControllerScopeAndCandidateTest {
             .thenReturn(new StoreContractLookup.StoreContractContext(storeId, tenantId, scopedProjectId, "ENABLED", List.of("一期")));
         when(fixture.capabilityScopes.resolve(fixture.session, "REQ_CREATE_OPERATIONS_CONTRACT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
             .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-CONTRACT-CREATE", new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(fixture.workspaceId, KEY, "PROJECT", scopedProjectId, "PROJECT", scopedProjectId, List.of(scopedProjectId))));
-        when(fixture.contracts.create(
-            fixture.workspaceId,
-            KEY,
-            "HT-001",
-            storeId,
-            scopedProjectId,
-            LocalDate.parse("2026-07-30"),
-            null,
-            "一期",
-            "备注",
-            List.of(new ContractCommandService.ItemInput("SKU-1", "货号一")),
-            Map.of(),
-            IDEMPOTENCY_KEY,
-            fixture.actor,
-            grant
-        )).thenReturn(new StoreContractReadback(
+        var command = new OperationsStoreContractCommandApi.CreateCommand(
+            fixture.workspaceId, KEY, "HT-001", storeId, scopedProjectId,
+            LocalDate.parse("2026-07-30"), null, "一期", "备注",
+            List.of(new OperationsStoreContractCommandApi.Item("SKU-1", "货号一")),
+            new com.catering.v2s.extension.api.ExtensionSubmission(List.of()), IDEMPOTENCY_KEY, fixture.actor, grant
+        );
+        when(fixture.contracts.create(command)).thenReturn(new StoreContractReadback(
             contractId,
             fixture.workspaceId,
             KEY,
@@ -165,8 +158,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                 "2026-07-30",
                 null,
                 "备注",
-                JsonNodeFactory.instance.objectNode(),
-                null,
+                List.of(),
                 List.of(new StoreContractItem("SKU-1", "货号一")),
                 "一期"
             )
@@ -178,22 +170,7 @@ class OperationsContractControllerScopeAndCandidateTest {
         verify(fixture.entities).requireStoreContractContext(fixture.workspaceId, KEY, storeId);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.capabilityScopes).resolve(fixture.session, "REQ_CREATE_OPERATIONS_CONTRACT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId));
-        verify(fixture.contracts).create(
-            fixture.workspaceId,
-            KEY,
-            "HT-001",
-            storeId,
-            scopedProjectId,
-            LocalDate.parse("2026-07-30"),
-            null,
-            "一期",
-            "备注",
-            List.of(new ContractCommandService.ItemInput("SKU-1", "货号一")),
-            Map.of(),
-            IDEMPOTENCY_KEY,
-            fixture.actor,
-            grant
-        );
+        verify(fixture.contracts).create(command);
     }
 
     @Test
@@ -214,7 +191,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                 KEY,
                 contractId,
                 IDEMPOTENCY_KEY,
-                new StoreContractUpdateRequest("一期", "2026-07-30", null, "备注", JsonNodeFactory.instance.objectNode(), null, 3L, List.of(new StoreContractItem("SKU-1", "货号一")), "一期")
+                new StoreContractUpdateRequest("一期", "2026-07-30", null, "备注", List.of(new StoreContractUpdateRequestExtensionValuesItem("remark", "\"test\"", "SET")), 3L, List.of(new StoreContractItem("SKU-1", "货号一")), "一期")
             )
         );
         assertThrows(

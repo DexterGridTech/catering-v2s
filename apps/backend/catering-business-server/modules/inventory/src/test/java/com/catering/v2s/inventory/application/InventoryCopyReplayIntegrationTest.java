@@ -74,6 +74,9 @@ class InventoryCopyReplayIntegrationTest {
             .put("targetRef", TARGET_ITEM.toString()).put("targetCode", "ITEM-TARGET");
         mappings.addObject().put("objectType", "PRODUCT_SKU").put("sourceRef", SOURCE_SKU.toString())
             .put("targetRef", TARGET_SKU.toString()).put("targetSkuCode", "SKU-TARGET");
+        // Catalog composes one cross-owner plan; inventory validates the opaque refs but does not consume SKU attributes.
+        mappings.addObject().put("objectType", "SKU_ATTRIBUTE").put("sourceRef", UUID.randomUUID().toString())
+            .put("targetRef", UUID.randomUUID().toString());
         return request;
     }
 

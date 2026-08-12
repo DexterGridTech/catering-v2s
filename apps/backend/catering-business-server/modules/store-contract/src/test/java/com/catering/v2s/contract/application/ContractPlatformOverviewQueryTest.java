@@ -37,12 +37,24 @@ class ContractPlatformOverviewQueryTest {
         assertThrows(ContractCommandService.ContractValidationException.class, () -> service.list(UUID.randomUUID(), "workspace-a", new ContractTaskReadService.ContractListQuery(null, null, null, null, null, null, null, null, null, "UPDATED_AT", "SIDEWAYS", 1, 20)));
     }
 
+    @Test void taskPageUsesUniqueContractAndProjectTieBreakers() {
+        var jdbc = new RecordingJdbcTemplate();
+        new ContractTaskReadService(jdbc).platformOverviewTaskPage(UUID.randomUUID(), "workspace-a", ContractTaskReadService.ContractListQuery.empty());
+
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.taskSql.contains("c.id AS contract_id"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.taskSql.contains("p.id AS project_id"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.taskSql.contains("ORDER BY updated_at_epoch_millis DESC, contract_id ASC"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.taskSql.contains("ORDER BY paged.updated_at_epoch_millis DESC, paged.contract_id ASC"));
+        org.junit.jupiter.api.Assertions.assertFalse(jdbc.taskSql.contains("ORDER BY updated_at_epoch_millis DESC, id ASC"));
+        org.junit.jupiter.api.Assertions.assertFalse(jdbc.taskSql.contains("ORDER BY paged.updated_at_epoch_millis DESC, paged.id ASC"));
+    }
+
     private static int occurrences(String value, String token) { return value.split(java.util.regex.Pattern.quote(token), -1).length - 1; }
 
     private static final class RecordingJdbcTemplate extends JdbcTemplate {
-        private String countSql; private Object[] countArgs; private String listSql; private Object[] listArgs;
+        private String countSql; private Object[] countArgs; private String listSql; private Object[] listArgs; private String taskSql;
         @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) { countSql = sql; countArgs = args; return requiredType.cast(73L); }
         @Override public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) { if (sql.startsWith("SELECT c.id")) { listSql = sql; listArgs = args; } return List.of(); }
-        @Override public <T> T query(String sql, PreparedStatementSetter setter, ResultSetExtractor<T> extractor) { return null; }
+        @Override public <T> T query(String sql, PreparedStatementSetter setter, ResultSetExtractor<T> extractor) { taskSql = sql; return null; }
     }
 }

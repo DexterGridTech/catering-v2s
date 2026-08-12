@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "packageId": "BACKEND-PERFORMANCE-TESTCONTAINERS-196-REMOTE-20260811",
+  "kind": "backend-performance-testcontainers-196-remote-package-input",
+  "status": "ACTIVE_DYNAMIC_PREPARATION",
+  "authorization": "Dexter authorized the distinct managed remote Testcontainers technical-validation package after static 196/196 reconciliation. This package does not authorize browser L2, reset, managed DEV, seed, UAT, or deployment.",
+  "implementationAuthority": true,
+  "runtimeAuthority": true,
+  "seedResetAuthority": false,
+  "reviewTarget": "IMPLEMENTATION",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_IMPLEMENTATION_20260811",
+  "predecessor": {
+    "packageId": "BACKEND-PERFORMANCE-FINAL-OPTIMIZATION-STATIC-IMPLEMENTATION-20260811",
+    "packageExitPath": "doc/evidence/platform/2026-08-11-v2s-backend-performance-final-optimization-static-implementation-package-exit.json",
+    "packageExitSha256": "a8676788b1a983821918bb7d63a1225038715844bee4b17758133106a17a8904",
+    "staticProofStatus": "PASS",
+    "reconciledOperations": 196
+  },
+  "denominator": {
+    "canonicalOperations": 196,
+    "sourceRows": 196,
+    "shapeRows": 196,
+    "loaders": 10,
+    "groupedScenarios": 14,
+    "fixtureRows": 396,
+    "dynamicBusinessRows": 196
+  },
+  "inputs": {
+    "bindings": {"path": "contracts/registry/operation-handler-bindings.json", "sha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"},
+    "sourceInventory": {"path": "contracts/registry/backend-performance-operation-source-inventory.json", "sha256": "80bb1575a621eada962c5b933bdd22002f8f53f630bc99814d525c419afb7daf"},
+    "shapeMatrix": {"path": "contracts/registry/backend-performance-operation-database-shape-matrix.json", "sha256": "318edda959bf0e50250c209b9f77fab783104959a1b356be0659151e11bec7ce"},
+    "loaderCatalogue": {"path": "contracts/registry/backend-performance-fact-loader-catalog.json", "sha256": "49b9254d8db1e320c82c0f83f84cc7d8fa4422c2f630595e079ab4db81bf2fea"},
+    "fixtureCatalog": {"path": "contracts/policy/backend-performance-final-fixture-catalog.json", "sha256": "3ed047efd573acfe567a42dc358c8a4967cfe6fc535097450b9bd17f8365742f", "rows": 396},
+    "testcontainersPlan": {"path": "contracts/policy/backend-performance-testcontainers-plan.json", "sha256": "8ecd9c3e13ad30bbcb9453c268056145e6b823fb4eb62f2dce8909fcb324c7bb"},
+    "currentStateSemantics": "CURRENT_INPUT_BYTES_MUST_MATCH_PACKAGE_EXIT_OBSERVED_STATE",
+    "entrySnapshot": {
+      "capturedAt": "2026-08-11T12:34:03Z",
+      "semantics": "IMMUTABLE_PACKAGE_ENTRY_SNAPSHOT",
+      "semanticsDetail": "entrySha256 records package-entry bytes only; it is intentionally not a current-state assertion, and every entry-to-exit difference requires an exact legal disposition in the package exit.",
+      "entries": {
+        "bindings": {"path": "contracts/registry/operation-handler-bindings.json", "entrySha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"},
+        "sourceInventory": {"path": "contracts/registry/backend-performance-operation-source-inventory.json", "entrySha256": "3b4e7c91e64e27a32d7f4bce89319c327f2118592e77e8cf7fe067fb773bab61"},
+        "shapeMatrix": {"path": "contracts/registry/backend-performance-operation-database-shape-matrix.json", "entrySha256": "e6168feb40695caf3ae09a4cf7adbc8e52b2b501e86040bc9c0a15ea92d50a90"},
+        "loaderCatalogue": {"path": "contracts/registry/backend-performance-fact-loader-catalog.json", "entrySha256": "49b9254d8db1e320c82c0f83f84cc7d8fa4422c2f630595e079ab4db81bf2fea"},
+        "fixtureCatalog": {"path": "contracts/policy/backend-performance-final-fixture-catalog.json", "entrySha256": "3ed047efd573acfe567a42dc358c8a4967cfe6fc535097450b9bd17f8365742f"},
+        "testcontainersPlan": {"path": "contracts/policy/backend-performance-testcontainers-plan.json", "entrySha256": "8ecd9c3e13ad30bbcb9453c268056145e6b823fb4eb62f2dce8909fcb324c7bb"}
+      }
+    }
+  },
+  "topology": {
+    "executionPlane": "REMOTE_JVM_AND_DOCKER",
+    "transport": "scripts/test/r5-remote-testcontainers.mjs",
+    "localDockerForbidden": true,
+    "devDatabaseForbidden": true,
+    "seedForbidden": true,
+    "browserL2Forbidden": true,
+    "uatForbidden": true
+  },
+  "admission": {
+    "status": "NOT_ADMITTED",
+    "reason": "The current repository has the managed transport and static 196 inputs, but the current 196-aware grouped runner/report producer must pass its own red mutations before a remote command may start.",
+    "requiredBeforeRun": [
+      "current plan-aware runner reads all six bound inputs",
+      "each canonical operationId maps to exactly one of 14 fixture-plan families",
+      "each dynamic row has request/completion join and database-operation attribution",
+      "formal report validates exact 196/196 coverage and kindCounts including UPDATE",
+      "missing, duplicate, unknown, stale hash, cross-report-kind and cleanup-fail mutations are red",
+      "managed resource preflight and previous terminal manifest review PASS"
+    ]
+  },
+  "forbidden": [
+    "reuse old BACKEND-PERFORMANCE-FINAL-DYNAMIC-ACCEPTANCE-20260810 admission",
+    "reuse old implementation-review-before-dynamic prerequisite",
+    "unmanaged JVM, Docker, SSH, SQL, browser or application",
+    "treat 396 fixture rows as the 196 dynamic denominator",
+    "report a static route check as a request/event measurement",
+    "reset, DEV start, seed or L2 from this package"
+  ]
+}

@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {isCleanupAlreadyPassed, redact, validateManagedManifest, validateRuntimePlan, waitForBackendReady} from './http-diagnostic-runner.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const valid = {runtime: path.join(root, '.runtime', 'rm1', 'http-diagnostic', 'test'), namespace: 'v2s-http-diagnostic-1234abcd', host: 'dev.example.internal', hostSha256: createHash('sha256').update('dev.example.internal').digest('hex'), database: 'catering_v2s_diag_1234abcd', role: 'r5diag_1234abcd', backendPort: 8081};
+const valid = {runtime: path.join(root, '.runtime', 'rm1', 'http-diagnostic', 'rm1-http-diagnostic-1234567890-abcdef12'), namespace: 'v2s-http-diagnostic-1234567890-abcdef12', host: 'catering-remote-dev', hostSha256: '416201af7e30f6fb2d8b1de9e0492dca889f90a095619d60f78a267145e8d2eb', database: 'catering_v2s_diag_1234abcd', role: 'r5diag_1234abcd', backendPort: 8081};
 
 test('diagnostic plan permits only local backend plus a non-production remote middleware identity', () => {
   assert.doesNotThrow(() => validateRuntimePlan(valid));
@@ -29,11 +29,11 @@ test('managed backend readiness requires identity continuity and an actual HTTP 
 });
 
 test('stop accepts only an identity-bound manifest under its own runtime root', () => {
-  const runtime = path.join(root, '.runtime', 'rm1', 'http-diagnostic', 'test');
+  const runtime = valid.runtime;
   const manifestPath = path.join(runtime, 'run-manifest.json');
   const manifest = {
-    kind: 'rm1-http-diagnostic-local-runtime', runId: 'test', plan: {...valid, runtime, runId: 'test'},
-    credentialPath: path.join(runtime, 'private.env'), eventPath: path.join(runtime, 'evidence', 'http-request-events.jsonl'),
+    kind: 'rm1-http-diagnostic-local-runtime', runId: 'rm1-http-diagnostic-1234567890-abcdef12', plan: {...valid, runtime, runId: 'rm1-http-diagnostic-1234567890-abcdef12'},
+    credentialPath: path.join(runtime, 'private.env'), eventPath: path.join(runtime, 'evidence', 'http-request-events.jsonl'), dbOperationsPath: path.join(runtime, 'evidence', 'db-operations.jsonl'), statementDictionaryPath: path.join(runtime, 'evidence', 'statement-dictionary.json'),
     processes: [{name: 'business-server', pid: 101, pgid: 101, startToken: 'start', processStart: 'start', commandSha256: 'a'.repeat(64), logPath: path.join(runtime, 'business-server.log')}],
   };
   assert.doesNotThrow(() => validateManagedManifest(manifestPath, manifest));
@@ -42,6 +42,6 @@ test('stop accepts only an identity-bound manifest under its own runtime root', 
 });
 
 test('a completed cleanup is idempotent and cannot be replaced with a missing-private-env failure', () => {
-  assert.equal(isCleanupAlreadyPassed({cleanup: {status: 'PASS', localProcessesStopped: true, remoteNamespaceRemoved: true, privateCredentialsRemoved: true}}), true);
+  assert.equal(isCleanupAlreadyPassed({cleanup: {status: 'PASS', localProcessesStopped: true, remoteNamespaceRemoved: true, privateCredentialsRemoved: true}, processes: []}), true);
   assert.equal(isCleanupAlreadyPassed({cleanup: {status: 'PASS', localProcessesStopped: true, remoteNamespaceRemoved: true, privateCredentialsRemoved: false}}), false);
 });

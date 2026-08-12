@@ -10,6 +10,7 @@ const command = process.argv[2];
 const activePackageRecoveryPath = ".runtime/compliance-control/active-package-recovery.json";
 const activePackageRecoveryReceiptPath = ".runtime/compliance-control/active-package-recovery-receipt.json";
 const activePackageRecoveryAuthorization = "DEXTER_AUTHORIZED_ACTIVE_PACKAGE_RECOVERY";
+const mandatoryPerEditGateClosurePath = "contracts/policy/mandatory-per-edit-gate-command-closure.json";
 const remediationManifestKey = "r5ComplianceRemediationManifestRef";
 const baselineRecoveryEvidencePath = "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json";
 const hookCanaryEvidencePath = "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json";
@@ -144,6 +145,226 @@ function currentRemediationManifest(root) {
   try { manifest = JSON.parse(fs.readFileSync(manifestAbsolute, "utf8")); } catch { throw new Error("CURRENT_REMEDIATION_MANIFEST_INVALID"); }
   if (manifest.kind !== "implementation-facing-design-granularity-manifest" || !Array.isArray(manifest.deliveryUnits)) throw new Error("CURRENT_REMEDIATION_MANIFEST_INVALID");
   return { roadmapPath, manifestPath, manifestAbsolute, manifest, manifestSha256: hashOrAbsent(manifestAbsolute) };
+}
+
+function isBackendPerformancePackage(active) {
+  return typeof active?.packageId === "string"
+    && active.packageId.startsWith("BACKEND-PERFORMANCE-")
+    && typeof active.packageInputPath === "string";
+}
+
+const backendPerformanceInputPaths = Object.freeze({
+  bindings: "contracts/registry/operation-handler-bindings.json",
+  sourceInventory: "contracts/registry/backend-performance-operation-source-inventory.json",
+  shapeMatrix: "contracts/registry/backend-performance-operation-database-shape-matrix.json",
+  loaderCatalogue: "contracts/registry/backend-performance-fact-loader-catalog.json",
+  fixtureCatalog: "contracts/policy/backend-performance-final-fixture-catalog.json",
+  testcontainersPlan: "contracts/policy/backend-performance-testcontainers-plan.json",
+});
+const backendPerformanceInputIds = Object.freeze(Object.keys(backendPerformanceInputPaths));
+const backendPerformanceCurrentInputSemantics = "CURRENT_INPUT_BYTES_MUST_MATCH_PACKAGE_EXIT_OBSERVED_STATE";
+const backendPerformanceEntrySnapshotSemantics = "IMMUTABLE_PACKAGE_ENTRY_SNAPSHOT";
+const backendPerformanceExitObservedStateSemantics = "CURRENT_PACKAGE_EXIT_INPUT_BYTES";
+const backendPerformanceLegalDriftDisposition = "ALLOWED_IN_PACKAGE_SCOPE_CHANGE";
+
+function exactObjectKeys(value, expected) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+    && exactSet(Object.keys(value), expected);
+}
+
+function sha256Value(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function packageEntryTimestamp(value) {
+  return typeof value === "string"
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value)
+    && Number.isFinite(Date.parse(value));
+}
+
+function validateBackendPerformanceInputEvidence(root, input, exit) {
+  const inputs = input.inputs;
+  if (!exactObjectKeys(inputs, [...backendPerformanceInputIds, "currentStateSemantics", "entrySnapshot"])
+    || inputs.currentStateSemantics !== backendPerformanceCurrentInputSemantics) {
+    throw new Error("BACKEND_PERFORMANCE_PACKAGE_INPUT_SCHEMA_INVALID");
+  }
+  const entrySnapshot = inputs.entrySnapshot;
+  if (!entrySnapshot || entrySnapshot.semantics !== backendPerformanceEntrySnapshotSemantics
+    || !packageEntryTimestamp(entrySnapshot.capturedAt)
+    || typeof entrySnapshot.semanticsDetail !== "string" || entrySnapshot.semanticsDetail.trim().length === 0
+    || !exactObjectKeys(entrySnapshot.entries, backendPerformanceInputIds)) {
+    throw new Error("BACKEND_PERFORMANCE_PACKAGE_ENTRY_SNAPSHOT_SCHEMA_INVALID");
+  }
+
+  const currentInputs = new Map();
+  const entrySnapshots = new Map();
+  for (const inputId of backendPerformanceInputIds) {
+    const expectedPath = backendPerformanceInputPaths[inputId];
+    const current = inputs[inputId];
+    const currentKeys = inputId === "fixtureCatalog" ? ["path", "sha256", "rows"] : ["path", "sha256"];
+    if (!exactObjectKeys(current, currentKeys)) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_ENTRY_SCHEMA_INVALID:${inputId}`);
+    if (current.path !== expectedPath) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_PATH_INVALID:${inputId}`);
+    if (!sha256Value(current.sha256)) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_SHA256_INVALID:${inputId}`);
+    if (inputId === "fixtureCatalog" && current.rows !== 396) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_ENTRY_SCHEMA_INVALID:${inputId}`);
+    const currentHash = hashOrAbsent(requireFile(root, expectedPath, `BACKEND_PERFORMANCE_PACKAGE_INPUT_PATH_INVALID:${inputId}`));
+    if (current.sha256 !== currentHash) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_CURRENT_HASH_DRIFT:${inputId}`);
+    currentInputs.set(inputId, {path: expectedPath, sha256: current.sha256});
+
+    const snapshot = entrySnapshot.entries[inputId];
+    if (!exactObjectKeys(snapshot, ["path", "entrySha256"])) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_ENTRY_SNAPSHOT_SCHEMA_INVALID:${inputId}`);
+    if (snapshot.path !== expectedPath) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_ENTRY_SNAPSHOT_PATH_INVALID:${inputId}`);
+    if (!sha256Value(snapshot.entrySha256)) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_ENTRY_SNAPSHOT_SHA256_INVALID:${inputId}`);
+    entrySnapshots.set(inputId, {path: expectedPath, entrySha256: snapshot.entrySha256});
+  }
+
+  const observed = exit?.observedInputState;
+  if (exit?.packageId !== input.packageId
+    || !observed || observed.semantics !== backendPerformanceExitObservedStateSemantics
+    || typeof observed.semanticsDetail !== "string" || observed.semanticsDetail.trim().length === 0
+    || !exactObjectKeys(observed.entries, backendPerformanceInputIds)
+    || !Array.isArray(observed.legalEntryDriftDispositions)) {
+    throw new Error("BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_STATE_SCHEMA_INVALID");
+  }
+  const driftIds = [];
+  for (const inputId of backendPerformanceInputIds) {
+    const expectedPath = backendPerformanceInputPaths[inputId];
+    const entry = observed.entries[inputId];
+    if (!exactObjectKeys(entry, ["path", "exitSha256"])) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_ENTRY_SCHEMA_INVALID:${inputId}`);
+    if (entry.path !== expectedPath) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_PATH_INVALID:${inputId}`);
+    if (!sha256Value(entry.exitSha256)) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_SHA256_INVALID:${inputId}`);
+    const currentHash = hashOrAbsent(requireFile(root, expectedPath, `BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_PATH_INVALID:${inputId}`));
+    if (entry.exitSha256 !== currentHash) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_HASH_DRIFT:${inputId}`);
+    if (entry.exitSha256 !== currentInputs.get(inputId).sha256) throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_INPUT_BINDING_DRIFT:${inputId}`);
+    if (entry.exitSha256 !== entrySnapshots.get(inputId).entrySha256) driftIds.push(inputId);
+  }
+  const legalDrifts = requireUniqueEntries(observed.legalEntryDriftDispositions, "inputId", "BACKEND_PERFORMANCE_PACKAGE_EXIT_LEGAL_DRIFT_SET_INVALID");
+  if (!exactSet([...legalDrifts.keys()], driftIds)) throw new Error("BACKEND_PERFORMANCE_PACKAGE_EXIT_LEGAL_DRIFT_SET_INVALID");
+  for (const inputId of driftIds) {
+    const disposition = legalDrifts.get(inputId);
+    const expectedPath = backendPerformanceInputPaths[inputId];
+    const entrySnapshot = entrySnapshots.get(inputId);
+    const current = currentInputs.get(inputId);
+    if (!exactObjectKeys(disposition, ["inputId", "path", "entrySha256", "exitSha256", "disposition", "reason"])
+      || disposition.path !== expectedPath
+      || disposition.entrySha256 !== entrySnapshot.entrySha256
+      || disposition.exitSha256 !== current.sha256
+      || disposition.disposition !== backendPerformanceLegalDriftDisposition
+      || typeof disposition.reason !== "string" || disposition.reason.trim().length === 0) {
+      throw new Error(`BACKEND_PERFORMANCE_PACKAGE_EXIT_LEGAL_DRIFT_INVALID:${inputId}`);
+    }
+  }
+}
+
+function backendPerformancePackageInputSelfTest() {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-backend-performance-package-input-"));
+  const inputId = "sourceInventory";
+  try {
+    for (const [id, relative] of Object.entries(backendPerformanceInputPaths)) {
+      const absolute = path.join(scratch, relative);
+      fs.mkdirSync(path.dirname(absolute), {recursive: true});
+      fs.writeFileSync(absolute, `${id}-current\n`);
+    }
+    const currentEntries = Object.fromEntries(backendPerformanceInputIds.map((id) => [id, {
+      path: backendPerformanceInputPaths[id],
+      sha256: hashOrAbsent(path.join(scratch, backendPerformanceInputPaths[id])),
+      ...(id === "fixtureCatalog" ? {rows: 396} : {}),
+    }]));
+    const snapshotEntries = Object.fromEntries(backendPerformanceInputIds.map((id) => [id, {
+      path: backendPerformanceInputPaths[id],
+      entrySha256: id === inputId ? "a".repeat(64) : currentEntries[id].sha256,
+    }]));
+    const observedEntries = Object.fromEntries(backendPerformanceInputIds.map((id) => [id, {
+      path: backendPerformanceInputPaths[id],
+      exitSha256: currentEntries[id].sha256,
+    }]));
+    const input = {packageId: "BACKEND-PERFORMANCE-SELF-TEST", inputs: {
+      ...currentEntries,
+      currentStateSemantics: backendPerformanceCurrentInputSemantics,
+      entrySnapshot: {
+        capturedAt: "2026-08-11T12:34:03Z",
+        semantics: backendPerformanceEntrySnapshotSemantics,
+        semanticsDetail: "Immutable entry bytes are intentionally distinct from package-exit current bytes.",
+        entries: snapshotEntries,
+      },
+    }};
+    const exit = {packageId: input.packageId, observedInputState: {
+      semantics: backendPerformanceExitObservedStateSemantics,
+      semanticsDetail: "Exit observations bind every current file to the active package inputs.",
+      entries: observedEntries,
+      legalEntryDriftDispositions: [{
+        inputId,
+        path: backendPerformanceInputPaths[inputId],
+        entrySha256: snapshotEntries[inputId].entrySha256,
+        exitSha256: currentEntries[inputId].sha256,
+        disposition: backendPerformanceLegalDriftDisposition,
+        reason: "Self-test legal package-scope change.",
+      }],
+    }};
+    validateBackendPerformanceInputEvidence(scratch, input, exit);
+    const expectRed = (expected, action) => {
+      try {
+        action();
+        throw new Error(`BACKEND_PERFORMANCE_PACKAGE_INPUT_SELF_TEST_RED_NOT_DETECTED:${expected}`);
+      } catch (error) {
+        if (error instanceof Error && error.message === `BACKEND_PERFORMANCE_PACKAGE_INPUT_SELF_TEST_RED_NOT_DETECTED:${expected}`) throw error;
+        if (!(error instanceof Error) || error.message !== expected) throw error;
+      }
+    };
+    expectRed(`BACKEND_PERFORMANCE_PACKAGE_EXIT_OBSERVED_HASH_DRIFT:${inputId}`, () =>
+      validateBackendPerformanceInputEvidence(scratch, input, structuredClone({...exit, observedInputState: {
+        ...exit.observedInputState,
+        entries: {...exit.observedInputState.entries, [inputId]: {...exit.observedInputState.entries[inputId], exitSha256: "b".repeat(64)}},
+      }})));
+    expectRed(`BACKEND_PERFORMANCE_PACKAGE_ENTRY_SNAPSHOT_SHA256_INVALID:${inputId}`, () =>
+      validateBackendPerformanceInputEvidence(scratch, structuredClone({...input, inputs: {
+        ...input.inputs,
+        entrySnapshot: {...input.inputs.entrySnapshot, entries: {...input.inputs.entrySnapshot.entries, [inputId]: {...input.inputs.entrySnapshot.entries[inputId], entrySha256: "not-a-sha"}}},
+      }}), exit));
+    process.stdout.write("BACKEND_PERFORMANCE_PACKAGE_INPUT_SELF_TEST=PASS\nRED_STALE_EXIT_STATE=PASS\nRED_MALFORMED_ENTRY_SNAPSHOT=PASS\nCLEANUP=PASS\n");
+  } finally {
+    fs.rmSync(scratch, {recursive: true, force: true});
+  }
+}
+
+function currentBackendPerformancePackageBinding(root, active = readActivePackage(root)) {
+  if (!isBackendPerformancePackage(active)) return undefined;
+  const roadmapPath = "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md";
+  const roadmap = fs.readFileSync(requireFile(root, roadmapPath, "CURRENT_ROADMAP_MISSING"), "utf8");
+  if (!/^CURRENT_STEP=BACKEND_PERFORMANCE_FINAL_CLOSURE$/m.test(roadmap)
+    || !/^IMPLEMENTATION_AUTHORITY=true$/m.test(roadmap)) {
+    throw new Error("BACKEND_PERFORMANCE_CURRENT_ROADMAP_ADMISSION_INVALID");
+  }
+  const inputAbsolute = requireFile(root, active.packageInputPath, "BACKEND_PERFORMANCE_PACKAGE_INPUT_MISSING");
+  const input = readJson(inputAbsolute, "BACKEND_PERFORMANCE_PACKAGE_INPUT_INVALID");
+  if (input.schemaVersion !== 1 || input.packageId !== active.packageId
+    || input.implementationAuthority !== true
+    || input.runtimeAuthority !== active.runtimeAuthority
+    || input.seedResetAuthority !== active.seedResetAuthority
+    || typeof input.kind !== "string" || typeof input.status !== "string") {
+    throw new Error("BACKEND_PERFORMANCE_PACKAGE_INPUT_INVALID");
+  }
+  const packageExitAbsolute = requireFile(root, active.packageExitPath, "BACKEND_PERFORMANCE_PACKAGE_EXIT_MISSING");
+  const packageExit = readJson(packageExitAbsolute, "BACKEND_PERFORMANCE_PACKAGE_EXIT_INVALID");
+  validateBackendPerformanceInputEvidence(root, input, packageExit);
+  if (input.predecessor !== undefined) {
+    const predecessor = input.predecessor;
+    if (!predecessor || typeof predecessor.packageId !== "string"
+      || typeof predecessor.packageExitPath !== "string"
+      || typeof predecessor.packageExitSha256 !== "string"
+      || predecessor.staticProofStatus !== "PASS" || predecessor.reconciledOperations !== 196) {
+      throw new Error("BACKEND_PERFORMANCE_PREDECESSOR_INVALID");
+    }
+    const exitAbsolute = requireFile(root, predecessor.packageExitPath, "BACKEND_PERFORMANCE_PREDECESSOR_EXIT_MISSING");
+    const exit = readJson(exitAbsolute, "BACKEND_PERFORMANCE_PREDECESSOR_EXIT_INVALID");
+    if (hashOrAbsent(exitAbsolute) !== predecessor.packageExitSha256
+      || exit.packageId !== predecessor.packageId || exit.staticProofStatus !== "PASS"
+      || exit.denominator?.reconciledOperations !== 196) {
+      throw new Error("BACKEND_PERFORMANCE_PREDECESSOR_EXIT_INVALID");
+    }
+  } else if (input.runtimeAuthority !== false || input.seedResetAuthority !== false) {
+    throw new Error("BACKEND_PERFORMANCE_STATIC_PACKAGE_AUTHORITY_INVALID");
+  }
+  return {roadmapPath, inputAbsolute, input};
 }
 
 function stableRuleId(sourcePath, selector, exactRuleText) {
@@ -691,6 +912,7 @@ function validatePackageExit() {
   const absolute = requireFile(root, relative, "PACKAGE_EXIT_MISSING");
   const exit = readJson(absolute, "PACKAGE_EXIT_INVALID");
   const packageState = readActivePackage(root);
+  const { changed } = deltaState(root);
   const rm1 = currentRM1ExecutionBinding(root, packageState);
   validateRM1ApprovedSurfaceSet(packageState, rm1);
   if (exit.schemaVersion !== 1 || exit.packageId !== packageState.packageId || !Array.isArray(exit.changedPaths)) throw new Error("PACKAGE_EXIT_INVALID");
@@ -738,9 +960,13 @@ function validatePackageExit() {
     validateRequiredDynamicEvidence(exit, rm1.binding);
     validateGeneratedReplayTerminal(exit, rm1.binding, root);
   }
+  // Package exit owns the current package's intake delta. A legacy baseline without
+  // problemIntakeEntries cannot retroactively make every historical intake part of
+  // this package; current and post-baseline intakes still require full disposition
+  // and evidence validation through the same baseline-derived selector.
   const problemFamilies = rm1
     ? (rm1.isP0 ? validateRM1P0PackageIntakeDispositions(root, rm1) : validateRM1SuccessorPackageIntakeDispositions(root, packageState))
-    : validateAllProblemFamilyDispositions(root);
+    : validateRM1SuccessorPackageIntakeDispositions(root, packageState);
   process.stdout.write(`PACKAGE_EXIT=PASS\nPACKAGE_ID=${packageState.packageId}\nCHANGED=${deltaByPath.size}\n`);
   process.stdout.write(`PROBLEM_INTAKES=${problemFamilies.intakeCount}\nPROBLEM_FAMILIES=${problemFamilies.problemCount}\n`);
 }
@@ -776,6 +1002,7 @@ function validateCurrentPackageSerialBoundary(root) {
     validateRM1PredecessorHashBinding(active, predecessor, hashOrAbsent(exitAbsolute));
     return;
   }
+  if (currentBackendPerformancePackageBinding(root, active)) return;
   const current = currentRemediationManifest(root);
   const packageState = active;
   const index = current.manifest.deliveryUnits.findIndex((unit) => unit.id === packageState.packageId);
@@ -802,6 +1029,11 @@ function validateNoPendingProtectedControl(root) {
     if (containsPendingState(rm1.unit)) throw new Error(`PENDING_PROTECTED_CONTROL:${active.packageId}`);
     return;
   }
+  const backendPerformance = currentBackendPerformancePackageBinding(root, active);
+  if (backendPerformance) {
+    if (backendPerformance.input.status.includes("PENDING")) throw new Error(`PENDING_PROTECTED_CONTROL:${active.packageId}`);
+    return;
+  }
   const current = currentRemediationManifest(root);
   const unit = current.manifest.deliveryUnits.find((entry) => entry.id === active.packageId);
   if (!unit) throw new Error(`ACTIVE_PACKAGE_NOT_IN_CURRENT_MANIFEST:${active.packageId}`);
@@ -813,18 +1045,72 @@ function staticScan() {
   const root = process.cwd();
   const active = readActivePackage(root);
   const rm1 = currentRM1ExecutionBinding(root, active);
+  const backendPerformance = currentBackendPerformancePackageBinding(root, active);
   validateRM1ApprovedSurfaceSet(active, rm1);
   validateUiIaAdmission(root, active);
-  if (!rm1) validateSourceMap();
+  if (!rm1 && !backendPerformance) validateSourceMap();
   if (active.packageId === "R5-CR-U00") validateBaselineRecovery(root);
   validateCurrentPackageSerialBoundary(root);
   validateNoPendingProtectedControl(root);
-  if (!rm1) validateCurrentHookCanary(root);
-  const rules = rm1 ? [] : derivedSourceRules(root);
-  process.stdout.write(`REMEDIATION_COMPLIANCE=PASS\nRULES=${rules.length}\nMODE=${rm1 ? "RM1_STATIC_ADMISSION" : "CR00_STATIC_ADMISSION"}\n`);
+  if (!rm1 && !backendPerformance) validateCurrentHookCanary(root);
+  const rules = rm1 || backendPerformance ? [] : derivedSourceRules(root);
+  const mode = rm1 ? "RM1_STATIC_ADMISSION" : backendPerformance ? "BACKEND_PERFORMANCE_STATIC_ADMISSION" : "CR00_STATIC_ADMISSION";
+  process.stdout.write(`REMEDIATION_COMPLIANCE=PASS\nRULES=${rules.length}\nMODE=${mode}\n`);
 }
 
-function validateActivePackageShape(value, reason = "ACTIVE_PACKAGE_INVALID") {
+function mandatoryGateProfiles(root) {
+  const absolute = requireFile(root, mandatoryPerEditGateClosurePath, "MANDATORY_PER_EDIT_GATE_CLOSURE_MISSING");
+  const closure = readJson(absolute, "MANDATORY_PER_EDIT_GATE_CLOSURE_INVALID");
+  if (closure.schemaVersion !== 1 || closure.kind !== "mandatory-per-edit-gate-command-closure"
+    || closure.status !== "PASS" || !Array.isArray(closure.profiles) || closure.profiles.length === 0) {
+    throw new Error("MANDATORY_PER_EDIT_GATE_CLOSURE_INVALID");
+  }
+  const profiles = new Map();
+  for (const profile of closure.profiles) {
+    if (!profile || typeof profile.profileId !== "string" || profiles.has(profile.profileId)
+      || !["ACTIVE", "ACTIVE_BOOTSTRAP_COMPATIBILITY"].includes(profile.status)
+      || typeof profile.command !== "string" || path.isAbsolute(profile.command) || profile.command.includes("..")
+      || !Array.isArray(profile.argv) || profile.argv.length !== 0
+      || !/^[a-f0-9]{64}$/.test(profile.commandSha256)
+      || !Array.isArray(profile.compatiblePackageArchetypes) || profile.compatiblePackageArchetypes.length === 0
+      || new Set(profile.compatiblePackageArchetypes).size !== profile.compatiblePackageArchetypes.length
+      || profile.compatiblePackageArchetypes.some((entry) => typeof entry !== "string" || entry.length === 0)) {
+      throw new Error(`MANDATORY_PER_EDIT_GATE_PROFILE_INVALID:${profile?.profileId || "UNSET"}`);
+    }
+    const binding = profile.independentReviewBinding;
+    if (!binding || typeof binding.kind !== "string" || binding.kind.length === 0
+      || binding.verdict !== "GO" || !Number.isInteger(binding.M) || binding.M < 0
+      || !Number.isInteger(binding.S) || binding.S < 0 || !Number.isInteger(binding.N) || binding.N < 0) {
+      throw new Error(`MANDATORY_PER_EDIT_GATE_REVIEW_BINDING_INVALID:${profile.profileId}`);
+    }
+    if (binding.kind !== "SELF_TEST") {
+      if (typeof binding.path !== "string" || path.isAbsolute(binding.path) || binding.path.includes("..")
+        || !/^[a-f0-9]{64}$/.test(binding.sha256)
+        || hashOrAbsent(requireFile(root, binding.path, `MANDATORY_PER_EDIT_GATE_REVIEW_MISSING:${profile.profileId}`)) !== binding.sha256) {
+        throw new Error(`MANDATORY_PER_EDIT_GATE_REVIEW_BINDING_INVALID:${profile.profileId}`);
+      }
+    }
+    const commandAbsolute = requireFile(root, profile.command, `MANDATORY_PER_EDIT_GATE_COMMAND_MISSING:${profile.profileId}`);
+    if ((fs.statSync(commandAbsolute).mode & 0o100) === 0 || hashOrAbsent(commandAbsolute) !== profile.commandSha256) {
+      throw new Error(`MANDATORY_PER_EDIT_GATE_COMMAND_DRIFT:${profile.profileId}`);
+    }
+    profiles.set(profile.profileId, profile);
+  }
+  return profiles;
+}
+
+function validateMandatoryPerEditGate(root, value, reason = "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") {
+  if (!value || typeof value.packageArchetype !== "string" || value.packageArchetype.length === 0
+    || !value.mandatoryPerEditGate || typeof value.mandatoryPerEditGate.profileId !== "string"
+    || Object.keys(value.mandatoryPerEditGate).some((key) => key !== "profileId")) {
+    throw new Error(reason);
+  }
+  const profile = mandatoryGateProfiles(root).get(value.mandatoryPerEditGate.profileId);
+  if (!profile || !profile.compatiblePackageArchetypes.includes(value.packageArchetype)) throw new Error(reason);
+  return profile;
+}
+
+function validateActivePackageShape(value, reason = "ACTIVE_PACKAGE_INVALID", root = process.cwd()) {
   if (!value || value.schemaVersion !== 1 || typeof value.packageId !== "string" || !Array.isArray(value.allowedChangeSurfaces)) {
     throw new Error(reason);
   }
@@ -845,7 +1131,102 @@ function validateActivePackageShape(value, reason = "ACTIVE_PACKAGE_INVALID") {
       throw new Error("ACTIVE_PACKAGE_SCOPE_INVALID");
     }
   }
+  try { validateMandatoryPerEditGate(root, value); } catch { throw new Error("ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID"); }
   return value;
+}
+
+function runMandatoryPerEditGate(root, packageState) {
+  const profile = validateMandatoryPerEditGate(root, packageState);
+  const result = childProcess.spawnSync(path.join(root, profile.command), profile.argv, {cwd: root, encoding: "utf8"});
+  if (result.status !== 0) {
+    const detail = `${result.stdout || ""}${result.stderr || ""}`.trim().replace(/\s+/g, " ");
+    throw new Error(`MANDATORY_PER_EDIT_GATE_FAILED:${profile.profileId}:${profile.command}${detail ? `:${detail}` : ""}`);
+  }
+}
+
+function mandatoryPerEditGateSelfTest() {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-mandatory-per-edit-gate-"));
+  try {
+    const runtime = path.join(scratch, ".runtime/compliance-control");
+    const check = path.join(scratch, "scripts/check/backend-performance-sql-merge-coverage");
+    const closure = path.join(scratch, mandatoryPerEditGateClosurePath);
+    const active = path.join(runtime, "active-package.json");
+    fs.mkdirSync(runtime, { recursive: true });
+    fs.mkdirSync(path.dirname(check), { recursive: true });
+    fs.writeFileSync(check, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+    fs.mkdirSync(path.dirname(closure), { recursive: true });
+    fs.writeFileSync(closure, `${JSON.stringify({
+      schemaVersion: 1,
+      kind: "mandatory-per-edit-gate-command-closure",
+      status: "PASS",
+      profiles: [{
+        profileId: "MANDATORY_PER_EDIT_GATE_SELF_TEST_PROFILE",
+        status: "ACTIVE",
+        command: "scripts/check/backend-performance-sql-merge-coverage",
+        argv: [],
+        commandSha256: hashOrAbsent(check),
+        compatiblePackageArchetypes: ["backend-source"],
+        independentReviewBinding: {kind: "SELF_TEST", verdict: "GO", M: 0, S: 0, N: 0},
+      }],
+    }, null, 2)}\n`);
+    const validPackage = {
+      schemaVersion: 1,
+      packageId: "MANDATORY-PER-EDIT-GATE-SELF-TEST",
+      packageArchetype: "backend-source",
+      allowedChangeSurfaces: ["governed.txt"],
+      mandatoryPerEditGate: {profileId: "MANDATORY_PER_EDIT_GATE_SELF_TEST_PROFILE"},
+    };
+    fs.writeFileSync(active, `${JSON.stringify(validPackage, null, 2)}\n`);
+    const expectInvalid = (mutate, reason) => {
+      const copy = structuredClone(validPackage);
+      mutate(copy);
+      fs.writeFileSync(active, `${JSON.stringify(copy, null, 2)}\n`);
+      try { readActivePackage(scratch); throw new Error(`MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED:${reason}`); }
+      catch (error) {
+        if (error instanceof Error && error.message === `MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED:${reason}`) throw error;
+        if (!(error instanceof Error) || error.message !== "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") throw error;
+      } finally { fs.writeFileSync(active, `${JSON.stringify(validPackage, null, 2)}\n`); }
+    };
+    expectInvalid((copy) => { delete copy.mandatoryPerEditGate; }, "MISSING_PROFILE");
+    expectInvalid((copy) => { copy.mandatoryPerEditGate.profileId = "UNKNOWN"; }, "UNKNOWN_PROFILE");
+    expectInvalid((copy) => { copy.packageArchetype = "incompatible"; }, "INCOMPATIBLE_ARCHETYPE");
+    const closureValue = JSON.parse(fs.readFileSync(closure, "utf8"));
+    closureValue.profiles[0].commandSha256 = "0".repeat(64);
+    fs.writeFileSync(closure, `${JSON.stringify(closureValue, null, 2)}\n`);
+    try { readActivePackage(scratch); throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED:COMMAND_HASH"); }
+    catch (error) {
+      if (error instanceof Error && error.message === "MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED:COMMAND_HASH") throw error;
+      if (!(error instanceof Error) || error.message !== "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") throw error;
+    }
+    closureValue.profiles[0].commandSha256 = hashOrAbsent(check);
+    fs.writeFileSync(closure, `${JSON.stringify(closureValue, null, 2)}\n`);
+    fs.writeFileSync(path.join(scratch, "governed.txt"), "before\n");
+    const invocationId = "mandatory-per-edit-gate-self-test";
+    fs.writeFileSync(eventPath(scratch, invocationId, "pre"), `${JSON.stringify({
+      schemaVersion: 1,
+      packageId: "MANDATORY-PER-EDIT-GATE-SELF-TEST",
+      invocationId,
+      paths: [{ path: "governed.txt", beforeSha256: hashOrAbsent(path.join(scratch, "governed.txt")) }],
+    }, null, 2)}\n`);
+    fs.writeFileSync(path.join(scratch, "governed.txt"), "after\n");
+    const result = childProcess.spawnSync(process.execPath, [path.resolve(process.argv[1]), "hook-post"], {
+      cwd: scratch,
+      input: `${JSON.stringify({
+        cwd: scratch,
+        tool_name: "apply_patch",
+        tool_input: { command: "*** Update File: governed.txt\n" },
+        tool_use_id: invocationId,
+      })}\n`,
+      encoding: "utf8",
+    });
+    if (result.status !== 0 || !result.stdout.includes("MANDATORY_PER_EDIT_GATE_FAILED:MANDATORY_PER_EDIT_GATE_SELF_TEST_PROFILE:scripts/check/backend-performance-sql-merge-coverage")) {
+      throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED");
+    }
+    if (fs.existsSync(eventPath(scratch, invocationId, "post"))) throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_POST_RECEIPT_WRITTEN");
+    process.stdout.write("MANDATORY_PER_EDIT_GATE_SELF_TEST=PASS\nRED_MISSING_PROFILE=PASS\nRED_UNKNOWN_PROFILE=PASS\nRED_INCOMPATIBLE_ARCHETYPE=PASS\nRED_COMMAND_HASH=PASS\nRED_GATE_FAILURE_BLOCKS_POST_RECEIPT=PASS\nCLEANUP=PASS\n");
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
 }
 
 function readActivePackage(root) {
@@ -853,7 +1234,7 @@ function readActivePackage(root) {
   if (!fs.existsSync(candidate)) throw new Error("ACTIVE_PACKAGE_MISSING");
   let value;
   try { value = JSON.parse(fs.readFileSync(candidate, "utf8")); } catch { throw new Error("ACTIVE_PACKAGE_INVALID"); }
-  return validateActivePackageShape(value);
+  return validateActivePackageShape(value, "ACTIVE_PACKAGE_INVALID", root);
 }
 
 function readActivePackageRecoveryRequest(root) {
@@ -865,7 +1246,7 @@ function readActivePackageRecoveryRequest(root) {
     || typeof request.reason !== "string" || request.reason.length === 0) {
     throw new Error("ACTIVE_PACKAGE_RECOVERY_REQUEST_INVALID");
   }
-  const target = validateActivePackageShape(request.targetPackage, "ACTIVE_PACKAGE_RECOVERY_TARGET_INVALID");
+  const target = validateActivePackageShape(request.targetPackage, "ACTIVE_PACKAGE_RECOVERY_TARGET_INVALID", root);
   const rm1 = currentRM1ExecutionBinding(root, target);
   validateRM1ApprovedSurfaceSet(target, rm1);
   successorPackageAdmission(target);
@@ -1524,10 +1905,10 @@ function changedCommandPaths(root, packageState, prePaths) {
     });
 }
 
-function baselinePath(root) {
+function baselinePath(root, packageState = readActivePackage(root)) {
   const directory = path.join(root, ".runtime/compliance-control");
   fs.mkdirSync(directory, { recursive: true });
-  const packageId = readActivePackage(root).packageId;
+  const packageId = packageState.packageId;
   return packageId === "R5-CR-U00"
     ? path.join(directory, "package-baseline.json")
     : path.join(directory, `package-baseline-${packageId}.json`);
@@ -2073,7 +2454,7 @@ function validateExactMissingPackageBaselineRecovery(root, packageState, config)
 }
 
 function packageBaselineState(root, packageState) {
-  const target = baselinePath(root);
+  const target = baselinePath(root, packageState);
   if (fs.existsSync(target)) {
     const baseline = readJson(target, "PACKAGE_BASELINE_INVALID");
     if (baseline.schemaVersion !== 1 || baseline.packageId !== packageState.packageId || !Array.isArray(baseline.entries)) throw new Error("PACKAGE_BASELINE_INVALID");
@@ -2320,10 +2701,14 @@ async function hookPost() {
       else successorPackageAdmission(readActivePackage(root));
     } catch (error) { return postBlock(error.message); }
   }
+  try { runMandatoryPerEditGate(root, postPackageState); } catch (error) { return postBlock(error.message); }
   fs.writeFileSync(eventPath(root, invocationId, "post"), `${JSON.stringify({
     schemaVersion: 1,
     packageId: pre.packageId,
     invocationId,
+    mandatoryPerEditGate: postPackageState.mandatoryPerEditGate
+      ? {profileId: postPackageState.mandatoryPerEditGate.profileId, status: "PASS"}
+      : undefined,
     paths: paths.map((entry) => ({
       path: entry.path,
       beforeSha256: preByPath.get(entry.path).beforeSha256,
@@ -2462,6 +2847,12 @@ else if (command === "deterministic-index-write-self-test") {
 else if (command === "assert-invocation") assertInvocation();
 else if (command === "assert-command-tool-event") assertCommandToolEvent();
 else if (command === "command-tool-event-self-test") commandToolEventSelfTest();
+else if (command === "mandatory-per-edit-gate-self-test") {
+  try { mandatoryPerEditGateSelfTest(); } catch (error) {
+    process.stderr.write(`MANDATORY_PER_EDIT_GATE_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
 else if (command === "create-baseline") createBaseline();
 else if (command === "print-delta") printDelta();
 else if (command === "print-package-exit-template") {
@@ -2524,6 +2915,12 @@ else if (command === "exact-predecessor-evidence-self-test") {
     process.exitCode = 1;
   }
 }
+else if (command === "backend-performance-package-input-self-test") {
+  try { backendPerformancePackageInputSelfTest(); } catch (error) {
+    process.stderr.write(`BACKEND_PERFORMANCE_PACKAGE_INPUT_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
 else if (command === "validate-package-exit") {
   try { validatePackageExit(); } catch (error) {
     process.stderr.write(`PACKAGE_EXIT=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
@@ -2537,6 +2934,6 @@ else if (command === "static-scan") {
   }
 }
 else {
-  process.stderr.write("USAGE: compliance-control <hook-pre|hook-post|assert-invocation|assert-command-tool-event|command-tool-event-self-test|create-baseline|print-delta|print-package-exit-template|validate-baseline-recovery|baseline-recovery-self-test|missing-baseline-recovery-self-test|print-derived-rules|validate-source-map|problem-family-self-test|ui-ia-admission-self-test|successor-package-admission-self-test|successor-intake-baseline-self-test|rm1-p0-binding-self-test|rm1-p0-intake-recovery-self-test|rm1-predecessor-hash-self-test|rm1-evidence-truth-self-test|exact-predecessor-evidence-self-test|validate-package-exit|static-scan>\n");
+  process.stderr.write("USAGE: compliance-control <hook-pre|hook-post|assert-invocation|assert-command-tool-event|command-tool-event-self-test|mandatory-per-edit-gate-self-test|create-baseline|print-delta|print-package-exit-template|validate-baseline-recovery|baseline-recovery-self-test|missing-baseline-recovery-self-test|print-derived-rules|validate-source-map|problem-family-self-test|ui-ia-admission-self-test|successor-package-admission-self-test|successor-intake-baseline-self-test|rm1-p0-binding-self-test|rm1-p0-intake-recovery-self-test|rm1-predecessor-hash-self-test|rm1-evidence-truth-self-test|exact-predecessor-evidence-self-test|backend-performance-package-input-self-test|validate-package-exit|static-scan>\n");
   process.exitCode = 2;
 }

@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  * one organization batch that decorates persisted assignment references with display paths.
  */
 @Service
-public final class PlatformWorkspaceAccountTaskReadService {
+public class PlatformWorkspaceAccountTaskReadService {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Set<String> SORTS = Set.of("DISPLAY_NAME", "LOGIN_NAME", "LAST_LOGIN_AT", "UPDATED_AT");
     private final JdbcTemplate jdbc;
@@ -114,7 +114,8 @@ public final class PlatformWorkspaceAccountTaskReadService {
             value.workspaceUuid(), value.groupWorkspaceKey(), value.workspaceUuid(), value.groupWorkspaceKey(),
             value.userName(), value.userName(), value.mobile(), value.mobile(), value.loginName(), value.loginName(), value.status(), value.status(),
             value.targetType(), value.organizationRef(), value.roleId(), value.targetType(), value.targetType(), value.organizationRef(), value.organizationRef(), value.roleId(), value.roleId(),
-            value.pageSize(), (value.page() - 1) * value.pageSize()
+            value.pageSize(), (value.page() - 1) * value.pageSize(),
+            value.workspaceUuid(), value.groupWorkspaceKey(), value.workspaceUuid(), value.groupWorkspaceKey()
         };
     }
 

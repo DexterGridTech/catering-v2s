@@ -3,10 +3,12 @@
  * Final performance admission is intentionally a reader of immutable evidence.
  * It never rewrites a baseline or turns a source-only check into a measurement.
  */
-import {createHash, createHmac, timingSafeEqual} from "node:crypto";
+import {createHash} from "node:crypto";
 import {existsSync, readFileSync} from "node:fs";
 import path from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
+import {loadFinalFixtureCatalog, validateFinalFixtureCatalog} from "./backend-performance-final-fixtures.mjs";
+import {decodeIntegrityKey, isBase64UrlHmac, signCompletionEvidence, signDatabaseOperationEvidence, verifyBase64UrlHmac} from "./backend-performance-evidence-hmac.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const policyPath = "contracts/policy/backend-performance-final-workload.json";
@@ -19,8 +21,6 @@ const exact = (actual, expected, code) => {
   if (JSON.stringify(left) !== JSON.stringify(right)) fail(code, `${left.length}:${right.length}`);
 };
 const tuple = (row) => `${row.runId ?? row.managedDevRunId}\u0000${row.correlationId}\u0000${row.requestId}`;
-const evidenceCanonical = (row, databaseOperationCount) => [row.runId ?? row.managedDevRunId, row.correlationId, row.requestId, row.operationId, row.performanceFixtureId, row.performanceArea, databaseOperationCount, row.logicalStatementCount].join("\u0000");
-const evidenceHmac = (key, row, databaseOperationCount) => createHmac("sha256", key).update(evidenceCanonical(row, databaseOperationCount)).digest("base64url");
 const jsonl = (file) => readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line, index) => {
   try { return JSON.parse(line); } catch { fail("BP_FINAL_JSONL_INVALID", `${file}:${index + 1}`); }
 });
@@ -72,10 +72,18 @@ export function validatePolicy(policy = loadPolicy()) {
   if (policy.runnerKind !== "backend-performance-final-acceptance" || policy.runtimeRoot !== ".runtime/backend-performance") fail("BP_FINAL_POLICY_RUNNER_INVALID");
   const expectedDigest = sha256(read(policy.finalImplementationManifest.path));
   if (policy.finalImplementationManifest.sha256 !== expectedDigest || !/^[a-f0-9]{64}$/.test(expectedDigest)) fail("BP_FINAL_IMPLEMENTATION_MANIFEST_DRIFT");
+  const fixtureCatalogBytes = read(policy.fixtureCatalog?.path);
+  if (policy.fixtureCatalog?.sha256 !== sha256(fixtureCatalogBytes) || policy.fixtureCatalog?.rows !== 396) fail("BP_FINAL_FIXTURE_CATALOG_DRIFT");
+  const catalog = validateFinalFixtureCatalog(loadFinalFixtureCatalog(policy.fixtureCatalog.path));
+  if (catalog.rows.length !== policy.fixtureCatalog.rows) fail("BP_FINAL_FIXTURE_CATALOG_DRIFT");
+  if (policy.adapterContract?.kind !== "backend-performance-final-managed-adapter" || policy.adapterContract?.nestedTechnicalProof !== "REQUIRED_PARENT_BOUND_CLEANUP_PASS" || policy.adapterContract?.terminalBusinessCleanupRequired !== true) fail("BP_FINAL_ADAPTER_CONTRACT_INVALID");
   const required = {u05TaskReads: 78, u05ProtocolCompletions: 5, u05CapExceptions: 10, u04NumericBaselines: 79, u04NormalBaselines: 74, u04CatalogSaveBranches: 5, u04ContextParity: 38, u07RouteCompletions: 196, u07M1: 126, u07M2: 60, u07M3: 25, u07M4Retired: 6, u07M4Retained: 5, u07M5: 6, u07M6: 11};
   for (const [key, value] of Object.entries(required)) if (policy.denominators?.[key] !== value) fail("BP_FINAL_POLICY_DENOMINATOR_DRIFT", key);
   if (JSON.stringify(policy.denominators.u05ReadContextPartition) !== JSON.stringify([58, 15, 4, 1])) fail("BP_FINAL_POLICY_DENOMINATOR_DRIFT", "u05ReadContextPartition");
-  if (policy.snapshotAdmission?.unclassifiedMustEqual !== 0 || policy.snapshotAdmission?.sameRunTupleRequired !== true || !Array.isArray(policy.snapshotAdmission?.historicRuntimeRootsRejected)) fail("BP_FINAL_POLICY_ADMISSION_INVALID");
+  const evidence = policy.snapshotAdmission?.serverEvidence;
+  if (policy.snapshotAdmission?.unclassifiedMustEqual !== 0 || policy.snapshotAdmission?.sameRunTupleRequired !== true || !Array.isArray(policy.snapshotAdmission?.historicRuntimeRootsRejected)
+    || evidence?.algorithm !== "HmacSHA256" || evidence?.keyEnvironment !== "V2S_DB_OPERATIONS_HMAC_KEY" || evidence?.keyEncoding !== "BASE64URL"
+    || evidence?.requestField !== "serverEvidenceHmac" || evidence?.databaseField !== "serverOperationHmac") fail("BP_FINAL_POLICY_ADMISSION_INVALID");
   expectedU05(policy); expectedU04(policy); expectedU07(policy);
   return policy;
 }
@@ -91,9 +99,10 @@ function measureKey(row) {
   return `${row.performanceArea}\u0000${row.performanceFixtureId}`;
 }
 
-export async function validateFinalSnapshot(snapshot, policy = loadPolicy(), {integrityKey = process.env.V2S_BACKEND_PERFORMANCE_FINAL_INTEGRITY_KEY} = {}) {
+export async function validateFinalSnapshot(snapshot, policy = loadPolicy(), {integrityKey = process.env.V2S_DB_OPERATIONS_HMAC_KEY} = {}) {
   validatePolicy(policy);
-  if (typeof integrityKey !== "string" || integrityKey.length < 24) fail("BP_FINAL_INTEGRITY_KEY_REQUIRED");
+  if (typeof integrityKey !== "string" || !/^[A-Za-z0-9_-]{22,}$/.test(integrityKey)) fail("BP_FINAL_INTEGRITY_KEY_REQUIRED");
+  const hmacKey = decodeIntegrityKey(integrityKey, "BP_FINAL_INTEGRITY_KEY_REQUIRED");
   const snapshotPath = path.resolve(snapshot);
   if (policy.snapshotAdmission.historicRuntimeRootsRejected.some((relative) => snapshotPath.startsWith(path.join(root, relative) + path.sep))) fail("BP_FINAL_HISTORIC_SNAPSHOT_REJECTED");
   if (!snapshotPath.startsWith(path.join(root, policy.runtimeRoot) + path.sep)) fail("BP_FINAL_SNAPSHOT_RUNTIME_ROOT_INVALID");
@@ -101,13 +110,22 @@ export async function validateFinalSnapshot(snapshot, policy = loadPolicy(), {in
   const generic = snapshotTool.validateSnapshot(snapshotPath);
   const snapshotManifest = JSON.parse(readFileSync(path.join(snapshotPath, "snapshot-manifest.json"), "utf8"));
   const runManifest = JSON.parse(readFileSync(path.join(snapshotPath, snapshotInput(snapshotManifest, "RUN_MANIFEST")), "utf8"));
-  if (runManifest.runId !== generic.selectedRunId || runManifest.kind !== policy.runnerKind) fail("BP_FINAL_RUNNER_PROVENANCE_INVALID");
+  if (runManifest.runId !== generic.selectedRunId || runManifest.kind !== policy.runnerKind || runManifest.adapterKind !== policy.adapterContract.kind) fail("BP_FINAL_RUNNER_PROVENANCE_INVALID");
   if (runManifest.finalImplementationManifestSha256 !== policy.finalImplementationManifest.sha256 || runManifest.workloadPolicySha256 !== sha256(read(policyPath))) fail("BP_FINAL_RUN_PROVENANCE_DIGEST_DRIFT");
+  if (runManifest.fixtureCatalogSha256 !== policy.fixtureCatalog.sha256 || !/^[a-f0-9]{64}$/.test(runManifest.fixtureReportSha256 ?? "")) fail("BP_FINAL_FIXTURE_PROVENANCE_INVALID");
+  const nested = runManifest.nestedTechnicalProof;
+  if (!nested || !/^[a-f0-9]{64}$/.test(nested.manifestSha256 ?? "") || nested.parentRunId !== runManifest.runId || nested.business?.status !== "PASS" || nested.cleanup?.status !== "PASS") fail("BP_FINAL_NESTED_TECHNICAL_PROOF_INVALID");
+  if (runManifest.business?.status !== "PASS" || runManifest.cleanup?.status !== "PASS") fail("BP_FINAL_TERMINAL_LIFECYCLE_INVALID");
   if (generic.unclassifiedOperations !== policy.snapshotAdmission.unclassifiedMustEqual || generic.missingPhases?.length || generic.ownerCommandPhaseMissingRequests?.length) fail("BP_FINAL_SNAPSHOT_QUALITY_INVALID");
   const eventRows = jsonl(path.join(snapshotPath, snapshotInput(snapshotManifest, "REQUEST_EVENTS")));
   const dbRows = jsonl(path.join(snapshotPath, snapshotInput(snapshotManifest, "DATABASE_OPERATIONS")));
   const dbByTuple = new Map();
-  for (const row of dbRows) { const key = tuple(row); dbByTuple.set(key, (dbByTuple.get(key) ?? 0) + 1); }
+  for (const row of dbRows) {
+    if (!isBase64UrlHmac(row?.serverOperationHmac)) fail("BP_FINAL_SERVER_OPERATION_HMAC_MISSING", row?.operationId);
+    const expectedHmac = signDatabaseOperationEvidence(hmacKey, row);
+    if (!verifyBase64UrlHmac(row.serverOperationHmac, expectedHmac)) fail("BP_FINAL_SERVER_OPERATION_HMAC_INVALID", row.operationId);
+    const key = tuple(row); dbByTuple.set(key, (dbByTuple.get(key) ?? 0) + 1);
+  }
   const u05 = expectedU05(policy), u04 = expectedU04(policy), u07 = expectedU07(policy);
   const actual = {U05_TASK_READ: new Set(), U05_PROTOCOL: new Set(), U04_NUMERIC: new Set(), U04_CONTEXT_PARITY: new Set(), U07_ROUTE: new Set()};
   for (const row of eventRows) {
@@ -115,9 +133,9 @@ export async function validateFinalSnapshot(snapshot, policy = loadPolicy(), {in
     const key = tuple(row);
     const databaseOperationCount = dbByTuple.get(key);
     if (!databaseOperationCount) fail("BP_FINAL_EVENT_DATABASE_TUPLE_MISSING", row.operationId);
-    if (typeof row.serverEvidenceHmac !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(row.serverEvidenceHmac)) fail("BP_FINAL_SERVER_EVIDENCE_HMAC_MISSING", row.operationId);
-    const expectedHmac = evidenceHmac(integrityKey, row, databaseOperationCount);
-    if (!timingSafeEqual(Buffer.from(row.serverEvidenceHmac), Buffer.from(expectedHmac))) fail("BP_FINAL_SERVER_EVIDENCE_HMAC_INVALID", row.operationId);
+    if (!isBase64UrlHmac(row.serverEvidenceHmac)) fail("BP_FINAL_SERVER_EVIDENCE_HMAC_MISSING", row.operationId);
+    const expectedHmac = signCompletionEvidence(hmacKey, row, databaseOperationCount);
+    if (!verifyBase64UrlHmac(row.serverEvidenceHmac, expectedHmac)) fail("BP_FINAL_SERVER_EVIDENCE_HMAC_INVALID", row.operationId);
     const measurement = measureKey(row);
     if (actual[row.performanceArea].has(measurement)) fail("BP_FINAL_FIXTURE_DUPLICATE", measurement);
     actual[row.performanceArea].add(measurement);

@@ -1,6 +1,7 @@
 package com.catering.v2s.contract.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
@@ -33,6 +34,9 @@ class ContractCommandServiceTest {
     private static UUID workspaceId;
     private static UUID storeId;
     private static UUID tenantId;
+    private static UUID secondWorkspaceId;
+    private static UUID secondStoreId;
+    private static UUID secondProjectId;
     private static long now = 1_785_000_000_000L;
 
     @BeforeAll static void setup() {
@@ -52,13 +56,24 @@ class ContractCommandServiceTest {
         var tenant = entities.createEntity("TENANT", workspaceId, "contract-test", "tenant-code", "Tenant", "Tenant legal", "91310000TEST", Map.of());
         tenantId = tenant.id();
         storeId = entities.createStore(workspaceId, "contract-test", project.id(), tenant.id(), brand.id(), null, "store-code", "Store", Map.of()).id();
+        secondWorkspaceId = UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'contract-test-b', 'Contract test B', 'contract test b', 'Contract test B', 'ENABLED', 1, 1, ?, ?, ?)", secondWorkspaceId, now, now, now);
+        var secondRegion = hierarchy.create(secondWorkspaceId, "contract-test-b", "REGION", null, "region-b", "Region B");
+        var secondProject = hierarchy.create(secondWorkspaceId, "contract-test-b", "PROJECT", secondRegion.id(), "project-b", "Project B");
+        hierarchy.replaceProjectPhaseNames(secondWorkspaceId, "contract-test-b", secondProject.id(), secondProject.version(), List.of("筹备", "营运"));
+        var secondBrand = entities.createEntity("BRAND", secondWorkspaceId, "contract-test-b", "brand-b", "Brand B", null, null, Map.of());
+        var secondTenant = entities.createEntity("TENANT", secondWorkspaceId, "contract-test-b", "tenant-code-b", "Tenant B", "Tenant legal B", "91310000TESTB", Map.of());
+        secondProjectId = secondProject.id();
+        secondStoreId = entities.createStore(secondWorkspaceId, "contract-test-b", secondProject.id(), secondTenant.id(), secondBrand.id(), null, "store-code-b", "Store B", Map.of()).id();
         contracts = new ContractCommandService(jdbc, time, new BusinessDateProvider(time), entities, definitions);
         reads = new ContractTaskReadService(jdbc);
     }
 
     @AfterEach void isolateSharedFixtureRows() {
         jdbc().update("DELETE FROM contract.store_contract WHERE workspace_uuid=?", workspaceId);
+        jdbc().update("DELETE FROM contract.store_contract WHERE workspace_uuid=?", secondWorkspaceId);
         jdbc().update("DELETE FROM organization.store WHERE workspace_uuid=? AND id<>?", workspaceId, storeId);
+        jdbc().update("DELETE FROM organization.store WHERE workspace_uuid=? AND id<>?", secondWorkspaceId, secondStoreId);
     }
 
     @Test void createsUpdatesInvalidatesAndDerivesStoreStatusFromBusinessDate() {
@@ -143,6 +158,20 @@ class ContractCommandServiceTest {
         assertEquals(projectId, projectAndStoreItem.project().id());
         assertEquals("tea-owner", projectAndStoreItem.items().getFirst().code());
         assertEquals(first.id(), byTenantId.items().stream().filter(item -> item.id().equals(first.id())).findFirst().orElseThrow().id());
+    }
+
+    @Test void receiptIdentityIsWorkspaceScopedWhileSameWorkspaceMismatchStillConflicts() {
+        UUID projectId = jdbc().queryForObject("SELECT project_id FROM organization.store WHERE id=?", UUID.class, storeId);
+        String sharedKey = "contract-scope-key-0001";
+        var first = contracts.create(workspaceId, "contract-test", "CT-scope-a", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "scope A", List.of(new ContractCommandService.ItemInput("tea-a", "茶 A")), Map.of(), sharedKey);
+        var second = contracts.create(secondWorkspaceId, "contract-test-b", "CT-scope-b", secondStoreId, secondProjectId, LocalDate.of(2026, 8, 1), null, "筹备", "scope B", List.of(new ContractCommandService.ItemInput("tea-b", "茶 B")), Map.of(), sharedKey);
+
+        assertNotEquals(first.id(), second.id());
+        assertEquals(first, contracts.create(workspaceId, "contract-test", "CT-scope-a", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "scope A", List.of(new ContractCommandService.ItemInput("tea-a", "茶 A")), Map.of(), sharedKey));
+        assertEquals(second, contracts.create(secondWorkspaceId, "contract-test-b", "CT-scope-b", secondStoreId, secondProjectId, LocalDate.of(2026, 8, 1), null, "筹备", "scope B", List.of(new ContractCommandService.ItemInput("tea-b", "茶 B")), Map.of(), sharedKey));
+        assertEquals(2, jdbc().queryForObject("SELECT count(*) FROM contract.contract_command_receipt WHERE idempotency_key=?", Integer.class, sharedKey));
+        assertThrows(ContractCommandReceiptService.ContractIdempotencyConflictException.class,
+            () -> contracts.create(workspaceId, "contract-test", "CT-scope-a-changed", storeId, projectId, LocalDate.of(2026, 8, 1), null, "筹备", "scope A", List.of(new ContractCommandService.ItemInput("tea-a", "茶 A")), Map.of(), sharedKey));
     }
 
     private static JdbcTemplate jdbc() { return new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); }

@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Bounded organization-only initialization facts; never reads platform_workspace. */
 @Service
-public final class OrganizationGroupWorkspaceInitializationTaskReadService implements OrganizationGroupWorkspaceInitializationLookup {
+public class OrganizationGroupWorkspaceInitializationTaskReadService implements OrganizationGroupWorkspaceInitializationLookup {
     private final JdbcTemplate jdbc;
 
     public OrganizationGroupWorkspaceInitializationTaskReadService(JdbcTemplate jdbc) { this.jdbc = jdbc; }

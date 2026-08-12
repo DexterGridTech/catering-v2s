@@ -7,6 +7,7 @@ import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  * handlers continue to use their existing owner APIs and must not call this service.</p>
  */
 @Service
-public final class OperationsOrganizationTaskReadService {
+public class OperationsOrganizationTaskReadService {
     private final BusinessEntityService entities;
     private final OrganizationOverviewTaskReadService overview;
     private final OrganizationHierarchyService hierarchy;
@@ -31,6 +32,7 @@ public final class OperationsOrganizationTaskReadService {
         this(entities, overview, null, null);
     }
 
+    @Autowired
     public OperationsOrganizationTaskReadService(
         BusinessEntityService entities,
         OrganizationOverviewTaskReadService overview,

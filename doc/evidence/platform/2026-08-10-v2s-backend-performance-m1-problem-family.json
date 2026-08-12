@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "BACKEND_PERFORMANCE_COMMAND_CONTEXT_AND_OWNER_RECHECK_20260810",
+  "genericProblem": "A command can perform repeated session, assignment, role, capability, path, owner validation and readback queries when each layer independently re-resolves facts or starts its own transaction, although the facts have the same command-local validity interval.",
+  "rootCauseClass": "COMMAND_CONTEXT_AND_OWNER_LOCAL_FACT_FRAGMENTATION",
+  "finiteDenominator": [
+    "68 operation ids in contracts/registry/backend-performance-sql-merge-applicability.json m1BindingPartition.commandOperationIds",
+    "workspace-iam command fact resolution",
+    "organization path and owner validation",
+    "extension definition lookup",
+    "store-contract derived status and readback"
+  ],
+  "searchedSurfaces": [
+    "WorkspaceAuthenticationService",
+    "WorkspaceCapabilityScopeResolver",
+    "CommandExecutionContextResolver",
+    "OrganizationTaskPathService",
+    "OrganizationHierarchyService",
+    "BusinessEntityService",
+    "OrganizationVisibilityService",
+    "ExtensionDefinitionService",
+    "ContractCommandService",
+    "operations command controllers"
+  ],
+  "searchQueries": [
+    "OperationsSessionResolver",
+    "WorkspaceCapabilityScopeResolver",
+    "OrganizationTaskPathService#node",
+    "OrganizationHierarchyService#requireNode",
+    "BusinessEntityService#enabled",
+    "ExtensionDefinitionService#requireDefinition",
+    "resolveSessionEntryFactsUnmeasured"
+  ],
+  "counterexamples": [
+    "Receipt replay and owner object-state recheck remain required and cannot be moved ahead of authorization merely to reduce queries.",
+    "Read-side task readers remain outside this SQL-M1 command package.",
+    "A cross-owner all-in-one query would violate module-owner sovereignty even if it reduced the raw count.",
+    "Caching between requests is not a substitute for command-local typed facts."
+  ],
+  "findings": [
+    {
+      "findingId": "M1-F01",
+      "statement": "The command context stack fragments workspace, organization and owner judgments across independent calls and transactions."
+    },
+    {
+      "findingId": "M1-F02",
+      "statement": "Repeated same-command reads must be eliminated only by typed owner-local projections or command-statement output, while retaining authorization, receipts, CAS and required readback semantics."
+    },
+    {
+      "findingId": "M1-F03",
+      "statement": "A per-controller transaction count can falsely accept a transport-layer transaction origin or an annotation moved to the wrong endpoint; every OWNER_COMMAND binding instead needs one exact owner-local handler and an enforced post-edit source gate invocation."
+    },
+    {
+      "findingId": "M1-F04",
+      "statement": "A generated contract binding that is outside the business-server source set can falsely appear to prove runtime routing. Every selected binding needs an actually compiled generated runtime binding, a unique transaction adapter and an endpoint-to-binding call chain; missing runtime wiring is not a harmless metadata gap."
+    },
+    {
+      "findingId": "M1-F05",
+      "statement": "A reviewed implementation can be semantically ready yet mechanically impossible when its active package records only legacy exact files and omits the declared matrices, generators, build source-set and bounded new adapter roots."
+    },
+    {
+      "findingId": "M1-F06",
+      "statement": "A catalog-specific resolver can be mistakenly reused for unrelated command owners, silently importing catalog data-node, brand and copy authority into workspace-IAM, organization or contract commands."
+    },
+    {
+      "findingId": "M1-F07",
+      "statement": "Generating typed edge DTOs can be mistaken for closing a generic owner-command boundary; module-owned typed public command APIs and exact response readbacks remain required."
+    },
+    {
+      "findingId": "M1-F08",
+      "statement": "A pre-existing JUnit source can import a test library without declaring its module dependency, causing unrelated focused tests to fail before their target class is reached."
+    },
+    {
+      "findingId": "M1-F09",
+      "statement": "A command can require and format-check an Idempotency-Key at the edge yet fail to carry it to the owner receipt/replay boundary, leaving retries non-idempotent despite the public contract."
+    },
+    {
+      "findingId": "M1-F10",
+      "statement": "A typed edge DTO can still force a generic Map or JSON tree into an owner, or leave a multi-owner HTTP readback without a declared owner-native composition, preventing a one-operation typed command chain."
+    },
+    {
+      "findingId": "M1-F11",
+      "statement": "A superseded extension-definition revision can remain in generated host write requests even when neither edge nor owner consumes it, inviting a future adapter to invent an obsolete CAS chain."
+    },
+    {
+      "findingId": "M1-F12",
+      "statement": "A current named owner service method is not by itself an admissible M1 typed owner boundary when the edge still supplies separately resolved target or scope facts, or when the HTTP response still depends on a second owner task read and edge-local mapper. A composition adapter must not absorb those missing owner boundaries merely to migrate a controller."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "M1-F01",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "2026-08-10-v2s-backend-performance-m1-implementation-granularity-manifest.json"
+    },
+    {
+      "findingId": "M1-F02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage"
+    },
+    {
+      "findingId": "M1-F03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs mandatoryPerEditGate + scripts/check/backend-performance-sql-merge-coverage"
+    },
+    {
+      "findingId": "M1-F04",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/generate/operation-handler-bindings.mjs + scripts/check/backend-performance-sql-merge-coverage"
+    },
+    {
+      "findingId": "M1-F05",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/compliance-control/cli.mjs allowedChangeSurfaces + package-declared-change-surface-scopes, exact package manifest admission"
+    },
+    {
+      "findingId": "M1-F06",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage execution-matrix resolver-family validation"
+    },
+    {
+      "findingId": "M1-F07",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage typed owner-invocation and generic-dispatch rejection"
+    },
+    {
+      "findingId": "M1-F08",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "pre-existing-test-import to module-test-dependency scan before focused unit execution"
+    },
+    {
+      "findingId": "M1-F09",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage M1 execution idempotency-chain assertion"
+    },
+    {
+      "findingId": "M1-F10",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage adapter-to-owner native-type and readback-composition assertion"
+    },
+    {
+      "findingId": "M1-F11",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-performance-sql-merge-coverage exact host-extension request-field absence plus owner current-definition-validation anchors"
+    },
+    {
+      "findingId": "M1-F12",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "workspace-iam 20-row source mapping before adapter admission; require one owner-native typed command input that consumes command facts and one owner-native readback matching the existing HTTP response before changing implementationStatus"
+    }
+  ],
+  "workspaceIamM1SourceMapping": {
+    "finiteDenominator": 20,
+    "conclusion": "NO_SAFE_EXISTING_TYPED_OWNER_API_SUBSET",
+    "reason": "The current workspace-iam services expose named command methods, but none of the twenty routes has the complete existing public typed command-plus-readback boundary required for a one-operation M1 adapter. Keeping all twenty rows DECLARED_RUNTIME_SOURCE_PENDING is the only source-honest disposition.",
+    "groups": [
+      {
+        "operationIds": [
+          "createOperationsWorkspaceGroupInvitation",
+          "createOperationsWorkspaceHeadCompanyInvitation",
+          "createOperationsWorkspaceProjectInvitation",
+          "createOperationsWorkspaceRegionInvitation",
+          "createOperationsWorkspaceStoreInvitation"
+        ],
+        "edgeSource": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#create",
+        "resolver": "CommandExecutionContextResolver#resolveOperations",
+        "currentNamedCommand": "WorkspaceInvitationService#createForOperations",
+        "blockingGap": "The command requires a target produced by WorkspaceUserService#resolveCommandTarget and the existing HTTP response then requires WorkspaceInvitationService#managementView plus WorkspaceInvitationWireMapper#wire. No public owner-native typed create command accepts command facts and the wire request while producing the existing WorkspaceInvitation response in one declared boundary."
+      },
+      {
+        "operationIds": [
+          "cancelOperationsWorkspaceGroupInvitation",
+          "cancelOperationsWorkspaceHeadCompanyInvitation",
+          "cancelOperationsWorkspaceProjectInvitation",
+          "cancelOperationsWorkspaceRegionInvitation",
+          "cancelOperationsWorkspaceStoreInvitation"
+        ],
+        "edgeSource": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#cancel",
+        "resolver": "CommandExecutionContextResolver#resolveOperationsAtContextVersion",
+        "currentNamedCommand": "WorkspaceInvitationService#cancelForOperations",
+        "blockingGap": "The command requires WorkspaceUserService#resolveTaskScope before the named command, and the response requires WorkspaceInvitationService#managementView plus WorkspaceInvitationWireMapper#wire after it. Neither target judgment nor response composition is supplied by the declared command boundary."
+      },
+      {
+        "operationIds": [
+          "reissueOperationsWorkspaceGroupInvitation",
+          "reissueOperationsWorkspaceHeadCompanyInvitation",
+          "reissueOperationsWorkspaceProjectInvitation",
+          "reissueOperationsWorkspaceRegionInvitation",
+          "reissueOperationsWorkspaceStoreInvitation"
+        ],
+        "edgeSource": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java#reissue",
+        "resolver": "CommandExecutionContextResolver#resolveOperationsAtContextVersion",
+        "currentNamedCommand": "WorkspaceInvitationService#reissueForOperations",
+        "blockingGap": "The command requires WorkspaceUserService#resolveTaskScope before the named command, and the response requires WorkspaceInvitationService#managementView plus WorkspaceInvitationWireMapper#wire after it. A root adapter would otherwise become an undeclared workspace-iam command facade."
+      },
+      {
+        "operationIds": [
+          "revokeOperationsWorkspaceGroupUserAssignment",
+          "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+          "revokeOperationsWorkspaceProjectUserAssignment",
+          "revokeOperationsWorkspaceRegionUserAssignment",
+          "revokeOperationsWorkspaceStoreUserAssignment"
+        ],
+        "edgeSource": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#revoke",
+        "resolver": "CommandExecutionContextResolver#resolveOperations",
+        "currentNamedCommand": "WorkspaceAccountService#revokeAssignmentForOperations",
+        "preservedSafety": "WorkspaceAccountService rechecks assignment target and capability before receipt replay.",
+        "blockingGap": "The existing command returns only accountId. The contract response additionally requires WorkspaceUserService#detail(AccountDetailQuery.forOperations(...)) and OperationsWorkspaceUserController#user mapping. No current owner-native typed revoke readback represents WorkspaceUserRevokeResult, so moving those calls into a root adapter would violate the declared one-command owner boundary."
+      }
+    ],
+    "rejectedShortcuts": [
+      "Do not pass a pre-resolved WorkspaceUserService target or scope through a generic invocation bag.",
+      "Do not call WorkspaceUserService and WorkspaceInvitationService as an adapter-level replacement for a missing owner command boundary.",
+      "Do not shrink invitation or revoke HTTP responses to avoid the missing owner-native readback.",
+      "Do not move receipt lookup ahead of existing owner target and capability rechecks."
+    ],
+    "nextAdmissibleChange": "First add and source-anchor owner-native workspace-iam command inputs and readbacks for each operation family; only then admit a bounded per-operation adapter slice and update execution/topology status atomically."
+  },
+  "workspaceIamM1TypedOperationsApiDesign": {
+    "api": "modules/workspace-iam/.../api/WorkspaceOperationsCommandApi",
+    "implementation": "modules/workspace-iam/.../application/WorkspaceOperationsCommandService",
+    "boundary": "module-public typed API; never a root facade; no operationId, Map, callback or pre-resolved target/scope input",
+    "sharedInput": "WorkspaceCommandAuthorizationFacts plus immutable family command and AuditActor",
+    "invitationReadback": "WorkspaceInvitationService.ManagementInvitationView, owner-produced in the command transaction and mapped only by existing WorkspaceInvitationWireMapper",
+    "revokeReadback": "typed OperationsAssignmentRevokeReadback(assignmentId, accountId, contextVersion, WorkspaceUserService.User); mapped by existing edge user mapper without a controller post-read",
+    "ownerOrdering": "owner resolves target or scope, validates target type and capability, then executes existing receipt/mutation path; receipt lookup must never precede those owner rechecks",
+    "families": [
+      {"name":"create","operationIds":["createOperationsWorkspaceGroupInvitation","createOperationsWorkspaceHeadCompanyInvitation","createOperationsWorkspaceProjectInvitation","createOperationsWorkspaceRegionInvitation","createOperationsWorkspaceStoreInvitation"],"resolver":"resolveOperations","ownerAction":"resolveCommandTarget -> createForOperations -> managementView"},
+      {"name":"cancel","operationIds":["cancelOperationsWorkspaceGroupInvitation","cancelOperationsWorkspaceHeadCompanyInvitation","cancelOperationsWorkspaceProjectInvitation","cancelOperationsWorkspaceRegionInvitation","cancelOperationsWorkspaceStoreInvitation"],"resolver":"resolveOperationsAtContextVersion","ownerAction":"resolveTaskScope -> cancelForOperations -> managementView"},
+      {"name":"reissue","operationIds":["reissueOperationsWorkspaceGroupInvitation","reissueOperationsWorkspaceHeadCompanyInvitation","reissueOperationsWorkspaceProjectInvitation","reissueOperationsWorkspaceRegionInvitation","reissueOperationsWorkspaceStoreInvitation"],"resolver":"resolveOperationsAtContextVersion","ownerAction":"resolveTaskScope -> reissueForOperations -> managementView"},
+      {"name":"revoke","operationIds":["revokeOperationsWorkspaceGroupUserAssignment","revokeOperationsWorkspaceHeadCompanyUserAssignment","revokeOperationsWorkspaceProjectUserAssignment","revokeOperationsWorkspaceRegionUserAssignment","revokeOperationsWorkspaceStoreUserAssignment"],"resolver":"resolveOperations","ownerAction":"revokeAssignmentForOperations recheck/receipt -> owner user detail"}
+    ],
+    "admissionRule": "Each row becomes IMPLEMENTED_SOURCE_ANCHORED only after exact API method, per-operation REQUIRED adapter, generated binding and controller call exist; retain all other rows byte-equivalent."
+  },
+  "catalogCopyM1SourceMapping": {
+    "finiteDenominator": 4,
+    "operationIds": [
+      "preflightOperationsLocalCatalogCopy",
+      "executeOperationsLocalCatalogCopy",
+      "preflightOperationsBrandCatalogCopy",
+      "executeOperationsBrandCatalogCopy"
+    ],
+    "rootCause": "CatalogInventoryCoordinator currently obtains every owner preflight, digest, opaque mapping and final readback through ObjectNode/JsonNode dispatch. A typed edge DTO alone would therefore preserve a generic public owner boundary and allow an adapter to bypass owner-local receipt/recheck semantics.",
+    "localCopyAtomicFamily": {
+      "operationIds": ["preflightOperationsLocalCatalogCopy", "executeOperationsLocalCatalogCopy"],
+      "owners": ["catalog", "inventory"],
+      "sourceGroundedOrder": "catalog local preflight -> optional inventory preflight only for selected BOM sections -> combined digest; execute recomputes both owner digests, rejects a stale combined digest, merges owner-issued opaque mappings, then writes catalog before inventory.",
+      "typedBoundaryRequirement": "CatalogOwnerApi and InventoryOwnerApi must each expose named immutable local-copy command/judgment/readback records. Adapters may compose those records but may not expose Map, JsonNode, ObjectNode, operationId or an invocation bag in any public owner signature.",
+      "counterexamples": [
+        "A selected section without ITEM_BOM, SKU_BOM or OPTION_VALUE_BOM has no inventory preflight or inventory write.",
+        "The adapter must not treat item codes as mapping identity; only owner-issued opaque reference mappings may cross the owner boundary.",
+        "A receipt lookup cannot precede catalog or inventory current-fact rechecks merely because the combined digest was previously issued."
+      ]
+    },
+    "brandCopyDeferredAtomicFamily": {
+      "operationIds": ["preflightOperationsBrandCatalogCopy", "executeOperationsBrandCatalogCopy"],
+      "owners": ["catalog", "inventory", "fulfillment-production"],
+      "additionalRequirement": "Brand copy adds the production-tag owner digest and reference plan; it must not reuse the local-only typed boundary or infer a source from a request field."
+    },
+    "saveItemDeferredAtomicFamily": {
+      "operationIds": ["saveOperationsCatalogItem"],
+      "owners": ["catalog", "inventory", "asset"],
+      "rootCause": "The current chain crosses CatalogOwnerApi.write(context,ObjectNode), InventoryOwnerApi ensureCatalogInventoryTarget/saveCatalogProductBom ObjectNode commands, and PlatformAssetService implementation methods. It also receives generated free production-profile JSON and a grant map, so a root adapter cannot safely expose the existing request object as an owner API.",
+      "sourceGroundedOrder": "catalog owner performs its existing current-item recheck, receipt lookup and CAS save; coordinator retains only the in-transaction owner composition; inventory then owns target/BOM commands; asset owner claims new staged refs and releases only former unreferenced refs under its own lock and receipt rules; final HTTP readback retains its current shape.",
+      "typedBoundaryDesign": {
+        "catalog": "CatalogOwnerApi.SaveCatalogItemCommand(itemCode, canonicalRequestJson) -> SaveCatalogItemReadback(canonicalJson). The canonical text is opaque to the coordinator except for private composition normalization; CatalogOwnerService alone validates the draft, snapshot, CAS, receipt and final readback.",
+        "inventory": "InventoryOwnerApi receives named immutable ensure-target and save-BOM records whose dynamic row bodies are canonical JSON text. InventoryOwnerService alone interprets the text and preserves its save-operation grant recheck.",
+        "asset": "CatalogAssetCommandApi exposes a named typed save-settlement boundary for lock, staged-ref claim, current metadata and conditional release. It accepts no Map and no raw JSON; bind grants remain one opaque per-asset value carried only in typed entries.",
+        "coordinator": "CatalogInventoryCoordinator may parse generated DTOs and canonical text privately, but exposes no generic owner API, does not query a repository/JDBC surface, and does not alter receipt/CAS/owner order."
+      },
+      "rejectedShortcuts": [
+        "Do not pass CatalogItemSaveRequest or its JsonNode productionProfiles through a public owner API.",
+        "Do not retain PlatformAssetService as a composition dependency after a public asset boundary exists.",
+        "Do not collapse asset bind grants into a Map or delete final save readback to reduce command work.",
+        "Do not mark the row source-anchored until the exact API, REQUIRED adapter, generated binding, controller and matrix/P1 hash all close atomically."
+      ]
+    },
+    "prevention": "The M1 topology gate must require one source-anchored per-operation REQUIRED adapter, named typed owner invocation and P1 binding before an operation leaves DECLARED_RUNTIME_SOURCE_PENDING."
+  }
+}

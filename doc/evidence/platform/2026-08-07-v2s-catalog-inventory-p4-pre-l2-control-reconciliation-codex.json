@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "catalog-inventory-p4-pre-l2-control-reconciliation",
   "status": "PASS",
-  "createdAt": "2026-08-09T02:24:29.654Z",
+  "createdAt": "2026-08-10T12:35:30.828Z",
   "authority": "STATIC_PRE_L2_ONLY",
   "sourceBindings": {
     "requirements": {
@@ -31,7 +31,7 @@
     },
     "apiScenarios": {
       "path": "contracts/policy/catalog-inventory-api-scenarios.json",
-      "sha256": "772f4dad30611af73c0bb9de34fd0839643dccb8e67ec14dd50743bbfe9eeb7e"
+      "sha256": "5c17620b1d9d04f95682541034e96a1a4951d0a6a49246d7343bff19a97170f3"
     },
     "assertionMatrix": {
       "path": "contracts/policy/catalog-inventory-assertion-matrix.json",
@@ -42,10 +42,10 @@
     "iaControls": 89,
     "apiScenarios": 26,
     "apiCases": 100,
-    "apiNegative": 38,
-    "apiPositive": 62,
-    "apiTypedFailure": 13,
-    "apiFact": 87,
+    "apiNegative": 37,
+    "apiPositive": 63,
+    "apiTypedFailure": 12,
+    "apiFact": 88,
     "l2Scenarios": 18,
     "l2Cases": 43,
     "l2Bindings": 43,
@@ -1636,7 +1636,7 @@
     "apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx": "7aa0deac2a5e44ed6630d503eaf43163ad237294c9976e032e68d1c86c247a40",
     "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx": "bfc6c92158fa585250f84967a384c93e2edeb1a8ddfb3bc0f1af23e492fe6e55",
     "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx": "ec7f03ffdba5cfbc2bcb73e71db43e2839c53cbb6e8e017e849d0a8fb671c213",
-    "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx": "9687667a18b1c51d188600375d3b4b0b6ffe4de6c215b9114a8c80deaae2895f",
+    "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemDrawer.tsx": "35df4a4aaf8d4daba52ced79f3aa0484e89e6bc39309ab1374e9cd52fc0df3f6",
     "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx": "85efba07ed7edfb5a4a265c9603d9755a827a7e68dcd7651ff0abc29ac9b3278",
     "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx": "322a77866116f07a589bb7f7f96340169e1d93ba01d846cf085d64b10f95b1f9",
     "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx": "8a23f4759376afb97ef770821e4a10abf5bb06ecfa74151d4d08f716862a0b8f",
@@ -1644,7 +1644,7 @@
     "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx": "c101a3b78c42bb0032c394c1684053af9ada5f65ede4a22ef7a64eb91d4c2c02",
     "apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts": "300916f5f6ff60e41bf8bfd22e6acd8ad9e30cf8dffa4ab742476c80f8675528",
     "scripts/test/catalog-inventory-l2-test-fixture.mjs": "c5fbc894da54dd7a21a535fd2731fb30e6fb61007dff7efd94ead2ed21fe414c",
-    "scripts/test/r5-joint-remote-l2-fixture.mjs": "a05a1132786bab36c0bceb7a2d9096354a5d92086c357f9b530db608fffa952a"
+    "scripts/test/r5-joint-remote-l2-fixture.mjs": "7c69e5fa1c87c7f3e4eee37f993e5849fd420f06a25df90e0e438ac8e3e97733"
   },
   "runtimeStatus": "NOT_EXECUTED_PRE_L2_GATE",
   "businessStatus": "NOT_STARTED",

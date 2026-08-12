@@ -4,12 +4,15 @@ import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.organization.api.OrganizationNodeTypes;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;
+import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
@@ -39,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class BusinessEntityService implements StoreAssignmentLookup, OrganizationEntityLookup, StoreContractLookup, CatalogScopeLookup {
+public class BusinessEntityService implements StoreAssignmentLookup, OrganizationEntityLookup, StoreContractLookup, CatalogScopeLookup, OperationsBusinessEntityCommandApi, OperationsStoreCommandApi {
     private static final String BUSINESS_ENTITY_PROJECTION = "entities.id, entities.workspace_uuid, entities.group_workspace_key, entities.code, entities.name, entities.legal_name, entities.credit_code, entities.alias, entities.remark, entities.notes, entities.status, entities.version, entities.extension_rule_revision, entities.created_at_epoch_millis, entities.updated_at_epoch_millis, entities.extension_values, entities.entity_type";
     private static final Set<String> ENTITY_TYPES = Set.of("BRAND", "TENANT", BusinessEntityTypes.HEAD_COMPANY);
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -58,6 +61,165 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     public BusinessEntityService(JdbcTemplate jdbc, TimeProvider time, ExtensionDefinitionLookup definitions, OrganizationNodeLookup nodes, BusinessEntityCommandReceiptService receipts) {
         this.jdbc = jdbc; this.time = time; this.definitions = definitions; this.nodes = nodes;
         this.receipts = receipts;
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback createBrand(BrandCreateCommand command) {
+        return createEntitySubmission(BusinessEntityTypes.BRAND, command.workspaceUuid(), command.groupWorkspaceKey(), command.code(), command.name(), null, null, command.alias(), command.remark(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback updateBrand(BrandUpdateCommand command) {
+        return updateEntitySubmission(BusinessEntityTypes.BRAND, command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId(), command.code(), command.name(), null, null, command.alias(), command.remark(), command.expectedVersion(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback createTenant(TenantCreateCommand command) {
+        return createEntitySubmission(BusinessEntityTypes.TENANT, command.workspaceUuid(), command.groupWorkspaceKey(), command.code(), command.name(), command.legalName(), command.creditCode(), null, command.remark(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback updateTenant(TenantUpdateCommand command) {
+        return updateEntitySubmission(BusinessEntityTypes.TENANT, command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId(), command.code(), command.name(), command.legalName(), command.creditCode(), null, command.remark(), command.expectedVersion(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public HeadCompanyCommandReadback createHeadCompany(HeadCompanyCreateCommand command) {
+        OrganizationEntityReadback entity = createEntitySubmission(BusinessEntityTypes.HEAD_COMPANY, command.workspaceUuid(), command.groupWorkspaceKey(), command.code(), command.name(), command.legalName(), command.creditCode(), null, command.remark(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+        return headCompanyReadback(command.workspaceUuid(), command.groupWorkspaceKey(), entity);
+    }
+
+    @Override @Transactional
+    public HeadCompanyCommandReadback updateHeadCompany(HeadCompanyUpdateCommand command) {
+        OrganizationEntityReadback entity = updateEntitySubmission(BusinessEntityTypes.HEAD_COMPANY, command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId(), command.code(), command.name(), command.legalName(), command.creditCode(), null, command.remark(), command.expectedVersion(), command.extensionSubmission(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+        return headCompanyReadback(command.workspaceUuid(), command.groupWorkspaceKey(), entity);
+    }
+
+    @Override @Transactional
+    public HeadCompanyCommandReadback transitionHeadCompanyStatus(HeadCompanyStatusCommand command) {
+        OrganizationEntityReadback entity = transitionEntityStatus(BusinessEntityTypes.HEAD_COMPANY, command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId(), command.targetStatus(), command.expectedVersion(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+        return headCompanyReadback(command.workspaceUuid(), command.groupWorkspaceKey(), entity);
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback transitionBrandStatus(BrandStatusCommand command) {
+        return transitionEntityStatus(BusinessEntityTypes.BRAND, command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId(), command.targetStatus(), command.expectedVersion(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback transitionTenantStatus(TenantStatusCommand command) {
+        return transitionEntityStatus(BusinessEntityTypes.TENANT, command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId(), command.targetStatus(), command.expectedVersion(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    @Override @Transactional
+    public HeadCompanyBrandAuthorizationReadback addHeadCompanyBrandAuthorization(HeadCompanyBrandAuthorizationCommand command) {
+        requireOwnerGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), ServiceNodeTypes.HEAD_COMPANY, command.headCompanyId());
+        addHeadCompanyBrandAuthorization(command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId(), command.brandId(), command.idempotencyKey(), command.actor());
+        return new HeadCompanyBrandAuthorizationReadback(command.headCompanyId(), command.brandId());
+    }
+
+    @Override @Transactional
+    public HeadCompanyBrandAuthorizationReadback removeHeadCompanyBrandAuthorization(HeadCompanyBrandAuthorizationCommand command) {
+        requireOwnerGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), ServiceNodeTypes.HEAD_COMPANY, command.headCompanyId());
+        removeHeadCompanyBrandAuthorization(command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId(), command.brandId(), command.idempotencyKey(), command.actor());
+        return new HeadCompanyBrandAuthorizationReadback(command.headCompanyId(), command.brandId());
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback createStore(CreateStoreCommand command) {
+        UUID ownerProjectId = requireProjectId(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectId());
+        requireOwnerGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), ServiceNodeTypes.PROJECT, ownerProjectId);
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical("createStore", command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, command.tenantId(), command.brandId(), command.headCompanyId(), command.code(), command.name(), command.notes(), command.extensionSubmission()), () -> createStoreSubmission(command, ownerProjectId));
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback updateStore(UpdateStoreCommand command) {
+        UUID ownerProjectId = requireStoreProjectId(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
+        requireOwnerGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), ServiceNodeTypes.PROJECT, ownerProjectId);
+        if (!ownerProjectId.equals(command.projectId())) throw new OrganizationValidationException();
+        return receipts.execute(command.workspaceUuid(), command.idempotencyKey(), canonical("updateStore", command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId(), ownerProjectId, command.tenantId(), command.brandId(), command.headCompanyId(), command.code(), command.name(), command.notes(), command.expectedVersion(), command.extensionSubmission()), () -> updateStoreSubmission(command, ownerProjectId));
+    }
+
+    @Override @Transactional
+    public OrganizationEntityReadback transitionStoreStatus(StoreStatusCommand command) {
+        return transitionEntityStatus(ServiceNodeTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId(), command.targetStatus(), command.expectedVersion(), command.idempotencyKey(), command.actor(), command.ownerScopeGrant());
+    }
+
+    private OrganizationEntityReadback createStoreSubmission(CreateStoreCommand command, UUID ownerProjectId) {
+        var project = nodes.requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, OrganizationNodeTypes.PROJECT);
+        if (!"ENABLED".equals(project.status()) || !enabled("tenant", command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId()) || !enabled("brand", command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId())) throw new OrganizationValidationException();
+        if (command.headCompanyId() != null && (!enabled("head_company", command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId()) || !authorized(command.headCompanyId(), command.brandId()))) throw new OrganizationValidationException();
+        UUID id = UUID.randomUUID(); long now = time.currentEpochMillis();
+        try { jdbc.update("INSERT INTO organization.store (id, workspace_uuid, group_workspace_key, project_id, tenant_id, brand_id, head_company_id, code, name, notes, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, command.tenantId(), command.brandId(), command.headCompanyId(), text(command.code(), 64), text(command.name(), 120), optional(command.notes(), 2000), now, now); }
+        catch (DuplicateKeyException exception) { throw new OrganizationDuplicateException(); }
+        catch (DataIntegrityViolationException exception) { throw new OrganizationConflictException(); }
+        replaceValues("store", id, command.workspaceUuid(), command.groupWorkspaceKey(), ExtensionHostTypes.STORE, command.extensionSubmission());
+        OrganizationEntityReadback created = OwnerOperationDiagnostics.readback(() -> requireEntity(ServiceNodeTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), id));
+        audit(command.workspaceUuid(), command.groupWorkspaceKey(), id, AuditEntityTypes.STORE, "STORE_CREATED", now, command.actor(), createdChanges(created));
+        return created;
+    }
+
+    private OrganizationEntityReadback updateStoreSubmission(UpdateStoreCommand command, UUID ownerProjectId) {
+        OrganizationEntityReadback before = requireEntity(BusinessEntityTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
+        var project = nodes.requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, OrganizationNodeTypes.PROJECT);
+        if (!"ENABLED".equals(project.status()) || !enabled("tenant", command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId()) || !enabled("brand", command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId()) || (command.headCompanyId() != null && (!enabled("head_company", command.workspaceUuid(), command.groupWorkspaceKey(), command.headCompanyId()) || !authorized(command.headCompanyId(), command.brandId())))) throw new OrganizationValidationException();
+        try {
+            if (jdbc.update("UPDATE organization.store SET project_id=?, tenant_id=?, brand_id=?, head_company_id=?, code=?, name=?, notes=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?", ownerProjectId, command.tenantId(), command.brandId(), command.headCompanyId(), text(command.code(), 64), text(command.name(), 120), optional(command.notes(), 2000), time.currentEpochMillis(), command.storeId(), command.workspaceUuid(), command.groupWorkspaceKey(), command.expectedVersion()) != 1) throw new OrganizationConflictException();
+        } catch (DataIntegrityViolationException exception) { throw new OrganizationConflictException(); }
+        replaceValues("store", command.storeId(), command.workspaceUuid(), command.groupWorkspaceKey(), ExtensionHostTypes.STORE, command.extensionSubmission());
+        OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> requireEntity(BusinessEntityTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId()));
+        audit(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId(), AuditEntityTypes.STORE, "STORE_UPDATED", time.currentEpochMillis(), command.actor(), changed(before, updated));
+        return updated;
+    }
+
+    private OrganizationEntityReadback createEntitySubmission(String entityType, UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String legalName, String creditCode, String alias, String remark, ExtensionSubmission submission, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("createEntity", entityType, workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, alias, remark, submission), () -> createEntitySubmission(entityType, workspaceUuid, groupWorkspaceKey, code, name, legalName, creditCode, alias, remark, submission, actor));
+    }
+
+    private OrganizationEntityReadback createEntitySubmission(String entityType, UUID workspaceUuid, String groupWorkspaceKey, String code, String name, String legalName, String creditCode, String alias, String remark, ExtensionSubmission submission, AuditActor actor) {
+        String type = entityType(entityType);
+        ensureAvailable(type, workspaceUuid, groupWorkspaceKey, null, code, name);
+        UUID id = UUID.randomUUID();
+        long now = time.currentEpochMillis();
+        String table = table(type);
+        try {
+            if (BusinessEntityTypes.BRAND.equals(type)) jdbc.update("INSERT INTO organization.brand (id, workspace_uuid, group_workspace_key, code, name, alias, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, workspaceUuid, groupWorkspaceKey, text(code, 64), text(name, 120), optional(alias, 120), optional(remark, 2000), now, now);
+            else jdbc.update("INSERT INTO organization." + table + " (id, workspace_uuid, group_workspace_key, code, name, legal_name, credit_code, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)", id, workspaceUuid, groupWorkspaceKey, text(code, 64), text(name, 120), text(legalName, 240), text(creditCode, 32), optional(remark, 2000), now, now);
+        } catch (DuplicateKeyException exception) { throw new OrganizationDuplicateException(); }
+        replaceValues(table, id, workspaceUuid, groupWorkspaceKey, type, submission);
+        OrganizationEntityReadback created = OwnerOperationDiagnostics.readback(() -> requireEntity(type, workspaceUuid, groupWorkspaceKey, id));
+        audit(workspaceUuid, groupWorkspaceKey, id, type, type + "_CREATED", now, actor, createdChanges(created));
+        return created;
+    }
+
+    private OrganizationEntityReadback updateEntitySubmission(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String code, String name, String legalName, String creditCode, String alias, String remark, long expectedVersion, ExtensionSubmission submission, String idempotencyKey, AuditActor actor, OperationsOwnerScopeGrant ownerScopeGrant) {
+        String type = entityType(entityType);
+        if (ServiceNodeTypes.HEAD_COMPANY.equals(type)) requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, id);
+        else requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP, requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+        return receipts.execute(workspaceUuid, idempotencyKey, canonical("updateEntity", type, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, submission), () -> updateEntitySubmission(type, workspaceUuid, groupWorkspaceKey, id, code, name, legalName, creditCode, alias, remark, expectedVersion, submission, actor));
+    }
+
+    private OrganizationEntityReadback updateEntitySubmission(String entityType, UUID workspaceUuid, String groupWorkspaceKey, UUID id, String code, String name, String legalName, String creditCode, String alias, String remark, long expectedVersion, ExtensionSubmission submission, AuditActor actor) {
+        String type = entityType(entityType);
+        String table = table(type);
+        OrganizationEntityReadback before = requireEntity(type, workspaceUuid, groupWorkspaceKey, id);
+        ensureAvailable(type, workspaceUuid, groupWorkspaceKey, id, code, name);
+        String update = BusinessEntityTypes.BRAND.equals(type)
+            ? "UPDATE organization.brand SET code=?, name=?, alias=?, remark=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?"
+            : "UPDATE organization." + table + " SET code=?, name=?, legal_name=?, credit_code=?, remark=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?";
+        Object[] args = BusinessEntityTypes.BRAND.equals(type)
+            ? new Object[]{text(code, 64), text(name, 120), optional(alias, 120), optional(remark, 2000), time.currentEpochMillis(), id, workspaceUuid, groupWorkspaceKey, expectedVersion}
+            : new Object[]{text(code, 64), text(name, 120), text(legalName, 240), text(creditCode, 32), optional(remark, 2000), time.currentEpochMillis(), id, workspaceUuid, groupWorkspaceKey, expectedVersion};
+        if (jdbc.update(update, args) != 1) throw new OrganizationConflictException();
+        replaceValues(table, id, workspaceUuid, groupWorkspaceKey, type, submission);
+        OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> requireEntity(type, workspaceUuid, groupWorkspaceKey, id));
+        audit(workspaceUuid, groupWorkspaceKey, id, type, type + "_UPDATED", time.currentEpochMillis(), actor, changed(before, updated));
+        return updated;
+    }
+
+    private HeadCompanyCommandReadback headCompanyReadback(UUID workspaceUuid, String groupWorkspaceKey, OrganizationEntityReadback entity) {
+        return new HeadCompanyCommandReadback(entity, authorizedBrands(workspaceUuid, groupWorkspaceKey, entity.id()));
     }
 
     @Transactional
@@ -636,6 +798,20 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
         }
         if (fields.values().stream().filter(field -> "ENABLED".equals(field.status()) && field.required()).anyMatch(field -> !merged.hasNonNull(field.fieldKey()) || !validJsonValue(field, merged.get(field.fieldKey()).toString()))) throw new OrganizationValidationException();
         jdbc.update("UPDATE organization." + table + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?", merged.toString(), definition.version(), id);
+    }
+    private void replaceValues(String table, UUID id, UUID workspaceUuid, String key, String hostType, ExtensionSubmission submission) {
+        String current = jdbc.query("SELECT extension_values::text FROM organization." + table + " WHERE id=?", statement -> statement.setObject(1, id), result -> { if (!result.next()) throw new OrganizationNotFoundException(); return result.getString(1); });
+        ExtensionDefinitionReadback definition;
+        try { definition = definitions.requireDefinition(workspaceUuid, key, hostType); }
+        catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (submission != null && !submission.fields().isEmpty()) throw new OrganizationValidationException();
+            jdbc.update("UPDATE organization." + table + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?", current, 0L, id);
+            return;
+        }
+        String merged;
+        try { merged = ExtensionDefinitionService.mergeValues(definition, current, submission); }
+        catch (ExtensionDefinitionService.DefinitionInvalidException invalid) { throw new OrganizationValidationException(); }
+        jdbc.update("UPDATE organization." + table + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?", merged, definition.version(), id);
     }
     private static Map<String, String> jsonObject(String source) { try { JsonNode node = JSON.readTree(source); if (!node.isObject()) throw new OrganizationValidationException(); Map<String, String> values = new java.util.LinkedHashMap<>(); node.fields().forEachRemaining(entry -> values.put(entry.getKey(), entry.getValue().toString())); return Map.copyOf(values); } catch (java.io.IOException failure) { throw new OrganizationValidationException(); } }
 

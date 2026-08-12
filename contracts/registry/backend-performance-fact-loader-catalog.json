@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-fact-loader-catalog",
+  "status": "SOURCE_VERIFIED_STATIC",
+  "authority": "BPF-U01 source inventory owns this closed loader/caller catalogue; runtime at-most-once is BPF-U03 evidence.",
+  "denominator": {
+    "loaderCount": 10,
+    "M1OperationCount": 68
+  },
+  "rows": [
+    {
+      "loaderId": "PLATFORM_READ_SESSION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireRead",
+      "sourceSha256": "96908a985f6d0209e7ddc0e3139081d7c075fb1c0b4b2973a5fce72425475225",
+      "callSitePrefix": "PlatformSessionResolver.requireRead",
+      "invocationPattern": "requireRead(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "immutable platform session read fact"
+    },
+    {
+      "loaderId": "PLATFORM_SELECTED_WORKSPACE_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireEnabledSelectedWorkspace",
+      "sourceSha256": "96908a985f6d0209e7ddc0e3139081d7c075fb1c0b4b2973a5fce72425475225",
+      "callSitePrefix": "PlatformReadSessionFacts.requireEnabledSelectedWorkspace",
+      "invocationPattern": "requireEnabledSelectedWorkspace(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "owner-validated selected workspace fact"
+    },
+    {
+      "loaderId": "PLATFORM_COMMAND_SESSION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#require",
+      "sourceSha256": "96908a985f6d0209e7ddc0e3139081d7c075fb1c0b4b2973a5fce72425475225",
+      "callSitePrefix": "PlatformSessionResolver.require",
+      "invocationPattern": "require(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+        "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+        "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/access/PlatformExecutionContext.java",
+        "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+        "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java",
+        "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsWorkspaceLoginEntryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java",
+        "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+        "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/access/PlatformExecutionContext.java",
+        "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractCommandService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+        "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/PlatformWorkspaceAdministrationTaskReadService.java",
+        "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application/WorkspaceAdministrationService.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsWorkspaceLoginEntryController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/asset/PlatformAssetController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformCommercialGroupController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceRoleController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "fresh platform command/session context"
+    },
+    {
+      "loaderId": "OPERATIONS_READ_AUTHORIZATION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#requireReadFacts",
+      "sourceSha256": "6dff117da379d2b473843cccc31d68b4d4c910013dd23aadcf4693e2a91a684f",
+      "callSitePrefix": "OperationsSessionResolver.requireReadFacts",
+      "invocationPattern": "requireReadFacts(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java"
+      ],
+      "declaredOperationIds": [],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "immutable operations read authorization fact"
+    },
+    {
+      "loaderId": "WORKSPACE_COMMAND_AUTHORIZATION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsSessionResolver.java#requireWorkspaceCommandFacts",
+      "sourceSha256": "6dff117da379d2b473843cccc31d68b4d4c910013dd23aadcf4693e2a91a684f",
+      "callSitePrefix": "OperationsSessionResolver.requireWorkspaceCommandFacts",
+      "invocationPattern": "requireWorkspaceCommandFacts(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationController.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "immutable workspace command authorization fact"
+    },
+    {
+      "loaderId": "M1_CATALOG_COMMAND_CONTEXT_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java#resolveCatalog",
+      "sourceSha256": "2fe8194588d74752c35317d028da3d090e6dc99b9550fc5daaf001088c24b8f6",
+      "callSitePrefix": "CommandExecutionContextResolver.resolveCatalog",
+      "invocationPattern": "resolveCatalog(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogCategoryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogDictionaryEntryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CreateOperationsCatalogItemOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/DeleteOperationsCatalogCategoryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsBrandCatalogCopyOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsLocalCatalogCopyOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsTemporaryCatalogItemPromotionOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/MoveOperationsCatalogCategoryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsBrandCatalogCopyOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsLocalCatalogCopyOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/PreflightOperationsTemporaryCatalogItemPromotionOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ReorderOperationsCatalogDictionaryEntryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/SaveOperationsCatalogItemOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogDictionaryEntryStatusOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/UpdateOperationsCatalogCategoryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/UpdateOperationsCatalogDictionaryEntryOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/CreateOperationsProductionTagOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/TransitionOperationsProductionTagStatusOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/UpdateOperationsProductionTagOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/AdjustOperationsInventoryTargetOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/CountOperationsInventoryTargetOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/IncreaseOperationsInventoryTargetOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/inventory/application/UpdateOperationsInventoryTargetConfigurationOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application/ReleaseOperationsCatalogStagedAssetOperation.java",
+        "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application/StageOperationsCatalogAssetMultipartOperation.java"
+      ],
+      "declaredOperationIds": [
+        "createOperationsCatalogItem",
+        "saveOperationsCatalogItem",
+        "transitionOperationsCatalogItemStatus",
+        "createOperationsCatalogCategory",
+        "updateOperationsCatalogCategory",
+        "moveOperationsCatalogCategory",
+        "deleteOperationsCatalogCategory",
+        "createOperationsCatalogDictionaryEntry",
+        "updateOperationsCatalogDictionaryEntry",
+        "reorderOperationsCatalogDictionaryEntry",
+        "transitionOperationsCatalogDictionaryEntryStatus",
+        "createOperationsProductionTag",
+        "updateOperationsProductionTag",
+        "transitionOperationsProductionTagStatus",
+        "preflightOperationsLocalCatalogCopy",
+        "executeOperationsLocalCatalogCopy",
+        "preflightOperationsTemporaryCatalogItemPromotion",
+        "executeOperationsTemporaryCatalogItemPromotion",
+        "preflightOperationsBrandCatalogCopy",
+        "executeOperationsBrandCatalogCopy",
+        "countOperationsInventoryTarget",
+        "increaseOperationsInventoryTarget",
+        "adjustOperationsInventoryTarget",
+        "updateOperationsInventoryTargetConfiguration",
+        "stageOperationsCatalogAsset",
+        "releaseOperationsCatalogStagedAsset"
+      ],
+      "callerAdmission": "M1_MATRIX_DECLARED_CALLERS",
+      "reason": "M1 catalog command execution context origin"
+    },
+    {
+      "loaderId": "M1_OPERATIONS_COMMAND_CONTEXT_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java#resolveOperations",
+      "sourceSha256": "2fe8194588d74752c35317d028da3d090e6dc99b9550fc5daaf001088c24b8f6",
+      "callSitePrefix": "CommandExecutionContextResolver.resolveOperations",
+      "invocationPattern": "resolveOperations(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java"
+      ],
+      "declaredOperationIds": [
+        "addOperationsOrganizationHeadCompanyBrandAuthorization",
+        "createOperationsContract",
+        "createOperationsOrganizationBrand",
+        "createOperationsOrganizationHeadCompany",
+        "createOperationsOrganizationProject",
+        "createOperationsOrganizationRegion",
+        "createOperationsOrganizationStore",
+        "createOperationsOrganizationTenant",
+        "createOperationsWorkspaceGroupInvitation",
+        "createOperationsWorkspaceHeadCompanyInvitation",
+        "createOperationsWorkspaceProjectInvitation",
+        "createOperationsWorkspaceRegionInvitation",
+        "createOperationsWorkspaceStoreInvitation",
+        "invalidateOperationsContract",
+        "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+        "revokeOperationsWorkspaceGroupUserAssignment",
+        "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+        "revokeOperationsWorkspaceProjectUserAssignment",
+        "revokeOperationsWorkspaceRegionUserAssignment",
+        "revokeOperationsWorkspaceStoreUserAssignment",
+        "transitionOperationsOrganizationBrandStatus",
+        "transitionOperationsOrganizationHeadCompanyStatus",
+        "transitionOperationsOrganizationNodeStatus",
+        "transitionOperationsOrganizationStoreStatus",
+        "transitionOperationsOrganizationTenantStatus",
+        "updateOperationsCommercialGroup",
+        "updateOperationsContract",
+        "updateOperationsOrganizationBrand",
+        "updateOperationsOrganizationHeadCompany",
+        "updateOperationsOrganizationNode",
+        "updateOperationsOrganizationStore",
+        "updateOperationsOrganizationTenant"
+      ],
+      "callerAdmission": "M1_MATRIX_DECLARED_CALLERS",
+      "reason": "M1 operations command execution context origin"
+    },
+    {
+      "loaderId": "M1_OPERATIONS_CONTEXT_VERSION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java#resolveOperationsAtContextVersion",
+      "sourceSha256": "2fe8194588d74752c35317d028da3d090e6dc99b9550fc5daaf001088c24b8f6",
+      "callSitePrefix": "CommandExecutionContextResolver.resolveOperationsAtContextVersion",
+      "invocationPattern": "resolveOperationsAtContextVersion(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java"
+      ],
+      "declaredOperationIds": [
+        "cancelOperationsWorkspaceGroupInvitation",
+        "cancelOperationsWorkspaceHeadCompanyInvitation",
+        "cancelOperationsWorkspaceProjectInvitation",
+        "cancelOperationsWorkspaceRegionInvitation",
+        "cancelOperationsWorkspaceStoreInvitation",
+        "reissueOperationsWorkspaceGroupInvitation",
+        "reissueOperationsWorkspaceHeadCompanyInvitation",
+        "reissueOperationsWorkspaceProjectInvitation",
+        "reissueOperationsWorkspaceRegionInvitation",
+        "reissueOperationsWorkspaceStoreInvitation"
+      ],
+      "callerAdmission": "M1_MATRIX_DECLARED_CALLERS",
+      "reason": "M1 context-version command execution context origin"
+    },
+    {
+      "loaderId": "SESSION_ENTRY_AUTHENTICATION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sessionEntryAuthenticationFacts",
+      "sourceSha256": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe",
+      "callSitePrefix": "WorkspaceAuthenticationService.sessionEntryAuthenticationFacts",
+      "invocationPattern": "sessionEntryAuthenticationFacts(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "fresh session-entry authentication fact"
+    },
+    {
+      "loaderId": "VISIBLE_ORGANIZATION_FACT",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OrganizationVisibilityLookup.java#resolveSessionEntryFacts",
+      "sourceSha256": "d7996cd07c0db98dc2443527fa50c22e29615d28c6b616084ddb3a1d209f24ba",
+      "callSitePrefix": "OrganizationVisibilityLookup.resolveSessionEntryFacts",
+      "invocationPattern": "resolveSessionEntryFacts(",
+      "allowedCallerPaths": [
+        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"
+      ],
+      "declaredOperationIds": [
+        "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationVisibilityService.java",
+        "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java"
+      ],
+      "callerAdmission": "SOURCE_SCANNED_CALLERS",
+      "reason": "owner-provided immutable organization visibility fact"
+    }
+  ]
+}

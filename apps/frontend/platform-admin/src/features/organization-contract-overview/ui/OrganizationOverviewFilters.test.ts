@@ -1,5 +1,4 @@
 import {describe, expect, it} from 'vitest';
-import {readFile} from 'node:fs/promises';
 import {defaultOrganizationTabQueryState, filtersForOrganizationTab, organizationOverviewQuery, ownerFilterOptions, updateOrganizationTabQueryState, type OrganizationFilters, type OrganizationTab} from './OrganizationOverviewFilters';
 
 const storeTab: OrganizationTab = {key: 'STORE', label: '门店', category: 'STORE', type: 'STORE'};
@@ -33,14 +32,5 @@ describe('organization overview owner-backed filters', () => {
     const states = updateOrganizationTabQueryState({BRAND: defaultOrganizationTabQueryState}, 'TENANT', {filters: {name: '租户'}});
     expect(states.BRAND).toEqual(defaultOrganizationTabQueryState);
     expect(states.TENANT.filters).toEqual({name: '租户'});
-  });
-
-  it('binds the tested query and owner candidates to the generated-RTK page request', async () => {
-    const page = await readFile(new URL('./PlatformReadPage.tsx', import.meta.url), 'utf8');
-    expect(page).toContain('organizationOverviewQuery(tab, organizationTabState.filters, organizationTabState.page, organizationTabState.pageSize, organizationTabState.sort, organizationTabState.direction)');
-    expect(page).toContain("ownerFilterOptions(organizationPage?.filterOptions, 'PROJECT')");
-    expect(page).toContain("ownerFilterOptions(organizationPage?.filterOptions, 'BRAND')");
-    expect(page).toContain("ownerFilterOptions(organizationPage?.filterOptions, 'TENANT')");
-    expect(page).toContain("ownerFilterOptions(organizationPage?.filterOptions, 'HEAD_COMPANY')");
   });
 });

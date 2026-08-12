@@ -1,0 +1,67 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TEST_DELIVERY_PROCESS_REMEDIATION_DESIGN_REMEDIATION_20260811",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "furtherCodexAdversarialRoundAllowed": false,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-remediation-round2-input-checklist.md",
+    "sha256": "89d8e9ac051aaa1899f072a7f2945fa673806fa9f4c7a0628fdc9cb2551baf1e"
+  },
+  "blindReviewDeclaration": "I formed the bounded independent DESIGN verdict before reading any author intake. The pre-verdict source-first review was limited to the round-2 checklist's closed source list and revalidated only the manifest self-surface correction, checker-required standalone authority colon/hash binding, and the current-invocation rootRunId receipt design. I read the author material only after that verdict for comparison; it did not alter this verdict.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "48e8171ba85b5ef7de6b086721e8f90fecf73917cd54723e9d12aaf451cf2e0e",
+  "verdict": "GO",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "manifest-self-surface-checker-admission",
+      "design-only-authority-colon-form-and-hash-binding",
+      "root-receipt-current-invocation-identity-and-replay-rejection",
+      "single-executor-and-pure-validator-separation",
+      "static-design-scope-and-runtime-boundary"
+    ]
+  },
+  "expectedBehavior": [
+    "THCL-U01 declares the existing remediation manifest path as update, so the existing implementation-design-granularity checker no longer treats its self-referential hash binding as a create of an already-existing path.",
+    "The detailed design and separately hash-bound design-only authorization each contain the checker-required standalone implementationAuthority: false colon form, and the remediation manifest binds their current SHA-256 bytes.",
+    "VERIFY_ROOT generates one rootRunId before any child execution, derives the receipt path from that invocation identity, and supplies that same identity with the receipt path to U12 through --expected-root-run-id.",
+    "U12 remains a pure receipt validator: it compares the supplied current rootRunId and derived receipt-path identity exactly, rejects a structurally valid prior receipt, and never spawns a second child execution.",
+    "VERIFY_ROOT remains the sole VERIFY_CHILD executor; the ACTIVE GATE child exact set and ARCHUNIT_SELECTOR receipt remain separate.",
+    "This is static DESIGN review only; it makes no implementation, test, runner, contract, dynamic execution, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment claim."
+  ],
+  "findings": [],
+  "unitVerdicts": [
+    {
+      "id": "THCL-U01",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "THCL-U02",
+      "verdict": "GO",
+      "findingIds": []
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Changing only the manifest self-path disposition from create to update directly removes the checker-admission contradiction without weakening the checker. The existing colon-form authority declarations and their manifest hashes remain mechanically bound. The root-generated identity, derived receipt path, and caller-supplied expected rootRunId give the pure validator the minimum information required to reject a replayed prior receipt.",
+    "simplerAlternativeAssessment": "Relaxing the create-path rule, treating prose authority as sufficient, accepting receipt self-attestation, using a timestamp heuristic, or allowing U12 to execute children would either weaken a current control or duplicate execution. The accepted correction and same-invocation identity transport are the smaller bounded design.",
+    "costFit": "The correction is limited to the manifest's self-referential disposition. Revalidation preserves the existing checker, catalog, root executor, and validator roles; it introduces no new gate, execution map, runtime action, or implementation authority.",
+    "verdict": "GO"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "Static DESIGN review GO. THCL-U01's remediation manifest now correctly declares its own existing hash-binding surface as update, so the existing checker can admit the two-unit design. Both authority artifacts retain checker-required standalone colon form and current manifest hash bindings. THCL-U02's design keeps rootRunId generated once by VERIFY_ROOT, derives the receipt path from that current invocation, passes expected identity to a pure U12 validator, rejects a valid prior receipt, and preserves selector separation and single child execution. No M or S findings. Static DESIGN only.",
+    "authorizationBoundary": "This independent review is static DESIGN only. It neither grants implementation authority nor demonstrates source, test, runner, contract, package, dynamic execution, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment success.",
+    "severityCounts": {
+      "M": 0,
+      "S": 0,
+      "N": 0
+    }
+  }
+}

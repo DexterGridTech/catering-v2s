@@ -5,7 +5,7 @@
   "genericProblem": "A reviewable performance ledger can drift from its executable SQL budget assertions when IDs, identities, budgets, or cases are manually duplicated.",
   "rootCauseClass": "DUPLICATED_PERFORMANCE_CONTRACT_WITHOUT_EXECUTABLE_AUTHORITY_BINDING",
   "finiteDenominator": [
-    "26 canonical ledger rows",
+    "25 canonical ledger rows",
     "all declared budget cases",
     "WorkspaceInvitationService public invitation-list callers"
   ],

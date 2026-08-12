@@ -35,7 +35,7 @@ export function CommercialGroupEditDrawer({group, queryContext, onClose, onUpdat
     try {
       const updated = await operationsClient.updateOperationsCommercialGroup(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {groupCode: values.code.trim(), groupName: values.name.trim(), extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues), expectedVersion: group.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {groupCode: values.code.trim(), groupName: values.name.trim(), extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues, group.extensionValues), expectedVersion: group.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated(updated);

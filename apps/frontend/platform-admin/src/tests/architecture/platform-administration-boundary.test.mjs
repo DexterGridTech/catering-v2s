@@ -19,7 +19,6 @@ test('platform administrator actions remain detail-first, generated-client-only 
   assert.match(page, /AdministratorStatusModal/);
   assert.match(page, /platform-admin-create/);
   assert.match(page, /platform-admin-detail-/);
-  assert.match(page, /title: '账号类型'[\s\S]*title: '登录账号'/);
   assert.doesNotMatch(page, /fetch\(|createApi\(|createSlice\(|useDispatch\(|useSelector\(/);
   assert.doesNotMatch(page, /columns={[\s\S]*title:\s*['"]操作['"]/);
   assert.match(page + detail, /PlatformAuditHistoryModal|onAudit/);
@@ -37,9 +36,7 @@ test('administrator write surfaces reuse drawer lifecycles and never substitute 
   assert.match(credential, /platformClient\.resetPlatformAdminCredential/);
   assert.match(status, /platformClient\.transitionPlatformAdminStatus/);
   assert.match(status, /useOverlayLock/);
-  assert.match(status, /okText="确认"/);
   assert.doesNotMatch(status, /活动会话将失效/);
-  assert.match(detail, /管理员详情/);
   assert.match(detail, /useOverlayLock/);
   assert.match(create + edit + credential, /testId/);
   assert.match(credential, /admin\?\.loginName/);

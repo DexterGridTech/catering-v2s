@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.session;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts;
 import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.audit.contract.AuditActor;
@@ -59,6 +60,32 @@ public final class OperationsSessionResolver {
         WorkspaceSessionReadback session = require(request);
         if (!groupWorkspaceKey.equals(session.groupWorkspaceKey())) {
             throw new WorkspaceAuthenticationService.SessionInvalidException();
+        }
+        return session;
+    }
+
+    /** Fresh, non-cached workspace-iam command projection; callers still require owner scope judgment. */
+    public WorkspaceCommandAuthorizationFacts requireWorkspaceCommandFacts(EdgeRequestContext request, String groupWorkspaceKey) {
+        WorkspaceCommandAuthorizationFacts facts;
+        try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SESSION)) {
+            facts = sessions.commandAuthorizationFacts(token(request));
+        } finally {
+            DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.SESSION_RESOLVED);
+        }
+        if (!groupWorkspaceKey.equals(facts.sessionReadback().groupWorkspaceKey())) {
+            throw new WorkspaceAuthenticationService.SessionInvalidException();
+        }
+        return facts;
+    }
+
+    public WorkspaceSessionReadback requireWorkspaceCommand(EdgeRequestContext request, String groupWorkspaceKey) {
+        return requireWorkspaceCommandFacts(request, groupWorkspaceKey).sessionReadback();
+    }
+
+    public WorkspaceSessionReadback requireWorkspaceCommandAtContextVersion(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
+        WorkspaceSessionReadback session = requireWorkspaceCommand(request, groupWorkspaceKey);
+        if (session.contextVersion() != expectedContextVersion) {
+            throw new WorkspaceAuthenticationService.SessionConflictException();
         }
         return session;
     }

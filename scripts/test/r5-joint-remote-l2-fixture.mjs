@@ -106,6 +106,19 @@ const boundedDiagnostic = (value) => {
   const safe = safeDiagnostic(value);
   return safe.length <= 4_000 ? safe : `${safe.slice(0, 2_000)}\n... [TRUNCATED] ...\n${safe.slice(-2_000)}`;
 };
+const managedBootstrapFailureDetails = (failureOutput) => {
+  if (!existsSync(failureOutput)) return 'bootstrapFailureArtifact=ABSENT\n';
+  try {
+    const failure = JSON.parse(readFileSync(failureOutput, 'utf8'));
+    const failureType = typeof failure?.failureType === 'string' && /^[A-Za-z0-9_.$]{1,160}$/.test(failure.failureType)
+      ? failure.failureType : 'MISSING_OR_INVALID';
+    const failureMessage = typeof failure?.failureMessage === 'string' && failure.failureMessage.trim()
+      ? boundedDiagnostic(failure.failureMessage).replaceAll(/\s+/g, ' ').slice(0, 240) : 'MISSING_OR_INVALID';
+    return `bootstrapFailureArtifact=PRESENT; bootstrapFailureType=${failureType}; bootstrapFailureMessage=${failureMessage}\n`;
+  } catch {
+    return 'bootstrapFailureArtifact=INVALID_JSON\n';
+  }
+};
 const command = (binary, args, {failureDetails, label = path.basename(binary), ...options} = {}) => {
   log(`command:${label}`, 'START', {argCount: args.length});
   let result;
@@ -225,11 +238,7 @@ function createManagedInvitation(phase, {mobile, targetType, targetRef, roleId})
   try {
     command('gradle', ['--project-dir', root, ':apps:backend:catering-business-server:managedInvitationBootstrap', '--no-daemon', '--info'], {
       env: bootstrapEnvironment,
-      failureDetails: () => {
-        if (!existsSync(failureOutput)) return '';
-        const failure = JSON.parse(readFileSync(failureOutput, 'utf8'));
-        return `bootstrapFailureType=${required(failure?.failureType, 'MANAGED_BOOTSTRAP_FAILURE_TYPE')}; bootstrapFailureMessage=${required(failure?.failureMessage, 'MANAGED_BOOTSTRAP_FAILURE_MESSAGE')}\n`;
-      },
+      failureDetails: () => managedBootstrapFailureDetails(failureOutput),
     });
     const invitation = JSON.parse(readFileSync(output, 'utf8'));
     const token = required(invitation?.invitationToken, `${phase}_INVITATION_TOKEN`);
@@ -366,7 +375,7 @@ const project = await request('createOperationsOrganizationProject', 'createOper
 const alternateProject = await request('createOperationsOrganizationAlternateProject', 'createOperationsOrganizationProject', {pathParameters: {...workspacePathParameters, regionId: required(region.json?.id, 'REGION_ID')}}, {cookie: operationsCookie, expected: [201], body: {code: 'PINE', name: '松林项目', phases: [{name: '二期'}]}});
 const disabledRegion = await request('createOperationsOrganizationDisabledRegion', 'createOperationsOrganizationRegion', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'SOUTH', name: '停用大区'}});
 const disabledProject = await request('createOperationsOrganizationDisabledProject', 'createOperationsOrganizationProject', {pathParameters: {...workspacePathParameters, regionId: required(disabledRegion.json?.id, 'DISABLED_REGION_ID')}}, {cookie: operationsCookie, expected: [201], body: {code: 'CLOSED', name: '停用项目', phases: [{name: '停用分期'}]}});
-const brand = await request('createOperationsOrganizationBrand', 'createOperationsOrganizationBrand', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'TEA', name: '茶里', expectedExtensionRuleRevision: required(extension.json?.revision, 'BRAND_EXTENSION_REVISION')}});
+const brand = await request('createOperationsOrganizationBrand', 'createOperationsOrganizationBrand', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'TEA', name: '茶里'}});
 const tenant = await request('createOperationsOrganizationTenant', 'createOperationsOrganizationTenant', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'TEN-A', name: '极光餐饮一号', legalName: '极光餐饮一号有限公司', unifiedSocialCreditCode: '91310000P6L200001A'}});
 const alternateTenant = await request('createOperationsOrganizationAlternateTenant', 'createOperationsOrganizationTenant', {pathParameters: workspacePathParameters}, {cookie: operationsCookie, expected: [201], body: {code: 'TEN-B', name: '极光餐饮二号', legalName: '极光餐饮二号有限公司', unifiedSocialCreditCode: '91310000P6L200003C'}});
 for (const sequence of ['01', '02', '03', '04', '05', '06', '07', '08', '09']) {

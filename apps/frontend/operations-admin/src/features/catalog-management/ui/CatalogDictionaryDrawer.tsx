@@ -3,7 +3,6 @@ import {adminWideDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycl
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {CatalogDictionaryView, CatalogInventoryEnvelope, ProductionTagPage} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 
 export type ProductionTagKind = 'PRODUCTION' | 'PACKAGE' | 'LABEL' | 'HANDOFF' | 'REVIEW' | 'OTHER';
@@ -64,11 +63,8 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
   const [transitionEntry, transitionEntryState] = operationsRtk.useTransitionOperationsCatalogDictionaryEntryStatusMutation();
   const [updateTag, updateTagState] = operationsRtk.useUpdateOperationsProductionTagMutation();
   const [transitionTag, transitionTagState] = operationsRtk.useTransitionOperationsProductionTagStatusMutation();
-  // The owner edge returns the page payload in envelope.data; generated page
-  // readbacks retain their historical revision/data wrapper, so the UI reads
-  // the actual wire boundary rather than assuming a second nested data field.
-  const dictionaryData = (dictionaryQuery.data as CatalogInventoryEnvelope | undefined)?.data as CatalogDictionaryView['data'] | undefined;
-  const productionData = (productionQuery.data as CatalogInventoryEnvelope | undefined)?.data as ProductionTagPage['data'] | undefined;
+  const dictionaryData = dictionaryQuery.data?.data;
+  const productionData = productionQuery.data?.data;
   useEffect(() => { if (open) setKind(initialKind); }, [initialKind, open]);
   useEffect(() => { if (!open) { setEditingCode(undefined); setEditingName(''); setRebuildFrom(undefined); setProblem(undefined); } }, [open]);
   useEffect(() => {
@@ -89,7 +85,7 @@ export function CatalogDictionaryDrawer({open, initialKind = 'TAG', queryContext
       if (isProduction) {
         const tagKind = values.tagKind ?? 'PRODUCTION';
         const response = await createTag(catalogInventoryRtkRequest.createOperationsProductionTag({}, {headers: {...headers, 'Idempotency-Key': lifecycle.getIdempotencyKey()}, body: {dataNodeRef, code, tagKind, name}})).unwrap();
-        const readback = (response as CatalogInventoryEnvelope).result as {code?: string; name?: string} | undefined;
+        const readback = response.result;
         const candidate: ProductionTagCandidate = {code: readback?.code ?? code, name: readback?.name ?? name, tagKind, owner: 'fulfillment-production'};
         onCreated?.(candidate);
         await productionQuery.refetch();

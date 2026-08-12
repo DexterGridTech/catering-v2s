@@ -18,6 +18,7 @@ import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetReadback;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.StageReadback;
+import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,6 +60,7 @@ public class CatalogInventoryCoordinator {
     private final InventoryOwnerApi inventory;
     private final ProductionTagOwnerApi production;
     private final PlatformAssetService assets;
+    private final CatalogAssetCommandApi assetCommands;
     private final ObjectMapper mapper;
     private final TimeProvider time;
     private final CatalogScopeLookup catalogScopes;
@@ -78,7 +80,7 @@ public class CatalogInventoryCoordinator {
 
     @org.springframework.beans.factory.annotation.Autowired
     public CatalogInventoryCoordinator(CatalogOwnerApi catalog, InventoryOwnerApi inventory, ProductionTagOwnerApi production, PlatformAssetService assets, ObjectMapper mapper, TimeProvider time, CatalogScopeLookup catalogScopes, CommandExecutionContextResolver commandContexts) {
-        this.catalog = catalog; this.inventory = inventory; this.production = production; this.assets = assets; this.mapper = mapper; this.time = time; this.catalogScopes = catalogScopes; this.commandContexts = commandContexts;
+        this.catalog = catalog; this.inventory = inventory; this.production = production; this.assets = assets; this.assetCommands = assets; this.mapper = mapper; this.time = time; this.catalogScopes = catalogScopes; this.commandContexts = commandContexts;
         this.catalogReads = new CatalogTaskReadService(catalog);
         this.inventoryReads = new InventoryTaskReadService(inventory);
         this.productionReads = new ProductionTagTaskReadService(production);
@@ -201,31 +203,48 @@ public class CatalogInventoryCoordinator {
             catalogAssetBindGrants, coordinatedInventoryDefinitionCommands);
     }
 
-    public JsonNode createCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_ITEM); }
-    public JsonNode saveCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.SAVE_OPERATIONS_CATALOG_ITEM); }
-    public JsonNode transitionCatalogItemStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS); }
-    public JsonNode createCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_CATEGORY); }
-    public JsonNode updateCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_CATEGORY); }
-    public JsonNode moveCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.MOVE_OPERATIONS_CATALOG_CATEGORY); }
-    public JsonNode deleteCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.DELETE_OPERATIONS_CATALOG_CATEGORY); }
-    public JsonNode createCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    public JsonNode updateCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    public JsonNode reorderCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    public JsonNode transitionCatalogDictionaryEntryStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS); }
-    public JsonNode createProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG); }
-    public JsonNode updateProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_PRODUCTION_TAG); }
-    public JsonNode transitionProductionTagStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS); }
-    public JsonNode preflightLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY); }
-    public JsonNode executeLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY); }
-    public JsonNode preflightTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
-    public JsonNode executeTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
-    public JsonNode preflightBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY); }
-    public JsonNode executeBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_BRAND_CATALOG_COPY); }
-    public JsonNode countInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.COUNT_OPERATIONS_INVENTORY_TARGET); }
-    public JsonNode increaseInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.INCREASE_OPERATIONS_INVENTORY_TARGET); }
-    public JsonNode adjustInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.ADJUST_OPERATIONS_INVENTORY_TARGET); }
-    public JsonNode updateInventoryTargetConfiguration(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION); }
-    public JsonNode releaseCatalogAsset(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.RELEASE_OPERATIONS_CATALOG_STAGED_ASSET); }
+    @Transactional public JsonNode createCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_ITEM); }
+    @Transactional public JsonNode saveCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.SAVE_OPERATIONS_CATALOG_ITEM); }
+
+    /**
+     * One save composition: catalog remains authoritative for the item and global asset-reference
+     * judgment; inventory and asset owners receive only their typed, immutable command inputs.
+     */
+    public CatalogOwnerApi.CatalogItemSaveReadback saveCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                    CatalogOwnerApi.CatalogItemSaveCommand command,
+                                                                    List<CatalogAssetCommandApi.AssetBinding> submittedBindings,
+                                                                    String idempotencyKey) {
+        ObjectNode request = canonicalSaveRequest(command.canonicalRequestJson());
+        CatalogAuthorizationScope scope = context.ownerScope();
+        Set<String> previousAssetRefs = catalogItemAssetRefs(scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId());
+        CatalogOwnerApi.CatalogItemSaveReadback readback = catalog.saveCatalogItem(context, command, idempotencyKey);
+        coordinateSaveInventory(context, request, idempotencyKey);
+        settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
+        return readback;
+    }
+    @Transactional public JsonNode transitionCatalogItemStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS); }
+    @Transactional public JsonNode createCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_CATEGORY); }
+    @Transactional public JsonNode updateCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_CATEGORY); }
+    @Transactional public JsonNode moveCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.MOVE_OPERATIONS_CATALOG_CATEGORY); }
+    @Transactional public JsonNode deleteCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.DELETE_OPERATIONS_CATALOG_CATEGORY); }
+    @Transactional public JsonNode createCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
+    @Transactional public JsonNode updateCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
+    @Transactional public JsonNode reorderCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
+    @Transactional public JsonNode transitionCatalogDictionaryEntryStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS); }
+    @Transactional public JsonNode createProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG); }
+    @Transactional public JsonNode updateProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_PRODUCTION_TAG); }
+    @Transactional public JsonNode transitionProductionTagStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS); }
+    @Transactional public JsonNode preflightLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY); }
+    @Transactional public JsonNode executeLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY); }
+    @Transactional public JsonNode preflightTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
+    @Transactional public JsonNode executeTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
+    @Transactional public JsonNode preflightBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY); }
+    @Transactional public JsonNode executeBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_BRAND_CATALOG_COPY); }
+    @Transactional public JsonNode countInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.COUNT_OPERATIONS_INVENTORY_TARGET); }
+    @Transactional public JsonNode increaseInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.INCREASE_OPERATIONS_INVENTORY_TARGET); }
+    @Transactional public JsonNode adjustInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.ADJUST_OPERATIONS_INVENTORY_TARGET); }
+    @Transactional public JsonNode updateInventoryTargetConfiguration(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION); }
+    @Transactional public JsonNode releaseCatalogAsset(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.RELEASE_OPERATIONS_CATALOG_STAGED_ASSET); }
 
     private JsonNode execute(CommandRequest request, WorkspaceCommandOperationToken token) {
         return executeWorkspaceCommand(request.sessionCredential(), token, request.dataNodeRef(), request.requestedBrandRef(),
@@ -281,7 +300,7 @@ public class CatalogInventoryCoordinator {
                 JsonNode result = catalog.write(context, request, idempotencyKey);
                 if ("saveOperationsCatalogItem".equals(operationId)) {
                     coordinateSaveInventory(context, request, idempotencyKey);
-                    settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, catalogAssetBindGrants);
+                    settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, assetBindings(catalogAssetBindGrants));
                 }
                 return result;
             }
@@ -304,7 +323,7 @@ public class CatalogInventoryCoordinator {
     private JsonNode dispatchWorkspaceLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         boolean execute = "executeOperationsLocalCatalogCopy".equals(context.operationToken().operationId());
         ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalog.copy(context, catalogRequest, null);
+        JsonNode catalogPreflight = catalogCopyPreflight(context, catalogRequest);
         CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
         OwnerPreflight owners = preflightInventoryIfSelected(context, request, catalogPlan);
         String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
@@ -324,10 +343,120 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
+    /** Typed local-copy composition with catalog and inventory owner-native commands. */
+    public record LocalCopyPreflightReadback(String canonicalJson) { }
+
+    public LocalCopyPreflightReadback preflightLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                          CatalogOwnerApi.LocalCopyPreflightCommand command) {
+        JsonNode catalogPreflight = parseLocalCopyJson(catalog.preflightLocalCopy(context, command).canonicalJson());
+        CopyReferencePlan plan = copyReferencePlan(catalogPreflight);
+        OwnerPreflight owners = preflightLocalInventory(context, command, plan);
+        String combined = combinedDigest(preflightData(catalogPreflight).path("preflightDigest").asText(), owners.inventoryDigest(), "");
+        return new LocalCopyPreflightReadback(canonicalLocalCopyJson(mergeCopyPreflight(catalogPreflight, owners, combined)));
+    }
+
+    public record LocalCopyExecutionReadback(CatalogOwnerApi.CopyExecutionReadback catalog,
+                                             List<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks) { }
+
+    public LocalCopyExecutionReadback executeLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                              CatalogOwnerApi.LocalCopyExecuteCommand command,
+                                              String submittedDigest, String idempotencyKey) {
+        CatalogOwnerApi.LocalCopyPreflightCommand current = new CatalogOwnerApi.LocalCopyPreflightCommand(command.sourceItemCode(), command.targetItemCode(), command.selectedSections());
+        JsonNode catalogPreflight = parseLocalCopyJson(catalog.preflightLocalCopy(context, current).canonicalJson());
+        CopyReferencePlan plan = copyReferencePlan(catalogPreflight);
+        OwnerPreflight owners = preflightLocalInventory(context, current, plan);
+        String combined = combinedDigest(preflightData(catalogPreflight).path("preflightDigest").asText(), owners.inventoryDigest(), "");
+        if (!combined.equals(submittedDigest)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
+        CatalogOwnerApi.CopyExecutionReadback catalogReadback = catalog.executeLocalCopy(context, new CatalogOwnerApi.LocalCopyExecuteCommand(
+            command.sourceItemCode(), command.targetItemCode(), command.selectedSections(), preflightData(catalogPreflight).path("preflightDigest").asText(),
+            command.expectedSourceVersion(), command.expectedTargetVersion(), canonicalReferencePlan(plan)), idempotencyKey);
+        java.util.ArrayList<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks = new java.util.ArrayList<>(catalogReadback.ownerReadbacks());
+        if (owners.inventoryDigest() != null && !owners.inventoryDigest().isBlank()) {
+            InventoryOwnerApi.LocalCopyExecutionReadback inventoryReadback = inventory.executeLocalCopy(context,
+                new InventoryOwnerApi.LocalCopyExecuteCommand(command.sourceItemCode(), command.targetItemCode(), command.selectedSections(), owners.inventoryDigest(), canonicalReferencePlan(plan)), idempotencyKey);
+            ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
+        }
+        return new LocalCopyExecutionReadback(catalogReadback, List.copyOf(ownerReadbacks));
+    }
+
+    private OwnerPreflight preflightLocalInventory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                   CatalogOwnerApi.LocalCopyPreflightCommand command, CopyReferencePlan plan) {
+        if (!containsInventorySection(mapper.valueToTree(command.selectedSections() == null ? List.of() : command.selectedSections()))) return new OwnerPreflight("", "", null, null);
+        InventoryOwnerApi.LocalCopyPreflightReadback readback = inventory.preflightLocalCopy(context,
+            new InventoryOwnerApi.LocalCopyPreflightCommand(command.targetItemCode(), command.selectedSections(), canonicalReferencePlan(plan)));
+        return new OwnerPreflight(readback.preflightDigest(), "", parseLocalCopyJson(readback.canonicalJson()), null);
+    }
+
+    /** One brand-copy composition operation: owners return typed opaque readbacks; this coordinator only merges them. */
+    public BrandCopyPreflightReadback preflightBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                         CatalogOwnerApi.BrandCopyPreflightCommand command) {
+        JsonNode catalogPreflight = parseLocalCopyJson(catalog.preflightBrandCopy(context, command).canonicalJson());
+        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
+        OwnerPreflight owners = preflightBrandOwners(context, command, catalogPlan);
+        String combined = combinedDigest(preflightData(catalogPreflight).path("preflightDigest").asText(), owners.inventoryDigest(), owners.productionDigest());
+        return new BrandCopyPreflightReadback(canonicalLocalCopyJson(mergeCopyPreflight(catalogPreflight, owners, combined)));
+    }
+
+    public record BrandCopyExecutionReadback(CatalogOwnerApi.CopyExecutionReadback catalog,
+                                             List<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks) { }
+
+    public BrandCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                     CatalogOwnerApi.BrandCopyExecuteCommand command,
+                                                     String submittedDigest, String idempotencyKey) {
+        CatalogOwnerApi.BrandCopyPreflightCommand current = new CatalogOwnerApi.BrandCopyPreflightCommand(command.selectedItemCodes(), command.targetDataNodeRef());
+        JsonNode catalogPreflight = parseLocalCopyJson(catalog.preflightBrandCopy(context, current).canonicalJson());
+        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
+        OwnerPreflight owners = preflightBrandOwners(context, current, catalogPlan);
+        String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
+        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), owners.productionDigest());
+        if (!combined.equals(submittedDigest)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
+        if (preflightData(catalogPreflight) instanceof ObjectNode data) enforceMergedClosureLimit(data);
+        CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement())).merge(ownerReferencePlan(owners.productionJudgement()));
+        CatalogOwnerApi.CopyExecutionReadback catalogReadback = catalog.executeBrandCopy(context, new CatalogOwnerApi.BrandCopyExecuteCommand(
+            command.selectedItemCodes(), command.targetDataNodeRef(), catalogDigest, command.expectedSourceVersion(), command.expectedTargetVersion(), canonicalReferencePlan(executionPlan)), idempotencyKey);
+        java.util.ArrayList<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks = new java.util.ArrayList<>(catalogReadback.ownerReadbacks());
+        InventoryOwnerApi.LocalCopyExecutionReadback inventoryReadback = inventory.executeBrandCopy(context, new InventoryOwnerApi.BrandCopyExecuteCommand(
+            command.selectedItemCodes(), command.targetDataNodeRef(), owners.inventoryDigest(), canonicalReferencePlan(executionPlan)), idempotencyKey);
+        ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
+        ProductionTagOwnerApi.BrandCopyExecutionReadback productionReadback = production.executeBrandCopy(context, new ProductionTagOwnerApi.BrandCopyExecuteCommand(
+            command.selectedItemCodes(), command.targetDataNodeRef(), owners.productionDigest(), canonicalReferencePlan(executionPlan)), idempotencyKey);
+        ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(productionReadback.owner(), productionReadback.status(), productionReadback.version()));
+        return new BrandCopyExecutionReadback(catalogReadback, List.copyOf(ownerReadbacks));
+    }
+
+    private OwnerPreflight preflightBrandOwners(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                CatalogOwnerApi.BrandCopyPreflightCommand command, CopyReferencePlan catalogPlan) {
+        String plan = canonicalReferencePlan(catalogPlan);
+        InventoryOwnerApi.LocalCopyPreflightReadback inventoryReadback = inventory.preflightBrandCopy(context,
+            new InventoryOwnerApi.BrandCopyPreflightCommand(command.selectedItemCodes(), command.targetDataNodeRef(), plan));
+        ProductionTagOwnerApi.BrandCopyPreflightReadback productionReadback = production.preflightBrandCopy(context,
+            new ProductionTagOwnerApi.BrandCopyPreflightCommand(command.selectedItemCodes(), command.targetDataNodeRef(), plan));
+        return new OwnerPreflight(inventoryReadback.preflightDigest(), productionReadback.preflightDigest(),
+            parseLocalCopyJson(inventoryReadback.canonicalJson()), parseLocalCopyJson(productionReadback.canonicalJson()));
+    }
+
+    public record BrandCopyPreflightReadback(String canonicalJson) { }
+
+    private JsonNode parseLocalCopyJson(String canonicalJson) {
+        try {
+            var envelope = mapper.readTree(canonicalJson);
+            if (!envelope.path("data").isObject()) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "owner copy readback data is invalid");
+            }
+            return envelope;
+        } catch (CatalogOwnerApi.Problem failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "owner copy readback is invalid", failure);
+        }
+    }
+    private String canonicalLocalCopyJson(JsonNode value) { try { return mapper.writeValueAsString(value); } catch (Exception failure) { throw new IllegalStateException("copy composition could not encode readback", failure); } }
+    private String canonicalReferencePlan(CopyReferencePlan plan) { ObjectNode value = mapper.createObjectNode(); value.set("closureItemRefs", plan.closureItemRefs().deepCopy()); value.set("productionTagRefs", plan.productionTagRefs().deepCopy()); value.set("referenceMappings", plan.referenceMappings().deepCopy()); return canonicalLocalCopyJson(value); }
+
     private JsonNode dispatchWorkspaceBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey, String testFailurePoint) {
         boolean execute = "executeOperationsBrandCatalogCopy".equals(context.operationToken().operationId());
         ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalog.copy(context, catalogRequest, null);
+        JsonNode catalogPreflight = catalogCopyPreflight(context, catalogRequest);
         CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
         OwnerPreflight owners = preflightBrandOwners(context, request, catalogPlan);
         String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
@@ -351,6 +480,15 @@ public class CatalogInventoryCoordinator {
         JsonNode inventoryJudgement = inventory.preflightCopy(context, ownerRequest);
         JsonNode productionJudgement = production.preflightCopy(context, ownerRequest);
         return new OwnerPreflight(inventoryJudgement.path("digest").asText(), productionJudgement.path("digest").asText(), inventoryJudgement, productionJudgement);
+    }
+
+    /**
+     * The coordinator may combine owner digests, but catalog preflight itself
+     * must stay catalog-only.  This remains true when the live command token is
+     * the execute variant, so it cannot be routed through {@link CatalogOwnerApi#copy}.
+     */
+    JsonNode catalogCopyPreflight(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request) {
+        return catalog.preflightCopy(context, request);
     }
 
     private OwnerPreflight preflightInventoryIfSelected(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, CopyReferencePlan catalogPlan) {
@@ -387,8 +525,10 @@ public class CatalogInventoryCoordinator {
             if (!targetRef.isBlank() && node.path("configuration").isObject() && node.path("configuration").size() > 0) {
                 Long expected = versions.get(targetRef); if (expected == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "inventory target version is required"); ensure.put("expectedVersion", expected);
             }
-            JsonNode ensured = inventory.ensureCatalogInventoryTarget(context, ensure, idempotencyKey + ":ensure:" + itemRef + ":" + (productSkuRef == null ? "ITEM" : productSkuRef));
-            node.put("targetRef", ensured.path("targetRef").asText(""));
+            InventoryTargetEnsureReadback ensured = parseCatalogSaveOwnerReadback(inventory.ensureCatalogItemSaveTarget(
+                context, new InventoryOwnerApi.CatalogItemSaveEnsureTargetCommand(canonicalLocalJson(ensure)),
+                idempotencyKey + ":ensure:" + itemRef + ":" + (productSkuRef == null ? "ITEM" : productSkuRef)).canonicalJson());
+            node.put("targetRef", ensured.targetRef());
         }
         if (draft.path("inventoryBom").isArray()) {
             java.util.Map<String, ArrayNode> grouped = new java.util.LinkedHashMap<>(); java.util.Map<String, ObjectNode> commands = new java.util.LinkedHashMap<>(); java.util.Map<String, Long> versionsByKey = new java.util.HashMap<>();
@@ -402,7 +542,7 @@ public class CatalogInventoryCoordinator {
                 commands.computeIfAbsent(key, ignored -> { ObjectNode command = mapper.createObjectNode().put("itemRef", itemRef).put("itemCode", entry.path("itemCode").asText(request.path("itemCode").asText(""))); if (productSkuRef == null) command.putNull("productSkuRef"); else command.put("productSkuRef", productSkuRef); if (optionValueRef == null) command.putNull("optionValueRef"); else command.put("optionValueRef", optionValueRef); if (skuCode.isBlank()) command.putNull("skuCode"); else command.put("skuCode", skuCode); if (optionValueCode.isBlank()) command.putNull("optionValueCode"); else command.put("optionValueCode", optionValueCode); return command; });
                 if (entry.has("version")) versionsByKey.putIfAbsent(key, entry.path("version").asLong());
             });
-            grouped.forEach((key, entries) -> { ObjectNode command = commands.get(key).deepCopy(); command.set("rows", entries); command.put("expectedVersion", versionsByKey.getOrDefault(key, 0L)); inventory.saveCatalogProductBom(context, command, idempotencyKey + ":bom:" + key); });
+            grouped.forEach((key, entries) -> { ObjectNode command = commands.get(key).deepCopy(); command.set("rows", entries); command.put("expectedVersion", versionsByKey.getOrDefault(key, 0L)); inventory.saveCatalogItemProductBom(context, new InventoryOwnerApi.CatalogItemSaveBomCommand(canonicalLocalJson(command)), idempotencyKey + ":bom:" + key); });
         }
     }
 
@@ -411,7 +551,7 @@ public class CatalogInventoryCoordinator {
         assets.lockCatalogReferences(Set.of(ref));
         if (catalog.assetReferencedAnywhere(ref.toString())) throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产仍被商品引用，不能释放");
         try {
-            AssetReadback readback = assets.releaseUnreferencedCatalogAsset(ref, request.path("expectedVersion").asLong(1), idempotencyKey, context);
+            AssetReadback readback = assets.releaseCatalogStaged(ref, request.path("expectedVersion").asLong(1), idempotencyKey, context);
             ObjectNode result = mapper.createObjectNode().put("assetRef", readback.assetRef().toString()).put("disposition", "RELEASED").put("releasedAt", time.currentEpochMillis()).put("version", readback.version());
             ObjectNode response = mapper.createObjectNode().put("revision", REVISION).put("requestId", context.requestId()); response.set("result", result); response.put("version", readback.version()); return response;
         } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) { throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权"); }
@@ -421,32 +561,88 @@ public class CatalogInventoryCoordinator {
 
     private void settleWorkspaceCatalogAssets(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request,
                                                Set<String> previousAssetRefs, String idempotencyKey,
-                                               Map<String, String> catalogAssetBindGrants) {
+                                               List<CatalogAssetCommandApi.AssetBinding> submittedBindings) {
         Set<String> nextAssetRefs = catalogAssetRefs(request.path("sections").path("catalogDraft"));
-        for (String ref : nextAssetRefs) {
-            try {
-                assets.claimCatalogStaged(UUID.fromString(ref), catalogAssetBindGrants.get(ref), context);
-            } catch (IllegalArgumentException failure) {
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");
-            } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-                throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-            } catch (PlatformAssetService.AssetClaimRejectedException failure) {
-                throw new CatalogOwnerApi.Problem("ASSET_NOT_READY", 409, "图片资产尚未准备好或已失效");
+        java.util.List<CatalogAssetCommandApi.AssetBinding> bindings = new java.util.ArrayList<>();
+        java.util.List<CatalogAssetCommandApi.PriorAssetReference> releasable = new java.util.ArrayList<>();
+        try {
+            for (String ref : nextAssetRefs) bindings.add(optionalAssetBinding(ref, submittedBindings));
+        Set<String> candidates = new java.util.LinkedHashSet<>(previousAssetRefs); candidates.removeAll(nextAssetRefs);
+        Set<String> stillReferenced = catalog.assetRefsStillReferenced(candidates);
+        for (String ref : candidates) {
+            if (stillReferenced.contains(ref)) continue;
+                releasable.add(new CatalogAssetCommandApi.PriorAssetReference(UUID.fromString(ref)));
             }
+            assetCommands.settleCatalogSaveAssets(context, new CatalogAssetCommandApi.SaveSettlementCommand(bindings, releasable, idempotencyKey));
+        } catch (IllegalArgumentException failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");
+        } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
+            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
+        } catch (PlatformAssetService.AssetClaimRejectedException failure) {
+            throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产尚未准备好或已失效、版本已变化或仍被引用");
         }
-        for (String ref : previousAssetRefs) {
-            if (nextAssetRefs.contains(ref) || catalog.assetReferencedAnywhere(ref)) continue;
-            try {
-                AssetReadback current = assets.require(UUID.fromString(ref));
-                assets.releaseUnreferencedCatalogAsset(UUID.fromString(ref), current.version(), idempotencyKey + ":asset-release:" + ref, context);
-            } catch (IllegalArgumentException failure) {
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");
-            } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-                throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-            } catch (PlatformAssetService.AssetClaimRejectedException failure) {
-                throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产释放失败，资产版本已变化或仍被引用");
+    }
+
+    /** Exact payload owned by inventory's catalog-save task envelope. */
+    private record InventoryTargetEnsureReadback(String targetRef, long version, boolean created) { }
+
+    private String requiredInventoryTargetRef(JsonNode readback) {
+        if (readback == null || !readback.isObject()) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback is invalid");
+        }
+        String targetRef = readback.path("targetRef").asText();
+        if (targetRef.isBlank()) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback targetRef is required");
+        }
+        return targetRef;
+    }
+
+    private InventoryTargetEnsureReadback parseCatalogSaveOwnerReadback(String canonicalJson) {
+        try {
+            var envelope = mapper.readTree(canonicalJson);
+            if (!envelope.path("data").isObject()) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback data is invalid");
             }
+            JsonNode data = envelope.path("data");
+            if (!data.hasNonNull("targetRef") || !data.path("version").canConvertToLong() || !data.path("created").isBoolean()) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback fields are invalid");
+            }
+            InventoryTargetEnsureReadback readback = mapper.treeToValue(data, InventoryTargetEnsureReadback.class);
+            if (readback == null || readback.targetRef() == null || readback.targetRef().isBlank()) {
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback targetRef is required");
+            }
+            return readback;
+        } catch (CatalogOwnerApi.Problem failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback is invalid", failure);
         }
+    }
+
+    private String canonicalLocalJson(JsonNode value) {
+        try { return mapper.writeValueAsString(value); }
+        catch (Exception failure) { throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "catalog save composition cannot encode owner request", failure); }
+    }
+
+    private ObjectNode canonicalSaveRequest(String canonicalRequestJson) {
+        try {
+            JsonNode parsed = mapper.readTree(canonicalRequestJson);
+            if (!parsed.isObject()) throw new IllegalArgumentException("request must be object");
+            return (ObjectNode) parsed;
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "catalog save request is invalid", failure);
+        }
+    }
+
+    private static List<CatalogAssetCommandApi.AssetBinding> assetBindings(Map<String, String> grants) {
+        return grants.entrySet().stream().map(entry -> new CatalogAssetCommandApi.AssetBinding(UUID.fromString(entry.getKey()), entry.getValue())).toList();
+    }
+
+    private static CatalogAssetCommandApi.AssetBinding optionalAssetBinding(String assetRef, List<CatalogAssetCommandApi.AssetBinding> submittedBindings) {
+        UUID ref;
+        try { ref = UUID.fromString(assetRef); } catch (IllegalArgumentException failure) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef"); }
+        return submittedBindings.stream().filter(binding -> binding != null && ref.equals(binding.assetRef())).findFirst()
+            .orElse(new CatalogAssetCommandApi.AssetBinding(ref, null));
     }
 
     private CommandExecutionContextResolver requireCommandContexts() {
@@ -485,96 +681,9 @@ public class CatalogInventoryCoordinator {
         }
     }
 
-    private JsonNode dispatchLocalCopy(String operationId, String scope, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
-                                       UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
-        boolean execute = "executeOperationsLocalCatalogCopy".equals(operationId);
-        ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalog.copy("preflightOperationsLocalCatalogCopy", scope, scope, brandRef, catalogRequest, requestId, null,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
-        OwnerPreflight owners = preflightInventoryIfSelected(scope, scope, brandRef, request, catalogPlan,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
-        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), "");
-        JsonNode merged = mergeCopyPreflight(catalogPreflight, owners, combined, execute ? false : true);
-        if (!execute) return merged;
-        if (!request.path("preflightDigest").asText("").equals(combined)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
-        if (preflightData(catalogPreflight) instanceof ObjectNode mergedData) enforceMergedClosureLimit(mergedData);
-        CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement()));
-        catalogRequest.put("preflightDigest", catalogDigest);
-        applyCopyReferencePlan(catalogRequest, executionPlan);
-        JsonNode result = catalog.copy(operationId, scope, scope, brandRef, catalogRequest, requestId, idempotencyKey,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        if (owners.inventoryDigest() != null && !owners.inventoryDigest().isBlank()) {
-            ObjectNode inventoryRequest = request.deepCopy();
-            inventoryRequest.put("inventoryPreflightDigest", owners.inventoryDigest());
-            applyCopyReferencePlan(inventoryRequest, executionPlan);
-            result = appendOwnerReadback(result, inventory.copy(scope, scope, brandRef, inventoryRequest, requestId, idempotencyKey,
-                workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant), "inventory");
-        }
-        return result;
-    }
-
-    private JsonNode dispatchBrandCopy(String operationId, String source, String target, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
-                                       String testFailurePoint, UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
-        boolean execute = "executeOperationsBrandCatalogCopy".equals(operationId);
-        ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalog.copy("preflightOperationsBrandCatalogCopy", source, target, brandRef, catalogRequest, requestId, null,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
-        OwnerPreflight owners = preflightBrandOwners(source, target, brandRef, request, catalogPlan,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
-        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), owners.productionDigest());
-        JsonNode merged = mergeCopyPreflight(catalogPreflight, owners, combined, execute ? false : true);
-        if (!execute) return merged;
-        if (!request.path("preflightDigest").asText("").equals(combined)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
-        if (preflightData(catalogPreflight) instanceof ObjectNode mergedData) enforceMergedClosureLimit(mergedData);
-            CopyReferencePlan executionPlan = catalogPlan
-                .merge(ownerReferencePlan(owners.inventoryJudgement()))
-                .merge(ownerReferencePlan(owners.productionJudgement()));
-            catalogRequest.put("preflightDigest", catalogDigest);
-            applyCopyReferencePlan(catalogRequest, executionPlan);
-            JsonNode result = catalog.copy(operationId, source, target, brandRef, catalogRequest, requestId, idempotencyKey,
-                workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-            if ("owner-failure".equals(testFailurePoint) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) {
-                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "受控 owner failure fixture");
-            }
-            ObjectNode ownerRequest = request.deepCopy();
-            ownerRequest.put("inventoryPreflightDigest", owners.inventoryDigest());
-            applyCopyReferencePlan(ownerRequest, executionPlan);
-        result = appendOwnerReadback(result, inventory.copy(source, target, brandRef, ownerRequest, requestId, idempotencyKey,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant), "inventory");
-        ObjectNode productionRequest = request.deepCopy();
-        productionRequest.put("productionPreflightDigest", owners.productionDigest());
-        applyCopyReferencePlan(productionRequest, executionPlan);
-        return appendOwnerReadback(result, production.copy(source, target, brandRef, productionRequest, requestId, idempotencyKey,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant), "fulfillment-production");
-    }
-
-    private OwnerPreflight preflightBrandOwners(String source, String target, String brandRef, ObjectNode request, CopyReferencePlan catalogPlan,
-                                                UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
-        ObjectNode ownerRequest = request.deepCopy();
-        applyCopyReferencePlan(ownerRequest, catalogPlan);
-        JsonNode inventoryJudgement = inventory.preflightCopy(source, target, brandRef, ownerRequest,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        JsonNode productionJudgement = production.preflightCopy(source, target, brandRef, ownerRequest,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        return new OwnerPreflight(inventoryJudgement.path("digest").asText(), productionJudgement.path("digest").asText(), inventoryJudgement, productionJudgement);
-    }
-
-    private OwnerPreflight preflightInventoryIfSelected(String source, String target, String brandRef, ObjectNode request, CopyReferencePlan catalogPlan,
-                                                        UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
-        if (!containsInventorySection(request.path("selectedSections"))) return new OwnerPreflight("", "", null, null);
-        ObjectNode ownerRequest = request.deepCopy();
-        applyCopyReferencePlan(ownerRequest, catalogPlan);
-        ownerRequest.put("targetItemCode", request.path("targetItemCode").asText());
-        JsonNode judgement = inventory.preflightCopy(source, target, brandRef, ownerRequest,
-            workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-        return new OwnerPreflight(judgement.path("digest").asText(), "", judgement, null);
-    }
-
     private boolean containsInventorySection(JsonNode sections) { if (!sections.isArray()) return false; for (JsonNode section : sections) if (List.of("ITEM_BOM", "SKU_BOM", "OPTION_VALUE_BOM").contains(section.asText())) return true; return false; }
+    // NOT_APPLICABLE_WITH_REASON: CatalogOwnerApi copy preflight is a distinct canonical owner payload;
+    // the typed CopyPreflightReadback and legacy copy entrypoint deliberately do not share detail's HTTP envelope.
     private JsonNode preflightData(JsonNode preflight) { return preflight != null && preflight.path("data").isObject() ? preflight.path("data") : preflight; }
 
     /**
@@ -785,15 +894,14 @@ public class CatalogInventoryCoordinator {
 
     private void enrichInventory(JsonNode detail, String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         if (!(detail instanceof ObjectNode root)) return;
-        ObjectNode data = root.path("data").isObject() ? (ObjectNode) root.path("data") : root;
+        JsonNode dataNode = root.path("data");
+        if (!(dataNode instanceof ObjectNode data)) return;
         JsonNode item = data.path("item");
         String itemRef = requiredOpaqueTaskRef(item, "itemRef", "catalog item detail");
         if (!itemRef.isBlank()) {
             JsonNode definition = inventory.readCatalogInventoryDefinition(dataNodeRef, brandRef, itemRef, requestId);
-            // Inventory definition is a raw read model in the OpenAPI surface;
-            // tolerate the legacy enveloped form while preserving the owner
-            // response shape.  Otherwise a valid definition silently drops
-            // the detail BOM at the coordinator boundary.
+            // NOT_APPLICABLE_WITH_REASON: InventoryOwnerApi defines this as a raw definition graph;
+            // its legacy enveloped compatibility is a different owner contract, not a CatalogOwner detail response.
             JsonNode definitionData = definition.path("data").isObject() ? definition.path("data") : definition;
             if (definitionData.isObject() && definitionData.path("nodes").isArray()) {
                 data.set("inventoryBom", definitionData.path("nodes"));
@@ -812,7 +920,7 @@ public class CatalogInventoryCoordinator {
     private String catalogItemRef(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         if (itemCode == null || itemCode.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode is required for catalog lookup");
         JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, mapper.createObjectNode().put("itemCode", itemCode), requestId);
-        JsonNode item = detail.path("data").path("item").isObject() ? detail.path("data").path("item") : detail.path("item");
+        JsonNode item = detail.path("data").path("item");
         return requiredOpaqueTaskRef(item, "itemRef", "catalog item task read");
     }
 
@@ -851,7 +959,7 @@ public class CatalogInventoryCoordinator {
         String code = current.path("target").path("productCode").asText("");
         if (code.isBlank()) return;
         JsonNode detail = catalog.readItem(dataNodeRef, brandRef, code, requestId);
-        JsonNode item = detail.path("data").path("item").isObject() ? detail.path("data").path("item") : detail.path("item");
+        JsonNode item = detail.path("data").path("item");
         if (item.isObject()) {
             ObjectNode target = (ObjectNode) current.path("target");
             target.put("productName", item.path("name").asText(target.path("productName").asText()));
@@ -872,6 +980,8 @@ public class CatalogInventoryCoordinator {
      */
     private void enrichInventoryConsumptionReferences(JsonNode result, String dataNodeRef, String brandRef, String requestId) {
         if (!(result instanceof ObjectNode root)) return;
+        // NOT_APPLICABLE_WITH_REASON: InventoryOwnerService.references is a raw inventory task-read;
+        // it is not a CatalogOwner detail/page envelope consumer.
         JsonNode dataNode = root.path("data").isObject() ? root.path("data") : root;
         if (!(dataNode instanceof ObjectNode data) || !data.path("entries").isArray()) return;
         ArrayNode itemCodes = mapper.createArrayNode();
@@ -887,7 +997,7 @@ public class CatalogInventoryCoordinator {
             lookup.set("itemCodes", itemCodes);
             lookup.put("itemCodesOnly", true);
             JsonNode catalogPage = catalog.readItems(dataNodeRef, brandRef, lookup, requestId);
-            JsonNode catalogData = catalogPage.path("data").isObject() ? catalogPage.path("data") : catalogPage;
+            JsonNode catalogData = catalogPage.path("data");
             catalogData.path("items").forEach(item -> {
                 String code = item.path("code").asText("");
                 if (!code.isBlank()) {
@@ -973,7 +1083,7 @@ public class CatalogInventoryCoordinator {
             JsonNode ensured = inventory.ensureCatalogInventoryTarget(dataNodeRef, brandRef, ensure, requestId,
                 idempotencyKey + ":ensure:" + itemRef + ":" + (productSkuRef == null ? "ITEM" : productSkuRef),
                 workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-            targetRef = ensured.path("targetRef").asText("");
+            targetRef = requiredInventoryTargetRef(ensured);
             node.put("targetRef", targetRef);
         }
         if (draft.path("inventoryBom").isArray()) {
@@ -1016,7 +1126,7 @@ public class CatalogInventoryCoordinator {
      */
     private CatalogInventoryProjection catalogInventoryProjection(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, mapper.createObjectNode().put("itemCode", itemCode), requestId);
-        JsonNode item = detail.path("data").path("item").isObject() ? detail.path("data").path("item") : detail.path("item");
+        JsonNode item = detail.path("data").path("item");
         String itemRef = requiredOpaqueTaskRef(item, "itemRef", "catalog item task read");
         java.util.Map<String, String> skuRefs = new java.util.LinkedHashMap<>();
         if (item.path("skus").isArray()) item.path("skus").forEach(sku -> {
@@ -1061,7 +1171,7 @@ public class CatalogInventoryCoordinator {
         if (itemCode == null || itemCode.isBlank()) return Set.of();
         ObjectNode query = mapper.createObjectNode().put("itemCode", itemCode);
         JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, query, requestId);
-        JsonNode detailRoot = detail.path("data").isObject() ? detail.path("data") : detail;
+        JsonNode detailRoot = detail.path("data");
         return catalogAssetRefs(detailRoot.path("item"));
     }
 
@@ -1086,11 +1196,12 @@ public class CatalogInventoryCoordinator {
                 throw new CatalogOwnerApi.Problem("ASSET_NOT_READY", 409, "图片资产尚未准备好或已失效");
             }
         }
-        for (String ref : previousAssetRefs) {
-            if (nextAssetRefs.contains(ref) || catalog.assetReferencedAnywhere(ref)) continue;
+        Set<String> candidates = new java.util.LinkedHashSet<>(previousAssetRefs); candidates.removeAll(nextAssetRefs);
+        Set<String> stillReferenced = catalog.assetRefsStillReferenced(candidates);
+        for (String ref : candidates) {
+            if (stillReferenced.contains(ref)) continue;
             try {
-                AssetReadback current = assets.require(UUID.fromString(ref));
-                assets.releaseUnreferencedCatalogAsset(UUID.fromString(ref), current.version(), idempotencyKey + ":asset-release:" + ref,
+                assets.releaseUnreferencedCatalogAsset(UUID.fromString(ref), idempotencyKey + ":asset-release:" + ref,
                     workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
             } catch (IllegalArgumentException failure) {
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");

@@ -124,17 +124,19 @@ public class WorkspaceCapabilityScopeResolver {
         } catch (RuntimeException ignored) {
             return ScopeResolution.deny();
         }
-        OrganizationTaskPathLookup.TaskPath taskPath;
+        OrganizationTaskPathLookup.CommandTaskPathFacts pathFacts;
         try {
-            taskPath = statusTransitionTarget
-                ? taskPaths.requireStatusTransitionTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), target.resourceType(), target.resourceId())
-                : taskPaths.requireTaskPath(session.workspaceUuid(), session.groupWorkspaceKey(), target.resourceType(), target.resourceId());
+            pathFacts = taskPaths.commandTaskPathFacts(
+                session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(),
+                target.resourceType(), target.resourceId(), statusTransitionTarget
+            );
         } catch (RuntimeException ignored) {
             return ScopeResolution.deny();
         }
+        OrganizationTaskPathLookup.TaskPath taskPath = pathFacts.taskPath();
         if (assignment == null || assignment.serviceNodeType() == null || assignment.serviceNodeId() == null
             || !taskPath.targetType().equals(target.resourceType()) || !taskPath.targetId().equals(target.resourceId())
-            || !(taskPaths.isScopeAllowed(session.workspaceUuid(), session.groupWorkspaceKey(), assignment.serviceNodeType(), assignment.serviceNodeId(), taskPath)
+            || !(pathFacts.assignmentScopeAllowed()
                 || allowsHeadCompanyToCreateHeadCompany(capability, assignment, taskPath))) {
             return ScopeResolution.deny();
         }
@@ -172,6 +174,14 @@ public class WorkspaceCapabilityScopeResolver {
      */
     private WorkspaceCommandAuthorizationFacts loadWorkspaceCommandAuthorizationFacts(WorkspaceSessionReadback session, String capability) {
         try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.AUTHZ)) {
+            if (session.assignmentNodeType() != null && session.assignmentNodeId() != null) {
+                if (session.actionCapabilityKeys() == null || !session.actionCapabilityKeys().contains(capability)) {
+                    throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
+                }
+                return new WorkspaceCommandAuthorizationFacts(new WorkspaceAssignmentScopeLookup.AssignmentScope(
+                    session.assignmentNodeType(), session.assignmentNodeId()
+                ));
+            }
             if (jdbc == null) {
                 if (session.actionCapabilityKeys() == null || !session.actionCapabilityKeys().contains(capability)) {
                     throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();

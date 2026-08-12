@@ -1,0 +1,97 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "BACKEND_PERFORMANCE_FINAL_OPTIMIZATION_DESIGN_20260810",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "NO_GO",
+  "manifestSha256": "36fb73f1f7ac1e069442d6a9ae35e197c2cf85d76d4c90fba07c6153b471cafe",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-review-input-checklist.md",
+    "sha256": "9448b20edf73d17002f15b0956ab3a257803f33237a7e20470d2ea19f15a4826"
+  },
+  "blindReviewDeclaration": "Fresh v2s-rooted independent-subagent review. I first derived counterexamples from the authorization, canonical operation registry, current topology/read-policy and checker sources, then read the design and author requirements to test those counterexamples. No author intake/disposition was read, and no dynamic resource was started.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "dynamicEnvironmentStarted": false,
+    "riskClasses": [
+      "196-row future-proof denominator and source-admission authority",
+      "68 M1 generated-binding and command transaction reachability",
+      "fresh request-local fact attribution without cache or second-origin bypass",
+      "task-read/protocol-exemption fidelity without a universal numeric cap",
+      "same-basis report comparison and final technical-acceptance authority"
+    ]
+  },
+  "expectedBehavior": [
+    "Every current and future canonical operation is admitted only by an independently authoritative exact source-anchor denominator, never by a matrix row that can authorize its own production path.",
+    "All 68 M1 HTTP entries reach their declared generated binding, while command paths retain one REQUIRED origin and owner recheck before receipt replay.",
+    "Task reads and five protocol/content exemptions remain shape-specific; no universal numeric ceiling is introduced.",
+    "The comparison is immutable, same-basis and UPDATE-conserving, and final technical acceptance is never reported as browser L2 or UAT."
+  ],
+  "findings": [
+    {
+      "id": "BPF-D-M-001",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U01", "BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05"],
+      "title": "The proposed shape matrix self-authorizes its production source surface, so it cannot fail closed against a new bypass.",
+      "evidence": "The design's 'Fixed denominator and source of truth' makes the new matrix own edge/http/transaction source anchors, and lines 225-231 admit all Java paths only from anchors derived from that same future matrix. Current contracts/registry/operation-handler-bindings.json has no sourceAnchor or adapterSourcePath on any operation (independent jq recomputation), so there is no pre-existing immutable source-anchor denominator to constrain the new matrix. A change can add a new operation row or replace a row's anchor with an arbitrary controller/owner helper, then change that now-'admitted' source; exact matrix closure still passes. This violates the design's claimed no-broad-admission and the routed redline PER_OPERATION_DESIGN_CONTRACT requirement for a finite edge/coordinator/owner call chain before implementation.",
+      "risk": "The control can prove 196 registry rows exist while silently allowing a direct adapter, extra transaction origin, cache, or cross-owner read in a self-declared path. It therefore does not deliver the requested permanent future-operation prevention.",
+      "disposition": "Minimal correction: add an independently generated, hash-bound operation-to-edge/coordinator/owner source-inventory as the source denominator before the shape matrix; matrix anchors may only reference that inventory and its exact-set generator must reject additions, substitutions and orphaned paths. Declare that inventory and its generator/checker as BPF-U01 source surfaces, then make BPF-U02–U05 consume—not extend—the admission authority."
+    },
+    {
+      "id": "BPF-D-M-002",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U05"],
+      "title": "BPF-U05 assumes an existing task-read control that currently fails before its self-test can establish the intended baseline.",
+      "evidence": "Running scripts/check/backend-performance-read-budget --self-test in this review returns BP_U05_READ_SOURCE_ANCHOR_MISSING:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#revoke. scripts/generate/task-read-surface-policy.mjs:22-27 hard-codes that command anchor, but OperationsWorkspaceUserController currently exposes groupRevoke, regionRevoke, projectRevoke, headCompanyRevoke and storeRevoke; it has no revoke method. The design only says the task-read checker 'gains shape-row joins and explanation completeness' and its BPF-U05 change surfaces do not identify this stale command-anchor repair or require restoring the existing baseline before extension.",
+      "risk": "A package that is required to keep existing gates green starts from a broken task-read source check. Extending it can mask the failed command/read separation rather than prove the 78 reads and five exemptions are safely closed.",
+      "disposition": "Minimal correction: make the stale workspace-command-anchor family an explicit BPF-U05 precondition and source repair, with the five exact revoke entry points (or a deliberate finite replacement) declared and a red mutation for each lost anchor. Require the existing checker clean result before adding shape joins, then retain its current command/read separation control."
+    },
+    {
+      "id": "BPF-D-M-003",
+      "severity": "M",
+      "status": "CONFIRMED",
+      "unitIds": ["BPF-U06"],
+      "title": "The verification sequence authorizes the wrong execution class by placing browser L2 in the final technical-acceptance lifecycle.",
+      "evidence": "The design at lines 235-238 says a separately authorized managed lifecycle may create evidence, compare seed reports, 'run browser L2' and report business/cleanup. The controlling final-closure authorization explicitly says its managed workload is technical verification, 'not DEV product acceptance, browser L2, UAT or deployment' (doc/decisions/2026-08-10-v2s-backend-performance-final-closure-authorization.md, Boundaries). The design-only authorization also excludes browser L2. The routed EXECUTION_EVIDENCE_TAXONOMY redline requires these execution classes to remain separately declared and never mutually upgradeable.",
+      "risk": "Later implementation can treat the performance runner's evidence lifecycle as permission or a prerequisite for browser L2, confusing final HTTP/measurement evidence with a Journey-level business result and its separate cleanup scope.",
+      "disposition": "Minimal correction: remove browser L2 from BPF-U06 and the final-closure sequence. State that this package can only produce managed technical HTTP/performance evidence and its own cleanup; any browser L2 is a separately authorized Journey package with a distinct manifest, denominator, business oracle and cleanup evidence."
+    },
+    {
+      "id": "BPF-D-N-001",
+      "severity": "N",
+      "status": "VERIFIED",
+      "unitIds": ["BPF-U01", "BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05", "BPF-U06"],
+      "title": "The proposed shape vocabulary preserves the important non-uniform counterexamples.",
+      "evidence": "Independent registry counts are 196 total, 113 COMMAND and 83 READ; command topology is 68/20/9/7/9 and task-read policy is 78 TASK_READ plus five PROTOCOL_READ_EXEMPT rows. The design explicitly retains two NO_CONTENT M1 commands, five exemption evidence reasons, owner-local folds, required readback and above-floor task-read explanations. Its component model therefore does not itself impose the prohibited global numeric ceiling.",
+      "risk": "This is not sufficient to prevent the three major scope/control defects above.",
+      "disposition": "Retain this closed shape vocabulary and the no-global-cap rule when correcting the blocking findings."
+    }
+  ],
+  "unitVerdicts": [
+    {"id": "BPF-U01", "verdict": "NO_GO", "findingIds": ["BPF-D-M-001", "BPF-D-N-001"]},
+    {"id": "BPF-U02", "verdict": "NO_GO", "findingIds": ["BPF-D-M-001", "BPF-D-N-001"]},
+    {"id": "BPF-U03", "verdict": "NO_GO", "findingIds": ["BPF-D-M-001", "BPF-D-N-001"]},
+    {"id": "BPF-U04", "verdict": "NO_GO", "findingIds": ["BPF-D-M-001", "BPF-D-N-001"]},
+    {"id": "BPF-U05", "verdict": "NO_GO", "findingIds": ["BPF-D-M-001", "BPF-D-M-002", "BPF-D-N-001"]},
+    {"id": "BPF-U06", "verdict": "NO_GO", "findingIds": ["BPF-D-M-003", "BPF-D-N-001"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The requested permanent discipline is correctly aimed at preventing repeated database work without deleting owner authorization, receipts, CAS, audit or required readback. The present self-authorizing source map does not solve that future-bypass problem.",
+    "simplerAlternativeAssessment": "A finite generated source-inventory derived from the canonical route/handler registries is smaller and safer than inventing a broad call-graph framework or a global SQL threshold. Repairing the existing stale anchor before extending its checker is also smaller than replacing the task-read control.",
+    "costFit": "The proposed six-unit package is proportionate only after it stops matrix self-admission and keeps the final performance runner within its technical execution class. Those corrections add bounded registry/control work rather than infrastructure or a cache/query bus.",
+    "verdict": "NO_GO until the three confirmed major defects are repaired and independently re-reviewed."
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "summary": "The 196-row model correctly preserves no-content, protocol, task-read and owner-local counterexamples, but the design cannot yet be admitted. Its new matrix would authorize its own production paths, the task-read checker it extends currently fails on a stale command anchor, and the final sequence incorrectly includes browser L2 in a technical-acceptance package. Static self-tests that did pass were sql-merge coverage, evidence snapshot and implementation-design-granularity; read-budget did not pass.",
+    "severityCounts": {"M": 3, "S": 0, "N": 1},
+    "authorizationBoundary": "This independent DESIGN Round 1 verdict authorizes no production or script change, runtime, DEV, reset, seed, Testcontainers, tunnel, browser L2, UAT, deployment, measured performance-success claim or additional adversarial round. The author may only prepare bounded design corrections within the existing design-only authorization, then request DESIGN Round 2, the cycle's final independent review."
+  }
+}

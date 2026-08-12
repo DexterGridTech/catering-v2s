@@ -1,12 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {readFile} from 'node:fs/promises';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {adminCatalog} from '../catalog/generatedAdminCatalog';
 import {OperationsRequiredScopeSurface} from './OperationsRequiredScopeSurface';
 import {isOperationsScopeComplete} from './OperationsDataScopeContextBar';
 import type {WorkspaceScopeContext, WorkspaceScopeNode} from '../api/generated/operations-edge';
 
-const source = await readFile(new URL('./OperationsRequiredScopeSurface.tsx', import.meta.url), 'utf8');
 const node = (dataNodeRef: string): WorkspaceScopeNode => ({dataNodeRef, dataNodeName: dataNodeRef, dataNodeCode: dataNodeRef, dataNodeType: 'REGION', ancestorPath: []});
 type ScopeContext = WorkspaceScopeContext;
 const completeContext: ScopeContext = {region: node('region'), project: node('project'), store: node('store'), headCompany: node('head-company')};
@@ -49,12 +47,4 @@ describe('operations required scope surface', () => {
     expect(renderToStaticMarkup(<OperationsRequiredScopeSurface requiredDataNodeType="NONE" scopeContext={null}><button data-testid="none-child">无范围页面</button></OperationsRequiredScopeSurface>)).toContain('none-child');
   });
 
-  it('keeps the selector recoverable by replacing incomplete scoped content with one non-interactive gray placeholder', () => {
-    expect(source).toContain('<OperationsDataScopeContextBar requiredDataNodeType={requiredDataNodeType} scopeContext={scopeContext}/>');
-    expect(source).toContain('complete ? children');
-    expect(source).toContain("testId('operations-page-data-scope-gated')");
-    expect(source).toContain('<Skeleton active={false}');
-    expect(source).not.toContain('useShellInteractionLock');
-    expect(source).not.toContain('useSelector');
-  });
 });

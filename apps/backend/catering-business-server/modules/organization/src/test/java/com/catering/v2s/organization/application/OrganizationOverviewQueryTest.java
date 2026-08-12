@@ -1,6 +1,7 @@
 package com.catering.v2s.organization.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -12,6 +13,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 
 class OrganizationOverviewQueryTest {
@@ -59,9 +62,33 @@ class OrganizationOverviewQueryTest {
         assertThrows(IllegalArgumentException.class, () -> service.page(UUID.randomUUID(), "workspace-a", "STORE", new OrganizationOverviewTaskReadService.Query("STORE", null, null, null, null, null, null, null, null, null, "NAME", "SIDEWAYS"), 1, 20));
     }
 
+    @Test void platformOverviewKeepsWhitespaceAroundDynamicOrderClauses() {
+        var jdbc = new RecordingJdbcTemplate();
+        var service = new OrganizationOverviewTaskReadService(jdbc);
+
+        service.platformOverviewTaskPage(UUID.randomUUID(), "workspace-a", "HIERARCHY",
+            new OrganizationOverviewTaskReadService.Query(null, null, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", null), 1, 20);
+
+        assertTrue(jdbc.platformSql.contains("ORDER BY updated_at DESC, id DESC"));
+        assertTrue(jdbc.platformSql.contains(") ORDER BY updated_at DESC, id DESC) FROM paged"));
+        assertFalse(jdbc.platformSql.contains("ORDER BYupdated_at"));
+        assertTrue(jdbc.platformSql.contains("b.alias, b.remark AS notes, b.status"));
+        assertTrue(jdbc.platformSql.contains("t.legal_name, t.credit_code, NULL::text, t.remark, t.status"));
+        assertTrue(jdbc.platformSql.contains("h.legal_name, h.credit_code, NULL::text, h.remark, h.status"));
+        assertFalse(jdbc.platformSql.contains("alias, remark AS notes, status"));
+    }
+
     private static final class RecordingJdbcTemplate extends JdbcTemplate {
-        private String countSql; private Object[] countArgs; private String listSql; private Object[] listArgs; private String filterOptionsSql;
+        private String countSql; private Object[] countArgs; private String listSql; private Object[] listArgs; private String filterOptionsSql; private String platformSql;
         @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) { countSql = sql; countArgs = args; return requiredType.cast(73L); }
         @Override public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) { if (sql.startsWith("SELECT s.id")) { listSql = sql; listArgs = args; } if (sql.startsWith("SELECT kind")) filterOptionsSql = sql; return List.of(); }
+        @SuppressWarnings("unchecked")
+        @Override public <T> T query(String sql, PreparedStatementSetter setter, ResultSetExtractor<T> extractor) {
+            platformSql = sql;
+            return (T) new OrganizationOverviewTaskReadService.Page(
+                new OrganizationOverviewTaskReadService.Metadata("workspace-a", "HIERARCHY", 1, 20, 0L, "UPDATED_AT", "DESC"),
+                List.of(), "AVAILABLE", 0L, List.of(), List.of(), "AVAILABLE", 0L, List.of()
+            );
+        }
     }
 }

@@ -52,6 +52,9 @@ const bindings = {
   "CI-L2-018": {locator: "catalog-inventory-item-table", position: "catalog workbench table; Out columns/actions absent", wireframe: "IA §5.1：本期不渲染菜单/导出等 Out 项", controlIds: ["IA-CAT-LIST-006", "IA-CAT-LIST-008"]}
 };
 
+policy.bindings = policy.bindings.filter((binding) => caseMetadata.has(binding.caseId));
+policy.caseCount = policy.bindings.length;
+
 for (const binding of policy.bindings) {
   const scenario = binding.scenarioId;
   const metadata = bindings[scenario];

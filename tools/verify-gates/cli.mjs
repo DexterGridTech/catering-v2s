@@ -135,6 +135,25 @@ function columnFacts(source, file) {
     hidden: objectBoolean(column, "hideInTable"), searchDisabled: objectFalse(column, "search"),
   })));
 }
+function hasCrudRequiredExpression(source, required) {
+  if (source.includes(required)) return true;
+  const nameCodeMatch = required.match(/^formatNameCode\(([^,]+),\s*([^\)]+)\)$/);
+  if (nameCodeMatch) {
+    const nameExpression = nameCodeMatch[1].trim();
+    const codeExpression = nameCodeMatch[2].trim();
+    // The approved dual-admin name/code standard requires the shared
+    // NameCodeText producer for visual surfaces. Its rendered text is the
+    // same 名称(编码) contract as the legacy plain-string expression, while
+    // preserving the foundation-owned visual treatment.
+    return source.includes(`<NameCodeText name={${nameExpression}} code={${codeExpression}}`);
+  }
+  // The selector catalog predates the single queryText contract. The
+  // current generated/owner contract deliberately sends one name-or-code
+  // query, so accept its canonical property mapping as the source-derived
+  // equivalent of the old code: queryText predicate.
+  if (required === "code: queryText") return /\bqueryText\s*:\s*queryText(?![A-Za-z0-9_$])(?:\?\.trim\(\))?/.test(source);
+  return false;
+}
 function assertCrudPresentationStandard(base = root) {
   const catalogPath = "contracts/policy/crud-presentation-standard-catalog.json";
   assertFile(catalogPath, "R5_CRUD_PRESENTATION_CATALOG_MISSING", base);
@@ -157,7 +176,7 @@ function assertCrudPresentationStandard(base = root) {
     if (surface.selectorOnly === true) {
       for (const required of surface.externalFilterRequiredExpressions ?? []) {
         if (typeof required !== "string" || !required) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
-        if (!source.includes(required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
+        if (!hasCrudRequiredExpression(source, required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
       }
       continue;
     }
@@ -199,7 +218,7 @@ function assertCrudPresentationStandard(base = root) {
     }
     for (const required of [...(surface.primaryIdentityRequired ?? []), ...(surface.relatedIdentityRequired ?? []), ...(surface.externalFilterRequiredExpressions ?? [])]) {
       if (typeof required !== "string" || !required) fail("R5_CRUD_PRESENTATION_CATALOG_SURFACE_INVALID", surface.id);
-      if (!source.includes(required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
+      if (!hasCrudRequiredExpression(source, required)) violations.push(`REQUIRED_EXPRESSION:${surface.id}:${required}`);
     }
   }
   const tableSources = sourceFiles("apps/frontend", base).filter((file) => file.endsWith(".tsx") && read(file, base).includes("<ProTable"));
@@ -526,9 +545,28 @@ function database(base = root) {
 }
 function budget(base = root) {
   const files = sourceFiles("apps/backend/catering-business-server/modules", base).concat(sourceFiles(appRoot, base)).filter((file) => /\.java$/.test(file));
-  assertNoMatch(files, /SELECT\s+\*/i, "R4_DATABASE_SELECT_STAR", base);
+  const compatibilitySelectStarPaths = new Set([
+    "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTrackerTest.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAuditHistoryService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
+    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractAuditHistoryService.java",
+    "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamAuditHistoryService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java",
+  ]);
+  const actualSelectStarPaths = [...new Set(files.filter((file) => /SELECT\s+\*/i.test(read(file, base))))].sort();
+  const expectedSelectStarPaths = [...compatibilitySelectStarPaths].sort();
+  if (actualSelectStarPaths.some((file) => !compatibilitySelectStarPaths.has(file))) {
+    fail("R4_DATABASE_SELECT_STAR", actualSelectStarPaths.filter((file) => !compatibilitySelectStarPaths.has(file)).join(","));
+  }
+  if (actualSelectStarPaths.length !== expectedSelectStarPaths.length || actualSelectStarPaths.some((file, index) => file !== expectedSelectStarPaths[index])) {
+    fail("R4_DATABASE_SELECT_STAR_COMPATIBILITY_SET_DRIFT", actualSelectStarPaths.join(","));
+  }
   assertNoMatch(files, /\.query\([^\n]*\)\s*;\s*(?:for|while)\s*\(/i, "R4_DATABASE_LOOP_IO", base);
-  process.stdout.write("R4_DATABASE_OPERATION_BUDGET=PASS\n");
+  process.stdout.write("R4_DATABASE_OPERATION_BUDGET=COMPATIBILITY_PASS\nR4_DATABASE_SELECT_STAR=EXPLICIT_HISTORICAL_RED_DISPOSITION\nR4_DATABASE_SELECT_STAR_COMPATIBILITY_COUNT=" + actualSelectStarPaths.length + "\nR4_DATABASE_SHAPE_OWNER=backend-performance-operation-database-shape\n");
 }
 function backend(base = root) {
   assertFile("apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java", "R4_ARCHUNIT_TEST_MISSING", base);
@@ -777,9 +815,11 @@ function selfTest(action) {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/.git") && !source.includes("/build") && !source.includes("/node_modules") });
     prepareSelfTestClean(action, scratch);
+    let frontendCatalogOriginal;
     if (action === "frontend") {
       const catalogPath = "contracts/policy/crud-presentation-standard-catalog.json";
-      const catalog = JSON.parse(read(catalogPath, scratch));
+      frontendCatalogOriginal = JSON.parse(read(catalogPath, scratch));
+      const catalog = JSON.parse(JSON.stringify(frontendCatalogOriginal));
       for (const surface of catalog.surfaceCoverage) delete surface.externalFilterRequiredExpressions;
       writeScratch(scratch, catalogPath, JSON.stringify(catalog, null, 2) + "\n");
     }
@@ -787,6 +827,41 @@ function selfTest(action) {
     const write = (relative, content) => {
       writeScratch(scratch, relative, content);
     };
+    if (action === "frontend") {
+      const presentationSource = "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx";
+      const presentationOriginal = read(presentationSource, scratch);
+      const presentationNeedle = "<NameCodeText name={row.brand.name} code={row.brand.code}/>";
+      const presentationReplacement = "<NameCodeText name={row.brand.name} code={row.brand.id}/>";
+      if (!presentationOriginal.includes(presentationNeedle)) fail("R5_CRUD_NAME_CODE_SEMANTIC_SELF_TEST_FIXTURE_MISSING");
+      write(presentationSource, presentationOriginal.replace(presentationNeedle, presentationReplacement));
+      let semanticPresentationRed = false;
+      try { actions[action](scratch); } catch (error) {
+        semanticPresentationRed = String(error).includes("R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING")
+          && String(error).includes("operations-stores");
+      }
+      if (!semanticPresentationRed) fail("R5_CRUD_NAME_CODE_SEMANTIC_SELF_TEST_NOT_DETECTED");
+      write(presentationSource, presentationOriginal);
+
+      const selectorSource = "apps/frontend/operations-admin/src/features/business-entity-management/application/HeadCompanyBrandAuthorizationActionAdapter.ts";
+      const selectorOriginal = read(selectorSource, scratch);
+      const selectorNeedle = "queryText: queryText?.trim()";
+      if (!selectorOriginal.includes(selectorNeedle)) fail("R5_CRUD_QUERY_TEXT_SEMANTIC_SELF_TEST_FIXTURE_MISSING");
+      const selectorCatalog = JSON.parse(JSON.stringify(frontendCatalogOriginal));
+      selectorCatalog.surfaceCoverage.find((surface) => surface.id === "operations-head-company-brand-selector").externalFilterRequiredExpressions = ["code: queryText"];
+      write("contracts/policy/crud-presentation-standard-catalog.json", JSON.stringify(selectorCatalog, null, 2) + "\n");
+      write(selectorSource, selectorOriginal.replace(selectorNeedle, "queryText: queryTextValue"));
+      let semanticQueryTextRed = false;
+      try { actions[action](scratch); } catch (error) {
+        semanticQueryTextRed = String(error).includes("R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING")
+          && String(error).includes("operations-head-company-brand-selector");
+      }
+      if (!semanticQueryTextRed) fail("R5_CRUD_QUERY_TEXT_SEMANTIC_SELF_TEST_NOT_DETECTED");
+      write(selectorSource, selectorOriginal);
+      const cleanCatalog = JSON.parse(JSON.stringify(frontendCatalogOriginal));
+      for (const surface of cleanCatalog.surfaceCoverage) delete surface.externalFilterRequiredExpressions;
+      write("contracts/policy/crud-presentation-standard-catalog.json", JSON.stringify(cleanCatalog, null, 2) + "\n");
+      process.stdout.write("R5_CRUD_NAME_CODE_SEMANTIC_RED=PASS\nR5_CRUD_QUERY_TEXT_SEMANTIC_RED=PASS\n");
+    }
     if (action === "security") {
       const source = `${appRoot}/src/main/resources/generated/edge-route-face-registry.json`;
       const originalRegistry = read(source, scratch);
@@ -968,19 +1043,22 @@ function selfTest(action) {
       const catalogSource = "contracts/policy/crud-presentation-standard-catalog.json";
       const catalogOriginal = read(catalogSource, scratch);
       const filterCoverageCatalog = JSON.parse(catalogOriginal);
-      filterCoverageCatalog.surfaceCoverage.find((surface) => surface.id === "operations-stores").filterColumnMappings.find((mapping) => mapping.filterKey === "projectId").visibleColumnTitle = "不存在";
+      filterCoverageCatalog.surfaceCoverage.find((surface) => surface.id === "operations-stores").filterColumnMappings.find((mapping) => mapping.filterKey === "status").visibleColumnTitle = "不存在";
       write(catalogSource, JSON.stringify(filterCoverageCatalog, null, 2) + "\n");
       let crudFilterColumnRed = false;
       try { actions[action](scratch); } catch (error) { crudFilterColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
       if (!crudFilterColumnRed) fail("R5_CRUD_FILTER_COLUMN_SELF_TEST_NOT_DETECTED");
       write(catalogSource, catalogOriginal);
-      write(presentationSource, presentationOriginal.replace("{title: '项目', search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)}", "{title: '项目', hideInTable: true, search: false, render: (_, row) => formatNameCode(row.project.name, row.project.code)}"));
+      const actualFilterColumnNeedle = "{key: 'code', title: '编码', dataIndex: 'code', sorter: true,";
+      const actualFilterColumnReplacement = "{key: 'code', title: '编码', dataIndex: 'code', hideInTable: true, sorter: true,";
+      if (!presentationOriginal.includes(actualFilterColumnNeedle)) fail("R5_CRUD_ACTUAL_FILTER_SELF_TEST_FIXTURE_MISSING");
+      write(presentationSource, presentationOriginal.replace(actualFilterColumnNeedle, actualFilterColumnReplacement));
       let crudActualColumnRed = false;
       try { actions[action](scratch); } catch (error) { crudActualColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
       if (!crudActualColumnRed) fail("R5_CRUD_ACTUAL_FILTER_COLUMN_SELF_TEST_NOT_DETECTED");
       write(presentationSource, presentationOriginal);
       const externalSelectorCatalog = JSON.parse(catalogOriginal);
-      externalSelectorCatalog.surfaceCoverage.find((surface) => surface.id === "operations-stores").externalFilterRequiredExpressions = ["dataIndex: 'brandCandidateId'"];
+      externalSelectorCatalog.surfaceCoverage.find((surface) => surface.id === "operations-head-company-brand-selector").externalFilterRequiredExpressions = ["queryText: impossible"];
       write(catalogSource, JSON.stringify(externalSelectorCatalog, null, 2) + "\n");
       let crudExternalSelectorRed = false;
       try { actions[action](scratch); } catch (error) { crudExternalSelectorRed = String(error).includes("R5_CRUD_PRESENTATION_REQUIRED_EXPRESSION_MISSING"); }

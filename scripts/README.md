@@ -73,6 +73,16 @@ The root Gradle build has a fail-closed guard for every test source that imports
 
 All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
 
+### 日常 Testcontainers 发现与进度
+
+`scripts/test/r5-remote-testcontainers.mjs --all` 是可增长的日常 Testcontainers 入口：它每次扫描当前 Java `@Testcontainers` 源码，推导 owner Gradle `:test` task 和 class selector，新增测试自动纳入；`--discover` 只输出这份当前分母。入口优先使用显式 `V2S_GRADLE_HOME`，否则只从 PATH 解析 `gradle` 可执行文件自身的 `<home>/bin/gradle` 结构，绝不写死机器路径；两者皆不可用才 fail-closed。全量入口还从同一批带注解源码解析容器镜像，并先在默认 daemon 保温、再导入三个隔离 daemon；无法静态解析的镜像引用必须 fail-closed，已缓存镜像不再访问外网。全量入口通过三个受管、Engine ID 不同的 remote Docker daemon lane 执行：每 lane 内串行且只做一次 source workspace 初始化，当前分母先均分（22 为 7/7/8）；某 lane 跑完自有项后必须领取其他 lane 尚未开始的最长队列项，不得空转。lane 仅因自身首败停止，另外 lane 继续并由父 manifest 汇集全部 lane 首败；修复后 `--all` 必须 fresh 全量复跑，历史 PASS 不可跳过。无法从带注解的源码推导 task/class、重复 target、共享 Engine ID 或未完整执行分母必须失败，不得靠固定 196、宽 glob 或静默跳过维持绿色。`--all` 与 focused run 都在 stdout 和 suite/child manifest 报告开始、lane、Engine ID、阶段、心跳、当前/总数、结束、耗时、首败、business 与 cleanup；BPF 196 仍为独立专项 workload。
+
+Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
+`NO-SOURCE`, or `SKIPPED`: the build keeps compile/dependency preparation reusable but disables
+reuse for the Test task, and the managed runner reads the target task line from the current Gradle
+log and fails closed when it is missing or skipped. This prevents a stale Testcontainers result
+from being reported as a fresh technical PASS.
+
 ## 环境执行矩阵
 
 - **DEV**：本机启动 Spring Boot、`platform-admin` 与 `operations-admin` Web；只经受管 tunnel 使用远端非生产 PostgreSQL、对象存储等中间件。start/restart 可 additive Flyway，绝不 seed。
@@ -113,6 +123,12 @@ runtime 已经输出拓扑字段。
 ## 验证工作的通用规则
 
 R3–R6 及后续步骤遵循 `doc/decisions/2026-07-24-v2s-verification-governance.md`：机器门只处理可机械判定的事实，且必须驱动 production 并以真实 red mutation 证明会失败；业务语义留给 fresh 独立对抗审查和 Claude review，不做关键词式伪语义 checker。新门须同时满足“反复发生、纯机械、维护成本低于未来返工”三问；交付超过半小时审阅量先切小，`scripts/verify` 保持分钟级，变慢先砍最弱门。
+
+## 测试健康闭环
+
+- `scripts/test/test-health-entry-runner.mjs --self-test` 只验证显式 Node 测试入口的分母与红变异；`--node` 才执行这份有限清单，并要求 `DISCOVERED_TEST_FILES` 与 `EXECUTED_TEST_FILES` 精确相等。新增目录必须作为显式入口加入，禁止用宽 glob 掩盖空匹配。
+- `scripts/check/backend-performance-sql-merge-coverage` 对 host-extension fixture 使用精确集合和真实 red mutations。旧 `r5-platform-admin-l2.mjs`、fixture seed 与对应测试已在能力迁移和 predecessor proof 后退役；历史 hash-bound 文档与 evidence 保留，不能把历史引用误当当前执行入口。
+- 静态/本机单元与契约检查的 PASS 只证明对应静态范围；不得写成 Testcontainers、DEV、seed、受管 L2、浏览器、业务、cleanup、UAT 或性能 PASS。动态状态必须由独立授权的受管 runner、business evidence 和 cleanup evidence 关闭。
 
 ## 对抗式 review
 

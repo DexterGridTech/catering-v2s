@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-m1-existing-runner-validation-package-exit",
+  "packageId": "BACKEND-PERFORMANCE-M1-EXISTING-RUNNER-VALIDATION-20260810",
+  "businessStatus": "RUNTIME_READINESS_REPAIR_PENDING",
+  "cleanupStatus": "NOT_RUN",
+  "completionCondition": "The exact 68 selected transaction adapters must first pass the mandatory non-final proxyability gate, compile, and reach a successful managed DEV readiness. Then each of the five ordered existing entries must provide fresh original evidence. Every entry's business and cleanup status must be PASS, then the fresh r5-full seed report may be compared with the stated M1 baseline. No static result or historical evidence can satisfy this exit.",
+  "runtimeReadinessRepairStatus": "PENDING_68_NON_FINAL_PROXYABILITY_FIX",
+  "measuredPerformanceStatus": "BP_U07_SQL_MERGE_SUCCESS=BLOCKED_UNMEASURED; BP_U07_SNAPSHOT=NOT_SUPPLIED_UNMEASURED"
+}

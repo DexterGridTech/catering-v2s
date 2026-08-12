@@ -2,11 +2,12 @@ import {Alert, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch} 
 import {adminDrawerSurfaceProps, testId, useDrawerFormLifecycle, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsRtk} from '../../../app/api/OperationsTransport';
-import {OPERATIONS_ADMIN_OPERATION_IDS, type Brand, type ExtensionDefinition, type HeadCompany, type JsonValue, type Tenant} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type Brand, type ExtensionDefinition, type HeadCompany, type Tenant} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {ACTION_CAPABILITIES, adminCatalog, type AdminActionCapabilityKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
+import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type BusinessEntityFormValues = {
   code: string;
@@ -15,7 +16,7 @@ type BusinessEntityFormValues = {
   legalName?: string;
   unifiedSocialCreditCode?: string;
   remark?: string;
-  extensionValues?: Record<string, JsonValue>;
+  extensionValues?: OrganizationExtensionFormValues;
 };
 
 export type BusinessEntityEditDrawerProps = {
@@ -116,7 +117,7 @@ export function BusinessEntityEditDrawer({entity, kind, queryContext, onClose, o
     setCommandProblem(undefined);
     try {
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const extensionValues = value.extensionValues ?? {};
+      const extensionValues = serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues, entity.extensionValues);
       const entityReadback = kind === 'BRAND'
         ? await operationsClient.updateOperationsOrganizationBrand(
           {groupWorkspaceKey: queryContext.groupWorkspaceKey, brandId: entity.id},

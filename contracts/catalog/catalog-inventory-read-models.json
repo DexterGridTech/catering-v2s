@@ -5,7 +5,7 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "e89e8310e7209bba70e71941a558b97164aca64e250cb470b8eabd9f7d6e8388"
+      "sha256": "b6462cf33a53d3f58505bf6ae5a6a3f191d50590b3decf8244e0dc53f53a16b4"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -422,7 +422,7 @@
     {
       "name": "CatalogShapeManifestView",
       "required": [
-        "revision",
+        "manifestRevision",
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",

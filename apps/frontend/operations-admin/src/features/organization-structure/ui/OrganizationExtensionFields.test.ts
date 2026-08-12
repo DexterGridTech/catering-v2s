@@ -17,10 +17,22 @@ const definition: ExtensionDefinition = {
 };
 
 describe('organization extension fields', () => {
-  it('hydrates and serializes Date values without changing other owner readback values', () => {
+  it('hydrates form dates and serializes only explicit SET submissions as canonical JSON text', () => {
     const hydrated = hydrateOrganizationExtensionValues(definition, {startsOn: '2026-08-03', enabled: false, area: 12});
     expect(dayjs.isDayjs(hydrated.startsOn)).toBe(true);
-    expect(serializeOrganizationExtensionValues(definition, hydrated)).toEqual({startsOn: '2026-08-03', enabled: false, area: 12});
+    expect(serializeOrganizationExtensionValues(definition, hydrated)).toEqual([
+      {fieldKey: 'startsOn', valueJson: '"2026-08-03"', mode: 'SET'},
+      {fieldKey: 'enabled', valueJson: 'false', mode: 'SET'},
+      {fieldKey: 'area', valueJson: '12', mode: 'SET'},
+    ]);
+  });
+
+  it('makes omit, SET and CLEAR distinct without null-shaped intent inference', () => {
+    expect(serializeOrganizationExtensionValues(definition, {startsOn: undefined, enabled: false}, {startsOn: '2026-08-03', enabled: false, area: 12})).toEqual([
+      {fieldKey: 'startsOn', valueJson: '', mode: 'CLEAR'},
+      {fieldKey: 'area', valueJson: '', mode: 'CLEAR'},
+    ]);
+    expect(serializeOrganizationExtensionValues(definition, {}, {})).toEqual([]);
   });
 
   it('uses enabled definition labels, ordered values and display suffixes for details', () => {

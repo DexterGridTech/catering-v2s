@@ -1259,6 +1259,7 @@
       "required": [
         "sourceItemCode",
         "targetItemCode",
+        "selectedSections",
         "preflightDigest",
         "expectedSourceVersion",
         "expectedTargetVersion",
@@ -1272,6 +1273,13 @@
         "targetItemCode": {
           "type": "string",
           "description": "target item"
+        },
+        "selectedSections": {
+          "type": "array",
+          "description": "copy sections fixed by preflight",
+          "items": {
+            "type": "string"
+          }
         },
         "preflightDigest": {
           "type": "string",

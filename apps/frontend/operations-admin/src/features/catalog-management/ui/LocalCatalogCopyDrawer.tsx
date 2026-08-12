@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import type {ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {CatalogInventoryEnvelope, LocalCopyCandidatePage, LocalCopyPreflight, LocalCopyReadback} from '../../../app/api/generated/catalog-inventory-edge';
+import type {LocalCopyCandidatePage, LocalCopyPreflight, LocalCopyReadback} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
   decodeLocalCopyCandidatePage,
@@ -65,7 +65,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
     return catalogInventoryRtkRequest.getOperationsLocalCatalogCopyCandidates({}, {query, headers});
   }, [headers, queryContext.scopeRef, sourceKeyword]);
   const candidatesQuery = operationsRtk.useGetOperationsLocalCatalogCopyCandidatesQuery(candidateRequest, {skip: !open});
-  const candidatePage = decodeLocalCopyCandidatePage(candidatesQuery.data as CatalogInventoryEnvelope<LocalCopyCandidatePage> | undefined);
+  const candidatePage = decodeLocalCopyCandidatePage(candidatesQuery.data);
   const candidates = useMemo(
     () => (candidatePage?.items ?? []).filter((item) => item.code !== targetItemCode),
     [candidatePage?.items, targetItemCode],
@@ -109,7 +109,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
         headers: {...(headers ?? {}), 'Idempotency-Key': globalThis.crypto.randomUUID()},
         body: {dataNodeRef, sourceItemCode: selectedSourceItemCode, targetItemCode, selectedSections},
       })).unwrap();
-      const value = decodeLocalCopyPreflight(response as CatalogInventoryEnvelope<LocalCopyPreflight>);
+      const value = decodeLocalCopyPreflight(response);
       if (!value) throw new Error('COPY_PREFLIGHT_SHAPE_MISSING');
       setPreflight(value);
       setReferenceMappingsSnapshot(value.referenceMappings);
@@ -137,9 +137,9 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, queryContext, bran
       const dataNodeRef = requireOperationsScopeRef(queryContext);
       const response = await executeCopy(catalogInventoryRtkRequest.executeOperationsLocalCatalogCopy({}, {
         headers: {...(headers ?? {}), 'Idempotency-Key': submission.getIdempotencyKey()},
-        body: {dataNodeRef, sourceItemCode: selectedSourceItemCode, targetItemCode, preflightDigest: preflight.preflightDigest, ...versions},
+        body: {dataNodeRef, sourceItemCode: selectedSourceItemCode, targetItemCode, selectedSections, preflightDigest: preflight.preflightDigest, ...versions},
       })).unwrap();
-      const value = decodeLocalCopyReadback(response as CatalogInventoryEnvelope<LocalCopyReadback>);
+      const value = decodeLocalCopyReadback(response);
       if (!value) throw new Error('COPY_READBACK_SHAPE_MISSING');
       lifecycle.reset();
       submission.reset();

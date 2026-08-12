@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-standards-registration",
+  "status": "ACTIVE_STATIC",
+  "source": {
+    "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+    "sha256": "8c9b3d87089abf7989745f0bdfbba5c695e3bd8427c3f9dc9b4f592229255997",
+    "parser": "EXACT_REDLINE_LINES_V1"
+  },
+  "controls": [
+    {
+      "controlId": "ONE_REQUEST_ONE_TRANSACTION_ORIGIN",
+      "exactRuleText": "- `ONE_REQUEST_ONE_TRANSACTION_ORIGIN`: every HTTP command path declares exactly one transaction origin; edge code never creates a transaction and participating owner calls never create a second origin.",
+      "textSha256": "7db0caedf3bdb4e446d7f6aea400fa4ad6d81322b370183829757016b309e313",
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/backend-performance-operation-database-shape",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5"
+      },
+      "realRedMutation": {
+        "id": "BPF-U01-RED:TRANSACTION_ORIGIN",
+        "purpose": "one request has one transaction origin",
+        "evidence": "checker --self-test"
+      }
+    },
+    {
+      "controlId": "REQUEST_LOCAL_FACT_LOADED_ONCE",
+      "exactRuleText": "- `REQUEST_LOCAL_FACT_LOADED_ONCE`: fresh authorization, session and path facts are minted once at a named request-local origin and passed as immutable facts without bypassing a current owner recheck.",
+      "textSha256": "57877adae19dcb9c683070d03ec66052b9018e9c9dac7ac060d5960d3095be99",
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/backend-performance-request-fact-load-once",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5"
+      },
+      "realRedMutation": {
+        "id": "BPF-U03-RED:FACT_LOADER_DUPLICATE",
+        "purpose": "one request-local fact loader declaration",
+        "evidence": "checker --self-test"
+      }
+    },
+    {
+      "controlId": "OPERATION_DATABASE_SHAPE_DECLARED",
+      "exactRuleText": "- `OPERATION_DATABASE_SHAPE_DECLARED`: every canonical operation has one source-inventory-bound shape class, transaction origin, fact-loader set, component formula, evidence obligation and red discriminator before source admission.",
+      "textSha256": "28827301508ec3e331d7cd92d436d32a86770a5f6e2ca97888c6e02310f82941",
+      "enforcement": {
+        "kind": "GATE",
+        "ref": "scripts/check/backend-performance-operation-database-shape",
+        "status": "ACTIVE",
+        "enforcementPhase": "R5"
+      },
+      "realRedMutation": {
+        "id": "BPF-U04-RED:SHAPE_FOLD_OR_BUDGET",
+        "purpose": "one source-anchored operation shape declaration",
+        "evidence": "checker --self-test"
+      }
+    }
+  ],
+  "heritageStandardsCoverage": {
+    "path": "contracts/policy/standards-coverage-matrix.json",
+    "status": "UNCHANGED_FROZEN_SOURCE_DENOMINATOR",
+    "note": "This supplemental registration does not mutate the Heritage structural standards denominator."
+  }
+}

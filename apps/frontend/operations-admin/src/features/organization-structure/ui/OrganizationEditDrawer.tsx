@@ -46,7 +46,7 @@ export function OrganizationEditDrawer({node, parentName, queryContext, onClose,
     try {
       const updated = await operationsClient.updateOperationsOrganizationNode(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, nodeId: node.id},
-        {body: {code: values.code.trim(), name: values.name.trim(), parentId: node.parentId, phases: node.nodeType === 'PROJECT' ? projectPhasePayload(values.phaseDrafts) : [], notes: values.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues), expectedVersion: node.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {code: values.code.trim(), name: values.name.trim(), parentId: node.parentId, phases: node.nodeType === 'PROJECT' ? projectPhasePayload(values.phaseDrafts) : [], notes: values.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues, node.extensionValues), expectedVersion: node.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated({id: updated.id, nodeType: updated.nodeType, parentId: updated.parentId, code: updated.code, name: updated.name, notes: updated.notes, extensionValues: updated.extensionValues, status: updated.status, phases: updated.phases.map((phase) => phase.name), revision: updated.revision});

@@ -46,9 +46,44 @@ test('joint L2 fixture reports every administrator-reset bootstrap stage', () =>
   assert.match(fixture, /'createCredentialResetWorkspaceInvitation'/);
 });
 
+test('joint fixture retains the platform label, group-name, page-access and fixed-OTP assertions', () => {
+  const fixture = readFileSync(fixturePath, 'utf8');
+  assert.match(fixture, /initializeCommercialGroup/);
+  assert.match(fixture, /body:\s*\{[^}]*groupName:/);
+  assert.match(fixture, /R5_L2_PLATFORM_GROUP_LABEL:\s*required\(group\.json\?\.groupName, 'PLATFORM_GROUP_NAME'\)/);
+  assert.match(fixture, /R5_L2_PLATFORM_WORKSPACE_LABEL:\s*`\$\{required\(workspace\.json\?\.name, 'PLATFORM_WORKSPACE_LABEL'\)\}\(\$\{workspaceKey\}\)`/);
+  assert.doesNotMatch(fixture, /R5_L2_PLATFORM_(?:WORKSPACE|ORGANIZATION_PROJECT|ORGANIZATION_BRAND|ORGANIZATION_TENANT)_LABEL:[^;]*（/);
+  assert.match(fixture, /const pages = \[[\s\S]*'PG-ORG-STRUCTURE'/);
+  assert.match(fixture, /V2S_SEED_OTP_FIXED_VALUE:\s*required\(credentials\.V2S_SEED_OTP_FIXED_VALUE, 'MANAGED_BOOTSTRAP_FIXED_OTP'\)/);
+  assert.match(fixture, /R5_L2_PLATFORM_ORGANIZATION_LABEL:\s*`\$\{required\(store\.json\?\.name, 'PLATFORM_ORGANIZATION_NAME'\)\}\(\$\{required\(store\.json\?\.code, 'PLATFORM_ORGANIZATION_CODE'\)\}\)`/);
+});
+
+test('joint fixture creates store and contract under selected-project context without projectId', () => {
+  const fixture = readFileSync(fixturePath, 'utf8');
+  const storeCreate = fixture.match(/const store = await request\([\s\S]*?body:\s*\{([^}]*)\}\}\);/)?.[1] ?? '';
+  const contractCreate = fixture.match(/createOperationsContract[\s\S]*?body:\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(fixture, /selectOperationsProjectDataNode/);
+  assert.ok(storeCreate);
+  assert.ok(contractCreate);
+  assert.doesNotMatch(fixture, /\bprojectId\b/);
+  assert.match(storeCreate, /brandId:/);
+  assert.match(storeCreate, /tenantId:/);
+  assert.match(contractCreate, /storeId:/);
+});
+
 test('catalog API fixture provisions a project principal for project-scope rejection', () => {
   const fixture = readFileSync(fixturePath, 'utf8');
   assert.match(fixture, /createCatalogProjectRole/);
   assert.match(fixture, /targetType: 'PROJECT'/);
   assert.match(fixture, /CATALOG_INVENTORY_PROJECT_LOGIN: catalogProjectLoginName/);
+});
+
+test('catalog L2 child report keeps business and cleanup ownership separate with terminal diagnostics', () => {
+  const fixture = readFileSync(path.join(root, 'scripts/test/catalog-inventory-l2-test-fixture.mjs'), 'utf8');
+  assert.match(fixture, /businessStatus: 'PASS'/);
+  assert.match(fixture, /cleanupStatus: 'NOT_OWNED_BY_FIXTURE'/);
+  assert.match(fixture, /cleanupOwner: 'JOINT_L2_RUNNER'/);
+  assert.match(fixture, /firstFailure: null/);
+  assert.match(fixture, /lastKnownGood: 'L2_FIXTURE_READBACK'/);
+  assert.match(fixture, /brokenBoundary: null/);
 });

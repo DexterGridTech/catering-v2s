@@ -21,6 +21,7 @@ import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
+import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptService;
@@ -40,11 +41,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Contract-level fallback for R5 owner adapters. Controller-local R3 compatibility handlers retain precedence. */
 @Order
 @RestControllerAdvice
 public final class ContractProblemAdvice {
+    private static final Logger log = LoggerFactory.getLogger(ContractProblemAdvice.class);
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<Problem> multipartTooLarge(MaxUploadSizeExceededException exception, HttpServletRequest request) {
         return problem(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "上传文件超过商品图片大小限制", request);
@@ -58,12 +63,20 @@ public final class ContractProblemAdvice {
         int status = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.status()
             : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.status()
             : ((ProductionTagOwnerApi.Problem) exception).status();
+        log.warn("catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
+            code, status, exception.getClass().getSimpleName(),
+            exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName());
         return problem(HttpStatus.valueOf(status), code, "商品、生产标签或库存操作不满足 owner 约束", request);
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)
     ResponseEntity<Problem> catalogAssetOwnerScopeForbidden(PlatformAssetService.AssetOwnerScopeForbiddenException exception, HttpServletRequest request) {
         return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "商品图片资产操作不满足 owner 约束", request);
+    }
+
+    @ExceptionHandler(CommandExecutionContextResolver.CatalogScopeForbiddenException.class)
+    ResponseEntity<Problem> catalogScopeForbidden(CommandExecutionContextResolver.CatalogScopeForbiddenException exception, HttpServletRequest request) {
+        return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "已认证会话不具备该商品、库存或生产标签操作范围", request);
     }
 
     @ExceptionHandler({

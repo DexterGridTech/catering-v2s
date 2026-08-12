@@ -13,11 +13,11 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 ## Routed memory
 - [decisions.deterministic-context-only](../project-memory/decisions/deterministic-context-only.md) `4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20`
 - [decisions.independent-subagent-adversarial-review](../project-memory/decisions/independent-subagent-adversarial-review.md) `891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf`
-- [decisions.http-crud-efficiency-design-redlines](../project-memory/decisions/http-crud-efficiency-design-redlines.md) `80efcb002dde542c9cbcc08f19b0cec62f20e66c54d6d581650809ef8f33c876`
+- [decisions.http-crud-efficiency-design-redlines](../project-memory/decisions/http-crud-efficiency-design-redlines.md) `8c9b3d87089abf7989745f0bdfbba5c695e3bd8427c3f9dc9b4f592229255997`
 - [decisions.distributed-topology-is-not-current](../project-memory/decisions/distributed-topology-is-not-current.md) `c578afa258d1a7cb610aa87f8a80f5693f0477cfebd0795c8a5c863633c7664e`
 - [operations.claude-review-handoff-standard](../project-memory/operations/claude-review-handoff-standard.md) `35ee335e19c74ac3bdcd1e93281d60e2f36c5a4a9bf23ccf0759a43f9ab1137f`
-- [operations.verification-governance](../project-memory/operations/verification-governance.md) `e424bf923f1368381b26ef0e22a379a5cdd7bc8b7de887cc2c4e78250f2e0f18`
-- [operations.dev-command-separation](../project-memory/operations/dev-command-separation.md) `d75229d34422aa70ae1f7506c09633aa9444147932983de3197c5b093414897e`
+- [operations.verification-governance](../project-memory/operations/verification-governance.md) `5e248d47091b2ff6122f9a0d7fa77793b21aef476add819cac59345d52312bc3`
+- [operations.dev-command-separation](../project-memory/operations/dev-command-separation.md) `8d3c51bbf11f1e97c2b033059ce400966630997b0ebb2d20a2c7859e97a9fe66`
 - [operations.roadmap-control-transfer](../project-memory/operations/roadmap-control-transfer.md) `bcff1e0404176b55ed2b2d438bec47985e88bdaf2b190ec310d84d8d89419e10`
 - [pitfalls.log-first-failure-retry](../project-memory/pitfalls/log-first-failure-retry.md) `044df40abd43efb5948e6457b29f770b7798252c614e53eae1a7a92c40e9e909`
 - [decisions.confirmed-business-language-corpus](../project-memory/decisions/confirmed-business-language-corpus.md) `3dba1c80579d4a0eca281efd59d27fbfb20aa86572648f8e36c83a68a603b4f3`
@@ -26,3 +26,5 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.business-corpus-parked-domain-intake](../project-memory/operations/business-corpus-parked-domain-intake.md) `739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e`
 - [decisions.incremental-compliance-hook](../project-memory/decisions/incremental-compliance-hook.md) `a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81`
 - [operations.implementation-source-reread-discipline](../project-memory/operations/implementation-source-reread-discipline.md) `6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce`
+- [operations.test-closed-loop](../project-memory/operations/test-closed-loop.md) `7bf37e02e10540caac69e248e56e704aca8d1a4811de5c728f10bd2acb7e91de`
+- [pitfalls.green-by-existence-check](../project-memory/pitfalls/green-by-existence-check.md) `11168c34804228d5caf70ae0d4175d20a30c3a0342903d3b3732356037c36782`

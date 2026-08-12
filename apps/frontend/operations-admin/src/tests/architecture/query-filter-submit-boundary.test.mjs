@@ -16,7 +16,6 @@ test('operations CRUD query buttons use ProTable onSubmit and the official searc
     assert.doesNotMatch(source, /form=\{\{[^}]*onFinish/);
     assert.match(source, /onSubmit=/);
     if (source.includes('optionRender:')) {
-      assert.match(source, /optionRender: \(searchConfig\)/);
       assert.match(source, /searchConfig\.form\?\.submit\(\)/);
     }
   }

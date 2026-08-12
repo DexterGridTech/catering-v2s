@@ -48,6 +48,7 @@ import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,10 +80,10 @@ class P4SqlOperationBudgetTest {
     private static final String KEY = "p4-budget";
     private static final String LEDGER_RELATIVE_PATH = "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json";
 
-    /** The prospective S6 is deliberately included before the ledger file is amended. */
+    /** The executable set is deliberately bound to the canonical ledger below. */
     private static final Set<String> REQUIRED_LEDGER_IDS = Set.of(
         "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13",
-        "S1", "S2", "S3", "S4", "S6", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
+        "S1", "S2", "S3", "S4", "S5", "S6", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
     );
 
     /** Named source identities: no row may silently disappear while fixtures are being added. */
@@ -103,6 +104,7 @@ class P4SqlOperationBudgetTest {
         Map.entry("S2", "WorkspaceAuthenticationService#sessionEntry"),
         Map.entry("S3", "WorkspaceInvitationService#managementPage"),
         Map.entry("S4", "WorkspaceInvitationService#managementView"),
+        Map.entry("S5", "WorkspaceUserService#candidates"),
         Map.entry("S6", "WorkspaceInvitationService#managementPageForOperations"),
         Map.entry("O1", "WorkspaceUserService#page"),
         Map.entry("O2", "WorkspaceUserService#page"),
@@ -166,7 +168,7 @@ class P4SqlOperationBudgetTest {
         setupJdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, 'P4 budget', 'p4 budget', 'P4 budget', 'ENABLED', 1, 1, ?, ?, ?)", workspace, KEY, NOW, NOW, NOW);
         long workspaceId = setupJdbc.queryForObject("SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=?", Long.class, workspace);
         commercialGroupId = UUID.randomUUID();
-        setupJdbc.update("INSERT INTO organization.commercial_group (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis) VALUES (?, ?, 'p4-group', 'P4 group', 'system', ?, ?)", KEY, workspaceId, commercialGroupId, NOW);
+        setupJdbc.update("INSERT INTO organization.commercial_group (group_workspace_key, group_workspace_id, commercial_group_code, commercial_group_name, created_by_platform_subject, commercial_group_uuid, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, 'p4-group', 'P4 group', 'system', ?, ?, ?)", KEY, workspaceId, commercialGroupId, NOW, NOW);
 
         TimeProvider time = () -> NOW;
         ExtensionDefinitionService setupDefinitions = new ExtensionDefinitionService(setupJdbc, time);
@@ -260,79 +262,82 @@ class P4SqlOperationBudgetTest {
         assertEquals(REQUIRED_LEDGER_IDS, NAMED_LEDGER_OPERATIONS.keySet(), "named mapping must be an exact ledger set");
         Map<String, Integer> executed = new LinkedHashMap<>();
 
-        assertFixed(executed, "M2", 1,
+        assertFixed(executed, "M2",
             () -> contracts.fixedStoreContracts(workspace, KEY, storeIds.getFirst()),
             () -> contracts.fixedStoreContracts(workspace, KEY, storeIds.getLast()));
-        assertFixed(executed, "M3", 3,
+        assertFixed(executed, "M3",
             () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 1)),
             () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(projectId, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 100)));
-        assertFixed(executed, "M4", 2,
+        assertFixed(executed, "M4",
             () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(null, null, null, "p4-contract", "p4-phase", "p4-item", null, null, null, "UPDATED_AT", "DESC", 1, 1)),
             () -> contracts.list(workspace, KEY, new ContractTaskReadService.ContractListQuery(null, null, null, "p4-contract", "p4-phase", "p4-item", null, null, null, "UPDATED_AT", "DESC", 1, 100)));
-        assertFixed(executed, "M5", 1,
+        assertFixed(executed, "M5",
             () -> assertEquals(100, contractCommands.list(workspace, KEY).size()),
             () -> assertEquals(100, contractCommands.list(workspace, KEY).size()));
-        assertFixed(executed, "M6", 1,
+        assertFixed(executed, "M6",
             () -> assertEquals(101, roles.list(workspace, KEY).size()),
             () -> assertEquals(101, roles.list(workspace, KEY).size()));
-        assertFixed(executed, "M7", 1,
+        assertFixed(executed, "M7",
             () -> assertEquals(100, countedEntities.listEntities("STORE", workspace, KEY).size()),
             () -> assertEquals(100, countedEntities.listEntities("STORE", workspace, KEY).size()));
-        assertFixed(executed, "M8", 2,
+        assertFixed(executed, "M8",
             () -> assertEquals(100, countedEntities.authorizedBrands(workspace, KEY, headCompanyId).size()),
             () -> assertEquals(100, countedEntities.authorizedBrands(workspace, KEY, headCompanyId).size()));
-        assertFixed(executed, "M9", 2,
+        assertFixed(executed, "M9",
             () -> assertEquals(100, countedEntities.authorizedBrandAuthorizations(workspace, KEY, headCompanyId).size()),
             () -> assertEquals(100, countedEntities.authorizedBrandAuthorizations(workspace, KEY, headCompanyId).size()));
-        assertFixed(executed, "M10", 1,
+        assertFixed(executed, "M10",
             () -> assertEquals(5, countedDefinitions.listDefinitions(workspace, KEY).size()),
             () -> assertEquals(5, countedDefinitions.listDefinitions(workspace, KEY).size()));
-        assertFixed(executed, "M12", 2,
+        assertFixed(executed, "M12",
             () -> assertEquals("P4 group（p4-group）", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)),
             () -> assertEquals("P4 group（p4-group）", organizationCommands.describeCommercialGroup(workspace, KEY, commercialGroupId)));
-        assertFixed(executed, "M11", 2,
+        assertFixed(executed, "M11",
             () -> assertTrue(visibility.listVisibleDataNodeCandidates(workspace, KEY, "REGION", regionId).size() >= 100),
             () -> assertTrue(visibility.listVisibleDataNodeCandidates(workspace, KEY, "REGION", regionId).size() >= 100));
-        assertFixed(executed, "O3", 4,
+        assertFixed(executed, "O3",
             () -> assertEquals(1, overview.page(workspace, KEY, "STORE", 1, 1).items().size()),
             () -> assertEquals(100, overview.page(workspace, KEY, "STORE", 1, 100).items().size()));
-        assertFixed(executed, "O4", 1,
+        assertFixed(executed, "O4",
             () -> overview.detail(workspace, KEY, "STORE", storeIds.getFirst()),
             () -> overview.detail(workspace, KEY, "STORE", storeIds.getFirst()));
-        assertFixed(executed, "O6", 1,
+        assertFixed(executed, "O6",
             () -> assertEquals(102, accounts.list(workspace, KEY).size()),
             () -> assertEquals(102, accounts.list(workspace, KEY).size()));
-        assertFixed(executed, "O5", 5,
+        assertFixed(executed, "O5",
             () -> assertEquals(100, assignmentCandidates.listEnabled(workspace, KEY, "STORE").size()),
             () -> assertEquals(100, assignmentCandidates.listEnabled(workspace, KEY, "STORE").size()));
         int s1One = measure("S1-DIRECT-A1", () -> assertTrue(authentication.login(KEY, "p4-auth-one", "p4-password".toCharArray()).session().currentAssignmentId() != null));
         int s1Hundred = measure("S1-SELECT-A100", () -> assertTrue(authentication.login(KEY, "p4-auth-hundred", "p4-password".toCharArray()).session().currentAssignmentId() == null));
-        assertExactLedgerBudget(executed, "S1", "DIRECT_A1", 14, s1One);
-        assertExactLedgerBudget(executed, "S1", "SELECT_A100", 12, s1Hundred);
+        assertExactLedgerBudget(executed, "S1", "DIRECT_A1", s1One);
+        assertExactLedgerBudget(executed, "S1", "SELECT_A100", s1Hundred);
         int s2One = measure("S2-A1", () -> assertEquals(com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.Mode.DIRECT, authentication.sessionEntry(oneAssignmentSessionToken).mode()));
         int s2Hundred = measure("S2-A100", () -> assertEquals(com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.Mode.SELECT, authentication.sessionEntry(hundredAssignmentSessionToken).mode()));
-        assertExactLedgerBudget(executed, "S2", "DIRECT_A1", 9, s2One);
-        assertExactLedgerBudget(executed, "S2", "SELECT_A100", 9, s2Hundred);
-        assertFixed(executed, "S3", 7,
+        assertExactLedgerBudget(executed, "S2", "DIRECT_A1", s2One);
+        assertExactLedgerBudget(executed, "S2", "SELECT_A100", s2Hundred);
+        assertFixed(executed, "S3",
             () -> assertInvitationPage(invitations.managementPage(workspace, KEY, invitationPageRequest(1)), 1, 103),
             () -> assertInvitationPage(invitations.managementPage(workspace, KEY, invitationPageRequest(100)), 100, 103));
-        assertFixed(executed, "S4", 5,
+        assertFixed(executed, "S4",
             () -> invitations.managementView(invitationFixtures.getFirst()),
             () -> invitations.managementView(invitationFixtures.getLast()));
+        assertFixed(executed, "S5",
+            P4SqlOperationBudgetTest::candidateFamiliesAndRoleList,
+            P4SqlOperationBudgetTest::candidateFamiliesAndRoleList);
         WorkspaceSessionReadback regionSession = authentication.session(oneAssignmentSessionToken);
-        assertFixed(executed, "S6", 11,
+        assertFixed(executed, "S6",
             () -> assertInvitationPage(invitations.managementPageForOperations(regionSession, "REGION", regionId, invitationPageRequest(1)), 1, 102),
             () -> assertInvitationPage(invitations.managementPageForOperations(regionSession, "REGION", regionId, invitationPageRequest(100)), 100, 102));
-        assertExactLedgerBudget(executed, "M13", "SINGLE_CALL", 1, m13SqlMeasurement());
+        assertExactLedgerBudget(executed, "M13", "SINGLE_CALL", m13SqlMeasurement());
         var selectedProject = new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.VisibleDataNodeCandidate("PROJECT", projectId, "P4 project", "P4-PROJECT", List.of("P4 project"), regionId, projectId, null, null);
         WorkspaceSessionReadback projectSession = new WorkspaceSessionReadback(UUID.randomUUID(), workspace, KEY, accountIds.getFirst(), firstProjectAssignmentId, new com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext(null, selectedProject, null, null), 7L, 1L, Set.of(), Set.of(), "P4 project operator");
-        assertFixed(executed, "O1", 17,
+        assertFixed(executed, "O1",
             () -> assertEquals(1, users.page(WorkspaceUserService.AccountPageQuery.forOperations(projectSession, "PROJECT", projectId, null, null, null, null, null, null, 1, 1)).items().size()),
             () -> assertEquals(100, users.page(WorkspaceUserService.AccountPageQuery.forOperations(projectSession, "PROJECT", projectId, null, null, null, null, null, null, 1, 100)).items().size()));
-        assertFixed(executed, "O2", 12,
+        assertFixed(executed, "O2",
             () -> assertEquals(1, users.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspace, KEY, null, null, null, null, null, "PROJECT", projectId, null, null, 1, 1)).items().size()),
             () -> assertEquals(100, users.page(WorkspaceUserService.AccountPageQuery.forPlatform(workspace, KEY, null, null, null, null, null, "PROJECT", projectId, null, null, 1, 100)).items().size()));
-        assertFixed(executed, "R8", 2,
+        assertFixed(executed, "R8",
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"),
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"));
 
@@ -356,13 +361,13 @@ class P4SqlOperationBudgetTest {
         for (int index = 0; index < assignmentCount; index++) {
             UUID assignment = UUID.randomUUID();
             setupJdbc.update("INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, role_id, source_invitation_id, service_node_type, service_node_id, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'REGION', ?, 'ACTIVE', 1, ?, ?)",
-                assignment, workspace, KEY, account, projectRoleIds.get(index), invitation, regionId, NOW, NOW);
+                assignment, workspace, KEY, account, regionRoleId, invitation, regionId, NOW, NOW);
             if (selected == null) selected = assignment;
         }
         String token = "p4-session-" + label;
         if (selectedSession) {
-            setupJdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, visible_data_node_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)",
-                UUID.randomUUID(), workspace, KEY, account, sha256(token), selected, regionId, NOW + 86_400_000L);
+            setupJdbc.update("INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, token_hash, current_assignment_id, visible_data_node_id, selected_region_id, context_version, authorization_revision, status, expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)",
+                UUID.randomUUID(), workspace, KEY, account, sha256(token), selected, regionId, regionId, NOW + 86_400_000L);
         }
         return token;
     }
@@ -374,6 +379,34 @@ class P4SqlOperationBudgetTest {
     private static void assertInvitationPage(WorkspaceInvitationService.ManagementInvitationPage page, int itemCount, long total) {
         assertEquals(itemCount, page.items().size());
         assertEquals(total, page.total());
+    }
+
+    private static void candidateFamiliesAndRoleList() {
+        assertCandidateOrganization("GROUP", 1);
+        assertCandidateOrganization("REGION", 100);
+        assertCandidateOrganization("PROJECT", 1);
+        assertCandidateOrganization("HEAD_COMPANY", 1);
+        assertCandidateOrganization("STORE", 100);
+
+        WorkspaceUserService.CandidatePage rolePage = users.candidates(
+            WorkspaceUserService.CandidateQuery.forPlatform(
+                workspace, KEY, "PROJECT", "ROLE", "LIST_FILTER", null, 1, 100, null
+            )
+        );
+        assertEquals("ROLE", rolePage.metadata().subjectType());
+        assertEquals(100, rolePage.metadata().total());
+        assertEquals(100, rolePage.roles().size());
+    }
+
+    private static void assertCandidateOrganization(String targetType, int expectedCount) {
+        WorkspaceUserService.CandidatePage page = users.candidates(
+            WorkspaceUserService.CandidateQuery.forPlatform(
+                workspace, KEY, targetType, "ORGANIZATION", "LIST_FILTER", null, 1, 100, null
+            )
+        );
+        assertEquals("ORGANIZATION", page.metadata().subjectType());
+        assertEquals(expectedCount, page.metadata().total());
+        assertEquals(Math.min(expectedCount, 100), page.organizations().size());
     }
 
     private static String sha256(String value) {
@@ -392,7 +425,7 @@ class P4SqlOperationBudgetTest {
 
     @Test
     void m13ClosesTheJdbcResultSetBeforeTheAssetObjectProbe() {
-        assertExactLedgerBudget(new LinkedHashMap<>(), "M13", "SINGLE_CALL", 1, m13SqlMeasurement());
+        assertExactLedgerBudget(new LinkedHashMap<>(), "M13", "SINGLE_CALL", m13SqlMeasurement());
     }
 
     private static int m13SqlMeasurement() {
@@ -417,24 +450,23 @@ class P4SqlOperationBudgetTest {
         assertUsesIndex("ix_contract_store_contract_store", "SELECT id FROM contract.store_contract WHERE store_id='" + storeIds.getFirst() + "'::uuid");
         assertUsesIndex("ix_organization_store_project", "SELECT id FROM organization.store WHERE project_id='" + projectId + "'::uuid");
         assertUsesIndex("ix_organization_store_head_company", "SELECT id FROM organization.store WHERE head_company_id='" + headCompanyId + "'::uuid");
-        assertUsesIndex("ix_workspace_password_reset_account", "SELECT id FROM workspace_iam.password_reset WHERE account_id='00000000-0000-0000-0000-000000000006'::uuid");
+        assertUsesIndex("ix_operations_password_recovery_account_active", "SELECT id FROM workspace_iam.operations_password_recovery WHERE account_id='00000000-0000-0000-0000-000000000006'::uuid AND status IN ('PENDING', 'OTP_VERIFIED')");
         assertUsesIndex("ix_platform_session_platform_admin", "SELECT id FROM platform_iam.platform_session WHERE platform_admin_id='00000000-0000-0000-0000-000000000007'::uuid");
     }
 
-    private static void assertFixed(Map<String, Integer> executed, String id, int budget, SqlOperation one, SqlOperation hundred) {
+    private static void assertFixed(Map<String, Integer> executed, String id, SqlOperation one, SqlOperation hundred) {
         int oneCount = measure(id, one);
         int hundredCount = measure(id, hundred);
-        assertExactLedgerBudget(executed, id, "FIRST_CALL", budget, oneCount);
-        assertExactLedgerBudget(executed, id, "SECOND_CALL", budget, hundredCount);
+        assertExactLedgerBudget(executed, id, "FIRST_CALL", oneCount);
+        assertExactLedgerBudget(executed, id, "SECOND_CALL", hundredCount);
     }
 
-    private static void assertExactLedgerBudget(Map<String, Integer> executed, String id, String caseId, int localExpected, int actual) {
+    private static void assertExactLedgerBudget(Map<String, Integer> executed, String id, String caseId, int actual) {
         LedgerRow row = canonicalLedger.get(id);
         if (row == null) throw new AssertionError("canonical ledger row missing: " + id);
         assertEquals(NAMED_LEDGER_OPERATIONS.get(id), row.callerSymbol(), "ledger caller identity drift: " + id);
         Integer ledgerExpected = row.exactStatements().get(caseId);
         if (ledgerExpected == null) throw new AssertionError("canonical ledger case missing: " + id + "#" + caseId);
-        assertEquals(ledgerExpected.intValue(), localExpected, "local test budget drift: " + id + "#" + caseId);
         executed.put(id + "#" + caseId, actual);
         if (ledgerExpected.intValue() != actual) exactBudgetDrifts.add(id + "#" + caseId + " expected=" + ledgerExpected + " actual=" + actual);
     }
@@ -470,6 +502,7 @@ class P4SqlOperationBudgetTest {
         operation.run();
         int count = countedDataSource.statementCount();
         if (count == 0) throw new AssertionError(id + " did not execute real JDBC SQL");
+        if (id.startsWith("S1")) System.out.println("P4_SQL_TRACE=" + id + ";STATEMENTS=" + countedDataSource.executedSql());
         return count;
     }
 
@@ -496,11 +529,13 @@ class P4SqlOperationBudgetTest {
         private final DataSource delegate;
         private final AtomicInteger statements = new AtomicInteger();
         private final AtomicInteger openResultSets = new AtomicInteger();
+        private final List<String> executedSql = Collections.synchronizedList(new ArrayList<>());
 
         private CountingDataSource(DataSource delegate) { this.delegate = delegate; }
-        private void reset() { statements.set(0); }
+        private void reset() { statements.set(0); executedSql.clear(); }
         private int statementCount() { return statements.get(); }
         private int openResultSetCount() { return openResultSets.get(); }
+        private List<String> executedSql() { synchronized (executedSql) { return List.copyOf(executedSql); } }
 
         @Override public Connection getConnection() throws SQLException { return connection(delegate.getConnection()); }
         @Override public Connection getConnection(String username, String password) throws SQLException { return connection(delegate.getConnection(username, password)); }
@@ -515,13 +550,18 @@ class P4SqlOperationBudgetTest {
         private Connection connection(Connection connection) {
             return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[] { Connection.class }, (proxy, method, arguments) -> {
                 Object result = invoke(connection, method, arguments);
-                return result instanceof Statement statement && Statement.class.isAssignableFrom(method.getReturnType()) ? statement(statement) : result;
+                String preparedSql = arguments != null && arguments.length > 0 && arguments[0] instanceof String sql ? sql : null;
+                return result instanceof Statement statement && Statement.class.isAssignableFrom(method.getReturnType()) ? statement(statement, preparedSql) : result;
             });
         }
 
-        private Statement statement(Statement statement) {
+        private Statement statement(Statement statement, String preparedSql) {
             return (Statement) Proxy.newProxyInstance(Statement.class.getClassLoader(), statementInterfaces(statement), (proxy, method, arguments) -> {
-                if (method.getName().startsWith("execute")) statements.incrementAndGet();
+                if (method.getName().startsWith("execute")) {
+                    statements.incrementAndGet();
+                    String sql = arguments != null && arguments.length > 0 && arguments[0] instanceof String explicitSql ? explicitSql : preparedSql;
+                    executedSql.add(sql == null ? method.getName() : method.getName() + " " + sql.replaceAll("\\s+", " ").trim());
+                }
                 Object result = invoke(statement, method, arguments);
                 return result instanceof ResultSet resultSet ? resultSet(resultSet) : result;
             });

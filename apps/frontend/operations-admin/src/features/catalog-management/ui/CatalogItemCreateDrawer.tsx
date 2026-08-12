@@ -3,7 +3,7 @@ import {adminWideDrawerSurfaceProps, testId, useDrawerFormLifecycle} from '@cate
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {CatalogInventoryEnvelope, CatalogItemCreateRequest, CatalogShapeManifestView, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
+import type {CatalogItemCreateRequest, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 
 type Props = {
@@ -35,7 +35,7 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
   const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !open || !queryContext.scopeRef});
   const [create, createState] = operationsRtk.useCreateOperationsCatalogItemMutation();
   const lifecycle = useDrawerFormLifecycle({open, onOpenChange: (next) => { if (!next) onClose(); }, dirtyMessage: '新建商品内容尚未保存。', dirtyGuardTestIds: {confirm: testId('catalog-create-dirty-discard'), cancel: testId('catalog-create-dirty-continue')}, diagnosticOperationId: 'catalog-item-create', idempotencyKey: true});
-  const manifest = (manifestQuery.data as CatalogInventoryEnvelope<CatalogShapeManifestView> | undefined)?.data;
+  const manifest = manifestQuery.data?.data;
   const shapeKeys = manifest?.shapeKeys?.length ? manifest.shapeKeys : Object.keys(shapeLabels);
   const shapeOptions = shapeKeys.map((shapeKey) => ({value: shapeKey, label: shapeLabels[shapeKey] ?? shapeKey, disabled: shapeKey === 'BENEFIT_SHELL'}));
 

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TEST_DELIVERY_PROCESS_REMEDIATION_DESIGN_CLAUDE_REMEDIATION_20260811",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "verdict": "GO",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-design-claude-remediation-round1-input-checklist.md",
+    "sha256": "9b088d3c68365d9c54948dc7607acf0ba9e9259a7ffa6479ddc5914fe32df59a"
+  },
+  "blindReviewDeclaration": "Independent findings and verdict were formed from the mandatory checklist, governing sources, current design, manifest, authorization, catalog/checker/verifier, and canonical HMAC owners before author intake was read.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "manifestSha256": "edcbdf9fbdc7030536eefe57a698fec7f274acb3b5adc40729c793eadb95ce80",
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": [
+      "matrix-to-catalog exact-set weakening",
+      "kind-specific execution admission",
+      "receipt identity and no-replace collision safety",
+      "canonical HMAC byte preservation",
+      "static-design authorization boundary"
+    ]
+  },
+  "expectedBehavior": [
+    "The catalog admits exactly the matrix-derived 17 ACTIVE machine-enforcement refs: one VERIFY_ROOT, fifteen VERIFY_CHILD, and one ARCHUNIT_SELECTOR; missing, extra, duplicate, unknown-kind, and subset admissions fail.",
+    "VERIFY_ROOT has dependency hashes but no command or successMarkers; child and selector entries require command and markers; executeActive accepts only the child partition while root and selector use their dedicated paths.",
+    "A root invocation obtains rootRunId from crypto.randomUUID(), reserves its derived receipt path without replacement before any child, rejects an existing path with VERIFY_RECEIPT_PATH_EXISTS without overwrite, and validates the same invocation identity through --expected-root-run-id.",
+    "The shared database-operation canonical owner preserves the nine-field byte sequence including statementId ?? empty string; an omitted statementId has byte-for-byte pre-extraction equivalence and changes to that behavior fail.",
+    "This review is static DESIGN-only and does not assert implementation, dynamic execution, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment success."
+  ],
+  "findings": [
+    {
+      "id": "THCL-N-001",
+      "severity": "N",
+      "status": "CONFIRMED",
+      "unitIds": [
+        "THCL-U02"
+      ],
+      "title": "THCL-U02 approved-source anchor does not bind the canonical Claude N-01 heading",
+      "evidence": "The manifest declares `### N-01｜`rootRunId` 的“不可预测”未指定来源；receipt path 已存在时的行为未指定`, while the hash-bound Claude source contains only `### N-01｜`rootRunId` 的\"不可预测\"未指定来源`. Recomputing the exact literal occurrence count gives 0, and `scripts/check/implementation-design-granularity --manifest ...claude-remediation-granularity-manifest.json --review ...claude-remediation-round1.json` fails `UNIT_SOURCE_THCL-U02_1_ANCHOR_NOT_UNIQUE:0` before review-content validation.",
+      "risk": "The N-01 design logic is explicit, but the current manifest cannot provide its required unique owning-source trace or pass its fail-closed static checker until the anchor is corrected.",
+      "disposition": "Correct the manifest's THCL-U02 approvedSources[0].anchor to the exact canonical N-01 heading and renew its hash-bound review path; this is a documentation-binding correction only, not implementation or runtime authority."
+    }
+  ],
+  "unitVerdicts": [
+    {
+      "id": "THCL-U01",
+      "verdict": "GO",
+      "findingIds": []
+    },
+    {
+      "id": "THCL-U02",
+      "verdict": "GO_WITH_N",
+      "findingIds": [
+        "THCL-N-001"
+      ]
+    },
+    {
+      "id": "THCL-U04",
+      "verdict": "GO",
+      "findingIds": []
+    }
+  ],
+  "solutionReasonableness": {
+    "problemFit": "The repair directly reconciles Claude M-01 by retaining the frozen full matrix denominator while making catalog fields and execution paths mutually kind-aware; it separately closes the bounded N-01 receipt and N-02 canonical-byte ambiguities.",
+    "simplerAlternativeAssessment": "Keeping the former unconditional command schema would make VERIFY_ROOT impossible; weakening the catalog to children or adding a parallel runner would lose root or selector coverage. The selected schema-v2 partition reuses the existing catalog, checker, verifier, and HMAC owner with the smallest bounded change surface.",
+    "costFit": "The added controls are finite mechanical predicates with concrete red mutations and do not claim dynamic evidence or create a new general governance system.",
+    "verdict": "REASONABLE"
+  },
+  "conclusion": {
+    "verdict": "GO",
+    "summary": "Independent static DESIGN review found no M or S finding. The design fixes the kind conflict without weakening the 17-ref denominator, specifies UUID/no-replace receipt safety, and preserves statementId nullish canonical bytes through a single owner and red proof. One N finding records the current manifest's non-binding N-01 source anchor, which prevents its static granularity check from admitting the hash-bound manifest until corrected.",
+    "severityCounts": {
+      "M": 0,
+      "S": 0,
+      "N": 1
+    },
+    "authorizationBoundary": "Static DESIGN-only verdict. It does not authorize implementation or any source, test, runner, contract, active-package, dynamic-environment, business, cleanup, performance, Testcontainers, DEV, L2, seed, reset, browser, UAT, or deployment action."
+  }
+}

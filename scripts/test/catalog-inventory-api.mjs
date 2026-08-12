@@ -23,8 +23,10 @@ const scenarioPath = path.join(root, 'contracts/policy/catalog-inventory-api-sce
 const shapePath = path.join(root, 'contracts/catalog/catalog-inventory-read-models.json');
 const fixturePath = path.join(root, 'contracts/policy/catalog-inventory-fixture-catalog.json');
 const copyPolicyPath = path.join(root, 'contracts/policy/catalog-inventory-copy-policy.json');
+const backendPerformanceFixturePath = path.join(root, 'contracts/policy/backend-performance-final-fixture-catalog.json');
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+const backendPerformanceFixtures = new Map(readJson(backendPerformanceFixturePath).rows.filter((row) => row.area === 'U07_ROUTE').map((row) => [row.operationId, row]));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const compact = (value, max = 240) => String(value ?? 'UNKNOWN').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').slice(0, max);
 const fail = (code) => { const error = new Error(code); error.code = code; throw error; };
@@ -32,8 +34,15 @@ const required = (value, name) => { if (value === null || value === undefined ||
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
 const envelopeData = (json) => json?.data ?? json;
 const responseErrorCode = (json) => json?.errorCode ?? json?.code ?? json?.problemCode ?? json?.error?.code ?? null;
+export const catalogRuntimeFailureCode = (error) => {
+  const candidate = error?.code;
+  if (typeof candidate === 'string' && /^[A-Z][A-Z0-9_]*$/.test(candidate)) return candidate;
+  const responseCode = String(error?.message ?? '').match(/_HTTP_\d{3}_([A-Z][A-Z0-9_]*)$/)?.[1];
+  return responseCode ?? 'CATALOG_INVENTORY_UNCLASSIFIED_FAILURE';
+};
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requiredUuid = (value, label) => { if (typeof value !== 'string' || !uuidPattern.test(value)) fail(`API_OWNER_REF_MISSING:${label}`); return value; };
+const normalizeBackendPerformanceRoute = normalizeEdgePath;
 function canonicalJson(value) {
   if (Array.isArray(value)) return value.map(canonicalJson);
   if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])]));
@@ -49,13 +58,45 @@ function registry() {
   return merged;
 }
 
+function validateBackendPerformanceCanonicalOperationIds(all, catalogOperationIds) {
+  const expectedOperationIds = new Set(all
+    .filter((operation) => catalogOperationIds.has(operation.operationId)
+      && backendPerformanceFixtures.get(operation.operationId)?.area === 'U07_ROUTE')
+    .map((operation) => operation.operationId));
+  if (expectedOperationIds.size !== 42) fail('BP_U07_CANONICAL_OPERATION_DENOMINATOR');
+  return expectedOperationIds;
+}
+
 function loadManagedRun() {
-  if (!runtime || !fs.existsSync(path.join(runtime, 'run-manifest.json'))) fail('MANAGED_RUN_MANIFEST_REQUIRED');
-  const manifest = readJson(path.join(runtime, 'run-manifest.json'));
-  if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true) fail('MANAGED_RUN_MANIFEST_INVALID');
+  const manifestPath = process.env.CATALOG_INVENTORY_MANIFEST_PATH || path.join(runtime, 'run-manifest.json');
+  if (!runtime || !fs.existsSync(manifestPath)) fail('MANAGED_RUN_MANIFEST_REQUIRED');
+  const manifest = readJson(manifestPath);
+  const performanceCanonicalMode = process.env.CATALOG_INVENTORY_PERFORMANCE_CANONICAL === 'true';
+  const validDevManifest = manifest.kind === 'r5-dev-run-manifest' && manifest.freshDatabase === true;
+  const validPerformanceManifest = performanceCanonicalMode
+    && manifest.kind === 'backend-performance-testcontainers-catalog-runtime'
+    && manifest.freshDatabase === true
+    && manifest.executionPlane === 'REMOTE_JVM_AND_DOCKER';
+  if (!validDevManifest && !validPerformanceManifest) fail('MANAGED_RUN_MANIFEST_INVALID');
   const credentialsFile = required(manifest.credentialsFile, 'MANAGED_CREDENTIALS_FILE');
   const credentials = Object.fromEntries(fs.readFileSync(credentialsFile, 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
-  return {manifest, credentials};
+  return {manifest, credentials, performanceCanonicalMode};
+}
+
+function backendPerformanceRequestMetadata(operationId, operation, environment = process.env) {
+  const runId = required(environment.V2S_BACKEND_PERFORMANCE_FINAL_RUN_ID, 'BACKEND_PERFORMANCE_FINAL_RUN_ID');
+  const secret = required(environment.V2S_BACKEND_PERFORMANCE_FINAL_SECRET, 'BACKEND_PERFORMANCE_FINAL_SECRET');
+  const fixture = backendPerformanceFixtures.get(operationId);
+  if (!fixture || fixture.area !== 'U07_ROUTE' || fixture.operationId !== operationId) fail(`BP_FINAL_FIXTURE_CATALOG_OPERATION_MISSING:${operationId}`);
+  if (fixture.method !== operation.method || normalizeBackendPerformanceRoute(fixture.routeTemplate) !== normalizeBackendPerformanceRoute(operation.path)) fail(`BP_FINAL_FIXTURE_CATALOG_ROUTE_DRIFT:${operationId}`);
+  return {
+    'X-Backend-Performance-Run-Id': runId,
+    'X-Backend-Performance-Secret': secret,
+    'X-Backend-Performance-Operation-Id': operationId,
+    'X-Backend-Performance-Route-Template': fixture.routeTemplate,
+    'X-Backend-Performance-Fixture-Id': fixture.fixtureId,
+    'X-Backend-Performance-Area': fixture.area,
+  };
 }
 
 function scalarSessionNode(session, type, requested) {
@@ -72,6 +113,38 @@ function scalarSessionNode(session, type, requested) {
 }
 
 function assertThat(condition, code) { if (!condition) fail(code); }
+export function validateScenarioCatalog(scenarios) {
+  assertThat(scenarios && typeof scenarios === 'object' && Array.isArray(scenarios.scenarios), 'API_SCENARIO_CATALOG_INVALID');
+  assertThat(Number.isSafeInteger(scenarios.scenarioCount) && scenarios.scenarioCount === scenarios.scenarios.length, 'API_SCENARIO_COUNT_DENOMINATOR_INVALID');
+  const cases = [];
+  const caseIds = new Set();
+  for (const scenario of scenarios.scenarios) {
+    assertThat(Number.isSafeInteger(scenario.caseCount) && scenario.caseCount >= 0 && Array.isArray(scenario.cases) && scenario.caseCount === scenario.cases.length, `API_SCENARIO_CASE_DENOMINATOR_INVALID:${scenario.scenarioId ?? 'UNKNOWN'}`);
+    for (const entry of scenario.cases) {
+      assertThat(typeof entry?.caseId === 'string' && entry.caseId !== '' && !caseIds.has(entry.caseId), `API_SCENARIO_CASE_SET_INVALID:${entry?.caseId ?? 'UNKNOWN'}`);
+      caseIds.add(entry.caseId);
+      cases.push(entry);
+    }
+  }
+  assertThat(Number.isSafeInteger(scenarios.caseCount) && scenarios.caseCount === cases.length, 'API_CASE_DENOMINATOR_INVALID');
+  return {scenarioCount: scenarios.scenarioCount, caseCount: scenarios.caseCount, cases};
+}
+export const caseLoopSkipReason = ({performanceCanonicalMode, sharedFixtureBarrier}) => {
+  if (sharedFixtureBarrier?.status !== 'PASS') return 'SHARED_FIXTURE_BARRIER_FAILED';
+  if (performanceCanonicalMode) return 'PERFORMANCE_CANONICAL_MODE';
+  return null;
+};
+export const canonicalFailureResult = (operationIds, reason) => ({status: 'FAIL', operationIds: [...operationIds], reason});
+function preserveFixtureWholeSaveImages(detail, draft) {
+  const item = detail?.item || detail || {};
+  return {...draft, images: Array.isArray(item.images) ? [...item.images] : []};
+}
+function assertFixtureWholeSaveImagesRetained(detail, draft) {
+  const item = detail?.item || detail || {};
+  const previous = Array.isArray(item.images) ? item.images : [];
+  const submitted = Array.isArray(draft?.images) ? draft.images : [];
+  assertThat(previous.every((assetRef) => submitted.includes(assetRef)), 'WHOLE_SAVE_IMAGE_REFERENCE_DROPPED');
+}
 function assertEnvelope(json, code = 'API_ENVELOPE_INVALID') {
   assertThat(typeof json === 'object' && json !== null, code);
   assertThat(typeof json.revision === 'string' && json.revision.length > 0, `${code}:REVISION`);
@@ -83,16 +156,36 @@ async function execute() {
     if (!process.env.V2S_RUNTIME_DIR) fail('V2S_RUNTIME_DIR_REQUIRED');
     if (!fs.existsSync(scenarioPath)) fail('API_SCENARIO_CATALOG_MISSING');
     const scenarios = readJson(scenarioPath);
-    assertThat(scenarios.scenarioCount === 26 && scenarios.caseCount === 100, 'API_SCENARIO_DENOMINATOR_INVALID');
+    const scenarioCatalog = validateScenarioCatalog(scenarios);
+    assertThat(scenarioCatalog.scenarioCount === 26 && scenarioCatalog.caseCount === 99, 'API_SCENARIO_DENOMINATOR_INVALID');
+    const sourceOwnedScenario = scenarios.scenarios.find((entry) => entry.scenarioId === 'CI-API-007');
+    assertThat(sourceOwnedScenario?.caseCount === 0 && sourceOwnedScenario.executionApplicability === 'NOT_APPLICABLE_WITH_REASON', 'API_SOURCE_OWNED_INGRESS_APPLICABILITY_INVALID');
     const sample = {scopeContext: {store: {dataNodeRef: 'store-ref'}}, dataNodeCandidates: [{dataNodeType: 'STORE', dataNodeRef: 'store-ref'}], contextVersion: 7};
     assertThat(scalarSessionNode(sample, 'STORE', 'store-ref').ref === 'store-ref', 'SESSION_WIRE_DATA_NODE_REF_REQUIRED');
     let codeRefRejected = false; try { requiredUuid('LATTE-001', 'PRODUCT_SKU'); } catch { codeRefRejected = true; }
     assertThat(codeRefRejected, 'API_CODE_TYPED_REF_MUST_REJECT');
-    process.stdout.write('CATALOG_INVENTORY_API_SELF_TEST=PASS\nAPI_CASE_DENOMINATOR=100\nHTTP_ONLY=true\n');
+    const prior = {item: {images: ['asset-ref']}};
+    const retained = preserveFixtureWholeSaveImages(prior, {inventoryBom: []});
+    assertFixtureWholeSaveImagesRetained(prior, retained);
+    let droppedImageRejected = false; try { assertFixtureWholeSaveImagesRetained(prior, {inventoryBom: [], images: []}); } catch { droppedImageRejected = true; }
+    assertThat(droppedImageRejected, 'WHOLE_SAVE_IMAGE_DROP_RED_MUTATION_REJECTED');
+    const all = registry();
+    const catalogOperationIds = new Set(readJson(registryCatalogPath).operations.map((operation) => operation.operationId));
+    const canonicalOperationIds = validateBackendPerformanceCanonicalOperationIds(all, catalogOperationIds);
+    assertThat(canonicalOperationIds.size === 42, 'BP_U07_CANONICAL_OPERATION_DENOMINATOR_SELF_TEST');
+    let broadRegistryRejected = false;
+    try { validateBackendPerformanceCanonicalOperationIds(all, new Set(all.map((operation) => operation.operationId))); } catch (error) { broadRegistryRejected = error.code === 'BP_U07_CANONICAL_OPERATION_DENOMINATOR'; }
+    assertThat(broadRegistryRejected, 'BP_U07_CANONICAL_BROAD_REGISTRY_RED_MUTATION_REQUIRED');
+    let incompleteCatalogRejected = false;
+    const incompleteCatalog = new Set(catalogOperationIds);
+    incompleteCatalog.delete(canonicalOperationIds.values().next().value);
+    try { validateBackendPerformanceCanonicalOperationIds(all, incompleteCatalog); } catch (error) { incompleteCatalogRejected = error.code === 'BP_U07_CANONICAL_OPERATION_DENOMINATOR'; }
+    assertThat(incompleteCatalogRejected, 'BP_U07_CANONICAL_MISSING_MEMBER_RED_MUTATION_REQUIRED');
+    process.stdout.write(`CATALOG_INVENTORY_API_SELF_TEST=PASS\nAPI_CASE_DENOMINATOR=${scenarioCatalog.caseCount}\nHTTP_ONLY=true\n`);
     return;
   }
 
-  const {manifest, credentials} = loadManagedRun();
+  const {manifest, credentials, performanceCanonicalMode} = loadManagedRun();
   const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const all = registry();
   const scenarios = readJson(scenarioPath);
@@ -101,6 +194,14 @@ async function execute() {
   const base = (process.env.CATALOG_INVENTORY_EDGE_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
   const workspaceKey = process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || 'aurora';
   const password = required(process.env.CATALOG_INVENTORY_OPERATIONS_PASSWORD || credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD, 'OPERATIONS_PASSWORD');
+  const passwords = {
+    GROUP: process.env.CATALOG_INVENTORY_GROUP_PASSWORD || password,
+    REGION: process.env.CATALOG_INVENTORY_REGION_PASSWORD || password,
+    PROJECT: process.env.CATALOG_INVENTORY_PROJECT_PASSWORD || password,
+    HEAD_COMPANY: process.env.CATALOG_INVENTORY_HEAD_COMPANY_PASSWORD || password,
+    STORE: process.env.CATALOG_INVENTORY_STORE_PASSWORD || password,
+  };
+  const passwordFor = (scopeType) => required(passwords[scopeType] || password, `${scopeType}_PASSWORD`);
   const storeLogin = required(process.env.CATALOG_INVENTORY_OPERATIONS_LOGIN || process.env.CATALOG_INVENTORY_STORE_LOGIN, 'OPERATIONS_LOGIN');
   const groupLogin = required(process.env.CATALOG_INVENTORY_GROUP_LOGIN, 'GROUP_LOGIN');
   const headLogin = process.env.CATALOG_INVENTORY_HEAD_COMPANY_LOGIN || storeLogin;
@@ -131,7 +232,12 @@ async function execute() {
     const operation = resolveGeneratedOperationById(all, operationId);
     const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters || {}});
     const correlationId = `catalog-api-${randomUUID()}`;
-    const headers = {Accept: 'application/json', 'X-Seed-Operation-Id': operationId, 'X-Seed-Run-Id': manifest.runId, 'X-Correlation-Id': correlationId};
+    const performanceMetadata = options.performanceCanonical ? backendPerformanceRequestMetadata(operationId, operation) : null;
+    const headers = {
+      Accept: 'application/json',
+      'X-Correlation-Id': correlationId,
+      ...(performanceMetadata || {'X-Seed-Operation-Id': operationId, 'X-Seed-Run-Id': manifest.runId}),
+    };
     if (options.requestId) headers['X-Request-Id'] = options.requestId;
     if (options.testFailurePoint) headers['X-Catalog-Test-Failure-Point'] = options.testFailurePoint;
     if (options.cookie) headers.Cookie = options.cookie;
@@ -142,19 +248,35 @@ async function execute() {
     else if (options.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(options.body); }
     if (operation.method !== 'GET') headers['Idempotency-Key'] = options.idempotencyKey || `catalog-api-${sha256(`${runId}:${phase}`).slice(0, 48)}`;
     const began = Date.now();
+    const timeoutMs = options.timeoutMs || 30_000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     let response;
-    try { response = await fetch(`${base}${pathname}`, {method: operation.method, headers, body, signal: AbortSignal.timeout(options.timeoutMs || 30_000)}); }
-    catch (error) {
+    try {
+      response = await fetch(`${base}${pathname}`, {method: operation.method, headers, body, signal: controller.signal});
+      log(`${phase}_RESPONSE_HEADERS`, 'RECEIVED', {operationId, status: response.status, correlationId});
+    } catch (error) {
+      clearTimeout(timeout);
       calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: 0, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null});
       log(phase, 'ERROR', {operationId, status: 0, correlationId});
       throw new Error(`${phase}_NETWORK_${compact(error.message)}`);
     }
-    const text = await response.text();
+    let text;
+    try {
+      text = await response.text();
+    } catch (error) {
+      clearTimeout(timeout);
+      calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null});
+      log(phase, 'ERROR', {operationId, status: response.status, correlationId, bodyRead: 'FAILED'});
+      throw new Error(`${phase}_BODY_${compact(error.message)}`);
+    }
+    clearTimeout(timeout);
+    log(`${phase}_RESPONSE_BODY`, 'RECEIVED', {operationId, status: response.status, bytes: text.length, correlationId});
     let json = null; try { json = text ? JSON.parse(text) : null; } catch { /* the case assertion will report a shape failure */ }
     const requestId = response.headers.get('x-request-id');
     const responseCorrelation = response.headers.get('x-correlation-id') || correlationId;
     const accepted = (options.expected || [200]).includes(response.status);
-    calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'REJECTED', durationMs: Date.now() - began, requestId});
+    calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'REJECTED', durationMs: Date.now() - began, requestId, ...(options.performanceCanonical ? {performanceCanonical: true} : {})});
     log(phase, accepted ? 'PASS' : 'REJECTED', {operationId, status: response.status, requestId, correlationId: responseCorrelation, problemCode: accepted ? undefined : responseErrorCode(json)});
     if (!accepted && !options.allowRejected) throw new Error(`${phase}_HTTP_${response.status}_${responseErrorCode(json) || 'UNCLASSIFIED'}`);
     return {status: response.status, json, requestId, correlationId: responseCorrelation, cookie: response.headers.get('set-cookie')?.split(';', 1)[0] || null};
@@ -168,7 +290,7 @@ async function execute() {
   };
 
   const login = async (scopeType, loginName, requestedRef, options = {}) => {
-    const logged = await request(`${scopeType}_LOGIN`, 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: workspaceKey}, {body: {loginName, password}});
+    const logged = await request(`${scopeType}_LOGIN`, 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: workspaceKey}, {body: {loginName, password: passwordFor(scopeType)}});
     const cookie = required(logged.cookie, `${scopeType}_COOKIE`);
     const entry = await request(`${scopeType}_SESSION`, 'getOperationsWorkspaceSessionEntry', {groupWorkspaceKey: workspaceKey}, {cookie});
     const node = scalarSessionNode(entry.json, scopeType, requestedRef);
@@ -186,7 +308,7 @@ async function execute() {
     return {scopeType, cookie, dataNodeRef, brandRef, session, context: envelopeData(context.json)};
   };
   const loginGroup = async (loginName) => {
-    const logged = await request('GROUP_LOGIN', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: workspaceKey}, {body: {loginName, password}});
+    const logged = await request('GROUP_LOGIN', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: workspaceKey}, {body: {loginName, password: passwordFor('GROUP')}});
     const cookie = required(logged.cookie, 'GROUP_COOKIE');
     const entry = await request('GROUP_SESSION', 'getOperationsWorkspaceSessionEntry', {groupWorkspaceKey: workspaceKey}, {cookie});
     return {scopeType: 'GROUP', cookie, dataNodeRef: null, brandRef, session: entry.json, context: null};
@@ -380,7 +502,6 @@ async function execute() {
   let staleFixture;
   let productionTagFixture;
   let hasSkuFixture;
-  let sourceOwnershipFixture;
   let shapeMatrixFixture;
   const fixtureBindings = {};
   const bindFixture = (fixtureRef, binding) => {
@@ -457,19 +578,34 @@ async function execute() {
     if (closureOverflowFixture) return closureOverflowFixture;
     const stamp = Date.now();
     const rootCode = `API-CLOSURE-ROOT-${stamp}`;
-    const componentCodes = Array.from({length: closureLimit}, (_, index) => `API-CLOSURE-COMP-${stamp}-${String(index + 1).padStart(3, '0')}`);
+    // The root itself participates in the copy closure.  Start exactly on the
+    // published boundary, then let CI-API-017-02 add one normal owner-managed
+    // component to prove the one-over-limit rejection.
+    const componentCodes = Array.from({length: closureLimit - 1}, (_, index) => `API-CLOSURE-COMP-${stamp}-${String(index + 1).padStart(3, '0')}`);
+    const overflowCode = `API-CLOSURE-COMP-${stamp}-${String(closureLimit).padStart(3, '0')}`;
     await createItem(head, 'COPY_CLOSURE_CREATE_ROOT', rootCode);
-    await createItemsInBatches(head, 'COPY_CLOSURE_CREATE', componentCodes);
-    for (const code of [rootCode, ...componentCodes]) await recordItemRefs(head, 'COPY_CLOSURE', code);
+    await createItemsInBatches(head, 'COPY_CLOSURE_CREATE', [...componentCodes, overflowCode]);
+    for (const code of [rootCode, ...componentCodes, overflowCode]) await recordItemRefs(head, 'COPY_CLOSURE', code);
     const rootDetail = envelopeData((await getDetail(head, 'COPY_CLOSURE_ROOT_DETAIL', rootCode)).json);
     await saveItem(head, 'COPY_CLOSURE_ROOT_SAVE', rootCode, Number(rootDetail.item?.version || rootDetail.version || 1), {
       name: rootCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
       ...compositeGroups(head, componentCodes, rootCode),
     });
-    closureOverflowFixture = {rootCode, componentCodes};
-    bindFixture('FIXTURE-CLOSURE-LIMIT', {catalogItemCodes: [rootCode, ...componentCodes], primaryCatalogItemCode: rootCode});
+    closureOverflowFixture = {rootCode, componentCodes, overflowCode, overflowApplied: false};
+    bindFixture('FIXTURE-CLOSURE-LIMIT', {catalogItemCodes: [rootCode, ...componentCodes, overflowCode], primaryCatalogItemCode: rootCode});
     return closureOverflowFixture;
+  };
+  const addClosureOverflowComponent = async (fixture) => {
+    if (fixture.overflowApplied) return fixture;
+    const detail = envelopeData((await getDetail(head, 'COPY_CLOSURE_OVERFLOW_ROOT_DETAIL', fixture.rootCode)).json);
+    await saveItem(head, 'COPY_CLOSURE_OVERFLOW_ROOT_SAVE', fixture.rootCode, Number(detail.item?.version || detail.version || 1), {
+      name: fixture.rootCode,
+      shapeKey: 'STANDARD_SALE_COUNTED',
+      ...compositeGroups(head, [...fixture.componentCodes, fixture.overflowCode], fixture.rootCode),
+    });
+    fixture.overflowApplied = true;
+    return fixture;
   };
   const ensureSelectedOverflowFixture = async (selectedLimit) => {
     if (selectedOverflowFixture) return selectedOverflowFixture;
@@ -488,19 +624,12 @@ async function execute() {
     const stamp = Date.now();
     const sourceCode = `API-LOCAL-SOURCE-${stamp}`;
     const targetCode = `API-LOCAL-TARGET-${stamp}`;
-    const createdSource = await createItem(store, 'LOCAL_COPY_SOURCE_CREATE', sourceCode);
+    await createItem(store, 'LOCAL_COPY_SOURCE_CREATE', sourceCode);
     await createItem(store, 'LOCAL_COPY_TARGET_CREATE', targetCode);
     await recordItemRefs(store, 'LOCAL_COPY_SOURCE', sourceCode);
     await recordItemRefs(store, 'LOCAL_COPY_TARGET', targetCode);
-    const sourceVersion = Number(itemResult(createdSource.json)?.version || 1);
-    await saveItem(store, 'LOCAL_COPY_SOURCE_SAVE', sourceCode, sourceVersion, {
-      name: sourceCode,
-      shapeKey: 'STANDARD_SALE_COUNTED',
-      ...compositeGroups(store, [`API-MISSING-COMPONENT-${stamp}`], sourceCode, {allowMissing: true}),
-    });
     localCopyMappingFixture = {sourceCode, targetCode};
     bindFixture('FIXTURE-LOCAL-COPY', {catalogItemCodes: [sourceCode, targetCode], primaryCatalogItemCode: sourceCode});
-    bindFixture('FIXTURE-REFERENCE-MAPPING-MISSING', {catalogItemCodes: [sourceCode, targetCode], primaryCatalogItemCode: sourceCode});
     return localCopyMappingFixture;
   };
   const ensureOwnerFailureFixture = async () => {
@@ -541,8 +670,7 @@ async function execute() {
     const shapeCode = `API-COMPAT-SHAPE-${stamp}`;
     const skuCode = `API-COMPAT-SKU-${stamp}`;
     const unitCode = `API-COMPAT-UNIT-${stamp}`;
-    const referenceCode = `API-COMPAT-REF-${stamp}`;
-    const pairs = [reuseCode, shapeCode, skuCode, unitCode, referenceCode];
+    const pairs = [reuseCode, shapeCode, skuCode, unitCode];
     await createItemsInBatches(head, 'COMPAT_SOURCE_CREATE', pairs);
     await createItemsInBatches(store, 'COMPAT_TARGET_CREATE', pairs.filter((code) => code !== shapeCode));
     await createItem(store, 'COMPAT_TARGET_SHAPE_CREATE', shapeCode, 'MATERIAL');
@@ -554,7 +682,6 @@ async function execute() {
     const targetSku = envelopeData((await getDetail(store, 'COMPAT_TARGET_SKU_DETAIL', skuCode)).json);
     const sourceUnit = envelopeData((await getDetail(head, 'COMPAT_SOURCE_UNIT_DETAIL', unitCode)).json);
     const targetUnit = envelopeData((await getDetail(store, 'COMPAT_TARGET_UNIT_DETAIL', unitCode)).json);
-    const sourceRef = envelopeData((await getDetail(head, 'COMPAT_SOURCE_REF_DETAIL', referenceCode)).json);
     await saveItem(head, 'COMPAT_SHAPE_SAVE', shapeCode, Number(sourceShape.item?.version || sourceShape.version || 1), {name: shapeCode, shapeKey: 'STANDARD_SALE_COUNTED'});
     await saveItem(store, 'COMPAT_SHAPE_SAVE_TARGET', shapeCode, Number(targetShape.item?.version || targetShape.version || 1), {name: shapeCode, shapeKey: 'MATERIAL'});
     const skuDraft = (client, size, owner) => ({
@@ -576,12 +703,11 @@ async function execute() {
     await saveItem(store, 'COMPAT_UNIT_SAVE_TARGET', unitCode, Number(targetUnit.item?.version || targetUnit.version || 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
       nodes: [{nodeType: 'ITEM', itemCode: unitCode, itemRef: itemRef(refsFor(store), unitCode), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
     });
-    await saveItem(head, 'COMPAT_REFERENCE_SAVE', referenceCode, Number(sourceRef.item?.version || sourceRef.version || 1), {name: referenceCode, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(head, [`API-COMPAT-MISSING-${stamp}`], referenceCode, {allowMissing: true})});
-    compatibilityFixture = {reuseCode, shapeCode, skuCode, unitCode, referenceCode};
+    compatibilityFixture = {reuseCode, shapeCode, skuCode, unitCode};
     bindFixture('FIXTURE-COMPATIBILITY-MATRIX', {catalogItemCodes: pairs, primaryCatalogItemCode: reuseCode});
     bindFixture('FIXTURE-SKU-STRUCTURE-CONFLICT', {catalogItemCodes: [skuCode], primaryCatalogItemCode: skuCode});
     bindFixture('FIXTURE-UNIT-GRAM-EACH', {catalogItemCodes: [unitCode], primaryCatalogItemCode: unitCode});
-    bindFixture('FIXTURE-REFERENCE-MAPPING-MISSING', {catalogItemCodes: [referenceCode], primaryCatalogItemCode: referenceCode});
+    bindFixture('FIXTURE-REFERENCE-MAPPING-MISSING', {catalogItemCodes: [shapeCode, reuseCode], primaryCatalogItemCode: shapeCode});
     return compatibilityFixture;
   };
   const ensureStaleFixture = async () => {
@@ -620,7 +746,7 @@ async function execute() {
     await request('VOID_CATEGORY_CREATE', 'createOperationsCatalogCategory', {}, {
       cookie: store.cookie, brandRef: store.brandRef, expected: [200],
       idempotencyKey: `catalog-api-category-${runId}`,
-      body: {dataNodeRef: store.dataNodeRef, code: categoryCode, name: 'API void category', parentCode: null},
+      body: {dataNodeRef: store.dataNodeRef, code: categoryCode, name: 'API void category', parentCategoryRef: null},
     });
     const dictionaryCode = `API-UNIT-${stamp}`;
     await request('VOID_DICTIONARY_CREATE', 'createOperationsCatalogDictionaryEntry', {dictionaryKind: 'SALES_UNIT'}, {
@@ -656,7 +782,7 @@ async function execute() {
 
     const currentAfterAsset = envelopeData((await getDetail(store, 'VOID_BOM_PARENT_DETAIL', sampleStoreCode)).json);
     const parentVersion = Number(currentAfterAsset.item?.version || currentAfterAsset.version || 1);
-    const bomSaved = await saveItem(store, 'VOID_BOM_PARENT_SAVE', sampleStoreCode, parentVersion, {
+    const bomDraft = preserveFixtureWholeSaveImages(currentAfterAsset, {
       name: currentAfterAsset.item?.name || sampleStoreCode,
       shapeKey: currentAfterAsset.item?.shapeKey || 'STANDARD_SALE_COUNTED',
       inventoryBom: [{
@@ -664,6 +790,8 @@ async function execute() {
         itemCode: sampleStoreCode, itemRef: itemRef(refsFor(store), sampleStoreCode), productSkuRef: null, optionValueCode: null, optionValueRef: null, quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: 0,
       }],
     });
+    assertFixtureWholeSaveImagesRetained(currentAfterAsset, bomDraft);
+    const bomSaved = await saveItem(store, 'VOID_BOM_PARENT_SAVE', sampleStoreCode, parentVersion, bomDraft);
     assertThat(itemResult(bomSaved.json)?.version !== undefined, 'VOID_BOM_SAVE_READBACK');
     sampleDetail = envelopeData((await getDetail(store, 'VOID_OBJECT_FACTS_READBACK', sampleStoreCode)).json);
     const sampleItem = sampleDetail.item || sampleDetail;
@@ -683,7 +811,7 @@ async function execute() {
       .find((entry) => entry.mode === 'BOM' && entry.targetRef === targetRef);
     assertThat(currentBom?.version !== undefined, 'VOID_BOM_REPEAT_VERSION_READBACK');
     const repeatBomVersion = Number(currentBom.version);
-    const repeatSaved = await saveItem(store, 'VOID_BOM_REPEAT_SAVE', sampleStoreCode, repeatVersion, {
+    const repeatDraft = preserveFixtureWholeSaveImages(repeatDetail, {
       name: repeatDetail.item?.name || sampleStoreCode,
       shapeKey: repeatDetail.item?.shapeKey || 'STANDARD_SALE_COUNTED',
       inventoryBom: [{
@@ -691,6 +819,8 @@ async function execute() {
         itemCode: sampleStoreCode, itemRef: itemRef(refsFor(store), sampleStoreCode), productSkuRef: null, optionValueCode: null, optionValueRef: null, quantity: '1', unit: 'GRAM', lineSign: 'POSITIVE', version: repeatBomVersion,
       }],
     });
+    assertFixtureWholeSaveImagesRetained(repeatDetail, repeatDraft);
+    const repeatSaved = await saveItem(store, 'VOID_BOM_REPEAT_SAVE', sampleStoreCode, repeatVersion, repeatDraft);
     assertThat(itemResult(repeatSaved.json)?.version !== undefined, 'VOID_BOM_REPEAT_UPSERT_READBACK');
     const afterRepeat = envelopeData((await getDetail(store, 'VOID_BOM_REPEAT_READBACK', sampleStoreCode)).json);
     const repeatedBom = (afterRepeat.inventoryBom || afterRepeat.item?.inventoryBom || [])
@@ -727,30 +857,6 @@ async function execute() {
     bindFixture('FIXTURE-ARCHIVED-ONLY-SKU', {catalogItemCodes: [archivedCode], primaryCatalogItemCode: archivedCode});
     bindFixture('FIXTURE-DISABLED-SKU', {catalogItemCodes: [disabledCode], primaryCatalogItemCode: disabledCode});
     return hasSkuFixture;
-  };
-  const ensureSourceOwnershipFixture = async () => {
-    if (sourceOwnershipFixture) return sourceOwnershipFixture;
-    const autoCode = apiCode('AUTO-001');
-    const created = await getDetailAllowMissing(store, 'AUTO_SYNC_LOOKUP', autoCode);
-    if (created.status === 404) {
-      const response = await createItem(store, 'AUTO_SYNC_CREATE', autoCode);
-      const version = Number(itemResult(response.json)?.version || 1);
-      await saveItem(store, 'AUTO_SYNC_SAVE', autoCode, version, {
-        name: '自动同步拿铁',
-        code: autoCode,
-        shapeKey: 'STANDARD_SALE_COUNTED',
-        source: 'AUTO_SYNC',
-        deniedFields: ['name', 'code'],
-        ordering: {priceGranularity: 'ITEM', standardSalePrice: 2800, listedSalePrice: 2800, missingPriceCount: 0},
-      });
-    }
-    const detail = envelopeData((await getDetail(store, 'AUTO_SYNC_READBACK', autoCode)).json);
-    const item = detail.item || detail;
-    assertThat(item.source === 'AUTO_SYNC', 'AUTO_SYNC_SOURCE_READBACK');
-    assertThat(Array.isArray(detail.deniedFields) && detail.deniedFields.includes('name') && detail.deniedFields.includes('code'), 'AUTO_SYNC_DENIED_FIELDS_READBACK');
-    sourceOwnershipFixture = {code: autoCode};
-    bindFixture('FIXTURE-AUTO-SYNC', {catalogItemCodes: [autoCode], primaryCatalogItemCode: autoCode});
-    return sourceOwnershipFixture;
   };
   const ensureShapeMatrixFixture = async () => {
     if (shapeMatrixFixture) return shapeMatrixFixture;
@@ -828,6 +934,326 @@ async function execute() {
     return result;
   };
 
+  /**
+   * Final U07 catalog calls are deliberately issued one-by-one through the
+   * generated operation registry.  Preparation calls above remain ordinary
+   * owner HTTP calls; only these 42 requests receive the final performance
+   * headers and therefore can contribute to the 196-row request/event join.
+   */
+  const executeBackendPerformanceCanonicalRoutes = async (onProgress = () => {}) => {
+    const catalogOperationIds = new Set(readJson(registryCatalogPath).operations.map((operation) => operation.operationId));
+    const expectedOperationIds = validateBackendPerformanceCanonicalOperationIds(all, catalogOperationIds);
+    const seen = [];
+    const canonical = async (phase, operationId, pathParameters = {}, options = {}) => {
+      if (seen.includes(operationId)) fail(`BP_U07_CANONICAL_DUPLICATE:${operationId}`);
+      seen.push(operationId);
+      onProgress([...seen]);
+      return request(phase, operationId, pathParameters, {...options, performanceCanonical: true});
+    };
+    const resultOf = (response) => itemResult(response.json) || envelopeData(response.json);
+    const versionOf = (response, fallback) => Number(resultOf(response)?.version ?? response.json?.version ?? fallback);
+    const entriesOf = (response) => envelopeData(response.json)?.entries || envelopeData(response.json)?.items || [];
+    const objectVersion = (data, code, field, fallback = 1) => Number(data?.objectVersions?.find((entry) => entry.objectType === 'CATALOG_ITEM' && entry.code === code)?.[field] ?? fallback);
+
+    const context = await canonical('BP_U07_CONTEXT', 'getOperationsCatalogWorkbenchContext', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    assertEnvelope(context.json);
+
+    const navigation = await canonical('BP_U07_NAVIGATION', 'getOperationsCatalogNavigation', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, viewKey: 'ALL'},
+    });
+    assertThat(Array.isArray(envelopeData(navigation.json)?.smartViews), 'BP_U07_NAVIGATION_READBACK');
+
+    const itemCode = `BPF-U07-ITEM-${Date.now()}`;
+    const created = await canonical('BP_U07_ITEM_CREATE', 'createOperationsCatalogItem', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-create-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, name: itemCode, code: itemCode, shapeKey: 'STANDARD_SALE_COUNTED', attributes: {fixtureRef: 'BPF-U07-CANONICAL'}},
+    });
+    let itemVersion = versionOf(created, 1);
+    const saved = await canonical('BP_U07_ITEM_SAVE', 'saveOperationsCatalogItem', {itemCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-save-${runId}`,
+      body: {
+        dataNodeRef: store.dataNodeRef,
+        itemCode,
+        sections: {
+          catalogDraft: {
+            name: itemCode,
+            shapeKey: 'STANDARD_SALE_COUNTED',
+            attributes: {fixtureRef: 'BPF-U07-CANONICAL'},
+            images: [],
+            productionTagRefs: [],
+            categoryRefs: [],
+            ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0},
+          },
+          inventoryConfiguration: {nodes: []},
+          expectedCatalogVersion: itemVersion,
+          expectedInventoryVersions: [],
+        },
+      },
+    });
+    itemVersion = versionOf(saved, itemVersion + 1);
+    await canonical('BP_U07_ITEM_TRANSITION', 'transitionOperationsCatalogItemStatus', {itemCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-transition-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, itemCode, expectedVersion: itemVersion, targetStatus: 'ENABLED'},
+    });
+
+    const items = await canonical('BP_U07_ITEMS', 'getOperationsCatalogItems', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, pageSize: 100},
+    });
+    assertThat((envelopeData(items.json)?.items || []).some((entry) => entry.code === itemCode), 'BP_U07_ITEMS_READBACK');
+    const detail = await canonical('BP_U07_ITEM_DETAIL', 'getOperationsCatalogItem', {itemCode}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    assertThat((envelopeData(detail.json)?.item || envelopeData(detail.json))?.code === itemCode, 'BP_U07_ITEM_DETAIL_READBACK');
+
+    const parentSetup = await request('BP_U07_CATEGORY_PARENT_SETUP', 'createOperationsCatalogCategory', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-category-parent-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, code: `BPF-U07-PARENT-${Date.now()}`, name: 'BPF U07 parent', parentCategoryRef: null},
+    });
+    const parent = resultOf(parentSetup);
+    const categoryCode = `BPF-U07-CATEGORY-${Date.now()}`;
+    const category = await canonical('BP_U07_CATEGORY_CREATE', 'createOperationsCatalogCategory', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-category-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, code: categoryCode, name: 'BPF U07 category', parentCategoryRef: required(parent?.categoryRef, 'BP_U07_CATEGORY_PARENT_REF')},
+    });
+    const categoryResult = resultOf(category);
+    const categoryRef = required(categoryResult?.categoryRef, 'BP_U07_CATEGORY_REF');
+    let categoryVersion = Number(categoryResult?.version || 1);
+    const categoryUpdated = await canonical('BP_U07_CATEGORY_UPDATE', 'updateOperationsCatalogCategory', {categoryRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-category-update-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, categoryRef, expectedVersion: categoryVersion, name: `${categoryCode}-UPDATED`},
+    });
+    categoryVersion = versionOf(categoryUpdated, categoryVersion + 1);
+    const categoryMoved = await canonical('BP_U07_CATEGORY_MOVE', 'moveOperationsCatalogCategory', {categoryRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-category-move-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, categoryRef, expectedVersion: categoryVersion, action: 'REPARENT', parentCategoryRef: null},
+    });
+    categoryVersion = versionOf(categoryMoved, categoryVersion + 1);
+    await canonical('BP_U07_CATEGORY_DELETE', 'deleteOperationsCatalogCategory', {categoryRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-category-delete-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, categoryRef, expectedVersion: categoryVersion},
+    });
+
+    const dictionaryKind = 'SKU_ATTRIBUTE';
+    const dictionary = await canonical('BP_U07_DICTIONARY', 'getOperationsCatalogDictionary', {dictionaryKind}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    const existingDictionaryCodes = entriesOf(dictionary).map((entry) => entry.code).filter(Boolean);
+    const dictionaryCode = `BPF-U07-DICT-${Date.now()}`;
+    const dictionaryCreated = await canonical('BP_U07_DICTIONARY_CREATE', 'createOperationsCatalogDictionaryEntry', {dictionaryKind}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-dictionary-create-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, dictionaryKind, code: dictionaryCode, name: 'BPF U07 dictionary'},
+    });
+    let dictionaryVersion = versionOf(dictionaryCreated, 1);
+    const dictionaryUpdated = await canonical('BP_U07_DICTIONARY_UPDATE', 'updateOperationsCatalogDictionaryEntry', {dictionaryKind, entryCode: dictionaryCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-dictionary-update-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, dictionaryKind, entryCode: dictionaryCode, expectedVersion: dictionaryVersion, name: 'BPF U07 dictionary updated'},
+    });
+    dictionaryVersion = versionOf(dictionaryUpdated, dictionaryVersion + 1);
+    const reordered = await canonical('BP_U07_DICTIONARY_REORDER', 'reorderOperationsCatalogDictionaryEntry', {dictionaryKind}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-dictionary-reorder-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, dictionaryKind, orderedCodes: [dictionaryCode, ...existingDictionaryCodes]},
+    });
+    const reorderedEntry = entriesOf(reordered).find((entry) => entry.code === dictionaryCode);
+    dictionaryVersion = Number(reorderedEntry?.version || dictionaryVersion + 1);
+    await canonical('BP_U07_DICTIONARY_TRANSITION', 'transitionOperationsCatalogDictionaryEntryStatus', {dictionaryKind, entryCode: dictionaryCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-dictionary-transition-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, dictionaryKind, entryCode: dictionaryCode, expectedVersion: dictionaryVersion, targetStatus: 'DISABLED'},
+    });
+
+    const productionTags = await canonical('BP_U07_PRODUCTION_TAGS', 'getOperationsProductionTags', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    assertThat(Array.isArray(entriesOf(productionTags)), 'BP_U07_PRODUCTION_TAGS_READBACK');
+    const tagCode = `BPF-U07-TAG-${Date.now()}`;
+    const tagCreated = await canonical('BP_U07_PRODUCTION_TAG_CREATE', 'createOperationsProductionTag', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-tag-create-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, code: tagCode, tagKind: 'PRODUCTION', name: 'BPF U07 production tag'},
+    });
+    let tagVersion = versionOf(tagCreated, 1);
+    const tagUpdated = await canonical('BP_U07_PRODUCTION_TAG_UPDATE', 'updateOperationsProductionTag', {tagCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-tag-update-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, tagCode, tagKind: 'PRODUCTION', expectedVersion: tagVersion, name: 'BPF U07 production tag updated'},
+    });
+    tagVersion = versionOf(tagUpdated, tagVersion + 1);
+    await canonical('BP_U07_PRODUCTION_TAG_TRANSITION', 'transitionOperationsProductionTagStatus', {tagCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-tag-transition-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, tagCode, expectedVersion: tagVersion, targetStatus: 'DISABLED'},
+    });
+
+    const localCopy = await ensureLocalCopyMappingFixture();
+    await canonical('BP_U07_LOCAL_COPY_CANDIDATES', 'getOperationsLocalCatalogCopyCandidates', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    const localPreflight = await canonical('BP_U07_LOCAL_COPY_PREFLIGHT', 'preflightOperationsLocalCatalogCopy', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-local-preflight-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, sourceItemCode: localCopy.sourceCode, targetItemCode: localCopy.targetCode, selectedSections: ['BASIC_INFO']},
+    });
+    const localData = envelopeData(localPreflight.json);
+    await canonical('BP_U07_LOCAL_COPY_EXECUTE', 'executeOperationsLocalCatalogCopy', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-local-execute-${runId}`,
+      body: {
+        dataNodeRef: store.dataNodeRef,
+        sourceItemCode: localCopy.sourceCode,
+        targetItemCode: localCopy.targetCode,
+        selectedSections: ['BASIC_INFO'],
+        preflightDigest: required(localData?.preflightDigest, 'BP_U07_LOCAL_PREFLIGHT_DIGEST'),
+        expectedSourceVersion: objectVersion(localData, localCopy.sourceCode, 'sourceVersion'),
+        expectedTargetVersion: objectVersion(localData, localCopy.targetCode, 'targetVersion'),
+      },
+    });
+
+    const brandCopy = await ensureOwnerFailureFixture();
+    await canonical('BP_U07_BRAND_COPY_CANDIDATES', 'getOperationsBrandCatalogCopyCandidates', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    const brandPreflight = await canonical('BP_U07_BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-brand-preflight-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [brandCopy.sourceCode], targetDataNodeRef: store.dataNodeRef},
+    });
+    const brandData = envelopeData(brandPreflight.json);
+    await canonical('BP_U07_BRAND_COPY_EXECUTE', 'executeOperationsBrandCatalogCopy', {}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-brand-execute-${runId}`,
+      body: {
+        dataNodeRef: store.dataNodeRef,
+        selectedItemCodes: [brandCopy.sourceCode],
+        targetDataNodeRef: store.dataNodeRef,
+        preflightDigest: required(brandData?.preflightDigest, 'BP_U07_BRAND_PREFLIGHT_DIGEST'),
+        expectedSourceVersion: objectVersion(brandData, brandCopy.sourceCode, 'sourceVersion'),
+        expectedTargetVersion: objectVersion(brandData, brandCopy.sourceCode, 'targetVersion', 0),
+      },
+    });
+
+    const targets = await canonical('BP_U07_INVENTORY_TARGETS', 'getOperationsInventoryTargets', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, pageSize: 100},
+    });
+    assertThat((envelopeData(targets.json)?.items || []).some((entry) => entry.targetRef === targetRef), 'BP_U07_INVENTORY_TARGET_LIST_READBACK');
+    const target = await canonical('BP_U07_INVENTORY_TARGET', 'getOperationsInventoryTarget', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    const targetData = envelopeData(target.json);
+    let targetVersion = Number(targetData?.version ?? targetData?.target?.version);
+    assertThat(Number.isSafeInteger(targetVersion) && targetVersion > 0, 'BP_U07_INVENTORY_TARGET_VERSION');
+    const unit = targetData?.configuration?.countingUnit || targetData?.target?.consumptionUnit || 'EACH';
+    await canonical('BP_U07_INVENTORY_CHANGE_SUMMARY', 'getOperationsInventoryTargetChangeSummary', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, period: '30D'},
+    });
+    await canonical('BP_U07_INVENTORY_HISTORY', 'getOperationsInventoryTargetBusinessHistory', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, pageSize: 100},
+    });
+    await canonical('BP_U07_INVENTORY_REFERENCES', 'getOperationsInventoryTargetConsumptionReferences', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, pageSize: 100},
+    });
+    await canonical('BP_U07_INVENTORY_LEDGER', 'getOperationsInventoryTargetLedger', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, pageSize: 100},
+    });
+    await canonical('BP_U07_INVENTORY_DIAGNOSTICS', 'getOperationsInventoryTargetDiagnostics', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+    const counted = await canonical('BP_U07_INVENTORY_COUNT', 'countOperationsInventoryTarget', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-inventory-count-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, targetRef, expectedVersion: targetVersion, countedQuantity: String(targetData?.balance ?? targetData?.target?.balance ?? '0'), unit, zeroConfirmation: true},
+    });
+    targetVersion = versionOf(counted, targetVersion + 1);
+    const increased = await canonical('BP_U07_INVENTORY_INCREASE', 'increaseOperationsInventoryTarget', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-inventory-increase-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, targetRef, expectedVersion: targetVersion, quantity: '1', unit},
+    });
+    targetVersion = versionOf(increased, targetVersion + 1);
+    const adjusted = await canonical('BP_U07_INVENTORY_ADJUST', 'adjustOperationsInventoryTarget', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-inventory-adjust-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, targetRef, expectedVersion: targetVersion, direction: 'INCREASE', quantity: '1', unit, reasonCode: 'RECOUNT'},
+    });
+    targetVersion = versionOf(adjusted, targetVersion + 1);
+    await canonical('BP_U07_INVENTORY_CONFIGURATION', 'updateOperationsInventoryTargetConfiguration', {targetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-inventory-config-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, targetRef, expectedVersion: targetVersion, configuration: {allowNegative: Boolean(targetData?.configuration?.allowNegative), lowStockThreshold: String(targetData?.configuration?.lowStockThreshold ?? '0'), countingUnit: unit, conversionFactor: String(targetData?.configuration?.conversionFactor ?? '1')}},
+    });
+
+    // The void/readback fixture owns coffee.jpg and keeps it actively bound.
+    // This canonical pair instead proves the independent STAGED -> RELEASED
+    // lifecycle, so it must use a valid asset not already referenced by that
+    // fixture.
+    const fileName = 'tiramisu.jpg';
+    const bytes = fs.readFileSync(path.join(root, 'contracts/policy/catalog-inventory-p1-media', fileName));
+    const form = new FormData();
+    form.set('dataNodeRef', store.dataNodeRef);
+    form.set('fileName', fileName);
+    form.set('mediaType', 'image/jpeg');
+    form.set('contentDigest', sha256(bytes));
+    form.set('content', new Blob([bytes], {type: 'image/jpeg'}), fileName);
+    const staged = await canonical('BP_U07_ASSET_STAGE', 'stageOperationsCatalogAsset', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, form,
+      idempotencyKey: `bpf-u07-asset-stage-${runId}`,
+    });
+    const stagedResult = resultOf(staged);
+    const assetRef = required(stagedResult?.assetRef, 'BP_U07_ASSET_REF');
+    const assetVersion = Number(stagedResult?.version || 1);
+    await canonical('BP_U07_ASSET_RELEASE', 'releaseOperationsCatalogStagedAsset', {assetRef}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-asset-release-${runId}`,
+      body: {dataNodeRef: store.dataNodeRef, assetRef, expectedVersion: assetVersion},
+    });
+
+    // The source-owned external-order item is intentionally not fabricated by
+    // this phase.  The two promotion routes still belong to the closed 42-row
+    // U07 set, so the canonical run requires an explicitly run-scoped fixture
+    // supplied by the approved ingress owner.  Missing state is a hard red,
+    // never a normal-item fallback or a skipped operation.
+    const temporaryCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_ITEM_CODE, 'BP_U07_TEMPORARY_OWNER_FIXTURE_REQUIRED');
+    const temporaryDetail = envelopeData((await request('BP_U07_TEMPORARY_FIXTURE_READBACK', 'getOperationsCatalogItem', {itemCode: temporaryCode}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
+    const temporaryItem = temporaryDetail?.item || temporaryDetail;
+    assertThat(temporaryItem?.source === 'TEMPORARY' || temporaryItem?.source === 'EXTERNAL_ORDER_TEMPORARY', 'BP_U07_TEMPORARY_OWNER_FACT_REQUIRED');
+    const temporaryVersion = Number(temporaryItem.version);
+    const formalCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_FORMAL_CODE, 'BP_U07_TEMPORARY_FORMAL_CODE_REQUIRED');
+    const promotionBody = {dataNodeRef: store.dataNodeRef, itemCode: temporaryCode, formalCode, shapeKey: temporaryItem.shapeKey || 'STANDARD_SALE_COUNTED', name: temporaryItem.name || temporaryCode, shortName: temporaryItem.shortName || undefined, attributes: temporaryItem.attributes || {fixtureRef: 'BPF-U07-TEMPORARY'}, expectedSourceVersion: temporaryVersion};
+    const promotionPreflight = await canonical('BP_U07_TEMPORARY_PREFLIGHT', 'preflightOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-temporary-preflight-${runId}`,
+      body: promotionBody,
+    });
+    const promotionData = envelopeData(promotionPreflight.json);
+    assertThat(promotionData?.canPromote === true, 'BP_U07_TEMPORARY_PROMOTION_NOT_READY');
+    await canonical('BP_U07_TEMPORARY_EXECUTE', 'executeOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+      cookie: store.cookie, brandRef: store.brandRef,
+      idempotencyKey: `bpf-u07-temporary-execute-${runId}`,
+      body: {...promotionBody, expectedVersion: temporaryVersion, preflightDigest: required(promotionData.preflightDigest, 'BP_U07_TEMPORARY_PREFLIGHT_DIGEST')},
+    });
+
+    await canonical('BP_U07_SHAPE_MANIFEST', 'getOperationsCatalogShapeManifest', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    });
+
+    assertThat(seen.length === 42, 'BP_U07_CANONICAL_OPERATION_COUNT');
+    assertThat(seen.every((operationId) => expectedOperationIds.has(operationId)), 'BP_U07_CANONICAL_UNKNOWN_OPERATION');
+    assertThat(expectedOperationIds.size === new Set(seen).size && [...expectedOperationIds].every((operationId) => seen.includes(operationId)), 'BP_U07_CANONICAL_OPERATION_SET');
+    return {status: 'PASS', operationIds: seen};
+  };
+
   async function runCase(entry, assertion) {
     const before = calls.length;
     const started = Date.now();
@@ -843,7 +1269,8 @@ async function execute() {
     }
   }
 
-  const allCases = scenarios.scenarios.flatMap((scenario) => scenario.cases);
+  const scenarioCatalog = validateScenarioCatalog(scenarios);
+  const allCases = scenarioCatalog.cases;
   let sharedFixtureBarrier = {status: 'NOT_RUN'};
   try {
     await ensureVoidObjectFacts();
@@ -855,7 +1282,20 @@ async function execute() {
     sharedFixtureBarrier = {status: 'FAIL', reason};
     log('SHARED_FIXTURE_BARRIER', 'FAIL', {reason});
   }
-  if (sharedFixtureBarrier.status === 'PASS') {
+  let backendPerformanceCanonical = {status: 'NOT_RUN', operationIds: []};
+  let canonicalSeen = [];
+  if (performanceCanonicalMode && sharedFixtureBarrier.status === 'PASS') {
+    try {
+      backendPerformanceCanonical = await executeBackendPerformanceCanonicalRoutes((operationIds) => { canonicalSeen = operationIds; });
+      log('BACKEND_PERFORMANCE_CANONICAL_42', 'PASS', {operationCount: backendPerformanceCanonical.operationIds.length});
+    } catch (error) {
+      const reason = error.code || compact(error.message);
+      firstFailure ??= `BACKEND_PERFORMANCE_CANONICAL:${reason}`;
+      backendPerformanceCanonical = canonicalFailureResult(canonicalSeen, reason);
+      log('BACKEND_PERFORMANCE_CANONICAL_42', 'FAIL', {reason});
+    }
+  }
+  if (!performanceCanonicalMode && sharedFixtureBarrier.status === 'PASS') {
     for (const entry of allCases) {
       const p = entry.parameter || {};
       await runCase(entry, async () => {
@@ -882,7 +1322,7 @@ async function execute() {
         return;
       }
       if (entry.caseId === 'CI-API-004-01') {
-        const nav = envelopeData((await request('SMART_NAV', 'getOperationsCatalogNavigation', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
+        const nav = envelopeData((await request('SMART_NAV', 'getOperationsCatalogNavigation', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, viewKey: 'ALL'}})).json);
         const keys = (nav.smartViews || []).map((value) => value.viewKey || value.key || value.code);
         // ALL is the tree root; the six smart views are the business views
         // defined by the requirements and v4 carry-over baseline.
@@ -902,7 +1342,7 @@ async function execute() {
         await ensureVoidObjectFacts();
         const objectType = p.objectType;
         if (objectType === 'CatalogItem') assertThat(sampleDetail.actionAvailability?.voidAvailability, 'VOID_ITEM_FACT');
-        else if (objectType === 'CatalogCategory') { const nav = envelopeData((await request('VOID_CATEGORY', 'getOperationsCatalogNavigation', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json); assertThat((nav.tree || []).some((node) => node.voidAvailability), 'VOID_CATEGORY_FACT'); }
+        else if (objectType === 'CatalogCategory') { const nav = envelopeData((await request('VOID_CATEGORY', 'getOperationsCatalogNavigation', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json); assertThat((nav.tree || []).some((node) => node.deletionAvailability), 'VOID_CATEGORY_FACT'); }
         else if (objectType === 'CatalogDictionaryEntry') { const dict = envelopeData((await request('VOID_DICTIONARY', 'getOperationsCatalogDictionary', {dictionaryKind: 'SALES_UNIT'}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json); const entries = dict.entries || []; assertThat(entries.length > 0 && entries.every((row) => row.voidAvailability), 'VOID_DICTIONARY_FACT'); }
         else if (objectType === 'ProductionTag') { const tags = envelopeData((await request('VOID_TAG', 'getOperationsProductionTags', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json); const entries = tags.items || tags.entries || []; assertThat(entries.length > 0 && entries.every((row) => row.voidAvailability), 'VOID_TAG_FACT'); }
         else if (objectType === 'CatalogItemSku') assertThat(Array.isArray(sampleDetail.item?.skus) && sampleDetail.item.skus.length > 0, 'VOID_SKU_FACT');
@@ -916,13 +1356,6 @@ async function execute() {
           const fixture = await ensureDependentVoidFixture();
           await expectedProblem('VOID_DEPENDENT', 'transitionOperationsCatalogItemStatus', {itemCode: fixture.code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: fixture.code, expectedVersion: fixture.version, targetStatus: 'VOIDED'}, idempotencyKey: `api-void-dependent-${runId}`}, 'DEPENDENT_FACTS_BLOCK_VOID', [422]);
         }
-        return;
-      }
-      if (entry.caseId === 'CI-API-007-01') {
-        await ensureSourceOwnershipFixture();
-        const detail = envelopeData((await getDetail(store, 'SOURCE_OWNERSHIP', sourceOwnershipFixture.code)).json);
-        const item = detail.item ?? detail;
-        assertThat(item.source === 'AUTO_SYNC' && Array.isArray(detail.deniedFields) && detail.deniedFields.includes('name') && detail.deniedFields.includes('code'), 'AUTO_SYNC_OWNERSHIP_FACT');
         return;
       }
       if (entry.caseId.startsWith('CI-API-008-')) {
@@ -979,7 +1412,7 @@ async function execute() {
         assertThat(detailTargetRef, 'INVENTORY_TARGET_REQUIRED');
         const opByZone = {current: 'getOperationsInventoryTarget', changeSummary: 'getOperationsInventoryTargetChangeSummary', businessHistory: 'getOperationsInventoryTargetBusinessHistory', consumptionReferences: 'getOperationsInventoryTargetConsumptionReferences', ledger: 'getOperationsInventoryTargetLedger', advancedDiagnostics: 'getOperationsInventoryTargetDiagnostics'};
         const operationId = opByZone[p.detailZone];
-        const result = await request(`INVENTORY_${p.detailZone}`, operationId, {targetRef: detailTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}, expected: [200]});
+        const result = await request(`INVENTORY_${p.detailZone}`, operationId, {targetRef: detailTargetRef}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef, ...(p.detailZone === 'changeSummary' ? {period: p.period || '30D'} : {})}, expected: [200]});
         const data = envelopeData(result.json); const valid = p.detailZone === 'changeSummary' ? ['period', 'increase', 'decrease', 'netChange', 'entryCount'].every((field) => data?.[field] !== undefined) : (data?.target || data?.entries || data?.permission || data?.changeSummary); assertThat(data !== null && Boolean(valid), `INVENTORY_ZONE_${p.detailZone}`);
         return;
       }
@@ -1048,10 +1481,14 @@ async function execute() {
         const limit = entry.caseId.startsWith('CI-API-016-') ? copyPolicy.limits.selectedItemCount : copyPolicy.limits.closureItemCount;
         assertThat(Number.isInteger(limit) && limit > 0, 'COPY_LIMIT_POLICY');
         if (p.variant === 2) {
-          const selected = entry.caseId.startsWith('CI-API-016-') ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit + 1) : [(await ensureClosureOverflowFixture(limit)).rootCode];
+          const selected = entry.caseId.startsWith('CI-API-016-')
+            ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit + 1)
+            : [(await addClosureOverflowComponent(await ensureClosureOverflowFixture(limit))).rootCode];
           await expectedProblem('COPY_LIMIT_OVERFLOW', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}, entry.caseId.startsWith('CI-API-016-') ? 'COPY_SELECTED_ITEMS_TOO_LARGE' : 'COPY_CLOSURE_TOO_LARGE', [422]);
         } else {
-          const selected = entry.caseId.startsWith('CI-API-016-') ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit) : [sampleHeadCode];
+          const selected = entry.caseId.startsWith('CI-API-016-')
+            ? (await ensureSelectedOverflowFixture(limit)).selectedCodes.slice(0, limit)
+            : [(await ensureClosureOverflowFixture(limit)).rootCode];
           const preflight = await request('COPY_LIMIT_BOUNDARY', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-copy-limit-${runId}-${entry.caseId}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: selected, targetDataNodeRef: store.dataNodeRef}}); const data = envelopeData(preflight.json); assertThat(Number(data.selectedLimit) === copyPolicy.limits.selectedItemCount && Number(data.closureLimit) === copyPolicy.limits.closureItemCount, 'COPY_LIMIT_READBACK');
         }
         return;
@@ -1059,9 +1496,20 @@ async function execute() {
       if (entry.caseId.startsWith('CI-API-018-')) {
         const fixture = await ensureCompatibilityFixture();
         const code = p.outcome === 'STRUCTURAL_BLOCK'
-          ? ({10: fixture.shapeCode, 11: fixture.skuCode, 12: fixture.unitCode, 13: fixture.shapeCode, 14: fixture.referenceCode, 15: fixture.unitCode}[p.matrixRow] || fixture.shapeCode)
+          ? ({10: fixture.shapeCode, 11: fixture.skuCode, 12: fixture.unitCode, 13: fixture.shapeCode, 14: fixture.shapeCode, 15: fixture.unitCode}[p.matrixRow] || fixture.shapeCode)
           : fixture.reuseCode;
-        const preflight = await request('COMPATIBILITY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-compat-preflight-${runId}-${p.matrixRow}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef}});
+        const expectedCode = ({10: 'STRUCTURE_INCOMPATIBLE', 11: 'STRUCTURE_INCOMPATIBLE', 12: 'CONSUMPTION_UNIT_INCOMPATIBLE', 13: 'STRUCTURE_INCOMPATIBLE', 14: 'REFERENCE_MAPPING_UNRESOLVED', 15: 'CONSUMPTION_UNIT_INCOMPATIBLE'})[p.matrixRow] || 'STRUCTURE_INCOMPATIBLE';
+        const body = {
+          dataNodeRef: store.dataNodeRef,
+          selectedItemCodes: [code],
+          targetDataNodeRef: store.dataNodeRef,
+          ...(Number(p.matrixRow) === 14 ? {referenceMappings: [{
+            objectType: 'CATALOG_ITEM',
+            sourceRef: itemRef(refsFor(head), fixture.shapeCode),
+            targetRef: itemRef(refsFor(store), fixture.reuseCode),
+          }]} : {}),
+        };
+        const preflight = await request('COMPATIBILITY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-compat-preflight-${runId}-${p.matrixRow}`, body});
         const data = envelopeData(preflight.json);
         assertThat(Array.isArray(data.compatibilityResults) && data.compatibilityResults.length >= 1, 'COMPATIBILITY_MATRIX_READBACK');
         // The frozen compatibility item deliberately has no code field; the
@@ -1075,9 +1523,13 @@ async function execute() {
         assertThat(result, `COMPATIBILITY_RESULT_ROW_${p.matrixRow}`);
         if (p.outcome === 'STRUCTURAL_BLOCK') {
           assertThat(data.blockingCount > 0 && result?.result === 'BLOCKED', `COMPATIBILITY_BLOCK_ROW_${p.matrixRow}`);
-          const expectedCode = ({10: 'STRUCTURE_INCOMPATIBLE', 11: 'STRUCTURE_INCOMPATIBLE', 12: 'CONSUMPTION_UNIT_INCOMPATIBLE', 13: 'STRUCTURE_INCOMPATIBLE', 14: 'REFERENCE_MAPPING_UNRESOLVED', 15: 'CONSUMPTION_UNIT_INCOMPATIBLE'})[p.matrixRow] || 'STRUCTURE_INCOMPATIBLE';
           const versions = data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === code) || {};
-          await expectedProblem(`COMPATIBILITY_BLOCK_EXECUTE_${p.matrixRow}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, expectedCode, [422]);
+          await expectedProblem(`COMPATIBILITY_BLOCK_EXECUTE_${p.matrixRow}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {
+            ...body,
+            preflightDigest: data.preflightDigest,
+            expectedSourceVersion: Number(versions.sourceVersion || 1),
+            expectedTargetVersion: Number(versions.targetVersion || 0),
+          }}, expectedCode, [422]);
         } else {
           assertThat(data.blockingCount === 0 && ['REUSE', 'REUSE_OR_CREATE', 'CREATE'].includes(result?.result), `COMPATIBILITY_REUSE_ROW_${p.matrixRow}`);
         }
@@ -1088,9 +1540,6 @@ async function execute() {
         const preflight = await request('UNIT_CONFLICT_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-unit-preflight-${runId}-${p.variant}`, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
         assertThat(data.blockingCount > 0, `UNIT_CONFLICT_PREFLIGHT_${p.variant}`);
-        // Compatibility rows do not carry an item code in the frozen wire;
-        // the unit fixture has one STOCK_TARGET row, which is the inventory
-        // owner's authoritative judgement.
         const result = data.compatibilityResults?.find((value) => value.objectType === 'STOCK_TARGET');
         assertThat(result, `UNIT_CONFLICT_RESULT_ROW_${p.variant}`);
         assertThat(result?.result === 'BLOCKED', `UNIT_CONFLICT_RESULT_${p.variant}`);
@@ -1103,7 +1552,9 @@ async function execute() {
         const fixture = await ensureLocalCopyMappingFixture();
         const preflight = await request('LOCAL_COPY_MAPPING_PREFLIGHT', 'preflightOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO']}});
         const data = envelopeData(preflight.json);
-        await expectedProblem('LOCAL_COPY_MAPPING', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.targetCode)?.targetVersion || 1)}}, 'REFERENCE_MAPPING_UNRESOLVED', [422]); return;
+        const executed = await request('LOCAL_COPY_NORMAL_EXECUTE', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.targetCode)?.targetVersion || 1)}});
+        assertThat(envelopeData(executed.json).ownerReadbacks?.some((readback) => readback.owner === 'catalog' && readback.status === 'COMMITTED'), 'LOCAL_COPY_OWNER_COMMITTED');
+        return;
       }
       if (entry.caseId === 'CI-API-020-02') {
         const preflight = await request('BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [sampleHeadCode], targetDataNodeRef: store.dataNodeRef}}); assertThat(Array.isArray(envelopeData(preflight.json).referenceRewritePreview), 'REFERENCE_REWRITE_PREVIEW'); return;
@@ -1186,15 +1637,17 @@ async function execute() {
       });
     }
   } else {
-    log('API_CASE_LOOP_SKIPPED', 'SKIP', {reason: 'SHARED_FIXTURE_BARRIER_FAILED'});
+    log('API_CASE_LOOP_SKIPPED', 'SKIP', {reason: caseLoopSkipReason({performanceCanonicalMode, sharedFixtureBarrier})});
   }
 
   const passCount = caseResults.filter((result) => result.status === 'PASS').length;
   const failCount = caseResults.length - passCount;
+  const businessPass = sharedFixtureBarrier.status === 'PASS'
+    && (performanceCanonicalMode ? backendPerformanceCanonical.status === 'PASS' && backendPerformanceCanonical.operationIds.length === 42 : failCount === 0 && caseResults.length === scenarioCatalog.caseCount);
   const report = {
     schemaVersion: 1,
     kind: 'catalog-inventory-api-runtime-report',
-    status: failCount === 0 && caseResults.length === 100 ? 'PASS' : 'FAIL',
+    status: businessPass ? 'PASS' : 'FAIL',
     runtimeAuthority: true,
     httpOnly: true,
     managedRunId: manifest.runId,
@@ -1203,7 +1656,7 @@ async function execute() {
     finishedAt: new Date().toISOString(),
     imageBindEvidenceInputs,
     sourceBindings: {scenarioCatalog: {path: path.relative(root, scenarioPath), sha256: sha256(fs.readFileSync(scenarioPath))}, fixtureCatalog: {path: path.relative(root, fixturePath), sha256: sha256(fs.readFileSync(fixturePath))}, copyPolicy: {path: path.relative(root, copyPolicyPath), sha256: sha256(fs.readFileSync(copyPolicyPath))}, generatedShape: {path: path.relative(root, shapePath), sha256: sha256(fs.readFileSync(shapePath))}},
-    denominator: {scenarioCount: 26, caseCount: 100, caseResults: caseResults.length, passed: passCount, failed: failCount},
+    denominator: {scenarioCount: scenarioCatalog.scenarioCount, caseCount: scenarioCatalog.caseCount, caseResults: caseResults.length, passed: passCount, failed: failCount, backendPerformanceCanonicalOperations: backendPerformanceCanonical.operationIds.length},
     caseResults,
     calls,
     events,
@@ -1211,9 +1664,10 @@ async function execute() {
     fixtureBindings,
     fixtureSetup: 'OWNER_HTTP_ONLY',
     sharedFixtureBarrier,
+    backendPerformanceCanonical,
     seedDependency: 'NONE',
     firstFailure,
-    businessStatus: sharedFixtureBarrier.status === 'PASS' && failCount === 0 ? 'PASS' : 'FAIL',
+    businessStatus: businessPass ? 'PASS' : 'FAIL',
     cleanupStatus: 'OWNED_BY_MANAGED_JOINT_RUNNER',
     noDirectDatabaseWrites: true,
   };
@@ -1222,7 +1676,23 @@ async function execute() {
   if (report.status !== 'PASS') process.exitCode = 2;
 }
 
-execute().catch((error) => {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;
+if (isMain) execute().catch((error) => {
+  const runtimeDirectory = process.env.V2S_RUNTIME_DIR;
+  if (typeof runtimeDirectory === 'string' && runtimeDirectory.trim() !== '') {
+    const outputDir = path.join(runtimeDirectory, 'results', 'catalog-inventory-api');
+    fs.mkdirSync(outputDir, {recursive: true, mode: 0o700});
+    const firstFailure = `CATALOG_INVENTORY_CHILD_REFUSED:${catalogRuntimeFailureCode(error)}`;
+    fs.writeFileSync(path.join(outputDir, 'catalog-inventory-api-runtime-report.json'), `${JSON.stringify({
+      schemaVersion: 1,
+      kind: 'catalog-inventory-api-runtime-report',
+      status: 'FAIL',
+      businessStatus: 'FAIL',
+      firstFailure,
+      cleanupStatus: 'OWNED_BY_MANAGED_JOINT_RUNNER',
+      failureKind: 'UNCAUGHT_CHILD_FAILURE',
+    }, null, 2)}\n`, {mode: 0o600});
+  }
   process.stderr.write(`CATALOG_INVENTORY_API=REFUSED; REASON=${error.code || compact(error.message)}\n`);
   process.exitCode = 2;
 });

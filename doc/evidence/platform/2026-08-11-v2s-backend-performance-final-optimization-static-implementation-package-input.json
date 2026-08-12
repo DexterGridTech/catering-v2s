@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-final-optimization-static-implementation-package-input",
+  "packageId": "BACKEND-PERFORMANCE-FINAL-OPTIMIZATION-STATIC-IMPLEMENTATION-20260811",
+  "status": "ACTIVE_STATIC_IMPLEMENTATION",
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "authorization": "Dexter authorized the exact BPF-U01 through BPF-U06 static implementation and its source/control/generator/test/report/evidence surfaces on 2026-08-11. Dynamic packages remain separately gated by static 196-row reconciliation and their own managed admissions.",
+  "designAdmission": {
+    "implementationDesign": "doc/plans/platform/2026-08-10-v2s-backend-performance-final-optimization-implementation-design-codex.md",
+    "designGranularityManifest": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-design-granularity-manifest.json",
+    "claudePostRemediationReview": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-post-remediation-recheck-claude.md",
+    "claudeVerdict": "GO",
+    "claudeSeverity": {"M": 0, "S": 0, "N": 1},
+    "outOfScopeDebt": "N-01 implementation-design-granularity update-path symmetry remains OUT_OF_SCOPE_HANDOFF_DEBT and is not part of BPF-U01 through BPF-U06."
+  },
+  "denominator": {
+    "canonicalOperations": 196,
+    "commands": 113,
+    "reads": 83,
+    "m1WorkspaceExecutionCommands": 68,
+    "taskReads": 78,
+    "protocolReadExemptions": 5,
+    "nonM1CurrentChainRederivation": 45,
+    "idempotencyPredecisions": 87,
+    "readbackPredecisions": 45,
+    "originParticipantPredecisions": 45
+  },
+  "serialUnits": ["BPF-U01", "BPF-U02", "BPF-U03", "BPF-U04", "BPF-U05", "BPF-U06"],
+  "bootstrapPerEditGate": {
+    "kind": "closed-static-command",
+    "command": "scripts/check/backend-performance-sql-merge-coverage",
+    "status": "RETAINED_COMPATIBILITY_BOOTSTRAP",
+    "note": "The existing passing topology gate is retained only while BPF-U01 implements the closed mandatory-gate profile control; it is not the BPF final-shape gate and does not close any BPF unit by itself."
+  },
+  "forbidden": [
+    "dynamic runtime before static reconciliation",
+    "remote Testcontainers before static reconciliation",
+    "local managed L2 before Testcontainers business+cleanup PASS",
+    "reset before local managed L2 business+cleanup PASS",
+    "DEV start or seed before reset terminal PASS",
+    "request/global cache",
+    "cross-owner/schema convenience BFF or direct DML",
+    "HTTP/OpenAPI contract expansion or shape change",
+    "deletion of idempotency/CAS/audit/lock/owner recheck/typed failure/final readback",
+    "SQL numeric performance success claim",
+    "Git or unknown-resource control"
+  ]
+}

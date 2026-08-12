@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "skillUsed": "cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787",
+  "problemFamilyId": "BACKEND-PERFORMANCE-CLAUDE-NO-GO-20260811",
+  "genericProblem": "A nominal 196-operation static and remote-Testcontainers package allowed stale version facts, scope-less receipts, JSON façade owner readbacks, contract-shape drift, and loss of first-failure or cleanup evidence to appear green.",
+  "rootCauseClass": "OWNER_BOUNDARY_AND_EVIDENCE_DENOMINATOR_DRIFT",
+  "finiteDenominator": [
+    "three typed inventory mutations count/increase/adjust",
+    "one typed VOIDED status transition",
+    "contract receipts plus catalog-staging and scoped staged-release asset receipts, with global active-asset release as an explicit counterexample",
+    "one saveOperationsCatalogItem receipt recheck",
+    "five owner copy methods and four coordinator copy façades",
+    "four catalog query schemas and their generator/client consumers",
+    "four copy adapters, two asset-settlement loops, and the Testcontainers/catalog runtime harness receipt paths"
+  ],
+  "searchedSurfaces": [
+    "apps/backend/catering-business-server/modules/inventory",
+    "apps/backend/catering-business-server/modules/catalog",
+    "apps/backend/catering-business-server/modules/store-contract",
+    "apps/backend/catering-business-server/modules/asset",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application",
+    "contracts/openapi/components/catalog",
+    "scripts/test",
+    "apps/frontend/operations-admin/src/features/catalog-management/model"
+  ],
+  "searchQueries": [
+    "expectedVersion recheck write CAS receipt replay",
+    "itemCode itemRef VOIDED catalogItemVoidDependencies",
+    "idempotency_key advisory lock workspace_uuid receipt",
+    "CopyExecutionReadback canonicalJson referenceMappings",
+    "CatalogInventoryEnvelope catalogModel data result",
+    "caseResults.length safeCode firstFailure operationIds cleanup"
+  ],
+  "counterexamples": [
+    "inventory configuration update already binds command.expectedVersion and remains the required CAS comparison",
+    "legacy catalog coordinator resolves business code before calling the inventory owner and is a source-boundary comparison, not a candidate for JSON reuse",
+    "item transitions and promotions intentionally use top-level expectedVersion; only catalog save uses sections.expectedCatalogVersion",
+    "globally shared active assets retain global receipt semantics and must not gain workspace predicates",
+    "performance throughput figures remain UNVERIFIED until a future managed workload produces business and cleanup evidence"
+  ],
+  "findings": [
+    {"findingId": "M-01", "status": "CONFIRMED", "scope": "inventory typed mutation CAS"},
+    {"findingId": "M-02", "status": "CONFIRMED", "scope": "VOIDED code-to-opaque-ref boundary"},
+    {"findingId": "M-03", "status": "PARTIALLY_CONFIRMED", "scope": "contract and scoped asset receipts"},
+    {"findingId": "M-04", "status": "CONFIRMED", "scope": "catalog save receipt version recheck"},
+    {"findingId": "M-05", "status": "CONFIRMED", "scope": "copy owner readback typing"},
+    {"findingId": "M-06", "status": "CONFIRMED", "scope": "copy adapter rollback-safe diagnostic propagation"},
+    {"findingId": "M-07", "status": "CONFIRMED", "scope": "scenario denominator and workload first-failure/cleanup receipts"}
+  ],
+  "preventionDispositions": [
+    {"findingId": "M-01", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "scripts/check/backend-performance-operation-database-shape"},
+    {"findingId": "M-02", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "doc/review/platform implementation owner-boundary checklist"},
+    {"findingId": "M-03", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "receipt scope and global-asset counterexample checklist"},
+    {"findingId": "M-04", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "catalog save idempotency focused regression test"},
+    {"findingId": "M-05", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "public owner readback typed-boundary static red mutation"},
+    {"findingId": "M-06", "preventionDestination": "REVIEW_CHECKLIST", "owningSourceOrControl": "transactional copy readback diagnostics checklist"},
+    {"findingId": "M-07", "preventionDestination": "EXISTING_MACHINE_CONTROL", "owningSourceOrControl": "backend-performance Testcontainers harness node tests"}
+  ]
+}

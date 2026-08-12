@@ -3,6 +3,8 @@
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
+import {loadFinalFixtureCatalog, materializeFinalFixtureRequest, validateFixtureCatalogAgainstRecipes} from "./backend-performance-final-fixtures.mjs";
+import {normalizeEdgePath} from "./seed-report.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const policyPath = "contracts/policy/backend-performance-final-workload.json";
@@ -18,7 +20,7 @@ export function createFinalWorkloadRecipes(policy = readJson(policyPath)) {
   const withRoute = (recipe) => {
     const route = routeByOperation.get(recipe.operationId);
     if (!route || typeof route.method !== "string" || typeof route.path !== "string") fail("BP_FINAL_WORKLOAD_ROUTE_MISSING");
-    return {...recipe, method: route.method, routeTemplate: route.path.startsWith("/api/") ? route.path : `/api${route.path}`};
+    return {...recipe, method: route.method, routeTemplate: normalizeEdgePath(route.path)};
   };
   const task = (taskPolicy.rows ?? []).filter((row) => row.disposition === "TASK_READ").map((row) => withRoute({area: "U05_TASK_READ", operationId: row.operationId, fixtureId: `BP-U05-TASK:${row.operationId}`, logicalStatementCap: Number(row.primaryQueryCap) + Number(row.optionalCountCap ?? 0)}));
   const protocol = (taskPolicy.rows ?? []).filter((row) => row.disposition === "PROTOCOL_READ_EXEMPT").map((row) => withRoute({area: "U05_PROTOCOL", operationId: row.operationId, fixtureId: `BP-U05-PROTOCOL:${row.operationId}`}));
@@ -47,14 +49,19 @@ export function validateFinalWorkloadRecipes(recipes, policy = readJson(policyPa
   return recipes;
 }
 
-/** Executes only recipe requests materialized by the isolated fixture owner. */
-export async function executeFinalWorkload({baseUrl, runId, secret, materializeRequest, recipes = createFinalWorkloadRecipes(), fetcher = fetch}) {
-  if (typeof baseUrl !== "string" || !/^https?:\/\/127\.0\.0\.1:\d+$/.test(baseUrl) || typeof runId !== "string" || typeof secret !== "string" || secret.length < 24 || typeof materializeRequest !== "function") fail("BP_FINAL_WORKLOAD_EXECUTION_INPUT_INVALID");
+/**
+ * Executes only requests materialized by the closed final fixture catalog.
+ * The managed adapter supplies private fixture state, never a callback that
+ * could infer arbitrary ids/routes/bodies or redirect the workload.
+ */
+export async function executeFinalWorkload({baseUrl, runId, secret, fixtureState, catalog = loadFinalFixtureCatalog(), recipes = createFinalWorkloadRecipes(), fetcher = fetch}) {
+  if (typeof baseUrl !== "string" || !/^https?:\/\/127\.0\.0\.1:\d+$/.test(baseUrl) || typeof runId !== "string" || typeof secret !== "string" || secret.length < 24 || !fixtureState || typeof fixtureState !== "object") fail("BP_FINAL_WORKLOAD_EXECUTION_INPUT_INVALID");
+  validateFixtureCatalogAgainstRecipes(catalog, recipes);
   const observations = [];
   for (const recipe of recipes) {
-    const request = await materializeRequest(recipe);
-    if (!request || typeof request.path !== "string" || !request.path.startsWith("/api/") || request.method !== recipe.method) fail("BP_FINAL_WORKLOAD_FIXTURE_MATERIALIZATION_INVALID");
-    const response = await fetcher(`${baseUrl}${request.path}`, {method: request.method, headers: {"X-Backend-Performance-Run-Id": runId, "X-Backend-Performance-Secret": secret, "X-Backend-Performance-Operation-Id": recipe.operationId, "X-Backend-Performance-Route-Template": recipe.routeTemplate, "X-Backend-Performance-Fixture-Id": recipe.fixtureId, "X-Backend-Performance-Area": recipe.area, ...(request.headers ?? {})}, ...(request.body === undefined ? {} : {body: JSON.stringify(request.body)})});
+    const request = materializeFinalFixtureRequest(recipe, {catalog, state: fixtureState});
+    if (!request || typeof request.path !== "string" || normalizeEdgePath(request.path) !== request.path || request.method !== recipe.method) fail("BP_FINAL_WORKLOAD_FIXTURE_MATERIALIZATION_INVALID");
+    const response = await fetcher(`${baseUrl}${request.path}`, {method: request.method, headers: {"X-Backend-Performance-Run-Id": runId, "X-Backend-Performance-Secret": secret, "X-Backend-Performance-Operation-Id": recipe.operationId, "X-Backend-Performance-Route-Template": recipe.routeTemplate, "X-Backend-Performance-Fixture-Id": recipe.fixtureId, "X-Backend-Performance-Area": recipe.area, ...(request.headers ?? {}), ...(request.body === undefined ? {} : {"Content-Type": "application/json"})}, ...(request.body === undefined ? {} : {body: JSON.stringify(request.body)})});
     if (!response?.ok) fail("BP_FINAL_WORKLOAD_HTTP_FAILURE");
     observations.push({operationId: recipe.operationId, fixtureId: recipe.fixtureId, area: recipe.area, status: response.status});
   }
