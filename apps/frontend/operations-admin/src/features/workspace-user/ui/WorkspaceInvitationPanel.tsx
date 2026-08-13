@@ -1,6 +1,6 @@
 import {Alert, Button, DatePicker, Space, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, NameCodePathText, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {activeInvitationPageUrl, contextScopedQueryArgs, EllipsisTooltip, formatCodeNamePath, NameCodePathText, testId, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
 import type {Dayjs} from 'dayjs';
 import {useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -113,12 +113,16 @@ export function WorkspaceInvitationPanel({
   const roleOptions = (roleCandidateResult.data?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
   const selected = detail.target;
   const columns = useMemo<ProColumns<WorkspaceInvitation>[]>(() => [
-    {title: '邀请手机号', dataIndex: 'maskedMobile', ellipsis: true, search: false, render: (_, value) => <Button type="link" onClick={() => detail.open(value)} {...testId('operations-workspace-invitation-open-detail')}>{value.maskedMobile}</Button>},
+    {title: '邀请手机号', dataIndex: 'maskedMobile', ellipsis: {showTitle: false}, search: false, render: (_, value) => <EllipsisTooltip title={value.maskedMobile}><span><Button type="link" onClick={() => detail.open(value)} {...testId('operations-workspace-invitation-open-detail')}>{value.maskedMobile}</Button></span></EllipsisTooltip>},
     {title: '邀请手机号', dataIndex: 'mobile', hideInTable: true, fieldProps: {...testId('operations-workspace-invitation-query-mobile'), allowClear: true, placeholder: '请输入邀请手机号'}},
     {title: '任职机构', dataIndex: 'organizationRef', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setOrganizationCandidateQuery, options: organizationOptions, loading: organizationCandidateResult.isFetching, allowClear: true, placeholder: '搜索机构名称或编码', ...testId('operations-workspace-invitation-query-organization')}},
     {title: '业务角色', dataIndex: 'roleId', hideInTable: true, valueType: 'select', fieldProps: {showSearch: true, filterOption: false, onSearch: setRoleCandidateQuery, options: roleOptions, loading: roleCandidateResult.isFetching, allowClear: true, placeholder: '搜索业务角色', ...testId('operations-workspace-invitation-query-role')}},
-    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: true, search: false, render: (_, value) => <NameCodePathText value={value.targetOrganizationPath}/>},
+    {title: '任职机构', dataIndex: 'targetOrganizationPath', ellipsis: {showTitle: false}, search: false, render: (_, value) => <EllipsisTooltip title={formatCodeNamePath(value.targetOrganizationPath)}><span><NameCodePathText value={value.targetOrganizationPath}/></span></EllipsisTooltip>},
     {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, value) => <Space size={[4, 4]} wrap>{value.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
+    {title: '邀请链接', key: 'invitationPageUrl', search: false, render: (_, value) => {
+      const href = activeInvitationPageUrl(value);
+      return href ? <a href={href} target="_blank" rel="noreferrer" {...testId(`operations-workspace-invitation-entry-${value.id}`)}>打开邀请页</a> : '—';
+    }},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: Object.fromEntries(Object.entries(statusLabel).map(([value, text]) => [value, {text}])), fieldProps: {...testId('operations-workspace-invitation-query-status'), allowClear: true}, render: (_, value) => <Tag color={value.status === 'ACTIVE' ? 'blue' : value.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabel[value.status]}</Tag>},
     {title: '有效期', dataIndex: 'expiresRange', hideInTable: true, valueType: 'dateRange', renderFormItem: () => <DatePicker.RangePicker {...testId('operations-workspace-invitation-query-expires-range')}/>},
     {title: '有效期', dataIndex: 'expiresAt', search: false, sorter: true, render: (_, value) => time(value.expiresAt)},

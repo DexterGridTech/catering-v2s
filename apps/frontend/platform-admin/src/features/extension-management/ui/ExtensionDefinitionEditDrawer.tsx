@@ -5,8 +5,7 @@ import {PLATFORM_ADMIN_OPERATION_IDS, type ExtensionDefinition} from '../../../a
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 
 type DefinitionField = ExtensionDefinition['definitions'][number];
-type ExtensionFieldDraft = Omit<DefinitionField, 'options'> & {optionsText: string};
-type ExtensionEditorFields = {definitions: ExtensionFieldDraft[]};
+type ExtensionEditorFields = {definitions: DefinitionField[]};
 
 const fieldTypeOptions: Array<{value: DefinitionField['type']; label: string}> = [
   {value: 'TEXT', label: '文本'}, {value: 'NUMBER', label: '数值'}, {value: 'DATE', label: '日期'},
@@ -24,11 +23,12 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
   const ownerKey = Form.useWatch(['definitions', field.name, 'key'], form) as string | undefined;
   const isExisting = existingKeys.has(ownerKey ?? '');
   const changeType = (next: DefinitionField['type']) => {
-    const optionsPath: ['definitions', number, 'optionsText'] = ['definitions', field.name, 'optionsText'];
-    if (type === 'SELECT' && next !== 'SELECT' && form.getFieldValue(optionsPath)) {
+    const optionsPath: ['definitions', number, 'options'] = ['definitions', field.name, 'options'];
+    const options = form.getFieldValue(optionsPath) as string[] | undefined;
+    if (type === 'SELECT' && next !== 'SELECT' && options?.length) {
       Modal.confirm({
         title: '清除单选选项？', content: '字段改为非单选类型后，已填写的选项将被清除。', okText: '清除并继续', cancelText: '保留单选',
-        onOk: () => form.setFieldValue(optionsPath, ''),
+        onOk: () => form.setFieldValue(optionsPath, []),
         onCancel: () => form.setFieldValue(['definitions', field.name, 'type'] as ['definitions', number, 'type'], 'SELECT'),
       });
     }
@@ -37,10 +37,14 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
     <Row gutter={[16, 0]}>
       <Col xs={24} sm={12} lg={6}>{isExisting ? <Form.Item label="字段 key"><Space size={8}><Typography.Text code {...testId(`extension-definition-key-display-${index}`)}>{ownerKey}</Typography.Text><Typography.Text type="secondary">已固定</Typography.Text><Form.Item name={[field.name, 'key']} hidden><Input /></Form.Item></Space></Form.Item> : <Form.Item label="字段 key" name={[field.name, 'key']} rules={[{required: true, whitespace: true, message: '请填写字段 key'}, {pattern: /^[a-z][a-zA-Z0-9_]{0,79}$/, message: '字段 key 须以小写字母开头，仅可包含字母、数字和下划线'}]}><Input placeholder="例如：groupTier" {...testId(`extension-definition-key-${index}`)}/></Form.Item>}</Col>
       <Col xs={24} sm={12} lg={6}><Form.Item label="字段名称" name={[field.name, 'label']} rules={[{required: true, whitespace: true}]}><Input {...testId(`extension-definition-label-${index}`)}/></Form.Item></Col>
-      <Col xs={24} sm={12} lg={6}><Form.Item label="字段类型" name={[field.name, 'type']} rules={[{required: true}]}>{isExisting ? <Input value={fieldTypeLabel(type)} readOnly {...testId(`extension-definition-type-${index}`)}/> : <Select options={fieldTypeOptions} onChange={changeType} {...testId(`extension-definition-type-${index}`)}/>}</Form.Item></Col>
+      <Col xs={24} sm={12} lg={6}>{isExisting ? <Form.Item label="字段类型"><Space size={8}><Typography.Text {...testId(`extension-definition-type-display-${index}`)}>{fieldTypeLabel(type)}</Typography.Text><Typography.Text type="secondary">已固定</Typography.Text><Form.Item name={[field.name, 'type']} hidden><Input /></Form.Item></Space></Form.Item> : <Form.Item label="字段类型" name={[field.name, 'type']} rules={[{required: true}]}><Select options={fieldTypeOptions} onChange={changeType} {...testId(`extension-definition-type-${index}`)}/></Form.Item>}</Col>
       <Col xs={12} sm={12} lg={3}><Form.Item label="是否必填" name={[field.name, 'required']} rules={[{required: true}]}><Select options={[{value: true, label: '是'}, {value: false, label: '否'}]} {...testId(`extension-definition-required-${index}`)}/></Form.Item></Col>
       <Col xs={12} sm={12} lg={3}><Form.Item label="是否启用" name={[field.name, 'status']}><Select options={fieldStatusOptions} {...testId(`extension-definition-status-${index}`)}/></Form.Item></Col>
-      {type === 'SELECT' && <Col span={24}><Form.Item label="选项（使用顿号分隔）" name={[field.name, 'optionsText']} rules={[{required: true, whitespace: true, message: '请填写至少一个单选选项'}, {validator: (_, value) => { const options = String(value ?? '').split('、').map((option) => option.trim()).filter(Boolean); return options.length && new Set(options).size === options.length ? Promise.resolve() : Promise.reject(new Error('单选选项不能为空或重复')); }}]}><Input placeholder="例如：堂食、外带、配送" {...testId(`extension-definition-options-${index}`)}/></Form.Item></Col>}
+      {type === 'SELECT' && <Col span={24}><Form.Item label="选项" required><Form.List name={[field.name, 'options']} rules={[{validator: (_, value) => { const options = Array.isArray(value) ? value.map((option) => String(option).trim()).filter(Boolean) : []; return options.length && new Set(options).size === options.length ? Promise.resolve() : Promise.reject(new Error('请填写至少一个不重复的单选选项')); }}]}>{(optionFields, {add, remove}, {errors}) => <Space direction="vertical" size={8} style={{width: '100%'}}>
+        {optionFields.map((optionField, optionIndex) => <Space key={optionField.key} size={8} style={{display: 'flex'}}><Form.Item {...optionField} rules={[{required: true, whitespace: true, message: '请填写选项'}]} style={{marginBottom: 0, flex: 1}}><Input aria-label={`选项 ${optionIndex + 1}`} placeholder={`选项 ${optionIndex + 1}`} maxLength={120} {...testId(`extension-definition-option-${index}-${optionIndex}`)}/></Form.Item><Button danger type="text" onClick={() => remove(optionField.name)} {...testId(`extension-definition-option-remove-${index}-${optionIndex}`)}>删除</Button></Space>)}
+        <Button type="dashed" onClick={() => add('')} {...testId(`extension-definition-option-add-${index}`)}>添加选项</Button>
+        <Form.ErrorList errors={errors}/>
+      </Space>}</Form.List></Form.Item></Col>}
     </Row>
   </Card>;
 }
@@ -58,14 +62,14 @@ export function ExtensionDefinitionEditDrawer({definition, displayName, groupWor
   useOverlayLock(Boolean(definition));
   useEffect(() => {
     if (!definition) return;
-    form.setFieldsValue({definitions: definition.definitions.map((field, index) => ({...field, displayOrder: field.displayOrder ?? index, optionsText: field.type === 'SELECT' ? field.options.join('、') : ''}))});
+    form.setFieldsValue({definitions: definition.definitions.map((field, index) => ({...field, displayOrder: field.displayOrder ?? index, options: field.type === 'SELECT' ? field.options : []}))});
     setProblem(undefined); setDragIndex(undefined); resetSubmission(); lifecycle.reset();
   }, [definition, form, lifecycle, resetSubmission]);
   const submit = async (value: ExtensionEditorFields) => {
     if (!definition || lifecycle.submitting) return;
     lifecycle.setSubmitting(true); setProblem(undefined);
     try {
-      const updated = await platformClient.replaceExtensionDefinition({groupWorkspaceKey, entityType: definition.entityType}, {body: {definitions: value.definitions.map((field, index) => ({key: field.key.trim(), label: field.label.trim(), type: field.type, required: field.required, options: field.type === 'SELECT' ? field.optionsText.split('、').map((option) => option.trim()).filter(Boolean) : [], status: field.status ?? 'ENABLED', displayOrder: index})), expectedVersion: definition.revision}, headers: {'Idempotency-Key': getIdempotencyKey()}});
+      const updated = await platformClient.replaceExtensionDefinition({groupWorkspaceKey, entityType: definition.entityType}, {body: {definitions: value.definitions.map((field, index) => ({key: field.key.trim(), label: field.label.trim(), type: field.type, required: field.required, options: field.type === 'SELECT' ? field.options.map((option) => option.trim()).filter(Boolean) : [], status: field.status ?? 'ENABLED', displayOrder: index})), expectedVersion: definition.revision}, headers: {'Idempotency-Key': getIdempotencyKey()}});
       resetSubmission(); lifecycle.setDirty(false); lifecycle.closeAfterSuccess(); onSaved(updated);
     } catch (error) {
       const currentProblem = platformProblemOf(error);
@@ -74,7 +78,7 @@ export function ExtensionDefinitionEditDrawer({definition, displayName, groupWor
     } finally { lifecycle.setSubmitting(false); }
   };
   const addField = () => {
-    form.setFieldValue('definitions', [...(form.getFieldValue('definitions') ?? []), {key: '', label: '', type: 'TEXT', required: false, status: 'ENABLED', optionsText: ''}]);
+    form.setFieldValue('definitions', [...(form.getFieldValue('definitions') ?? []), {key: '', label: '', type: 'TEXT', required: false, status: 'ENABLED', options: []}]);
     lifecycle.setDirty(true); markBusinessIntentChanged();
   };
   return <Drawer title={`编辑${displayName ?? ''}字段配置`} extra={<Button type="primary" onClick={addField} disabled={lifecycle.submitting} {...testId('extension-definition-add')}>添加字段</Button>} open={Boolean(definition)} size={980} destroyOnHidden onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} mask={{closable: true}} keyboard={!lifecycle.submitting} {...adminDrawerSurfaceProps} footer={<Space><Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>取消</Button><Button type="primary" loading={lifecycle.submitting} onClick={() => form.submit()} {...testId('extension-definition-save')}>保存</Button></Space>}>

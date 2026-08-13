@@ -40,7 +40,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         return readTags(dataNodeRef, brandRef, requestId);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTags(String dataNodeRef, String brandRef, String requestId) {
         requireScope(dataNodeRef, brandRef);
         ObjectNode data = mapper.createObjectNode(); ArrayNode entries = data.putArray("entries");

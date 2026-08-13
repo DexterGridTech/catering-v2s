@@ -73,9 +73,31 @@ The root Gradle build has a fail-closed guard for every test source that imports
 
 All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
 
-### 日常 Testcontainers 发现与进度
+### Backend acceptance（设计态，尚未实现）
 
-`scripts/test/r5-remote-testcontainers.mjs --all` 是可增长的日常 Testcontainers 入口：它每次扫描当前 Java `@Testcontainers` 源码，推导 owner Gradle `:test` task 和 class selector，新增测试自动纳入；`--discover` 只输出这份当前分母。入口优先使用显式 `V2S_GRADLE_HOME`，否则只从 PATH 解析 `gradle` 可执行文件自身的 `<home>/bin/gradle` 结构，绝不写死机器路径；两者皆不可用才 fail-closed。全量入口还从同一批带注解源码解析容器镜像，并先在默认 daemon 保温、再导入三个隔离 daemon；无法静态解析的镜像引用必须 fail-closed，已缓存镜像不再访问外网。全量入口通过三个受管、Engine ID 不同的 remote Docker daemon lane 执行：每 lane 内串行且只做一次 source workspace 初始化，当前分母先均分（22 为 7/7/8）；某 lane 跑完自有项后必须领取其他 lane 尚未开始的最长队列项，不得空转。lane 仅因自身首败停止，另外 lane 继续并由父 manifest 汇集全部 lane 首败；修复后 `--all` 必须 fresh 全量复跑，历史 PASS 不可跳过。无法从带注解的源码推导 task/class、重复 target、共享 Engine ID 或未完整执行分母必须失败，不得靠固定 196、宽 glob 或静默跳过维持绿色。`--all` 与 focused run 都在 stdout 和 suite/child manifest 报告开始、lane、Engine ID、阶段、心跳、当前/总数、结束、耗时、首败、business 与 cleanup；BPF 196 仍为独立专项 workload。
+未来唯一公共后台动态验收入口是 `scripts/test/backend-acceptance`，名称不含接口数量、
+Roadmap/Journey 或阶段编号。本文件只登记已批准的 implementation-facing contract；当前文件
+不存在即表示能力尚未实施，不得把旧 Testcontainers runner 或历史 PASS 改称为该能力。
+
+入口每次从当前 semantic OpenAPI route registry 与 operation-handler bindings 推导 operation
+identity exact set，并分别验证 row equality 与 projection digest freshness，再映射到 owning
+route-behavior unit。测试类与 `@Testcontainers` 注解不构成覆盖分母。昂贵初始化前必须完成
+scenario admission：每个 operation 的 `identity/fixture/request/businessOracle/
+performanceCriterion/cleanup` 非空，`correctnessCases` 为空时有理由；缺项使用稳定 typed
+failure。
+
+per-edit 运行机器推导的 impacted operations；package-exit 运行全量。任何未被动态
+package-entry 捕获不可变 production surface `P0` 与 source-anchor-covered `W0`，exit 独立扫描
+`P1`；`P0 ∪ P1` 中变化但不在 `W0` 的任一 production 文件令 impacted set 为 `ALL`，同包
+重生成 inventory 不得自准入。lane 数可配置，
+每 lane 独立容器、可写数据库/schema 与对象存储 namespace；单 lane 首败仅停本 lane，其他
+lane 继续并汇集各自首败。报告固定落在 `.runtime/backend-acceptance/<runId>/`，输出 run/lane、
+分母、当前 operation、passed/failed/remaining、心跳、耗时、首败、单 operation 重跑命令、
+四维 verdict 和 cleanup。并行资源不足时先增加 lane；任何情况下不得缩覆盖。
+
+旧 `scripts/test/r5-remote-testcontainers.mjs` 与其他分立行为入口在迁移期保持 predecessor
+身份，只有 route 断言、结构预算与 red control 已进入新能力后才按先建后删退役。它们不再是
+独立功能或性能契约。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
 `NO-SOURCE`, or `SKIPPED`: the build keeps compile/dependency preparation reusable but disables
@@ -84,6 +106,21 @@ log and fails closed when it is missing or skipped. This prevents a stale Testco
 from being reported as a fresh technical PASS.
 
 ## 环境执行矩阵
+
+### 完整 DEV seed
+
+“seed” 的唯一公开入口是：
+
+```bash
+scripts/dev/seed --profile r5-full --dry-run
+R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
+```
+
+它依次装载 R5 基础 owner facts 与 catalog/inventory 体验数据，不能选择或宣称单独的
+catalog/inventory 部分 seed。父 receipt 在 `.runtime/r5/seed/complete/`，有序链接两个子报告；
+任一组件的 business、cleanup、同一 managed DEV run 或 readback 不通过，完整 seed 即失败。
+`start/restart` 永不隐式 seed，seed 也不会自动 stop/reset/start；失败的部分体验数据只由下一次
+显式 reset 清理。
 
 - **DEV**：本机启动 Spring Boot、`platform-admin` 与 `operations-admin` Web；只经受管 tunnel 使用远端非生产 PostgreSQL、对象存储等中间件。start/restart 可 additive Flyway，绝不 seed。
 - **当前受管浏览器 L2**：同样在本机启动 Spring Boot、两个 Web 和 Playwright；远端只承载每 run 隔离的中间件命名空间。runner 必须保留本机 PID/日志、tunnel identity、远端数据库/资产 namespace readback，并分别证明业务结果与两侧 cleanup。
@@ -175,3 +212,6 @@ production validator 复算 design/authorization/reviewer/source/checker hash，
 - 若未来存在 `.runtime/agent-sessions/<sessionId>.json`，Stop 只检查该 session 与其显式 `managedRunIds`；
 - `start/restart` 未来必须迁移 schema 但不得 seed；`seed/reset` 始终独立；
 - 不执行 Git stage、commit、push；Git 归 Dexter。
+# Per-edit control-plane checks
+
+The `scripts/check/per-edit-control-plane` adapter runs the control-plane self-tests and validates the finite source-anchor disposition. It is a static implementation control only; it does not start Testcontainers, DEV, L2, reset, seed, or a browser. `mandatory-per-edit-gate-self-test` and `active-package-recovery-self-test` remain CLI subcommands owned by `tools/compliance-control/cli.mjs`.

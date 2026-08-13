@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "per-edit-gate-bootstrap-activation-receipt",
+  "requestPath": "/tmp/v2s-per-edit-gate-bridge7.LTZoBl/request.json",
+  "requestSha256": "51059bea801533bd46f8190381fc19c8bfda28b4db1b720f125c2171bbcf4c38",
+  "executorPath": "/tmp/v2s-per-edit-gate-bridge7.LTZoBl/per-edit-gate-bootstrap-bridge.mjs",
+  "executorSha256": "bf74b577a25469a81eb1c7a6f72ba6eb4772dde69a1fdb4a86e67eba4793d2cf",
+  "repoRoot": "/Users/dexter/Documents/workspace/idea/catering-v2s",
+  "targets": [
+    {
+      "path": "contracts/policy/mandatory-per-edit-gate-command-closure.json",
+      "beforeSha256": "b1d9d412ffea237c7387e8124df530ea7b75ab61adc79476cfd96d09c5d09f9e",
+      "afterSha256": "d7b825944a6b7e4928a20ec21837d936df202664db96c0c670c037b8ab26a2c9"
+    },
+    {
+      "path": ".runtime/compliance-control/active-package.json",
+      "beforeSha256": "2302480a04e4027a3d7a59b95cb18a5fdce6acf3ba98d740b0923808351d7b7b",
+      "afterSha256": "2302480a04e4027a3d7a59b95cb18a5fdce6acf3ba98d740b0923808351d7b7b"
+    }
+  ],
+  "startedAt": "2026-08-12T07:34:01.351Z",
+  "completedAt": "2026-08-12T07:34:01.352Z",
+  "result": "PASS"
+}
+

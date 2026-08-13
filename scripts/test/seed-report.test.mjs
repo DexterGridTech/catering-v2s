@@ -7,14 +7,19 @@ import path from 'node:path';
 
 const call = (durationMs, id = String(durationMs)) => ({stageId: 'stage-a', owner: 'organization', operationId: 'createThing', method: 'POST', routeTemplate: '/api/things/{id}', durationMs, correlationId: `corr-${id}`, requestId: `req-${id}`});
 const event = (durationMs, id = String(durationMs), databaseOperationCount = 2) => ({runId: 'run-12345678', correlationId: `corr-${id}`, requestId: `req-${id}`, operationId: 'createThing', method: 'POST', routeTemplate: '/api/things/{id}', status: 201, outcome: 'SUCCEEDED', databaseOperationCount, databaseDurationMillis: durationMs, measurementSchemaVersion: 2, measurementBasis: 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH', kindCounts: databaseOperationCount === 0 ? {UPDATE: 0} : {QUERY: databaseOperationCount, UPDATE: 0}});
+const fixtureIdentity = {path: 'doc/plans/test-fixture.json', version: 1, sha256: 'a'.repeat(64)};
 
 test('aggregates one and many calls with min average max and DB metrics', () => {
-  const report = buildSeedReport({runId: 'run-12345678', seedProfile: 'r5-full', startedAt: '2026-08-01T00:00:00Z', finishedAt: '2026-08-01T00:00:03Z', status: 'PASS', calls: [call(10, 'a'), call(30, 'b')], events: [event(10, 'a', 1), event(30, 'b', 3)]});
+  const report = buildSeedReport({runId: 'run-12345678', seedProfile: 'r5-full', startedAt: '2026-08-01T00:00:00Z', finishedAt: '2026-08-01T00:00:03Z', status: 'PASS', businessStatus: 'PASS', cleanupStatus: 'PASS_NO_PERSISTENT_SEED_PROCESS', fixtureIdentity, calls: [call(10, 'a'), call(30, 'b')], events: [event(10, 'a', 1), event(30, 'b', 3)]});
   assert.deepEqual(report.apiEndpoints[0].httpDurationMs, {average: 20, min: 10, max: 30});
   assert.deepEqual(report.apiEndpoints[0].databaseOperationCount, {average: 2, min: 1, max: 3});
-  assert.deepEqual(report.apiEndpoints[0].kindCounts, {QUERY: 4, UPDATE: 0});
-  assert.deepEqual(report.kindCounts, {QUERY: 4, UPDATE: 0});
+  assert.deepEqual(report.apiEndpoints[0].kindCounts, {CONNECTION: 0, QUERY: 4, TRANSACTION: 0, UPDATE: 0});
+  assert.deepEqual(report.kindCounts, {CONNECTION: 0, QUERY: 4, TRANSACTION: 0, UPDATE: 0});
   assert.equal(report.reportKind, 'SEED');
+  assert.equal(report.schemaVersion, 4);
+  assert.deepEqual(report.fixtureIdentity, fixtureIdentity);
+  assert.equal(report.businessStatus, 'PASS');
+  assert.equal(report.cleanupStatus, 'PASS_NO_PERSISTENT_SEED_PROCESS');
   assert.deepEqual(report.measurement, {schemaVersion: 2, basis: 'JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH'});
   assert.equal(report.status, 'PASS');
 });

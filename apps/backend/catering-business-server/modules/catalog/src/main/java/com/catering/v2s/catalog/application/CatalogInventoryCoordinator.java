@@ -118,17 +118,14 @@ public class CatalogInventoryCoordinator {
         return catalogReads.dictionary(dataNodeRef, brandRef, dictionaryKind, request, requestId);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readLocalCatalogCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         return catalogReads.localCopyCandidates(dataNodeRef, brandRef, request, requestId);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readBrandCatalogCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         return catalogReads.brandCopyCandidates(dataNodeRef, brandRef, request, requestId);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogShapeManifest(String requestId) { return catalogReads.shapeManifest(requestId); }
 
     @Transactional(readOnly = true)
@@ -151,35 +148,28 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType) {
         JsonNode result = inventoryReads.target(dataNodeRef, brandRef, targetRef, requestId, dataNodeType);
         enrichInventoryTarget(result, dataNodeRef, brandRef, requestId);
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargetChangeSummary(String targetRef, String period) { return inventoryReads.changeSummary(targetRef, period); }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargetBusinessHistory(String targetRef, ObjectNode request, String requestId) {
         return inventoryReads.businessHistory(targetRef, request, requestId);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId) {
         JsonNode result = inventoryReads.consumptionReferences(dataNodeRef, brandRef, targetRef, request, requestId);
         enrichInventoryConsumptionReferences(result, dataNodeRef, brandRef, requestId);
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargetLedger(String targetRef, ObjectNode request, String requestId) { return inventoryReads.ledger(targetRef, request, requestId); }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargetDiagnostics(String targetRef, String requestId) { return inventoryReads.diagnostics(targetRef, requestId); }
 
-    @Transactional(readOnly = true)
     public JsonNode readProductionTags(String dataNodeRef, String brandRef, String requestId) {
         return productionReads.tags(dataNodeRef, brandRef, requestId);
     }
@@ -217,7 +207,8 @@ public class CatalogInventoryCoordinator {
         ObjectNode request = canonicalSaveRequest(command.canonicalRequestJson());
         CatalogAuthorizationScope scope = context.ownerScope();
         Set<String> previousAssetRefs = catalogItemAssetRefs(scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId());
-        CatalogOwnerApi.CatalogItemSaveReadback readback = catalog.saveCatalogItem(context, command, idempotencyKey);
+        CatalogOwnerApi.CatalogItemSaveCommand normalizedCommand = new CatalogOwnerApi.CatalogItemSaveCommand(command.itemCode(), canonicalLocalJson(request));
+        CatalogOwnerApi.CatalogItemSaveReadback readback = catalog.saveCatalogItem(context, normalizedCommand, idempotencyKey);
         coordinateSaveInventory(context, request, idempotencyKey);
         settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
         return readback;
@@ -628,10 +619,44 @@ public class CatalogInventoryCoordinator {
         try {
             JsonNode parsed = mapper.readTree(canonicalRequestJson);
             if (!parsed.isObject()) throw new IllegalArgumentException("request must be object");
-            return (ObjectNode) parsed;
+            ObjectNode request = (ObjectNode) parsed;
+            JsonNode draft = request.path("sections").path("catalogDraft");
+            if (draft.isObject()) omitTypedNullFields(draft, "/sections/catalogDraft");
+            return request;
         } catch (Exception failure) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "catalog save request is invalid", failure);
         }
+    }
+
+    /**
+     * Jackson 3 materializes omitted nullable record components before this
+     * request crosses into the catalog owner.  Catalog draft save is a merge:
+     * an omitted field preserves the owner fact, while an empty collection or
+     * scalar remains an explicit replacement.  Restore omission only for the
+     * typed draft tree; raw CanonicalJsonDocument values remain opaque owner
+     * JSON and are not rewritten.
+     */
+    private static void omitTypedNullFields(JsonNode value, String path) {
+        if (value == null || value.isNull() || isOpaqueCanonicalDocument(path)) return;
+        if (value.isObject()) {
+            ObjectNode object = (ObjectNode) value;
+            List<String> nullFields = new java.util.ArrayList<>();
+            object.fields().forEachRemaining(entry -> {
+                String childPath = path + "/" + entry.getKey();
+                if (entry.getValue().isNull()) nullFields.add(entry.getKey());
+                else omitTypedNullFields(entry.getValue(), childPath);
+            });
+            nullFields.forEach(object::remove);
+        } else if (value.isArray()) {
+            value.forEach(entry -> omitTypedNullFields(entry, path + "[]"));
+        }
+    }
+
+    private static boolean isOpaqueCanonicalDocument(String path) {
+        return "/sections/catalogDraft/attributes".equals(path)
+            || "/sections/catalogDraft/productionProfiles/item".equals(path)
+            || "/sections/catalogDraft/productionProfiles/sku".equals(path)
+            || "/sections/catalogDraft/productionProfiles/optionValue".equals(path);
     }
 
     private static List<CatalogAssetCommandApi.AssetBinding> assetBindings(Map<String, String> grants) {

@@ -1,6 +1,6 @@
 import {Alert, Button} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {contextScopedQueryArgs, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {contextScopedQueryArgs, EllipsisTooltip, NameCodeText, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {StoreContract, StoreContractSortDirection, StoreContractSortKey} from '../../../app/api/generated/operations-edge';
@@ -67,7 +67,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
         : undefined;
 
   const columns = useMemo<ProColumns<StoreContract>[]>(() => [
-    {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, ellipsis: true, search: false, render: (value, row) => <Button type="link" className="operations-contract-number-link" onClick={() => detail.open(row)} {...testId('operations-contract-detail-open')}>{value}</Button>},
+    {key: 'contractNo', title: '合同编号', dataIndex: 'contractNo', sorter: true, ellipsis: {showTitle: false}, search: false, render: (value, row) => <EllipsisTooltip title={value}><span><Button type="link" className="operations-contract-number-link" onClick={() => detail.open(row)} {...testId('operations-contract-detail-open')}>{value}</Button></span></EllipsisTooltip>},
     {title: '门店', dataIndex: 'storeDisplay', search: false, render: (_, row) => <NameCodeText name={row.store.name} code={row.store.code}/>},
     {title: '分期', dataIndex: 'phaseName', search: false},
     {title: '经营租户', dataIndex: 'tenantDisplay', search: false, render: (_, row) => <NameCodeText name={row.tenant.name} code={row.tenant.code}/>},

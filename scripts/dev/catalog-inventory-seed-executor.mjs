@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Catalog/inventory seed executor.  This is deliberately separate from the
- * historical r5-full seed: it consumes the static parity plan, uses only owner
- * HTTP commands, and stops on the first failed stage.  It never writes SQL.
+ * Catalog/inventory is the second internal component of the public r5-full
+ * seed. It consumes the static parity plan, uses only owner HTTP commands,
+ * stops on the first failed stage, and never writes SQL.
  */
 import {createHash, randomUUID} from "node:crypto";
 import fs from "node:fs";
@@ -333,6 +333,8 @@ async function execute() {
     firstFailure = error.code || compact(error.message);
     business = "FAIL";
     phase("PREFLIGHT", "FAIL", {reason: firstFailure});
+    cleanup = "PASS_PRESERVED_DEV_STATE";
+    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
     const report = {schemaVersion: 2, kind: "catalog-inventory-seed-report", runId, managedDevRunId: manifest?.runId ?? null, startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business: "FAIL", cleanup, phases, calls, firstFailure, noDirectDatabaseWrites: true, preflight: true};
     try { writeSeedReportPair(reportPath, report); } catch { /* preserve the primary preflight failure */ }
     process.stderr.write(`CATALOG_INVENTORY_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${runManifestPath}; REPORT=${reportPath}\n`);
@@ -864,7 +866,9 @@ async function execute() {
     phase("SEED_BUSINESS_READBACK", "PASS", {sourceCatalogItems: plan.sourceItems.length, createdCatalogItems: seedItems.length, excludedCatalogItems: plan.excludedSourceItems.length, mediaAssets: plan.mediaPlan.length});
     phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset"});
   } catch (error) {
-    firstFailure ??= error.code || compact(error.message); business = "FAIL"; phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
+    firstFailure ??= error.code || compact(error.message); business = "FAIL"; cleanup = "PASS_PRESERVED_DEV_STATE";
+    phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
+    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
   }
   const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? []};
   writeSeedReportPair(reportPath, report);

@@ -27,6 +27,21 @@ reusable remedy. Route it to project-memory, an existing mechanically admitted c
 production red mutation, an explicit review checklist, or a justified
 `NOT_APPLICABLE_WITH_REASON`. A repaired symptom without a prevention disposition remains open.
 
+For a backend `BUG_FIX`, closure also requires a `backend-acceptance` regression case that is proven
+FAIL on the preserved pre-fix bytes and PASS on the fixed bytes. A case that is green on both byte
+sets has no regression value and fails with `BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF_REQUIRED`.
+If the defect cannot be expressed at the route boundary, place it in the finite route-unexpressible
+exception list with evidence; if no protection can be built, explicitly register an unprotected fix.
+Neither path permits silent completion. Scenario relaxation or structural-budget increase must cite
+the applicable product/contract source and accepted-baseline authorization; “the test blocks the
+fix” is never a reason.
+
+When the implementation unit is the initial backend-acceptance migration, reopen the exact historical
+finding row before diagnosis. Six cataloged CONNECTION regressions must become route regression cases;
+the fifteen historical HTTP failures and eight seed/client/fixture failures must each be classified
+against owning source and an explicit affected-route set. Never treat a later seed PASS, a shorter seed
+duration, or an unqualified "already fixed" statement as root-cause or regression evidence.
+
 Any debugging record starts with:
 
 ```text

@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-design-package-input",
+  "packageId": "BACKEND-ACCEPTANCE-DESIGN-20260813",
+  "status": "DESIGN_GO_ROUND2_REMEDIATED_NOT_IMPLEMENTED",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "BACKEND_PERFORMANCE_FINAL_CLOSURE_SUPERSEDED_DESIGN_ONLY",
+  "machineId": "backend-acceptance",
+  "implementationAuthority": false,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "postDesignGoActivation": {
+    "authorityOwner": "Dexter",
+    "effectiveCondition": "THE_COMPLETE_DESIGN_RECEIVES_GO_IN_THE_CLAUDE_DESIGN_REVIEW_CYCLE",
+    "latestAuthorityState": "PAUSED_AFTER_DESIGN_REMEDIATION_BY_DEXTER_20260813",
+    "requiresNewExplicitImplementationInstruction": true,
+    "implementationAuthority": false,
+    "runtimeAuthority": [],
+    "executionContract": "ONE_IMPLEMENTATION_PACKAGE_BA_U01_THROUGH_BA_U06_WITH_INTERNAL_SELF_REVIEW_EACH_NODE_AND_NO_INTERMEDIATE_CLAUDE_REVIEW",
+    "excluded": ["DEV", "L2", "reset", "seed", "browser", "UAT", "deployment", "manual SQL"]
+  },
+  "reviewContract": {
+    "external": ["CLAUDE_DESIGN_REVIEW_CYCLE_AFTER_COMPLETE_DESIGN", "CLAUDE_IMPLEMENTATION_REVIEW_CYCLE_AFTER_FINAL_EXIT"],
+    "internal": "IMPLEMENTING_AGENT_SELF_REVIEWS_EVERY_NODE_MAX_TWO_ROUNDS_THEN_FIX_AND_CONTINUE_WITHOUT_THIRD_REVIEW"
+  },
+  "authority": {
+    "path": ".runtime/compliance-control/active-package.json",
+    "entrySha256": "57d8990e6162e4732633a40d7e7ca3fdc26a081b068f604538b273e0ddd64f01",
+    "capturedAt": "PACKAGE_ENTRY",
+    "scope": "requirements norms skills and implementation-facing design only"
+  },
+  "inputs": [
+    {
+      "id": "MERGED_REQUIREMENT",
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+      "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+    },
+    {
+      "id": "CLAUDE_MERGED_REVIEW",
+      "path": "doc/review/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements-review-claude.md",
+      "sha256": "f70a40d8e225cbc32b3ff683e85470774f03d2e554e8a3abba3ad178ff121a91"
+    },
+    {
+      "id": "CLAUDE_STANDARD",
+      "path": "doc/review/platform/2026-08-12-v2s-backend-acceptance-standard-and-landing-points-claude.md",
+      "sha256": "569de0b3e1570b18b58a203602ccb527b5ae49b46a87d7d832e31b5c2ff36c7a"
+    },
+    {
+      "id": "CLAUDE_INDEPENDENT_ANALYSIS",
+      "path": "doc/review/platform/2026-08-12-v2s-unified-backend-test-capability-requirements-and-solution-analysis-claude.md",
+      "sha256": "490e53758c970cbf631f9a880247cdd014c2ded21fc94e1ee2ea831a84ec3f2e"
+    },
+    {
+      "id": "CODEX_INDEPENDENT_ANALYSIS",
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-requirements-and-solution-analysis-codex.md",
+      "sha256": "fe4b0c94682691783fe2faf85132915376d22180f5691e2197b044dc4bf275f0"
+    },
+    {
+      "id": "IMPLEMENTATION_DESIGN",
+      "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+      "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+    },
+    {
+      "id": "DESIGN_AUTHORIZATION",
+      "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-design-authorization.md",
+      "sha256": "715e6078dec350e5ef0a4fa8c3b97901140645495ef0486f33633bc029190aee"
+    },
+    {
+      "id": "CLAUDE_DESIGN_REVIEW_ROUND_1",
+      "path": "doc/review/platform/2026-08-13-v2s-backend-acceptance-design-review-claude.md",
+      "sha256": "192f210bad7fc93baa2e6532e736e913f0f02f08687a065deed9d906a067ccb9"
+    },
+    {
+      "id": "CLAUDE_DESIGN_REVIEW_ROUND_2",
+      "path": "doc/review/platform/2026-08-13-v2s-backend-acceptance-design-review-round2-claude.md",
+      "sha256": "1d1fc0ef26eae133fb3661d76622fb67570ce3959d0cb531ee150f3d6213becb"
+    },
+    {
+      "id": "HISTORICAL_SEED_FINDING_CATALOG",
+      "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json",
+      "sha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07"
+    },
+    {
+      "id": "EXECUTION_CONTRACT_DESIGN",
+      "path": "contracts/policy/backend-acceptance-execution-contract.json",
+      "sha256": "f9c3f2b469da30f1eccc9a08608d0076537e55baf3bf1332101ac2ecb60d8018"
+    },
+    {
+      "id": "DESIGN_GRANULARITY_MANIFEST",
+      "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-design-granularity-manifest.json",
+      "sha256": "2dd8312b1808d30565af91c8dea7c13aa887cce0110bf7277ac84795509c088a"
+    }
+  ],
+  "verifiedCurrentFacts": {
+    "operationHandlerBindings": {
+      "status": "FAIL",
+      "errorCode": "BP_U02_ROUTE_SOURCE_DIGEST_DRIFT",
+      "scope": "catalog-inventory projection metadata only"
+    },
+    "p4Ledger": {
+      "status": "PASS",
+      "rows": 28,
+      "callerSymbols": 26,
+      "cases": 52
+    },
+    "existingRunner": {
+      "laneCountConfigurable": false,
+      "fixedLaneCount": 3,
+      "reusableSemantics": ["work stealing", "lane-local first failure", "managed cleanup"]
+    },
+    "anchorCoverage": {
+      "checkedInProductionJava": 571,
+      "checkedInAnchoredPaths": 128,
+      "checkedInBlindPaths": 443,
+      "checkedInBlindPercent": 77.58,
+      "effectiveCompiledMain": 616,
+      "effectiveAnchoredPaths": 129,
+      "effectiveBlindPaths": 487
+    }
+  },
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_AND_REQUIREMENT","owner":"Dexter authority plus revised merged requirement and Claude inputs","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"TERMINOLOGY_AND_STANDARD_LANDING","owner":"decision project memory skills AGENTS CLAUDE blueprint scripts README","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","owner":"semantic route projections bindings scenario contract and acceptance schema","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"RUNNER_MIGRATION_AND_RETIREMENT","owner":"existing remote runner P4 behavior tests known-uncovered and retirement ledgers","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"CHANGE_IMPACT_AND_BUG_RED_PROOF","owner":"entry P0 W0 O0 exit P1 dispositions consumer faces and regression receipts","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"PREVENTION_ACCEPTANCE_AND_HANDOFF","owner":"production validators scratch red mutations design review and authorization boundary","capturedAt":"PACKAGE_ENTRY"}
+  ],
+  "dynamicEvidence": "NOT_AUTHORIZED_DESIGN_PACKAGE"
+}

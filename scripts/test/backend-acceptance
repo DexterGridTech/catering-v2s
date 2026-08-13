@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+case "${1:-}" in
+  --preflight)
+    [[ "$#" -eq 1 ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2; exit 2; }
+    exec node "$REPO_ROOT/tools/backend-acceptance/cli.mjs" preflight
+    ;;
+  --close-dynamic)
+    [[ "$#" -eq 2 ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2; exit 2; }
+    exec node "$REPO_ROOT/tools/backend-acceptance/cli.mjs" close-dynamic "$2"
+    ;;
+  --per-edit|--package-exit)
+    [[ "$#" -eq 1 ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2; exit 2; }
+    exec node "$REPO_ROOT/tools/backend-acceptance/runner.mjs" "$1"
+    ;;
+  --operation)
+    [[ "$#" -eq 2 && "${2:-}" =~ ^[A-Za-z][A-Za-z0-9._:-]{2,127}$ ]] || { printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2; exit 2; }
+    exec node "$REPO_ROOT/tools/backend-acceptance/runner.mjs" "$1" "$2"
+    ;;
+  *)
+    printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
+    exit 2
+    ;;
+esac

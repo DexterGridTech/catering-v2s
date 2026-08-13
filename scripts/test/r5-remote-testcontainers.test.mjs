@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
 import test from 'node:test';
-import {backendPerformance196SourcePaths, classifyGradleTestExecution, createDynamicLaneScheduler, deriveBackendPerformance196ChildFailure, finalizeCleanupAfterCollection, initialLaneQueues, isReusableSuiteTargetPass, parseAndValidateRunManifest, remoteGradleDistributionPath, resolveGradleHome, testcontainersTargetForSource, validateBackendPerformance196SourcePaths, validateBackendPerformance196WorkloadResult, validateCleanupReceipt, validateFinalAdapterChildManifest, validateGradleDistribution, validateGradleHome} from './r5-remote-testcontainers.mjs';
+import {backendAcceptanceFaultEnvironmentScript, backendAcceptanceProgressScript, backendPerformance196SourcePaths, classifyGradleTestExecution, createDynamicLaneScheduler, deriveBackendPerformance196ChildFailure, finalizeCleanupAfterCollection, initialLaneQueues, isReusableSuiteTargetPass, managedGradleHomeScript, managedProcessCompletionScript, managedProcessMembershipScript, materializeBackendAcceptanceLaneContract, parseAndValidateRunManifest, remoteGradleDistributionPath, resolveGradleHome, runtimeEvidencePathForRun, testcontainersTargetForSource, validateBackendAcceptanceWorkloadResult, validateBackendPerformance196SourcePaths, validateBackendPerformance196WorkloadResult, validateCleanupReceipt, validateFinalAdapterChildManifest, validateGradleDistribution, validateGradleHome, workloadObservationKey} from './r5-remote-testcontainers.mjs';
 
 const control = {runId: 'r5-tc-12345678-123', remoteRoot: '/tmp/r5-tc-12345678-123', pid: 1, pgid: 1, bootId: 'boot', processStartTicks: 1, commandSha256: 'a'.repeat(64), phase: 'PROCESS_STARTED', logPath: '/tmp/r5-tc-12345678-123/results/gradle.log', phasePath: '/tmp/r5-tc-12345678-123/results/phase.jsonl'};
 const phases = ['PREPARED', 'SOURCE_SYNCED', 'GRADLE_SYNCED', 'PROCESS_STARTED', 'RUNNING', 'COLLECTED', 'CLEANUP'].map((phase, index) => ({sequence: index + 1, phase, outcome: 'PASS'}));
@@ -38,6 +40,23 @@ test('196 workload result may delegate cleanup only to Testcontainers plus the m
   assert.throws(() => validateBackendPerformance196WorkloadResult({...result, cleanupStatus: 'PASS'}), /BP_U06_WORKLOAD_CLEANUP_OWNER_INVALID/);
 });
 
+test('backend-acceptance child preserves lane denominator while allowing a partial FAIL result', () => {
+  const result = {
+    kind: 'backend-acceptance-workload-result', status: 'FAIL',
+    expectedOperations: 65, completedOperations: 0,
+    contractStatus: 'FAIL', businessStatus: 'FAIL', performanceStatus: 'FAIL', cleanupStatus: 'FAIL',
+    firstFailure: 'BACKEND_ACCEPTANCE_CATALOG_WORKLOAD_FAILED',
+  };
+  assert.doesNotThrow(() => validateBackendAcceptanceWorkloadResult(result, 65));
+  assert.throws(() => validateBackendAcceptanceWorkloadResult({...result, expectedOperations: 66}, 65), /BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID/);
+  assert.throws(() => validateBackendAcceptanceWorkloadResult({...result, completedOperations: 66}, 65), /BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID/);
+  assert.throws(() => validateBackendAcceptanceWorkloadResult({...result, status: 'PASS', contractStatus: 'PASS', businessStatus: 'PASS', performanceStatus: 'PASS', cleanupStatus: 'PASS', completedOperations: 64}, 65), /BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID/);
+});
+
+test('managed backend-acceptance enables the catalog fault seams required by route red proofs', () => {
+  assert.deepEqual(backendAcceptanceFaultEnvironmentScript(), ['export V2S_CATALOG_TEST_FAULTS=true']);
+});
+
 test('remote runner requires an explicit usable Gradle distribution and never falls back to a machine path', () => {
   assert.throws(() => validateGradleHome(undefined, false), /ENV_GRADLE_HOME_REQUIRED/);
   assert.throws(() => validateGradleHome('gradle', true), /ENV_GRADLE_HOME_INVALID/);
@@ -60,6 +79,50 @@ test('shared Gradle distribution is content-addressed and its manifest binding f
   assert.throws(() => validateGradleDistribution({...record, status: 'UNVERIFIED'}), /GRADLE_DISTRIBUTION_RECORD_INVALID/);
 });
 
+test('remote wrapper exports the full immutable Gradle distribution to nested managed tasks', () => {
+  const distribution = '/tmp/catering-v2s-r5-gradle-distribution-immutable';
+  const result = spawnSync('bash', ['-s'], {
+    input: [`gradle=${distribution}`, managedGradleHomeScript(), 'test "$V2S_GRADLE_HOME" = "$gradle"'].join('\n'),
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('managed workload fingerprint ignores volatile process state and CPU time', () => {
+  const firstFingerprint = managedProcessMembershipScript('first');
+  const secondFingerprint = managedProcessMembershipScript('second');
+  const result = spawnSync('bash', ['-s'], {
+    input: [
+      'ps() { if [ "$mode" = first ]; then printf "42 100 java S 00:01\\n"; else printf "42 100 java R 99:59\\n"; fi; }',
+      'pgid=42',
+      'mode=first',
+      firstFingerprint,
+      'mode=second',
+      secondFingerprint,
+      'test -n "$first" && test "$first" = "$second"',
+    ].join('\n'),
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(firstFingerprint, /^first=\$\(ps -eo pgid=,pid=,comm=/);
+  assert.doesNotMatch(firstFingerprint, /stat=|time=/);
+});
+
+test('stall observation advances only on observable workload artifacts', () => {
+  const stableA = workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 1});
+  const stableB = workloadObservationKey({logBytes: 10, workloadSha256: 'worker-b', testResultBytes: 0, childHeartbeatSequence: 2});
+  assert.equal(stableA, stableB);
+  assert.notEqual(stableA, workloadObservationKey({logBytes: 11, workloadSha256: 'worker-b', testResultBytes: 0, childHeartbeatSequence: 2}));
+  assert.notEqual(stableA, workloadObservationKey({logBytes: 10, workloadSha256: 'worker-b', testResultBytes: 0, runtimeEvidenceSha256: 'evidence-b', runtimeEvidenceBytes: 20, childHeartbeatSequence: 2}));
+});
+
+test('backend-acceptance stall observation binds the same HTTP event artifact as progress', () => {
+  const remoteResults = '/tmp/r5-results';
+  assert.equal(runtimeEvidencePathForRun({remoteResults, runType: 'backend-acceptance'}), `${remoteResults}/http-request-events.jsonl`);
+  assert.equal(runtimeEvidencePathForRun({remoteResults, runType: 'backend-performance'}), `${remoteResults}/backend-performance-196/catalog-runtime/results/catalog-inventory-api/events.jsonl`);
+  assert.equal(runtimeEvidencePathForRun({remoteResults, runType: 'other'}), null);
+});
+
 test('remote runner preserves the deepest workload firstFailure before Gradle exit classification', () => {
   const childFailure = 'BP_U06_REMOTE_WORKLOAD_CATALOG_HTTP_FAILED:CATALOG_FIXTURE_HTTP_422';
   assert.equal(deriveBackendPerformance196ChildFailure({workloadResult: {
@@ -71,6 +134,44 @@ test('remote runner preserves the deepest workload firstFailure before Gradle ex
   assert.throws(() => deriveBackendPerformance196ChildFailure({workloadResult: {
     kind: 'backend-performance-testcontainers-196-workload-result', status: 'FAIL', businessStatus: 'FAIL', firstFailure: 'not-safe',
   }, gradleStatus: 1}), /BP_U06_WORKLOAD_RESULT_FIRST_FAILURE_INVALID/);
+});
+
+test('managed remote wrapper reaps a zombie Gradle child and preserves its nonzero exit', () => {
+  const result = spawnSync('bash', ['-s'], {
+    input: [
+      'set -uo pipefail',
+      '(exit 17) & gradle_pid=$!',
+      managedProcessCompletionScript({heartbeat: 'true', sleep: 'true'}),
+      'printf "GRADLE_STATUS=%s\\n" "$gradle_status"',
+    ].join('\n'),
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /GRADLE_STATUS=17/);
+});
+
+test('backend-acceptance progress probe keeps success and failure predicates syntactically valid', () => {
+  const directory = mkdtempSync('/tmp/backend-acceptance-progress-test-');
+  const eventsPath = `${directory}/http-request-events.jsonl`;
+  const runId = 'backend-acceptance-progress-test';
+  const operationIds = ['operation-a'];
+  const runProbe = () => spawnSync('bash', ['-s'], {
+    input: backendAcceptanceProgressScript({eventsPath, runId, operationIds}),
+    encoding: 'utf8',
+  });
+  try {
+    writeFileSync(eventsPath, `${JSON.stringify({runId, operationId: 'operation-a', outcome: 'SUCCEEDED', status: 200})}\n`);
+    const success = runProbe();
+    assert.equal(success.status, 0, success.stderr);
+    assert.equal(success.stdout, '1\t0\tNONE\n');
+
+    writeFileSync(eventsPath, `${JSON.stringify({runId, operationId: 'operation-a', outcome: 'FAILED', status: 500})}\n`);
+    const failure = runProbe();
+    assert.equal(failure.status, 0, failure.stderr);
+    assert.equal(failure.stdout, '0\t1\tBACKEND_ACCEPTANCE_ROUTE_FAILED\n');
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
 });
 
 test('Testcontainers discovery derives each module task and fails closed for an unparseable annotated source', () => {
@@ -118,4 +219,28 @@ test('whole-suite uses an initial 7/7/8 partition and an idle lane steals only u
   assert.equal(stolen.target.id, 15);
   assert.equal(scheduler.remaining(), 14);
   assert.throws(() => createDynamicLaneScheduler(targets).next(3), /TESTCONTAINERS_LANE_INDEX_INVALID/);
+});
+
+test('backend-acceptance lane contract is parameterized beyond the predecessor three-lane shape', () => {
+  const lanes = [1, 2, 5].map((laneId) => materializeBackendAcceptanceLaneContract({
+    laneCount: 5,
+    laneId,
+    databaseNamespace: `backend-acceptance-db-${laneId}`,
+    objectStorageNamespace: `backend-acceptance-asset-${laneId}`,
+    dockerHost: `unix:///run/catering-v2s-testcontainers/daemon-${laneId}/docker.sock`,
+    workspace: `/tmp/r5-tc-suite-20260813-1/lane-${laneId}/workspace`,
+  }));
+  assert.deepEqual(lanes.map((lane) => lane.laneId), [1, 2, 5]);
+  assert.throws(() => materializeBackendAcceptanceLaneContract({
+    laneCount: 5,
+    laneId: 6,
+    databaseNamespace: 'backend-acceptance-db-6',
+    objectStorageNamespace: 'backend-acceptance-asset-6',
+  }), /BACKEND_ACCEPTANCE_LANE_CONTRACT_INVALID/);
+  assert.throws(() => materializeBackendAcceptanceLaneContract({
+    laneCount: 5,
+    laneId: 1,
+    databaseNamespace: 'Shared',
+    objectStorageNamespace: 'backend-acceptance-asset-1',
+  }), /BACKEND_ACCEPTANCE_LANE_DATABASENAMESPACE_INVALID/);
 });

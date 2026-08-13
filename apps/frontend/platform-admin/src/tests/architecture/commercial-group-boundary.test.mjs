@@ -34,7 +34,13 @@ test("platform typed write paths include extension replacement and opaque asset 
   assert.match(extensionEditSource, /useDrawerFormLifecycle/);
   assert.match(extensionSource, /useOverlayLock/);
   assert.match(extensionEditSource, /PLATFORM_ADMIN_OPERATION_IDS\.replaceExtensionDefinition/);
-  assert.match(extensionEditSource, /field\.type === 'SELECT' \? field\.optionsText/);
+  assert.match(extensionEditSource, /<Form\.List name=\{\[field\.name, 'options'\]\}/);
+  assert.match(extensionEditSource, /extension-definition-option-add-\$\{index\}/);
+  assert.match(extensionEditSource, /extension-definition-option-remove-\$\{index\}-\$\{optionIndex\}/);
+  assert.match(extensionEditSource, /field\.type === 'SELECT' \? field\.options\.map/);
+  assert.doesNotMatch(extensionEditSource, /optionsText|顿号分隔|split\('、'\)|join\('、'\)/);
+  assert.match(extensionEditSource, /extension-definition-type-display-\$\{index\}/);
+  assert.match(extensionEditSource, /<Form\.Item name=\{\[field\.name, 'type'\]\} hidden>/);
   assert.doesNotMatch(extensionSource + extensionEditSource, /field_\$\{Date\.now\(\)\}|onRow=|entityType\/key\/revision/);
   assert.match(extensionEditSource, /EXTENSION_DEFINITION_VERSION_CONFLICT/);
   assert.match(workspaceCreateSource + workspaceEditSource, /platformClient\.stagePlatformAsset/);

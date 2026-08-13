@@ -366,10 +366,17 @@ public class WorkspaceInvitationService {
     @Transactional
     public PublicAcceptIntent acceptPublic(String groupWorkspaceKey, String rawInvitationToken) {
         Invitation invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
-        if (!"PENDING".equals(invitation.status()) || invitation.expiresAtEpochMillis() <= time.currentEpochMillis()) throw new InvitationStateException();
-        if (jdbc.update("UPDATE workspace_iam.invitation SET status='ACCEPT_INTENT_RECORDED', consented_at_epoch_millis=?, version=version+1 WHERE id=? AND status='PENDING' AND version=?", time.currentEpochMillis(), invitation.id(), invitation.version()) != 1) throw new InvitationStateException();
-        audit(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.id(), "WORKSPACE_INVITATION_ACCEPT_INTENT_RECORDED", AuditActor.system(), invitation.status(), "ACCEPT_INTENT_RECORDED");
-        return new PublicAcceptIntent("VERIFY_MOBILE");
+        String nextStep = publicResumeStep(invitation);
+        if ("ACCEPT".equals(nextStep)) {
+            if (jdbc.update("UPDATE workspace_iam.invitation SET status='ACCEPT_INTENT_RECORDED', consented_at_epoch_millis=?, version=version+1 WHERE id=? AND status='PENDING' AND version=?", time.currentEpochMillis(), invitation.id(), invitation.version()) == 1) {
+                audit(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.id(), "WORKSPACE_INVITATION_ACCEPT_INTENT_RECORDED", AuditActor.system(), invitation.status(), "ACCEPT_INTENT_RECORDED");
+                return new PublicAcceptIntent("VERIFY_MOBILE");
+            }
+            invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
+            nextStep = publicResumeStep(invitation);
+        }
+        if ("VERIFY_MOBILE".equals(nextStep) || "FINALIZE".equals(nextStep)) return new PublicAcceptIntent(nextStep);
+        throw new InvitationStateException();
     }
 
     @Transactional(readOnly = true)
@@ -382,7 +389,7 @@ public class WorkspaceInvitationService {
         if (intents.stream().anyMatch(intent -> !type.equals(intent.serviceNodeType()))) throw new InvitationStateException();
         String path = targetPath(invitation, intents, paths(invitation, intents));
         if (path.length() > 240) throw new InvitationStateException();
-        return new PublicInvitationView(invitation.id(), invitation.groupWorkspaceKey(), type, path, roleNames, maskMobile(invitation.mobile()), invitation.status(), invitation.expiresAtEpochMillis());
+        return new PublicInvitationView(invitation.id(), invitation.groupWorkspaceKey(), type, path, roleNames, maskMobile(invitation.mobile()), invitation.status(), publicResumeStep(invitation), invitation.expiresAtEpochMillis());
     }
 
     @Transactional(noRollbackFor = WorkspaceAuthenticationService.OtpRateLimitedException.class)
@@ -400,15 +407,16 @@ public class WorkspaceInvitationService {
     public PublicReadiness verifyPublicOtp(String groupWorkspaceKey, String rawInvitationToken, String mobile, String rawOtp) {
         Invitation invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
         requireInvitationMobile(invitation, mobile);
-        if (!"ACCEPT_INTENT_RECORDED".equals(invitation.status()) || invitation.expiresAtEpochMillis() <= time.currentEpochMillis()) throw new InvitationStateException();
+        if (!Set.of("ACCEPT_INTENT_RECORDED", "MOBILE_VERIFIED").contains(invitation.status()) || invitation.expiresAtEpochMillis() <= time.currentEpochMillis()) throw new InvitationStateException();
         otpLimits.beforeVerify(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), "INVITATION_MOBILE_VERIFY", invitation.id());
         int consumed = jdbc.update("UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND purpose='INVITATION_MOBILE_VERIFY' AND token_hash=? AND status='ACTIVE' AND expires_at_epoch_millis>?", time.currentEpochMillis(), invitation.id(), sha256(rawOtp), time.currentEpochMillis());
         if (consumed != 1) { jdbc.update("UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'", invitation.id()); otpLimits.invalidVerify(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), "INVITATION_MOBILE_VERIFY", invitation.id()); throw new InvitationStateException(); }
         otpLimits.successfulVerify(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), "INVITATION_MOBILE_VERIFY", invitation.id());
         String grant = randomToken(); long expires = Math.min(invitation.expiresAtEpochMillis(), time.currentEpochMillis() + 15 * 60 * 1000L);
-        if (jdbc.update("UPDATE workspace_iam.invitation SET status='MOBILE_VERIFIED', version=version+1 WHERE id=? AND status='ACCEPT_INTENT_RECORDED' AND version=?", invitation.id(), invitation.version()) != 1) throw new InvitationStateException();
+        boolean firstVerification = "ACCEPT_INTENT_RECORDED".equals(invitation.status());
+        if (firstVerification && jdbc.update("UPDATE workspace_iam.invitation SET status='MOBILE_VERIFIED', version=version+1 WHERE id=? AND status='ACCEPT_INTENT_RECORDED' AND version=?", invitation.id(), invitation.version()) != 1) throw new InvitationStateException();
         jdbc.update("INSERT INTO workspace_iam.invitation_public_progress (invitation_id, verification_grant_hash, verification_grant_expires_at_epoch_millis, version) VALUES (?, ?, ?, 1) ON CONFLICT (invitation_id) DO UPDATE SET verification_grant_hash=EXCLUDED.verification_grant_hash, verification_grant_expires_at_epoch_millis=EXCLUDED.verification_grant_expires_at_epoch_millis, version=workspace_iam.invitation_public_progress.version+1", invitation.id(), sha256(grant), expires);
-        audit(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.id(), "WORKSPACE_INVITATION_MOBILE_VERIFIED", AuditActor.system(), invitation.status(), "MOBILE_VERIFIED");
+        if (firstVerification) audit(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), invitation.id(), "WORKSPACE_INVITATION_MOBILE_VERIFIED", AuditActor.system(), invitation.status(), "MOBILE_VERIFIED");
         return new PublicReadiness(grant, accountExists(invitation), false, false, false, "COMPLETE_CREDENTIALS");
     }
 
@@ -447,7 +455,7 @@ public class WorkspaceInvitationService {
     }
 
     private String issueMobileVerificationOtp(Invitation invitation, long expiresAtEpochMillis) {
-        if (!"ACCEPT_INTENT_RECORDED".equals(invitation.status()) || expiresAtEpochMillis <= time.currentEpochMillis() || expiresAtEpochMillis > invitation.expiresAtEpochMillis()) throw new InvitationStateException();
+        if (!Set.of("ACCEPT_INTENT_RECORDED", "MOBILE_VERIFIED").contains(invitation.status()) || expiresAtEpochMillis <= time.currentEpochMillis() || expiresAtEpochMillis > invitation.expiresAtEpochMillis()) throw new InvitationStateException();
         jdbc.update("UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'", invitation.id());
         String otp = fixedOtpIssuer == null ? String.format("%06d", random.nextInt(1_000_000)) : fixedOtpIssuer.issue("INVITATION_MOBILE_VERIFY", invitation.id());
         jdbc.update("INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'INVITATION_MOBILE_VERIFY', ?, ?, 'ACTIVE', ?)", UUID.randomUUID(), invitation.workspaceUuid(), invitation.groupWorkspaceKey(), sha256(otp), invitation.id(), expiresAtEpochMillis);
@@ -675,6 +683,16 @@ public class WorkspaceInvitationService {
     private static String normalizedLogin(String value) { if (value == null || !value.matches("^[A-Za-z0-9_.-]{3,120}$")) throw new InvitationValidationException(); return value.toLowerCase(); }
     private static String text(String value, int limit) { if (value == null || value.isBlank() || value.trim().length() > limit) throw new InvitationValidationException(); return value.trim(); }
     private static String maskMobile(String value) { return value.length() <= 4 ? "****" : value.substring(0, Math.min(3, value.length())) + "****" + value.substring(Math.max(3, value.length() - 4)); }
+    private String publicResumeStep(Invitation invitation) {
+        if (invitation.expiresAtEpochMillis() <= time.currentEpochMillis()) return "TERMINAL";
+        return switch (invitation.status()) {
+            case "PENDING" -> "ACCEPT";
+            case "ACCEPT_INTENT_RECORDED", "MOBILE_VERIFIED" -> "VERIFY_MOBILE";
+            case "CREDENTIAL_READY" -> "FINALIZE";
+            case "COMPLETED", "CANCELLED", "EXPIRED" -> "TERMINAL";
+            default -> throw new InvitationStateException();
+        };
+    }
     public record AssignmentIntent(UUID roleId, String serviceNodeType, UUID serviceNodeId) {
         @Override public String toString() {
             return roleId + ":" + serviceNodeType + ":" + serviceNodeId;
@@ -683,7 +701,7 @@ public class WorkspaceInvitationService {
     public record PublicAcceptIntent(String nextStep) { }
     public record PublicReadiness(String verificationGrant, boolean accountExists, boolean userNameReady, boolean loginNameReady, boolean passwordReady, String nextStep) { }
     public record PublicCompletion(UUID invitationId, String status, String message, String loginPath) { }
-    public record PublicInvitationView(UUID invitationId, String groupWorkspaceKey, String targetOrganizationType, String targetOrganizationPath, List<String> roleNames, String maskedMobile, String status, long expiresAt) { }
+    public record PublicInvitationView(UUID invitationId, String groupWorkspaceKey, String targetOrganizationType, String targetOrganizationPath, List<String> roleNames, String maskedMobile, String status, String nextStep, long expiresAt) { }
     public record PublicOtpDelivery(String verificationId, long expiresAt, String debugVerificationCode) { }
     public record ManagementInvitationView(
         UUID id,

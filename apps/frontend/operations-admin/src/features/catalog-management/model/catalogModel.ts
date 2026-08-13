@@ -36,6 +36,7 @@ export type CatalogItemSummary = {
 };
 
 export type CatalogNavigation = {
+  allCount: number;
   tree: Array<{
     categoryRef: string;
     code: string;
@@ -255,6 +256,7 @@ export function decodeWorkbenchContext(envelope: CatalogDataEnvelope | undefined
 export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): CatalogNavigation {
   const value = envelopeData(envelope) ?? {};
   return {
+    allCount: integer(value.allCount),
     tree: recordArray(value.tree).map((row) => {
       const deletion = asRecord(row.deletionAvailability) ?? {};
       return {

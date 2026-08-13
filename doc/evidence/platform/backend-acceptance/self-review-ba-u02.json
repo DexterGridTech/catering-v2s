@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-unit-self-review",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "reviewCycleId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "reviewTarget": "IMPLEMENTATION_UNIT",
+  "unitId": "BA-U02",
+  "reviewerKind": "CODEX_AUTHOR_SELF_REVIEW",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "status": "PASS_STATIC_ONLY",
+  "operationImpact": {
+    "value": "ADDED_OR_CHANGED",
+    "scenarioContractRegistry": "contracts/registry/backend-acceptance-scenarios.json",
+    "identitySource": "CURRENT_ENTRY_OPERATION_DENOMINATOR",
+    "exactSet": "CURRENT_SEMANTIC_OPERATION_IDENTITY",
+    "requiredFields": [
+      "identity",
+      "fixture",
+      "request",
+      "businessOracle",
+      "performanceCriterion",
+      "cleanup"
+    ],
+    "fixedOperationCountUsedAsGate": false,
+    "diagnosticDiscoveredOperations": 196
+  },
+  "sourceBindings": [
+    {
+      "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+      "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+    },
+    {
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+      "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+    },
+    {
+      "path": "contracts/policy/backend-acceptance-execution-contract.json",
+      "sha256": "b25b535ac09e8345388ad69f3e912c0398753f8be59d8408d778156c9f74fb7d"
+    },
+    {
+      "path": "contracts/registry/backend-performance-operation-source-inventory.json",
+      "sha256": "7d3e19ee694612e31a25a477bdf8a7542a4245c2899b1c40a70c94b4b5766396"
+    },
+    {
+      "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json",
+      "sha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07"
+    },
+    {
+      "path": "tools/backend-acceptance/cli.mjs",
+      "sha256": "5a3be78cc8e0d50395c7327ff8b68e9d327b71f775167c8f1cc450a312043401"
+    },
+    {
+      "path": "scripts/test/backend-acceptance",
+      "sha256": "6d1fc4070b9d09afd8944b125f2c2c6122dd132a1a291ead64b9160f3e72f655"
+    },
+    {
+      "path": "scripts/test/backend-acceptance.test.mjs",
+      "sha256": "0b4af00f9d07b37e47aa15c526ea3f38ddd3dd064cbb8b87c519f6f1b119454b"
+    }
+  ],
+  "staticOutputs": [
+    {
+      "path": "contracts/registry/backend-acceptance-scenarios.json",
+      "sha256": "e11372f139af237205372e798767f30b5c0b3829c008e906a49f8c72cd35df60",
+      "status": "STATIC_ADMITTED_AWAITING_OWNER_PROVIDER_MIGRATION",
+      "operationRows": 196
+    },
+    {
+      "path": "contracts/registry/backend-acceptance-accepted-baseline.json",
+      "sha256": "741a1e402e775fbb81fec34fe94594fc6355a8a34ac4583db14b5ca551d5dc15",
+      "status": "ENTRY_BASELINE_REGISTRY",
+      "operationRows": 196,
+      "measuredRows": 0
+    },
+    {
+      "path": "doc/evidence/platform/backend-acceptance-historical-seed-dispositions.json",
+      "sha256": "1546492ae6ede36e3fc528d907b8c208f67ab1cbbd2cd7e428ebda7885f6effc",
+      "status": "ENTRY_REPLAY_DENOMINATOR",
+      "performanceRows": 6,
+      "httpRows": 15,
+      "nonRouteRows": 8
+    },
+    {
+      "path": "contracts/policy/backend-acceptance-retained-owner-logic.json",
+      "sha256": "e8938cc25c2dc1945158cb9a38834ec6e113c1ba749c827c7eab6ab99b0c1082",
+      "status": "ACTIVE_CLOSED_FINITE_SET",
+      "entries": 0
+    },
+    {
+      "path": "contracts/policy/backend-acceptance-route-unexpressible-regressions.json",
+      "sha256": "2f1a058f1eb77ce39746a200229444891ce31e0e7a7aff599e6afae9c71c1d5a",
+      "status": "ACTIVE_CLOSED_FINITE_SET",
+      "entries": 0
+    }
+  ],
+  "cleanProof": [
+    {
+      "command": "scripts/test/backend-acceptance --preflight",
+      "result": "PASS: OPERATIONS=196; BASELINE_MEASURED=0; HISTORICAL_PERFORMANCE=6; HISTORICAL_HTTP=15; HISTORICAL_NON_ROUTE=8; CLEANUP=PASS"
+    },
+    {
+      "command": "node tools/backend-acceptance/cli.mjs entry-check",
+      "result": "PASS: CURRENT_OPERATIONS=196; ROUTE_FRESHNESS=PASS; P0=633; W0=724; CLEANUP=PASS"
+    },
+    {
+      "command": "scripts/check/backend-boundaries",
+      "result": "PASS: R4_BACKEND_BOUNDARIES=PASS"
+    },
+    {
+      "command": "scripts/check/implementation-design-granularity --backend-acceptance-admission doc/evidence/platform/backend-acceptance/design-admission.json",
+      "result": "PASS: UNITS=6; ADDED_OR_CHANGED=1"
+    }
+  ],
+  "redProof": [
+    {
+      "command": "node scripts/test/backend-acceptance.test.mjs",
+      "result": "PASS: RED_UNCOVERED_OPERATION=PASS"
+    },
+    {
+      "command": "node scripts/test/backend-acceptance.test.mjs",
+      "result": "PASS: RED_SCENARIO_FIELD_MISSING=PASS"
+    },
+    {
+      "command": "node scripts/test/backend-acceptance.test.mjs",
+      "result": "PASS: RED_BASELINE_EXACT_SET_DRIFT=PASS"
+    },
+    {
+      "command": "node scripts/test/backend-acceptance.test.mjs",
+      "result": "PASS: RED_HISTORICAL_FINDING_MISSING=PASS"
+    }
+  ],
+  "migrationState": {
+    "knownUncoveredOpen": 196,
+    "knownUncoveredRule": "CURRENT_MUST_BE_ENTRY_SUBSET; NEW_OPERATION_IS_FAIL_CLOSED",
+    "dynamicEvidence": "NOT_RUN_UNTIL_BA_U03_MANAGED_TESTCONTAINERS",
+    "businessVerdict": "NOT_RUN",
+    "performanceVerdict": "NOT_RUN",
+    "cleanupVerdict": "STATIC_TEMP_FIXTURE_CLEANUP_PASS_ONLY"
+  },
+  "conclusion": "BA-U02_STATIC_SELF_REVIEW_PASS_AND_CLOSED_FOR_UNIT_HANDOFF"
+}

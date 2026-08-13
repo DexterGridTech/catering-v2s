@@ -16,6 +16,14 @@ stop and return it to Dexter; do not invent a test account, seed data or an exte
 
 For every delivery unit, specify the package-exit source-compliance denominators, exact owning source/anchor, incremental verification, and a non-PENDING disposition. A package receipt must independently compare actual changed paths to non-empty incremental checks; a gate or mapping green alone is not a package exit.
 
+For every new or modified backend HTTP operation, the design must include a draft
+`backend-acceptance` scenario contract with non-empty `identity`, `fixture`, `request`,
+`businessOracle`, `performanceCriterion`, and `cleanup`. `correctnessCases` may be empty only with a
+one-line semantic reason; `contractOracle` is supplied by the generic validator and is not a repeated
+per-operation field. Missing any mandatory draft field is the typed design-admission failure
+`BACKEND_ACCEPTANCE_SCENARIO_REQUIRED`; the design must not enter review. Performance criteria are
+deterministic structural database counts, not latency, warmup, sampling or percentile budgets.
+
 Plans must also define how every confirmed design, implementation, testing, or evidence finding is
 abstracted into a reusable failure pattern and receives one prevention destination: project-memory,
 an admitted existing machine control with production red proof, a semantic review checklist, or a

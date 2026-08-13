@@ -11,7 +11,7 @@ if (result.status !== 0) {
   process.stderr.write(result.stderr || "");
   process.exit(result.status || 1);
 }
-if (!result.stdout.includes("BP_U01_DATABASE_SHAPE_SELF_TEST=PASS") || !result.stdout.includes("RED_MISSING_ROW=PASS") || !result.stdout.includes("RED_SOURCE_REF=PASS") || !result.stdout.includes("RED_FOLD_PROOF=PASS") || !result.stdout.includes("RED_BUDGET_FORMULA=PASS")) {
+if (!result.stdout.includes("BP_U01_DATABASE_SHAPE_SELF_TEST=PASS") || !result.stdout.includes("RED_MISSING_ROW=PASS") || !result.stdout.includes("RED_SOURCE_REF=PASS") || !result.stdout.includes("RED_FOLD_PROOF=PASS") || !result.stdout.includes("RED_BUDGET_FORMULA=PASS") || !result.stdout.includes("DBCR_U02_RED_OWNER_COUNT=PASS") || !result.stdout.includes("DBCR_U02_RED_SHAPE_CLASS=PASS") || !result.stdout.includes("DBCR_U02_RED_SAME_OWNER_DUPLICATE=PASS")) {
   throw new Error("BP_U01_DATABASE_SHAPE_TEST_OUTPUT_INVALID");
 }
 process.stdout.write("BP_U01_DATABASE_SHAPE_GENERATOR_TEST=PASS\n");

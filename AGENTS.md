@@ -48,6 +48,8 @@
 
 **日志、诊断与验收（硬约束）**：所有脚本、业务代码与支撑代码必须在实际运行边界具备统一、结构化、脱敏且可关联的必要日志/诊断能力，用于问题追踪、执行阶段和效率判断；禁止以 audit、异常 response、exit code、测试名称或临时输出替代。受管执行必须有 run-scoped manifest、阶段/心跳、受控 process identity、log path 和 cleanup 证据；测试/动态验证必须实际读取日志，判定 first failure、last known good、broken boundary、business 与 cleanup。无新日志是诊断信号，不得以等待、延长 timeout 或盲目重试掩盖。安全敏感路径不得记录 password/hash、OTP、token、cookie、Authorization、手机号、登录名、原始 IP 或 raw payload。已发现的范围外日志缺口必须在当前工作中补齐，无需另向 Dexter 申请日志授权；仍须遵守 owner、隐私、详设、hook 与 package-exit 边界。规范原文见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md`。
 
+**后台统一测试能力（强制）**：唯一机器标识是 `backend-acceptance`；“完成后台功能测试”“后台性能测试”“接口测试”均指向该同一能力，不得恢复固定接口数量、阶段编号或功能/性能分立命名。只有同一次 fresh 真实 HTTP 执行对当前 semantic operation 全集给出的 `CONTRACT`、`BUSINESS`、确定性结构 `PERFORMANCE`、`CLEANUP` 四维 verdict 才能支持“后台功能测试已完成”；静态门、编译、ArchUnit、seed、DEV、测试类数量和历史 PASS 均不能替代。新增或修改 operation 的 implementation-facing 详设必须在 review 前具备非空 `identity/fixture/request/businessOracle/performanceCriterion/cleanup` scenario 草案，`correctnessCases` 为空时写明理由。package exit 必须以 package-entry 不可变的完整 production surface `P0` 和 anchor-covered set `W0` 为基线，独立扫描 exit `P1`；`P0 ∪ P1` 中存在性或全文件 hash 变化但不在 `W0` 的任一 production 文件都把影响面置为 `ALL`，同包重生成 inventory 不得自准入。受影响 operation 必须有机器可证 disposition；BUG_FIX 必须有修复前 FAIL、修复后 PASS 的 route scenario 红证，或显式进入封闭例外/未保护修复登记。只改实现而不更新 scenario、且无 `BEHAVIOR_UNCHANGED` 四维基线背书的包不得收口。规范原文见 `doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md`。
+
 ## 协作进度与结束闸门
 
 - **持续任务进展汇报（硬约束）**：任何持续超过五分钟的 task 必须在 `commentary` 主动汇报；首次汇报及之后任意两次相邻汇报的间隔均不得超过五分钟。不得闷头执行，不得只写“继续中”或无可核对内容的泛化状态。每次必须完整使用以下六行格式：

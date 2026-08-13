@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-unit-self-review",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "reviewCycleId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "reviewTarget": "IMPLEMENTATION_UNIT",
+  "unitId": "BA-U01",
+  "reviewerKind": "CODEX_AUTHOR_SELF_REVIEW",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "status": "PASS",
+  "operationImpact": {
+    "value": "NONE_WITH_REASON",
+    "reason": "The unit refreshes projection metadata and enforces design admission; it does not add or change a semantic route identity, method, path, consumer face, owner, schema, or error contract.",
+    "fixedOperationCountUsedAsGate": false,
+    "diagnosticOperationCount": 196
+  },
+  "sourceBindings": [
+    {
+      "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+      "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+    },
+    {
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+      "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+    },
+    {
+      "path": "contracts/policy/backend-acceptance-execution-contract.json",
+      "sha256": "b25b535ac09e8345388ad69f3e912c0398753f8be59d8408d778156c9f74fb7d"
+    },
+    {
+      "path": "scripts/generate/operation-handler-bindings.mjs",
+      "sha256": "69c104112be03eb298cc9dc3aebf6121b906d712048035d59b39796d92ac36ea"
+    },
+    {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "de1202c33e68d5a1d9d3960dab7ac43f43293124fac102cafd65e6569320b650"
+    },
+    {
+      "path": "doc/evidence/platform/backend-acceptance/design-admission.json",
+      "sha256": "b76ea9a0a4fe4973c17a3deee9c3c58604b774a948bed0ac4fc4fad6b3c55e0e"
+    }
+  ],
+  "cleanProof": [
+    {
+      "command": "scripts/check/operation-handler-bindings",
+      "result": "PASS: BP_U02_BINDING_CHECK=PASS; JSON_FILES=12; JAVA_FILES=12; FILES=24"
+    },
+    {
+      "command": "node tools/backend-acceptance/cli.mjs entry-check",
+      "result": "PASS: ROUTE_FRESHNESS=PASS; P0=633; W0=724; CLEANUP=PASS"
+    },
+    {
+      "command": "scripts/check/implementation-design-granularity --backend-acceptance-admission doc/evidence/platform/backend-acceptance/design-admission.json",
+      "result": "PASS: UNITS=6; ADDED_OR_CHANGED=1"
+    },
+    {
+      "command": "scripts/check/backend-boundaries",
+      "result": "PASS: R4_BACKEND_BOUNDARIES=PASS"
+    }
+  ],
+  "redProof": [
+    {
+      "mutation": "Scratch-only route projection revision mutation while operation rows remain unchanged",
+      "command": "node scripts/generate/operation-handler-bindings.mjs --self-test",
+      "result": "PASS: BP_U02_ROUTE_SOURCE_DIGEST_DRIFT is detected"
+    },
+    {
+      "mutation": "Scratch-only missing backend operation disposition in admission fixture",
+      "command": "scripts/check/implementation-design-granularity --self-test",
+      "result": "PASS: RED_FIXTURE_BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_REQUIRED=PASS"
+    },
+    {
+      "mutation": "Scratch-only missing scenario contract for ADDED_OR_CHANGED unit",
+      "command": "scripts/check/implementation-design-granularity --self-test",
+      "result": "PASS: RED_FIXTURE_BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REQUIRED=PASS"
+    }
+  ],
+  "activation": {
+    "executionContractStatus": "ACTIVE_IMPLEMENTATION",
+    "implementationAuthority": true,
+    "runtimeAuthority": true,
+    "runtimeAuthorityScope": "MANAGED_BACKEND_ACCEPTANCE_TESTCONTAINERS_ONLY",
+    "excluded": [
+      "DEV",
+      "L2",
+      "reset",
+      "seed",
+      "browser",
+      "UAT",
+      "deployment",
+      "manual SQL",
+      "Git"
+    ]
+  },
+  "dynamicEvidence": "NOT_RUN_IN_BA_U01; DYNAMIC_EXECUTION_REMAINS_BA_U03_SCOPE",
+  "conclusion": "BA-U01_SELF_REVIEW_PASS_AND_CLOSED_FOR_UNIT_HANDOFF"
+}

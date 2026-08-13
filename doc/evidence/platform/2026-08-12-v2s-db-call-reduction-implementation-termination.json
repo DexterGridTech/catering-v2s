@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-package-termination",
+  "packageId": "DB-CALL-REDUCTION-IMPLEMENTATION-20260812",
+  "status": "TERMINATED_BY_DEXTER_SCOPE_REFRAME",
+  "terminatedAt": "2026-08-12T13:44:18Z",
+  "terminationAuthority": {
+    "grantedBy": "Dexter",
+    "decision": "STOP_DBCR_AND_REFRAME_BACKEND_TESTING_AS_ONE_UNIFIED_TESTCONTAINERS_CAPABILITY"
+  },
+  "predecessorState": {
+    "priorActivePackageSha256": "b6a187e2073a1d570aa7ede17395e509aecbb30974dcbcfbf0dd1e063d998a6c",
+    "packageInput": {
+      "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-package-input.json",
+      "sha256": "e0f22381396fc2c7202e295c912636496785a4d4d3f31f71c1000586f986e3f3"
+    },
+    "granularityManifest": {
+      "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-granularity-manifest.json",
+      "sha256": "df90b1891659a1b22186a38777e34f8ff763d76e4b76a41f63d81db5f6c84730"
+    },
+    "packageExit": "NOT_CREATED",
+    "implementationReview": "NOT_REQUESTED",
+    "completion": "NOT_CLAIMED",
+    "dynamicAcceptance": "NOT_ACCEPTED"
+  },
+  "terminationReason": [
+    "The backend test landscape is fragmented across ordinary Testcontainers classes, a fixed 196-operation performance suite, SQL budget tests, seed metrics and additional static or integration checks without one future-proof interface-derived acceptance denominator.",
+    "The DBCR transaction change reduced TRANSACTION counts but increased CONNECTION borrows on catalog paths while QUERY and UPDATE counts stayed flat; the defect was exposed by seed output only because the pre-seed test evidence did not bind functional and performance assertions to the same operation scenarios.",
+    "Dexter ruled that seed exists only to populate complete DEV experience data and must not be used as a functional or performance test or as interface-coverage evidence.",
+    "A new independent requirements and solution analysis is required before any further backend test or DBCR implementation work."
+  ],
+  "preservedWorkingState": {
+    "policy": "NO_ROLLBACK_OR_REVERT_PERFORMED; preserve the interrupted package bytes for root-cause and migration analysis",
+    "changedPathCount": 27,
+    "changedPaths": [
+      "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+      "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+      "apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java",
+      "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java",
+      "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/CatalogInventoryReadTransactionTopologyTest.java",
+      "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java",
+      "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+      "contracts/policy/backend-performance-owner-api-registry.json",
+      "contracts/registry/backend-performance-operation-database-shape-matrix.json",
+      "contracts/registry/backend-performance-operation-source-inventory.json",
+      "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-granularity-manifest.json",
+      "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-package-input.json",
+      "doc/evidence/platform/rm1/p4/canonical-performance-accepted-baseline.json",
+      "doc/evidence/platform/rm1/p4/canonical-performance-candidate-disposition.json",
+      "doc/evidence/platform/rm1/p4/canonical-performance-candidate-recovery-receipt.json",
+      "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+      "scripts/dev/owner-command-seed-executor.mjs",
+      "scripts/generate/backend-performance-operation-database-shape.mjs",
+      "scripts/generate/backend-performance-operation-database-shape.test.mjs",
+      "scripts/generate/backend-performance-operation-source-inventory.mjs",
+      "scripts/generate/backend-performance-operation-source-inventory.test.mjs",
+      "scripts/test/compare-backend-performance-seed-reports.mjs",
+      "scripts/test/compare-backend-performance-seed-reports.test.mjs",
+      "scripts/test/seed-report.mjs",
+      "scripts/test/seed-report.test.mjs",
+      "tools/performance/canonical-ledger-scanner.mjs"
+    ]
+  },
+  "successorAnalysisPackage": {
+    "packageId": "UNIFIED-BACKEND-TEST-CAPABILITY-ANALYSIS-20260812",
+    "activePackagePath": ".runtime/compliance-control/active-package.json",
+    "activePackageSha256": "138e5b3e792c89f18b52f437f64f52f4d200ffb38cd93960ebea537f8e0c1667",
+    "implementationAuthority": false,
+    "runtimeAuthority": false,
+    "seedResetAuthority": false
+  },
+  "boundary": "This termination record is not a package exit, GO verdict, rollback, implementation acceptance, seed acceptance, performance conclusion or authorization to run Testcontainers, DEV, reset, seed, L2, UAT or deployment."
+}

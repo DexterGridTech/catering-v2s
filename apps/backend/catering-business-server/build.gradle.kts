@@ -85,6 +85,16 @@ dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:asset")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:catalog")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:store-contract")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:extension")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:fulfillment-production")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:inventory")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:organization")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:platform-admin-iam")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:workspace")))
+    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:workspace-iam")))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

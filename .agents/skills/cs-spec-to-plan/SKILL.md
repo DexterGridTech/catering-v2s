@@ -6,6 +6,23 @@ description: Derive a reviewable catering-v2s implementation plan from an approv
 
 Confirm the explicit program and current Roadmap authorization first. Reopen applicable project-memory and Heritage sources, including `SOLUTION_REASONABLENESS_FIRST`, `UI_USER_TASK_VALIDATION` and `AMBIGUITY_REQUIRES_DEXTER`. Before decomposing implementation, state the business user's actual task, Dexter's stage/cost intent, at least one viable alternative and why the recommendation is better. For UI, prove each operation comes from an approved Journey, is logical in context and has no better path; attribute constraints to backend/owner/contract/document ambiguity rather than inheriting them silently, and ask Dexter when product semantics are ambiguous. Then produce implementation units with exact create/update/delete/retain paths, owner and transaction boundaries, failure behavior, evidence and red controls.
 
+Any new or modified backend HTTP operation is incomplete until the plan contains its
+`backend-acceptance` scenario draft: non-empty `identity`, `fixture`, `request`, `businessOracle`,
+deterministic structural `performanceCriterion`, and `cleanup`. `correctnessCases` may be empty only
+with a one-line reason; the generic contract validator owns OpenAPI/envelope/Problem validation.
+Reject a missing draft before review with `BACKEND_ACCEPTANCE_SCENARIO_REQUIRED`; do not defer it to
+implementation or invent latency/percentile budgets.
+
+For the initial backend-acceptance migration, plans must also enumerate—not summarize—the hash-bound
+historical replay catalog at
+`doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json`: 6 required
+structural regression cases, 15 HTTP failure families, and 8 seed/client/fixture families. For each
+of the six performance rows, the plan must enforce QUERY, CONNECTION, and TRANSACTION at or below
+the row's DBCR-pre per-call baseline, include the typed QUERY disposition, and reject a connection-only
+closure. Every
+finding needs an implementation disposition and fresh route proof; the words "historical replay"
+alone are not a delivery item or acceptance criterion.
+
 ## Journey-to-design pipeline
 
 Before any implementation-facing design, use the sequence defined by

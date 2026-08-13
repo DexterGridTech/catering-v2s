@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `java-test-fixtures`
 }
 
 dependencies {
@@ -9,6 +10,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
     implementation("io.minio:minio:8.5.17")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation("org.mockito:mockito-core:5.17.0")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testImplementation("org.flywaydb:flyway-core:11.11.2")

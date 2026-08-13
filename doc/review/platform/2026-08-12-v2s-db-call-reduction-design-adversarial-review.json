@@ -1,0 +1,54 @@
+{
+  "kind": "implementation-design-adversarial-review",
+  "reviewTarget": "DESIGN",
+  "verdict": "NO_GO",
+  "manifestSha256": "dd9f72f2365afb0cd699a65118f4ffe716e1b97aac8303ad997bcf7e98dc962c",
+  "reviewCycleId": "DB_CALL_REDUCTION_DESIGN_20260812",
+  "reviewRound": 1,
+  "reviewRoundLimit": 2,
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewerInputChecklist": {
+    "path": "doc/review/platform/2026-08-12-v2s-db-call-reduction-design-adversarial-review-input-checklist.md",
+    "sha256": "2d545dc4d2c1cc9cea53f28444392719f68432026879cb333f1c674b26b404c1"
+  },
+  "blindReviewDeclaration": "Independent source-first findings and verdict were formed before reading author intake or handoff.",
+  "authorMaterialReadAfterIndependentVerdict": true,
+  "reviewMethod": {
+    "sourceFirst": true,
+    "solutionReasonablenessReviewedBeforeClosure": true,
+    "allDeliveryUnitsReviewed": true,
+    "riskClasses": ["transaction-topology", "owner-derivation", "candidate-reconciliation", "budget-ratchet", "seed-comparison", "authority"]
+  },
+  "expectedBehavior": [
+    "Sixteen reads remove all transaction re-entry without changing command transactions.",
+    "Five commands derive two reachable owners from a finite source authority.",
+    "Candidate reconciliation, accepted budgets and PRE POST comparison cannot self-certify."
+  ],
+  "findings": [
+    {"id":"DBCR-M-001","severity":"M","status":"CONFIRMED","unitIds":["DBCR-U01"],"title":"Coordinator path was nonexistent","evidence":"The reviewed manifest named apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/application/CatalogInventoryCoordinator.java; the real class is modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java.","risk":"The implementation denominator could miss all sixteen real transaction origins.","disposition":"Bind the actual module path and method anchors."},
+    {"id":"DBCR-S-002","severity":"S","status":"CONFIRMED","unitIds":["DBCR-U02"],"title":"Owner API mapping authority was unspecified","evidence":"The generator currently exposes one ownerBoundary and the reviewed design named no finite API-type-to-owner registry or source-inventory self-test surface.","risk":"A heuristic can miscount imports, nested APIs or same-owner duplicates.","disposition":"Add a source-hash-bound finite API registry and complete reachability red fixtures."},
+    {"id":"DBCR-M-003","severity":"M","status":"CONFIRMED","unitIds":["DBCR-U03"],"title":"Candidate recovery fallback was not auditable","evidence":"Accepted evidence stores only 721 and a fingerprint; reviewed design had no finite recovery-location denominator or closed exclusion reasons.","risk":"Generic dispositions could turn historical uncertainty into a false reconciliation.","disposition":"Hash-bind finite recovery locations, emit OLD_ROW_SET_UNRECOVERABLE when applicable, and close disposition vocabulary and source evidence."},
+    {"id":"DBCR-M-004","severity":"M","status":"CONFIRMED","unitIds":["DBCR-U04"],"title":"Budget increase was self-approvable","evidence":"A literal APPROVED plus arbitrary same-package evidence could satisfy the reviewed history schema.","risk":"Current and accepted values could rise together and bypass the ratchet.","disposition":"Require a pre-existing Dexter authority artifact outside the implementation changed set and red-test same-package self-approval."},
+    {"id":"DBCR-M-005","severity":"M","status":"CONFIRMED","unitIds":["DBCR-U05"],"title":"Detailed sequence captured PRE after production changes","evidence":"Reviewed design section 5.1 placed U01-U04 before comparator and PRE while the manifest placed PRE first.","risk":"An optimized state could be mislabeled as baseline.","disposition":"Make comparator and PRE capture precede every production behavior edit and bind entry source hashes."},
+    {"id":"DBCR-M-006","severity":"M","status":"CONFIRMED","unitIds":["DBCR-U05"],"title":"PRE and POST workload equality was incomplete","evidence":"The comparator checked operation IDs but not per-operation callCount or stageIds, and report producer/test surfaces plus terminal cleanup identity were omitted.","risk":"A smaller POST workload could falsely appear improved.","disposition":"Exact-match operation call counts and stage IDs, bind fixture identity and terminal business cleanup, and cover producer plus tests."}
+  ],
+  "unitVerdicts": [
+    {"id":"DBCR-U01","verdict":"NO_GO","findingIds":["DBCR-M-001"]},
+    {"id":"DBCR-U02","verdict":"NO_GO","findingIds":["DBCR-S-002"]},
+    {"id":"DBCR-U03","verdict":"NO_GO","findingIds":["DBCR-M-003"]},
+    {"id":"DBCR-U04","verdict":"NO_GO","findingIds":["DBCR-M-004"]},
+    {"id":"DBCR-U05","verdict":"NO_GO","findingIds":["DBCR-M-005","DBCR-M-006"]}
+  ],
+  "solutionReasonableness": {
+    "problemFit": "Correct target problems, incomplete executable contracts.",
+    "simplerAlternativeAssessment": "Extend existing generators, scanner, P4 and comparator; no second runner is needed.",
+    "costFit": "Proportionate after exact source and evidence contracts close.",
+    "verdict": "UNREASONABLE_UNTIL_BLOCKERS_CLOSED"
+  },
+  "conclusion": {
+    "verdict": "NO_GO",
+    "severityCounts": {"M":5,"S":1,"N":0},
+    "summary": "Five blocking and one serious design gaps required source-bound remediation before Claude handoff.",
+    "authorizationBoundary": "Read-only DESIGN review only; no implementation, Testcontainers, DEV, L2, reset, seed or performance authority."
+  }
+}

@@ -341,9 +341,10 @@ owner 批量判断，禁止前端计算、逐行 N+1 或新增第 43 个 endpoin
 - owner 返回的 action availability 与 typed reason；
 - `contextVersion/authorizationRevision`。
 
-`CatalogNavigationView`：全部、未分类、六个智能视图及计数、七形态及计数（零计数保留）、
-两级分类树（名码/状态/计数）。分类 count 是否包含后代固定为显式字段
-`countSemantics=SELF_ONLY|SELF_AND_DESCENDANTS`，前端不得猜。
+`CatalogNavigationView`：`allCount` 是当前 `dataNodeRef + brandRef` 内所有非 `VOIDED` 商品的 owner
+统计，且必须与 `SMART:ALL` 的无额外筛选结果域一致；全部、未分类、六个智能视图及计数、七形态及计数
+（零计数保留）、两级分类树（名码/状态/计数）。`allCount` 不得由分类、形态或分页结果在前端推导。
+分类 count 是否包含后代固定为显式字段 `countSemantics=SELF_ONLY|SELF_AND_DESCENDANTS`，前端不得猜。
 
 `CatalogItemPage` 请求/响应共同回显 query identity：owner scope、selected tree node、
 `includeSubCategories`、节点内 keyword、status/governance/source/tag filters、opaque cursor、

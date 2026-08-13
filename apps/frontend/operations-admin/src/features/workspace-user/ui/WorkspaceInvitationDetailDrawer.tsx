@@ -1,5 +1,5 @@
 import {Button, Descriptions, Drawer, Space, Typography} from 'antd';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {activeInvitationPageUrl, adminDetailDescriptionsProps, adminDrawerSurfaceProps, NameCodePathText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useState} from 'react';
 import type {WorkspaceInvitation} from '../../../app/api/generated/operations-edge';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -32,6 +32,7 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
   const [auditOpen, setAuditOpen] = useState(false);
   useOverlayLock(open);
   const actionable = invitation?.status === 'ACTIVE' && canInvite;
+  const invitationPageUrl = invitation ? activeInvitationPageUrl(invitation) : undefined;
   return <><Drawer
     title="邀请详情"
     open={open}
@@ -53,10 +54,10 @@ export function WorkspaceInvitationDetailDrawer({open, invitation, canInvite, on
       {key: 'roles', label: '业务角色', children: invitation.roleNames.join('、')},
       {key: 'status', label: '状态', children: statusLabel[invitation.status]},
       {key: 'expiresAt', label: '有效期', children: time(invitation.expiresAt)},
-      {key: 'url', label: '邀请链接', children: <Space>
-        <Typography.Text ellipsis={{tooltip: invitation.invitationPageUrl}} style={{maxWidth: 420}} {...testId('operations-workspace-invitation-link')}>{invitation.invitationPageUrl}</Typography.Text>
-        <Button onClick={() => void copy(invitation.invitationPageUrl)} {...testId('operations-workspace-invitation-copy-link')}>复制</Button>
-      </Space>},
+      ...(invitationPageUrl ? [{key: 'url', label: '邀请链接', children: <Space>
+        <Typography.Text ellipsis={{tooltip: invitationPageUrl}} style={{maxWidth: 420}} {...testId('operations-workspace-invitation-link')}>{invitationPageUrl}</Typography.Text>
+        <Button onClick={() => void copy(invitationPageUrl)} {...testId('operations-workspace-invitation-copy-link')}>复制</Button>
+      </Space>}] : []),
     ]}/>}
   </Drawer><OperationsAuditHistoryModal open={auditOpen} target={invitation ? {entityType: 'WORKSPACE_INVITATION', entityId: invitation.id, displayName: <NameCodePathText value={invitation.targetOrganizationPath}/>} : undefined} groupWorkspaceKey={invitation?.groupWorkspaceKey ?? ''} onClose={() => setAuditOpen(false)}/></>;
 }

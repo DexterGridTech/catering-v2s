@@ -1,6 +1,6 @@
 import {ProTable, type ProColumns, type ProFormInstance} from '@ant-design/pro-components';
 import {Alert, App, Button, Card, Descriptions, Drawer, Form, Input, Popconfirm, Select, Skeleton, Space, Tag, Typography} from 'antd';
-import {adminDrawerSurfaceProps, NameCodePathText, testId, useAsyncGenerationGuard, useDetailDrawer, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {activeInvitationPageUrl, adminDrawerSurfaceProps, NameCodePathText, testId, useAsyncGenerationGuard, useDetailDrawer, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformClient, platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
@@ -63,7 +63,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   const filterRoleRequest = useMemo(() => filterTargetType ? platformAdminRtkRequest.getWorkspaceInvitationCandidates({groupWorkspaceKey}, {query: {targetOrganizationType: filterTargetType, subjectType: 'ROLE', candidateUsage: 'LIST_FILTER', queryText: filterRoleQuery || undefined, page: 1, pageSize: 50}}) : undefined, [filterRoleQuery, filterTargetType, groupWorkspaceKey]);
   const filterOrganizationCandidates = platformRtk.useGetWorkspaceInvitationCandidatesQuery(filterOrganizationRequest!, {skip: !filterOrganizationRequest});
   const filterRoleCandidates = platformRtk.useGetWorkspaceInvitationCandidatesQuery(filterRoleRequest!, {skip: !filterRoleRequest});
-  const filterOrganizationOptions = filterTargetType ? candidateOptions(filterOrganizationCandidates.data as WorkspaceInvitationCandidatePage | undefined, filterTargetType) : [];
+  const filterOrganizationOptions = useMemo(() => filterTargetType ? candidateOptions(filterOrganizationCandidates.data as WorkspaceInvitationCandidatePage | undefined, filterTargetType) : [], [filterOrganizationCandidates.data, filterTargetType]);
   const filterRoleOptions = ((filterRoleCandidates.data as WorkspaceInvitationCandidatePage | undefined)?.roles ?? []).map((role) => ({value: role.id, label: role.name}));
   const columns = useMemo<ProColumns<PlatformWorkspaceInvitation>[]>(() => [
     {title: '邀请手机号', dataIndex: 'mobile', search: false, render: (_, row) => <Button type="link" onClick={() => void loadDetail(row.id)} {...testId(`platform-invitation-detail-${row.id}`)}>{row.mobile}</Button>},
@@ -75,7 +75,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
     {title: '任职机构', dataIndex: 'targetOrganizationPath', search: false, render: (_, row) => <NameCodePathText value={row.targetOrganizationPath}/>},
     {title: '业务角色', dataIndex: 'roleNames', search: false, render: (_, row) => <Space wrap size={[4, 4]}>{row.roleNames.map((role) => <Tag key={role}>{role}</Tag>)}</Space>},
     {title: '邀请链接', key: 'invitationPageUrl', search: false, render: (_, row) => {
-      const href = operationsInvitationUrl(row.invitationPageUrl);
+      const href = operationsInvitationUrl(activeInvitationPageUrl(row));
       return href ? <a href={href} target="_blank" rel="noreferrer" {...testId(`platform-invitation-entry-${row.id}`)}>打开邀请页</a> : '—';
     }},
     {title: '状态', dataIndex: 'status', valueType: 'select', valueEnum: Object.fromEntries(Object.entries(statusLabels).map(([value, label]) => [value, {text: label}])), fieldProps: {...testId('platform-invitation-query-status'), allowClear: true}, render: (_, row) => <Tag color={row.status === 'ACTIVE' ? 'blue' : row.status === 'COMPLETED' ? 'green' : 'default'}>{statusLabels[row.status]}</Tag>},

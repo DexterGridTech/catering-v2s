@@ -20,6 +20,7 @@ const routeRegistryPaths = [
 const inventoryPath = "contracts/registry/backend-performance-operation-source-inventory.json";
 const loaderPath = "contracts/registry/backend-performance-fact-loader-catalog.json";
 const decisionPath = "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json";
+const ownerRegistryPath = "contracts/policy/backend-performance-owner-api-registry.json";
 
 const loaderSpecs = [
   ["PLATFORM_READ_SESSION_FACT", "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolver.java#requireRead", "PlatformSessionResolver.requireRead", "requireRead(", "immutable platform session read fact"],
@@ -157,6 +158,103 @@ function physical(anchor, label) {
     body: method ? method.text : "",
     hasBody: Boolean(method),
   };
+}
+
+function javaImports(source) {
+  return new Map([...source.matchAll(/^import\s+([A-Za-z_$][\w$.]*);/gm)].map((match) => {
+    const imported = match[1];
+    return [imported.slice(imported.lastIndexOf(".") + 1), imported];
+  }));
+}
+
+function resolveJavaType(source, type) {
+  const imports = javaImports(source);
+  const packageName = source.match(/^package\s+([A-Za-z_$][\w$.]*);/m)?.[1];
+  if (!packageName) fail("DBCR_U02_SOURCE_PACKAGE_MISSING", type);
+  const first = type.split(".")[0];
+  if (imports.has(first)) return imports.get(first) + type.slice(first.length);
+  if (imports.has(type)) return imports.get(type);
+  if (type.includes(".")) return type;
+  return packageName + "." + type;
+}
+
+function injectedFields(source) {
+  const fields = [];
+  const fieldPattern = /private\s+final\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s+([A-Za-z_$][\w$]*)\s*;/g;
+  for (const match of source.matchAll(fieldPattern)) {
+    fields.push({type: match[1], field: match[2], resolvedType: resolveJavaType(source, match[1])});
+  }
+  const assignments = new Map([...source.matchAll(/this\.([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g)].map((match) => [match[1], match[2]]));
+  return fields.map((entry) => Object.assign(entry, {
+    constructorAssigned: assignments.get(entry.field) === entry.field,
+  }));
+}
+
+function typeDeclarationExists(source, apiType) {
+  const simpleName = apiType.slice(apiType.lastIndexOf(".") + 1);
+  return new RegExp("\\b(?:interface|class|record|enum)\\s+" + escaped(simpleName) + "\\b").test(source);
+}
+
+function validateOwnerRegistry(registry) {
+  if (!registry || registry.schemaVersion !== 1 || registry.kind !== "backend-performance-owner-api-registry" || registry.status !== "SOURCE_VERIFIED_STATIC") {
+    fail("DBCR_U02_OWNER_REGISTRY_HEADER_INVALID");
+  }
+  if (!Array.isArray(registry.ownerApis) || registry.ownerApis.length !== 7 || !Array.isArray(registry.excludedApis) || registry.excludedApis.length !== 1 || !Array.isArray(registry.targetOperations) || registry.targetOperations.length !== 5) {
+    fail("DBCR_U02_OWNER_REGISTRY_DENOMINATOR_INVALID");
+  }
+  const apiByType = new Map();
+  for (const entry of registry.ownerApis) {
+    if (!entry || typeof entry.apiType !== "string" || typeof entry.owner !== "string" || typeof entry.sourcePath !== "string" || typeof entry.sourceSha256 !== "string" || apiByType.has(entry.apiType)) fail("DBCR_U02_OWNER_REGISTRY_API_ROW_INVALID", entry?.apiType || "UNSET");
+    const source = read(entry.sourcePath);
+    if (hash(source) !== entry.sourceSha256 || !typeDeclarationExists(source, entry.apiType)) fail("DBCR_U02_OWNER_REGISTRY_API_SOURCE_DRIFT", entry.apiType);
+    apiByType.set(entry.apiType, entry);
+  }
+  const excludedByType = new Map();
+  for (const entry of registry.excludedApis) {
+    if (!entry || typeof entry.apiType !== "string" || typeof entry.exclusionKind !== "string" || excludedByType.has(entry.apiType)) fail("DBCR_U02_OWNER_REGISTRY_EXCLUSION_ROW_INVALID", entry?.apiType || "UNSET");
+    const source = read(entry.sourcePath);
+    if (hash(source) !== entry.sourceSha256 || !typeDeclarationExists(source, entry.apiType)) fail("DBCR_U02_OWNER_REGISTRY_EXCLUSION_SOURCE_DRIFT", entry.apiType);
+    excludedByType.set(entry.apiType, entry);
+  }
+  const targetById = new Map();
+  for (const entry of registry.targetOperations) {
+    if (!entry || typeof entry.operationId !== "string" || targetById.has(entry.operationId) || !Array.isArray(entry.expectedOwners) || entry.expectedOwners.length !== 2 || new Set(entry.expectedOwners).size !== 2) fail("DBCR_U02_OWNER_REGISTRY_TARGET_ROW_INVALID", entry?.operationId || "UNSET");
+    for (const owner of entry.expectedOwners) if (![...apiByType.values()].some((api) => api.owner === owner)) fail("DBCR_U02_OWNER_REGISTRY_TARGET_OWNER_UNKNOWN", entry.operationId + ":" + owner);
+    targetById.set(entry.operationId, entry);
+  }
+  return {apiByType, excludedByType, targetById};
+}
+
+function ownerApiBindings(operationId, m1Row, registry) {
+  const target = registry.targetById.get(operationId);
+  if (!target) return {status: "NOT_APPLICABLE", bindings: [], exclusions: []};
+  if (!m1Row || typeof m1Row.adapterSourcePath !== "string" || m1Row.transactionEntry?.methodName !== "execute") fail("DBCR_U02_TARGET_ADAPTER_SOURCE_MISSING", operationId);
+  const adapter = physical(m1Row.adapterSourcePath + "#" + m1Row.transactionEntry.methodName, operationId + ":owner-api-adapter");
+  const fields = injectedFields(adapter.source);
+  const execute = bodyOf(adapter.source, m1Row.transactionEntry.methodName);
+  if (!execute) fail("DBCR_U02_TARGET_EXECUTE_BODY_MISSING", operationId);
+  const bindings = [];
+  const exclusions = [];
+  for (const field of fields) {
+    const ownerApi = registry.apiByType.get(field.resolvedType);
+    const excludedApi = registry.excludedByType.get(field.resolvedType);
+    if (!ownerApi && !excludedApi) fail("DBCR_U02_UNKNOWN_INJECTED_API", operationId + ":" + field.field + ":" + field.resolvedType);
+    if (!field.constructorAssigned) fail("DBCR_U02_OWNER_FIELD_NOT_CONSTRUCTOR_INJECTED", operationId + ":" + field.field);
+    const callSymbols = ownerApi
+      ? [...execute.text.matchAll(new RegExp("\\b" + escaped(field.field) + "\\s*\\.\\s*([A-Za-z_$][\\w$]*)\\s*\\(", "g"))].map((match) => match[1])
+      : [];
+    if (ownerApi && callSymbols.length === 0) fail("DBCR_U02_OWNER_FIELD_NOT_REACHABLE", operationId + ":" + field.field);
+    if (ownerApi) {
+      bindings.push({field: field.field, type: field.resolvedType, owner: ownerApi.owner, callSymbols: [...new Set(callSymbols)], sourceAnchor: adapter.anchor, sourceSha256: adapter.sha256});
+    } else {
+      exclusions.push({field: field.field, type: field.resolvedType, exclusionKind: excludedApi.exclusionKind, reason: excludedApi.reason, sourceAnchor: adapter.anchor, sourceSha256: adapter.sha256});
+    }
+  }
+  const actualOwners = [...new Set(bindings.map((entry) => entry.owner))].sort();
+  const expectedOwners = target.expectedOwners.slice().sort();
+  exactSet(actualOwners, expectedOwners, "DBCR_U02_OWNER_SET_DRIFT:" + operationId);
+  if (bindings.some((entry) => entry.callSymbols.length === 0) || new Set(bindings.map((entry) => entry.field)).size !== bindings.length) fail("DBCR_U02_OWNER_BINDING_SET_INVALID", operationId);
+  return {status: "SOURCE_DERIVED_REQUIRED", bindings, exclusions};
 }
 
 function routeMap() {
@@ -355,6 +453,7 @@ function build() {
   const topology = json(topologyPath);
   const m1 = json(m1Path);
   const policy = json(policyPath);
+  const ownerRegistry = validateOwnerRegistry(json(ownerRegistryPath));
   if (commandCatalog.rows.length !== 113 || readCatalog.rows.length !== 83 || topology.rows.length !== 113 || m1.rows.length !== 68 || policy.rows.length !== 83) fail("BP_U01_INPUT_PARTITION_DRIFT");
   const topologyById = new Map(topology.rows.map((row) => [row.operationId, row]));
   const m1ById = new Map(m1.rows.map((row) => [row.operationId, row]));
@@ -437,6 +536,9 @@ function build() {
       if (!loader) fail("BP_U01_FACT_LOADER_REFERENCE_MISSING", binding.operationId + ":" + loaderId);
       return {loaderId, loaderDigest: loaderDigest(loader)};
     });
+    const derivedOwnerApis = binding.mode === "COMMAND"
+      ? ownerApiBindings(binding.operationId, m1ById.get(binding.operationId), ownerRegistry)
+      : {status: "NOT_APPLICABLE", bindings: [], exclusions: []};
     return {
       rowId: "BPF-SRC-" + String(index + 1).padStart(3, "0"),
       operationId: binding.operationId,
@@ -449,6 +551,9 @@ function build() {
       adapter,
       transaction,
       ownerBoundary,
+      ownerApiDerivation: derivedOwnerApis.status,
+      ownerApiBindings: derivedOwnerApis.bindings,
+      ownerApiExclusions: derivedOwnerApis.exclusions,
       factLoaderRefs,
       shapeInput,
       evidence: {bindingPath, bindingSha256: fileHash(bindingPath), canonicalOperationIndex: index, sourceDecisionReceipt: decisionPath + "#rows[operationId=" + binding.operationId + "]"},
@@ -459,7 +564,7 @@ function build() {
     kind: "backend-performance-operation-source-inventory",
     status: "SOURCE_VERIFIED_STATIC",
     authority: "BPF-U01 generated source inventory is the only physical source-path authority for the 196-row shape matrix.",
-    denominator: {operations: 196, commands: 113, reads: 83, m1Commands: 68, taskReads: 78, protocolReadExemptions: 5},
+    denominator: {operations: 196, commands: 113, reads: 83, m1Commands: 68, taskReads: 78, protocolReadExemptions: 5, coordinatedOwnerOperations: 5},
     inputs: {
       bindings: {path: bindingPath, sha256: fileHash(bindingPath)},
       routeRegistries: routeRegistryPaths.map((relative) => ({path: relative, sha256: fileHash(relative)})),
@@ -467,6 +572,7 @@ function build() {
       m1Execution: {path: m1Path, sha256: fileHash(m1Path)},
       taskReadPolicy: {path: policyPath, sha256: fileHash(policyPath)},
       curRederivation: {path: rederivationPath, sha256: fileHash(rederivationPath)},
+      ownerApiRegistry: {path: ownerRegistryPath, sha256: fileHash(ownerRegistryPath)},
     },
     loaderCatalogue: {path: loaderPath, sha256: hash(pretty(loaders)), loaderCount: loaders.rows.length},
     sourceDecisionReceipt: {path: decisionPath, sha256: hash(pretty(decisions))},
@@ -542,7 +648,15 @@ function main() {
     orphan.rows[0].factLoaderRefs.push({loaderId: "UNKNOWN", loaderDigest: "0".repeat(64)});
     try { validateExact(orphan, expected.inventory, "SOURCE_INVENTORY"); fail("BP_U01_SOURCE_INVENTORY_RED_MUTATION_NOT_DETECTED", "loader-orphan"); }
     catch (error) { if (!String(error.message).startsWith("BP_U01_SOURCE_INVENTORY_ARTIFACT_DRIFT")) throw error; }
-    process.stdout.write("BP_U01_SOURCE_INVENTORY_SELF_TEST=PASS\nRED_MISSING_ROW=PASS\nRED_SOURCE_SUBSTITUTION=PASS\nRED_LOADER_ORPHAN=PASS\nCLEANUP=PASS\n");
+    const ownerLoss = structuredClone(expected.inventory);
+    ownerLoss.rows.find((row) => row.operationId === "transitionOperationsCatalogItemStatus").ownerApiBindings.pop();
+    try { validateExact(ownerLoss, expected.inventory, "SOURCE_INVENTORY"); fail("DBCR_U02_SOURCE_INVENTORY_RED_MUTATION_NOT_DETECTED", "owner-field-loss"); }
+    catch (error) { if (!String(error.message).startsWith("BP_U01_SOURCE_INVENTORY_ARTIFACT_DRIFT")) throw error; }
+    const importOnly = structuredClone(expected.inventory);
+    importOnly.rows.find((row) => row.operationId === "createOperationsCatalogItem").ownerApiBindings.push({field: "scope", type: "com.catering.v2s.organization.api.CatalogScopeLookup", owner: "organization", callSymbols: ["typeOnly"]});
+    try { validateExact(importOnly, expected.inventory, "SOURCE_INVENTORY"); fail("DBCR_U02_SOURCE_INVENTORY_RED_MUTATION_NOT_DETECTED", "import-only"); }
+    catch (error) { if (!String(error.message).startsWith("BP_U01_SOURCE_INVENTORY_ARTIFACT_DRIFT")) throw error; }
+    process.stdout.write("BP_U01_SOURCE_INVENTORY_SELF_TEST=PASS\nRED_MISSING_ROW=PASS\nRED_SOURCE_SUBSTITUTION=PASS\nRED_LOADER_ORPHAN=PASS\nDBCR_U02_RED_OWNER_FIELD_LOSS=PASS\nDBCR_U02_RED_IMPORT_ONLY=PASS\nCLEANUP=PASS\n");
   } else {
     fail("BP_U01_SOURCE_INVENTORY_ARGUMENT_INVALID");
   }

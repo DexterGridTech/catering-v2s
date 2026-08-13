@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "public-invitation-resumption-package-input",
+  "packageId": "PUBLIC-INVITATION-RESUMPTION-REPAIR-20260812",
+  "status": "ACTIVE",
+  "problem": "A public invitation refresh flattened a resumable owner state to ACTIVE and offered a second accept action; the typed Problem from that action was hidden by a generic frontend catch.",
+  "sourceDenominators": {
+    "INTERACTION": "IA01-PUBLIC-INVITATION through IA01-PUBLIC-INVITATION-COMPLETE in doc/decisions/2026-07-28-v2s-rm1-ia-01-platform-otp-and-invitation-interaction.md",
+    "OWNER_STATES": "WorkspaceInvitationService public acceptance, view, OTP, credential and completion methods",
+    "PUBLIC_CONTRACT": "PublicInvitationView and PublicInvitationAcceptIntent in contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "CONSUMERS": "PublicInvitationController, generated public-edge wires, PublicInvitationEntry",
+    "DYNAMIC_PROOF": "WorkspaceInvitationPublicFlowTest under managed remote Testcontainers"
+  },
+  "forbiddenPseudoFixes": [
+    "do not expose owner internal states through WorkspaceInvitationStatus",
+    "do not silently ignore an existing typed public Problem",
+    "do not preserve a browser-held verification grant across reload",
+    "do not create an assignment before completePublic"
+  ]
+}

@@ -159,8 +159,47 @@ function managedRuntime() {
   }
   return {manifest, credentials: readEnv(requireValue(manifest.credentialsFile, 'SEED_CREDENTIALS_PATH_REQUIRED'))};
 }
-function topology(credentials) {
-  const result = spawnSync(process.execPath, [environmentScript, 'seed', '--json'], {cwd: root, encoding: 'utf8', env: {...process.env, ...credentials}});
+function databaseName(databaseUrl) {
+  try {
+    const parsed = new URL(String(databaseUrl).replace(/^jdbc:/, ''));
+    const name = parsed.pathname.replace(/^\//, '');
+    if (!name) fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
+    return name;
+  } catch (error) {
+    if (error instanceof FormalSeedFailure) throw error;
+    fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
+  }
+}
+export function managedSeedEnvironment(manifest, credentials) {
+  const database = requireValue(manifest?.database, 'SEED_MANAGED_DATABASE_BINDING_INVALID');
+  const name = databaseName(database);
+  const match = name.match(/^catering_v2s_dev_([a-z0-9_]{3,32})$/);
+  if (!match) fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
+  const namespace = `v2s-dev-${match[1].replaceAll('_', '-')}`;
+  if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail('SEED_MANAGED_NAMESPACE_BINDING_INVALID');
+  const trust = manifest.remoteHostTrust;
+  if (!trust || !/^[a-z0-9._-]{3,128}$/i.test(trust.host ?? '') || !/^[a-f0-9]{64}$/i.test(trust.fingerprint ?? '')
+    || !trust.allowlistVersion || !trust.maintainer || !trust.rotatedAt) {
+    fail('SEED_MANAGED_REMOTE_HOST_BINDING_INVALID');
+  }
+  return {
+    ...process.env,
+    ...credentials,
+    V2S_RUNTIME_DIR: runtimeRoot,
+    V2S_DEV_DATABASE_URL: database,
+    V2S_DEV_NAMESPACE: namespace,
+    V2S_DEV_PROFILE: 'r5-full',
+    V2S_RUNTIME_ENVIRONMENT: 'non-production',
+    V2S_DEV_REMOTE_HOST: trust.host,
+    V2S_DEV_REMOTE_HOST_SHA256: trust.fingerprint,
+    V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION: trust.allowlistVersion,
+    V2S_DEV_REMOTE_HOST_MAINTAINER: trust.maintainer,
+    V2S_DEV_REMOTE_HOST_ROTATED_AT: trust.rotatedAt,
+    V2S_DEV_ASSET_ROOT: 's3://catering-v2s-r5-assets',
+  };
+}
+function topology(environment) {
+  const result = spawnSync(process.execPath, [environmentScript, 'seed', '--json'], {cwd: root, encoding: 'utf8', env: environment});
   if (result.status !== 0) throw new FormalSeedFailure('SEED_ENVIRONMENT_REFUSED');
   const parsed = JSON.parse(result.stdout);
   if (parsed.environment?.V2S_DEV_PROFILE !== 'r5-full' || parsed.environment?.V2S_RUNTIME_ENVIRONMENT !== 'non-production') throw new FormalSeedFailure('SEED_ENVIRONMENT_PROFILE_INVALID');
@@ -247,8 +286,14 @@ async function executeFormalSeed() {
     const registry = loadGeneratedOperationRegistry(registryPath);
     return {...validateFormalSeedStaticInputs({fixture, registry}), fixture, registry};
   })();
+  const fixtureIdentity = Object.freeze({
+    path: path.relative(root, fixturePath),
+    version: fixture.profile.version,
+    sha256: crypto.createHash('sha256').update(readFileSync(fixturePath)).digest('hex'),
+  });
   const {manifest, credentials} = managedRuntime();
-  const env = topology(credentials);
+  const managedEnvironment = managedSeedEnvironment(manifest, credentials);
+  const env = topology(managedEnvironment);
   // Backend metrics are correlated to the managed DEV run id injected at
   // startup.  The formal seed report must use that exact id, otherwise a
   // superficially successful HTTP sequence would have zero matched DB events.
@@ -264,11 +309,11 @@ async function executeFormalSeed() {
   const startedAt = new Date().toISOString();
   let firstFailure = null;
   const measurement = measurementMetadataForReport(manifest);
-  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 2, runId, profile: 'r5-full', managedDevRunId: manifest.runId, measurement, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
+  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 2, runId, profile: 'r5-full', managedDevRunId: manifest.runId, measurement, fixtureIdentity, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, extra = {}) => { phases.push({atEpochMillis: Date.now(), stage, status, ...extra}); persist(); };
   const seedEvents = () => readManagedDiagnosticEvents(manifest);
   const finalize = (business, cleanup) => {
-    const report = buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
+    const report = buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, fixtureIdentity, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
     writeSeedReportPair(reportPath, report);
     // A terminal PASS is valid only after the report pair is durable.  If the
     // report writer fails the caller records FAIL_REPORT_FINALIZATION instead
@@ -301,7 +346,7 @@ async function executeFormalSeed() {
   }
   try {
     const bootstrapStarted = Date.now();
-    const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: {...process.env, ...credentials}});
+    const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: managedEnvironment});
     if (bootstrap.status !== 0) throw new FormalSeedFailure('SEED_BOOTSTRAP_FAILED');
     nonApiStages.push({stageId: 'bootstrap', status: 'PASS', durationMs: Date.now() - bootstrapStarted, summary: 'allowed-root-bootstrap'}); phase('bootstrap', 'PASS');
     const login = await request('platform-login', 'platformPasswordLogin', {}, {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
@@ -315,9 +360,10 @@ async function executeFormalSeed() {
     }
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
     for (const asset of fixture.stableFixtures.assets) {
-      // Staging keys are content-addressed.  Fixture assets therefore need
-      // distinct bytes, not merely distinct display filenames.
-      const bytes = Buffer.concat([png, Buffer.from(asset.key, 'utf8')]);
+      // The seed deliberately stages identical physical bytes into independent
+      // workspace-logo lifecycles. Content identity may be shared; asset refs and
+      // one-time grants must remain distinct owner facts.
+      const bytes = png;
       const form = new FormData(); form.set('usage', asset.usage); form.set('file', new Blob([bytes], {type: 'image/png'}), `${asset.key}.png`);
       const staged = await request(`asset-${asset.key}`, 'stagePlatformAsset', {}, {cookie: platformCookie, form, expected: [201]});
       ids.asset[asset.key] = staged.json;
@@ -434,7 +480,7 @@ async function executeFormalSeed() {
     ids.invitation['inv-reissued'] = reissued.json;
     const expiredPlan = invitationPlan.find((entry) => entry.invitationKey === 'inv-expired');
     const terminalStarted = Date.now();
-    const terminal = spawnSync(process.execPath, [terminalFixtureScript], {cwd: root, encoding: 'utf8', input: JSON.stringify({fixtureKey: 'inv-expired', groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-expired']?.id, 'SEED_EXPIRED_INVITATION_ID'), roleId: requireValue(ids.role[expiredPlan.roleKey]?.id, 'SEED_EXPIRED_ROLE_ID'), serviceNodeType: expiredPlan.targetOrganizationType, serviceNodeId: nodeIdFor(expiredPlan), createdAtEpochMillis: Date.now() - 120_000, expiresAtEpochMillis: Date.now() - 60_000}), env: {...process.env, ...credentials}});
+    const terminal = spawnSync(process.execPath, [terminalFixtureScript], {cwd: root, encoding: 'utf8', input: JSON.stringify({fixtureKey: 'inv-expired', groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-expired']?.id, 'SEED_EXPIRED_INVITATION_ID'), roleId: requireValue(ids.role[expiredPlan.roleKey]?.id, 'SEED_EXPIRED_ROLE_ID'), serviceNodeType: expiredPlan.targetOrganizationType, serviceNodeId: nodeIdFor(expiredPlan), createdAtEpochMillis: Date.now() - 120_000, expiresAtEpochMillis: Date.now() - 60_000}), env: managedEnvironment});
     if (terminal.status !== 0) throw new FormalSeedFailure('SEED_TERMINAL_INVITATION_EXPIRED_FAILED');
     nonApiStages.push({stageId: 'terminal-inv-expired', status: 'PASS', durationMs: Date.now() - terminalStarted, summary: 'allowlisted-invitation-expired'}); phase('terminal-inv-expired', 'PASS');
     const accountByKey = new Map(fixture.stableFixtures.workspaceIam.accounts.map((account) => [account.key, account]));
@@ -513,6 +559,14 @@ function selfTest() {
   };
   const plan = resolveInvitationCreationPlan(fixture);
   if (plan.length !== 2 || plan[0].targetOrganizationType !== 'STORE') throw new Error('SELF_TEST_PLAN_RESOLUTION_FAILED');
+  const managedEnvironment = managedSeedEnvironment({
+    database: 'jdbc:postgresql://127.0.0.1:25433/catering_v2s_dev_r5_full',
+    remoteHostTrust: {host: 'catering-remote-dev', fingerprint: 'a'.repeat(64), allowlistVersion: 'r5-test-v1', maintainer: 'Dexter', rotatedAt: '2026-08-05'},
+  }, {V2S_SEED_PLATFORM_ROOT_PASSWORD: 'test-only'});
+  if (managedEnvironment.V2S_DEV_DATABASE_URL !== 'jdbc:postgresql://127.0.0.1:25433/catering_v2s_dev_r5_full'
+    || managedEnvironment.V2S_DEV_NAMESPACE !== 'v2s-dev-r5-full'
+    || managedEnvironment.V2S_RUNTIME_DIR !== runtimeRoot) throw new Error('SELF_TEST_MANAGED_ENVIRONMENT_BINDING_FAILED');
+  expect('SEED_MANAGED_DATABASE_BINDING_INVALID', () => managedSeedEnvironment({...managedEnvironment, database: 'jdbc:postgresql://127.0.0.1:25432/not-allowlisted'}, {}));
   expect('SEED_INVITATION_PLAN_REQUIRED', () => resolveInvitationCreationPlan({...fixture, executionPlan: {}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'pending' ? {...entry, nodeKey: 'missing'} : entry)}}));
   expect('SEED_INVITATION_PLAN_REFERENCE_INVALID', () => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'completed' ? {...entry, accountKey: 'missing'} : entry)}}));

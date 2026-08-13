@@ -177,7 +177,7 @@ function Shell({
           {entry.logoUrl && !brandLogoBroken
             ? <img className="operations-header-logo" src={entry.logoUrl} alt={`${entry.workspaceName}标识`} onError={() => setBrandLogoBroken(true)}/>
             : <DashboardOutlined className="operations-header-logo"/>}
-          <Typography.Text className="operations-header-title">{entry.operationsTitle}</Typography.Text>
+          <Typography.Text className="operations-header-title" ellipsis={{tooltip: entry.operationsTitle}}>{entry.operationsTitle}</Typography.Text>
         </div>
         {shellLock.dirtyLocked && <Typography.Text type="warning" {...testId('operations-shell-dirty-guard')}>{dirtyDraftPrompt}</Typography.Text>}
       </div>

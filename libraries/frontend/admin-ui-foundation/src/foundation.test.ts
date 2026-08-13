@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {createElement} from 'react';
+import {createElement, type ReactElement, type ReactNode} from 'react';
 import {platformHttpProtocol} from './http/platformHttpProtocol';
 import {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 import {updateDirtyRegistrations, updateOpenRegistrations} from './overlay/overlayLock';
@@ -11,6 +11,8 @@ import {createRefreshSignal} from './behavior/refreshSignal';
 import {serializeJsonOrMultipartBody} from './http/wireRequestBody';
 import {adminListState} from './list/adminListState';
 import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
+import {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
+import {EllipsisTooltip} from './presentation/EllipsisTooltip';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
   it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
@@ -37,6 +39,23 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   it('renders owner task paths segment by segment without rewriting malformed transport values', () => {
     expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe('东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)');
     expect(formatCodeNamePath('无编码路径')).toBe('无编码路径');
+  });
+
+  it('keeps complete human-readable text attached to an authored truncation boundary', () => {
+    const tooltip = EllipsisTooltip({
+      title: '东区(EAST) / 河畔项目(RIVER)',
+      children: createElement('span', null, '东区(EAST) / 河畔项目(RIV...)'),
+    }) as ReactElement<{title: ReactNode}>;
+    expect(tooltip.props.title).toBe('东区(EAST) / 河畔项目(RIVER)');
+  });
+
+  it('exposes an invitation link only while the workspace-IAM owner reports it ACTIVE', () => {
+    const invitationPageUrl = '/operations/invitations/aurora/token';
+    expect(activeInvitationPageUrl({status: 'ACTIVE', invitationPageUrl})).toBe(invitationPageUrl);
+    for (const status of ['CANCELLED', 'EXPIRED', 'COMPLETED', 'UNKNOWN']) {
+      expect(activeInvitationPageUrl({status, invitationPageUrl})).toBeUndefined();
+    }
+    expect(activeInvitationPageUrl({status: 'ACTIVE', invitationPageUrl: '   '})).toBeUndefined();
   });
   it('exposes the generated shared HTTP protocol without local aliases', () => {
     expect(platformHttpProtocol.CORRELATION_ID).toBeTruthy();

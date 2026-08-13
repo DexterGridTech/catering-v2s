@@ -575,9 +575,16 @@ function writeText(root, relative, value) {
 }
 
 function writeOutputs(root = ROOT) {
-  const outputs = expected(root);
+  const binding = readJson(root, BINDINGS_PATH);
+  const refreshedBinding = {
+    ...binding,
+    routeSources: routeSourceMetadata(root),
+  };
+  const rows = validateBindingContract(root, refreshedBinding);
+  writeJson(root, BINDINGS_PATH, refreshedBinding);
+  const outputs = outputMap(root, rows);
   for (const [relative, value] of outputs) writeJson(root, relative, value);
-  const javaSources = expectedJavaSources(root);
+  const javaSources = javaOutputMap(rows);
   for (const [relative, value] of javaSources) writeText(root, relative, value);
   return { json: outputs.size, java: javaSources.size };
 }
@@ -733,6 +740,12 @@ function selfTest(root = ROOT) {
   const binding = readJson(root, BINDINGS_PATH);
   validateBindingContract(root, binding);
   mutateAndExpect(root, (scratch) => {
+    const routePath = ROUTE_REGISTRIES["catalog-inventory"];
+    const value = readJson(scratch, routePath);
+    value.revision = `${value.revision}-stale-mutation`;
+    fs.writeFileSync(path.join(scratch, routePath), `${JSON.stringify(value, null, 2)}\n`);
+  }, "BP_U02_ROUTE_SOURCE_DIGEST_DRIFT");
+  mutateAndExpect(root, (scratch) => {
     const value = readJson(scratch, BINDINGS_PATH);
     value.runtimeIntegration.legacyDispatcher = "CatalogInventoryApplicationService.dispatch(String,...)";
     fs.writeFileSync(path.join(scratch, BINDINGS_PATH), `${JSON.stringify(value, null, 2)}\n`);
@@ -797,7 +810,7 @@ function selfTest(root = ROOT) {
     const stalePath = path.join(scratch, `${OUTPUT_ROOT}/stale-owner.json`);
     fs.writeFileSync(stalePath, "{}\n");
   }, "BP_U02_GENERATED_OUTPUT_SET_DRIFT", checkOutputs);
-  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
+  process.stdout.write("BP_U02_BINDING_SELF_TEST=PASS\nRED=BP_U02_ROUTE_SOURCE_DIGEST_DRIFT,BP_U02_BINDING_EXACT_SET_DRIFT,BP_U02_BINDING_OWNER_DRIFT,BP_U02_BINDING_ADAPTER_IDENTITY_DRIFT,BP_U02_BINDING_PLATFORM_CONTEXT_DRIFT,BP_U02_BINDING_OPERATION_CONTEXT_DRIFT,BP_U02_BINDING_COMMAND_BOUNDARY_DRIFT,BP_U02_BINDING_PATH_DRIFT,BP_U02_BINDING_FACE_DRIFT,BP_U02_WIRE_TYPE_UNKNOWN,BP_U02_BINDING_COPY_ROLE_DRIFT,BP_U02_MULTIPART_ADAPTER_REQUIRED,BP_U02_GENERATED_OUTPUT_SET_DRIFT\n");
 }
 
 const isDirectInvocation = path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url);

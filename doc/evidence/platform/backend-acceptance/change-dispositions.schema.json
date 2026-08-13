@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "backend-acceptance-change-dispositions.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "packageId", "status", "operations", "consumerFaces"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "backend-acceptance-change-dispositions" },
+    "packageId": { "const": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813" },
+    "status": { "const": "PASS" },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["operationId", "disposition"],
+        "properties": {
+          "operationId": { "type": "string", "minLength": 1 },
+          "disposition": {
+            "enum": ["SCENARIO_UPDATED", "REGRESSION_ADDED", "BEHAVIOR_UNCHANGED"]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "consumerFaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["operationId", "consumerFace", "disposition"],
+        "properties": {
+          "operationId": { "type": "string", "minLength": 1 },
+          "consumerFace": { "type": "string", "minLength": 1 },
+          "disposition": {
+            "enum": [
+              "CONSUMER_CONTRACT_REGENERATED",
+              "CONSUMER_UNAFFECTED",
+              "CONSUMER_BREAKING_ACKNOWLEDGED"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "regressionReceipts": { "type": "array" }
+  },
+  "additionalProperties": true
+}

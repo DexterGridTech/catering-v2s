@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-design-admission",
+  "status": "ACTIVE_IMPLEMENTATION",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "sourceBindings": {
+    "design": {
+      "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+      "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+    },
+    "requirements": {
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+      "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+    },
+    "designReview": {
+      "path": "doc/review/platform/2026-08-13-v2s-backend-acceptance-design-review-round2-claude.md",
+      "sha256": "1d1fc0ef26eae133fb3661d76622fb67570ce3959d0cb531ee150f3d6213becb"
+    },
+    "executionContract": {
+      "path": "contracts/policy/backend-acceptance-execution-contract.json",
+      "sha256": "b25b535ac09e8345388ad69f3e912c0398753f8be59d8408d778156c9f74fb7d"
+    },
+    "implementationManifest": {
+      "path": "doc/evidence/platform/backend-acceptance/implementation-manifest.json",
+      "sha256": "c914372e5b1ca037773f2a37ea098f128a38965d91411246ddac6a838c9ef17f"
+    }
+  },
+  "deliveryUnits": [
+    {
+      "id": "BA-U01",
+      "backendOperationImpact": "NONE_WITH_REASON",
+      "reason": "Route projection freshness and static admission controls do not add or change a semantic operation identity, method, path, consumer face, owner, schema, or error contract."
+    },
+    {
+      "id": "BA-U02",
+      "backendOperationImpact": "ADDED_OR_CHANGED",
+      "scenarioContracts": [
+        {
+          "registryPath": "contracts/registry/backend-acceptance-scenarios.json",
+          "identitySource": "CURRENT_ENTRY_OPERATION_DENOMINATOR",
+          "exactSet": "CURRENT_SEMANTIC_OPERATION_IDENTITY",
+          "requiredFields": [
+            "identity",
+            "fixture",
+            "request",
+            "businessOracle",
+            "performanceCriterion",
+            "cleanup"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BA-U03",
+      "backendOperationImpact": "NONE_WITH_REASON",
+      "reason": "The HTTP harness, authoritative tracker sink, calibration route, and isolated lane runner add execution infrastructure without changing semantic operation contracts."
+    },
+    {
+      "id": "BA-U04",
+      "backendOperationImpact": "NONE_WITH_REASON",
+      "reason": "Change-impact, BUG_FIX red proof, and consumer disposition controls observe operation changes but do not themselves introduce a semantic operation change."
+    },
+    {
+      "id": "BA-U05",
+      "backendOperationImpact": "NONE_WITH_REASON",
+      "reason": "Owner-local route scenario and assertion migration fills the admitted registry for existing semantic identities; any route, schema, error, face, or owner change must enter an exact operation disposition."
+    },
+    {
+      "id": "BA-U06",
+      "backendOperationImpact": "NONE_WITH_REASON",
+      "reason": "Full acceptance, predecessor disposition, retirement, and implementation review consume the current operation denominator without defining a new semantic operation."
+    }
+  ]
+}

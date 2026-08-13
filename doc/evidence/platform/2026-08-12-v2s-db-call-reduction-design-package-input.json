@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "db-call-reduction-design-package-input",
+  "packageId": "DB-CALL-REDUCTION-DESIGN-20260812",
+  "status": "PASS",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "roadmapStep": "BACKEND_PERFORMANCE_FINAL_CLOSURE",
+  "implementationAuthority": false,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "authority": {
+    "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-design-authorization.md",
+    "entrySha256": "196669882b0455d51e7de3ee25a98938d1df82c8a535044d4ebe6571e606b77d",
+    "capturedAt": "PACKAGE_ENTRY"
+  },
+  "requirement": {
+    "path": "doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md",
+    "entrySha256": "0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d",
+    "status": "CLAUDE_REVISED_GO_M0_S0_N0"
+  },
+  "predecessorPackage": {
+    "packageId": "OPERATIONS-CATALOG-TREE-COUNT-PLACEMENT-20260812",
+    "status": "STOPPED_UNCLOSED_BY_DEXTER_SCOPE_SWITCH",
+    "exitStatus": "MISSING",
+    "claimPolicy": "NO_COMPLETION_CLAIM_AND_NO_SOURCE_MIXING"
+  },
+  "contextRoute": {
+    "taskKind": "design",
+    "domain": "backend",
+    "consumerFace": "backend",
+    "owner": "backend",
+    "impact": "database",
+    "trigger": "review",
+    "status": "PASS"
+  },
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_REQUIREMENT","owner":"Dexter authorization and revised Claude requirement","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"TRANSACTION_OPERATION_DISPOSITION","owner":"16 GET bindings, coordinator methods and owner methods","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"COORDINATED_OWNER_SHAPE","owner":"five command adapters, bindings, generator and budget policy","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"CANONICAL_LEDGER_AND_MEASUREMENT_MAPPING","owner":"canonical ledger scanner, P4 test and three method mappings","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"ACCEPTED_BASELINE_RATCHET","owner":"accepted entry baseline, increase dispositions and production checker","capturedAt":"PACKAGE_ENTRY"},
+    {"id":"PREVENTION_ACCEPTANCE_HANDOFF","owner":"real red mutations, static/dynamic boundary and one-review handoff","capturedAt":"PACKAGE_ENTRY"}
+  ],
+  "dynamicEvidence": "NOT_AUTHORIZED_DESIGN_PACKAGE"
+}

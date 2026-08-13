@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "PER_EDIT_GATE_CONTROL_PLANE_REMEDIATION_20260812",
+  "implementationAuthority": false,
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-design-authorization.md",
+    "sha256": "bed4d99e23c7c86614d0acf306e8de487111188d9e04318ea9a3f3cc97f8d34c",
+    "scope": "design-only"
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md",
+    "sha256": "887e783d61591025a39c059c6e671577b6be6be0e62584162f56624f5d832b62"
+  },
+  "reviewException": {
+    "kind": "DEXTER_EXPLICIT_INTERNAL_ADVERSARIAL_REVIEW_WAIVER",
+    "date": "2026-08-12",
+    "scope": "skip Codex internal adversarial review and proceed directly to the single Claude DESIGN review",
+    "doesNotGrantImplementationAuthority": true
+  },
+  "claudeDesignReview": {
+    "path": "doc/review/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-design-review-claude.md",
+    "sha256": "94d364324f4e307ccb80d4830ed93314cc2fd8ea8849774bbf724cf488c98ddd",
+    "verdict": "GO",
+    "M": 0,
+    "S": 1,
+    "N": 1,
+    "findingDisposition": "S-01 and N-01 are confirmed and remediated in the revised design; no further Claude round is scheduled.",
+    "authorIntake": {
+      "path": "doc/review/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-design-author-intake-codex.md",
+      "sha256": "91af1bb8659c557048cffe7f162e9bc12d320a0e8b3d5288b01ab0e65f255887"
+    }
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {"path": "scripts/check/implementation-design-granularity", "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"},
+    "tool": {"path": "tools/implementation-design-granularity/cli.mjs", "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"},
+    "selfTest": true,
+    "redFixtures": ["DESIGN_HASH_DRIFT", "MISSING_BUSINESS_EVIDENCE", "SEVERITY_COUNT_MISMATCH", "ROUND_THREE", "MISSING_FINDING_UNIT_LINK", "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT", "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"]
+  },
+  "candidateJourney": {
+    "id": "PEG-CP-J01",
+    "status": "PROPOSED_STATIC_ENGINEERING",
+    "actor": "engineering maintainer",
+    "task": "recover a self-locked per-edit control plane without weakening final-state admission",
+    "pageKey": "NO_UI_JOURNEY_CONTROL_PLANE_REMEDIATION",
+    "ownerReadback": "control CLI, closure, ledger, receipt and package-exit readback",
+    "mutations": []
+  },
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_REQUIREMENT","owner":"Dexter authorization and Claude requirement","sources":["design authorization","per-edit deadlock remediation requirement"]},
+    {"id":"BOOTSTRAP_CONTROL_SURFACE","owner":"bootstrap closure and CLI","sources":["one-time external executor source+sha256 archive","activation request/receipt","control CLI bootstrap branch"]},
+    {"id":"ENTRY_LEDGER_RECEIPT","owner":"hook and package exit","sources":["deltaState","PRE/POST ledger and receipts"]},
+    {"id":"ARCHETYPE_PROFILE_PARTITION","owner":"mandatory gate closure","sources":["six archetypes","profile commands and final exit receipt"]},
+    {"id":"SOURCE_ANCHOR_DISPOSITION","owner":"SQL merge gate and replacement owners","sources":["source anchor ledger","contract or behavior replacement"]},
+    {"id":"PREVENTION_AND_HANDOFF","owner":"self-tests and project memory","sources":["current-state health","red mutations and review input"]}
+  ],
+  "deliveryUnits": [
+    {
+      "id": "PEG-CP-U01",
+      "title": "Exact bootstrap activation and durable recovery",
+      "approvedAssertions": ["bootstrap works only for mandatory gate hash drift", "bootstrap target and surface sets are exact and hash-bound", "healthy packages cannot use bootstrap to bypass scope"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-per-edit-gate-deadlock-remediation-requirements-claude.md","sha256":"a6d2e3ffb593b77cb9f2035b07243be97accc8c7246bf283a57fe8d5553cead8","anchor":"## 3. P0 · control-plane bootstrap activation"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","anchor":"## 3. P0：首次 exact bridge 与 durable bootstrap"},
+      "currentDeviation": "readActivePackage is locked by command hash drift and the existing recovery reuses the same failing validation chain.",
+      "changeSurfaces": [
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"durable bootstrap command, pure candidate validation and current-state health"},
+        {"path":"contracts/policy/mandatory-per-edit-gate-command-closure.json","disposition":"update","target":"bridge hash repair then versioned exact profile closure"},
+        {"path":"contracts/policy/per-edit-control-plane-bootstrap-closure.json","disposition":"create","target":"hash-bound bootstrap trust and exact activatable surfaces"},
+        {"path":".runtime/compliance-control/active-package.json","disposition":"update","target":"activate the single control-plane implementation package"},
+        {"path":"scripts/check/per-edit-control-plane","disposition":"create","target":"production current-state health and bootstrap focused control"}
+      ],
+      "orderedChain": ["produce and authorize exact bridge request", "atomically repair closure then activate control package", "install durable bootstrap", "prove current-state and bypass red mutations"],
+      "dependencyAndSerialBoundaries": ["P0 precedes every ordinary implementation edit", "bridge touches exactly closure and active package", "durable bootstrap is unavailable when active package is healthy"],
+      "dataEvolution": {"notApplicableReason":"local control metadata only; no database evolution"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"bootstrap self-test and production current-state check","l2":"NOT_RUN_STATIC_CONTROL_PACKAGE","l3":"NOT_RUN_STATIC_CONTROL_PACKAGE","business":"NOT_RUN_STATIC_CONTROL_PACKAGE","cleanup":"NOT_RUN_STATIC_CONTROL_PACKAGE"},
+      "forbiddenPseudoFixes": ["hash sync without durable control", "disable hook", "directory or glob bootstrap scope"],
+      "discriminator": {"fixture":"healthy-package bypass, extra target, command drift and request replay each fail with stable codes"}
+    },
+    {
+      "id": "PEG-CP-U02",
+      "title": "Independent entry ledger and structured terminal receipts",
+      "approvedAssertions": ["deltaState is independent changed-path denominator", "every final changed path has linked PRE and terminal POST", "FAIL receipts remain actionable and immutable within the discipline boundary"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-per-edit-gate-deadlock-remediation-requirements-claude.md","sha256":"a6d2e3ffb593b77cb9f2035b07243be97accc8c7246bf283a57fe8d5553cead8","anchor":"## 4. P1 · entry ledger 与 receipt 完整性（Codex M-02，采纳）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","anchor":"## 4. P1：独立 entry ledger、FAIL receipt 与全 exit mode"},
+      "currentDeviation": "gate failure writes no post receipt, package exit reads no receipts, and trim returns before any receipt validation.",
+      "changeSurfaces": [
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"append-only PRE/POST ledger, structured FAIL and shared exit validator"},
+        {"path":"project-memory/operations/per-edit-gate-failure-and-bootstrap.md","disposition":"create","target":"durable final-state and FAIL receipt rule"},
+        {"path":"project-memory/pitfalls/per-edit-gate-self-lock.md","disposition":"create","target":"deadlock problem family and counterexamples"}
+      ],
+      "orderedChain": ["append PRE after legal pre receipt", "always write terminal PASS or FAIL receipt", "append receipt-bound POST", "validate delta paths and chain in every exit mode", "run final gate"],
+      "dependencyAndSerialBoundaries": ["depends on PEG-CP-U01", "does not restore retired after-hash exact-set", "runtime ledger is discipline boundary not security boundary"],
+      "dataEvolution": {"notApplicableReason":"local runtime control ledger only"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"ledger and terminal receipt self-tests with real red mutations","l2":"NOT_RUN_STATIC_CONTROL_PACKAGE","l3":"NOT_RUN_STATIC_CONTROL_PACKAGE","business":"NOT_RUN_STATIC_CONTROL_PACKAGE","cleanup":"NOT_RUN_STATIC_CONTROL_PACKAGE"},
+      "forbiddenPseudoFixes": ["derive paths from receipts", "trim bypass", "PASS covers earlier FAIL", "log secrets"],
+      "discriminator": {"fixture":"missing or edited FAIL receipt, broken chain, orphan PRE and final gate failure each reject exit"}
+    },
+    {
+      "id": "PEG-CP-U03",
+      "title": "Six-archetype mandatory profile exact partition",
+      "approvedAssertions": ["six archetypes map one-to-one to six profiles", "each profile pins command argv hash and applicability", "package exit executes a fresh final-state profile"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-per-edit-gate-deadlock-remediation-requirements-claude.md","sha256":"a6d2e3ffb593b77cb9f2035b07243be97accc8c7246bf283a57fe8d5553cead8","anchor":"## 5. P2 · archetype → profile exact partition（Codex M-03，采纳）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","anchor":"## 5. P2：六 archetype 的 exact partition"},
+      "currentDeviation": "one backend SQL profile claims compatibility with six unrelated archetypes and no final exit rerun exists.",
+      "changeSurfaces": [
+        {"path":"contracts/policy/mandatory-per-edit-gate-command-closure.json","disposition":"update","target":"six one-to-one profiles and exact archetype denominator"},
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"exact partition validation and fresh final-exit execution"},
+        {"path":"scripts/check/per-edit-design-context","disposition":"create","target":"design-only profile adapter"},
+        {"path":"scripts/check/per-edit-runner-evidence","disposition":"create","target":"runner-evidence static profile adapter"},
+        {"path":"scripts/check/backend-boundaries","disposition":"retain","target":"backend-source profile owner"},
+        {"path":"scripts/check/frontend-architecture","disposition":"retain","target":"frontend-source profile owner"}
+      ],
+      "orderedChain": ["add and validate six-profile exact catalog", "prove omitted wrong widened and stale-final red mutations", "atomically remove old multi-compatible profile", "rerun final exit profile"],
+      "dependencyAndSerialBoundaries": ["depends on PEG-CP-U01 and PEG-CP-U02", "new partition is proven before old compatibility is removed", "verify is not treated as final gate owner"],
+      "dataEvolution": {"notApplicableReason":"control catalog only"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"partition exact-set and fresh final receipt red tests","l2":"NOT_RUN_STATIC_CONTROL_PACKAGE","l3":"NOT_RUN_STATIC_CONTROL_PACKAGE","business":"NOT_RUN_STATIC_CONTROL_PACKAGE","cleanup":"NOT_RUN_STATIC_CONTROL_PACKAGE"},
+      "forbiddenPseudoFixes": ["multi-archetype compatibility", "remove old profile before replacement", "reuse old final PASS"],
+      "discriminator": {"fixture":"one missing duplicate wrong or widened profile and one absent final execution each fail"}
+    },
+    {
+      "id": "PEG-CP-U04",
+      "title": "Source-anchor finite disposition and additive migration",
+      "approvedAssertions": ["every production source-text anchor has one finite disposition", "dual-source replacement uses independent producers", "implementation discipline is retained or behavior-tested before anchor removal"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-per-edit-gate-deadlock-remediation-requirements-claude.md","sha256":"a6d2e3ffb593b77cb9f2035b07243be97accc8c7246bf283a57fe8d5553cead8","anchor":"## 6. P3 · 锚点换基（保留第一版，Codex 未质疑）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","anchor":"## 6. P3：源码锚点换基"},
+      "currentDeviation": "SQL merge coverage mixes contract facts with production source spelling anchors and has no complete migration disposition ledger.",
+      "changeSurfaces": [
+        {"path":"scripts/check/backend-performance-sql-merge-coverage","disposition":"update","target":"add replacement controls first and remove only proven obsolete anchors"},
+        {"path":"doc/evidence/platform/2026-08-12-v2s-per-edit-source-anchor-disposition.json","disposition":"create","target":"exact source-anchor denominator and three-way disposition"},
+        {"path":"scripts/test/catalog-inventory-query-envelope.test.mjs","disposition":"retain","target":"dual-source reconciliation precedent"}
+      ],
+      "orderedChain": ["freeze anchor denominator", "classify every anchor", "add replacement", "prove real red mutation", "remove only replaced anchor", "reconcile exact set"],
+      "dependencyAndSerialBoundaries": ["depends on PEG-CP-U03", "no PENDING disposition", "canonicalJson fail-closed anchors remain unless equivalent behavior proof exists"],
+      "dataEvolution": {"notApplicableReason":"static control replacement only"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"anchor ledger exact-set and per-disposition red proof","l2":"NOT_RUN_STATIC_CONTROL_PACKAGE","l3":"NOT_RUN_STATIC_CONTROL_PACKAGE","business":"NOT_RUN_STATIC_CONTROL_PACKAGE","cleanup":"NOT_RUN_STATIC_CONTROL_PACKAGE"},
+      "forbiddenPseudoFixes": ["delete anchor first", "generator self-output as dual source", "delete implementation discipline for cleanliness"],
+      "discriminator": {"fixture":"missing extra pending or prematurely removed anchor and substituted independent source each fail"}
+    },
+    {
+      "id": "PEG-CP-U05",
+      "title": "Package reconciliation and implementation review handoff",
+      "approvedAssertions": ["six source compliance denominators close with no PENDING", "all changed paths have receipt evidence", "static success is not dynamic or business success"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-per-edit-gate-deadlock-remediation-requirements-claude.md","sha256":"a6d2e3ffb593b77cb9f2035b07243be97accc8c7246bf283a57fe8d5553cead8","anchor":"## 7. Dexter 已裁决：允许 FAIL receipt 存在"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","anchor":"## 9. 唯一串行实施计划与验收"},
+      "currentDeviation": "no package-exit evidence can currently prove bootstrap, receipts, partition and anchor migration as one final state.",
+      "changeSurfaces": [
+        {"path":"scripts/README.md","disposition":"update","target":"document bootstrap, ledger and final gate commands"},
+        {"path":"project-memory/index.md","disposition":"update","target":"deterministic navigation after new memory"},
+        {"path":"project-memory/index.json","disposition":"update","target":"deterministic machine navigation after new memory"},
+        {"path":"contracts/policy/standards-coverage-matrix.json","disposition":"update","target":"append review checklist pointer only; preserve rules"}
+      ],
+      "orderedChain": ["reconcile six denominators", "run focused and global static controls", "run fresh final gate", "validate package exit", "prepare one implementation review input"],
+      "dependencyAndSerialBoundaries": ["depends on PEG-CP-U01 through U04", "no dynamic environment", "one implementation review only"],
+      "dataEvolution": {"notApplicableReason":"review and static evidence only"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"package exit, scripts verify and implementation review input","l2":"NOT_RUN_SEPARATE_AUTHORIZATION","l3":"NOT_RUN_SEPARATE_AUTHORIZATION","business":"NOT_RUN_STATIC_CONTROL_PACKAGE","cleanup":"NOT_RUN_STATIC_CONTROL_PACKAGE"},
+      "forbiddenPseudoFixes": ["single gate PASS as package exit", "dynamic success claim", "rules array modification"],
+      "discriminator": {"fixture":"any missing denominator receipt source hash anchor disposition or fresh final gate fails exit"}
+    }
+  ]
+}

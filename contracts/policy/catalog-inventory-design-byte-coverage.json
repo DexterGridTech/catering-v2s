@@ -5,7 +5,7 @@
   "source": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
     "designHeading": "### 3.4 读模型一次定全",
-    "designSha256": "def2e0490ee964233448063578c671dc5da9d1287eaceb189d886aa9a8252215"
+    "designSha256": "c9b0503b10272b3ca9b3f4c4f22916c444a2c5342e928fe72f1f0947eb03105c"
   },
   "requiredModelCount": 25,
   "rows": [
@@ -94,6 +94,7 @@
     {
       "model": "CatalogNavigationView",
       "required": [
+        "allCount",
         "tree",
         "smartViews",
         "shapeCounts",
@@ -101,6 +102,10 @@
         "generation"
       ],
       "fields": [
+        {
+          "path": "allCount",
+          "type": "integer"
+        },
         {
           "path": "tree",
           "type": "array",

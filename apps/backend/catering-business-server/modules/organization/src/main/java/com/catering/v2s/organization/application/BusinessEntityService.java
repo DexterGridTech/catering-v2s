@@ -549,7 +549,6 @@ public class BusinessEntityService implements StoreAssignmentLookup, Organizatio
     }
 
     @Override
-    @Transactional(readOnly = true)
     public UUID resolveCatalogCopySource(UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, UUID targetDataNodeId, String brandRef) {
         if (workspaceUuid == null || groupWorkspaceKey == null || targetDataNodeId == null || brandRef == null || brandRef.isBlank()) throw new OrganizationValidationException();
         if (!ServiceNodeTypes.STORE.equals(targetDataNodeType)) throw new OrganizationValidationException();

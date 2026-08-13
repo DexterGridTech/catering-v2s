@@ -20,6 +20,8 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public final class DatabaseOperationTracker {
     private static final ThreadLocal<Collector> CURRENT = new ThreadLocal<>();
+    private static final MeasurementSink NOOP_MEASUREMENT_SINK = (correlationId, snapshot) -> { };
+    private static volatile MeasurementSink activeMeasurementSink = NOOP_MEASUREMENT_SINK;
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int IDENTIFIER_LENGTH = 16;
 
@@ -37,9 +39,24 @@ public final class DatabaseOperationTracker {
     /** Opens a request scope. The supplied HMAC key is copied and never included in snapshots. */
     public static Scope open(Options options) {
         Collector previous = CURRENT.get();
-        Collector current = new Collector(options == null ? Options.legacy() : options);
+        Options resolved = options == null ? Options.legacy() : options;
+        MeasurementSink sink = resolved.measurementSink() != null
+                ? resolved.measurementSink()
+                : resolved.correlationId() == null ? NOOP_MEASUREMENT_SINK : activeMeasurementSink;
+        Collector current = new Collector(resolved, sink);
         CURRENT.set(current);
         return new Scope(previous, current);
+    }
+
+    /**
+     * Installs the optional in-JVM acceptance observer. Production callers keep the default no-op;
+     * the managed acceptance test context owns the returned registration and restores the previous
+     * observer when its lane terminates.
+     */
+    public static synchronized MeasurementSinkRegistration installMeasurementSink(MeasurementSink sink) {
+        MeasurementSink previous = activeMeasurementSink;
+        activeMeasurementSink = sink == null ? NOOP_MEASUREMENT_SINK : sink;
+        return new MeasurementSinkRegistration(previous, activeMeasurementSink);
     }
 
     /** Returns true only while an active request owns a collector on this thread. */
@@ -50,6 +67,31 @@ public final class DatabaseOperationTracker {
     public static Snapshot snapshot() {
         Collector collector = CURRENT.get();
         return collector == null ? Snapshot.empty() : collector.snapshot();
+    }
+
+    /** Test-visible sink contract; it receives the existing tracker snapshot, never a second count. */
+    @FunctionalInterface
+    public interface MeasurementSink {
+        void accept(String correlationId, Snapshot snapshot);
+    }
+
+    public static final class MeasurementSinkRegistration implements AutoCloseable {
+        private final MeasurementSink previous;
+        private final MeasurementSink installed;
+        private boolean closed;
+
+        private MeasurementSinkRegistration(MeasurementSink previous, MeasurementSink installed) {
+            this.previous = previous;
+            this.installed = installed;
+        }
+
+        @Override public synchronized void close() {
+            if (closed) return;
+            closed = true;
+            synchronized (DatabaseOperationTracker.class) {
+                if (activeMeasurementSink == installed) activeMeasurementSink = previous;
+            }
+        }
     }
 
     /** Attributes subsequent operations to a closed section vocabulary until the returned scope closes. */
@@ -97,15 +139,28 @@ public final class DatabaseOperationTracker {
     }
 
     /** Per-request non-secret telemetry settings owned by the edge diagnostic boundary. */
-    public record Options(byte[] hmacKey, boolean captureCallSite, boolean retainStatementTemplatesForLocalDictionary) {
+    public record Options(byte[] hmacKey, boolean captureCallSite, boolean retainStatementTemplatesForLocalDictionary,
+                          String correlationId, MeasurementSink measurementSink) {
         public Options {
             hmacKey = hmacKey == null ? null : hmacKey.clone();
             if (hmacKey != null && hmacKey.length < 16) throw new IllegalArgumentException("hmac key too short");
+            if (correlationId != null && !correlationId.matches("[A-Za-z0-9._:-]{1,128}")) {
+                throw new IllegalArgumentException("invalid correlation id");
+            }
         }
 
         @Override public byte[] hmacKey() { return hmacKey == null ? null : hmacKey.clone(); }
-        public Options(byte[] hmacKey, boolean captureCallSite) { this(hmacKey, captureCallSite, false); }
-        public static Options legacy() { return new Options(null, false, false); }
+        public Options(byte[] hmacKey, boolean captureCallSite, boolean retainStatementTemplatesForLocalDictionary) {
+            this(hmacKey, captureCallSite, retainStatementTemplatesForLocalDictionary, null, null);
+        }
+        public Options(byte[] hmacKey, boolean captureCallSite) { this(hmacKey, captureCallSite, false, null, null); }
+        public Options withCorrelationId(String value) {
+            return new Options(hmacKey, captureCallSite, retainStatementTemplatesForLocalDictionary, value, measurementSink);
+        }
+        public Options withMeasurementSink(MeasurementSink sink) {
+            return new Options(hmacKey, captureCallSite, retainStatementTemplatesForLocalDictionary, correlationId, sink);
+        }
+        public static Options legacy() { return new Options(null, false, false, null, null); }
     }
 
     public static final class Scope implements AutoCloseable {
@@ -123,7 +178,11 @@ public final class DatabaseOperationTracker {
         @Override public void close() {
             if (!closed) {
                 closed = true;
-                if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
+                try {
+                    current.publish();
+                } finally {
+                    if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
+                }
             }
         }
     }
@@ -242,6 +301,7 @@ public final class DatabaseOperationTracker {
 
     private static final class Collector {
         private final Options options;
+        private final MeasurementSink measurementSink;
         private final List<Operation> operations = new ArrayList<>();
         private final Deque<Section> sections = new ArrayDeque<>();
         private final Map<String, String> statementDictionary = new LinkedHashMap<>();
@@ -249,7 +309,14 @@ public final class DatabaseOperationTracker {
         private Phase phase;
         private long sequence;
 
-        private Collector(Options options) { this.options = options; }
+        private Collector(Options options, MeasurementSink measurementSink) {
+            this.options = options;
+            this.measurementSink = measurementSink;
+        }
+
+        private void publish() {
+            if (options.correlationId() != null) measurementSink.accept(options.correlationId(), snapshot());
+        }
 
         private synchronized SectionScope pushSection(Section section) {
             Section resolved = section == null ? Section.UNCLASSIFIED : section;

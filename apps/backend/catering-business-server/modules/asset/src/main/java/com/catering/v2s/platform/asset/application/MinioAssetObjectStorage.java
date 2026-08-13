@@ -10,6 +10,7 @@ import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.net.URI;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
     private final String objectPrefix;
     private boolean bucketPrepared;
 
+    @Autowired
     MinioAssetObjectStorage(
         @Value("${catering.asset.object-storage.endpoint}") String endpoint,
         @Value("${catering.asset.object-storage.access-key}") String accessKey,
@@ -30,7 +32,11 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         @Value("${catering.asset.public-base-url}") String publicBaseUrl,
         @Value("${catering.asset.object-storage.object-prefix}") String objectPrefix
     ) {
-        this.client = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
+        this(MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build(), bucket, publicBaseUrl, objectPrefix);
+    }
+
+    MinioAssetObjectStorage(MinioClient client, String bucket, String publicBaseUrl, String objectPrefix) {
+        this.client = client;
         this.bucket = requiredBucket(bucket);
         this.publicBaseUrl = normalizeBase(publicBaseUrl);
         this.objectPrefix = requiredPrefix(objectPrefix);
@@ -45,7 +51,7 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
             client.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(this.bucket).config(publicDownloadPolicy(this.bucket)).build());
             bucketPrepared = true;
         } catch (Exception failure) {
-            throw new AssetObjectStorageUnavailableException(failure);
+            throw unavailable("bucket.prepare", failure);
         }
     }
 
@@ -62,10 +68,14 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         try {
             ensureBucket();
             client.putObject(PutObjectArgs.builder().bucket(bucket).object(validKey(objectKey)).contentType(contentType).stream(bytes, sizeBytes, -1).build());
-        } catch (Exception failure) { throw new AssetObjectStorageUnavailableException(failure); }
+        } catch (Exception failure) { throw unavailable("object.put", failure); }
     }
 
     @Override public boolean exists(String objectKey) {
+        // The first stage attempt probes content-addressed storage before it uploads.  Bucket
+        // readiness therefore belongs to the common stat path, not only to put; otherwise a
+        // fresh runtime turns a missing bucket into a generic upload failure before put can create it.
+        ensureBucket();
         return existsWith(() -> client.statObject(StatObjectArgs.builder().bucket(bucket).object(validKey(objectKey)).build()));
     }
 
@@ -73,8 +83,8 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         try { lookup.stat(); return true; }
         catch (ErrorResponseException failure) {
             if (isObjectNotFound(failure)) return false;
-            throw new AssetObjectStorageUnavailableException(failure);
-        } catch (Exception failure) { throw new AssetObjectStorageUnavailableException(failure); }
+            throw unavailable("object.stat", failure);
+        } catch (Exception failure) { throw unavailable("object.stat", failure); }
     }
 
     static boolean isObjectNotFound(ErrorResponseException failure) {
@@ -89,7 +99,7 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
 
     @Override public void delete(String objectKey) {
         try { client.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(validKey(objectKey)).build()); }
-        catch (Exception failure) { throw new AssetObjectStorageUnavailableException(failure); }
+        catch (Exception failure) { throw unavailable("object.delete", failure); }
     }
 
     private static String requiredBucket(String value) {
@@ -114,7 +124,13 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         if (value == null || !value.startsWith(objectPrefix) || !value.substring(objectPrefix.length()).matches("static/[a-f0-9]{64}(?:\\.[a-z0-9]{2,5})?")) throw new IllegalArgumentException("invalid asset object key");
         return value;
     }
-    static final class AssetObjectStorageUnavailableException extends RuntimeException {
-        AssetObjectStorageUnavailableException(Throwable cause) { super(cause); }
+    private static AssetObjectStorageUnavailableException unavailable(String operation, Throwable failure) {
+        if (failure instanceof AssetObjectStorageUnavailableException existing) return existing;
+        if (failure instanceof ErrorResponseException responseFailure) {
+            Integer status = responseFailure.response() == null ? null : responseFailure.response().code();
+            String serviceCode = responseFailure.errorResponse() == null ? null : responseFailure.errorResponse().code();
+            return new AssetObjectStorageUnavailableException(operation, failure, status, serviceCode);
+        }
+        return new AssetObjectStorageUnavailableException(operation, failure);
     }
 }

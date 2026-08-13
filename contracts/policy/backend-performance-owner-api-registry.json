@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-performance-owner-api-registry",
+  "status": "SOURCE_VERIFIED_STATIC",
+  "authority": "DBCR-U02 derives coordinated owner participation from constructor-injected business owner APIs and execute-body calls; imports, context resolvers and type-only references are not owner participation.",
+  "ownerApis": [
+    {
+      "apiType": "com.catering.v2s.organization.api.OperationsStoreCommandApi",
+      "owner": "organization",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OperationsStoreCommandApi.java#OperationsStoreCommandApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OperationsStoreCommandApi.java",
+      "sourceSha256": "35dd8ec43eb6c222e4bae1b2a8e79420783aae3d602d14ada92f7fcded3f2ca6"
+    },
+    {
+      "apiType": "com.catering.v2s.organization.api.OperationsStoreCommandApi.StoreDetailReadbackApi",
+      "owner": "organization",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OperationsStoreCommandApi.java#StoreDetailReadbackApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/api/OperationsStoreCommandApi.java",
+      "sourceSha256": "35dd8ec43eb6c222e4bae1b2a8e79420783aae3d602d14ada92f7fcded3f2ca6"
+    },
+    {
+      "apiType": "com.catering.v2s.contract.api.OperationsStoreContractCommandApi.StoreStatusReadbackApi",
+      "owner": "contract",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/api/OperationsStoreContractCommandApi.java#StoreStatusReadbackApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/api/OperationsStoreContractCommandApi.java",
+      "sourceSha256": "3e8264abf2987f1610cf864c958420947bef1c1fac73cbfbf335444f0b087339"
+    },
+    {
+      "apiType": "com.catering.v2s.catalog.api.CatalogOwnerApi",
+      "owner": "catalog",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java#CatalogOwnerApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java",
+      "sourceSha256": "0367e1b1e7af85e1b67280cf0475d77f56e17f8410efcfacb4fc693fb9d3e4eb"
+    },
+    {
+      "apiType": "com.catering.v2s.inventory.api.InventoryOwnerApi",
+      "owner": "inventory",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/api/InventoryOwnerApi.java#InventoryOwnerApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/api/InventoryOwnerApi.java",
+      "sourceSha256": "a2f45571bb2312ebdd0209695dc06b4287e795e7a0ace8ec6ae619f29fffc87c"
+    },
+    {
+      "apiType": "com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock",
+      "owner": "platform-asset",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/api/CatalogAssetReferenceLock.java#CatalogAssetReferenceLock",
+      "sourcePath": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/api/CatalogAssetReferenceLock.java",
+      "sourceSha256": "070830cd0e7731cbeb01802a9e6a5a82d21ee146c277bfddb35461796ed54c35"
+    },
+    {
+      "apiType": "com.catering.v2s.platform.asset.api.CatalogAssetCommandApi",
+      "owner": "platform-asset",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/api/CatalogAssetCommandApi.java#CatalogAssetCommandApi",
+      "sourcePath": "apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/api/CatalogAssetCommandApi.java",
+      "sourceSha256": "d48e378ecffa914686e7fe3ada50b857901a7f7e81a0d26cf91f86dd20a87017"
+    }
+  ],
+  "excludedApis": [
+    {
+      "apiType": "com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver",
+      "exclusionKind": "CONTEXT_RESOLVER",
+      "reason": "resolves authorization context and does not own the business facts or command mutation",
+      "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java#CommandExecutionContextResolver",
+      "sourcePath": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/CommandExecutionContextResolver.java",
+      "sourceSha256": "2fe8194588d74752c35317d028da3d090e6dc99b9550fc5daaf001088c24b8f6"
+    }
+  ],
+  "targetOperations": [
+    {
+      "operationId": "createOperationsOrganizationStore",
+      "expectedOwners": ["contract", "organization"]
+    },
+    {
+      "operationId": "updateOperationsOrganizationStore",
+      "expectedOwners": ["contract", "organization"]
+    },
+    {
+      "operationId": "transitionOperationsOrganizationStoreStatus",
+      "expectedOwners": ["contract", "organization"]
+    },
+    {
+      "operationId": "releaseOperationsCatalogStagedAsset",
+      "expectedOwners": ["catalog", "platform-asset"]
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "expectedOwners": ["catalog", "inventory"]
+    }
+  ],
+  "redDiscriminator": "DBCR-U02-RED:owner-field-and-execute-call-source-derived-exact-set-must-fail-on-import-only-or-owner-loss"
+}

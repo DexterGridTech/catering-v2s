@@ -4,6 +4,11 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "$0")/../.." && pwd)"
 runtime_dir="${V2S_RUNTIME_DIR:-$root_dir/.runtime/r5}"
 
+if [[ "$#" -ne 0 ]]; then
+  echo "R5_DEV_START=REFUSED; REASON=ARGUMENT_INVALID" >&2
+  exit 2
+fi
+
 if [[ "${R5_SEED:-}" == "true" ]]; then
   echo "DEV_START_REJECTED=SEED_MUST_USE_EXPLICIT_COMMAND" >&2
   exit 2

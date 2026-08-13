@@ -1,140 +1,134 @@
-# 分层调用规范：skill + ArchUnit + agent 三件套需求（Claude）
+# 分层调用约束需求（第二版 · Claude）
 
-> **本文替代**：`2026-08-12-v2s-transaction-boundary-static-gate-requirements-claude.md` 与 `2026-08-12-v2s-database-interaction-boundary-standard-requirements-claude.md` 中的**检查设计部分**。那两份里的点状检查（逐条红线、逐条对账、逐条基线）**不再执行**，只保留其中的欠账清单。
+> **第一版已作废，不要引用。** 它提出四条理想分层规范，经两个 fresh 独立子 agent 盲审后被证伪：四条是从**理想分层**推出来的，不是从**仓内实际形态**推出来的。作废清单见 §1。
 >
-> 原因：那两份是**逐个堵漏**——每发现一个问题加一条规则、一套判据、一组红变异、一个分母。规则数随问题数增长。本文改为**定规矩**：四条分层调用规范一旦成立，那些问题在结构上不可能发生。
+> 本版换方向：**先给现有形态一个完整分类，再只做迁移量已知且便宜的三件事。**
 
 - 会话出处：fresh v2s-rooted 会话，本文件为唯一写入。未运行任何动态环境。
-- 亲验声明：下列全部数字由我独立扫描源码得出。
+- 亲验声明：下列全部数字为我在本轮**重新扫描**所得。第一版有 4 处数字直接错误，本版每个数字都复算过。
 
 ---
 
-## 1. 现状事实（先摆事实，规范才有依据）
+## 1. 第一版被证伪的内容（供交叉核对，勿再引用）
 
-| 事实 | 数字 | 含义 |
+| 第一版说法 | 实测 | 性质 |
 |---|---|---|
-| operation adapter 命名一致性 | **196/196** 以 `Operation` 结尾，**196/196** 在 `application` 包 | 分层标识稳定，规则挂得住 |
-| edge 层事务标注 | **0 处** | edge 已经干净，规范化只是防回归 |
-| 事务 propagation 分布 | 裸 `@Transactional` 289 + `readOnly=true` 237 + 显式 `REQUIRED` 72；**`REQUIRES_NEW` / `NOT_SUPPORTED` / `NEVER` / `MANDATORY` 各 0** | **全仓统一 REQUIRED**，嵌套调用都 JOIN 现有事务 |
-| `@Transactional` 按层分布 | `*Operation` **68 处 / 68 文件**（恰好每类 1 处）；`*OwnerService` 85/3；其他 `*Service` 402/42；其他 43/1 | adapter 层非常干净；量在下游 |
-| 既有 ArchUnit 规则 | 28 条，**无一涉及事务** | 新地，不冲突 |
-
-**一个必须更正的推测**：我此前推测 `createOperationsOrganizationStore` 的 4 个连接来自"跨 owner 各自开事务"。propagation 全仓统一 `REQUIRED` 这个事实**不支持该推测**——嵌套调用会 JOIN 而非新建起点。那 4 个连接的成因**静态判不了**，需运行时归因，登记欠账。不要把这个推测写进任何实施依据。
+| 「L1 违规量 **0**，edge 已干净」 | edge 直接注入 `*Service` / `*Coordinator` **75 处 / 32 文件 / 28 种类型**（`WorkspaceAdministrationService` 10、`PlatformAssetService` 7、`WorkspaceUserService` 7、`BusinessEntityService` 5…） | **严重**。我把"edge 层 `@Transactional`=0"（属 L2，为真）当成了 L1 合规，把最大一笔迁移成本写成零 |
+| 「既有 ArchUnit **28 条**」 | **9 条**（`static final ArchRule` 9 / `@ArchTest` 9 / 另 6 个红夹具 `@Test`） | 错误，且我用它论证"新地不冲突"；实际 9 条里 `EDGE_DOES_NOT_TOUCH_PERSISTENCE` 与我 L1 第二子句**直接重复** |
+| 「L2 起点违规 **0**（零 `REQUIRES_NEW`）」 | 范畴错误。Spring `REQUIRED` 本身是 **start-or-join**，无外层事务时**它就是起点**。零 `REQUIRES_NEW` 不蕴含零起点违规 | 概念错 |
+| 「propagation：裸 289 + readOnly 237」 | 裸 **269** + readOnly **236** + 显式 REQUIRED **72** + **`noRollbackFor` 21**（我把这 21 处静默并进了另两桶，而 `noRollbackFor` 改的正是回滚语义） | 分桶错 |
+| 「四条成立后那些问题结构上不可能发生」 | 与本文档 §7 自述「用量做完一次都不会少」**自相矛盾**；且有反例：`saveOperationsCatalogItem` 三 owner 扇出而四条全绿 | 断言过度 |
+| 未提更小方案 | `contracts/policy/module-dependency-registry.json` + `tools/module-dependency-registry/check.mjs`（455 行）**早已存在**，带模块判据与 typed edge | 违反「说明为什么不是更小方案」 |
 
 ---
 
-## 2. 四条分层调用规范（规矩本身）
+## 2. 先分类：仓内实际有哪些形态
 
-层的定义按仓内既有事实，不新造概念：
+第一版只认四层，结果**匹配不到全仓最关键的类**。实际形态至少七种：
 
-| 层 | 标识 | 职责 |
+| 形态 | 标识 | 数量 | 关键事实 |
+|---|---|---|---|
+| edge controller | `..app.edge..` | 321 文件 | `@Transactional` **0**；但直接注入 owner service **75 处/32 文件** |
+| 生成 bindings | `..app.edge.generated..` | 1 | 113 个命令的 edge→Operation 这一跳实际由它承担，**包在 edge 内** |
+| operation adapter | `*Operation` 类 | **真实存在 69**（bindings 声明 196） | 68 个是 bindings adapter，各恰 1 处 `@Transactional`；第 69 个 `app/edge/diagnostic/PublicSecurityOperation.java` **住在 edge 里** |
+| owner api | `*Api` / `*Lookup` | — | 跨模块契约，但**不是唯一实际路径** |
+| owner service | `*OwnerService` | 3 | 85 处 `@Transactional`；`read(String operationId,…)` 三处全带 `readOnly=true` |
+| **coordinator** | `*Coordinator` | 1 | **`CatalogInventoryCoordinator`：`@Service` 但不叫 `*Service`，独占 43 处 `@Transactional`，是 catalog 全部 15 个读的实际入口，被 edge 直接注入。第一版四层对它全部失效** |
+| task read service | `*TaskReadService` | 多个 | 83 个读操作的实际承载者 |
+
+**关键结构事实：`RESOLVED=68 / UNRESOLVED=128`，而 128 = 83 READ + 45 COMMAND。** adapter 缺失**不是读路径专属**——第一版把 `selectOperationsWorkspaceSessionDataNode` 说成读，它实际是 `mode: COMMAND`。
+
+**结论**：在给这七种形态一个稳定分类之前，任何"层与层之间只能怎么调"的规范都会落空。**分类是前置工作，不是可选项。**
+
+---
+
+## 3. 只做三件事（迁移量已知、便宜、不需要新基建）
+
+### 3.1 补全 `module-dependency-registry` 缺的 5 个模块 —— 最高性价比
+
+**现状**：registry 按 `sourceRoot` 覆盖 **9/14** 个模块，`edges` 24 条。**未覆盖的 5 个是** `catalog`、`inventory`、`fulfillment-production`、`audit-read`、`foundation` —— **我全部发现所在的 catalog 家族整个在外**。
+
+**为什么它优于新写规则**：
+- 已有 `moduleKey` / `sourceRoot` / typed edge（`COMMAND` / `VALUE_API` / `SCHEMA_FK` / `TASK_READ`）+ 每条边的 rationale
+- **按 Gradle `sourceRoot` 判定，天然不受 split package 影响**——而 app 树与 modules 树共享 6 个包（`catalog.application` 等），任何键在包名的 ArchUnit 规则在这里都判不准
+- checker 已存在且已在跑，补数据不需要写代码
+
+**动作**：为这 5 个模块补 `moduleKey` / `sourceRoot`，并把 catalog→inventory / asset / production 等真实跨模块边显式登记为 typed edge 并写 rationale。
+
+**验收**：14/14 模块入册；catalog 家族的跨模块边全部有 typed edge 与 rationale；`check.mjs` 的 `validateSourceFacts` 覆盖到这 5 个模块。
+
+### 3.2 `*Operation` 禁止被 `new` —— 15 处，真假绿
+
+**事实**：edge 内有 **15 处 `new *Operation(`**，绕过 Spring 代理，Operation 上的 `@Transactional` **一次都不会触发**。而依赖方向检查看到的是 edge→`*Operation`，**判定合法**。测试走这条无事务路径会绿，生产语义不同。
+
+**规则**：`*Operation` 只能由容器注入，禁止 `new`。ArchUnit 可直接表达，迁移量 15 处。
+
+**注意**：`app/edge/diagnostic/PublicSecurityOperation.java` 是住在 edge 里的 `*Operation`。若规则键在名字，它会成为"edge 调 Operation 天然合法"的后门形态；实施时必须显式处置（归类或改名）。
+
+### 3.3 固定生成物的层归属 —— 否则规则要么永真要么全红
+
+113 个命令的 edge→Operation 这一跳由 `..app.edge.generated..` 的 bindings 承担，而它的包**在 edge 内**：
+
+- 若按包名算作 edge：手写 controller 只调生成物，任何"edge 只能调 Operation"的规则对手写代码变成**永真式**
+- 若把生成物排除出分析范围：所有 controller 看起来都不调 Operation，规则**全红**
+
+**动作**：在规则里显式声明生成物的层归属，并补红变异——改动生成器使 binding 输出到非 edge 包时必须红。
+
+---
+
+## 4. 明确不做（本阶段代价不配）
+
+| 第一版条目 | 真实迁移量 | 判断 |
 |---|---|---|
-| **edge** | `..app.edge..` 包 | HTTP 出入、wire 类型 |
-| **operation** | 类名 `*Operation`（196/196） | 一次操作的**事务边界**与跨模块编排 |
-| **owner api** | `*Api` / `*Lookup` 接口 | 模块之间**唯一**的调用契约 |
-| **owner service** | `*Service` 实现 | 本模块业务与持久化 |
+| 「事务起点只由 `*Operation` 声明」 | 唯一可机械表达的形式是"非 `*Operation` 层必须 `MANDATORY`"。全仓 `MANDATORY` 现为 **0**，迁移面 **530 处注解 / 46 文件**，且一改就打断 83 个读 + 45 个无 adapter 的命令 | **月级重构，不做**。按 CLAUDE.md 右尺寸标尺（分钟级、零基建、防回归），这是重构不是防回归 |
+| 「持久化只能被本模块 owner service 依赖」 | 仓内**没有持久化层**：直接持有 `JdbcTemplate`/`DataSource` 的类约 **50 个**，而叫 `*OwnerService` 的只有 **3 个**。落地要么新建 repository 层搬 50 个类的 SQL，要么把 44 个 service 改名合并 | **月级重构，不做**。跨模块读别人 schema 这件事，`check.mjs` 的 `validateSourceFacts` 已在做（扫 `schema.` 字面量并要求有 `TASK_READ` 边），补全 §3.1 即可覆盖 |
+| 「edge 不得依赖持久化」 | 与既有 `EDGE_DOES_NOT_TOUCH_PERSISTENCE`（`BackendModuleBoundariesTest.java:56-63`）**完全重复** | **不新增**。另注意 edge 已 import `platform.foundation.persistence` 下的诊断类若干处，规则若键在 `..persistence..` 包名会误报 |
 
-**四条规范：**
-
-> **L1** edge 只能调 `*Operation`，不得直接依赖 owner service 或持久化类型。
-> **L2** 事务**起点**只由 `*Operation` 声明；其他层只允许 JOIN（`REQUIRED`），不得使用 `REQUIRES_NEW` / `NOT_SUPPORTED` / `NEVER` 改变起点语义。
-> **L3** 跨模块调用只能经 `*Api` 接口；owner service 之间不得直接依赖。
-> **L4** 持久化类型只能被本模块的 owner service 依赖。
-
-**这四条成立后，先前那些点状问题结构上不可能发生**：edge 成为事务起点（L1+L2）、跨 owner 未声明（L3 使跨模块依赖在 `*Operation` 构造注入处可数）、校验读跑错层（L4）。
-
-**当前违规量**（我已扫描，这是迁移工作量，不是估计）：
-
-- L1：**0**（edge 已干净）
-- L2：**0** 起点违规（零 `REQUIRES_NEW` 等）；但有 **3 处**读入口在声明 `OUTSIDE_TRANSACTION` 的路径上带 `@Transactional(readOnly = true)`——`CatalogOwnerService` / `InventoryOwnerService` / `ProductionTagOwnerService` 的 `read(String operationId, ...)`
-- L3：**5 条** adapter 实际注入 owner 数 > matrix 声明的 `ownerCount`：`createOperationsOrganizationStore`、`updateOperationsOrganizationStore`、`transitionOperationsOrganizationStoreStatus`（均 contract+organization）、`releaseOperationsCatalogStagedAsset`（catalog+platform.asset）、`transitionOperationsCatalogItemStatus`（catalog+inventory）
-- L4：未扫描，实施时先测量再定迁移批次
-
-**对齐方向必须逐条判断，不得默认改代码。** L2 的 3 处：`readOnly=true` 常是为保证一次读的快照一致性，若确有依赖，该改的是 matrix 声明而非摘注解。L3 的 5 条同理：可能是 `ownerCount` declared 写窄了。**门只负责"不一致就红"，改哪边是业务判断。**
+**edge→owner service 那 75 处**：本版**不提规则**，先按 §3.1 把它们登记为 typed edge 并写 rationale。**先看清楚再决定要不要禁**，不要用一条规则把 32 个 controller 一次打红而没有承接批次。
 
 ---
 
-## 3. skill：编写期指南（最省的一环）
+## 5. 无感：新功能如何自动带上
 
-**这是三件套里唯一能让问题不发生的部分**，其余两个都只是发现问题。
+不再依赖第一版那套"四层标识 + UNRESOLVED 棘轮"（因为异形态**今天就是主干**，基线不是 0）。改为：
 
-新建 `.agents/skills/` 下一个 skill，内容是**照着写就对**的模板，不是规则罗列：
+- **靠 registry 的模块分母**：`check.mjs` 遍历 `registry.modules`，新增模块必须入册才被检查——所以**入册本身要成为门**：`modules` 集合必须等于 `modules/` 目录集合，不等即红。这一条把"新模块自动纳入"变成机器事实
+- **靠 typed edge 的 rationale**：新增跨模块调用必须登记边并写理由，否则 `validateSourceFacts` 红
+- **不再声称"开发者不需要知道规范"**：第一版这句过度了。真实机制是"新增跨模块调用会被要求登记"，这需要开发者做一个动作，只是那个动作很轻
 
-- 新增一个 operation 时：adapter 叫什么、放哪、事务标在哪、跨模块怎么调、owner service 里能做什么不能做什么
-- 每条给**正例与反例**，反例直接用 §2 的当前违规（真实代码，不编造）
-- 明确"需要停下来问人"的情形：需要跨模块、需要读一致性快照、需要新的调用形态
-
-**skill 不做检查，不产出结论**，它只降低写错的概率。
+**第一版关于 bindings 生成器的说法也要更正**：`scripts/generate/operation-handler-bindings.mjs` 把分母**硬编码**为 `EXPECTED_COUNTS = {operations: 196, …}`，新增第 197 个 operation 会让生成器直接失败并需人工改常量。**"新 operation 自动进入分母"不成立**，登记欠账。
 
 ---
 
-## 4. ArchUnit：结构阻断（确定性的那一半）
+## 6. 边界与欠账
 
-四条规范逐条落成 ArchUnit 规则，加进**既有** `BackendModuleBoundariesTest`（已是 catalog 里的 `ARCHUNIT_SELECTOR`）：
+**本版三件事管不了的**：
 
-- **不新建门**、不新建契约、不碰 Testcontainers、秒级
-- 规则**键在结构**（包名、类型依赖、注解、接口实现），**不得键在清单**——新增第 4 个 owner 只要符合形态就自动纳入，写成清单则新增者静默逃逸
-- L3 的判据必须是**构造注入字段**，**不得用 import 扫描**：我实测 import 判据会把 29 条判红，逐条核对后真实违规只有 5 条，**高估 24 条**（例：`CreateOperationsCatalogItemOperation` import 了 `organization.api.CatalogScopeLookup`，但那只是类型引用）
+- **用量**。`createOperationsOrganizationStore` 的 41 次、`selectOperationsWorkspaceSessionDataNode` 的 24 查询比 1 写，做完一次都不会少
+- **owner 扇出**。`saveOperationsCatalogItem` 类注释自述"across catalog, inventory and asset owners"，matrix 却声明 `ownerCount: 1` / `OWNER_COMMAND_SINGLE_OWNER`；全仓 `OWNER_COMMAND_CROSS_OWNER` 声明了但计数为 0。**这是声明与实现的系统性不一致，不是几条个案**
+- **78 个 `TASK_READ` 的 `transactionEvents: 0`** 与源码上普遍开着 `readOnly=true` 事务的事实系统性不一致。第一版说"3 处待裁决"，范围划小了
 
-**反馈时机在 verify，明确不进 per-edit 门**：ArchUnit 需编译；更重要的是 per-edit 门失败会阻塞 post receipt 造成控制面自锁，`sql-merge-coverage` 已吃过这个亏。
-
----
-
-## 5. skill agent：非阻断审查（结构合规但设计不合理的那一半）
-
-**能力边界必须先说死**：LLM 不能当阻断门——非确定（同输入两次可能不同结论）、不可红变异证明、不可审计。这三条与本仓的 receipt 模型直接冲突。
-
-**它的合法位置**：产出 **finding 集合**，机械门只检查**每条 finding 都有处置**。判断非确定，义务是确定的。**仓内已有此范式**：`problem-family-discovery` 证据就是"LLM 找 + 机械校验分母与处置齐备"。
-
-agent 的审查清单对准 ArchUnit 看不见的东西：
-
-- 循环内的查询调用（N+1 形态）
-- 一个方法内对同一事实的重复加载
-- 先查再写的成对模式是否可折叠
-- 结构上合规但对该业务任务明显过重的调用序列
-
-处置只有三种，必须写进证据：**改实现** / **改声明** / **显式接受并说明理由**。
+**欠账**（登记 `HANDOFF.md`，本次不做）：
+- 运行时用量对账（原两份文档的设计保留备查）
+- bindings 生成器的硬编码分母
+- `standards-enforcement-execution-catalog.json` 中 `ARCHUNIT_SELECTOR` 的 dependency 只钉 9 个文件，加规则后会系统性不完整
+- 仓内已有 `P4SqlOperationBudgetTest`：方法级 SQL 预算 harness，`CountingDataSource` 数真实语句，已覆盖 **25 条 ledger 行 / 23 个不同方法**。将来治用量应扩它，而非新建
 
 ---
 
-## 6. 无感：新功能如何自动带上
-
-- **规则键在结构** → 新增同形态自动纳入，无人需要记得加清单（§4）
-- **`*Operation` 命名与 bindings 由生成器维护** → 新 operation 自动进入分母
-- **`UNRESOLVED` 棘轮** → 新增**异形态**（不符合四层任一标识）解析不到，`UNRESOLVED` 上升即红。开发者不需要知道规范存在，走偏会自己撞上来
-- **红了只有三条出路**：扩规则（让规范跟着业务长）/ 改实现 / 显式豁免并归因。**把 `UNRESOLVED` 从输出里去掉不是出路**，配红变异
-
----
-
-## 7. 静态到此为止（诚实边界）
-
-**四条规范 + ArchUnit 管不了的**：
-
-- **用量**。`createOperationsOrganizationStore` 41 次里那 24 次 QUERY、`selectOperationsWorkspaceSessionDataNode` 的 24 查询比 1 写，做完这套一次都不会少
-- **`selectOperationsWorkspaceSessionDataNode` 连结构检查都覆盖不到**——它的 adapter 类不存在（读走 owner switch 分派），落进 `UNRESOLVED`
-- **覆盖面**：L3 的静态解析当前 `RESOLVED=68 / UNRESOLVED=128`，**只覆盖 35%**。不得把"68 条里 5 条红"表述为"跨 owner 边界已受控"
-- **那 4 个连接的真实成因**（见 §1 更正）
-
-这些登记 `HANDOFF.md` 欠账。原两份文档里的运行时对账设计**保留备查，本次不做**。
-
-**仓内已有一个可复用的资产值得记下**：`P4SqlOperationBudgetTest` 是**方法级 SQL 预算 harness**，用 `CountingDataSource` 数真实语句执行，已覆盖 25 个方法级操作（如 `WorkspaceUserService#page`）。将来真要治用量，**扩它的操作映射**比新建东西便宜得多。
-
----
-
-## 8. 批次
+## 7. 批次
 
 | 批次 | 内容 | 验收 |
 |---|---|---|
-| **L0** | 写 skill（§3） | 四条规范各有正反例；反例取自 §2 真实违规 |
-| **L1** | 逐条判断 8 项对齐方向（L2 的 3 处 + L3 的 5 条），写进证据 | 8 项各有明确结论与理由，**不得空着** |
-| **L2** | 按 L1 结论执行对齐 | 代码与 `transactionMode`、`ownerCount` 一致 |
-| **L3** | 四条规范落成 ArchUnit 规则 | 规则键在结构；输出 `RESOLVED` / `UNRESOLVED`，后者不得计入通过 |
-| **L4** | agent 审查清单 + 处置齐备的机械校验（§5） | 每条 finding 有处置；处置只能三选一 |
+| **R0** | 形态分类（§2）写进证据 | 七种形态各有标识与数量；97 个未匹配类有归属结论 |
+| **R1** | 补全 registry 5 个模块 + catalog 家族 typed edge（§3.1） | 14/14 入册；`validateSourceFacts` 覆盖 5 个新模块；模块集合相等断言上线 |
+| **R2** | `*Operation` 禁止 `new`（§3.2） | 15 处清零；`PublicSecurityOperation` 有显式处置 |
+| **R3** | 生成物层归属（§3.3） | 层归属显式声明；生成器输出到非 edge 包必红 |
 
-**红变异**：edge 加 `@Transactional` 必红；owner 读入口加回 `@Transactional` 必红；adapter 注入新 owner 而不改 `ownerCount` 必红；**判据退回 import 扫描必红**（样本 `CreateOperationsCatalogItemOperation`）；新增不符合四层标识的形态，`UNRESOLVED` 上升必红；`UNRESOLVED` 被隐藏或计入通过必红；finding 无处置必红。
+**红变异**：新增模块不入册必红；新增跨模块调用无 typed edge 必红；`new *Operation(` 必红；生成物输出到非 edge 包必红。
 
 ---
 
-## 9. 授权边界
+## 8. 授权边界
 
-本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器；文中数字为静态扫描与既有 seed 报告重算。不得据此宣称任何动态、业务、cleanup 或性能结果。
+本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器。§6 中 `createOperationsOrganizationStore` 的 41 次等用量数字，我在本轮**未能在仓内 seed 报告中找到出处**（该 operation 不出现在任何 `*seed-report*` 中），标 `UNVERIFIED`，不得作为实施依据。

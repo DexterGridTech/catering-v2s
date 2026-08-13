@@ -1,0 +1,1058 @@
+{
+  "schemaVersion": 1,
+  "kind": "canonical-performance-accepted-baseline",
+  "status": "PASS",
+  "ledgerPath": "doc/evidence/platform/rm1/p4/canonical-performance-ledger.json",
+  "measurementEvidence": {
+    "kind": "MANAGED_REMOTE_P4_TESTCONTAINERS",
+    "runId": "r5-tc-1786538385264-79525",
+    "evidencePath": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1786538385264-79525",
+    "runManifestPath": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1786538385264-79525/run-manifest.json",
+    "runManifestSha256": "ae8a4791f51f02aa45401f2b2c7f65f0fa453437cc82d18072e168f7dd6ad47e",
+    "task": ":apps:backend:catering-business-server:test",
+    "businessStatus": "PASS",
+    "cleanupStatus": "PASS"
+  },
+  "cases": [
+    {
+      "ledgerId": "M10",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ExtensionDefinitionService#listDefinitions::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M10",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ExtensionDefinitionService#listDefinitions::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M11",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationVisibilityService#listVisibleDataNodeCandidates::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M11",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationVisibilityService#listVisibleDataNodeCandidates::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M12",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::OrganizationCommandService#describeCommercialGroup::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M12",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::OrganizationCommandService#describeCommercialGroup::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M13",
+      "caseId": "SINGLE_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::PlatformAssetService#requireActivePublicReference::SINGLE_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M14",
+      "caseId": "NORMAL_SUCCESS",
+      "latestExpectedStatements": 20,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 20,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::CreateOperationsOrganizationStoreOperation#execute::NORMAL_SUCCESS::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M15",
+      "caseId": "NORMAL_SUCCESS",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ExtensionDefinitionService#platformManagementDefinition::NORMAL_SUCCESS::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M2",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractFixedStoreQueryTest.java",
+            "sha256": "e0fc2c33f0858d028afd5b8369d353f2c25d15c7ab74f8bcd5695dc88f6bca38",
+            "anchor": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractFixedStoreQueryTest.java::ContractTaskReadServiceTest::ContractTaskReadService#fixedStoreContracts::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M2",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractFixedStoreQueryTest.java",
+            "sha256": "e0fc2c33f0858d028afd5b8369d353f2c25d15c7ab74f8bcd5695dc88f6bca38",
+            "anchor": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractFixedStoreQueryTest.java::ContractTaskReadServiceTest::ContractTaskReadService#fixedStoreContracts::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M3",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 3,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 3,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ContractTaskReadService#list::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M3",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 3,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 3,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ContractTaskReadService#list::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M4",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ContractTaskReadService#list::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M4",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::ContractTaskReadService#list::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M5",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+            "sha256": "1779fb923a7cebc5870242709160ad7997869f66ff268cc104db57530362c2dc",
+            "anchor": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java::ContractCommandServiceTest::ContractCommandService#list::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M5",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java",
+            "sha256": "1779fb923a7cebc5870242709160ad7997869f66ff268cc104db57530362c2dc",
+            "anchor": "apps/backend/catering-business-server/modules/store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java::ContractCommandServiceTest::ContractCommandService#list::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M6",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+            "sha256": "da902fe7a9d5e0161d693520f65b5cfd92813c75a7ec7e55cfdb4a1205071cd3",
+            "anchor": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java::WorkspaceRoleServiceTest::WorkspaceRoleService#list::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M6",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java",
+            "sha256": "da902fe7a9d5e0161d693520f65b5cfd92813c75a7ec7e55cfdb4a1205071cd3",
+            "anchor": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java::WorkspaceRoleServiceTest::WorkspaceRoleService#list::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M7",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#listEntities::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M7",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#listEntities::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M8",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#authorizedBrands::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M8",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#authorizedBrands::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M9",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#authorizedBrandAuthorizations::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "M9",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::BusinessEntityService#authorizedBrandAuthorizations::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O1",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 12,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 12,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#page::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O1",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 12,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 12,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#page::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O2",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#page::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O2",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#page::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O3",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 4,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 4,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationOverviewTaskReadService#page::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O3",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 4,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 4,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationOverviewTaskReadService#page::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O4",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationOverviewTaskReadService#detail::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O4",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationOverviewTaskReadService#detail::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O5",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 4,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 4,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationAssignmentCandidateService#listEnabled::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O5",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 4,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 4,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationAssignmentCandidateService#listEnabled::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O6",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+            "sha256": "45d06b7d80ffd0ae1dbe69e99f073b5662c5c583e3a3fc10120f89adbf0267f1",
+            "anchor": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java::WorkspaceUserTaskScopeTest::WorkspaceAccountService#list::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "O6",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 1,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 1,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java",
+            "sha256": "45d06b7d80ffd0ae1dbe69e99f073b5662c5c583e3a3fc10120f89adbf0267f1",
+            "anchor": "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java::WorkspaceUserTaskScopeTest::WorkspaceAccountService#list::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "R8",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationHierarchyService#requireNode::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "R8",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 2,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 2,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java",
+            "sha256": "452e8daf47a58680e7442307ddf1f2725ed88a6d24290162ad97fc42cdcd7f63",
+            "anchor": "apps/backend/catering-business-server/modules/organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java::OrganizationOwnerServiceTest::OrganizationHierarchyService#requireNode::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S1",
+      "caseId": "DIRECT_A1",
+      "latestExpectedStatements": 14,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 14,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceAuthenticationService#login::DIRECT_A1::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S1",
+      "caseId": "SELECT_A100",
+      "latestExpectedStatements": 11,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 11,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceAuthenticationService#login::SELECT_A100::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S2",
+      "caseId": "DIRECT_A1",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceAuthenticationService#sessionEntry::DIRECT_A1::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S2",
+      "caseId": "SELECT_A100",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceAuthenticationService#sessionEntry::SELECT_A100::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S3",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 5,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 5,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementPage::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S3",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 5,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 5,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementPage::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S4",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 3,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 3,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementView::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S4",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 3,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 3,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementView::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S5",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 16,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 16,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#candidates::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S5",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 16,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 16,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceUserService#candidates::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S6",
+      "caseId": "FIRST_CALL",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementPageForOperations::FIRST_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S6",
+      "caseId": "SECOND_CALL",
+      "latestExpectedStatements": 8,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 8,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceInvitationService#managementPageForOperations::SECOND_CALL::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    },
+    {
+      "ledgerId": "S7",
+      "caseId": "NORMAL_SUCCESS",
+      "latestExpectedStatements": 11,
+      "history": [
+        {
+          "sequence": 1,
+          "previousExpectedStatements": null,
+          "expectedStatements": 11,
+          "changeKind": "INITIAL",
+          "reason": "FRESH_REMOTE_P4_MEASUREMENT",
+          "sourceEvidence": {
+            "path": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+            "sha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+            "anchor": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java::P4SqlOperationBudgetTest::WorkspaceAuthenticationService#selectDataNode::NORMAL_SUCCESS::fresh-remote-P4"
+          },
+          "approvalStatus": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

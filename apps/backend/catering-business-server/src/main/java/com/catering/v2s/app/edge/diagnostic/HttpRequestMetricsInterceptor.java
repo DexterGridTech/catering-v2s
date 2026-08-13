@@ -83,20 +83,28 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         String assertedOperation = request.getHeader(mode.operationHeader());
         String assertedRoute = request.getHeader(mode.routeHeader());
         PerformanceFixture fixture = performanceFixture(request);
+        boolean calibrationRequest = mode == Mode.BACKEND_ACCEPTANCE
+                && "true".equals(request.getHeader(mode.calibrationHeader()));
+        boolean validCalibrationRequest = calibrationRequest
+                && actual == null
+                && "backendAcceptanceMeasurementSinkIntegrity".equals(assertedOperation)
+                && safePattern(pattern).equals(assertedRoute);
         boolean credentialAuthorized = eventActive
                 && validSecret(request.getHeader(mode.secretHeader()))
                 && runId.equals(request.getHeader(mode.runIdHeader()));
-        boolean metadataMismatch = actual == null
+        boolean metadataMismatch = !validCalibrationRequest && (actual == null
                 || !actual.operationId().equals(assertedOperation)
-                || !actual.path().equals(assertedRoute)
+                || !actual.path().equals(assertedRoute))
                 || (mode == Mode.BACKEND_PERFORMANCE_FINAL && (fixture == null || !databaseCaptureActive));
         boolean eventAuthorized = credentialAuthorized;
-        Definition resolved = actual == null ? new Definition("route.unresolved", method, safePattern(pattern), "unresolved", "unknown") : actual;
+        Definition resolved = validCalibrationRequest
+                ? new Definition("backendAcceptanceMeasurementSinkIntegrity", method, safePattern(pattern), "backend-acceptance", "backend")
+                : actual == null ? new Definition("route.unresolved", method, safePattern(pattern), "unresolved", "unknown") : actual;
         RequestDiagnosticContext context = new RequestDiagnosticContext(correlationId, requestId, resolved.operationId(), resolved.path(), resolved.owner());
         DatabaseOperationTracker.Scope scope = DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(
                 databaseCaptureActive ? databaseOperationHmacKey : null,
                 databaseCaptureActive,
-                databaseCaptureActive && statementDictionaryPath != null));
+                databaseCaptureActive && statementDictionaryPath != null).withCorrelationId(correlationId));
         ReadBudgetComponent.Scope readBudget = ReadBudgetComponent.open();
         RequestDiagnosticLifecycle.Lifecycle lifecycle = RequestDiagnosticLifecycle.open(context, resolved.consumerFace());
         request.setAttribute(STATE, new State(scope, readBudget, System.nanoTime(), context, method, pattern, resolved, lifecycle, eventAuthorized, metadataMismatch, fixture));
@@ -319,9 +327,9 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
 
     private static boolean namespaceMatches(Mode mode, String namespace) {
         if (namespace == null) return false;
-        return mode == Mode.BACKEND_PERFORMANCE_FINAL
-                ? namespace.matches("v2s-backend-performance-[a-z0-9-]{3,32}")
-                : namespace.matches("v2s-(?:dev|http-diagnostic)-[a-z0-9-]{3,32}");
+        if (mode == Mode.BACKEND_PERFORMANCE_FINAL) return namespace.matches("v2s-backend-performance-[a-z0-9-]{3,32}");
+        if (mode == Mode.BACKEND_ACCEPTANCE) return namespace.matches("v2s-backend-acceptance-[a-z0-9-]{3,32}");
+        return namespace.matches("v2s-(?:dev|http-diagnostic)-[a-z0-9-]{3,32}");
     }
 
     private PerformanceFixture performanceFixture(HttpServletRequest request) {
@@ -374,7 +382,8 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     private enum Mode {
         SEED("r5-full", "V2S_SEED_REPORT", "X-Seed", "SEED_OPERATION_METADATA_MISMATCH"),
         HTTP_DIAGNOSTIC("rm1-http-diagnostic", "V2S_HTTP_DIAGNOSTIC", "X-Http-Diagnostic", "HTTP_DIAGNOSTIC_OPERATION_METADATA_MISMATCH"),
-        BACKEND_PERFORMANCE_FINAL("backend-performance-final-acceptance", "V2S_BACKEND_PERFORMANCE_FINAL", "X-Backend-Performance", "BACKEND_PERFORMANCE_FINAL_OPERATION_METADATA_MISMATCH");
+        BACKEND_PERFORMANCE_FINAL("backend-performance-final-acceptance", "V2S_BACKEND_PERFORMANCE_FINAL", "X-Backend-Performance", "BACKEND_PERFORMANCE_FINAL_OPERATION_METADATA_MISMATCH"),
+        BACKEND_ACCEPTANCE("backend-acceptance", "V2S_BACKEND_ACCEPTANCE", "X-Backend-Acceptance", "BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH");
 
         private final String profile;
         private final String variablePrefix;
@@ -396,6 +405,7 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         String routeHeader() { return headerPrefix + "-Route-Template"; }
         String fixtureIdHeader() { return headerPrefix + "-Fixture-Id"; }
         String areaHeader() { return headerPrefix + "-Area"; }
+        String calibrationHeader() { return headerPrefix + "-Calibration"; }
     }
 
     private record Definition(String operationId, String method, String path, String owner, String consumerFace) { }

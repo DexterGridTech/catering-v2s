@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "5c3b1e23b8a5d3b2f32a880b1a674251d0d2958939a7d020003d2480bf5a5633",
+  "denominatorSha256": "af181d2f616e77fd4232f2a6fb07ce37c336e79e12853c6acd1fe42b3b876793",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -917,7 +917,8 @@
       "route": {
         "taskKinds": [
           "runtime-management",
-          "testing"
+          "testing",
+          "backend-acceptance"
         ],
         "domains": [
           "platform",
@@ -948,7 +949,7 @@
         "UAT_ALL_REMOTE_EXECUTION",
         "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2",
         "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
-        "TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS"
+        "BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS"
       ],
       "assertionSources": [
         {
@@ -992,9 +993,9 @@
           "anchor": "## Decision"
         },
         {
-          "assertionKey": "TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS",
+          "assertionKey": "BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS",
           "path": "scripts/README.md",
-          "anchor": "### 日常 Testcontainers 发现与进度"
+          "anchor": "### Backend acceptance（设计态，尚未实现）"
         }
       ],
       "sourceRefs": [
@@ -1003,7 +1004,7 @@
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "scripts/README.md"
       ],
-      "sha256": "8d3c51bbf11f1e97c2b033059ce400966630997b0ebb2d20a2c7859e97a9fe66"
+      "sha256": "cf9e642b41e7c91004d67abcf988f60bf5d0105dbceccc0fd6066f246d0a87c1"
     },
     {
       "id": "operations.roadmap-control-transfer",
@@ -1421,7 +1422,7 @@
         "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
         "project-memory/operations/phase-retrospective-and-systemic-repair.md"
       ],
-      "sha256": "aa217082dd2dd9500ff3ce59258be46190c5941afe5cd813967c0773657e12ba"
+      "sha256": "a3b18747224364531419b1a1a8de01c610baa3a40daa5f9d1d0b4f754f1dadb3"
     },
     {
       "id": "operations.business-corpus-parked-domain-intake",
@@ -1593,6 +1594,7 @@
       "layer": "routed",
       "route": {
         "taskKinds": [
+          "backend-acceptance",
           "implementation",
           "testing",
           "review"
@@ -1628,7 +1630,8 @@
         "STATIC_PASS_NOT_DYNAMIC_PASS",
         "FAILURE_TAXONOMY_IS_TYPED",
         "LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF",
-        "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION"
+        "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
+        "BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED"
       ],
       "assertionSources": [
         {
@@ -1665,17 +1668,146 @@
           "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
           "path": "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
           "anchor": "## Decision"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 2. Operation 分母与四维职责"
         }
       ],
       "sourceRefs": [
         "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
+        "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
         "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
         "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
         "project-memory/operations/verification-governance.md",
         "scripts/check/backend-performance-sql-merge-coverage",
         "scripts/test/test-health-entry-runner.mjs"
       ],
-      "sha256": "7bf37e02e10540caac69e248e56e704aca8d1a4811de5c728f10bd2acb7e91de"
+      "sha256": "6503cadcc35afc01f3b2444cb230752b26e94d2bfc7ccba80d338745ab9a35c5"
+    },
+    {
+      "id": "operations.backend-acceptance",
+      "path": "project-memory/operations/backend-acceptance.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "backend-acceptance",
+          "design",
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "contract",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "database",
+          "contract",
+          "evidence",
+          "runtime",
+          "cleanup",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure",
+          "runtime"
+        ]
+      },
+      "assertions": [
+        "BACKEND_ACCEPTANCE_SINGLE_CAPABILITY",
+        "BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR",
+        "BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT",
+        "BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION",
+        "BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION",
+        "BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY",
+        "BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING",
+        "BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION",
+        "BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY",
+        "BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE",
+        "BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF",
+        "SEED_IS_DEV_DATA_ONLY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SINGLE_CAPABILITY",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 1. 唯一术语与完成声明"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 2. Operation 分母与四维职责"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 2. Operation 分母与四维职责"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 3. Scenario contract 设计准入"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "### 4.1 计量完整性"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "### 4.2 Full-mode capacity"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "### 4.3 Owner provider 与 consumer disposition"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "### 4.3 Owner provider 与 consumer disposition"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "### 4.4 历史 seed finding 必须逐项迁移"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 5. 变更联动与反弱化"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 5. 变更联动与反弱化"
+        },
+        {
+          "assertionKey": "SEED_IS_DEV_DATA_ONLY",
+          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
+          "anchor": "## 6. Seed 与其他证明边界"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"
+      ],
+      "sha256": "9771673f43447d9789fa1bc658c523657c51d7476d854f164c68079f5582fba5"
     },
     {
       "id": "pitfalls.green-by-existence-check",

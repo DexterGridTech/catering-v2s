@@ -26,8 +26,10 @@ describe('catalog management runtime model contracts', () => {
   });
 
   it('decodes category navigation from the canonical envelope', () => {
-    const envelope = {data: {tree: [{categoryRef: 'a0f5f2c9-3e80-4e10-9ecf-a6d8186dfd49', code: 'CAT-ROOT', name: '根类', parentCategoryRef: null, version: 3, displayOrder: 0, count: 2, countSemantics: 'SELF_ONLY', deletionAvailability: {canDelete: false, subtreeSize: 2, blockingReferenceCount: 1, blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)']}}], smartViews: [], shapeCounts: [], generation: 7}} as CatalogInventoryEnvelope;
-    const node = decodeNavigation(envelope).tree[0];
+    const envelope = {data: {allCount: 8, tree: [{categoryRef: 'a0f5f2c9-3e80-4e10-9ecf-a6d8186dfd49', code: 'CAT-ROOT', name: '根类', parentCategoryRef: null, version: 3, displayOrder: 0, count: 2, countSemantics: 'SELF_ONLY', deletionAvailability: {canDelete: false, subtreeSize: 2, blockingReferenceCount: 1, blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)']}}], smartViews: [], shapeCounts: [{shapeKey: 'STANDARD_SALE_COUNTED', count: 1}, {shapeKey: 'MATERIAL', count: 2}], generation: 7}} as CatalogInventoryEnvelope;
+    const navigation = decodeNavigation(envelope);
+    const node = navigation.tree[0];
+    expect(navigation.allCount).toBe(8);
     expect(node.parentCategoryRef).toBeNull();
     expect(node).toMatchObject({categoryRef: 'a0f5f2c9-3e80-4e10-9ecf-a6d8186dfd49', name: '根类', version: 3, displayOrder: 0, countSemantics: 'SELF_ONLY', deletionAvailability: {canDelete: false, subtreeSize: 2, blockingReferenceCount: 1, blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)']}});
   });

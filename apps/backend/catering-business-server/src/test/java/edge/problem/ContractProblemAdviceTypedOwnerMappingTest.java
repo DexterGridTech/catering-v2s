@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.contract.application.ContractCommandReceiptService;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry;
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.organization.application.BusinessEntityService;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
@@ -50,8 +54,62 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.notFound(new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.notFound(new OrganizationTaskPathService.TaskPathNotFoundException(), request), HttpStatus.NOT_FOUND, "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
         assertProblem(advice.catalogAssetOwnerScopeForbidden(new PlatformAssetService.AssetOwnerScopeForbiddenException(), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
+        assertProblem(advice.assetInvariantViolation(new PlatformAssetService.AssetInvariantViolationException("owner.metadata-conflict"), request), HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION");
         assertProblem(advice.catalogScopeForbidden(new CommandExecutionContextResolver.CatalogScopeForbiddenException(new IllegalStateException("scope")), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
         assertProblem(advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request), HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
+    }
+
+    @Test
+    void storageFailureKeepsSafeDependencyFactsAndMapsToGenericServerProblem() {
+        var adapterFailure = new com.catering.v2s.platform.asset.application.AssetObjectStorageUnavailableException(
+            "object.put", new IllegalStateException("provider response text is not logged"), 503, "ServiceUnavailable");
+        var ownerFailure = new PlatformAssetService.AssetStorageUnavailableException(
+            "object.put", adapterFailure, adapterFailure.httpStatus(), adapterFailure.serviceErrorCode());
+        assertEquals("object.put", ownerFailure.storageOperation());
+        assertEquals(503, ownerFailure.storageHttpStatus());
+        assertEquals("ServiceUnavailable", ownerFailure.storageErrorCode());
+        assertProblem(advice.invalid(ownerFailure, request), HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_RESULT_UNKNOWN");
+    }
+
+    @Test
+    void categoryMoveBoundaryKeepsAnActionableSafeContractDetail() {
+        var response = advice.catalogInventory(new CatalogOwnerApi.Problem("MOVE_BOUNDARY", 422, "internal owner detail"), request);
+
+        assertProblem(response, HttpStatus.UNPROCESSABLE_ENTITY, "MOVE_BOUNDARY");
+        assertEquals("分类已位于当前层级边界", response.getBody().detail());
+        assertFalse(response.getBody().detail().contains("internal owner detail"));
+    }
+
+    @Test
+    void storageFailureDiagnosticRendersSafeFactsForPlainConsoleLogs() {
+        var adapterFailure = new com.catering.v2s.platform.asset.application.AssetObjectStorageUnavailableException(
+            "object.stat", new IllegalStateException("provider response text must not be logged"), 404, "NoSuchBucket");
+        var ownerFailure = new PlatformAssetService.AssetStorageUnavailableException(
+            "object.stat", adapterFailure, adapterFailure.httpStatus(), adapterFailure.serviceErrorCode());
+
+        String rendered = ContractProblemAdvice.renderAssetStorageFailure(ownerFailure, null, adapterFailure.getCause());
+
+        assertTrue(rendered.contains("event=PLATFORM_ASSET_STORAGE_FAILURE"));
+        assertTrue(rendered.contains("storageOperation=object.stat"));
+        assertTrue(rendered.contains("httpStatus=404"));
+        assertTrue(rendered.contains("serviceErrorCode=NoSuchBucket"));
+        assertTrue(rendered.contains("rootCauseType=IllegalStateException"));
+        assertFalse(rendered.contains("provider response text must not be logged"));
+    }
+
+    @Test
+    void catalogAssetStageUsesItsOwnApprovedProcessingFailureInsteadOfPlatformProblemSemantics() {
+        var catalogRequest = new MockHttpServletRequest("POST", "/api/operations/catalog-inventory/assets/stage");
+        RequestCompletionDiagnosticState.getOrCreate(catalogRequest, new MockHttpServletResponse(),
+            new EdgeRouteFaceRegistry.Definition("stageOperationsCatalogAsset", "POST",
+                "/api/operations/catalog-inventory/assets/stage", "asset", "operations-admin"));
+
+        assertProblem(advice.assetInvariantViolation(
+            new PlatformAssetService.AssetInvariantViolationException("owner.metadata-conflict"), catalogRequest),
+            HttpStatus.INTERNAL_SERVER_ERROR, "ASSET_PROCESSING_FAILED");
+        assertProblem(advice.invalid(
+            new PlatformAssetService.AssetStorageUnavailableException("object.put", new IllegalStateException("unavailable")), catalogRequest),
+            HttpStatus.INTERNAL_SERVER_ERROR, "ASSET_PROCESSING_FAILED");
     }
 
     @Test
@@ -68,6 +126,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(WorkspaceInvitationService.InvitationStateException.class));
         assertTrue(declared.contains(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class));
         assertTrue(declared.contains(PlatformAssetService.AssetOwnerScopeForbiddenException.class));
+        assertTrue(declared.contains(PlatformAssetService.AssetInvariantViolationException.class));
         assertTrue(declared.contains(CommandExecutionContextResolver.CatalogScopeForbiddenException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));

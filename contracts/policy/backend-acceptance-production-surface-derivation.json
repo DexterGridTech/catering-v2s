@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-production-surface-derivation",
+  "status": "ACTIVE_IMPLEMENTATION_BOOTSTRAP",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "algorithmVersion": "V1_MAIN_SOURCE_AND_TASK_INPUTS_WITH_SOURCE_INVENTORY_ANCHORS",
+  "productionRoots": [
+    "apps/backend/catering-business-server/src/main/java",
+    "apps/backend/catering-business-server/src/main/resources",
+    "apps/backend/catering-business-server/modules"
+  ],
+  "productionFileRules": [
+    "include files under app src/main/java and src/main/resources",
+    "include files under every catering-business-server module src/main/java and src/main/resources",
+    "include app and module build.gradle.kts task inputs",
+    "normalize every path to a repository-relative POSIX path and hash full bytes",
+    "exclude build outputs, test sources, test fixtures, generated reports and runtime evidence"
+  ],
+  "anchorSource": {
+    "path": "contracts/registry/backend-performance-operation-source-inventory.json",
+    "fields": ["edge.sourceAnchor", "adapter.sourceAnchor", "transaction.sourceAnchor", "ownerBoundary.sourceAnchor", "ownerApiBindings.sourceAnchor"],
+    "unanchoredChangeDisposition": "IMPACTED_OPERATIONS_ALL_REQUIRED"
+  },
+  "entrySnapshotRules": [
+    "P0 and W0 are immutable package-entry bytes",
+    "O0 is the current semantic route union plus binding identities and producer metadata",
+    "P1 is derived with this same contract at package exit",
+    "P0 union P1 existence or full-file hash changes outside W0 fail safe to ALL",
+    "entry inventory updates cannot expand W0"
+  ]
+}

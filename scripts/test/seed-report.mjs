@@ -118,12 +118,24 @@ function aggregateKindCounts(events) {
     const counts = normalizeKindCounts(event.kindCounts, event.databaseOperationCount);
     for (const [kind, count] of Object.entries(counts)) aggregate[kind] = (aggregate[kind] ?? 0) + count;
   }
-  if (!Object.hasOwn(aggregate, 'UPDATE')) aggregate.UPDATE = 0;
+  for (const kind of ['CONNECTION', 'TRANSACTION', 'QUERY', 'UPDATE']) aggregate[kind] ??= 0;
   return Object.fromEntries(Object.entries(aggregate).sort(([left], [right]) => left.localeCompare(right)));
 }
 
-export function buildSeedReport({runId, managedDevRunId = runId, measurement = null, seedProfile, startedAt, finishedAt, status, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
+function normalizeFixtureIdentity(value) {
+  if (value === null || value === undefined) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || typeof value.path !== 'string' || value.path.trim() === ''
+    || !Number.isInteger(value.version) || value.version < 1
+    || typeof value.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.sha256)) {
+    throw new Error('SEED_REPORT_FIXTURE_IDENTITY_INVALID');
+  }
+  return Object.freeze({path: value.path, version: value.version, sha256: value.sha256});
+}
+
+export function buildSeedReport({runId, managedDevRunId = runId, measurement = null, seedProfile, startedAt, finishedAt, status, businessStatus = status, cleanupStatus = null, fixtureIdentity = null, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
   const effectiveManagedDevRunId = nonEmpty(managedDevRunId, 'SEED_REPORT_MANAGED_DEV_RUN_ID_INVALID');
+  const normalizedFixtureIdentity = normalizeFixtureIdentity(fixtureIdentity);
   const eventRun = (event) => event?.managedDevRunId ?? event?.runId;
   const keyFor = (event) => `${effectiveManagedDevRunId}:${event.correlationId}:${event.requestId}`;
   const expectedRequestKeys = new Set(calls.map((call) => `${call.managedDevRunId ?? effectiveManagedDevRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`));
@@ -183,7 +195,7 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
   const nonApiStagesMatch = !expectedStages || JSON.stringify(actualNonApiStageIds) === JSON.stringify(expectedStages);
   const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === scopedEvents.length && calls.every((call) => (call.managedDevRunId ?? effectiveManagedDevRunId) === effectiveManagedDevRunId && call.correlationId && call.requestId) && nonApiStagesMatch;
   const report = {
-    kind: 'r5-full-seed-report', reportKind: 'SEED', schemaVersion: 3, runId, managedDevRunId: effectiveManagedDevRunId, measurement: effectiveMeasurement, seedProfile, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
+    kind: 'r5-full-seed-report', reportKind: 'SEED', schemaVersion: 4, runId, managedDevRunId: effectiveManagedDevRunId, measurement: effectiveMeasurement, seedProfile, fixtureIdentity: normalizedFixtureIdentity, businessStatus, cleanupStatus, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
     startedAt, finishedAt, durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
     apiEndpoints, kindCounts: aggregateKindCounts(scopedEvents), nonApiStages,
     completeness: {apiCallCount: calls.length, reportedApiCallCount: scopedEvents.length, outOfScopeDatabaseEventCount: outOfScopeEvents.length, endpointGroupCount: apiEndpoints.length, unmatchedHttpEvents, unmatchedDatabaseEvents, nonApiStageIds: actualNonApiStageIds, expectedNonApiStageIds: expectedStages},
@@ -245,6 +257,9 @@ export function renderSeedReportMarkdown(report) {
     `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
     `- 报告类型：\`${escapeMarkdown(report.reportKind)}\``,
     `- 计量口径：${report.measurement ? `v${report.measurement.schemaVersion} / \`${escapeMarkdown(report.measurement.basis)}\`` : '未声明'}`,
+    `- Fixture：${report.fixtureIdentity ? `\`${escapeMarkdown(report.fixtureIdentity.path)}\` v${report.fixtureIdentity.version} / \`${escapeMarkdown(report.fixtureIdentity.sha256)}\`` : '未声明'}`,
+    `- Business：\`${escapeMarkdown(report.businessStatus)}\``,
+    `- Cleanup：\`${escapeMarkdown(report.cleanupStatus)}\``,
     `- 开始：${escapeMarkdown(report.startedAt)}`,
     `- 结束：${escapeMarkdown(report.finishedAt)}`,
     `- 总耗时：${formatNumber(report.durationMs)} ms`,

@@ -179,7 +179,7 @@ export type PublicAssetReference = {
 };
 
 export type PublicInvitationAcceptIntent = {
-  nextStep: "VERIFY_MOBILE";
+  nextStep: "VERIFY_MOBILE" | "FINALIZE";
 };
 
 export type PublicInvitationCompletion = {
@@ -229,6 +229,8 @@ export type PublicInvitationReadiness = {
   nextStep: "COMPLETE_CREDENTIALS" | "FINALIZE";
 };
 
+export type PublicInvitationResumeStep = "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
+
 export type PublicInvitationView = {
   invitationId: string;
   groupWorkspaceKey: string;
@@ -238,6 +240,7 @@ export type PublicInvitationView = {
   roleNames: Array<string>;
   maskedMobile: string;
   status: WorkspaceInvitationStatus;
+  nextStep: PublicInvitationResumeStep;
   expiresAt: EpochMillis;
   workspaceName: string;
   logoUrl?: (string) | null;

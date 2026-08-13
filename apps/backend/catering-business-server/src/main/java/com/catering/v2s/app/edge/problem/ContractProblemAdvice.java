@@ -66,12 +66,31 @@ public final class ContractProblemAdvice {
         log.warn("catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
             code, status, exception.getClass().getSimpleName(),
             exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName());
-        return problem(HttpStatus.valueOf(status), code, "商品、生产标签或库存操作不满足 owner 约束", request);
+        String detail = "MOVE_BOUNDARY".equals(code) ? "分类已位于当前层级边界" : "商品、生产标签或库存操作不满足 owner 约束";
+        return problem(HttpStatus.valueOf(status), code, detail, request);
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)
     ResponseEntity<Problem> catalogAssetOwnerScopeForbidden(PlatformAssetService.AssetOwnerScopeForbiddenException exception, HttpServletRequest request) {
         return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "商品图片资产操作不满足 owner 约束", request);
+    }
+
+    @ExceptionHandler(PlatformAssetService.AssetInvariantViolationException.class)
+    ResponseEntity<Problem> assetInvariantViolation(PlatformAssetService.AssetInvariantViolationException exception, HttpServletRequest request) {
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        String errorCode = assetOwnerFailureCode(completion);
+        log.atError()
+            .addKeyValue("event", "PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION")
+            .addKeyValue("phase", "OWNER")
+            .addKeyValue("outcome", "FAILED")
+            .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+            .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+            .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+            .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
+            .addKeyValue("ownerOperation", exception.ownerOperation())
+            .addKeyValue("errorCode", errorCode)
+            .log("platform-asset-owner-invariant event=PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION phase=OWNER outcome=FAILED ownerOperation={} errorCode={}", exception.ownerOperation(), errorCode);
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, errorCode, "静态资源 owner 状态不满足既定约束", request);
     }
 
     @ExceptionHandler(CommandExecutionContextResolver.CatalogScopeForbiddenException.class)
@@ -181,14 +200,90 @@ public final class ContractProblemAdvice {
         PlatformAuthenticationService.AdministratorDeactivationForbiddenException.class
     })
     ResponseEntity<Problem> invalid(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof PlatformAssetService.AssetStorageUnavailableException ? "PLATFORM_COMMON_RESULT_UNKNOWN"
+        PlatformAssetService.AssetStorageUnavailableException storageFailure = exception instanceof PlatformAssetService.AssetStorageUnavailableException failure ? failure : null;
+        if (storageFailure != null) logAssetStorageFailure(storageFailure, request);
+        String code = storageFailure != null ? assetStorageFailureCode(RequestCompletionDiagnosticState.find(request))
             : exception instanceof ExtensionDefinitionService.DefinitionInvalidException ? "EXTENSION_DEFINITION_INVALID"
             : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
             : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
             : exception instanceof WorkspaceUserService.PageValidationException ? "PLATFORM_COMMON_VALIDATION_FAILED"
             : exception instanceof WorkspaceRoleService.RoleValidationException ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
             : "PLATFORM_COMMON_VALIDATION_FAILED";
-        return problem(exception instanceof PlatformAssetService.AssetStorageUnavailableException ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY, code, exception instanceof PlatformAssetService.AssetStorageUnavailableException ? "静态资源存储暂时不可用" : "请求不满足 owner 约束", request);
+        return problem(storageFailure != null ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY, code, storageFailure != null ? "静态资源存储暂时不可用" : "请求不满足 owner 约束", request);
+    }
+
+    private void logAssetStorageFailure(PlatformAssetService.AssetStorageUnavailableException failure, HttpServletRequest request) {
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        Throwable root = rootCause(failure);
+        String errorCode = assetStorageFailureCode(completion);
+        log.atWarn()
+            .addKeyValue("event", "PLATFORM_ASSET_STORAGE_FAILURE")
+            .addKeyValue("phase", "OWNER")
+            .addKeyValue("outcome", "FAILED")
+            .addKeyValue("dependency", dependencyFor(failure.storageOperation()))
+            .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+            .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+            .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+            .addKeyValue("routeTemplate", completion == null ? "unavailable" : completion.routeTemplate())
+            .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
+            .addKeyValue("storageOperation", failure.storageOperation())
+            .addKeyValue("failureType", safeType(failure))
+            .addKeyValue("rootCauseType", safeType(root))
+            .addKeyValue("retryAttempt", 0)
+            .addKeyValue("status", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+            .addKeyValue("httpStatus", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+            .addKeyValue("serviceErrorCode", failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
+            .addKeyValue("errorCode", errorCode)
+            .log(renderAssetStorageFailure(failure, completion, root));
+    }
+
+    static String renderAssetStorageFailure(PlatformAssetService.AssetStorageUnavailableException failure, RequestCompletionDiagnosticState completion, Throwable root) {
+        return "platform-asset-diagnostic event=PLATFORM_ASSET_STORAGE_FAILURE"
+            + " phase=OWNER outcome=FAILED"
+            + " dependency=" + dependencyFor(failure.storageOperation())
+            + " correlationId=" + (completion == null ? "unavailable" : completion.correlationId())
+            + " requestId=" + (completion == null ? "unavailable" : completion.requestId())
+            + " operationId=" + (completion == null ? "unavailable" : completion.operationId())
+            + " routeTemplate=" + (completion == null ? "unavailable" : completion.routeTemplate())
+            + " owner=" + (completion == null ? "platform-asset" : completion.owner())
+            + " storageOperation=" + failure.storageOperation()
+            + " failureType=" + safeType(failure)
+            + " rootCauseType=" + safeType(root)
+            + " retryAttempt=0"
+            + " status=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+            + " httpStatus=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+            + " serviceErrorCode=" + (failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
+            + " errorCode=" + assetStorageFailureCode(completion);
+    }
+
+    private static String assetOwnerFailureCode(RequestCompletionDiagnosticState completion) {
+        return isCatalogAssetStage(completion) ? "ASSET_PROCESSING_FAILED" : "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION";
+    }
+
+    private static String assetStorageFailureCode(RequestCompletionDiagnosticState completion) {
+        return isCatalogAssetStage(completion) ? "ASSET_PROCESSING_FAILED" : "PLATFORM_COMMON_RESULT_UNKNOWN";
+    }
+
+    private static boolean isCatalogAssetStage(RequestCompletionDiagnosticState completion) {
+        return completion != null && "stageOperationsCatalogAsset".equals(completion.operationId());
+    }
+
+    private static Throwable rootCause(Throwable failure) {
+        Throwable current = failure;
+        while (current.getCause() != null && current.getCause() != current) current = current.getCause();
+        return current;
+    }
+
+    private static String safeType(Throwable failure) {
+        if (failure == null) return "none";
+        String value = failure.getClass().getSimpleName();
+        return value.matches("[A-Za-z0-9_$]{1,128}") ? value : "unknown";
+    }
+
+    private static String dependencyFor(String operation) {
+        if (operation.startsWith("object.") || operation.startsWith("bucket.")) return "object-storage";
+        if (operation.startsWith("local.")) return "local-filesystem";
+        return "platform-asset-owner";
     }
 
     @ExceptionHandler(OrganizationCommandService.OrganizationCommandException.class)

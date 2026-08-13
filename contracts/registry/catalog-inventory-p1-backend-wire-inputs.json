@@ -8,7 +8,7 @@
     },
     {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "b6462cf33a53d3f58505bf6ae5a6a3f191d50590b3decf8244e0dc53f53a16b4"
+      "sha256": "27fb6774660c6da0fea005ba2b13876ff7e750d2477dffe4e6a6ee725aafc703"
     },
     {
       "path": "contracts/policy/catalog-inventory-media-assets.json",
@@ -156,7 +156,7 @@
     },
     {
       "path": "contracts/registry/backend-performance-m1-command-execution-matrix.json",
-      "sha256": "1733c192673aa9a674e740ef105e84b3bdb7f17367e0932f298dcea3c550c141"
+      "sha256": "c3619ffe2c9687b65e3ca5af12ab8b9cfb5ee6b2bdd9bee2ff73b60a2f1f1994"
     },
     {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
@@ -168,7 +168,7 @@
     },
     {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
-      "sha256": "def2e0490ee964233448063578c671dc5da9d1287eaceb189d886aa9a8252215"
+      "sha256": "c9b0503b10272b3ca9b3f4c4f22916c444a2c5342e928fe72f1f0947eb03105c"
     },
     {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",

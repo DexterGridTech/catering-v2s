@@ -76,17 +76,37 @@ test("workspace invitation management resolves page capability from the generate
   const invitationPanel = fs.readFileSync(new URL("../../features/workspace-user/ui/WorkspaceInvitationPanel.tsx", import.meta.url), "utf8");
   const invitationCreateDrawer = fs.readFileSync(new URL("../../features/workspace-user/ui/WorkspaceInvitationCreateDrawer.tsx", import.meta.url), "utf8");
   const invitationActionModal = fs.readFileSync(new URL("../../features/workspace-user/ui/WorkspaceInvitationActionModal.tsx", import.meta.url), "utf8");
+  const invitationDetailDrawer = fs.readFileSync(new URL("../../features/workspace-user/ui/WorkspaceInvitationDetailDrawer.tsx", import.meta.url), "utf8");
   assert.match(invitationPanel, /userManagementFor\(pageDesignKey\)/);
   assert.match(invitationPanel, /actionCapabilityKeys\.includes\(userManagement\.inviteActionKey\)/);
   assert.match(invitationPanel, /const targetType = userManagement\.targetOrganizationType/);
+  assert.match(invitationPanel, /activeInvitationPageUrl\(value\)/);
+  assert.match(invitationPanel, /title: '邀请链接'/);
+  assert.match(invitationPanel, /ellipsis: \{showTitle: false\}/);
+  assert.match(invitationPanel, /EllipsisTooltip title=\{formatCodeNamePath\(value\.targetOrganizationPath\)\}/);
   assert.doesNotMatch(invitationPanel, /ACTION_CAPABILITIES/);
   for (const target of ["Group", "Region", "Project", "HeadCompany", "Store"]) {
+    assert.match(invitationPanel, new RegExp(`getOperationsWorkspace${target}Invitations`));
     assert.match(invitationCreateDrawer, new RegExp(`operationsClient\\.createOperationsWorkspace${target}Invitation`));
     assert.match(invitationActionModal, new RegExp(`operationsClient\\.cancelOperationsWorkspace${target}Invitation`));
     assert.match(invitationActionModal, new RegExp(`operationsClient\\.reissueOperationsWorkspace${target}Invitation`));
   }
   assert.doesNotMatch(invitationCreateDrawer + invitationActionModal, /operationsClient\.(?:create|cancel|reissue)OperationsWorkspaceInvitation/);
   assert.match(invitationPanel + invitationCreateDrawer + invitationActionModal, /expectedContextVersion: queryContext\.expectedContextVersion/);
+  assert.match(invitationDetailDrawer, /activeInvitationPageUrl\(invitation\)/);
+  assert.doesNotMatch(invitationDetailDrawer, /copy\(invitation\.invitationPageUrl\)/);
+});
+
+test("every authored operations-admin text truncation keeps its complete human-readable value available", () => {
+  const app = fs.readFileSync(new URL("../../app/OperationsApp.tsx", import.meta.url), "utf8");
+  const roleSelector = fs.readFileSync(new URL("../../features/role-home-bootstrap/ui/RoleContextSelector.tsx", import.meta.url), "utf8");
+  const invitationPanel = fs.readFileSync(new URL("../../features/workspace-user/ui/WorkspaceInvitationPanel.tsx", import.meta.url), "utf8");
+  const contract = fs.readFileSync(new URL("../../features/contract-management/ui/ContractManagementPage.tsx", import.meta.url), "utf8");
+  assert.match(app, /operations-header-title" ellipsis=\{\{tooltip: entry\.operationsTitle\}\}/);
+  assert.match(roleSelector, /labelRender=\{\(\{label\}\) => <EllipsisTooltip title=\{label\}>/);
+  assert.match(invitationPanel, /title: '邀请手机号'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{value\.maskedMobile\}/);
+  assert.match(invitationPanel, /title: '任职机构'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{formatCodeNamePath\(value\.targetOrganizationPath\)\}/);
+  assert.match(contract, /title: '合同编号'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{value\}/);
 });
 
 test("operations details and login alternatives consume every approved generated read or auth operation", () => {

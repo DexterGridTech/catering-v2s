@@ -2013,6 +2013,7 @@
       "data"
     ],
     "CatalogNavigationView": [
+      "allCount",
       "tree",
       "smartViews",
       "shapeCounts",
@@ -2184,5 +2185,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "09674d725474d06c7f9bf3c990e7abef82c8367450d0d6b318ed2d2ab65b3eb9"
+  "manifestDigest": "27b0b0fd30232446b318350e2dca69e6342bf91bede430af84a259ef8816ae5a"
 }

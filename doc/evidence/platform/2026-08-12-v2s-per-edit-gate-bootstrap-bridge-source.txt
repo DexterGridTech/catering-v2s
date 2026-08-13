@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+const [requestPath, requestSha256] = process.argv.slice(2);
+if (process.argv.length !== 4 || !path.isAbsolute(requestPath) || !/^[a-f0-9]{64}$/.test(requestSha256)) {
+  throw new Error("BOOTSTRAP_BRIDGE_USAGE");
+}
+
+const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+const readBytes = (filePath) => fs.readFileSync(filePath);
+const hash = (filePath) => digest(readBytes(filePath));
+const requestDir = fs.realpathSync(path.dirname(requestPath));
+const request = JSON.parse(readBytes(requestPath));
+if (hash(requestPath) !== requestSha256) throw new Error("BOOTSTRAP_BRIDGE_REQUEST_HASH_MISMATCH");
+if (request.schemaVersion !== 1 || request.kind !== "per-edit-gate-bootstrap-activation-request"
+  || typeof request.repoRoot !== "string" || !path.isAbsolute(request.repoRoot)
+  || request.repoRoot !== fs.realpathSync(request.repoRoot)
+  || fs.realpathSync(request.executorPath) !== path.join(requestDir, "per-edit-gate-bootstrap-bridge.mjs")
+  || request.executorSha256 !== hash(request.executorPath)
+  || !Array.isArray(request.targets) || request.targets.length !== 2) {
+  throw new Error("BOOTSTRAP_BRIDGE_REQUEST_INVALID");
+}
+
+const expected = [
+  "contracts/policy/mandatory-per-edit-gate-command-closure.json",
+  ".runtime/compliance-control/active-package.json",
+];
+const targetByPath = new Map();
+for (const target of request.targets) {
+  if (!target || typeof target.path !== "string" || targetByPath.has(target.path)
+    || typeof target.beforeSha256 !== "string" || typeof target.afterSha256 !== "string"
+    || typeof target.candidatePath !== "string" || !path.isAbsolute(target.candidatePath)) {
+    throw new Error("BOOTSTRAP_BRIDGE_TARGET_INVALID");
+  }
+  targetByPath.set(target.path, target);
+}
+if (expected.some((entry) => !targetByPath.has(entry)) || targetByPath.size !== expected.length) {
+  throw new Error("BOOTSTRAP_BRIDGE_TARGET_SET_INVALID");
+}
+
+const repoRoot = request.repoRoot;
+for (const relativePath of expected) {
+  const target = targetByPath.get(relativePath);
+  const absolutePath = path.resolve(repoRoot, relativePath);
+  if (!absolutePath.startsWith(`${repoRoot}${path.sep}`) || path.isAbsolute(relativePath) || relativePath.includes("..")) {
+    throw new Error("BOOTSTRAP_BRIDGE_PATH_ESCAPE");
+  }
+  if (hash(absolutePath) !== target.beforeSha256) throw new Error(`BOOTSTRAP_BRIDGE_BEFORE_HASH_MISMATCH:${relativePath}`);
+  const candidateReal = fs.realpathSync(target.candidatePath);
+  if (!candidateReal.startsWith(`${requestDir}${path.sep}`)) throw new Error("BOOTSTRAP_BRIDGE_CANDIDATE_ESCAPE");
+  if (hash(candidateReal) !== target.afterSha256) throw new Error(`BOOTSTRAP_BRIDGE_CANDIDATE_HASH_MISMATCH:${relativePath}`);
+}
+
+const closurePath = targetByPath.get(expected[0]).candidatePath;
+const closure = JSON.parse(readBytes(closurePath));
+const actualGate = path.join(repoRoot, "scripts/check/backend-performance-sql-merge-coverage");
+const bootstrapProfile = closure.profiles?.find((entry) => entry?.packageArchetype === "backend-performance-static");
+if (!Array.isArray(closure.packageArchetypes) || closure.packageArchetypes.length !== 6
+  || new Set(closure.packageArchetypes).size !== 6
+  || !bootstrapProfile || bootstrapProfile.command !== "scripts/check/backend-performance-sql-merge-coverage"
+  || bootstrapProfile.commandSha256 !== hash(actualGate)) throw new Error("BOOTSTRAP_BRIDGE_GATE_BINDING_INVALID");
+
+const active = JSON.parse(readBytes(targetByPath.get(expected[1]).candidatePath));
+if (active.schemaVersion !== 1 || typeof active.packageId !== "string" || active.packageArchetype !== "control-plane"
+  || !Array.isArray(active.allowedChangeSurfaces) || new Set(active.allowedChangeSurfaces).size !== active.allowedChangeSurfaces.length
+  || active.mandatoryPerEditGate?.profileId !== "PER_EDIT_CONTROL_PLANE") {
+  throw new Error("BOOTSTRAP_BRIDGE_ACTIVE_PACKAGE_INVALID");
+}
+
+const atomicReplace = (targetPath, bytes) => {
+  const temporary = `${targetPath}.bootstrap-${process.pid}-${crypto.randomUUID()}.tmp`;
+  fs.writeFileSync(temporary, bytes, {mode: 0o600});
+  fs.renameSync(temporary, targetPath);
+};
+
+const startedAt = new Date().toISOString();
+atomicReplace(path.join(repoRoot, expected[0]), readBytes(closurePath));
+atomicReplace(path.join(repoRoot, expected[1]), readBytes(targetByPath.get(expected[1]).candidatePath));
+const receiptPath = path.join(requestDir, "per-edit-gate-bootstrap-activation-receipt.json");
+if (fs.existsSync(receiptPath)) throw new Error("BOOTSTRAP_BRIDGE_RECEIPT_EXISTS");
+const receipt = {
+  schemaVersion: 1,
+  kind: "per-edit-gate-bootstrap-activation-receipt",
+  requestPath,
+  requestSha256,
+  executorPath: request.executorPath,
+  executorSha256: request.executorSha256,
+  repoRoot,
+  targets: expected.map((relativePath) => ({path: relativePath, beforeSha256: targetByPath.get(relativePath).beforeSha256, afterSha256: hash(path.join(repoRoot, relativePath))})),
+  startedAt,
+  completedAt: new Date().toISOString(),
+  result: "PASS",
+};
+fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, {flag: "wx", mode: 0o600});
+process.stdout.write(`BOOTSTRAP_BRIDGE=PASS\nREQUEST_SHA256=${requestSha256}\nRECEIPT=${receiptPath}\n`);

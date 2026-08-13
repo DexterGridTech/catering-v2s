@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-route-unexpressible-regressions",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "status": "ACTIVE_CLOSED_FINITE_SET",
+  "exactSetRequired": true,
+  "entries": [],
+  "entryShape": {
+    "required": [
+      "operationId",
+      "reasonCode",
+      "owningSource",
+      "evidenceRefs"
+    ],
+    "allowedReasonCodes": [
+      "ROUTE_UNEXPRESSIBLE_WITH_SOURCE_PROOF"
+    ]
+  },
+  "rule": {
+    "affectedRouteExactSetRequired": true,
+    "freshRouteProofRequired": true,
+    "noSilentSuppression": true
+  },
+  "source": "contracts/policy/backend-acceptance-route-unexpressible-regressions.json"
+}

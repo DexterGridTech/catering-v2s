@@ -1,5 +1,5 @@
 import {Alert, Button, Card, Form, Result, Select, Space, Typography} from 'antd';
-import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {EllipsisTooltip, testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useState} from 'react';
 import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
@@ -46,7 +46,7 @@ export function RoleContextSelector({entry, variant, disabled = false, onSelecte
   if (variant === 'header') {
     const selectedRef = entry.selected?.roleAssignmentRef;
     if (!selectedRef || entry.candidates.length < 2) return <Space size={8}><Typography.Text>当前角色</Typography.Text><Typography.Text type="secondary">{entry.selected ? `${entry.selected.roleName} · ${entry.selected.roleNodeName}` : '待选择'}</Typography.Text></Space>;
-    return <Space size={8} align="center"><Typography.Text>当前角色</Typography.Text><Select aria-label="当前角色" style={{width: 288}} value={selectedRef} options={options} loading={submitting} disabled={disabled || locked || submitting} onChange={(next) => { if (next !== selectedRef) void select(next); }} {...testId('operations-role-context-header')}/>{problem && <Alert type="error" showIcon title={switchProblem}/>}</Space>;
+    return <Space size={8} align="center"><Typography.Text>当前角色</Typography.Text><Select aria-label="当前角色" style={{width: 288}} value={selectedRef} options={options} labelRender={({label}) => <EllipsisTooltip title={label}><span>{label}</span></EllipsisTooltip>} loading={submitting} disabled={disabled || locked || submitting} onChange={(next) => { if (next !== selectedRef) void select(next); }} {...testId('operations-role-context-header')}/>{problem && <Alert type="error" showIcon title={switchProblem}/>}</Space>;
   }
 
   if (entry.mode === 'EMPTY' || entry.candidates.length === 0) return <Result status="info" title="选择本次任职" subTitle="当前账号暂无可用任职，请联系集团管理员" {...testId('operations-role-context-empty')}/>;

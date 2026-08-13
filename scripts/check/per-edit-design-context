@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const required = [
+  "doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md",
+  "doc/review/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-design-review-claude.md",
+  "contracts/policy/standards-coverage-matrix.json",
+];
+for (const relative of required) if (!fs.existsSync(path.join(root, relative))) throw new Error(`PER_EDIT_DESIGN_CONTEXT_MISSING:${relative}`);
+const design = fs.readFileSync(path.join(root, required[0]), "utf8");
+for (const marker of ["P0", "P1", "P2", "P3", "六 archetype", "implementationAuthority"]) {
+  if (!design.includes(marker)) throw new Error(`PER_EDIT_DESIGN_CONTEXT_MARKER_MISSING:${marker}`);
+}
+process.stdout.write("PER_EDIT_DESIGN_CONTEXT=PASS\n");
+// The design is the implementation authority; no runtime or dynamic environment is started here.
+void 0;

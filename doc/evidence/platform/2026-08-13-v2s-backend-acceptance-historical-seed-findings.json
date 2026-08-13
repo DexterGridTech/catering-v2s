@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-historical-seed-findings",
+  "status": "DESIGN_INPUT_NOT_CURRENT_DEFECT_VERDICT",
+  "purpose": "Give an implementation agent with no chat context an exact, source-bound replay denominator for failures that managed seed runs exposed before backend-acceptance existed.",
+  "boundary": {
+    "seedIsTestOracle": false,
+    "seedDurationIsPerformanceOracle": false,
+    "historicalFailureImpliesCurrentDefect": false,
+    "requiredAction": "Every row must receive a machine-validated disposition and fresh backend-acceptance route evidence; no row may be closed by the phrase historical problems replayed."
+  },
+  "requiredPerformanceRegressions": [
+    {
+      "findingId": "BA-HIST-PERF-001",
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "calls": 2,
+      "before": {"CONNECTION": 6, "QUERY": 15, "TRANSACTION": 8, "UPDATE": 0},
+      "after": {"CONNECTION": 9, "QUERY": 15, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 7.5, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 4.5, "QUERY": 7.5, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 4.5 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 7.5 and UPDATE stayed at 0.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-002",
+      "operationId": "getOperationsCatalogNavigation",
+      "calls": 4,
+      "before": {"CONNECTION": 12, "QUERY": 36, "TRANSACTION": 16, "UPDATE": 0},
+      "after": {"CONNECTION": 24, "QUERY": 36, "TRANSACTION": 8, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 9, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 6, "QUERY": 9, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 6.0 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 9.0 and UPDATE stayed at 0.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-003",
+      "operationId": "getOperationsCatalogDictionary",
+      "calls": 4,
+      "before": {"CONNECTION": 12, "QUERY": 28, "TRANSACTION": 16, "UPDATE": 0},
+      "after": {"CONNECTION": 16, "QUERY": 28, "TRANSACTION": 8, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 7, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 4, "QUERY": 7, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 4.0 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 7.0 and UPDATE stayed at 0.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-004",
+      "operationId": "getOperationsCatalogItem",
+      "calls": 187,
+      "before": {"CONNECTION": 561, "QUERY": 1870, "TRANSACTION": 748, "UPDATE": 0},
+      "after": {"CONNECTION": 1309, "QUERY": 1870, "TRANSACTION": 374, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 10, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 7, "QUERY": 10, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 7.0 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 10.0 and UPDATE stayed at 0; this is the dominant regression that the terminated DBCR package exposed.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-005",
+      "operationId": "getOperationsCatalogItems",
+      "calls": 2,
+      "before": {"CONNECTION": 6, "QUERY": 18, "TRANSACTION": 8, "UPDATE": 0},
+      "after": {"CONNECTION": 12, "QUERY": 18, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 9, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 6, "QUERY": 9, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 6.0 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 9.0 and UPDATE stayed at 0.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-006",
+      "operationId": "getOperationsInventoryTargets",
+      "calls": 2,
+      "before": {"CONNECTION": 6, "QUERY": 18, "TRANSACTION": 8, "UPDATE": 0},
+      "after": {"CONNECTION": 12, "QUERY": 18, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallBefore": {"CONNECTION": 3, "QUERY": 9, "TRANSACTION": 4, "UPDATE": 0},
+      "perCallAfter": {"CONNECTION": 6, "QUERY": 9, "TRANSACTION": 2, "UPDATE": 0},
+      "regression": "Per call, CONNECTION increased from 3.0 to 6.0 and TRANSACTION fell from 4.0 to 2.0 while QUERY stayed at 9.0 and UPDATE stayed at 0.",
+      "requiredDisposition": "REGRESSION_ADDED"
+    }
+  ],
+  "performanceSources": {
+    "knownPrecedingChange": {
+      "kind": "READ_ONLY_TRANSACTION_REMOVAL_AT_CATALOG_INVENTORY_COORDINATOR_BOUNDARY",
+      "requirement": {
+        "path": "doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md",
+        "sha256": "0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d"
+      },
+      "currentTopologyEvidence": [
+        {"path": "contracts/registry/task-read-surface-policy.json", "sha256": "992e686d35c3579542b5a6e17374418c91e0c00a08651f8d54f93d10505684d9"},
+        {"path": "contracts/registry/backend-performance-operation-source-inventory.json", "sha256": "7d3e19ee694612e31a25a477bdf8a7542a4245c2899b1c40a70c94b4b5766396"},
+        {"path": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java", "sha256": "17ceff8fa2977e9e1caba9923261b58ead6b1691587872f16d86510ee2eeb16a"}
+      ],
+      "findingIds": ["BA-HIST-PERF-001", "BA-HIST-PERF-002", "BA-HIST-PERF-003", "BA-HIST-PERF-004", "BA-HIST-PERF-005", "BA-HIST-PERF-006"],
+      "verifiedInterpretation": "All six routes share the CatalogInventoryCoordinator and task-read boundary and the same pre-change 3.0 CONNECTION and 4.0 TRANSACTION signature. Four routes additionally use distinct coordinator enrichment helpers. This supports shared-boundary investigation but does not prove one common helper is the root cause."
+    },
+    "termination": {
+      "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-termination.json",
+      "sha256": "90f7d5d2d0fba99432946acdce3c2f33c0c783ea884e77978ae0258b0009cb49"
+    },
+    "before": {
+      "path": ".runtime/r5/catalog-inventory/seed/catalog-seed-5546c81a-ba3c-45ee-aa17-ae225624d32f/seed-report.json",
+      "sha256": "9bbd1282e29c5d2322f04345ab689d28480cb6c3aa9915ef51b83f4df9d9a8f5",
+      "durationMs": 399767,
+      "totals": {"CONNECTION": 1082, "QUERY": 7905, "TRANSACTION": 1758, "UPDATE": 1218}
+    },
+    "after": {
+      "path": ".runtime/r5/catalog-inventory/seed/catalog-seed-31e75299-2ff9-4047-b56b-5aa5bde66e3b/seed-report.json",
+      "sha256": "fc93e404671247731bd52f8669d7bcdc59a56a52003086702ef5d0fa341ab25f",
+      "durationMs": 314740,
+      "totals": {"CONNECTION": 1861, "QUERY": 7905, "TRANSACTION": 1352, "UPDATE": 1218}
+    },
+    "interpretation": "Wall time fell by 85027 ms while CONNECTION rose by 779. Therefore seed duration is not a performance verdict; the six route regressions must be remeasured by calibrated backend-acceptance."
+  },
+  "historicalHttpFailureFamilies": [
+    {
+      "findingId": "BA-HIST-HTTP-001",
+      "operationId": "stagePlatformAsset",
+      "problem": "The valid boreal asset staging step returned HTTP 500 after the preceding aurora asset staging step passed.",
+      "observedSignals": ["asset-asset-boreal_HTTP_500_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/r5-seed-8712e95a-7a39-4c1a-b560-f8f2dcd6d5ec/run-manifest.json", "sha256": "e496c3f214585f795fed18536886d710e046195ca8c5fcfa092ea78ad275e4de"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-002",
+      "operationId": "createPlatformAdmin",
+      "problem": "Creating the pa-support platform administrator from the valid seed fixture returned HTTP 422 validation failure.",
+      "observedSignals": ["platform-admin-pa-support_HTTP_422_PLATFORM_COMMON_VALIDATION_FAILED"],
+      "sources": [{"path": ".runtime/r5/seed/r5-seed-eb9f6f2d-70ff-4c36-9bcd-af71fd43239f/run-manifest.json", "sha256": "d7e2b69f784271269dc249cac1f374425a7ae88fa61bb65b740a2bcb69116ac4"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-003",
+      "operationId": "savePublicInvitationCredentials",
+      "problem": "Saving credentials for the completed multi-role invitation returned HTTP 422 in two managed runs.",
+      "observedSignals": ["invitation-credentials-inv-completed-multi-a_HTTP_422_PLATFORM_COMMON_VALIDATION_FAILED"],
+      "sources": [
+        {"path": ".runtime/r5/seed/rm1-seed-09f2ce38-f7ba-4295-805f-54dc636de0ae/run-manifest.json", "sha256": "8816aa3fbae87ee8f67781bd9320d2f17da15071137b61eafd890fe944b91308"},
+        {"path": ".runtime/r5/seed/rm1-seed-31056b3f-684e-4304-9157-81ff5b1b9ea4/run-manifest.json", "sha256": "66201f06fe9b4589d3b0715185308d1636d33fc62a8c6c77044f02264ede9ff9"}
+      ]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-004",
+      "operationId": "createOperationsOrganizationStore",
+      "problem": "Creating the operating store with the managed operations session returned HTTP 403 access denied.",
+      "observedSignals": ["store-store-operating_HTTP_403_PLATFORM_COMMON_ACCESS_DENIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-1254f68b-88e2-4a86-b889-e9d43f765960/run-manifest.json", "sha256": "e0dad5d3e001eaee86947b6a2eea40e73bb8924f7bda2449b96a56e2db55219f"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-005",
+      "operationId": "getWorkspaceAccounts",
+      "problem": "Reading the single-role workspace account fixture returned HTTP 500 instead of a contract-valid account response.",
+      "observedSignals": ["account-read-account-single-role_HTTP_500_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-29a279ab-c2b5-493e-9f38-b9e18ede855a/run-manifest.json", "sha256": "16b125a56504674969004443bf494310b658b2fbef6906b359963bd711d65d50"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-006",
+      "operationId": "sendPublicInvitationOtp",
+      "problem": "Sending the OTP for the verified invitation fixture returned HTTP 500.",
+      "observedSignals": ["invitation-otp-inv-verified_HTTP_500_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-3570eeb5-c817-4093-8552-2b6873fe3d76/run-manifest.json", "sha256": "fc6ae195d6e32a5689f3783158ffb0de98146bcf2f668d4aa96d2ee27b3a2433"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-007",
+      "operationId": "initializeCommercialGroup",
+      "problem": "Commercial-group initialization produced two incompatible first failures: HTTP 409 already initialized for boreal and HTTP 422 validation failure for aurora.",
+      "observedSignals": ["commercial-group-cg-boreal_HTTP_409_COMMERCIAL_GROUP_ALREADY_INITIALIZED", "commercial-group-cg-aurora_HTTP_422_VALIDATION_FAILED"],
+      "sources": [
+        {"path": ".runtime/r5/seed/rm1-seed-4dc11526-fc44-4f3f-8d66-82021f6a660f/run-manifest.json", "sha256": "904c631be2a1932a2b180f6f0b5e8825fab1ef8d4ae68c1cce18082cf9cdd3ce"},
+        {"path": ".runtime/r5/seed/rm1-seed-aa1e9974-30ce-45f7-8efc-8a77f3b550b2/run-manifest.json", "sha256": "0f5cf30aec56c460b9de47682f2d9dcc42340477f9f577cf9fff3c1f38bc950f"}
+      ]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-008",
+      "operationId": "createPlatformGroupWorkspace",
+      "problem": "Creating the aurora group workspace from the managed fixture returned HTTP 422 validation failure.",
+      "observedSignals": ["workspace-gw-aurora_HTTP_422_PLATFORM_COMMON_VALIDATION_FAILED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-54f316ba-6750-4577-bddc-a249dfb10886/run-manifest.json", "sha256": "1df1e3209110b20f9edf89288e3819a572fa804942f23c898393e3ad33849011"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-009",
+      "operationId": "createOperationsOrganizationRegion",
+      "problem": "Creating the east region from the valid organization fixture returned HTTP 400 with an unclassified error.",
+      "observedSignals": ["region-region-east_HTTP_400_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-575aa5df-822b-499b-8cd6-097674dbc9a0/run-manifest.json", "sha256": "74bb3ffd490f75419d6dd84e02825b9b28f4f4cfd303b050788444cc68aefd4b"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-010",
+      "operationId": "getWorkspaceInvitations",
+      "problem": "The invitation readback immediately following managed invitation setup returned HTTP 404 resource not found.",
+      "observedSignals": ["invitation-readback_HTTP_404_PLATFORM_COMMON_RESOURCE_NOT_FOUND"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-6736f6bd-7884-4172-a07e-cd3353779d84/run-manifest.json", "sha256": "3fe3676183cc0a18a87ba916bf34c1be23b62a42e24fe23426781baa81818b20"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-011",
+      "operationId": "getOperationsWorkspaceSessionEntry",
+      "problem": "Reading the operations workspace session entry returned HTTP 500.",
+      "observedSignals": ["operations-session_HTTP_500_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-8179cb69-69e8-4930-8483-2f18db86c7bb/run-manifest.json", "sha256": "92af485fb8c2b9ce569a0a580ba38f9d1d568feab6f7f8069efd3e36f70c72e1"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-012",
+      "operationId": "reissueWorkspaceInvitation",
+      "problem": "Invitation reissue returned HTTP 200 but the runner could not classify or validate the response/readback contract.",
+      "observedSignals": ["invitation-reissued_HTTP_200_UNCLASSIFIED"],
+      "sources": [{"path": ".runtime/r5/seed/rm1-seed-d25d49ed-f306-440e-907b-a5f99c3b36bf/run-manifest.json", "sha256": "8101d21eacd45b8cfa4ef2c4eac8acb06cdb753e7643b77295d97149d2e298c0"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-013",
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "problem": "The head-company workbench context read returned HTTP 403 SCOPE_FORBIDDEN for the managed catalog fixture.",
+      "observedSignals": ["HEAD_COMPANY-workbench-context_HTTP_403"],
+      "sources": [{"path": ".runtime/r5/catalog-inventory/seed/catalog-seed-18993e5b-26dc-4911-b432-a769da7a10cd/run-manifest.json", "sha256": "ab0e688f682cf1515eacd393b23ff7324085c1e2c76dbfbb2ccf686042b9772d"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-014",
+      "operationId": "saveOperationsCatalogItem",
+      "problem": "Saving the head-company CAESAR canonical BOM item returned HTTP 409 IDEMPOTENCY_MISMATCH after an earlier successful write path.",
+      "observedSignals": ["HEAD_COMPANY-canonical-bom-CAESAR-001-ITEM_HTTP_409"],
+      "sources": [{"path": ".runtime/r5/catalog-inventory/seed/catalog-seed-2bc6a5d7-a80a-4cd2-adbb-84869dfecd39/run-manifest.json", "sha256": "719fe70ed7c90ffc53eb36809dc98b2369d35a84606107455aea23c2b8e5024d"}]
+    },
+    {
+      "findingId": "BA-HIST-HTTP-015",
+      "operationId": "operationsWorkspacePasswordLogin",
+      "problem": "The store workspace login fixture returned HTTP 401 invalid credentials, preventing catalog setup from reaching the route under test.",
+      "observedSignals": ["STORE-login_HTTP_401"],
+      "sources": [{"path": ".runtime/r5/catalog-inventory/seed/catalog-seed-687d9a44-cfa2-4cdc-b786-5ed654df2fe5/run-manifest.json", "sha256": "5aeeacef27038655fc461afee43c5ee3151560f5f4e78ab036ae209d151870a4"}]
+    }
+  ],
+  "nonRouteSeedFailureFamilies": [
+    {"findingId": "BA-HIST-SEED-001", "signal": "SEED_PLATFORM_ADMIN_REVISION", "problem": "The seed client could not reconcile the platform-admin revision used for the next command.", "source": {"path": ".runtime/r5/seed/r5-seed-6c52e605-0326-4864-a29d-e07e16f4ba35/run-manifest.json", "sha256": "7afe5570fdf57deed69befd2159ca7906a7b3f8ed0e89409e0e892ae431e4937"}},
+    {"findingId": "BA-HIST-SEED-002", "signal": "BOOTSTRAP_SCHEMA_MISSING_PLATFORM_ADMIN", "problem": "Bootstrap SQL failed because platform_iam.platform_admin did not exist.", "source": {"path": ".runtime/r5/seed/rm1-seed-67a7b4b8-b886-4b10-bc7a-87590e6e9388/run-manifest.json", "sha256": "3fdb0ebed2233508a077de555bfeb503f6d1d369d302581db6c177d032e06d3c"}},
+    {"findingId": "BA-HIST-SEED-003", "signal": "BOOTSTRAP_REQUIRES_EMPTY_PLATFORM_ADMIN_CONTEXT", "problem": "Bootstrap refused a non-empty platform-admin context; fixture/reset ownership was inconsistent.", "source": {"path": ".runtime/r5/seed/rm1-seed-78346b3d-0750-409f-9ffa-e3ed239605ef/run-manifest.json", "sha256": "f19a4ae3459842e537e61b6eda93f7fb4eb2191036e606f8cfa826308d070167"}},
+    {"findingId": "BA-HIST-SEED-004", "signal": "SEED_OWNER_CHAIN_INCOMPLETE", "problem": "The seed client finished an incomplete owner command/readback chain.", "source": {"path": ".runtime/r5/seed/rm1-seed-e5767ee8-9d21-46b8-bf1c-0e55eaf090b5/run-manifest.json", "sha256": "ca6505f114f3a131990254a228daef95064f11f0bb30c2dee72b420eec975d45"}},
+    {"findingId": "BA-HIST-SEED-005", "signal": "SEED_TERMINAL_INVITATION_EXPIRED_FAILED", "problem": "The seed-owned terminal expired-invitation fixture failed before its expected terminal behavior could be evidenced.", "source": {"path": ".runtime/r5/seed/rm1-seed-f86c204b-9fff-49b4-bc38-4638fb490740/run-manifest.json", "sha256": "9b1c37b0f444f730f6d90bd3ddef9750df6e4a304bc92bfc1eca64a91a09400d"}},
+    {"findingId": "BA-HIST-SEED-006", "signal": "SEED_ACCOUNT_DISPLAY_NAME", "problem": "The seed client failed its account display-name readback expectation.", "source": {"path": ".runtime/r5/seed/rm1-seed-fb6578cf-e1cc-43e0-8696-5b568526f8c3/run-manifest.json", "sha256": "9d5ed641d47987b7548dd5ed26ed73a64cf3c6c3999416a1811a1ec93a579ea0"}},
+    {"findingId": "BA-HIST-SEED-007", "signal": "SEED_CANONICAL_BOM_TARGET_MISSING:HEAD_COMPANY:LATTE-001:BEAN-001", "problem": "The catalog fixture referenced a canonical BOM target that had not been materialized.", "source": {"path": ".runtime/r5/catalog-inventory/seed/catalog-seed-11d6d89f-daf4-4a47-a0ac-f2835b658e33/run-manifest.json", "sha256": "19889fb0ab9aebb6c13fd209dbb052b159b1db76392e2f0ffc078732bfbae16b"}},
+    {"findingId": "BA-HIST-SEED-008", "signal": "SEED_OWNER_REF_MISSING:PRODUCT_SKU:sku-steak-medium", "problem": "The catalog fixture referenced a product SKU owner object that was absent.", "source": {"path": ".runtime/r5/catalog-inventory/seed/catalog-seed-825ab1ce-2b57-48e0-9399-a5ddc2e40073/run-manifest.json", "sha256": "9b8beac8eca762e01ed71c008895e435c79b04d4c72a2131ad7c195333759ef8"}}
+  ],
+  "implementationDispositionContract": {
+    "requiredPerformanceRegressions": {
+      "allowed": ["REGRESSION_ADDED"],
+      "requiredEvidence": ["scenarioCaseId", "historicalMetricComparisonRef", "knownCostCalibrationReceipt", "freshBeforeFailureReceipt", "freshAfterPassReceipt", "acceptedBaselineRef", "rootCauseRef", "tripleMetricClosureReceipt", "transactionBoundaryDisposition", "queryDisposition"],
+      "scope": {
+        "findingIds": ["BA-HIST-PERF-001", "BA-HIST-PERF-002", "BA-HIST-PERF-003", "BA-HIST-PERF-004", "BA-HIST-PERF-005", "BA-HIST-PERF-006"],
+        "dbcrPackageRemains": "TERMINATED_BY_DEXTER_SCOPE_REFRAME",
+        "mustNotExpandToOtherFindings": true
+      },
+      "closureCriterion": {
+        "mode": "PER_CALL_ALL_METRICS_AT_OR_BELOW_DBCR_PRE_BASELINE",
+        "requiredMetrics": ["QUERY", "CONNECTION", "TRANSACTION"],
+        "ceilingSource": "requiredPerformanceRegressions[].perCallBefore",
+        "equivalentFixtureAndCallSemanticsRequired": true,
+        "allRequired": true,
+        "updateIsNotAClosureMetric": true,
+        "connectionOnlyClosureForbidden": true
+      },
+      "transactionBoundaryDispositionContract": {
+        "allowed": ["TRANSACTION_BOUNDARY_NOT_RESTORED", "READ_ONLY_TRANSACTION_RESTORED_FOR_CONNECTION_ECONOMY"],
+        "restorationDoesNotCloseFindingByItself": true,
+        "allowedRestorationReason": "CONNECTION_ECONOMY_ONLY",
+        "forbiddenRestorationReasons": ["STABLE_MULTI_QUERY_SNAPSHOT_UNDER_DEFAULT_READ_COMMITTED", "READ_CONSISTENCY_UNDER_DEFAULT_READ_COMMITTED"]
+      },
+      "queryDispositionContract": {
+        "allowedValuePattern": "^(QUERY_REDUCED_TO_[0-9]+(?:\\.[0-9]+)?|QUERY_ALREADY_MINIMAL)$",
+        "QUERY_REDUCED_TO_<n>": {
+          "requiredEvidence": ["freshQueriesPerCall", "mergeMethod", "owningSource"],
+          "valueRule": "n must equal freshQueriesPerCall and freshQueriesPerCall must be below the row perCallBefore.QUERY ceiling"
+        },
+        "QUERY_ALREADY_MINIMAL": {
+          "requiredEvidence": ["freshQueriesPerCall", "queryNecessityByStatement", "owningSource"],
+          "valueRule": "queryNecessityByStatement must account for every fresh counted QUERY and bind each query purpose to an owning source"
+        }
+      },
+      "fixDirectionNote": "For these six findings only, prefer reducing QUERY first; the healthy direction is one transaction, one connection and minimal QUERY per read. This is a direction, not an extra hard numeric gate: an owning-source constraint may be recorded and accepted. Restoring a read-only transaction is allowed only for connection economy and never as a stable-snapshot claim under default READ COMMITTED."
+    },
+    "historicalHttpFailureFamilies": {
+      "allowed": ["REGRESSION_ADDED", "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF", "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"],
+      "requiredCommonEvidence": ["operationId", "scenarioCaseId", "currentContractOracleReceipt", "businessOracleReceipt", "cleanupReceipt", "rootCauseRef"],
+      "regressionAddedExtraEvidence": ["preByteHash", "postByteHash", "sameFixtureDigest", "preFailureReceipt", "postPassReceipt"],
+      "seedOnlyExtraEvidence": ["seedOrFixtureOwningSource", "routeBehaviorUnaffectedProof"]
+    },
+    "nonRouteSeedFailureFamilies": {
+      "allowed": ["SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE", "BACKEND_ROUTE_REGRESSION_ADDED"],
+      "requiredEvidence": ["rootCauseRef", "owningSource", "affectedRouteSet", "affectedRouteDerivationMethod", "affectedRouteDerivationOwningSource", "freshRouteProofRefs"],
+      "allowedAffectedRouteDerivationMethods": ["OWNER_API_CALL_GRAPH", "FIXTURE_CONSUMER_REVERSE_LOOKUP", "CONTRACT_CONSUMER_FACE_REVERSE_LOOKUP", "NO_ROUTE_IMPACT_WITH_SOURCE_PROOF"],
+      "rule": "A non-route classification cannot suppress a route scenario when the failed fixture was intended to prove route behavior."
+    },
+    "pendingForbidden": true,
+    "freeTextOnlyForbidden": true,
+    "exactSetRequired": true,
+    "completionCondition": "All 6 performance rows, all 15 HTTP families and all 8 non-route seed families have schema-valid dispositions and fresh required evidence on final implementation bytes."
+  },
+  "validatorFailures": [
+    "BACKEND_ACCEPTANCE_HISTORICAL_FINDING_MISSING",
+    "BACKEND_ACCEPTANCE_HISTORICAL_FINDING_EXTRA",
+    "BACKEND_ACCEPTANCE_HISTORICAL_DISPOSITION_INVALID",
+    "BACKEND_ACCEPTANCE_HISTORICAL_EVIDENCE_MISSING",
+    "BACKEND_ACCEPTANCE_HISTORICAL_PERFORMANCE_REGRESSION_NOT_ADDED",
+    "BACKEND_ACCEPTANCE_HISTORICAL_PERFORMANCE_TRIPLE_METRIC_CLOSURE_FAILED",
+    "BACKEND_ACCEPTANCE_HISTORICAL_TRANSACTION_REASON_INVALID",
+    "BACKEND_ACCEPTANCE_HISTORICAL_QUERY_DISPOSITION_INVALID",
+    "BACKEND_ACCEPTANCE_HISTORICAL_AFFECTED_ROUTE_DERIVATION_INVALID",
+    "BACKEND_ACCEPTANCE_HISTORICAL_ROUTE_PROOF_STALE"
+  ]
+}

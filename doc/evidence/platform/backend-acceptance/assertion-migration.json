@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-assertion-migration",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "status": "ACTIVE_AWAITING_BACKEND_ACCEPTANCE_DYNAMIC",
+  "exactSetRequired": true,
+  "entryInventory": {
+    "path": "doc/evidence/platform/backend-acceptance/implementation-package-input.json",
+    "sha256": "3462fa636025fed2f92bbf2f0a7570bab01d291181205fc533416b828d749f0e",
+    "entryAssetDigest": "3f994725ec54a20079aa121b688b1b7194a06625d8b4b390b3f64d3e0a108f3b",
+    "count": 52
+  },
+  "allowedDispositions": [
+    "MIGRATED_TO_BACKEND_ACCEPTANCE",
+    "RETAIN_DIFFERENT_DUTY",
+    "HISTORICAL_HASH_BOUND"
+  ],
+  "rows": [
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/BackendModuleBoundariesTest.java",
+      "sourceSha256": "eef278b5cb102e9af8e5dcb24ce9e79fa8d077d845898b69818ace02326c6ec0",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/CookieReadingController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/CookieReadingController.java",
+      "sourceSha256": "b82b279c8d73db47113295d7e2c4431f6ffb3d7c9e6b2d475716acd3567bea4a",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/CrossCapabilityController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/CrossCapabilityController.java",
+      "sourceSha256": "08c37583b49caa4d69f474f89506eacc5e39f7ea44eb06c358ea23efb1cc6a24",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/IllegalArgumentController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/IllegalArgumentController.java",
+      "sourceSha256": "9fae164a2cf093fdc5a48314b6e188babcd5ffd443d938ee2ef421a4a9f2919f",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/JdbcTouchingController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/JdbcTouchingController.java",
+      "sourceSha256": "bbfb28e5d565207ef9980e6d74c5eb816f46295478741cc1f4688173b9ea544d",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/OperationsDependsOnPlatformSessionFixture.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/OperationsDependsOnPlatformSessionFixture.java",
+      "sourceSha256": "5b3fe9f0c0857936f24ebadba9dff1d8041ab621ec82f9b1822628da0ea14274",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/PlatformDependsOnOperationsSessionFixture.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/PlatformDependsOnOperationsSessionFixture.java",
+      "sourceSha256": "9e382f9fb82ac0f53571cb70d39afaada9be906b1923d4705288dbfa9984f3ec",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/ServletReadingController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/ServletReadingController.java",
+      "sourceSha256": "63047993cc289a80d485a23d4baf2bf24e7279ce47ba0b4d6b3bfde40bafd4ff",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/architecture/fixture/SessionDependencyController.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/architecture/fixture/SessionDependencyController.java",
+      "sourceSha256": "7a4561b78a63a809e9954a941d8f69893fc7eb8b6fc9b5e803b409f2f7bf530d",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/CatalogInventoryReadTransactionTopologyTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/CatalogInventoryReadTransactionTopologyTest.java",
+      "sourceSha256": "a67dff42eac1c84229f7a33518b525b9e16344ddbb1d916491a5f9aa7faae059",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrapTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/bootstrap/ManagedInvitationBootstrapTest.java",
+      "sourceSha256": "95eb73751c9408631b96ac8055a8cc644687f170219d4909dc2db646d6cfa4c3",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfigurationTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/DevSeedRuntimeConfigurationTest.java",
+      "sourceSha256": "79bab5e68820bfa7b7bafe01cad544e379a7882e8854795cc1844818ff890389",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/EdgeWebConfigurationTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/EdgeWebConfigurationTest.java",
+      "sourceSha256": "954239a910906d216bc6460c960f6dc8258177ccdfe2477658ea229492f81ced",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfigurationTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/HttpDiagnosticBootstrapConfigurationTest.java",
+      "sourceSha256": "00d173366dcc7dbf1c7ed77b7ac8dbbc8135c9e25b05172fe2481a8b1a66ae55",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/OtpDispatchWireSerializationConfigurationTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/configuration/OtpDispatchWireSerializationConfigurationTest.java",
+      "sourceSha256": "f9ab1862388fcb45d06a733400e30f81bb99a83d0dffa5edef30175266e46bf2",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptorTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptorTest.java",
+      "sourceSha256": "75f967c4b92f49d4f23c96edd8f7cc161b2e9831af9eddf3b673073e4ba04d78",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/PublicSecurityDiagnosticInterceptorTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/PublicSecurityDiagnosticInterceptorTest.java",
+      "sourceSha256": "fd04480b3308a638cf679fd30c83f82d6e4deb08209d2cc200caeec61f2a86b6",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/RequestCompletionDiagnosticInterceptorTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/RequestCompletionDiagnosticInterceptorTest.java",
+      "sourceSha256": "6f0a92d12a5237d32fada540459491c0c32df8aff0f89fa1a02e15db9132afac",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/RequestDiagnosticLifecycleTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/diagnostic/RequestDiagnosticLifecycleTest.java",
+      "sourceSha256": "9654a0540ce69c1edb393a81366867646c613bd89c8cd252eb6aef5456b4292c",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/access/OperationsWorkspaceInvitationServerScopeTest.java",
+      "sourceSha256": "05d9597fc12d854e17c8a2dad189eccbc081bb27d4f41cc6f520c8a994b252be",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/audit/OperationsAuditHistoryControllerTest.java",
+      "sourceSha256": "da5df1ceb398eb8cc33bd4a6de040d2b73f5f10e6ca17e755012f3098450795b",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java",
+      "sourceSha256": "1f527ebdc9fbe7024d7b36c217b8a3be75d80a188be1b0d5d1ff5d1d7584d4ad",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserServerScopeTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserServerScopeTest.java",
+      "sourceSha256": "ed100635d5646ddd228262a6942b88348c20b60226edcceae440da960434f15d",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java",
+      "sourceSha256": "598b8a1ac1962c7ba7ea2b8012e980bdb4989f501e1efe11d2a45880028c5768",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityControllerTest.java",
+      "sourceSha256": "bf6edaf9fc82a8585a941c1c5b2a88a68e1e2a9d42ed930ec5b853ac636c2bfb",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationControllerTest.java",
+      "sourceSha256": "05ecad1753a82623d5733e49bc8225b9924b224eecdc5c5eb7ed394e5fe8c46c",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyControllerTest.java",
+      "sourceSha256": "abe5fe284800ad377cf7931575f2883140b4439528f2706bf087f21600f90585",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementControllerCandidateScopeTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementControllerCandidateScopeTest.java",
+      "sourceSha256": "a0dc8243270c5f6727c012cadfd5d4e59da663768f9a416b39e175164e07cb1a",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreProfileControllerTest.java",
+      "sourceSha256": "411bd8157b465fcb6d56490b7206a983d476d8719a599fb3b273019c47647654",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationControllerTest.java",
+      "sourceSha256": "c1e41c95ef7ea6949ddfa26cb6b1218bfadc668ba16d5fa7b198c725678098eb",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryControllerTest.java",
+      "sourceSha256": "e537ced0a3f49e9ed99fe8bc8bfb97854ce490a173099aac868aabd2abf3a237",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/contract/PlatformContractOverviewControllerTest.java",
+      "sourceSha256": "786942b97e12da10e68576c422ac66b50a7e1f35e443db62a74eae17c5622c38",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/extension/PlatformExtensionDefinitionControllerTest.java",
+      "sourceSha256": "c4b63279d3ad81cf0a163f20ee9aa99b84c7f4561f61366a41175bfffd63f236",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/organization/PlatformOrganizationOverviewControllerTest.java",
+      "sourceSha256": "eeef989259fa318fdea8d9f871bc5dd5e4801cc9b764534e596d7919347c2692",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformAdminGovernanceControllerTest.java",
+      "sourceSha256": "a3833c6ea50c52abbbcad1bfd2abc3be673404e756333d3c69c151fe7be70738",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationControllerTest.java",
+      "sourceSha256": "15a311c1f620dce3ba45fbe5b6364e8a3e31dcec14b96299d153cafa694592b4",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolverTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/session/PlatformSessionResolverTest.java",
+      "sourceSha256": "14eb3424c94cef30ab0118d946002ab28e903a48a6015c2551915e004fe7aa6a",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationControllerTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspace/PlatformWorkspaceAdministrationControllerTest.java",
+      "sourceSha256": "f1222a16d9ba5365ef2297213a45498809b8d11b83f938e1419f9ee74bd13a81",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountControllerSortTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/platform/workspaceiam/PlatformWorkspaceAccountControllerSortTest.java",
+      "sourceSha256": "31927c4f36d6d29a017fe01221b671f9ed9f51dd50f999dae455e5b9201fa275",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/session/EdgeSessionCookieWriterTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/session/EdgeSessionCookieWriterTest.java",
+      "sourceSha256": "cf5190f1c9b9344f63dbfc76c0ac5e99611647abb0550798b6bbeeefe47dc41a",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/catalog/application/CopyPreflightWireShapeTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/catalog/application/CopyPreflightWireShapeTest.java",
+      "sourceSha256": "906fe3e0f4c502b3335422e1d20bca276101389e5637488b62e86188c1e78f49",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperationTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperationTest.java",
+      "sourceSha256": "370c40a6ed45844ac00e308c86563d2f4cbb3c7a1644eeb2eb12077d582d08ae",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAuditAuthorizationServiceTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAuditAuthorizationServiceTest.java",
+      "sourceSha256": "63794dddd005bdb9d0839a6fdff09ea76750af2f3c63432e4373913df67e2e41",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/database/DatabaseBoundariesTest.java",
+      "sourceSha256": "cd594d749691a5e845d8c3c3136751cca9e0abbb7bf92725e8a493d068eb12f3",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java",
+      "sourceSha256": "a78f60f4beac55ba8a22361ecabd39e6acac6ba17343ee8c25fc4a7096337a88",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/dynamic/BackendPerformanceTestcontainers196Test.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/dynamic/BackendPerformanceTestcontainers196Test.java",
+      "sourceSha256": "62007f1b45d955086ab410e873fdf97585c9338a04f8bf35ec7be6c52c4e8676",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/edge/EdgeRouteRegistryCoverageTest.java",
+      "sourceSha256": "60f66da3b06d035ff86310d96be65a660bdb20ec7d50733521a88e6d1196dd1d",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/edge/PlatformCommercialGroupControllerProblemTest.java",
+      "sourceSha256": "d542333b404f2da8ac60fd4b52db6c458badcd6e94202cfe8a4ebfa958136646",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+      "sourcePath": "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+      "sourceSha256": "8055caeb0fc3a0d19312bcd6ef68879dded303fae1834aca2150434580304afc",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "scripts/test/r5-remote-testcontainers.mjs",
+      "sourcePath": "scripts/test/r5-remote-testcontainers.mjs",
+      "sourceSha256": "2e8f59e5a51737d7e1226293c7ba35d5fd35ac8d9a68e9991076d2972e737e2b",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "scripts/test/r5-remote-testcontainers.test.mjs",
+      "sourcePath": "scripts/test/r5-remote-testcontainers.test.mjs",
+      "sourceSha256": "fc398bf878882a11a47a5332cf42e07ae4009289884a3ea451f6f955b0a4ca62",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    },
+    {
+      "assertionKey": "scripts/test/r5-testcontainers-daemon-lanes.mjs",
+      "sourcePath": "scripts/test/r5-testcontainers-daemon-lanes.mjs",
+      "sourceSha256": "9192325b678637151e1e0db78fc2790cec6aa92d61a6cfb1bedbc25cd8c8e1b1",
+      "disposition": "HISTORICAL_HASH_BOUND",
+      "reasonCode": "FRESH_ROUTE_PROOF_REQUIRED_BEFORE_ASSERTION_RETIREMENT",
+      "evidenceRefs": [
+        "doc/evidence/platform/backend-acceptance/implementation-package-input.json#entrySnapshot.packageEntry.behaviorAssertionsAndPredecessors"
+      ]
+    }
+  ]
+}

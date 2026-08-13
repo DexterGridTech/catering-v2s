@@ -27,6 +27,29 @@ const lanes = Object.freeze([1, 2, 3].map((lane) => Object.freeze({
   config: `${configRoot}/daemon-${lane}.json`,
   service: `${servicePrefix}@${lane}.service`,
 })));
+export function materializeBackendAcceptanceDaemonLanes({laneCount, daemonRootPath = daemonRoot, runtimeRootPath = runtimeRoot, configRootPath = configRoot, servicePrefixValue = servicePrefix}) {
+  if (!Number.isSafeInteger(laneCount) || laneCount < 1 || laneCount > 254) throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_COUNT_INVALID');
+  if (![daemonRootPath, runtimeRootPath, configRootPath, servicePrefixValue].every((value) => typeof value === 'string' && value.length > 0)) {
+    throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_PATH_INVALID');
+  }
+  const result = Array.from({length: laneCount}, (_, index) => {
+    const lane = index + 1;
+    return Object.freeze({
+      lane,
+      bridge: `cvtcbr${lane}`,
+      subnet: `172.30.${lane}.1/24`,
+      socket: `${runtimeRootPath}/daemon-${lane}/docker.sock`,
+      config: `${configRootPath}/daemon-${lane}.json`,
+      service: `${servicePrefixValue}@${lane}.service`,
+      dataRoot: `${daemonRootPath}/daemon-${lane}/data`,
+    });
+  });
+  const uniqueFields = ['bridge', 'socket', 'config', 'service', 'dataRoot'];
+  for (const field of uniqueFields) if (new Set(result.map((lane) => lane[field])).size !== result.length) {
+    throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_COLLISION');
+  }
+  return Object.freeze(result);
+}
 const now = () => new Date().toISOString();
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const quote = (value) => `'${String(value).replaceAll("'", "'\\''")}'`;

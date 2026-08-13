@@ -1,11 +1,22 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "dimensions": {
-    "taskKinds": ["all", "memory-recall", "review", "design", "implementation", "testing", "diagnostics", "runtime-management"],
+    "taskKinds": ["all", "memory-recall", "review", "design", "implementation", "testing", "diagnostics", "runtime-management", "backend-acceptance"],
     "domains": ["all", "platform", "backend", "contract", "admin-ui"],
     "consumerFaces": ["all", "backend", "platform-admin", "operations-admin"],
     "owners": ["all", "product", "platform", "backend", "contract", "frontend-platform"],
     "impacts": ["all", "architecture", "roadmap", "governance", "memory", "session", "owner", "transaction", "database", "contract", "evidence", "runtime", "cleanup", "heritage"],
     "triggers": ["all", "session-start", "task-start", "implementation", "review", "failure", "runtime", "status-question", "cutover"]
+  },
+  "aliases": {
+    "taskKinds": {
+      "完成后台功能测试": "backend-acceptance",
+      "后台统一测试": "backend-acceptance",
+      "后台验收": "backend-acceptance",
+      "backend acceptance": "backend-acceptance",
+      "后台功能测试": "backend-acceptance",
+      "后台性能测试": "backend-acceptance",
+      "接口测试": "backend-acceptance"
+    }
   }
 }

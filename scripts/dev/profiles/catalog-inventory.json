@@ -30,5 +30,5 @@
   ],
   "readback": ["getOperationsCatalogItem", "getOperationsCatalogNavigation", "getOperationsInventoryTargets"],
   "cleanup": {"kind": "catalog-inventory-seed", "mediaNamespaceReadbackRequired": true, "businessAndCleanupSeparate": true},
-  "forbidden": ["direct-database-writes", "sql-fallback", "duplicate-code-as-replay-success", "implicit-r5-profile-reuse"]
+  "forbidden": ["direct-database-writes", "sql-fallback", "duplicate-code-as-replay-success", "standalone-user-seed-entry", "independent-full-seed-claim"]
 }

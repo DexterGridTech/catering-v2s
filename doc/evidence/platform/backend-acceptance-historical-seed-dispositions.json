@@ -1,0 +1,1032 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-historical-seed-dispositions",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "status": "ENTRY_REPLAY_DENOMINATOR",
+  "catalog": {
+    "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json",
+    "sha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07"
+  },
+  "exactSetRequired": true,
+  "pendingForbidden": true,
+  "freeTextOnlyForbidden": true,
+  "entries": [
+    {
+      "findingId": "BA-HIST-HTTP-001",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-001]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "68b8efc41efd43f3205b59f12e08790c90d42ac3efacf5598cb3560d140af8a1",
+      "operationId": "stagePlatformAsset",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-002",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-002]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "d59b1a1ef3ffd78ab812a2db67dd039e15ec615af4a7c8141d8ae2a96596abea",
+      "operationId": "createPlatformAdmin",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-003",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-003]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "56e5c1461c71cab29854e9061bfbf41b6d58f3a0b94057d2d2753fe7557be661",
+      "operationId": "savePublicInvitationCredentials",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-004",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-004]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "4ac45f5b6c13cf782a75d6ae91ed7122e68585b0316a9dc678135bf72a3dcf8c",
+      "operationId": "createOperationsOrganizationStore",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-005",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-005]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "16e0909a523540813f59177124ed25c8685573264d1aecb490d7721fd5488111",
+      "operationId": "getWorkspaceAccounts",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-006",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-006]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "0e5b6ae7252c34e0fa083aabd17593f2254ac619bcd9acf725d25ef0bac9ef21",
+      "operationId": "sendPublicInvitationOtp",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-007",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-007]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "5624f7e2d73940964dbd51da42fde63d6c17127d28f2dabd9546633a37c78923",
+      "operationId": "initializeCommercialGroup",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-008",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-008]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "e25e1ac7810847148b6f143cfedfcbfcc9abe373d3a43f62d1a384c6debc7bd8",
+      "operationId": "createPlatformGroupWorkspace",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-009",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-009]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "51fbddc2503544800477d155568bf3c4fa304720dffa446af5282f6181889822",
+      "operationId": "createOperationsOrganizationRegion",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-010",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-010]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "b6da0d8f3c17d213c6b41799dd8c2b7a48a5c9dd739ac574aeb4f256cbd3932b",
+      "operationId": "getWorkspaceInvitations",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-011",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-011]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "0882521770953b8acf29ab99766af0be220d45315f92839c5f371fb9f875f0cf",
+      "operationId": "getOperationsWorkspaceSessionEntry",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-012",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-012]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "190960d5f2e7a968166e129008462ac688dcbcf76d160525eeb0f3d8f1605f5d",
+      "operationId": "reissueWorkspaceInvitation",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-013",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-013]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "a02a13868120d08df67207e63b6c09aa2b0d4636f3e29a3c50934d58f3b53522",
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-014",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-014]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "6441385f4347e3e28f43c0691e6fcbfd63887d1c980c9888f2d1d4cb0dcb9c1c",
+      "operationId": "saveOperationsCatalogItem",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-HTTP-015",
+      "category": "HTTP",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#HTTP[findingId=BA-HIST-HTTP-015]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "43ff05f29b94d690ea94cb43f6855737f614354c339c7256188b37094291858c",
+      "operationId": "operationsWorkspacePasswordLogin",
+      "allowedDispositions": [
+        "REGRESSION_ADDED",
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF",
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF"
+      ],
+      "requiredEvidence": {
+        "REGRESSION_ADDED": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "preByteHash",
+          "postByteHash",
+          "sameFixtureDigest",
+          "preFailureReceipt",
+          "postPassReceipt"
+        ],
+        "ALREADY_COVERED_WITH_FRESH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef"
+        ],
+        "SEED_CLIENT_OR_FIXTURE_ONLY_WITH_ROUTE_PROOF": [
+          "operationId",
+          "scenarioCaseId",
+          "currentContractOracleReceipt",
+          "businessOracleReceipt",
+          "cleanupReceipt",
+          "rootCauseRef",
+          "seedOrFixtureOwningSource",
+          "routeBehaviorUnaffectedProof"
+        ]
+      },
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-PERF-001",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-001]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "7ca7341d7fcc65b90d8bfcf37154bc53505decc642b7d76c128c58d5ef4dc960",
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-002",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-002]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "4421adc5ff5835f1cf2c3525b43c74d5664a624d6b403ec28a329b7c2066c9ef",
+      "operationId": "getOperationsCatalogNavigation",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-003",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-003]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "fc77b104daf7e3c7e9db262f4677c641b4521b1f8cbefa567776710d4130979e",
+      "operationId": "getOperationsCatalogDictionary",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-004",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-004]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "3d59d90039deb6228a629ab056b7c428f10fa461dde0b57b3129e3abf7dc3de9",
+      "operationId": "getOperationsCatalogItem",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-005",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-005]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "37333fa3dab543d59e21abd1ae901848d9c8d6ae03ef93c06a79344b82a5886a",
+      "operationId": "getOperationsCatalogItems",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-PERF-006",
+      "category": "PERFORMANCE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#PERFORMANCE[findingId=BA-HIST-PERF-006]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "5995605de5e45f7b26f58864a1a108ccce648df62786576fa18b08182ac7226b",
+      "operationId": "getOperationsInventoryTargets",
+      "allowedDispositions": [
+        "REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "scenarioCaseId",
+        "historicalMetricComparisonRef",
+        "knownCostCalibrationReceipt",
+        "freshBeforeFailureReceipt",
+        "freshAfterPassReceipt",
+        "acceptedBaselineRef",
+        "rootCauseRef",
+        "tripleMetricClosureReceipt",
+        "transactionBoundaryDisposition",
+        "queryDisposition"
+      ],
+      "requiredDisposition": "REGRESSION_ADDED"
+    },
+    {
+      "findingId": "BA-HIST-SEED-001",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-001]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "20b057a4f728e07a4da4003eee1f9f89504f1725a074a904c92126102223d43f",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-002",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-002]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "5ec729fca1ae5cc3c89f5353a7a2e6cb6347bd0ed2ececf941083cf5b5489103",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-003",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-003]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "f091d45e90657871a783cae817e1fd9b9ac5b4f378733a818d06e3b3903ee0f9",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-004",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-004]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "86bdfcdf021ddb652f238657479eb08e1e9e921086179826b6e6d48738ae4ce3",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-005",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-005]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "dddbc8498d4d046772d02d37eaac250729e02f5b1f34b8335a4e6f6418e747a4",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-006",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-006]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "49c6839a409d36c8cee51fd2c84a0ef3df90c654df03a392d252237fcfbc0d8e",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-007",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-007]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "6e151b3395c4eaa2703d4559aa0264d542cacf3222d8221bdd28d795fc3f12e0",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    },
+    {
+      "findingId": "BA-HIST-SEED-008",
+      "category": "NON_ROUTE",
+      "source": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json#NON_ROUTE[findingId=BA-HIST-SEED-008]",
+      "sourceCatalogSha256": "2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07",
+      "sourceEntryDigest": "b45d0e4256fbfae562f4732bf2da4ed689d5d84ae341560e289206bef346442d",
+      "operationId": null,
+      "allowedDispositions": [
+        "SEED_CLIENT_OR_FIXTURE_ROOT_CAUSE",
+        "BACKEND_ROUTE_REGRESSION_ADDED"
+      ],
+      "requiredEvidence": [
+        "rootCauseRef",
+        "owningSource",
+        "affectedRouteSet",
+        "affectedRouteDerivationMethod",
+        "affectedRouteDerivationOwningSource",
+        "freshRouteProofRefs"
+      ],
+      "requiredDisposition": null
+    }
+  ]
+}

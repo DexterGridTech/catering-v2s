@@ -10,8 +10,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.catering.v2s.contract.application.BusinessDateProvider;
 import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.contract.application.ContractTaskReadService;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.CreateOperationsOrganizationStoreOperation;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.organization.application.OrganizationVisibilityService;
@@ -34,6 +38,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceOtpRateLimitService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import com.catering.v2s.workspace.iam.application.WorkspaceSessionRequestCache;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -82,8 +87,8 @@ class P4SqlOperationBudgetTest {
 
     /** The executable set is deliberately bound to the canonical ledger below. */
     private static final Set<String> REQUIRED_LEDGER_IDS = Set.of(
-        "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13",
-        "S1", "S2", "S3", "S4", "S5", "S6", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
+        "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13", "M14", "M15",
+        "S1", "S2", "S3", "S4", "S5", "S6", "S7", "O1", "O2", "O3", "O4", "O5", "O6", "R8"
     );
 
     /** Named source identities: no row may silently disappear while fixtures are being added. */
@@ -100,12 +105,15 @@ class P4SqlOperationBudgetTest {
         Map.entry("M11", "OrganizationVisibilityService#listVisibleDataNodeCandidates"),
         Map.entry("M12", "OrganizationCommandService#describeCommercialGroup"),
         Map.entry("M13", "PlatformAssetService#requireActivePublicReference"),
+        Map.entry("M14", "CreateOperationsOrganizationStoreOperation#execute"),
+        Map.entry("M15", "ExtensionDefinitionService#platformManagementDefinition"),
         Map.entry("S1", "WorkspaceAuthenticationService#login"),
         Map.entry("S2", "WorkspaceAuthenticationService#sessionEntry"),
         Map.entry("S3", "WorkspaceInvitationService#managementPage"),
         Map.entry("S4", "WorkspaceInvitationService#managementView"),
         Map.entry("S5", "WorkspaceUserService#candidates"),
         Map.entry("S6", "WorkspaceInvitationService#managementPageForOperations"),
+        Map.entry("S7", "WorkspaceAuthenticationService#selectDataNode"),
         Map.entry("O1", "WorkspaceUserService#page"),
         Map.entry("O2", "WorkspaceUserService#page"),
         Map.entry("O3", "OrganizationOverviewTaskReadService#page"),
@@ -122,6 +130,8 @@ class P4SqlOperationBudgetTest {
     private static UUID workspace;
     private static UUID regionId;
     private static UUID projectId;
+    private static UUID brandId;
+    private static UUID tenantId;
     private static UUID headCompanyId;
     private static UUID commercialGroupId;
     private static List<UUID> accountIds;
@@ -180,6 +190,8 @@ class P4SqlOperationBudgetTest {
         projectId = project.id();
         var brand = setupEntities.createEntity("BRAND", workspace, KEY, "p4-brand", "P4 brand", null, null, Map.of());
         var tenant = setupEntities.createEntity("TENANT", workspace, KEY, "p4-tenant", "P4 tenant", "P4 tenant", "91310000P4", Map.of());
+        brandId = brand.id();
+        tenantId = tenant.id();
         var head = setupEntities.createEntity("HEAD_COMPANY", workspace, KEY, "p4-head", "P4 head", "P4 head", "91310000P4HEAD", Map.of());
         headCompanyId = head.id();
         setupEntities.addHeadCompanyBrandAuthorization(workspace, KEY, headCompanyId, brand.id(), "p4-brand-authority", AuditActor.system());
@@ -341,9 +353,46 @@ class P4SqlOperationBudgetTest {
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"),
             () -> countedHierarchy.requireNode(workspace, KEY, projectId, "PROJECT"));
 
+        executeDbcrMethodBudgets(executed);
+
         assertEquals(requiredLedgerCases(), executed.keySet(), "every canonical ledger case must execute a real production call");
         System.out.println("P4_SQL_OBSERVED=" + executed);
         if (!exactBudgetDrifts.isEmpty()) throw new AssertionError("exact SQL budget drifts: " + exactBudgetDrifts);
+    }
+
+    /**
+     * One-time fresh measurement for the three DBCR method mappings.  This deliberately runs
+     * after the existing canonical rows so its isolated command fixture cannot change the
+     * cardinalities asserted by the legacy P4 cases.  The printed values are captured from the
+     * real counted DataSource and are entered into M14/S7/M15 only after this remote run.
+     */
+    private static void executeDbcrMethodBudgets(Map<String, Integer> executed) {
+        int m14 = measure("M14#NORMAL_SUCCESS", () -> {
+            var grant = new OperationsOwnerScopeGrant(
+                workspace, KEY, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", "BC-P4-M14",
+                "PROJECT", projectId, "PROJECT", projectId, List.of(projectId)
+            );
+            var result = new CreateOperationsOrganizationStoreOperation(countedEntities, overview, contracts).execute(
+                new OperationsStoreCommandApi.CreateStoreCommand(
+                    workspace, KEY, projectId, tenantId, brandId, headCompanyId,
+                    "p4-m14-" + UUID.randomUUID().toString().substring(0, 8), "P4 M14 store", null,
+                    new ExtensionSubmission(List.of()), "p4-m14-" + UUID.randomUUID(), AuditActor.system(), grant
+                )
+            );
+            assertEquals("NOT_OPERATING", result.contractDerivedStatus());
+        });
+        int s7 = measure("S7#NORMAL_SUCCESS", () -> {
+            WorkspaceSessionEntryReadback result = authentication.selectDataNode(oneAssignmentSessionToken, "PROJECT", projectId, 1L);
+            assertTrue(result.scopeContext().project() != null && projectId.equals(result.scopeContext().project().dataNodeId()));
+        });
+        int m15 = measure("M15#NORMAL_SUCCESS", () -> assertEquals(
+            "STORE", countedDefinitions.platformManagementDefinition(workspace, KEY, "STORE").hostType()
+        ));
+        assertExactLedgerBudget(executed, "M14", "NORMAL_SUCCESS", m14);
+        assertExactLedgerBudget(executed, "S7", "NORMAL_SUCCESS", s7);
+        assertExactLedgerBudget(executed, "M15", "NORMAL_SUCCESS", m15);
+        System.out.println("DBCR_METHOD_BUDGET_OBSERVED={\"M14#NORMAL_SUCCESS\":" + m14
+            + ",\"S7#NORMAL_SUCCESS\":" + s7 + ",\"M15#NORMAL_SUCCESS\":" + m15 + "}");
     }
 
     private static String authenticationFixture(String label, int assignmentCount, boolean selectedSession) {
@@ -424,7 +473,7 @@ class P4SqlOperationBudgetTest {
     }
 
     @Test
-    void m13ClosesTheJdbcResultSetBeforeTheAssetObjectProbe() {
+    void m13ClosesTheJdbcResultSetBeforeBuildingThePublicAssetReference() {
         assertExactLedgerBudget(new LinkedHashMap<>(), "M13", "SINGLE_CALL", m13SqlMeasurement());
     }
 
@@ -588,7 +637,7 @@ class P4SqlOperationBudgetTest {
         }
     }
 
-    /** Test-only object port that rejects any attempt to inspect an object while JDBC still owns a cursor. */
+    /** Test-only object port that rejects public-reference construction while JDBC still owns a cursor. */
     private static final class CursorOrderObjects implements AssetObjectStorage {
         private final CountingDataSource dataSource;
         private final String existingKey;
@@ -608,7 +657,11 @@ class P4SqlOperationBudgetTest {
             if (!checkedAfterResultSetClose) throw new AssertionError("object I/O occurred with a live JDBC ResultSet");
             return existingKey.equals(objectKey);
         }
-        @Override public String publicUrl(String objectKey) { return "https://assets.invalid/" + objectKey; }
+        @Override public String publicUrl(String objectKey) {
+            checkedAfterResultSetClose = dataSource.openResultSetCount() == 0;
+            if (!checkedAfterResultSetClose) throw new AssertionError("public reference construction occurred with a live JDBC ResultSet");
+            return "https://assets.invalid/" + objectKey;
+        }
         @Override public void delete(String objectKey) { throw new UnsupportedOperationException(); }
         private boolean checkedAfterResultSetClose() { return checkedAfterResultSetClose; }
     }

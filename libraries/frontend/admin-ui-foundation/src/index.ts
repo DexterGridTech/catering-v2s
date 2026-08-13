@@ -20,4 +20,7 @@ export {platformHttpProtocol} from './http/platformHttpProtocol';
 export type {PlatformHttpProtocolKey} from './http/platformHttpProtocol';
 export {serializeJsonOrMultipartBody} from './http/wireRequestBody';
 export {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
+export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
+export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
+export type {InvitationPageLinkSource} from './presentation/activeInvitationPageUrl';

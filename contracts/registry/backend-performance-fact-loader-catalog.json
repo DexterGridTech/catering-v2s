@@ -292,7 +292,7 @@
     {
       "loaderId": "SESSION_ENTRY_AUTHENTICATION_FACT",
       "sourceAnchor": "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationService.java#sessionEntryAuthenticationFacts",
-      "sourceSha256": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe",
+      "sourceSha256": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f",
       "callSitePrefix": "WorkspaceAuthenticationService.sessionEntryAuthenticationFacts",
       "invocationPattern": "sessionEntryAuthenticationFacts(",
       "allowedCallerPaths": [

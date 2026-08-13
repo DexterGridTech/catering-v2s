@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `java-test-fixtures`
 }
 
 dependencies {
@@ -12,4 +13,5 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("org.mockito:mockito-core:5.17.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testFixturesImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:asset")))
 }

@@ -56,49 +56,49 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         this.productionTags = productionTags;
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readWorkbenchContext(String dataNodeRef, String brandRef, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return workbenchContext(dataNodeRef, brandRef, requestId);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readNavigation(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return navigation(dataNodeRef, brandRef, requestId, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return items(dataNodeRef, brandRef, requestId, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return detail(dataNodeRef, brandRef, requestId, itemCode);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readDictionary(String dataNodeRef, String brandRef, String dictionaryKind, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return dictionary(dataNodeRef, brandRef, requestId, dictionaryKind, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readLocalCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return copyCandidates("getOperationsLocalCatalogCopyCandidates", dataNodeRef, brandRef, requestId, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readBrandCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return copyCandidates("getOperationsBrandCatalogCopyCandidates", dataNodeRef, brandRef, requestId, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readShapeManifest(String requestId) {
         return shapeManifest(requestId);
     }
@@ -1003,7 +1003,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public JsonNode skuNamesByItemCodes(String dataNodeRef, String brandRef, JsonNode itemCodes) {
         requireScope(dataNodeRef, brandRef);
         if (itemCodes == null || !itemCodes.isArray() || itemCodes.isEmpty()) return mapper.createObjectNode();
@@ -1041,6 +1040,10 @@ public class CatalogOwnerService implements CatalogOwnerApi {
 
     private ObjectNode navigation(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         ObjectNode data = mapper.createObjectNode();
+        Long allCount = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED'",
+            Long.class, dataNodeRef, brandRef);
+        data.put("allCount", allCount == null ? 0L : allCount);
         ArrayNode tree = data.putArray("tree");
         jdbc.query("SELECT c.category_ref, c.code, c.name, c.parent_category_ref, c.version, c.display_order, (SELECT COUNT(*) FROM catalog.catalog_item i WHERE i.data_node_ref=c.data_node_ref AND i.brand_ref=c.brand_ref AND i.status <> 'VOIDED' AND jsonb_exists(i.sections->'categoryRefs', c.category_ref::text)), (SELECT COUNT(*) FROM catalog.catalog_category child WHERE child.data_node_ref=c.data_node_ref AND child.brand_ref=c.brand_ref AND child.parent_category_ref=c.category_ref AND child.status <> 'VOIDED'), (SELECT COUNT(*) FROM catalog.catalog_item i WHERE i.data_node_ref=c.data_node_ref AND i.brand_ref=c.brand_ref AND i.status <> 'VOIDED' AND EXISTS (SELECT 1 FROM catalog.catalog_category subtree WHERE subtree.data_node_ref=c.data_node_ref AND subtree.brand_ref=c.brand_ref AND subtree.status <> 'VOIDED' AND (subtree.category_ref=c.category_ref OR subtree.parent_category_ref=c.category_ref) AND jsonb_exists(i.sections->'categoryRefs', subtree.category_ref::text))), (SELECT string_agg(i.name, '、' ORDER BY i.code) FROM catalog.catalog_item i WHERE i.data_node_ref=c.data_node_ref AND i.brand_ref=c.brand_ref AND i.status <> 'VOIDED' AND EXISTS (SELECT 1 FROM catalog.catalog_category subtree WHERE subtree.data_node_ref=c.data_node_ref AND subtree.brand_ref=c.brand_ref AND subtree.status <> 'VOIDED' AND (subtree.category_ref=c.category_ref OR subtree.parent_category_ref=c.category_ref) AND jsonb_exists(i.sections->'categoryRefs', subtree.category_ref::text))) FROM catalog.catalog_category c WHERE c.data_node_ref=? AND c.brand_ref=? AND c.status <> 'VOIDED' ORDER BY c.parent_category_ref NULLS FIRST, c.display_order, c.code", statement -> { statement.setString(1, dataNodeRef); statement.setString(2, brandRef); }, result -> { while (result.next()) { String categoryRef = result.getObject(1, UUID.class).toString(); long directCount = result.getLong(7); long childCount = result.getLong(8); long blockingCount = result.getLong(9); ObjectNode node = tree.addObject().put("categoryRef", categoryRef).put("code", result.getString(2)).put("name", result.getString(3)).put("version", result.getLong(5)).put("displayOrder", result.getInt(6)); if (result.getObject(4) == null) node.putNull("parentCategoryRef"); else node.put("parentCategoryRef", result.getObject(4, UUID.class).toString()); node.put("count", directCount).put("countSemantics", "SELF_ONLY"); ObjectNode deletion = node.putObject("deletionAvailability"); deletion.put("canDelete", blockingCount == 0).put("subtreeSize", 1 + childCount).put("blockingReferenceCount", blockingCount); ArrayNode labels = deletion.putArray("blockingReferenceLabels"); String joinedLabels = result.getString(10); if (joinedLabels != null && !joinedLabels.isBlank()) for (String label : joinedLabels.split("、")) labels.add(label); } return null; });
         ArrayNode views = data.putArray("smartViews");
@@ -1452,7 +1455,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         siblings.sort(java.util.Comparator.comparingInt(CategoryRow::displayOrder).thenComparing(CategoryRow::code));
         int index = java.util.stream.IntStream.range(0, siblings.size()).filter(i -> siblings.get(i).ref().equals(current.ref())).findFirst().orElseThrow(() -> new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在"));
         int neighborIndex = "UP".equals(action) ? index - 1 : index + 1;
-        if (neighborIndex < 0 || neighborIndex >= siblings.size()) throw new CatalogOwnerApi.Problem("CATEGORY_REORDER_BOUNDARY", 422, "分类已位于当前层级边界");
+        if (neighborIndex < 0 || neighborIndex >= siblings.size()) throw new CatalogOwnerApi.Problem("MOVE_BOUNDARY", 422, "分类已位于当前层级边界");
         CategoryRow neighbor = siblings.get(neighborIndex);
         long now = now();
         jdbc.update("UPDATE catalog.catalog_category SET display_order=?,version=version+1,updated_at_epoch_millis=? WHERE category_ref=?", neighbor.displayOrder(), now, current.ref());

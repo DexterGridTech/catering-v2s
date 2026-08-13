@@ -8,6 +8,20 @@
   "profile": {
     "id": "r5-full",
     "version": 1,
+    "completeSeedComponents": [
+      "owner-command",
+      "catalog-inventory"
+    ],
+    "catalogInventoryExtension": {
+      "fixtureCatalog": "contracts/policy/catalog-inventory-fixture-catalog.json",
+      "planProfile": "scripts/dev/profiles/catalog-inventory.json",
+      "sourceItemDenominator": 73,
+      "createdItemDenominator": 72,
+      "excludedItemDenominator": 1,
+      "mediaAssetDenominator": 34,
+      "requiredOwnerScopes": ["HEAD_COMPANY", "STORE"],
+      "rule": "The extension is a required internal component of r5-full; its canonical source and loader remain separate, and its owner/API report must not be merged into the owner-command measurement report."
+    },
     "namespaceSource": "V2S_DEV_NAMESPACE",
     "requiredNamespacePattern": "^v2s-dev-[a-z0-9-]{3,32}$",
     "databaseUrlSource": "V2S_DEV_DATABASE_URL",

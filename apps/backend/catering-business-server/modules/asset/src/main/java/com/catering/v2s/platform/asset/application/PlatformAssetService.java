@@ -26,15 +26,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** Owner service for public static images and videos. Business owners retain only asset references. */
 @Service
 public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogAssetReferenceLock, CatalogAssetCommandApi {
+    private static final Logger log = LoggerFactory.getLogger(PlatformAssetService.class);
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
     /** Video is deliberately not capped at the image/logo limit; future approved video usage stays streaming. */
     private static final long MAX_VIDEO_BYTES = 512L * 1024 * 1024;
@@ -49,15 +55,6 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
         this.jdbc = jdbc;
         this.time = time;
         this.objects = objects;
-    }
-
-    /** Metadata-only staging for a pre-existing object. The object must be in the configured owner bucket. */
-    @Transactional
-    public AssetReadback stage(UUID assetRef, String usage, String objectKey, String contentType, long sizeBytes, String sha256) {
-        if (assetRef == null || !validUsageContentType(usage, contentType) || !objects.ownsObjectKey(objectKey) || sha256 == null || !sha256.matches("[a-f0-9]{64}") || sizeBytes <= 0 || sizeBytes > maxBytes(contentType) || !objects.exists(objectKey)) throw new AssetInputInvalidException();
-        long now = time.currentEpochMillis();
-        jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, objectKey, objects.bucketName(), objectKey, contentType, sizeBytes, sha256, now);
-        return require(assetRef);
     }
 
     /**
@@ -146,6 +143,7 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             UUID assetRef = UUID.randomUUID();
             String digest = materialized.sha256();
             String objectKey = objects.objectKey("static/" + digest + suffix(contentType));
+            lockObjectReference(objectKey);
             String grant = secret();
             long now = time.currentEpochMillis();
             long expires = now + 15 * 60 * 1000L;
@@ -154,25 +152,34 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             // Object I/O deliberately happens outside a database transaction. Content-addressed
             // objects are shared, so an existing object is never overwritten or later deleted by
             // this attempt's relational rollback/constraint failure.
-            ExistingAsset existing = findByStorageKey(objectKey);
+            // Physical bytes are shared by digest. Logical reference reuse is a separate,
+            // usage-owned policy: only catalog images reuse an existing asset lifecycle.
+            // Workspace logos always receive a fresh asset ref and one-time bind grant.
+            ExistingAsset existing = "CATALOG_ITEM_IMAGE".equals(usage) ? findCatalogByStorageKey(objectKey) : null;
             if (existing != null && !sameCatalogContent(existing, usage, contentType, materialized.sizeBytes(), digest)) {
-                throw new AssetStorageUnavailableException(new IllegalStateException("content-addressed asset metadata conflict"));
+                throw new AssetInvariantViolationException("owner.metadata-conflict");
             }
-            if (!objects.exists(objectKey)) {
-                objects.put(objectKey, contentType, materialized.sizeBytes(), upload);
+            if (!storageValue("object.stat", () -> objects.exists(objectKey))) {
+                storageAction("object.put", () -> objects.put(objectKey, contentType, materialized.sizeBytes(), upload));
                 uploadedByThisAttempt = true;
             }
             if (existing != null) {
-                // The object key is content-addressed and the asset row is globally unique by
-                // design. Re-uploading identical catalog bytes must reuse the existing ref.
+                // The object key is content-addressed; catalog alone elects one reusable
+                // logical row for those bytes. Re-uploading identical catalog bytes reuses it.
                 // A RELEASED row is no longer referenced, so it may be safely restaged for
                 // the new catalog scope rather than making a valid re-upload impossible.
-                if ("RELEASED".equals(existing.status())) {
+                boolean restagedByThisCommand = "RELEASED".equals(existing.status());
+                if (restagedByThisCommand) {
                     existing = restageReleasedCatalogContent(existing, workspaceUuid, groupWorkspaceKey, contentType, materialized.sizeBytes(), digest);
                 }
-                if ("STAGED".equals(existing.status())) requireCatalogStageScope(existing.assetRef(), workspaceUuid, groupWorkspaceKey);
-                else if (!"ACTIVE".equals(existing.status())) {
-                    throw new AssetStorageUnavailableException(new IllegalStateException("content-addressed asset lifecycle state conflict"));
+                if ("STAGED".equals(existing.status())) {
+                    if (!restagedByThisCommand) {
+                        // A different command must not rotate the pending command's one-time
+                        // grant. Only receipt replay above may renew a grant for the same intent.
+                        throw new AssetIdempotencyConflictException();
+                    }
+                } else if (!"ACTIVE".equals(existing.status())) {
+                    throw new AssetInvariantViolationException("owner.lifecycle-conflict");
                 }
                 issueBindGrant(existing.assetRef(), grant, expires);
                 recordStageReceipt(receiptScope, idempotencyKey, existing.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
@@ -181,16 +188,19 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             try {
                 jdbc.update("INSERT INTO platform_asset.staged_asset (asset_ref, usage, workspace_uuid, group_workspace_key, storage_key, bucket_name, object_key, content_type, size_bytes, sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'STAGED', ?, 1)", assetRef, usage, workspaceUuid, groupWorkspaceKey, objectKey, objects.bucketName(), objectKey, contentType, materialized.sizeBytes(), digest, now);
             } catch (DuplicateKeyException race) {
-                // Another request may have won the content-addressed insert between the read
-                // above and this write. Re-read the authoritative row and apply the same reuse
-                // path instead of leaking a database duplicate-key failure to HTTP.
-                ExistingAsset winner = findByStorageKey(objectKey);
+                // Only catalog has a content-level logical uniqueness constraint. A logo
+                // duplicate-key failure is unrelated to object sharing and must not be
+                // reinterpreted as a reusable asset lifecycle.
+                if (!"CATALOG_ITEM_IMAGE".equals(usage)) throw race;
+                ExistingAsset winner = findCatalogByStorageKey(objectKey);
                 if (winner == null || !sameCatalogContent(winner, usage, contentType, materialized.sizeBytes(), digest)) throw race;
-                if ("RELEASED".equals(winner.status())) {
+                boolean restagedByThisCommand = "RELEASED".equals(winner.status());
+                if (restagedByThisCommand) {
                     winner = restageReleasedCatalogContent(winner, workspaceUuid, groupWorkspaceKey, contentType, materialized.sizeBytes(), digest);
                 }
-                if ("STAGED".equals(winner.status())) requireCatalogStageScope(winner.assetRef(), workspaceUuid, groupWorkspaceKey);
-                else if (!"ACTIVE".equals(winner.status())) throw race;
+                if ("STAGED".equals(winner.status())) {
+                    if (!restagedByThisCommand) throw new AssetIdempotencyConflictException();
+                } else if (!"ACTIVE".equals(winner.status())) throw race;
                 issueBindGrant(winner.assetRef(), grant, expires);
                 recordStageReceipt(receiptScope, idempotencyKey, winner.assetRef(), requestHash, contentType, materialized.sizeBytes(), digest, now);
                 return new StageReadback(winner.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
@@ -198,11 +208,11 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             issueBindGrant(assetRef, grant, expires);
             recordStageReceipt(receiptScope, idempotencyKey, assetRef, requestHash, contentType, materialized.sizeBytes(), digest, now);
             } catch (RuntimeException failure) {
-                deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
+                scheduleUnreferencedUploadCleanup(objectKey, uploadedByThisAttempt);
                 throw failure;
             } catch (IOException failure) {
-                deleteOnlyUnreferencedUpload(objectKey, uploadedByThisAttempt);
-                throw new AssetStorageUnavailableException(failure);
+                scheduleUnreferencedUploadCleanup(objectKey, uploadedByThisAttempt);
+                throw new AssetStorageUnavailableException("local.upload-read", failure);
             } finally {
                 try { Files.deleteIfExists(materialized.path()); } catch (IOException cleanupFailure) { }
             }
@@ -483,7 +493,6 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             if (!result.next()) throw new AssetNotFoundException();
             return new ActiveAsset(result.getString("object_key"), result.getString("content_type"), result.getString("sha256"));
         });
-        if (!objects.exists(asset.objectKey())) throw new AssetNotFoundException();
         return new PublicAssetReference(objects.publicUrl(asset.objectKey()), asset.contentType(), asset.sha256());
     }
 
@@ -506,7 +515,7 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
         Map<UUID, PublicAssetReference> references = new LinkedHashMap<>();
         for (UUID id : ids) {
             ActiveAsset asset = active.get(id);
-            if (asset == null || !objects.exists(asset.objectKey())) throw new AssetNotFoundException();
+            if (asset == null) throw new AssetNotFoundException();
             references.put(id, new PublicAssetReference(objects.publicUrl(asset.objectKey()), asset.contentType(), asset.sha256()));
         }
         return Map.copyOf(references);
@@ -518,13 +527,29 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
         boolean approvedUsage = "GROUP_WORKSPACE_LOGO".equals(usage) || "CATALOG_ITEM_IMAGE".equals(usage);
         return approvedUsage && ("image/png".equals(contentType) || "image/jpeg".equals(contentType) || "image/webp".equals(contentType));
     }
+    private <T> T storageValue(String operation, Supplier<T> action) {
+        try {
+            return action.get();
+        } catch (AssetObjectStorageUnavailableException failure) {
+            String resolvedOperation = failure.operation() == null ? operation : failure.operation();
+            throw new AssetStorageUnavailableException(resolvedOperation, failure, failure.httpStatus(), failure.serviceErrorCode());
+        }
+    }
+    private void storageAction(String operation, Runnable action) {
+        try {
+            action.run();
+        } catch (AssetObjectStorageUnavailableException failure) {
+            String resolvedOperation = failure.operation() == null ? operation : failure.operation();
+            throw new AssetStorageUnavailableException(resolvedOperation, failure, failure.httpStatus(), failure.serviceErrorCode());
+        }
+    }
     private static boolean validContentType(String value) { return "image/png".equals(value) || "image/jpeg".equals(value) || "image/webp".equals(value) || "video/mp4".equals(value); }
     private static String suffix(String contentType) { return switch (contentType) { case "image/png" -> ".png"; case "image/jpeg" -> ".jpg"; case "image/webp" -> ".webp"; case "video/mp4" -> ".mp4"; default -> throw new AssetInputInvalidException(); }; }
     private static long maxBytes(String contentType) { return "video/mp4".equals(contentType) ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES; }
     private static MaterializedContent materializeAndValidate(String contentType, long declaredSizeBytes, InputStream source) {
         Path file;
         try { file = Files.createTempFile("catering-v2s-asset-", ".upload"); }
-        catch (IOException failure) { throw new AssetStorageUnavailableException(failure); }
+        catch (IOException failure) { throw new AssetStorageUnavailableException("local.upload-materialization", failure); }
         long size = 0;
         byte[] prefix = new byte[8192];
         int prefixLength = 0;
@@ -544,7 +569,7 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
         } catch (AssetInputInvalidException failure) {
             deleteQuietly(file); throw failure;
         } catch (IOException failure) {
-            deleteQuietly(file); throw new AssetStorageUnavailableException(failure);
+            deleteQuietly(file); throw new AssetStorageUnavailableException("local.upload-materialization", failure);
         }
         if (size != declaredSizeBytes || size == 0 || !matchesMagic(contentType, prefix, prefixLength) || (isImage(contentType) && !decodesImage(file))) {
             deleteQuietly(file); throw new AssetInputInvalidException();
@@ -562,21 +587,41 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
             default -> false;
         };
     }
-    private void deleteOnlyUnreferencedUpload(String objectKey, boolean uploadedByThisAttempt) {
+    private void scheduleUnreferencedUploadCleanup(String objectKey, boolean uploadedByThisAttempt) {
         if (!uploadedByThisAttempt) return;
-        Boolean stillReferenced = jdbc.query(
-            "SELECT EXISTS(SELECT 1 FROM platform_asset.staged_asset WHERE object_key=?)",
-            statement -> statement.setString(1, objectKey),
-            result -> result.next() && result.getBoolean(1)
-        );
-        if (!Boolean.TRUE.equals(stillReferenced)) {
-            try { objects.delete(objectKey); } catch (RuntimeException ignored) { }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCompletion(int status) {
+                    if (status == TransactionSynchronization.STATUS_ROLLED_BACK) deleteUnreferencedObjectAfterRollback(objectKey);
+                }
+            });
+        } else {
+            deleteUnreferencedObjectAfterRollback(objectKey);
         }
     }
 
-    private ExistingAsset findByStorageKey(String objectKey) {
+    private void deleteUnreferencedObjectAfterRollback(String objectKey) {
+        try {
+            Boolean stillReferenced = jdbc.query(
+                "SELECT EXISTS(SELECT 1 FROM platform_asset.staged_asset WHERE bucket_name=? AND object_key=?)",
+                statement -> { statement.setString(1, objects.bucketName()); statement.setString(2, objectKey); },
+                result -> result.next() && result.getBoolean(1)
+            );
+            if (!Boolean.TRUE.equals(stillReferenced)) objects.delete(objectKey);
+        } catch (RuntimeException failure) {
+            log.atWarn()
+                .addKeyValue("event", "PLATFORM_ASSET_ROLLBACK_CLEANUP_FAILED")
+                .addKeyValue("phase", "CLEANUP")
+                .addKeyValue("outcome", "FAILED")
+                .addKeyValue("storageOperation", "object.delete")
+                .addKeyValue("failureType", failure.getClass().getSimpleName())
+                .log("platform-asset rollback cleanup failed; immutable orphan remains eligible for managed cleanup");
+        }
+    }
+
+    private ExistingAsset findCatalogByStorageKey(String objectKey) {
         return jdbc.query(
-            "SELECT asset_ref, usage, status, content_type, size_bytes, sha256 FROM platform_asset.staged_asset WHERE storage_key=?",
+            "SELECT asset_ref, usage, status, content_type, size_bytes, sha256 FROM platform_asset.staged_asset WHERE storage_key=? AND usage='CATALOG_ITEM_IMAGE'",
             statement -> statement.setString(1, objectKey),
             result -> result.next()
                 ? new ExistingAsset(result.getObject("asset_ref", UUID.class), result.getString("usage"), result.getString("status"), result.getString("content_type"), result.getLong("size_bytes"), result.getString("sha256"))
@@ -605,20 +650,15 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
         if (changed == 1) {
             return new ExistingAsset(released.assetRef(), released.usage(), "STAGED", released.contentType(), released.sizeBytes(), released.sha256());
         }
-        ExistingAsset current = findByStorageKey(objects.objectKey("static/" + sha256 + suffix(contentType)));
+        ExistingAsset current = findCatalogByStorageKey(objects.objectKey("static/" + sha256 + suffix(contentType)));
         if (current == null || !sameCatalogContent(current, "CATALOG_ITEM_IMAGE", contentType, sizeBytes, sha256) || "RELEASED".equals(current.status())) {
-            throw new AssetStorageUnavailableException(new IllegalStateException("released catalog asset restage conflict"));
+            throw new AssetInvariantViolationException("owner.restage-conflict");
         }
         return current;
     }
 
     private void issueBindGrant(UUID assetRef, String grant, long expiresAt) {
         jdbc.update("INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, consumed_at_epoch_millis) VALUES (?, ?, ?, NULL) ON CONFLICT (asset_ref) DO UPDATE SET grant_hash=EXCLUDED.grant_hash, expires_at_epoch_millis=EXCLUDED.expires_at_epoch_millis, consumed_at_epoch_millis=NULL", assetRef, sha256(grant.getBytes(StandardCharsets.UTF_8)), expiresAt);
-    }
-    private void requireCatalogStageScope(UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()) throw new AssetClaimRejectedException();
-        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM platform_asset.staged_asset WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND group_workspace_key=?", Integer.class, assetRef, workspaceUuid, groupWorkspaceKey);
-        if (count == null || count != 1) throw new AssetClaimRejectedException();
     }
     private static void requireCatalogOwnerScopeGrant(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeRef, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
         String expectedCapability = catalogCapabilityForTarget(dataNodeType);
@@ -669,6 +709,9 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
     private void lockReceipt(String receiptScope, String idempotencyKey) {
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))", receiptScope, idempotencyKey);
     }
+    private void lockObjectReference(String objectKey) {
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext('platform-asset-object'), hashtext(CAST(? AS text)))", objectKey);
+    }
     private static String receiptScope(UUID workspaceUuid) { return workspaceUuid == null ? GLOBAL_RECEIPT_SCOPE : "workspace:" + workspaceUuid; }
     private void recordStageReceipt(String receiptScope, String idempotencyKey, UUID assetRef, String requestHash, String contentType, long sizeBytes, String digest, long now) {
         if (idempotencyKey == null) return;
@@ -689,7 +732,36 @@ public class PlatformAssetService implements WorkspaceLogoAssetCommand, CatalogA
     private record Replay(String requestHash, UUID assetRef, String status, String contentType, long sizeBytes, String sha256) { }
     public static final class AssetInputInvalidException extends RuntimeException { }
     public static final class AssetIdempotencyConflictException extends RuntimeException { }
-    public static final class AssetStorageUnavailableException extends RuntimeException { public AssetStorageUnavailableException(Throwable cause) { super(cause); } }
+    public static final class AssetInvariantViolationException extends RuntimeException {
+        private final String ownerOperation;
+        public AssetInvariantViolationException(String ownerOperation) {
+            if (ownerOperation == null || !ownerOperation.matches("[A-Za-z0-9._:-]{1,128}")) throw new IllegalArgumentException("invalid owner operation");
+            this.ownerOperation = ownerOperation;
+        }
+        public String ownerOperation() { return ownerOperation; }
+    }
+    public static final class AssetStorageUnavailableException extends RuntimeException {
+        private final String storageOperation;
+        private final Integer storageHttpStatus;
+        private final String storageErrorCode;
+
+        public AssetStorageUnavailableException(Throwable cause) { this("unknown", cause, null, null); }
+        public AssetStorageUnavailableException(String storageOperation, Throwable cause) {
+            this(storageOperation, cause, null, null);
+        }
+        public AssetStorageUnavailableException(String storageOperation, Throwable cause, Integer storageHttpStatus, String storageErrorCode) {
+            super(cause);
+            if (storageOperation == null || !storageOperation.matches("[A-Za-z0-9._:-]{1,128}")) throw new IllegalArgumentException("invalid storage operation");
+            if (storageHttpStatus != null && (storageHttpStatus < 100 || storageHttpStatus > 599)) throw new IllegalArgumentException("invalid storage HTTP status");
+            if (storageErrorCode != null && !storageErrorCode.matches("[A-Za-z0-9._:-]{1,128}")) throw new IllegalArgumentException("invalid storage error code");
+            this.storageOperation = storageOperation;
+            this.storageHttpStatus = storageHttpStatus;
+            this.storageErrorCode = storageErrorCode;
+        }
+        public String storageOperation() { return storageOperation; }
+        public Integer storageHttpStatus() { return storageHttpStatus; }
+        public String storageErrorCode() { return storageErrorCode; }
+    }
     public static final class AssetClaimRejectedException extends RuntimeException { }
     public static final class AssetOwnerScopeForbiddenException extends RuntimeException { }
     public static final class AssetNotFoundException extends RuntimeException { }

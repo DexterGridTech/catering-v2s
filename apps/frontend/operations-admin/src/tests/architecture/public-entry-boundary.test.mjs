@@ -13,6 +13,11 @@ const generatedCatalog = readFileSync(new URL('../../app/api/generated/public-ed
 
 test('public invitation and recovery preserve the public-only, anonymous owner-flow boundary', () => {
   assert.match(invitationSource, /publicClient\.getPublicInvitationView/);
+  assert.match(invitationSource, /view\.nextStep/);
+  assert.match(invitationSource, /operationsProblemOf\(error\)/);
+  assert.match(invitationSource, /Card title=\{brandHeading\}/);
+  assert.match(invitationSource, /NameCodePathText value=\{view\.targetOrganizationPath\}/);
+  assert.doesNotMatch(invitationSource, /<h1>\{brandHeading\}<\/h1>/);
   for (const operation of ['startOperationsPasswordRecovery', 'sendOperationsPasswordRecoveryOtp', 'verifyOperationsPasswordRecoveryOtp', 'completeOperationsPasswordRecovery']) {
     assert.match(recoverySource, new RegExp(`publicClient\\.${operation}`));
     assert.match(generatedCatalog, new RegExp(`"operationId": "${operation}"`));

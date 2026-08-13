@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "PROPOSED_REVIEW_ONLY",
+  "implementationAuthority": false,
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "DB_CALL_REDUCTION_20260812",
+  "adversarialReviewPolicy": {
+    "version": "INDEPENDENT_SUBAGENT_V1",
+    "reviewerKindRequired": "INDEPENDENT_SUBAGENT",
+    "blindReviewRequired": true
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md",
+    "sha256": "120114f5d9852dd8db33e65c865bda2af84f27430c1a38ba07a97a03cf37f113"
+  },
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-design-authorization.md",
+    "sha256": "196669882b0455d51e7de3ee25a98938d1df82c8a535044d4ebe6571e606b77d",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "selfTest": true,
+    "redFixtures": [
+      "DESIGN_HASH_DRIFT",
+      "MISSING_BUSINESS_EVIDENCE",
+      "SEVERITY_COUNT_MISMATCH",
+      "ROUND_THREE",
+      "MISSING_FINDING_UNIT_LINK",
+      "REVIEWER_KIND_NOT_INDEPENDENT_SUBAGENT",
+      "REVIEWER_INPUT_CHECKLIST_NOT_FOUND"
+    ]
+  },
+  "candidateJourney": {
+    "id": "DBCR-J01",
+    "status": "PROPOSED_STATIC_ENGINEERING",
+    "actor": "backend maintainer",
+    "task": "remove unnecessary database transaction overhead and establish truthful method-level SQL budgets",
+    "pageKey": "NO_UI_JOURNEY_DATABASE_CALL_REDUCTION",
+    "ownerReadback": "source-derived transaction topology, owner shape, P4 measurements and seed report comparison",
+    "mutations": []
+  },
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_REQUIREMENT","owner":"Dexter authorization and revised Claude requirement","sources":["design authorization","revised requirement"]},
+    {"id":"TRANSACTION_OPERATION_DISPOSITION","owner":"bindings, coordinator and owner sources","sources":["16 GET operation exact set","typed owner transaction boundaries"]},
+    {"id":"COORDINATED_OWNER_SHAPE","owner":"five adapters and backend-performance generators","sources":["reachable owner API fields","source inventory and shape matrix"]},
+    {"id":"CANONICAL_LEDGER_AND_MEASUREMENT_MAPPING","owner":"canonical scanner and P4","sources":["accepted/current candidate scan","M14/S7/M15"]},
+    {"id":"ACCEPTED_BASELINE_RATCHET","owner":"accepted baseline and canonical checker","sources":["case exact set","budget history chain"]},
+    {"id":"PREVENTION_ACCEPTANCE_HANDOFF","owner":"red tests, comparator, managed evidence and reviews","sources":["static proof","business/cleanup proof","one design and one implementation review"]}
+  ],
+  "deliveryUnits": [
+    {
+      "id": "DBCR-U01",
+      "unitId": "DBCR-U01",
+      "title": "Sixteen GET transaction topology",
+      "approvedAssertions": ["the denominator is exactly sixteen named GET operations", "legacy dispatchers are not transaction origins", "ordinary read-only transactions do not promise stable snapshots"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","sha256":"0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d","anchor":"### 2.1 真实运行分母（**非** legacy dispatcher）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-01｜16 条 GET 的事务边界闭合"},
+      "currentDeviation": "sixteen coordinator reads and their typed owner reads open best-effort transactions despite OUTSIDE_TRANSACTION bindings.",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java","disposition":"update","target":"remove sixteen read-only transaction origins bound by method anchors"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","disposition":"update","target":"remove typed read transaction re-entry"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java","disposition":"update","target":"remove typed and cross-owner read transaction re-entry"},
+        {"path":"apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java","disposition":"update","target":"remove production tag read transaction"},
+        {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java","disposition":"update","target":"remove catalog copy source read transaction"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java","disposition":"update","target":"bind exact sixteen route-to-coordinator set"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/CatalogInventoryReadTransactionTopologyTest.java","disposition":"create","target":"prove all sixteen read chains remain outside a transaction"}
+      ],
+      "orderedChain": ["freeze sixteen operation ledger", "add failing transaction topology proof", "remove coordinator and owner transaction origins", "re-run focused tests"],
+      "dependencyAndSerialBoundaries": ["precedes method-level P4 measurement", "commands remain REQUIRED and out of denominator", "stable snapshot requires separate explicit design"],
+      "dataEvolution": {"notApplicableReason":"annotation and focused-test change only; no schema or persisted data change"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior or copy change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"route exact-set and transaction topology tests","l2":"NOT_RUN_USER_EXCLUDED_L2","l3":"managed Testcontainers only after explicit authority","business":"static package has no business-success claim","cleanup":"static package has no cleanup-success claim"},
+      "forbiddenPseudoFixes": ["remove only coordinator annotations", "treat readOnly as stable snapshot", "include legacy dispatchers or commands"],
+      "discriminator": {"fixture":"reintroducing a transaction at any disposed coordinator or owner read fails the exact operation case"}
+    },
+    {
+      "id": "DBCR-U02",
+      "unitId": "DBCR-U02",
+      "title": "Five coordinated-owner command shapes",
+      "approvedAssertions": ["all five adapters retain two real owners", "owner count is derived from reachable constructor owner APIs", "existing cross-owner shape becomes reachable"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","sha256":"0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d","anchor":"### 3.1 五条均为 `DECLARE_2 / KEEP_IMPLEMENTATION`"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-02｜五条 coordinated-owner command shape"},
+      "currentDeviation": "five production adapters call two owner domains while generated inventory and shape hardcode single-owner commands.",
+      "changeSurfaces": [
+        {"path":"contracts/policy/backend-performance-owner-api-registry.json","disposition":"create","target":"finite API type to module owner mapping with source hashes"},
+        {"path":"scripts/generate/backend-performance-operation-source-inventory.mjs","disposition":"update","target":"derive deduplicated reachable ownerApiBindings"},
+        {"path":"scripts/generate/backend-performance-operation-source-inventory.test.mjs","disposition":"update","target":"nested API import context dedupe and new-owner red fixtures"},
+        {"path":"contracts/registry/backend-performance-operation-source-inventory.json","disposition":"update","target":"regenerate five two-owner rows"},
+        {"path":"scripts/generate/backend-performance-operation-database-shape.mjs","disposition":"update","target":"derive cross-owner shape and coordinated owner participation"},
+        {"path":"contracts/registry/backend-performance-operation-database-shape-matrix.json","disposition":"update","target":"regenerate source-derived cross-owner shapes"},
+        {"path":"scripts/generate/backend-performance-operation-database-shape.test.mjs","disposition":"update","target":"red tests for count, shape, import and same-owner dedupe"}
+      ],
+      "orderedChain": ["freeze five adapter owner sets", "add owner derivation red fixtures", "remove hardcoded single-owner projection", "regenerate and exact-set check outputs"],
+      "dependencyAndSerialBoundaries": ["production adapters and initiating owner bindings are retained", "source inventory precedes shape generation", "no import scanner is permitted"],
+      "dataEvolution": {"notApplicableReason":"control inventory and budget metadata only"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior or copy change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"generator checks and real red mutations","l2":"NOT_RUN_USER_EXCLUDED_L2","l3":"NOT_RUN_SEPARATE_SCOPE","business":"no runtime behavior change","cleanup":"no runtime resources"},
+      "forbiddenPseudoFixes": ["delete second owner calls", "scan imports", "change ownerCount without shape and budget"],
+      "discriminator": {"fixture":"a reachable new owner omitted from ownerCount and a type-only import counted as owner both fail"}
+    },
+    {
+      "id": "DBCR-U03",
+      "unitId": "DBCR-U03",
+      "title": "Canonical candidate reconciliation and three method budgets",
+      "approvedAssertions": ["net cardinality nine is not an exact nine-row delta", "missing accepted row-set forces current 730-row disposition", "method budgets use fresh P4 measurements"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","sha256":"0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d","anchor":"### 4.1 前置：先修复台账当前漂移"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-03｜canonical candidate 与三条方法级预算"},
+      "currentDeviation": "the scanner stores only accepted count and fingerprint, current scan drifts, and three target methods have no method-level P4 cases.",
+      "changeSurfaces": [
+        {"path":"tools/performance/canonical-ledger-scanner.mjs","disposition":"update","target":"exact disposition reconciliation and new budget mapping validation"},
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-candidate-recovery-receipt.json","disposition":"create","target":"hash-bound finite recovery search and OLD_ROW_SET_UNRECOVERABLE result"},
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-candidate-disposition.json","disposition":"create","target":"complete recovered delta or current 730-row disposition"},
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","disposition":"update","target":"accepted reconciled scan and M14 S7 M15 rows"},
+        {"path":"apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java","disposition":"update","target":"fresh method-level fixtures and exact statement cases"}
+      ],
+      "orderedChain": ["attempt accepted scan recovery", "exact-diff or disposition all current candidates", "restore static scanner PASS", "add three P4 cases", "measure and bind fresh values"],
+      "dependencyAndSerialBoundaries": ["no dynamic measurement before static candidate reconciliation", "expected values remain unset until authorized Testcontainers", "seed endpoint counts cannot seed method budgets"],
+      "dataEvolution": {"notApplicableReason":"test fixtures and evidence only; no production schema change"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior or copy change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"canonical scanner check and red self-tests","l2":"NOT_RUN_USER_EXCLUDED_L2","l3":"fresh managed P4 Testcontainers after explicit authority","business":"P4 exact statements PASS after measurement","cleanup":"managed lane cleanup PASS"},
+      "forbiddenPseudoFixes": ["invent nine candidate IDs", "update only count and fingerprint", "copy 41 34 12 from seed"],
+      "discriminator": {"fixture":"one missing current candidate disposition or one seed-derived expectedStatements value fails"}
+    },
+    {
+      "id": "DBCR-U04",
+      "unitId": "DBCR-U04",
+      "title": "Accepted SQL budget baseline ratchet",
+      "approvedAssertions": ["accepted history is separate from current ledger", "increases require explicit approved source evidence", "decreases also lower the accepted latest value"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","sha256":"0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d","anchor":"### 4.4 accepted baseline 与升值归因（棘轮的可执行形式）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-04｜accepted baseline 与只降不升棘轮"},
+      "currentDeviation": "current expectedStatements is the only stored value, so raising it silently makes P4 accept a regression.",
+      "changeSurfaces": [
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-accepted-baseline.json","disposition":"create","target":"append-only accepted case histories"},
+        {"path":"tools/performance/canonical-ledger-scanner.mjs","disposition":"update","target":"baseline exact-set and increase disposition checker"},
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","disposition":"update","target":"current values bound to accepted latest"},
+        {"path":"apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java","disposition":"update","target":"consume validated current case values"}
+      ],
+      "orderedChain": ["create initial accepted histories from measured values", "add exact-set and history-chain validation", "add real increase and decrease mutations", "make P4 consume only validated cases"],
+      "dependencyAndSerialBoundaries": ["depends on DBCR-U03 fresh values", "baseline and current cannot be edited as one unreviewed number", "no second test facility is created"],
+      "dataEvolution": {"notApplicableReason":"evidence schema version one, no business data migration"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior or copy change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"baseline checker and eight red mutations","l2":"NOT_RUN_USER_EXCLUDED_L2","l3":"P4 exact SQL Testcontainers","business":"exact budget PASS","cleanup":"managed lane cleanup PASS"},
+      "forbiddenPseudoFixes": ["raise current and baseline together without disposition", "use a maximum instead of exact count", "leave a high accepted value after optimization"],
+      "discriminator": {"fixture":"raising only current or both values without a valid approved history entry fails"}
+    },
+    {
+      "id": "DBCR-U05",
+      "unitId": "DBCR-U05",
+      "title": "Seed comparator correction and single-batch acceptance",
+      "approvedAssertions": ["comparison inputs are same-basis 41-operation seed reports", "connection and transaction fall while query and update do not rise", "one sequential implementation ends in one implementation review"],
+      "approvedSources": [{"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","sha256":"0201c0bb648173e66a7f3b753bbb0191707cc32db29f18199c5f400bc2ebda9d","anchor":"## 7. 动态验收（第 8 步）"}],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-05｜单批顺序实施与最终验收"},
+      "currentDeviation": "the comparator rejects lower UPDATE and accepts higher UPDATE, and current design authority does not permit dynamic evidence.",
+      "changeSurfaces": [
+        {"path":"scripts/test/compare-backend-performance-seed-reports.mjs","disposition":"update","target":"same-fixture strict improvement and no-regression semantics"},
+        {"path":"scripts/test/compare-backend-performance-seed-reports.test.mjs","disposition":"update","target":"call-count stage cleanup and direction red tests"},
+        {"path":"scripts/test/seed-report.mjs","disposition":"update","target":"emit comparison identity and fixture contract fields"},
+        {"path":"scripts/test/seed-report.test.mjs","disposition":"update","target":"producer identity business and cleanup schema tests"},
+        {"path":"scripts/dev/owner-command-seed-executor.mjs","disposition":"update","target":"bind fixture identity and terminal business cleanup into immutable seed report"},
+        {"path":"scripts/dev/profiles/r5-full.json","disposition":"retain","target":"single accepted 41-operation seed profile"},
+        {"path":"doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-package-input.json","disposition":"create","target":"future single-batch implementation authority and pre-state binding"},
+        {"path":"doc/evidence/platform/2026-08-12-v2s-db-call-reduction-implementation-exit.json","disposition":"create","target":"future static dynamic business cleanup and denominator closure"},
+        {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-implementation-adversarial-review.json","disposition":"create","target":"future unique implementation review"}
+      ],
+      "orderedChain": ["fix comparator and self-test", "capture authorized same-basis PRE seed before source changes", "complete DBCR-U01 through U04", "run Testcontainers", "capture POST seed and compare", "run one implementation review"],
+      "dependencyAndSerialBoundaries": ["requires separate implementation and dynamic authority", "PRE and POST exact configuration identity is mandatory", "L2 is excluded", "no implementation review before business and cleanup close"],
+      "dataEvolution": {"notApplicableReason":"managed test database is reset per authorized run; no production migration"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior or copy change","termSource":"AGENTS.md"},
+      "evidence": {"l1":"comparator self-test and static gates","l2":"NOT_RUN_USER_EXCLUDED_L2","l3":"managed Testcontainers plus two same-basis seed reports","business":"both reports PASS and comparison PASS","cleanup":"both managed runs cleanup PASS"},
+      "forbiddenPseudoFixes": ["compare unlike profiles or fixtures", "allow UPDATE increase", "claim all operations from 41", "split implementation or review"],
+      "discriminator": {"fixture":"lower UPDATE passes, higher UPDATE fails, and any identity or operation-set drift fails"}
+    }
+  ]
+}

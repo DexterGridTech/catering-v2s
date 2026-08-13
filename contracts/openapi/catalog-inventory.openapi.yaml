@@ -3360,6 +3360,7 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
+              "allCount",
               "tree",
               "smartViews",
               "shapeCounts",
@@ -3367,6 +3368,10 @@
               "generation"
             ],
             "properties": {
+              "allCount": {
+                "type": "integer",
+                "description": "design-bound field"
+              },
               "tree": {
                 "type": "array",
                 "description": "design-bound field",

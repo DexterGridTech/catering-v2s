@@ -48,6 +48,30 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 环境执行面固定为三类：**DEV** 在本机启动 Spring Boot 与两个管理端 Web，通过受管 tunnel 使用远端非生产中间件；**当前受管浏览器 L2** 复用本机执行面，但每次必须隔离远端数据库/资产命名空间并分别证明业务与本机/远端 cleanup；**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。
 
+## Backend acceptance 设计红线
+
+后台动态功能与性能只允许由 `backend-acceptance` 一条能力共同承担。它以当前 semantic
+HTTP operation identity exact set 为分母，不以测试类、固定接口数或阶段名称为分母；
+operation row equality 与 route/binding projection digest freshness 必须分别校验。每条 route
+scenario 通过真实 HTTP 与真实 PostgreSQL/对象存储容器，在同一 correlation 下给出通用
+contract、业务真值、确定性结构 DB 计数与 cleanup。容器时延、预热、采样、percentile 和
+seed wall-clock 不构成硬性能预算。
+
+任何新增或修改 operation 的 implementation-facing 设计必须先声明非空
+`identity/fixture/request/businessOracle/performanceCriterion/cleanup`；`correctnessCases`
+为空只需给出真实理由，contract oracle 由全局通用 validator 承担。迁移期未覆盖 operation
+只能存在于只减不增的 `KNOWN_UNCOVERED`，新 operation 不得加入。已有方法级行为测试和
+SQL 台账在其 assertion/route budget 迁移后删除；只有不触库、不过事务、不跨 owner 的纯
+算法、mapper、parser 可列入封闭保留清单。
+
+改动与场景必须联动：package-entry 捕获不可变 production surface `P0` 与 anchor-covered
+set `W0`，exit 独立扫描同口径 `P1`；`P0 ∪ P1` 中存在性或全文件 hash 变化且不在 `W0`
+的任一 production 文件把影响面提升为 `ALL`，同包重生成 inventory 不得自准入。每个受影响
+operation 必须有可复算 disposition，`BEHAVIOR_UNCHANGED` 只能由 contract digest 未变和
+fresh 四维 accepted baseline 相等背书。BUG_FIX 至少一条 scenario 必须在修复前字节红、
+修复后字节绿；route/schema/error contract 变化还必须处置 `consumerFace`。不得以手写共享
+路径清单、删断言、调高预算或“测试跑不过”换取绿色。
+
 ## AI-first 与证据
 
 仓内 `AGENTS.md`、`.agents/skills/` 当前目录派生的 project-skill inventory、确定性 `project-memory`、只推荐不注入的 hooks，以及 provider-free 的 `rg`/源码回读构成最小执行底座。每个步骤必须有可失败的 clean/red gate、业务与 cleanup 分离的证据，以及明确的授权边界。

@@ -2,8 +2,8 @@
   "schemaVersion": 2,
   "kind": "canonical-performance-ledger",
   "candidateScan": {
-    "count": 721,
-    "fingerprint": "86515aa2e1af801e1aa561447d0f5f50b00a1e6d8267a994891b36fb0dbecddf"
+    "count": 730,
+    "fingerprint": "453bc463e510cf27122e1cf805310667a968d0d92f631b570b5c85ad4fb0ae90"
   },
   "rows": [
     {
@@ -432,13 +432,13 @@
       },
       "identity": {
         "callerSymbol": "PlatformAssetService#requireActivePublicReference",
-        "queryBoundarySymbol": "objects.exists",
+        "queryBoundarySymbol": "objects.publicUrl",
         "mechanism": "RESULT_SET_EXTRACTOR_OBJECT_STORE_IO"
       },
       "classification": "extractor",
       "owner": "asset",
       "testClass": "P4SqlOperationBudgetTest",
-      "fixture": "one public asset; ResultSet closes before object I/O",
+      "fixture": "one public asset; ResultSet closes before public URL construction",
       "budget": {
         "mode": "EXACT_SQL_STATEMENTS",
         "cases": [
@@ -448,7 +448,108 @@
           }
         ],
         "semanticInvariants": [
-          "<= 1 SQL; object I/O after cursor"
+          "<= 1 SQL; public URL construction after cursor"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M14",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/organization/src/main",
+          "apps/backend/catering-business-server/modules/store-contract/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "CreateOperationsOrganizationStoreOperation#execute",
+        "queryBoundarySymbol": "execute -> createStore + detail + contractDerivedStatus",
+        "mechanism": "COORDINATED_OWNER_COMMAND"
+      },
+      "classification": "callback/mapper",
+      "owner": "organization+contract",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "one authorized PROJECT store command with empty extension submission",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "NORMAL_SUCCESS",
+            "expectedStatements": 20
+          }
+        ],
+        "semanticInvariants": [
+          "fresh remote counted DataSource measurement; command plus coordinated owner readback"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "M15",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/extension/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "ExtensionDefinitionService#platformManagementDefinition",
+        "queryBoundarySymbol": "platformManagementDefinition -> requireDefinition",
+        "mechanism": "JDBC_QUERY"
+      },
+      "classification": "callback/mapper",
+      "owner": "extension",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "one configured STORE host definition",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "NORMAL_SUCCESS",
+            "expectedStatements": 1
+          }
+        ],
+        "semanticInvariants": [
+          "fresh remote counted DataSource measurement"
+        ]
+      },
+      "disposition": "RUNTIME_BUDGET_REQUIRED"
+    },
+    {
+      "id": "S7",
+      "roots": {
+        "source": [
+          "apps/backend/catering-business-server/modules/workspace-iam/src/main",
+          "apps/backend/catering-business-server/modules/organization/src/main"
+        ],
+        "test": [
+          "apps/backend/catering-business-server/src/test"
+        ]
+      },
+      "identity": {
+        "callerSymbol": "WorkspaceAuthenticationService#selectDataNode",
+        "queryBoundarySymbol": "session + assignment + visibility + session readback",
+        "mechanism": "COORDINATED_OWNER_READ"
+      },
+      "classification": "callback/mapper",
+      "owner": "workspace-iam+organization",
+      "testClass": "P4SqlOperationBudgetTest",
+      "fixture": "one selected PROJECT assignment with contextVersion=1",
+      "budget": {
+        "mode": "EXACT_SQL_STATEMENTS",
+        "cases": [
+          {
+            "id": "NORMAL_SUCCESS",
+            "expectedStatements": 11
+          }
+        ],
+        "semanticInvariants": [
+          "fresh remote counted DataSource measurement; no HTTP resolver or setup SQL"
         ]
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
@@ -938,5 +1039,9 @@
       },
       "disposition": "RUNTIME_BUDGET_REQUIRED"
     }
-  ]
+  ],
+  "candidateDisposition": {
+    "path": "doc/evidence/platform/rm1/p4/canonical-performance-candidate-disposition.json",
+    "sha256": "4447e1815fc82c2c98a21a2327869a65a7dcf5a131885bc260dbe8842835b31c"
+  }
 }

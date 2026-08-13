@@ -24,6 +24,9 @@ const shapePath = path.join(root, 'contracts/catalog/catalog-inventory-read-mode
 const fixturePath = path.join(root, 'contracts/policy/catalog-inventory-fixture-catalog.json');
 const copyPolicyPath = path.join(root, 'contracts/policy/catalog-inventory-copy-policy.json');
 const backendPerformanceFixturePath = path.join(root, 'contracts/policy/backend-performance-final-fixture-catalog.json');
+const backendAcceptanceCatalogMode = process.env.V2S_BACKEND_ACCEPTANCE_CATALOG_MODE === 'true';
+const backendAcceptanceRunId = process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID || null;
+const backendAcceptanceSecret = process.env.V2S_BACKEND_ACCEPTANCE_SECRET || null;
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const backendPerformanceFixtures = new Map(readJson(backendPerformanceFixturePath).rows.filter((row) => row.area === 'U07_ROUTE').map((row) => [row.operationId, row]));
@@ -77,10 +80,16 @@ function loadManagedRun() {
     && manifest.kind === 'backend-performance-testcontainers-catalog-runtime'
     && manifest.freshDatabase === true
     && manifest.executionPlane === 'REMOTE_JVM_AND_DOCKER';
-  if (!validDevManifest && !validPerformanceManifest) fail('MANAGED_RUN_MANIFEST_INVALID');
+  const validBackendAcceptanceManifest = backendAcceptanceCatalogMode
+    && manifest.kind === 'backend-acceptance-catalog-runtime'
+    && manifest.freshDatabase === true
+    && manifest.executionPlane === 'REMOTE_JVM_AND_DOCKER'
+    && typeof backendAcceptanceRunId === 'string'
+    && typeof backendAcceptanceSecret === 'string';
+  if (!validDevManifest && !validPerformanceManifest && !validBackendAcceptanceManifest) fail('MANAGED_RUN_MANIFEST_INVALID');
   const credentialsFile = required(manifest.credentialsFile, 'MANAGED_CREDENTIALS_FILE');
   const credentials = Object.fromEntries(fs.readFileSync(credentialsFile, 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
-  return {manifest, credentials, performanceCanonicalMode};
+  return {manifest, credentials, performanceCanonicalMode, backendAcceptanceMode: validBackendAcceptanceManifest};
 }
 
 function backendPerformanceRequestMetadata(operationId, operation, environment = process.env) {
@@ -185,7 +194,7 @@ async function execute() {
     return;
   }
 
-  const {manifest, credentials, performanceCanonicalMode} = loadManagedRun();
+  const {manifest, credentials, performanceCanonicalMode, backendAcceptanceMode} = loadManagedRun();
   const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const all = registry();
   const scenarios = readJson(scenarioPath);
@@ -232,11 +241,17 @@ async function execute() {
     const operation = resolveGeneratedOperationById(all, operationId);
     const pathname = materializeGeneratedOperationPath(operation, {pathParameters, queryParameters: options.queryParameters || {}});
     const correlationId = `catalog-api-${randomUUID()}`;
-    const performanceMetadata = options.performanceCanonical ? backendPerformanceRequestMetadata(operationId, operation) : null;
+    const performanceMetadata = options.performanceCanonical && !backendAcceptanceMode ? backendPerformanceRequestMetadata(operationId, operation) : null;
+    const backendAcceptanceMetadata = backendAcceptanceMode ? {
+      'X-Backend-Acceptance-Run-Id': backendAcceptanceRunId,
+      'X-Backend-Acceptance-Secret': backendAcceptanceSecret,
+      'X-Backend-Acceptance-Operation-Id': operationId,
+      'X-Backend-Acceptance-Route-Template': operation.path,
+    } : null;
     const headers = {
       Accept: 'application/json',
       'X-Correlation-Id': correlationId,
-      ...(performanceMetadata || {'X-Seed-Operation-Id': operationId, 'X-Seed-Run-Id': manifest.runId}),
+      ...(backendAcceptanceMetadata || performanceMetadata || {'X-Seed-Operation-Id': operationId, 'X-Seed-Run-Id': manifest.runId}),
     };
     if (options.requestId) headers['X-Request-Id'] = options.requestId;
     if (options.testFailurePoint) headers['X-Catalog-Test-Failure-Point'] = options.testFailurePoint;
@@ -257,7 +272,7 @@ async function execute() {
       log(`${phase}_RESPONSE_HEADERS`, 'RECEIVED', {operationId, status: response.status, correlationId});
     } catch (error) {
       clearTimeout(timeout);
-      calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: 0, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null});
+      calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: 0, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null, correlationId});
       log(phase, 'ERROR', {operationId, status: 0, correlationId});
       throw new Error(`${phase}_NETWORK_${compact(error.message)}`);
     }
@@ -266,7 +281,7 @@ async function execute() {
       text = await response.text();
     } catch (error) {
       clearTimeout(timeout);
-      calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null});
+      calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: 'ERROR', durationMs: Date.now() - began, requestId: null, correlationId});
       log(phase, 'ERROR', {operationId, status: response.status, correlationId, bodyRead: 'FAILED'});
       throw new Error(`${phase}_BODY_${compact(error.message)}`);
     }
@@ -274,9 +289,13 @@ async function execute() {
     log(`${phase}_RESPONSE_BODY`, 'RECEIVED', {operationId, status: response.status, bytes: text.length, correlationId});
     let json = null; try { json = text ? JSON.parse(text) : null; } catch { /* the case assertion will report a shape failure */ }
     const requestId = response.headers.get('x-request-id');
-    const responseCorrelation = response.headers.get('x-correlation-id') || correlationId;
+    const responseCorrelationHeader = response.headers.get('x-correlation-id');
+    const responseCorrelation = responseCorrelationHeader || correlationId;
+    if (backendAcceptanceMode && (responseCorrelationHeader !== correlationId || !/^[A-Za-z0-9._:-]{8,256}$/.test(requestId || ''))) {
+      throw new Error(`${phase}_BACKEND_ACCEPTANCE_RESPONSE_CORRELATION_INVALID`);
+    }
     const accepted = (options.expected || [200]).includes(response.status);
-    calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'REJECTED', durationMs: Date.now() - began, requestId, ...(options.performanceCanonical ? {performanceCanonical: true} : {})});
+    calls.push({phase, operationId, method: operation.method, routeTemplate: operation.path, status: response.status, outcome: accepted ? 'SUCCEEDED' : 'REJECTED', durationMs: Date.now() - began, requestId, correlationId: responseCorrelation, ...(options.performanceCanonical ? {performanceCanonical: true} : {})});
     log(phase, accepted ? 'PASS' : 'REJECTED', {operationId, status: response.status, requestId, correlationId: responseCorrelation, problemCode: accepted ? undefined : responseErrorCode(json)});
     if (!accepted && !options.allowRejected) throw new Error(`${phase}_HTTP_${response.status}_${responseErrorCode(json) || 'UNCLASSIFIED'}`);
     return {status: response.status, json, requestId, correlationId: responseCorrelation, cookie: response.headers.get('set-cookie')?.split(';', 1)[0] || null};

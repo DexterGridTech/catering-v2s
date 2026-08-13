@@ -84,6 +84,11 @@ class CatalogCategoryOwnerIntegrationTest {
             .put("expectedVersion", movedUp.path("version").asLong())
             .put("action", "DOWN"));
         assertTrue(movedDown.path("displayOrder").asInt() > movedUp.path("displayOrder").asInt());
+        CatalogOwnerApi.Problem boundary = assertThrows(CatalogOwnerApi.Problem.class, () -> write("moveOperationsCatalogCategory", MAPPER.createObjectNode()
+            .put("categoryRef", childC.path("categoryRef").asText())
+            .put("expectedVersion", movedDown.path("version").asLong())
+            .put("action", "DOWN")));
+        assertEquals("MOVE_BOUNDARY", boundary.code());
 
         JsonNode deletion = write("deleteOperationsCatalogCategory", MAPPER.createObjectNode()
             .put("categoryRef", rootA.path("categoryRef").asText())
@@ -94,6 +99,28 @@ class CatalogCategoryOwnerIntegrationTest {
         assertTrue(!deletion.has("deletedCount"));
         JsonNode recreated = create("CAT-A", "A-recreated", null);
         assertEquals("CAT-A", recreated.path("code").asText());
+    }
+
+    @Test void navigationAllCountMatchesTheSmartAllScopeAndExcludesVoidedItems() {
+        long before = navigationData().path("allCount").asLong();
+        String visibleCode = generatedCatalogCode("NAV-ALL-VISIBLE");
+        String voidedCode = generatedCatalogCode("NAV-ALL-VOIDED");
+        write("createOperationsCatalogItem", MAPPER.createObjectNode()
+            .put("code", visibleCode).put("name", "visible navigation item").put("shapeKey", "STANDARD_SALE_COUNTED"));
+        write("createOperationsCatalogItem", MAPPER.createObjectNode()
+            .put("code", voidedCode).put("name", "voided navigation item").put("shapeKey", "STANDARD_SALE_COUNTED"));
+        jdbc.update("UPDATE catalog.catalog_item SET status='VOIDED' WHERE data_node_ref=? AND brand_ref=? AND code=?", SCOPE.toString(), BRAND, voidedCode);
+
+        JsonNode navigation = navigationData();
+        long expected = jdbc.queryForObject(
+            "SELECT COUNT(*) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED'",
+            Long.class, SCOPE.toString(), BRAND);
+        JsonNode smartAll = service.read("getOperationsCatalogItems", SCOPE.toString(), BRAND,
+            MAPPER.createObjectNode().put("smartViewKey", "ALL").put("pageSize", 1), "navigation-smart-all").path("data");
+
+        assertEquals(before + 1, navigation.path("allCount").asLong());
+        assertEquals(expected, navigation.path("allCount").asLong());
+        assertEquals(navigation.path("allCount").asLong(), smartAll.path("total").asLong());
     }
 
     @Test void categoryDeleteReturnsTheCanonicalSubtreeReadbackAndReplaysOnlyAfterOwnerFactRecheck() {
@@ -455,7 +482,11 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     private static JsonNode navigation() {
-        return service.read("getOperationsCatalogNavigation", SCOPE.toString(), BRAND, MAPPER.createObjectNode(), "navigation").path("data").path("tree");
+        return navigationData().path("tree");
+    }
+
+    private static JsonNode navigationData() {
+        return service.read("getOperationsCatalogNavigation", SCOPE.toString(), BRAND, MAPPER.createObjectNode(), "navigation").path("data");
     }
 
     private static JsonNode category(JsonNode tree, String categoryRef) {

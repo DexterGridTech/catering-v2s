@@ -76,6 +76,12 @@ public final class RequestCompletionDiagnosticState {
 
     public String requestId() { return context.requestId(); }
 
+    public String operationId() { return context.operationId(); }
+
+    public String routeTemplate() { return context.routeTemplate(); }
+
+    public String owner() { return context.owner(); }
+
     private static String sanitizeCorrelationId(String candidate) {
         return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : "corr-" + UUID.randomUUID();
     }

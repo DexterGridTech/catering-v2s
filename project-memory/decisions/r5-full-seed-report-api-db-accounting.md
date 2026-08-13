@@ -15,9 +15,11 @@ sourceRefs: ["doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-b
 
 ## 规则
 
-- 每次显式执行 `scripts/dev/seed --profile r5-full` 都必须生成一对 run-scoped
-  `seed-report.json` 与 `seed-report.md`；JSON 是机器校验真相，Markdown 是给 Dexter 的可读交付
-  投影。成功、预期业务拒绝、半途失败和执行器异常都必须有这对报告。
+- 每次显式执行 `scripts/dev/seed --profile r5-full` 都必须生成完整组合父报告及两个子阶段报告。
+  父报告在 `.runtime/r5/seed/complete/<run-id>/`，只以有序精确集合
+  `owner-command` → `catalog-inventory` 校验并链接 receipt；两个子报告各自保留 API/数据库计量
+  的唯一真相。JSON 是机器校验真相，Markdown 是给 Dexter 的可读交付投影。成功、预期业务拒绝、
+  半途失败和执行器异常都必须保留相应报告，父报告不得把两个 owner 的 API 计量合并为第二套统计。
 - 报告的 API 分母是 Seed 实际发出的全部 HTTP/API 调用。每个 endpoint 按
   `owner + operationId + method + normalized routeTemplate` 聚合，并至少输出：
   `callCount`、HTTP 耗时 `average/min/max`、数据库逻辑操作次数

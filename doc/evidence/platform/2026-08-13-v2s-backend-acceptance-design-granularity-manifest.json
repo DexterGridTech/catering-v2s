@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "kind": "implementation-facing-design-granularity-manifest",
+  "status": "DESIGN_GO_ROUND2_REMEDIATED_NOT_IMPLEMENTED",
+  "machineId": "backend-acceptance",
+  "implementationAuthority": false,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "postDesignGoActivation": {
+    "authorityOwner": "Dexter",
+    "effectiveCondition": "CLAUDE_DESIGN_REVIEW_CYCLE_GO_AFTER_COMPLETE_DESIGN",
+    "latestAuthorityState": "PAUSED_AFTER_DESIGN_REMEDIATION_BY_DEXTER_20260813",
+    "requiresNewExplicitImplementationInstruction": true,
+    "implementationAuthority": false,
+    "runtimeScope": "NONE_DESIGN_ONLY",
+    "sequence": ["BA-U01", "BA-U02", "BA-U03", "BA-U04", "BA-U05", "BA-U06", "FINAL_PACKAGE_EXIT", "CLAUDE_IMPLEMENTATION_REVIEW_CYCLE"],
+    "intermediateClaudeReviewAllowed": false,
+    "internalSelfReviewRequiredAfterEveryNode": true,
+    "internalSelfReviewRoundLimit": 2,
+    "afterRoundTwoFinding": "APPLY_FIX_RUN_FOCUSED_MECHANICAL_PROOF_RECORD_AND_CONTINUE_WITHOUT_THIRD_REVIEW"
+  },
+  "programId": "V2S_W0_W4_EXECUTION",
+  "goalId": "BACKEND_ACCEPTANCE_UNIFIED_CAPABILITY_20260813",
+  "reviewCadence": "COMPLETE_DESIGN_THEN_CLAUDE_DESIGN_REVIEW_CYCLE_THEN_ONE_SEQUENTIAL_IMPLEMENTATION_BATCH_WITH_INTERNAL_SELF_REVIEW_EACH_NODE_THEN_CLAUDE_IMPLEMENTATION_REVIEW_CYCLE",
+  "reviewException": {
+    "kind": "DEXTER_EXPLICIT_INTERNAL_DESIGN_ADVERSARIAL_REVIEW_WAIVER",
+    "date": "2026-08-13",
+    "scope": "after the complete design is ready proceed to the Claude DESIGN review cycle; do not fabricate a subagent verdict or request intermediate review",
+    "doesNotGrantCurrentDesignPackageImplementationAuthority": true
+  },
+  "reviewContract": {
+    "internalSelfReviewStates": ["SR1", "SR2", "SR3", "SR4", "SR5_PER_OWNER", "SR5_AGGREGATE", "SR6A", "SR6B", "SR6C", "SR_FINAL"],
+    "roundLimit": 2,
+    "requiredChecks": ["approved inputs reopened", "planned actual surface exact set", "six source denominators", "forbidden pseudo fixes", "clean proof", "twenty-five production validator scratch red families", "measurement calibration integrity", "full-mode lane capacity", "owner module mapping exact set", "consumer disposition content and exact set", "historical seed finding 6 plus 15 plus 8 disposition and evidence exact sets", "business cleanup applicability", "round two findings fixed then continue without third review"],
+    "externalClaudeReviews": ["DESIGN_CYCLE_AFTER_COMPLETE_DESIGN", "IMPLEMENTATION_CYCLE_AFTER_FINAL_PACKAGE_EXIT"],
+    "reviewCycleClarification": "each external cycle may contain finding remediation and recheck; the restriction is no review before the corresponding artifact is complete"
+  },
+  "design": {
+    "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+    "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+  },
+  "requirement": {
+    "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+    "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+  },
+  "authorization": {
+    "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-design-authorization.md",
+    "sha256": "715e6078dec350e5ef0a4fa8c3b97901140645495ef0486f33633bc029190aee",
+    "scope": "design-only"
+  },
+  "implementationDesignGranularityChecker": {
+    "status": "ACTIVE_PREDECESSOR_REQUIRES_BA_U01_EXTENSION",
+    "script": {
+      "path": "scripts/check/implementation-design-granularity",
+      "sha256": "e99619ee45d81a3faa2be229699c8619f7394d5d9a019c749e363ff112a8ca43"
+    },
+    "tool": {
+      "path": "tools/implementation-design-granularity/cli.mjs",
+      "sha256": "0ae2ae04be919061ab4a73e5b0685e68543541f874d8fc5fecb9ce8c076c9252"
+    },
+    "requiredNewTypedFailure": "BACKEND_ACCEPTANCE_SCENARIO_REQUIRED",
+    "scratchpadOnlyRedMutations": true
+  },
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_AND_REQUIREMENT","owner":"active package requirement review and standard"},
+    {"id":"TERMINOLOGY_AND_STANDARD_LANDING","owner":"decision project memory skills root instructions and scripts README"},
+    {"id":"OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","owner":"route projections bindings scenarios accepted baselines and receipts"},
+    {"id":"RUNNER_MIGRATION_AND_RETIREMENT","owner":"runner lanes predecessor assets P4 and behavior assertions"},
+    {"id":"CHANGE_IMPACT_AND_BUG_RED_PROOF","owner":"immutable entry impact snapshot dispositions consumers and regression receipts"},
+    {"id":"PREVENTION_ACCEPTANCE_AND_HANDOFF","owner":"production validators true red mutations reviews and authorization boundary"}
+  ],
+  "candidateJourney": {
+    "id": "BACKEND-ACCEPTANCE-J01",
+    "status": "PROPOSED_BACKEND_ENGINEERING_CAPABILITY",
+    "actor": "backend maintainer",
+    "task": "prove every current backend HTTP operation contract business behavior deterministic database structure and cleanup through one managed acceptance capability",
+    "pageKey": "NO_UI_JOURNEY_BACKEND_ACCEPTANCE",
+    "ownerReadback": "current semantic operation denominator scenario receipts four-dimensional verdict cleanup and historical finding exact reconciliation",
+    "mutations": []
+  },
+  "deliveryUnits": [
+    {
+      "id": "BA-U01",
+      "unitId": "BA-U01",
+      "title": "Route freshness and design admission",
+      "approvedAssertions": [
+        "operation row exact equality and projection digest freshness are independent checks",
+        "every added or changed operation design declares six non-empty scenario fields",
+        "design admission runs before implementation and before dynamic initialization"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"## 4. Scenario contract"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 4. BA-U01｜基线新鲜度与设计准入"},
+      "currentDeviation": "catalog-inventory route source digest is stale and the design checker has no backend scenario admission field.",
+      "changeSurfaces": [
+        {"path":"scripts/generate/operation-handler-bindings.mjs","disposition":"update","target":"fresh route source digest without fixed row count"},
+        {"path":"contracts/registry/operation-handler-bindings.json","disposition":"update","target":"generate current exact identity rows and producer digests"},
+        {"path":"tools/implementation-design-granularity/cli.mjs","disposition":"update","target":"backendOperationImpact and six-field scenario admission"},
+        {"path":"scripts/check/implementation-design-granularity","disposition":"update","target":"production adapter for new admission"},
+        {"path":"contracts/policy/backend-acceptance-execution-contract.json","disposition":"update","target":"activate the reviewed schema errors owner mappings measurement calibration consumer dispositions full-mode capacity public entry evidence roots and execution tiers only after production validation"}
+      ],
+      "orderedChain": ["add clean and scratch red admission proof", "repair generator freshness", "regenerate bindings", "prove rows and digests independently"],
+      "dependencyAndSerialBoundaries": ["must complete before BA-U02", "no fixed operation count", "no container initialization"],
+      "dataEvolution": {"notApplicableReason":"contract and generated registry only; no business schema migration"},
+      "uiAndTerms": {"notApplicableReason":"backend engineering capability with no UI journey","termSource":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"},
+      "evidence": {"l1":"admission and route freshness production validators plus red mutations","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"NOT_AUTHORIZED_UNTIL_IMPLEMENTATION","business":"design-only unit has no business-success claim","cleanup":"NO_DYNAMIC_RESOURCES"},
+      "forbiddenPseudoFixes": ["hardcode current operation count", "make digest check a subset", "start containers before admission", "invent missing business oracle"],
+      "discriminator": {"fixture":"row sets equal while one producer digest is stale and one changed operation omits cleanup; both must fail with distinct codes"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    },
+    {
+      "id": "BA-U02",
+      "unitId": "BA-U02",
+      "title": "Operation denominator scenario registry and monotonic migration",
+      "approvedAssertions": [
+        "semantic operations not test classes form the denominator",
+        "KNOWN_UNCOVERED is package-entry bounded and can only shrink",
+        "contract oracle is generic while six scenario fields remain operation-owned",
+        "the hash-bound historical seed finding catalog is an exact replay denominator rather than chat context",
+        "the six performance findings require joint QUERY CONNECTION TRANSACTION closure and typed QUERY disposition",
+        "every non-route affected route set retains its source-derived derivation method and owning source"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"## 7. KNOWN_UNCOVERED 单调迁移台账"},
+        {"path":"doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json","sha256":"2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07","anchor":"\"implementationDispositionContract\""}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 5. BA-U02｜动态分母、scenario registry 与单调迁移"},
+      "currentDeviation": "there is no operation-scoped scenario registry accepted route baseline or monotonic uncovered ledger.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/backend-acceptance-scenarios.json","disposition":"create","target":"identity provider locators digests and typed declarations"},
+        {"path":"contracts/registry/backend-acceptance-known-uncovered.json","disposition":"create","target":"entry-only shrinking migration ledger"},
+        {"path":"contracts/registry/backend-acceptance-accepted-baseline.json","disposition":"create","target":"append-only structural baselines"},
+        {"path":"contracts/policy/backend-acceptance-retained-owner-logic.json","disposition":"create","target":"finite no-db no-tx no-cross-owner exceptions"},
+        {"path":"contracts/policy/backend-acceptance-route-unexpressible-regressions.json","disposition":"create","target":"finite route-unexpressible bug proof exceptions"},
+        {"path":"doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json","disposition":"retain","target":"consume as the hash-bound exact 6 performance 15 HTTP and 8 non-route replay denominator"},
+        {"path":"doc/evidence/platform/backend-acceptance-historical-seed-dispositions.json","disposition":"create","target":"schema-valid disposition and fresh evidence for every historical findingId"},
+        {"path":"tools/backend-acceptance/cli.mjs","disposition":"create","target":"discover preflight and exact-set production owner"},
+        {"path":"scripts/test/backend-acceptance","disposition":"create","target":"single public adapter preflight only until BA-U03"},
+        {"path":"scripts/test/backend-acceptance.test.mjs","disposition":"create","target":"scratchpad production validator mutations"}
+      ],
+      "orderedChain": ["freeze entry operation uncovered and historical finding sets", "create schemas and validators", "prove new operation cannot enter uncovered", "prove historical finding missing extra invalid triple-metric query-disposition route-derivation and stale evidence mutations", "open preflight-only public adapter"],
+      "dependencyAndSerialBoundaries": ["depends on BA-U01 fresh rows and digests", "no runtime verdict before BA-U03", "uncovered rows cannot increase"],
+      "dataEvolution": {"notApplicableReason":"versioned test contracts only; no business data migration"},
+      "uiAndTerms": {"notApplicableReason":"no UI behavior","termSource":"project-memory/operations/backend-acceptance.md"},
+      "evidence": {"l1":"denominator scenario monotonic ledger and historical finding exact-set checks","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"NOT_RUN_BEFORE_BA_U03","business":"design-only unit has no business-success claim","cleanup":"NO_DYNAMIC_RESOURCES"},
+      "forbiddenPseudoFixes": ["derive denominator from test classes", "add a new operation to KNOWN_UNCOVERED", "copy business code into central registry", "accept missing fields as NOT_APPLICABLE", "replace the explicit historical catalog with a historical replay note"],
+      "discriminator": {"fixture":"a new semantic route plus a matching newly-added uncovered row fails UNCOVERED_OPERATION; deleting one historical finding fails BACKEND_ACCEPTANCE_HISTORICAL_FINDING_MISSING; connection-only performance recovery and a non-route row without source-derived route derivation both fail"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    },
+    {
+      "id": "BA-U03",
+      "unitId": "BA-U03",
+      "title": "Real HTTP harness structural metrics and configurable isolated lanes",
+      "approvedAssertions": [
+        "one fresh HTTP correlation yields CONTRACT BUSINESS PERFORMANCE and CLEANUP",
+        "a fixture-derived known-cost calibration proves every database metric before any baseline is written or decreased",
+        "full mode is the normal capacity model and lane count is derived to meet the per-edit full-denominator target without reducing coverage",
+        "lane count is configurable and writable namespaces are independent",
+        "one lane first failure never cancels sibling lanes"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"## 8. 两层受管执行与并行"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 6. BA-U03｜真实 HTTP harness、计量与可配置隔离 lane"},
+      "currentDeviation": "the predecessor runner discovers test classes has three hardcoded lanes and does not provide the unified operation-scoped four-dimensional verdict.",
+      "changeSurfaces": [
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceScenarioProvider.java","disposition":"create","target":"module-owned test-fixture provider SPI"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceHttpHarness.java","disposition":"create","target":"real HTTP four-dimensional harness"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceDatabaseMetricsSink.java","disposition":"create","target":"correlated structural database metric collector"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationConfiguration.java","disposition":"create","target":"test-only known-cost calibration route configuration"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationScenario.java","disposition":"create","target":"fixture-derived exact LOGICAL_SQL QUERY UPDATE CONNECTION TRANSACTION and BATCH calibration"},
+        {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java","disposition":"create","target":"single suite consuming module-owned providers"},
+        {"path":"apps/backend/catering-business-server/build.gradle.kts","disposition":"update","target":"consume the ten explicit owner module test-fixture projects"},
+        {"path":"apps/backend/catering-business-server/modules/asset/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for asset and platform-asset providers"},
+        {"path":"apps/backend/catering-business-server/modules/catalog/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for catalog providers"},
+        {"path":"apps/backend/catering-business-server/modules/extension/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for extension providers"},
+        {"path":"apps/backend/catering-business-server/modules/fulfillment-production/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for fulfillment-production providers"},
+        {"path":"apps/backend/catering-business-server/modules/inventory/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for inventory providers"},
+        {"path":"apps/backend/catering-business-server/modules/organization/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for organization providers"},
+        {"path":"apps/backend/catering-business-server/modules/platform-admin-iam/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for platform-iam providers"},
+        {"path":"apps/backend/catering-business-server/modules/store-contract/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for contract providers"},
+        {"path":"apps/backend/catering-business-server/modules/workspace/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for platform-workspace providers"},
+        {"path":"apps/backend/catering-business-server/modules/workspace-iam/build.gradle.kts","disposition":"update","target":"enable java-test-fixtures for workspace-iam providers"},
+        {"path":"apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTracker.java","disposition":"update","target":"test-visible correlation sink with production no-op default"},
+        {"path":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/diagnostic/HttpRequestMetricsInterceptor.java","disposition":"update","target":"bind HTTP correlation to authoritative tracker"},
+        {"path":"scripts/test/r5-remote-testcontainers.mjs","disposition":"update","target":"migrate predecessor to operation work units and configurable lanes"},
+        {"path":"scripts/test/r5-testcontainers-daemon-lanes.mjs","disposition":"update","target":"parameterized socket workspace database schema and object namespace"},
+        {"path":"scripts/test/r5-remote-testcontainers.test.mjs","disposition":"update","target":"lane configuration isolation independence and heartbeat proofs"},
+        {"path":"scripts/test/backend-acceptance","disposition":"update","target":"per-edit package-exit and operation modes"}
+      ],
+      "orderedChain": ["add authoritative correlation sink", "add fixture-derived known-cost calibration and no-op plus per-metric red mutations", "derive full-mode minimum lane count from fresh scheduling weights and the per-edit target", "derive the lexicographically first current operation identity as bootstrapOperation", "build its real route scenario and one-operation HTTP proof", "parameterize one lane then many lanes", "prove isolation and sibling continuation", "run calibration then bootstrap four-dimensional PASS and cleanup", "open dynamic modes"],
+      "dependencyAndSerialBoundaries": ["depends on BA-U02 preflight", "admission precedes container initialization", "calibration precedes every operation batch and baseline write or decrease", "full mode is the normal capacity model", "each lane initializes once", "no latency or percentile budgets"],
+      "dataEvolution": {"notApplicableReason":"run-scoped container fixtures only; production schema unchanged"},
+      "uiAndTerms": {"notApplicableReason":"HTTP backend acceptance not browser L2","termSource":"AGENTS.md"},
+      "evidence": {"l1":"runner self-tests source checks measurement calibration and full-mode lane-capacity derivation","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"fresh managed calibration and route receipts only after DESIGN GO activates the recorded runtime authority","business":"bootstrap operation receives a fresh BUSINESS route oracle receipt","cleanup":"per-lane and parent cleanup receipts"},
+      "forbiddenPseudoFixes": ["derive calibration expected values from measured output", "write or decrease a baseline without same-run calibration PASS", "plan per-edit capacity from subset instead of full mode", "keep fixed three lanes", "share writable database or object namespace", "cancel siblings on one failure", "use seed or wall-clock as performance verdict", "reduce coverage to meet the time target"],
+      "discriminator": {"fixture":"a no-op or one-metric-omitted sink fails MEASUREMENT_SINK_INTEGRITY_FAILED; insufficient full-mode isolated lanes fail before initialization; namespace collision fails before first HTTP; a lane failure leaves sibling terminal receipts intact"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    },
+    {
+      "id": "BA-U04",
+      "unitId": "BA-U04",
+      "title": "Immutable change impact bug red proof and consumers",
+      "approvedAssertions": [
+        "P0 W0 and O0 are immutable package-entry facts",
+        "any changed production input outside W0 impacts ALL",
+        "BUG_FIX requires pre-fix FAIL and post-fix PASS or an explicit finite non-protection disposition",
+        "every changed consumer face uses a closed typed disposition with mandatory evidence and no pending or free text escape"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"## 10. 变更联动门"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 7. BA-U04｜变更联动、BUG_FIX 红证与 consumer"},
+      "currentDeviation": "current anchors cover only 128 of 571 checked-in production Java files and no package lifecycle owner computes a fail-safe impact set.",
+      "changeSurfaces": [
+        {"path":"tools/backend-acceptance/impact.mjs","disposition":"create","target":"single P0 P1 W0 D and disposition owner"},
+        {"path":"tools/compliance-control/cli.mjs","disposition":"update","target":"atomic no-replace entry snapshot and package-exit invocation"},
+        {"path":"scripts/check/backend-acceptance-change-impact","disposition":"create","target":"thin production adapter"},
+        {"path":"scripts/check/backend-acceptance-change-impact.test.mjs","disposition":"create","target":"scratchpad red mutations using production owner"},
+        {"path":"contracts/policy/backend-acceptance-production-surface-derivation.json","disposition":"create","target":"Gradle and generator input derivation contract not a path whitelist"},
+        {"path":"doc/evidence/platform/backend-acceptance-change-dispositions.schema.json","disposition":"create","target":"three operation dispositions three typed consumer dispositions oracle direction consumers and bug receipts"},
+        {"path":"contracts/policy/backend-acceptance-execution-contract.json","disposition":"update","target":"production-consumed closed consumer disposition schema and evidence requirements"}
+      ],
+      "orderedChain": ["capture immutable P0 W0 O0 before writes", "add independent P1 and union delta", "prove unanchored ALL and self-admission red", "add operation and typed consumer dispositions", "add bug red and consumer content plus exact-set mutations", "wire package exit"],
+      "dependencyAndSerialBoundaries": ["depends on BA-U02 identities and BA-U03 receipts", "entry snapshot cannot be overwritten or rebuilt", "no hand-written infrastructure allowlist"],
+      "dataEvolution": {"notApplicableReason":"package evidence only; no business schema change"},
+      "uiAndTerms": {"notApplicableReason":"consumerFace disposition may identify UI apps but does not implement UI","termSource":"CLAUDE.md"},
+      "evidence": {"l1":"P0 P1 W0 D exact-set and scratch red tests","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"BEHAVIOR_UNCHANGED consumes a fresh BA-U03 receipt","business":"operation disposition validator binds fresh business oracle evidence","cleanup":"entry and exit evidence contains no managed resource"},
+      "forbiddenPseudoFixes": ["derive W0 from exit inventory", "scan only exit paths", "trust changed-path declarations as the production denominator", "accept BEHAVIOR_UNCHANGED free text", "accept a consumer note later or pending as disposition", "delete or loosen a failing scenario"],
+      "discriminator": {"fixture":"add an unanchored production input and regenerate inventory in the same package; impacted remains ALL and self-admission fails; a consumer row with free text unknown enum missing evidence or PENDING also fails"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    },
+    {
+      "id": "BA-U05",
+      "unitId": "BA-U05",
+      "title": "Source-derived route scenario assertion and budget migration",
+      "approvedAssertions": [
+        "each current operation gets an owner-derived route scenario",
+        "existing business assertions migrate without loss",
+        "P4 rows are deleted only after fresh HTTP structural baselines exist",
+        "six structural regressions fifteen HTTP failure families and eight seed or fixture families are individually root-caused and evidenced",
+        "each of the six performance rows closes QUERY CONNECTION and TRANSACTION together and has a typed QUERY disposition"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"### 10.4 历史 seed finding 不是一句话，而是明确回放分母"},
+        {"path":"doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json","sha256":"2aec3425614d3a864ac98633cfa5c9b929bc1d5ceb74c4e19eeeb094eed3ed07","anchor":"\"findingId\": \"BA-HIST-PERF-001\""}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 8. BA-U05｜按 owner 迁移断言与预算"},
+      "currentDeviation": "route coverage behavior assertions and method-level SQL budgets are split across predecessor assets.",
+      "changeSurfaces": [
+        {"path":"contracts/registry/backend-acceptance-scenarios.json","disposition":"update","target":"generate provider and digest exact set for every semantic operation"},
+        {"path":"contracts/registry/backend-acceptance-accepted-baseline.json","disposition":"update","target":"append fresh route measurements for four-dimensional structural acceptance"},
+        {"path":"contracts/registry/backend-acceptance-known-uncovered.json","disposition":"update","target":"delete rows only as each operation gains fresh coverage"},
+        {"path":"doc/evidence/platform/backend-acceptance-assertion-migration.json","disposition":"create","target":"entry assertion to route or finite exception exact set"},
+        {"path":"doc/evidence/platform/backend-acceptance-historical-seed-dispositions.json","disposition":"update","target":"close every catalog findingId with typed disposition root cause and fresh route evidence"},
+        {"path":"doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","disposition":"update","target":"delete each mapped row only after its corresponding HTTP baseline"},
+        {"path":"apps/backend/catering-business-server/modules/<owner-module>/src/testFixtures/java/<provider-path>.java","disposition":"not-applicable","target":"materialize an exact concrete create or update provider file list at implementation entry from current operation rows and the closed execution-contract owner map"}
+      ],
+      "orderedChain": ["derive exact owner provider and matching historical finding paths", "reopen each finding source manifest plus owning requirements memory and source per operation", "for the six performance rows inspect the shared CatalogInventoryCoordinator read pipeline before any endpoint-local fix", "add route scenario red then green", "measure fresh structural baseline", "write typed historical disposition including triple-metric closure and QUERY disposition", "derive every non-route affected route set from owning source", "delete uncovered row P4 row and duplicated behavior assertion", "reconcile operation scenario assertion baseline and 6 plus 15 plus 8 historical exact sets"],
+      "dependencyAndSerialBoundaries": ["depends on BA-U01 through U04", "current owner exact set must equal the execution-contract owner map before materialization", "unknown owner and provider path collision fail closed", "provider paths are generated from current owner rows and explicit module roots not guessed", "one owner group at a time", "same-run calibration PASS precedes baseline writes or decreases", "no seed-derived budgets"],
+      "dataEvolution": {"notApplicableReason":"test fixture data is run-scoped and created by public owner lifecycle"},
+      "uiAndTerms": {"notApplicableReason":"no browser UI implementation; consumer contracts remain separately disposed","termSource":"PLATFORM-BLUEPRINT.md"},
+      "evidence": {"l1":"provider scenario assertion baseline and historical finding retirement exact sets","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"fresh operation receipts with four verdicts","business":"every covered operation and historical route finding binds fresh business oracle evidence","cleanup":"per-operation and lane cleanup readback"},
+      "forbiddenPseudoFixes": ["invent owner-module mapping from owner spelling", "centralize module-owned providers in the app suite", "invent oracle from names or chat", "keep current fixed operation count", "copy P4 seed or uncalibrated values into HTTP baseline", "delete an old assertion before route red-green proof", "use directory glob as provider ownership", "claim historical replay without per-finding evidence", "close a performance finding from CONNECTION alone", "claim default READ COMMITTED read-only transaction gives a stable multi-query snapshot", "leave QUERY without a reduced-or-minimal disposition", "invent non-route affected routes without an owning-source derivation", "treat shorter seed wall time as a performance fix"],
+      "discriminator": {"fixture":"an unmapped owner a provider path collision one entry assertion missing one uncalibrated baseline one missing historical finding one performance row without joint QUERY CONNECTION TRANSACTION closure one invalid transaction rationale one missing QUERY disposition or one non-route row without source-derived route derivation all fail"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    },
+    {
+      "id": "BA-U06",
+      "unitId": "BA-U06",
+      "title": "Full acceptance predecessor retirement and implementation review cycle",
+      "approvedAssertions": [
+        "full current operation denominator passes four dimensions and cleanup",
+        "KNOWN_UNCOVERED is empty before predecessor retirement",
+        "all historical finding dispositions and fresh proof exact sets pass before retirement",
+        "one sequential implementation batch ends in one implementation review"
+      ],
+      "approvedSources": [
+        {"path":"doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md","sha256":"12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb","anchor":"## 13. 最终验收"}
+      ],
+      "detailDesign": {"path":"doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md","anchor":"## 9. BA-U06｜全量验收、旧资产退役与实施 review cycle"},
+      "currentDeviation": "predecessor class-based fixed-number and split performance assets remain and no unified fresh completion evidence exists.",
+      "changeSurfaces": [
+        {"path":"doc/evidence/platform/backend-acceptance-predecessor-asset-dispositions.json","disposition":"create","target":"DELETE RETAIN_DIFFERENT_DUTY or HISTORICAL_HASH_BOUND exact set"},
+        {"path":"scripts/test/backend-acceptance","disposition":"retain","target":"retain as the only public dynamic entry for full current operation acceptance"},
+        {"path":"contracts/registry/backend-acceptance-known-uncovered.json","disposition":"delete","target":"remove temporary migration schema after it is empty"},
+        {"path":"doc/evidence/platform/backend-acceptance-implementation-exit.json","disposition":"create","target":"static dynamic four-dimensional cleanup and retirement closure"},
+        {"path":"doc/review/platform/backend-acceptance-implementation-review-request-codex.md","disposition":"create","target":"implementation review cycle handoff after final package exit"}
+      ],
+      "orderedChain": ["prove uncovered empty historical 6 plus 15 plus 8 disposition evidence complete and all exact sets", "run pre-retirement fresh full acceptance and cleanup", "reconcile and retire predecessor assets", "run post-retirement fresh full acceptance and cleanup", "run final static and package-exit exact reconciliation", "enter the Claude implementation review cycle"],
+      "dependencyAndSerialBoundaries": ["depends on BA-U01 through U05", "retirement follows fresh full PASS", "no split functional or performance review", "implementation authority and runtime authority remain separate"],
+      "dataEvolution": {"notApplicableReason":"acceptance containers are ephemeral; no production migration"},
+      "uiAndTerms": {"notApplicableReason":"backend acceptance completion claim only","termSource":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"},
+      "evidence": {"l1":"package exit exact sets and twenty-five production red mutation families including historical replay anti-omission","l2":"NOT_APPLICABLE_NO_BROWSER_JOURNEY","l3":"fresh current-denominator CONTRACT BUSINESS PERFORMANCE CLEANUP plus fresh proof for every historical finding","business":"full current operation denominator BUSINESS PASS on final bytes","cleanup":"all lane remote and local resources PASS"},
+      "forbiddenPseudoFixes": ["retire predecessor before full PASS", "claim completion from seed or static checks", "leave uncovered rows", "split functionality and performance", "reduce operation coverage to meet time target"],
+      "discriminator": {"fixture":"one uncovered row one missing receipt one cleanup residue or one undisposed predecessor asset prevents completion"},
+      "sourceComplianceDenominators": ["AUTHORITY_AND_REQUIREMENT","TERMINOLOGY_AND_STANDARD_LANDING","OPERATION_SCENARIO_AND_FOUR_DIMENSIONS","RUNNER_MIGRATION_AND_RETIREMENT","CHANGE_IMPACT_AND_BUG_RED_PROOF","PREVENTION_ACCEPTANCE_AND_HANDOFF"]
+    }
+  ]
+}

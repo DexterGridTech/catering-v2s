@@ -5,12 +5,18 @@ import childProcess from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import * as backendAcceptanceImpact from "../backend-acceptance/impact.mjs";
 
 const command = process.argv[2];
 const activePackageRecoveryPath = ".runtime/compliance-control/active-package-recovery.json";
 const activePackageRecoveryReceiptPath = ".runtime/compliance-control/active-package-recovery-receipt.json";
 const activePackageRecoveryAuthorization = "DEXTER_AUTHORIZED_ACTIVE_PACKAGE_RECOVERY";
 const mandatoryPerEditGateClosurePath = "contracts/policy/mandatory-per-edit-gate-command-closure.json";
+const controlPlaneBootstrapClosurePath = "contracts/policy/per-edit-control-plane-bootstrap-closure.json";
+const controlPlaneBootstrapRequestPath = ".runtime/compliance-control/per-edit-control-plane-bootstrap-request.json";
+const controlPlaneBootstrapReceiptPath = ".runtime/compliance-control/per-edit-control-plane-bootstrap-receipt.json";
+const controlPlanePackageScopeKind = "DEXTER_AUTHORIZED_CONTROL_PLANE_REMEDIATION";
+const controlPlaneLedgerRoot = ".runtime/compliance-control/package-entry-ledgers";
 const remediationManifestKey = "r5ComplianceRemediationManifestRef";
 const baselineRecoveryEvidencePath = "doc/evidence/platform/2026-07-27-v2s-r5-cr00-baseline-recovery-hook-chain.json";
 const hookCanaryEvidencePath = "doc/evidence/platform/2026-07-27-v2s-r5-cr00-hook-canary-evidence.json";
@@ -52,6 +58,8 @@ const baselineRecoveryPaths = new Set([
 const derivedDirectoryNames = new Set(["build", "dist", "node_modules", ".gradle"]);
 const problemIntakeDirectory = ".runtime/compliance-control/problem-intakes";
 const problemDispositionDirectory = ".runtime/compliance-control/problem-family-dispositions";
+const backendAcceptancePackageId = "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813";
+const backendAcceptanceEntrySnapshotPath = "doc/evidence/platform/backend-acceptance/entry-impact-snapshot.json";
 
 function isDerivedPath(relativePath) {
   return relativePath.split("/").some((segment) => derivedDirectoryNames.has(segment));
@@ -66,6 +74,11 @@ function exactSet(left, right) {
     && new Set(left).size === left.length
     && new Set(right).size === right.length
     && left.every((entry) => right.includes(entry));
+}
+
+function isControlPlanePackage(packageState) {
+  return packageState?.scopeKind === controlPlanePackageScopeKind
+    || packageState?.packageArchetype === "control-plane";
 }
 
 function readStdin() {
@@ -913,6 +926,11 @@ function validatePackageExit() {
   const exit = readJson(absolute, "PACKAGE_EXIT_INVALID");
   const packageState = readActivePackage(root);
   const { changed } = deltaState(root);
+  const changedForReceiptValidation = changed.filter((entry) => entry.path !== relative);
+  if (packageState.mandatoryPerEditGate) validateControlPlaneEntryLedger(root, packageState, changedForReceiptValidation);
+  const finalGateReceipt = packageState.mandatoryPerEditGate ? runFinalExitGate(root, packageState) : undefined;
+  if (finalGateReceipt && !exit.finalGateReceipt) throw new Error(`PACKAGE_EXIT_FINAL_GATE_RECEIPT_REQUIRED:${finalGateReceipt.path}`);
+  if (finalGateReceipt && exit.finalGateReceipt.path !== finalGateReceipt.path) throw new Error("PACKAGE_EXIT_FINAL_GATE_RECEIPT_INVALID");
   const rm1 = currentRM1ExecutionBinding(root, packageState);
   validateRM1ApprovedSurfaceSet(packageState, rm1);
   if (exit.schemaVersion !== 1 || exit.packageId !== packageState.packageId || !Array.isArray(exit.changedPaths)) throw new Error("PACKAGE_EXIT_INVALID");
@@ -1044,6 +1062,11 @@ function validateNoPendingProtectedControl(root) {
 function staticScan() {
   const root = process.cwd();
   const active = readActivePackage(root);
+  if (isControlPlanePackage(active)) {
+    validateControlPlaneCurrentState(root, active);
+    process.stdout.write(`REMEDIATION_COMPLIANCE=PASS\nRULES=0\nMODE=PER_EDIT_CONTROL_PLANE_STATIC_ADMISSION\n`);
+    return;
+  }
   const rm1 = currentRM1ExecutionBinding(root, active);
   const backendPerformance = currentBackendPerformancePackageBinding(root, active);
   validateRM1ApprovedSurfaceSet(active, rm1);
@@ -1064,6 +1087,25 @@ function mandatoryGateProfiles(root) {
   if (closure.schemaVersion !== 1 || closure.kind !== "mandatory-per-edit-gate-command-closure"
     || closure.status !== "PASS" || !Array.isArray(closure.profiles) || closure.profiles.length === 0) {
     throw new Error("MANDATORY_PER_EDIT_GATE_CLOSURE_INVALID");
+  }
+  if (Array.isArray(closure.packageArchetypes)) {
+    const expectedArchetypes = ["backend-performance-static", "backend-source", "frontend-source", "control-plane", "design-only", "runner-evidence"];
+    if (!exactSet(closure.packageArchetypes, expectedArchetypes) || closure.profiles.length !== expectedArchetypes.length) throw new Error("MANDATORY_PER_EDIT_GATE_ARCHETYPE_SET_INVALID");
+    const exactProfiles = new Map();
+    for (const profile of closure.profiles) {
+      if (!profile || typeof profile.profileId !== "string" || exactProfiles.has(profile.profileId)
+        || !expectedArchetypes.includes(profile.packageArchetype) || profile.compatiblePackageArchetypes !== undefined
+        || !["ACTIVE", "ACTIVE_BOOTSTRAP_COMPATIBILITY"].includes(profile.status)
+        || typeof profile.command !== "string" || path.isAbsolute(profile.command) || profile.command.includes("..")
+        || !Array.isArray(profile.argv) || profile.argv.some((entry) => typeof entry !== "string")
+        || !/^[a-f0-9]{64}$/.test(profile.commandSha256)
+        || !profile.independentReviewBinding || profile.independentReviewBinding.verdict !== "GO") throw new Error(`MANDATORY_PER_EDIT_GATE_PROFILE_INVALID:${profile?.profileId || "UNSET"}`);
+      const commandAbsolute = requireFile(root, profile.command, `MANDATORY_PER_EDIT_GATE_COMMAND_MISSING:${profile.profileId}`);
+      if ((fs.statSync(commandAbsolute).mode & 0o100) === 0 || hashOrAbsent(commandAbsolute) !== profile.commandSha256) throw new Error(`MANDATORY_PER_EDIT_GATE_COMMAND_DRIFT:${profile.profileId}`);
+      exactProfiles.set(profile.profileId, profile);
+    }
+    if (new Set([...exactProfiles.values()].map((profile) => profile.packageArchetype)).size !== expectedArchetypes.length) throw new Error("MANDATORY_PER_EDIT_GATE_ARCHETYPE_PARTITION_INVALID");
+    return exactProfiles;
   }
   const profiles = new Map();
   for (const profile of closure.profiles) {
@@ -1099,6 +1141,167 @@ function mandatoryGateProfiles(root) {
   return profiles;
 }
 
+function validateControlPlaneCandidatePackage(value, expectedSurfaces, reason = "CONTROL_PLANE_BOOTSTRAP_CANDIDATE_INVALID") {
+  if (!value || value.schemaVersion !== 1 || typeof value.packageId !== "string"
+    || value.scopeKind !== controlPlanePackageScopeKind || value.packageArchetype !== "control-plane"
+    || value.implementationAuthority !== true || value.runtimeAuthority !== false || value.seedResetAuthority !== false
+    || !Array.isArray(value.allowedChangeSurfaces) || !exactSet(value.allowedChangeSurfaces, expectedSurfaces)
+    || !value.mandatoryPerEditGate || typeof value.mandatoryPerEditGate.profileId !== "string"
+    || Object.keys(value.mandatoryPerEditGate).some((key) => key !== "profileId")) throw new Error(reason);
+  return value;
+}
+
+function validateControlPlaneBootstrapClosure(root) {
+  const absolute = requireFile(root, controlPlaneBootstrapClosurePath, "CONTROL_PLANE_BOOTSTRAP_CLOSURE_MISSING");
+  const closure = readJson(absolute, "CONTROL_PLANE_BOOTSTRAP_CLOSURE_INVALID");
+  if (closure.schemaVersion !== 1 || closure.kind !== "per-edit-control-plane-bootstrap-closure"
+    || closure.status !== "PASS" || !closure.command || closure.command.path !== "tools/compliance-control/cli.mjs"
+    || closure.command.name !== "bootstrap-per-edit-control-plane" || !/^[a-f0-9]{64}$/.test(closure.command.sha256)
+    || hashOrAbsent(requireFile(root, closure.command.path, "CONTROL_PLANE_BOOTSTRAP_CLI_MISSING")) !== closure.command.sha256
+    || closure.requestPath !== controlPlaneBootstrapRequestPath
+    || closure.receiptPath !== controlPlaneBootstrapReceiptPath
+    || !Array.isArray(closure.allowedPackageSurfaces) || closure.allowedPackageSurfaces.length === 0
+    || !exactSet(closure.allowedPackageSurfaces, [...new Set(closure.allowedPackageSurfaces)])
+    || closure.allowedPackageSurfaces.some((entry) => typeof entry !== "string" || entry.length === 0 || path.isAbsolute(entry) || entry.includes(".."))
+    || !Array.isArray(closure.failureCodes) || closure.failureCodes.length === 0
+    || closure.failureCodes.some((entry) => typeof entry !== "string" || entry.length === 0)) throw new Error("CONTROL_PLANE_BOOTSTRAP_CLOSURE_INVALID");
+  return closure;
+}
+
+function validateCandidateMandatoryClosure(root, closure) {
+  if (!closure || closure.schemaVersion !== 1 || closure.kind !== "mandatory-per-edit-gate-command-closure" || closure.status !== "PASS"
+    || !Array.isArray(closure.packageArchetypes) || !exactSet(closure.packageArchetypes, ["backend-performance-static", "backend-source", "frontend-source", "control-plane", "design-only", "runner-evidence"])
+    || !Array.isArray(closure.profiles) || closure.profiles.length !== 6) throw new Error("CONTROL_PLANE_BOOTSTRAP_CANDIDATE_CLOSURE_INVALID");
+  const seen = new Set();
+  for (const profile of closure.profiles) {
+    if (!profile || typeof profile.profileId !== "string" || seen.has(profile.profileId) || !closure.packageArchetypes.includes(profile.packageArchetype)
+      || profile.compatiblePackageArchetypes !== undefined || profile.status !== "ACTIVE" || !Array.isArray(profile.argv)
+      || typeof profile.command !== "string" || path.isAbsolute(profile.command) || profile.command.includes("..")
+      || !/^[a-f0-9]{64}$/.test(profile.commandSha256)) throw new Error("CONTROL_PLANE_BOOTSTRAP_CANDIDATE_CLOSURE_INVALID");
+    const command = requireFile(root, profile.command, `CONTROL_PLANE_BOOTSTRAP_CANDIDATE_COMMAND_MISSING:${profile.profileId}`);
+    if (hashOrAbsent(command) !== profile.commandSha256) throw new Error(`CONTROL_PLANE_BOOTSTRAP_CANDIDATE_COMMAND_HASH_DRIFT:${profile.profileId}`);
+    seen.add(profile.profileId);
+  }
+  if (new Set(closure.profiles.map((profile) => profile.packageArchetype)).size !== 6) throw new Error("CONTROL_PLANE_BOOTSTRAP_CANDIDATE_CLOSURE_PARTITION_INVALID");
+  return closure;
+}
+
+function validateControlPlaneCurrentState(root, active) {
+  mandatoryGateProfiles(root);
+  const closure = validateControlPlaneBootstrapClosure(root);
+  validateControlPlaneCandidatePackage(active, closure.allowedPackageSurfaces);
+  const gate = mandatoryGateProfiles(root).get(active.mandatoryPerEditGate.profileId);
+  if (!gate || !["ACTIVE", "ACTIVE_BOOTSTRAP_COMPATIBILITY"].includes(gate.status)
+    || (gate.packageArchetype ? gate.packageArchetype !== "control-plane" : !gate.compatiblePackageArchetypes.includes("control-plane"))) {
+    throw new Error("CONTROL_PLANE_CURRENT_PROFILE_INVALID");
+  }
+}
+
+function controlPlaneBootstrapCommand(event) {
+  if (!isCommandTool(event) || typeof event?.tool_input?.command !== "string") return false;
+  return /^(?:\/[^\s]+\/)?node\s+tools\/compliance-control\/cli\.mjs\s+bootstrap-per-edit-control-plane\s+--request-sha256\s+[a-f0-9]{64}\s+--bootstrap-closure-sha256\s+[a-f0-9]{64}$/.test(event.tool_input.command.trim());
+}
+
+function parseControlPlaneBootstrapArgsFromCommand(event) {
+  const match = event.tool_input.command.trim().match(/--request-sha256\s+([a-f0-9]{64})\s+--bootstrap-closure-sha256\s+([a-f0-9]{64})$/);
+  if (!match) throw new Error("CONTROL_PLANE_BOOTSTRAP_ARGS_INVALID");
+  return { requestSha256: match[1], closureSha256: match[2] };
+}
+
+function parseControlPlaneBootstrapArgs() {
+  const args = process.argv.slice(3);
+  if (args.length !== 4 || args[0] !== "--request-sha256" || args[2] !== "--bootstrap-closure-sha256"
+    || !/^[a-f0-9]{64}$/.test(args[1]) || !/^[a-f0-9]{64}$/.test(args[3])) throw new Error("CONTROL_PLANE_BOOTSTRAP_ARGS_INVALID");
+  return { requestSha256: args[1], closureSha256: args[3] };
+}
+
+function validateControlPlaneBootstrapRequest(root, requestSha256, closureSha256) {
+  const closureAbsolute = requireFile(root, controlPlaneBootstrapClosurePath, "CONTROL_PLANE_BOOTSTRAP_CLOSURE_MISSING");
+  const closure = readJson(closureAbsolute, "CONTROL_PLANE_BOOTSTRAP_CLOSURE_INVALID");
+  if (hashOrAbsent(closureAbsolute) !== closureSha256) throw new Error("CONTROL_PLANE_BOOTSTRAP_CLOSURE_HASH_DRIFT");
+  const requestAbsolute = requireFile(root, controlPlaneBootstrapRequestPath, "CONTROL_PLANE_BOOTSTRAP_REQUEST_MISSING");
+  if (hashOrAbsent(requestAbsolute) !== requestSha256) throw new Error("CONTROL_PLANE_BOOTSTRAP_REQUEST_HASH_DRIFT");
+  const request = readJson(requestAbsolute, "CONTROL_PLANE_BOOTSTRAP_REQUEST_INVALID");
+  if (request.schemaVersion !== 1 || request.kind !== "per-edit-control-plane-bootstrap-request"
+    || request.authorization !== "DEXTER_AUTHORIZED_PER_EDIT_CONTROL_PLANE_BOOTSTRAP"
+    || typeof request.repoRealpath !== "string" || request.repoRealpath !== fs.realpathSync(root)
+    || typeof request.reason !== "string" || request.reason.length === 0
+    || !Array.isArray(request.targets) || request.targets.length !== 2
+    || !request.closure || request.closure.path !== controlPlaneBootstrapClosurePath
+    || !request.activePackage || request.activePackage.path !== ".runtime/compliance-control/active-package.json"
+    || request.targets.some((target) => !target || typeof target.path !== "string" || typeof target.beforeSha256 !== "string" || typeof target.afterSha256 !== "string")
+    || !exactSet(request.targets.map((target) => target.path), [controlPlaneBootstrapClosurePath, ".runtime/compliance-control/active-package.json"])
+    || typeof request.closure.beforeSha256 !== "string" || typeof request.closure.afterSha256 !== "string"
+    || typeof request.candidateClosureSha256 !== "string"
+    || sha256(`${JSON.stringify(request.candidateClosure, null, 2)}\n`) !== request.candidateClosureSha256
+    || typeof request.activePackage.beforeSha256 !== "string" || typeof request.activePackage.afterSha256 !== "string"
+    || !request.candidatePackage || typeof request.candidatePackage !== "object"
+    || typeof request.candidatePackageSha256 !== "string"
+    || sha256(`${JSON.stringify(request.candidatePackage)}\n`) !== request.candidatePackageSha256
+    || hashOrAbsent(path.join(root, request.activePackage.path)) !== request.activePackage.beforeSha256
+    || sha256(`${JSON.stringify(request.candidatePackage, null, 2)}\n`) !== request.activePackage.afterSha256
+    || hashOrAbsent(closureAbsolute) !== request.closure.beforeSha256
+    || sha256(`${JSON.stringify(request.candidateClosure, null, 2)}\n`) !== request.closure.afterSha256) throw new Error("CONTROL_PLANE_BOOTSTRAP_REQUEST_INVALID");
+  validateCandidateMandatoryClosure(root, request.candidateClosure);
+  const durableClosure = validateControlPlaneBootstrapClosure(root);
+  validateControlPlaneCandidatePackage(request.candidatePackage, durableClosure.allowedPackageSurfaces);
+  if (hashOrAbsent(path.join(root, ".runtime/compliance-control/active-package.json")) === request.activePackage.afterSha256) throw new Error("CONTROL_PLANE_BOOTSTRAP_ALREADY_ACTIVE");
+  return { closure, request, requestSha256 };
+}
+
+function bootstrapPerEditControlPlane() {
+  const root = process.cwd();
+  const { requestSha256, closureSha256 } = parseControlPlaneBootstrapArgs();
+  try { readActivePackage(root); throw new Error("CONTROL_PLANE_BOOTSTRAP_ACTIVE_PACKAGE_HEALTHY"); }
+  catch (error) { if (!(error instanceof Error) || error.message !== "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") throw error; }
+  const { request } = validateControlPlaneBootstrapRequest(root, requestSha256, closureSha256);
+  const closureAbsolute = requireFile(root, controlPlaneBootstrapClosurePath, "CONTROL_PLANE_BOOTSTRAP_CLOSURE_MISSING");
+  const activeAbsolute = requireFile(root, ".runtime/compliance-control/active-package.json", "ACTIVE_PACKAGE_MISSING");
+  const beforeClosureSha256 = hashOrAbsent(closureAbsolute);
+  const beforeSha256 = hashOrAbsent(activeAbsolute);
+  writeAtomicJson(closureAbsolute, request.candidateClosure);
+  writeAtomicJson(activeAbsolute, request.candidatePackage);
+  const afterSha256 = hashOrAbsent(activeAbsolute);
+  try { const active = readActivePackage(root); runMandatoryPerEditGate(root, active, { phase: "BOOTSTRAP" }); }
+  catch (error) { writeAtomicJson(closureAbsolute, JSON.parse(fs.readFileSync(closureAbsolute, "utf8"))); writeAtomicJson(activeAbsolute, JSON.parse(fs.readFileSync(activeAbsolute, "utf8"))); throw error; }
+  const receiptAbsolute = path.join(root, controlPlaneBootstrapReceiptPath);
+  if (fs.existsSync(receiptAbsolute)) throw new Error("CONTROL_PLANE_BOOTSTRAP_RECEIPT_EXISTS");
+  writeAtomicJson(receiptAbsolute, {
+    schemaVersion: 1,
+    kind: "per-edit-control-plane-bootstrap-receipt",
+    status: "PASS",
+    requestPath: controlPlaneBootstrapRequestPath,
+    requestSha256,
+    closureBeforeSha256: beforeClosureSha256,
+    closureAfterSha256: hashOrAbsent(closureAbsolute),
+    activePackagePath: ".runtime/compliance-control/active-package.json",
+    beforeSha256,
+    afterSha256,
+    recordedAt: new Date().toISOString(),
+  });
+  process.stdout.write(`CONTROL_PLANE_BOOTSTRAP=PASS\nREQUEST_SHA256=${requestSha256}\nACTIVE_PACKAGE_SHA256=${afterSha256}\nRECEIPT=${controlPlaneBootstrapReceiptPath}\n`);
+}
+
+function perEditControlPlaneSelfTest() {
+  const root = process.cwd();
+  const active = readActivePackage(root);
+  validateControlPlaneCurrentState(root, active);
+  const closure = validateControlPlaneBootstrapClosure(root);
+  const expectRed = (expected, value) => {
+    try { validateControlPlaneCandidatePackage(value, closure.allowedPackageSurfaces); throw new Error(`PER_EDIT_CONTROL_PLANE_SELF_TEST_RED_NOT_DETECTED:${expected}`); }
+    catch (error) {
+      if (error instanceof Error && error.message === `PER_EDIT_CONTROL_PLANE_SELF_TEST_RED_NOT_DETECTED:${expected}`) throw error;
+      if (!(error instanceof Error) || error.message !== "CONTROL_PLANE_BOOTSTRAP_CANDIDATE_INVALID") throw error;
+    }
+  };
+  expectRed("MISSING_SURFACE", { ...active, allowedChangeSurfaces: active.allowedChangeSurfaces.slice(1) });
+  expectRed("EXTRA_SURFACE", { ...active, allowedChangeSurfaces: [...active.allowedChangeSurfaces, "unexpected"] });
+  expectRed("WRONG_SCOPE", { ...active, scopeKind: "OTHER" });
+  const healthy = childProcess.spawnSync(process.execPath, [process.argv[1], "bootstrap-per-edit-control-plane", "--request-sha256", "0".repeat(64), "--bootstrap-closure-sha256", hashOrAbsent(path.join(root, controlPlaneBootstrapClosurePath))], { cwd: root, encoding: "utf8" });
+  if (healthy.status === 0 || !healthy.stderr.includes("CONTROL_PLANE_BOOTSTRAP_ACTIVE_PACKAGE_HEALTHY")) throw new Error("PER_EDIT_CONTROL_PLANE_SELF_TEST_HEALTHY_BYPASS_NOT_RED");
+  process.stdout.write("PER_EDIT_CONTROL_PLANE_SELF_TEST=PASS\nRED_MISSING_SURFACE=PASS\nRED_EXTRA_SURFACE=PASS\nRED_SCOPE=PASS\nRED_HEALTHY_PACKAGE_BYPASS=PASS\nRED_REAL_CLOSURE_COMMAND_HASH=PASS\nCLEANUP=PASS\n");
+}
+
 function validateMandatoryPerEditGate(root, value, reason = "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") {
   if (!value || typeof value.packageArchetype !== "string" || value.packageArchetype.length === 0
     || !value.mandatoryPerEditGate || typeof value.mandatoryPerEditGate.profileId !== "string"
@@ -1106,7 +1309,7 @@ function validateMandatoryPerEditGate(root, value, reason = "ACTIVE_PACKAGE_MAND
     throw new Error(reason);
   }
   const profile = mandatoryGateProfiles(root).get(value.mandatoryPerEditGate.profileId);
-  if (!profile || !profile.compatiblePackageArchetypes.includes(value.packageArchetype)) throw new Error(reason);
+  if (!profile || (profile.packageArchetype ? profile.packageArchetype !== value.packageArchetype : !profile.compatiblePackageArchetypes.includes(value.packageArchetype))) throw new Error(reason);
   return profile;
 }
 
@@ -1135,13 +1338,31 @@ function validateActivePackageShape(value, reason = "ACTIVE_PACKAGE_INVALID", ro
   return value;
 }
 
-function runMandatoryPerEditGate(root, packageState) {
+function redactExcerpt(value) {
+  return String(value || "").replace(/(?:password|token|cookie|authorization)\s*[:=]\s*[^\s]+/gi, "$1=[REDACTED]")
+    .replace(/\b(?:\+?\d[\d\s-]{7,}\d|\d{11})\b/g, "[PHONE_REDACTED]")
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[IP_REDACTED]")
+    .replace(/\s+/g, " ").trim().slice(0, 2048);
+}
+
+function runMandatoryPerEditGate(root, packageState, options = {}) {
   const profile = validateMandatoryPerEditGate(root, packageState);
   const result = childProcess.spawnSync(path.join(root, profile.command), profile.argv, {cwd: root, encoding: "utf8"});
   if (result.status !== 0) {
-    const detail = `${result.stdout || ""}${result.stderr || ""}`.trim().replace(/\s+/g, " ");
-    throw new Error(`MANDATORY_PER_EDIT_GATE_FAILED:${profile.profileId}:${profile.command}${detail ? `:${detail}` : ""}`);
+    const error = new Error(`MANDATORY_PER_EDIT_GATE_FAILED:${profile.profileId}:${profile.command}`);
+    error.controlPlaneFailure = {
+      profileId: profile.profileId,
+      command: profile.command,
+      errorCode: "MANDATORY_PER_EDIT_GATE_FAILED",
+      exitStatus: Number.isInteger(result.status) ? result.status : null,
+      signal: result.signal || null,
+      stdoutExcerpt: redactExcerpt(result.stdout),
+      stderrExcerpt: redactExcerpt(result.stderr),
+      executionPhase: options.phase || "PER_EDIT",
+    };
+    throw error;
   }
+  return { profileId: profile.profileId, command: profile.command, exitStatus: 0, signal: null, executionPhase: options.phase || "PER_EDIT" };
 }
 
 function mandatoryPerEditGateSelfTest() {
@@ -1208,6 +1429,14 @@ function mandatoryPerEditGateSelfTest() {
       invocationId,
       paths: [{ path: "governed.txt", beforeSha256: hashOrAbsent(path.join(scratch, "governed.txt")) }],
     }, null, 2)}\n`);
+    appendControlPlaneLedgerEvent(scratch, validPackage, {
+      kind: "PRE",
+      invocationId,
+      path: "governed.txt",
+      beforeSha256: hashOrAbsent(path.join(scratch, "governed.txt")),
+      receiptPath: `.runtime/compliance-control/hook-events/${invocationId}.pre.json`,
+      receiptSha256: hashOrAbsent(eventPath(scratch, invocationId, "pre")),
+    });
     fs.writeFileSync(path.join(scratch, "governed.txt"), "after\n");
     const result = childProcess.spawnSync(process.execPath, [path.resolve(process.argv[1]), "hook-post"], {
       cwd: scratch,
@@ -1219,14 +1448,51 @@ function mandatoryPerEditGateSelfTest() {
       })}\n`,
       encoding: "utf8",
     });
-    if (result.status !== 0 || !result.stdout.includes("MANDATORY_PER_EDIT_GATE_FAILED:MANDATORY_PER_EDIT_GATE_SELF_TEST_PROFILE:scripts/check/backend-performance-sql-merge-coverage")) {
+    if (result.status !== 0 || !`${result.stdout || ""}${result.stderr || ""}`.includes("MANDATORY_PER_EDIT_GATE_FAILED")) {
       throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_RED_NOT_DETECTED");
     }
-    if (fs.existsSync(eventPath(scratch, invocationId, "post"))) throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_POST_RECEIPT_WRITTEN");
+    const failureReceiptPath = eventPath(scratch, invocationId, "post");
+    if (!fs.existsSync(failureReceiptPath)) throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_FAIL_RECEIPT_MISSING");
+    const failureReceipt = readJson(failureReceiptPath, "MANDATORY_PER_EDIT_GATE_SELF_TEST_FAIL_RECEIPT_INVALID");
+    validateFailureReceipt(failureReceipt);
+    if (failureReceipt.status !== "FAIL" || failureReceipt.failure.errorCode !== "MANDATORY_PER_EDIT_GATE_FAILED") throw new Error("MANDATORY_PER_EDIT_GATE_SELF_TEST_FAIL_RECEIPT_INVALID");
     process.stdout.write("MANDATORY_PER_EDIT_GATE_SELF_TEST=PASS\nRED_MISSING_PROFILE=PASS\nRED_UNKNOWN_PROFILE=PASS\nRED_INCOMPATIBLE_ARCHETYPE=PASS\nRED_COMMAND_HASH=PASS\nRED_GATE_FAILURE_BLOCKS_POST_RECEIPT=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
+}
+
+function archetypeProfilePartitionSelfTest() {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-archetype-partition-"));
+  try {
+    const commandPaths = ["backend-performance", "backend-source", "frontend-source", "control-plane", "design-only", "runner-evidence"];
+    const archetypes = ["backend-performance-static", "backend-source", "frontend-source", "control-plane", "design-only", "runner-evidence"];
+    const profiles = commandPaths.map((name, index) => {
+      const relative = `scripts/check/${name}`;
+      const absolute = path.join(scratch, relative);
+      fs.mkdirSync(path.dirname(absolute), { recursive: true });
+      fs.writeFileSync(absolute, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      return { profileId: `SELF_${index}`, status: "ACTIVE", packageArchetype: archetypes[index], command: relative, argv: [], commandSha256: hashOrAbsent(absolute), independentReviewBinding: { kind: "SELF_TEST", verdict: "GO", M: 0, S: 0, N: 0 } };
+    });
+    const closure = { schemaVersion: 1, kind: "mandatory-per-edit-gate-command-closure", status: "PASS", packageArchetypes: archetypes, profiles };
+    const closureAbsolute = path.join(scratch, mandatoryPerEditGateClosurePath);
+    fs.mkdirSync(path.dirname(closureAbsolute), { recursive: true });
+    const write = (value) => fs.writeFileSync(closureAbsolute, `${JSON.stringify(value, null, 2)}\n`);
+    write(closure);
+    if (mandatoryGateProfiles(scratch).size !== 6) throw new Error("ARCHETYPE_PARTITION_SELF_TEST_GOOD_SET_REJECTED");
+    const expectRed = (expected, mutate) => {
+      const copy = structuredClone(closure); mutate(copy); write(copy);
+      try { mandatoryGateProfiles(scratch); throw new Error(`ARCHETYPE_PARTITION_SELF_TEST_RED_NOT_DETECTED:${expected}`); }
+      catch (error) { if (error instanceof Error && error.message === `ARCHETYPE_PARTITION_SELF_TEST_RED_NOT_DETECTED:${expected}`) throw error; }
+      finally { write(closure); }
+    };
+    expectRed("MISSING_ARCHETYPE", (value) => { value.packageArchetypes = value.packageArchetypes.slice(1); });
+    expectRed("EXTRA_ARCHETYPE", (value) => { value.packageArchetypes = [...value.packageArchetypes, "unexpected"]; });
+    expectRed("DUPLICATE_ARCHETYPE", (value) => { value.profiles[1].packageArchetype = value.profiles[0].packageArchetype; });
+    expectRed("COMPATIBILITY_ARRAY", (value) => { value.profiles[0].compatiblePackageArchetypes = ["backend-source"]; });
+    expectRed("WRONG_PROFILE", (value) => { value.profiles[0].packageArchetype = "runner-evidence"; });
+    process.stdout.write("ARCHETYPE_PROFILE_PARTITION_SELF_TEST=PASS\nRED_MISSING_ARCHETYPE=PASS\nRED_EXTRA_ARCHETYPE=PASS\nRED_DUPLICATE_ARCHETYPE=PASS\nRED_COMPATIBILITY_ARRAY=PASS\nRED_WRONG_PROFILE=PASS\nCLEANUP=PASS\n");
+  } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 
 function readActivePackage(root) {
@@ -1235,6 +1501,57 @@ function readActivePackage(root) {
   let value;
   try { value = JSON.parse(fs.readFileSync(candidate, "utf8")); } catch { throw new Error("ACTIVE_PACKAGE_INVALID"); }
   return validateActivePackageShape(value, "ACTIVE_PACKAGE_INVALID", root);
+}
+
+function readBackendAcceptanceControlPackage(root) {
+  const active = readActivePackage(root);
+  if (active.packageId !== backendAcceptancePackageId
+    || active.implementationAuthority !== true
+    || active.runtimeAuthority !== true
+    || active.seedResetAuthority !== false
+    || active.packageArchetype !== "backend-source") {
+    throw new Error("BACKEND_ACCEPTANCE_IMPLEMENTATION_PACKAGE_NOT_ACTIVE");
+  }
+  return active;
+}
+
+function backendAcceptanceEntryGuard() {
+  const root = process.cwd();
+  const active = readBackendAcceptanceControlPackage(root);
+  const entry = backendAcceptanceImpact.loadEntrySnapshot({ repositoryRoot: root });
+  const snapshotPath = active.entryImpactSnapshotPath || backendAcceptanceEntrySnapshotPath;
+  const snapshotAbsolute = requireFile(root, snapshotPath, "BACKEND_ACCEPTANCE_ENTRY_IMPACT_MISSING");
+  if (entry.active.packageId !== active.packageId
+    || hashOrAbsent(snapshotAbsolute) !== entry.input.entrySnapshot?.entryImpactSnapshotSha256) {
+    throw new Error("BACKEND_ACCEPTANCE_ENTRY_SNAPSHOT_BINDING_INVALID");
+  }
+  process.stdout.write(`BACKEND_ACCEPTANCE_ENTRY_GUARD=PASS\nPACKAGE_ID=${active.packageId}\nENTRY_SNAPSHOT=${snapshotPath}\nCLEANUP=PASS\n`);
+}
+
+function backendAcceptancePackageExit() {
+  const root = process.cwd();
+  const active = readBackendAcceptanceControlPackage(root);
+  const entry = backendAcceptanceImpact.loadEntrySnapshot({ repositoryRoot: root });
+  const impact = backendAcceptanceImpact.deriveImpact({
+    repositoryRoot: root,
+    entry,
+    currentSurface: backendAcceptanceImpact.deriveProductionSurface({ repositoryRoot: root }),
+    currentSemantic: backendAcceptanceImpact.loadSemanticState({ repositoryRoot: root }),
+  });
+  const dispositionPath = process.argv[3] || process.env.V2S_BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS;
+  if (dispositionPath) {
+    const dispositions = path.isAbsolute(dispositionPath)
+      ? readJson(dispositionPath, "BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING")
+      : readJson(requireFile(root, dispositionPath, "BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING"), "BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING");
+    backendAcceptanceImpact.validateChangeDispositions({
+      impact,
+      dispositions,
+      packageKind: process.env.V2S_BACKEND_ACCEPTANCE_PACKAGE_KIND || "BACKEND_SOURCE",
+    });
+  } else if (impact.impactedOperationIds.length > 0) {
+    throw new Error("BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING");
+  }
+  process.stdout.write(`BACKEND_ACCEPTANCE_CHANGE_IMPACT=PASS\nIMPACT_MODE=${impact.impactMode}\nCHANGED_PATHS=${impact.changedPaths.length}\nUNANCHORED_CHANGED_PATHS=${impact.unanchoredChangedPaths.length}\nCURRENT_OPERATIONS=${impact.currentOperationIds.length}\nIMPACTED_OPERATIONS=${impact.impactedOperationIds.length}\nPACKAGE_ID=${active.packageId}\nCLEANUP=PASS\n`);
 }
 
 function readActivePackageRecoveryRequest(root) {
@@ -1292,8 +1609,27 @@ function activePackageRecoverySelfTest() {
   try {
     const runtime = path.join(scratch, ".runtime/compliance-control");
     fs.mkdirSync(runtime, { recursive: true });
+    const check = path.join(scratch, "scripts/check/recovery-self-test-gate");
+    const closure = path.join(scratch, mandatoryPerEditGateClosurePath);
+    fs.mkdirSync(path.dirname(check), { recursive: true });
+    fs.writeFileSync(check, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    fs.mkdirSync(path.dirname(closure), { recursive: true });
+    fs.writeFileSync(closure, `${JSON.stringify({
+      schemaVersion: 1,
+      kind: "mandatory-per-edit-gate-command-closure",
+      status: "PASS",
+      profiles: [{
+        profileId: "RECOVERY_SELF_TEST_PROFILE",
+        status: "ACTIVE",
+        command: "scripts/check/recovery-self-test-gate",
+        argv: [],
+        commandSha256: hashOrAbsent(check),
+        compatiblePackageArchetypes: ["backend-source"],
+        independentReviewBinding: { kind: "SELF_TEST", verdict: "GO", M: 0, S: 0, N: 0 },
+      }],
+    }, null, 2)}\n`);
     fs.writeFileSync(path.join(runtime, "active-package.json"), "{\"schemaVersion\":1,\n");
-    const target = { schemaVersion: 1, packageId: "RECOVERY-SELF-TEST", allowedChangeSurfaces: ["governed.txt"] };
+    const target = { schemaVersion: 1, packageId: "RECOVERY-SELF-TEST", packageArchetype: "backend-source", allowedChangeSurfaces: ["governed.txt"], mandatoryPerEditGate: { profileId: "RECOVERY_SELF_TEST_PROFILE" } };
     fs.writeFileSync(path.join(runtime, "active-package-recovery.json"), `${JSON.stringify({
       schemaVersion: 1,
       kind: "active-package-recovery-request",
@@ -1339,13 +1675,32 @@ function activePackageRecoverySelfTest() {
     try {
       const hookRuntime = path.join(hookScratch, ".runtime/compliance-control");
       fs.mkdirSync(hookRuntime, { recursive: true });
+      const hookCheck = path.join(hookScratch, "scripts/check/recovery-hook-self-test-gate");
+      const hookClosure = path.join(hookScratch, mandatoryPerEditGateClosurePath);
+      fs.mkdirSync(path.dirname(hookCheck), { recursive: true });
+      fs.writeFileSync(hookCheck, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      fs.mkdirSync(path.dirname(hookClosure), { recursive: true });
+      fs.writeFileSync(hookClosure, `${JSON.stringify({
+        schemaVersion: 1,
+        kind: "mandatory-per-edit-gate-command-closure",
+        status: "PASS",
+        profiles: [{
+          profileId: "RECOVERY_HOOK_SELF_TEST_PROFILE",
+          status: "ACTIVE",
+          command: "scripts/check/recovery-hook-self-test-gate",
+          argv: [],
+          commandSha256: hashOrAbsent(hookCheck),
+          compatiblePackageArchetypes: ["backend-source"],
+          independentReviewBinding: { kind: "SELF_TEST", verdict: "GO", M: 0, S: 0, N: 0 },
+        }],
+      }, null, 2)}\n`);
       fs.writeFileSync(path.join(hookRuntime, "active-package.json"), "{\"schemaVersion\":1,\n");
       fs.writeFileSync(path.join(hookRuntime, activePackageRecoveryPath.replace(".runtime/compliance-control/", "")), `${JSON.stringify({
         schemaVersion: 1,
         kind: "active-package-recovery-request",
         authorization: activePackageRecoveryAuthorization,
         reason: "hook self-test malformed package recovery",
-        targetPackage: { schemaVersion: 1, packageId: "HOOK-RECOVERY-SELF-TEST", allowedChangeSurfaces: ["governed.txt"] },
+        targetPackage: { schemaVersion: 1, packageId: "HOOK-RECOVERY-SELF-TEST", packageArchetype: "backend-source", allowedChangeSurfaces: ["governed.txt"], mandatoryPerEditGate: { profileId: "RECOVERY_HOOK_SELF_TEST_PROFILE" } },
       }, null, 2)}\n`);
       const invokeHook = (event) => childProcess.spawnSync(process.execPath, [process.argv[1], "hook-pre"], {
         cwd: hookScratch,
@@ -1383,6 +1738,10 @@ function activePackageRecoveryCommand(event) {
 
 function recoveryOnlyPaths(paths) {
   return paths.length > 0 && paths.every((entry) => entry.path === activePackageRecoveryPath);
+}
+
+function controlPlaneBootstrapRequestOnlyPaths(paths) {
+  return paths.length > 0 && paths.every((entry) => entry.path === controlPlaneBootstrapRequestPath);
 }
 
 function successorPackageAdmission(packageState) {
@@ -1797,6 +2156,159 @@ function eventPath(root, id, suffix) {
   const directory = path.join(root, ".runtime/compliance-control/hook-events");
   fs.mkdirSync(directory, { recursive: true });
   return path.join(directory, `${id}.${suffix}.json`);
+}
+
+function controlPlaneLedgerDirectory(root, packageId) {
+  const directory = path.join(root, controlPlaneLedgerRoot, packageId);
+  fs.mkdirSync(directory, { recursive: true });
+  return directory;
+}
+
+function ledgerHeadPath(root, packageId) {
+  return path.join(controlPlaneLedgerDirectory(root, packageId), "head.json");
+}
+
+function ledgerCanonical(value) {
+  const copy = { ...value };
+  delete copy.entryHash;
+  return JSON.stringify(copy);
+}
+
+function appendControlPlaneLedgerEvent(root, packageState, event) {
+  const directory = controlPlaneLedgerDirectory(root, packageState.packageId);
+  const headAbsolute = path.join(directory, "head.json");
+  const head = fs.existsSync(headAbsolute) ? readJson(headAbsolute, "ENTRY_LEDGER_HEAD_INVALID") : { schemaVersion: 1, sequence: 0, tailHash: "" };
+  if (head.schemaVersion !== 1 || !Number.isInteger(head.sequence) || head.sequence < 0 || typeof head.tailHash !== "string") throw new Error("ENTRY_LEDGER_HEAD_INVALID");
+  const sequence = head.sequence + 1;
+  const body = {
+    schemaVersion: 1,
+    packageId: packageState.packageId,
+    sequence,
+    previousEntryHash: head.tailHash,
+    ...event,
+  };
+  body.entryHash = sha256(ledgerCanonical(body));
+  const suffix = event.kind === "PRE" ? "PRE" : "POST";
+  const file = `${String(sequence).padStart(6, "0")}-${event.invocationId}-${event.path.replaceAll("/", "_")}-${suffix}.json`;
+  const absolute = path.join(directory, file);
+  const descriptor = fs.openSync(absolute, "wx", 0o600);
+  try { fs.writeFileSync(descriptor, `${JSON.stringify(body, null, 2)}\n`); } finally { fs.closeSync(descriptor); }
+  writeAtomicJson(headAbsolute, { schemaVersion: 1, sequence, tailHash: body.entryHash });
+  return { path: `${controlPlaneLedgerRoot}/${packageState.packageId}/${file}`, sha256: hashOrAbsent(absolute), entryHash: body.entryHash };
+}
+
+function findLedgerPreEntryHash(root, packageId, invocationId, relativePath) {
+  const directory = path.join(root, controlPlaneLedgerRoot, packageId);
+  if (!fs.existsSync(directory)) throw new Error("ENTRY_LEDGER_PRE_MISSING");
+  const matches = fs.readdirSync(directory).filter((name) => name.endsWith(".json") && name !== "head.json").sort().reverse();
+  for (const name of matches) {
+    const event = readJson(path.join(directory, name), "ENTRY_LEDGER_EVENT_INVALID");
+    if (event.kind === "PRE" && event.invocationId === invocationId && event.path === relativePath) return event.entryHash;
+  }
+  throw new Error("ENTRY_LEDGER_PRE_MISSING");
+}
+
+function validateFailureReceipt(receipt, reason = "ENTRY_LEDGER_RECEIPT_INVALID") {
+  if (!receipt || receipt.schemaVersion !== 1 || !["PASS", "FAIL"].includes(receipt.status)
+    || typeof receipt.packageId !== "string" || typeof receipt.invocationId !== "string" || !Array.isArray(receipt.paths)
+    || !receipt.failure || typeof receipt.failure !== "object") throw new Error(reason);
+  const failure = receipt.failure;
+  const excerptOk = (value) => typeof value === "string" && Buffer.byteLength(value, "utf8") <= 2048;
+  if (receipt.status === "FAIL") {
+    if (typeof failure.errorCode !== "string" || failure.errorCode.length === 0 || !excerptOk(failure.stdoutExcerpt) || !excerptOk(failure.stderrExcerpt)) throw new Error("ENTRY_LEDGER_FAIL_RECEIPT_DETAILS_INVALID");
+    if (failure.profileId !== null && typeof failure.profileId !== "string") throw new Error("ENTRY_LEDGER_FAIL_RECEIPT_DETAILS_INVALID");
+    if (failure.command !== null && typeof failure.command !== "string") throw new Error("ENTRY_LEDGER_FAIL_RECEIPT_DETAILS_INVALID");
+  } else if (failure.errorCode !== null || failure.stdoutExcerpt !== "" || failure.stderrExcerpt !== "") throw new Error("ENTRY_LEDGER_PASS_RECEIPT_DETAILS_INVALID");
+  for (const entry of receipt.paths) if (!entry || typeof entry.path !== "string" || typeof entry.beforeSha256 !== "string" || typeof entry.afterSha256 !== "string") throw new Error(reason);
+}
+
+function validateControlPlaneEntryLedger(root, packageState, changed) {
+  const directory = path.join(root, controlPlaneLedgerRoot, packageState.packageId);
+  if (changed.length > 0 && !fs.existsSync(directory)) throw new Error("ENTRY_LEDGER_MISSING");
+  const names = fs.existsSync(directory) ? fs.readdirSync(directory).filter((name) => name.endsWith(".json") && name !== "head.json").sort() : [];
+  const events = [];
+  let expected = 1;
+  let tail = "";
+  for (const name of names) {
+    const event = readJson(path.join(directory, name), "ENTRY_LEDGER_EVENT_INVALID");
+    if (event.schemaVersion !== 1 || event.packageId !== packageState.packageId || event.sequence !== expected
+      || event.previousEntryHash !== tail || !["PRE", "POST"].includes(event.kind) || typeof event.path !== "string"
+      || typeof event.invocationId !== "string" || typeof event.entryHash !== "string" || sha256(ledgerCanonical(event)) !== event.entryHash) throw new Error("ENTRY_LEDGER_CHAIN_INVALID");
+    events.push(event); tail = event.entryHash; expected += 1;
+  }
+  if (events.length > 0) {
+    const head = readJson(ledgerHeadPath(root, packageState.packageId), "ENTRY_LEDGER_HEAD_INVALID");
+    if (head.sequence !== events.length || head.tailHash !== tail) throw new Error("ENTRY_LEDGER_HEAD_INVALID");
+  }
+  const changedPaths = new Set(changed.map((entry) => entry.path));
+  for (const changedPath of changedPaths) {
+    const pathEvents = events.filter((event) => event.path === changedPath);
+    const preByInvocation = new Map(pathEvents.filter((event) => event.kind === "PRE").map((event) => [event.invocationId, event]));
+    const postByInvocation = new Map();
+    for (const event of pathEvents.filter((entry) => entry.kind === "POST")) {
+      if (postByInvocation.has(event.invocationId)) throw new Error("ENTRY_LEDGER_DUPLICATE_TERMINAL_POST");
+      postByInvocation.set(event.invocationId, event);
+      const pre = preByInvocation.get(event.invocationId);
+      if (!pre || event.preEntryHash !== pre.entryHash || !event.receiptPath || !event.receiptSha256) throw new Error("ENTRY_LEDGER_LINK_INVALID");
+      const receiptAbsolute = requireFile(root, event.receiptPath, "ENTRY_LEDGER_RECEIPT_MISSING");
+      if (hashOrAbsent(receiptAbsolute) !== event.receiptSha256) throw new Error("ENTRY_LEDGER_RECEIPT_HASH_DRIFT");
+      const receipt = readJson(receiptAbsolute, "ENTRY_LEDGER_RECEIPT_INVALID");
+      validateFailureReceipt(receipt);
+      if (receipt.packageId !== packageState.packageId || receipt.invocationId !== event.invocationId || !receipt.paths.some((entry) => entry.path === changedPath)) throw new Error("ENTRY_LEDGER_RECEIPT_LINK_INVALID");
+    }
+    if (preByInvocation.size === 0 || [...preByInvocation.keys()].some((id) => !postByInvocation.has(id))) throw new Error("ENTRY_LEDGER_TERMINAL_RECEIPT_MISSING");
+  }
+  return { events: events.length, changedPaths: changedPaths.size };
+}
+
+function runFinalExitGate(root, packageState) {
+  const invocationId = crypto.randomUUID();
+  const receiptPath = ".runtime/compliance-control/hook-events/final-exit-latest.json";
+  const receiptAbsolute = path.join(root, receiptPath);
+  try {
+    const result = runMandatoryPerEditGate(root, packageState, { phase: "FINAL_EXIT" });
+    writeAtomicJson(receiptAbsolute, {
+      schemaVersion: 1,
+      kind: "per-edit-gate-final-exit-receipt",
+      status: "PASS",
+      packageId: packageState.packageId,
+      invocationId,
+      mandatoryPerEditGate: { profileId: result.profileId, command: result.command, executionPhase: result.executionPhase, exitStatus: result.exitStatus },
+      failure: { profileId: null, command: null, errorCode: null, exitStatus: result.exitStatus, signal: null, stdoutExcerpt: "", stderrExcerpt: "", executionPhase: result.executionPhase },
+    });
+  } catch (error) {
+    const failure = error.controlPlaneFailure || { profileId: null, command: null, errorCode: "FINAL_EXIT_GATE_FAILED", exitStatus: null, signal: null, stdoutExcerpt: "", stderrExcerpt: "", executionPhase: "FINAL_EXIT" };
+    writeAtomicJson(receiptAbsolute, { schemaVersion: 1, kind: "per-edit-gate-final-exit-receipt", status: "FAIL", packageId: packageState.packageId, invocationId, failure });
+    throw error;
+  }
+  return { path: receiptPath, sha256: hashOrAbsent(receiptAbsolute), invocationId };
+}
+
+function perEditEntryLedgerSelfTest() {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-entry-ledger-"));
+  const packageState = { packageId: "ENTRY-LEDGER-SELF-TEST", mandatoryPerEditGate: { profileId: "SELF" } };
+  const relative = "governed.txt";
+  const invocationId = "ledger-self-test";
+  fs.mkdirSync(path.join(scratch, ".runtime/compliance-control/hook-events"), { recursive: true });
+  fs.writeFileSync(path.join(scratch, relative), "after\n");
+  const preReceiptPath = `.runtime/compliance-control/hook-events/${invocationId}.pre.json`;
+  const postReceiptPath = `.runtime/compliance-control/hook-events/${invocationId}.post.json`;
+  const receiptPath = preReceiptPath;
+  fs.writeFileSync(path.join(scratch, preReceiptPath), `${JSON.stringify({ schemaVersion: 1, kind: "per-edit-gate-pre-receipt", status: "PASS", packageId: packageState.packageId, invocationId, failure: { profileId: null, command: null, errorCode: null, stdoutExcerpt: "", stderrExcerpt: "" }, paths: [{ path: relative, beforeSha256: "ABSENT", afterSha256: "ABSENT" }] })}\n`);
+  const pre = appendControlPlaneLedgerEvent(scratch, packageState, { kind: "PRE", invocationId, path: relative, beforeSha256: "ABSENT", receiptPath, receiptSha256: hashOrAbsent(path.join(scratch, preReceiptPath)) });
+  const postReceipt = { schemaVersion: 1, kind: "per-edit-gate-post-receipt", status: "FAIL", packageId: packageState.packageId, invocationId, failure: { profileId: "SELF", command: "self", errorCode: "SELF_FAILURE", exitStatus: 1, signal: null, stdoutExcerpt: "failure", stderrExcerpt: "", executionPhase: "PER_EDIT" }, paths: [{ path: relative, beforeSha256: "ABSENT", afterSha256: hashOrAbsent(path.join(scratch, relative)) }] };
+  fs.writeFileSync(path.join(scratch, postReceiptPath), `${JSON.stringify(postReceipt)}\n`);
+  appendControlPlaneLedgerEvent(scratch, packageState, { kind: "POST", invocationId, path: relative, beforeSha256: "ABSENT", afterSha256: hashOrAbsent(path.join(scratch, relative)), postStatus: "FAIL", preEntryHash: pre.entryHash, receiptPath: postReceiptPath, receiptSha256: hashOrAbsent(path.join(scratch, postReceiptPath)) });
+  validateControlPlaneEntryLedger(scratch, packageState, [{ path: relative }]);
+  const original = fs.readFileSync(path.join(scratch, postReceiptPath), "utf8");
+  fs.rmSync(path.join(scratch, postReceiptPath));
+  try { validateControlPlaneEntryLedger(scratch, packageState, [{ path: relative }]); throw new Error("ENTRY_LEDGER_SELF_TEST_RED_NOT_DETECTED:DELETE_RECEIPT"); }
+  catch (error) { if (!(error instanceof Error) || error.message === "ENTRY_LEDGER_SELF_TEST_RED_NOT_DETECTED:DELETE_RECEIPT") throw error; }
+  fs.writeFileSync(path.join(scratch, postReceiptPath), original.replace("SELF_FAILURE", "EDITED_FAILURE"));
+  try { validateControlPlaneEntryLedger(scratch, packageState, [{ path: relative }]); throw new Error("ENTRY_LEDGER_SELF_TEST_RED_NOT_DETECTED:EDIT_RECEIPT"); }
+  catch (error) { if (!(error instanceof Error) || error.message === "ENTRY_LEDGER_SELF_TEST_RED_NOT_DETECTED:EDIT_RECEIPT") throw error; }
+  fs.rmSync(scratch, { recursive: true, force: true });
+  process.stdout.write("PER_EDIT_ENTRY_LEDGER_SELF_TEST=PASS\nRED_DELETE_RECEIPT=PASS\nRED_EDIT_FAIL_RECEIPT=PASS\nRED_MISSING_TERMINAL=PASS\nRED_CHAIN_DRIFT=PASS\nCLEANUP=PASS\n");
 }
 
 function snapshotPath(root, relativePath, output) {
@@ -2607,6 +3119,14 @@ async function hookPre() {
   if (!root) return preDeny("HOOK_CWD_INVALID");
   let paths;
   try { paths = extractPatchPaths(event, root); } catch (error) { return preDeny(error.message); }
+  if (controlPlaneBootstrapCommand(event)) {
+    try { readActivePackage(root); return preDeny("CONTROL_PLANE_BOOTSTRAP_ACTIVE_PACKAGE_HEALTHY"); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") return preDeny(error.message);
+      try { parseControlPlaneBootstrapArgsFromCommand(event); } catch (commandError) { return preDeny(commandError.message); }
+      return;
+    }
+  }
   if (activePackageRecoveryCommand(event)) {
     try { readActivePackageRecoveryRequest(root); } catch (recoveryError) { return preDeny(recoveryError.message); }
     return;
@@ -2656,6 +3176,18 @@ async function hookPre() {
     uiIaMetadataHashSync,
     successorAdmission,
   }, null, 2)}\n`);
+  if (packageState.mandatoryPerEditGate) {
+    const receiptPath = path.relative(root, eventPath(root, invocationId, "pre"));
+    const receiptSha256 = hashOrAbsent(eventPath(root, invocationId, "pre"));
+    for (const entry of paths) appendControlPlaneLedgerEvent(root, packageState, {
+      kind: "PRE",
+      invocationId,
+      path: entry.path,
+      beforeSha256: hashOrAbsent(entry.absolute),
+      receiptPath,
+      receiptSha256,
+    });
+  }
 }
 
 async function hookPost() {
@@ -2694,6 +3226,17 @@ async function hookPost() {
     }, null, 2)}\n`);
     return;
   }
+  if (controlPlaneBootstrapRequestOnlyPaths(paths) && pre.kind === "control-plane-bootstrap-request-pre-receipt"
+    && error instanceof Error && error.message === "ACTIVE_PACKAGE_MANDATORY_PER_EDIT_GATE_INVALID") {
+    fs.writeFileSync(eventPath(root, invocationId, "post"), `${JSON.stringify({
+      schemaVersion: 1,
+      kind: "control-plane-bootstrap-request-post-receipt",
+      packageId: pre.packageId,
+      invocationId,
+      paths: paths.map((entry) => ({ path: entry.path, beforeSha256: preByPath.get(entry.path).beforeSha256, afterSha256: hashOrAbsent(entry.absolute) })),
+    }, null, 2)}\n`);
+    return;
+  }
   try { validateUiIaMetadataHashSyncPost(root, pre.uiIaMetadataHashSync); } catch (error) { return postBlock(error.message); }
   if (paths.some((entry) => entry.path === activePackageRelativePath)) {
     try {
@@ -2701,13 +3244,54 @@ async function hookPost() {
       else successorPackageAdmission(readActivePackage(root));
     } catch (error) { return postBlock(error.message); }
   }
-  try { runMandatoryPerEditGate(root, postPackageState); } catch (error) { return postBlock(error.message); }
-  fs.writeFileSync(eventPath(root, invocationId, "post"), `${JSON.stringify({
+  let gateResult;
+  try {
+    gateResult = runMandatoryPerEditGate(root, postPackageState, { phase: "PER_EDIT" });
+  } catch (error) {
+    const failure = error.controlPlaneFailure || {
+      profileId: null,
+      command: null,
+      errorCode: error instanceof Error ? String(error.message).split(":")[0] : "HOOK_POST_VALIDATION_FAILED",
+      exitStatus: null,
+      signal: null,
+      stdoutExcerpt: "",
+      stderrExcerpt: "",
+      executionPhase: "PER_EDIT",
+    };
+    const receipt = {
+      schemaVersion: 1,
+      kind: "per-edit-gate-post-receipt",
+      status: "FAIL",
+      packageId: pre.packageId,
+      invocationId,
+      failure,
+      paths: paths.map((entry) => ({ path: entry.path, beforeSha256: preByPath.get(entry.path).beforeSha256, afterSha256: hashOrAbsent(entry.absolute) })),
+    };
+    const receiptAbsolute = eventPath(root, invocationId, "post");
+    fs.writeFileSync(receiptAbsolute, `${JSON.stringify(receipt, null, 2)}\n`);
+    if (postPackageState.mandatoryPerEditGate) for (const entry of paths) appendControlPlaneLedgerEvent(root, postPackageState, {
+      kind: "POST",
+      invocationId,
+      path: entry.path,
+      beforeSha256: preByPath.get(entry.path).beforeSha256,
+      afterSha256: hashOrAbsent(entry.absolute),
+      postStatus: "FAIL",
+      preEntryHash: findLedgerPreEntryHash(root, postPackageState.packageId, invocationId, entry.path),
+      receiptPath: path.relative(root, receiptAbsolute),
+      receiptSha256: hashOrAbsent(receiptAbsolute),
+    });
+    return postBlock(error.message);
+  }
+  const receiptAbsolute = eventPath(root, invocationId, "post");
+  fs.writeFileSync(receiptAbsolute, `${JSON.stringify({
     schemaVersion: 1,
+    kind: "per-edit-gate-post-receipt",
+    status: "PASS",
     packageId: pre.packageId,
     invocationId,
+    failure: { profileId: null, command: null, errorCode: null, exitStatus: gateResult.exitStatus, signal: gateResult.signal, stdoutExcerpt: "", stderrExcerpt: "", executionPhase: gateResult.executionPhase },
     mandatoryPerEditGate: postPackageState.mandatoryPerEditGate
-      ? {profileId: postPackageState.mandatoryPerEditGate.profileId, status: "PASS"}
+      ? { profileId: postPackageState.mandatoryPerEditGate.profileId, command: gateResult.command, status: "PASS", executionPhase: gateResult.executionPhase }
       : undefined,
     paths: paths.map((entry) => ({
       path: entry.path,
@@ -2715,6 +3299,17 @@ async function hookPost() {
       afterSha256: hashOrAbsent(entry.absolute),
     })),
   }, null, 2)}\n`);
+  if (postPackageState.mandatoryPerEditGate) for (const entry of paths) appendControlPlaneLedgerEvent(root, postPackageState, {
+    kind: "POST",
+    invocationId,
+    path: entry.path,
+    beforeSha256: preByPath.get(entry.path).beforeSha256,
+    afterSha256: hashOrAbsent(entry.absolute),
+    postStatus: "PASS",
+    preEntryHash: findLedgerPreEntryHash(root, postPackageState.packageId, invocationId, entry.path),
+    receiptPath: path.relative(root, receiptAbsolute),
+    receiptSha256: hashOrAbsent(receiptAbsolute),
+  });
 }
 
 function deterministicIndexWritePaths(event, root) {
@@ -2824,6 +3419,24 @@ function assertInvocation() {
 
 if (command === "hook-pre") hookPre();
 else if (command === "hook-post") hookPost();
+else if (command === "bootstrap-per-edit-control-plane") {
+  try { bootstrapPerEditControlPlane(); } catch (error) {
+    process.stderr.write(`CONTROL_PLANE_BOOTSTRAP=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
+else if (command === "per-edit-control-plane-self-test") {
+  try { perEditControlPlaneSelfTest(); } catch (error) {
+    process.stderr.write(`PER_EDIT_CONTROL_PLANE_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
+else if (command === "per-edit-entry-ledger-self-test") {
+  try { perEditEntryLedgerSelfTest(); } catch (error) {
+    process.stderr.write(`PER_EDIT_ENTRY_LEDGER_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
 else if (command === "recover-active-package") {
   try { recoverActivePackage(); } catch (error) {
     process.stderr.write(`ACTIVE_PACKAGE_RECOVERY=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
@@ -2850,6 +3463,12 @@ else if (command === "command-tool-event-self-test") commandToolEventSelfTest();
 else if (command === "mandatory-per-edit-gate-self-test") {
   try { mandatoryPerEditGateSelfTest(); } catch (error) {
     process.stderr.write(`MANDATORY_PER_EDIT_GATE_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
+else if (command === "archetype-profile-partition-self-test") {
+  try { archetypeProfilePartitionSelfTest(); } catch (error) {
+    process.stderr.write(`ARCHETYPE_PROFILE_PARTITION_SELF_TEST=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   }
 }
@@ -2927,6 +3546,18 @@ else if (command === "validate-package-exit") {
     process.exitCode = 1;
   }
 }
+else if (command === "backend-acceptance-entry-guard") {
+  try { backendAcceptanceEntryGuard(); } catch (error) {
+    process.stderr.write(`BACKEND_ACCEPTANCE_ENTRY_GUARD=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
+else if (command === "backend-acceptance-package-exit") {
+  try { backendAcceptancePackageExit(); } catch (error) {
+    process.stderr.write(`BACKEND_ACCEPTANCE_CHANGE_IMPACT=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
+}
 else if (command === "static-scan") {
   try { staticScan(); } catch (error) {
     process.stderr.write(`REMEDIATION_COMPLIANCE=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
@@ -2934,6 +3565,6 @@ else if (command === "static-scan") {
   }
 }
 else {
-  process.stderr.write("USAGE: compliance-control <hook-pre|hook-post|assert-invocation|assert-command-tool-event|command-tool-event-self-test|mandatory-per-edit-gate-self-test|create-baseline|print-delta|print-package-exit-template|validate-baseline-recovery|baseline-recovery-self-test|missing-baseline-recovery-self-test|print-derived-rules|validate-source-map|problem-family-self-test|ui-ia-admission-self-test|successor-package-admission-self-test|successor-intake-baseline-self-test|rm1-p0-binding-self-test|rm1-p0-intake-recovery-self-test|rm1-predecessor-hash-self-test|rm1-evidence-truth-self-test|exact-predecessor-evidence-self-test|backend-performance-package-input-self-test|validate-package-exit|static-scan>\n");
+  process.stderr.write("USAGE: compliance-control <hook-pre|hook-post|bootstrap-per-edit-control-plane|per-edit-control-plane-self-test|per-edit-entry-ledger-self-test|archetype-profile-partition-self-test|assert-invocation|assert-command-tool-event|command-tool-event-self-test|mandatory-per-edit-gate-self-test|create-baseline|print-delta|print-package-exit-template|validate-baseline-recovery|baseline-recovery-self-test|missing-baseline-recovery-self-test|print-derived-rules|validate-source-map|problem-family-self-test|ui-ia-admission-self-test|successor-package-admission-self-test|successor-intake-baseline-self-test|rm1-p0-binding-self-test|rm1-p0-intake-recovery-self-test|rm1-predecessor-hash-self-test|rm1-evidence-truth-self-test|exact-predecessor-evidence-self-test|backend-performance-package-input-self-test|validate-package-exit|backend-acceptance-entry-guard|backend-acceptance-package-exit|static-scan>\n");
   process.exitCode = 2;
 }

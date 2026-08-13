@@ -103,6 +103,27 @@ test("CatalogWorkbenchPage keeps strict GET response types instead of widening c
   assert.match(workbench, /decodeDetail\(query\.data\)/);
 });
 
+test("navigation allCount is a required owner statistic, never a browser aggregation", () => {
+  const coverage = JSON.parse(read("contracts/policy/catalog-inventory-design-byte-coverage.json"));
+  const navigationModel = readModels.models.find((model) => model.name === "CatalogNavigationView");
+  const navigationSchema = openApi.components.schemas.CatalogNavigationView;
+  const edge = read("apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts");
+  const workbench = read("apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx");
+  const row = coverage.rows.find((entry) => entry.model === "CatalogNavigationView");
+
+  assert.ok(row);
+  assert.deepEqual(row.required, navigationModel.required);
+  assert.ok(row.required.includes("allCount"));
+  assert.deepEqual(row.fields.find((field) => field.path === "allCount"), {path: "allCount", type: "integer"});
+  assert.ok(navigationSchema.properties.data.required.includes("allCount"));
+  assert.equal(navigationSchema.properties.data.properties.allCount.type, "integer");
+  assert.match(edge, /data: \{ allCount: number;/);
+  assert.match(workbench, /CatalogTreeLine label="全部商品" count=\{navigation\.allCount\}/);
+
+  const derivedMutation = workbench.replace("navigation.allCount", "navigation.shapeCounts.reduce((total, node) => total + node.count, 0)");
+  assert.throws(() => assert.match(derivedMutation, /CatalogTreeLine label="全部商品" count=\{navigation\.allCount\}/), /did not match/);
+});
+
 test("every catalog-management GET consumer preserves its generated strict response type", () => {
   const queryConsumers = [
     ["ui/CatalogItemCreateDrawer.tsx", ["const manifest = manifestQuery.data?.data;"], ["manifestQuery.data as"]],

@@ -18,6 +18,26 @@ const operationDesignRedFixtures = [
   "OPERATION_PROBLEM_MAPPING_DRIFT",
   "OPERATION_DB_COUNT_DRIFT",
 ];
+const backendAcceptanceImpactValues = new Set([
+  "NONE_WITH_REASON",
+  "ADDED_OR_CHANGED",
+]);
+const backendAcceptanceScenarioFields = [
+  "identity",
+  "fixture",
+  "request",
+  "businessOracle",
+  "performanceCriterion",
+  "cleanup",
+];
+const backendAcceptanceUnitIds = [
+  "BA-U01",
+  "BA-U02",
+  "BA-U03",
+  "BA-U04",
+  "BA-U05",
+  "BA-U06",
+];
 const flowIdentifier = /(?:^|[\\/._-])(?:(?:r|u|j|jg|pkg)\d+[a-z0-9_-]*|g-\d+[a-z0-9_-]*)(?=$|[\\/._-])/i;
 
 function fail(reason) {
@@ -403,6 +423,104 @@ function validateAdversarialReviewPolicy(manifest) {
     fail("INDEPENDENT_SUBAGENT_POLICY_INVALID");
   }
   return true;
+}
+
+function validateBackendAcceptanceAdmission(root, admissionPath) {
+  const admissionFile = readJson(
+    root,
+    admissionPath,
+    "BACKEND_ACCEPTANCE_ADMISSION",
+  );
+  const admission = admissionFile.value;
+  if (
+    admission?.schemaVersion !== 1 ||
+    admission.kind !== "backend-acceptance-design-admission" ||
+    admission.status !== "ACTIVE_IMPLEMENTATION" ||
+    admission.packageId !== "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813"
+  ) {
+    fail("BACKEND_ACCEPTANCE_ADMISSION_IDENTITY_INVALID");
+  }
+  const sourceBindings = admission.sourceBindings;
+  if (!sourceBindings || typeof sourceBindings !== "object") {
+    fail("BACKEND_ACCEPTANCE_ADMISSION_SOURCE_BINDINGS_MISSING");
+  }
+  for (const [key, label] of [
+    ["design", "BACKEND_ACCEPTANCE_ADMISSION_DESIGN"],
+    ["requirements", "BACKEND_ACCEPTANCE_ADMISSION_REQUIREMENTS"],
+    ["designReview", "BACKEND_ACCEPTANCE_ADMISSION_DESIGN_REVIEW"],
+    ["executionContract", "BACKEND_ACCEPTANCE_ADMISSION_EXECUTION_CONTRACT"],
+    ["implementationManifest", "BACKEND_ACCEPTANCE_ADMISSION_IMPLEMENTATION_MANIFEST"],
+  ]) {
+    validateArtifactBinding(root, sourceBindings[key], label);
+  }
+  if (!Array.isArray(admission.deliveryUnits)) {
+    fail("BACKEND_ACCEPTANCE_ADMISSION_UNITS_MISSING");
+  }
+  const unitsById = new Map();
+  for (const unit of admission.deliveryUnits) {
+    const id = requireString(unit?.id, "BACKEND_ACCEPTANCE_ADMISSION_UNIT_ID_MISSING");
+    if (!backendAcceptanceUnitIds.includes(id) || unitsById.has(id)) {
+      fail(`BACKEND_ACCEPTANCE_ADMISSION_UNIT_ID_INVALID:${id}`);
+    }
+    unitsById.set(id, unit);
+    const impact = requireString(
+      unit.backendOperationImpact,
+      `BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_REQUIRED:${id}`,
+    );
+    if (!backendAcceptanceImpactValues.has(impact)) {
+      fail(`BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_INVALID:${id}:${impact}`);
+    }
+    if (impact === "NONE_WITH_REASON") {
+      requireString(
+        unit.reason,
+        `BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_REASON_REQUIRED:${id}`,
+      );
+      if (unit.scenarioContracts !== undefined) {
+        fail(`BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_UNEXPECTED:${id}`);
+      }
+      continue;
+    }
+    if (!Array.isArray(unit.scenarioContracts) || unit.scenarioContracts.length === 0) {
+      fail(`BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REQUIRED:${id}`);
+    }
+    for (const contract of unit.scenarioContracts) {
+      requireString(
+        contract?.registryPath,
+        `BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REGISTRY_PATH_MISSING:${id}`,
+      );
+      resolveRepositoryPath(
+        root,
+        contract.registryPath,
+        `BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REGISTRY_PATH_INVALID:${id}`,
+      );
+      requireString(
+        contract?.identitySource,
+        `BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_IDENTITY_SOURCE_MISSING:${id}`,
+      );
+      if (contract.exactSet !== "CURRENT_SEMANTIC_OPERATION_IDENTITY") {
+        fail(`BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_EXACT_SET_INVALID:${id}`);
+      }
+      if (
+        !Array.isArray(contract.requiredFields) ||
+        contract.requiredFields.length !== backendAcceptanceScenarioFields.length ||
+        !sameStringSet(contract.requiredFields, backendAcceptanceScenarioFields)
+      ) {
+        fail(`BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_FIELDS_INVALID:${id}`);
+      }
+    }
+  }
+  if (
+    unitsById.size !== backendAcceptanceUnitIds.length ||
+    backendAcceptanceUnitIds.some((id) => !unitsById.has(id))
+  ) {
+    fail("BACKEND_ACCEPTANCE_ADMISSION_UNIT_EXACT_SET_DRIFT");
+  }
+  return {
+    units: unitsById.size,
+    addedOrChanged: [...unitsById.values()].filter(
+      (unit) => unit.backendOperationImpact === "ADDED_OR_CHANGED",
+    ).length,
+  };
 }
 
 
@@ -1652,6 +1770,80 @@ function selfTest() {
       "FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE:ST-U01:apps/example/src/R5Foo.java",
     );
 
+    writeJson(path.join(root, fixture.manifestPath), fixture.manifest);
+    writeJson(path.join(root, fixture.reviewPath), fixture.review);
+    const admissionPath = "backend-acceptance-admission.json";
+    const boundBytes = (relativePath) =>
+      fs.readFileSync(path.join(root, relativePath));
+    const admission = {
+      schemaVersion: 1,
+      kind: "backend-acceptance-design-admission",
+      status: "ACTIVE_IMPLEMENTATION",
+      packageId: "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+      sourceBindings: {
+        design: {
+          path: "doc/plans/design.md",
+          sha256: sha256(boundBytes("doc/plans/design.md")),
+        },
+        requirements: {
+          path: "doc/decisions/source.md",
+          sha256: sha256(boundBytes("doc/decisions/source.md")),
+        },
+        designReview: {
+          path: fixture.reviewPath,
+          sha256: sha256(boundBytes(fixture.reviewPath)),
+        },
+        executionContract: {
+          path: fixture.backendOperationDesignContractPath,
+          sha256: sha256(boundBytes(fixture.backendOperationDesignContractPath)),
+        },
+        implementationManifest: {
+          path: fixture.manifestPath,
+          sha256: sha256(boundBytes(fixture.manifestPath)),
+        },
+      },
+      deliveryUnits: [
+        {
+          id: "BA-U01",
+          backendOperationImpact: "NONE_WITH_REASON",
+          reason: "static route and admission infrastructure only",
+        },
+        {
+          id: "BA-U02",
+          backendOperationImpact: "ADDED_OR_CHANGED",
+          scenarioContracts: [
+            {
+              registryPath: "contracts/registry/backend-acceptance-scenarios.json",
+              identitySource: "CURRENT_ENTRY_OPERATION_DENOMINATOR",
+              exactSet: "CURRENT_SEMANTIC_OPERATION_IDENTITY",
+              requiredFields: backendAcceptanceScenarioFields,
+            },
+          ],
+        },
+        ...["BA-U03", "BA-U04", "BA-U05", "BA-U06"].map((id) => ({
+          id,
+          backendOperationImpact: "NONE_WITH_REASON",
+          reason: "acceptance infrastructure or migration only",
+        })),
+      ],
+    };
+    writeJson(path.join(root, admissionPath), admission);
+    validateBackendAcceptanceAdmission(root, admissionPath);
+    const missingImpact = structuredClone(admission);
+    delete missingImpact.deliveryUnits[0].backendOperationImpact;
+    writeJson(path.join(root, admissionPath), missingImpact);
+    expectFailure(
+      () => validateBackendAcceptanceAdmission(root, admissionPath),
+      "BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_REQUIRED:BA-U01",
+    );
+    const missingScenarioContract = structuredClone(admission);
+    delete missingScenarioContract.deliveryUnits[1].scenarioContracts;
+    writeJson(path.join(root, admissionPath), missingScenarioContract);
+    expectFailure(
+      () => validateBackendAcceptanceAdmission(root, admissionPath),
+      "BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REQUIRED:BA-U02",
+    );
+
     const baselinePath = "doc/evidence/s0-baseline.md";
     const baselineText = [
       "# Baseline",
@@ -1705,6 +1897,8 @@ function selfTest() {
       "RED_FIXTURE_FLOW_IDENTIFIER_IN_DESIGN_CHANGE_SURFACE=PASS",
       "RED_FIXTURE_CREATE_PATH_ALREADY_EXISTS=PASS",
       "RED_FIXTURE_S0_BASELINE_PENDING_CONTROL=PASS",
+      "RED_FIXTURE_BACKEND_ACCEPTANCE_OPERATION_DISPOSITION_REQUIRED=PASS",
+      "RED_FIXTURE_BACKEND_ACCEPTANCE_SCENARIO_CONTRACT_REQUIRED=PASS",
       "",
     ].join("\n"),
   );
@@ -1715,6 +1909,7 @@ function usage() {
     [
       "Usage:",
       "  scripts/check/implementation-design-granularity --manifest <path> --review <path>",
+      "  scripts/check/implementation-design-granularity --backend-acceptance-admission <path>",
       "  scripts/check/implementation-design-granularity --self-test",
       "  scripts/check/implementation-design-granularity --s0-baseline <path>",
       "",
@@ -1737,6 +1932,21 @@ function main(argv) {
       [
         "IMPLEMENTATION_DESIGN_GRANULARITY_S0_BASELINE=PASS",
         `CONTROLS=${result.controls}`,
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  if (
+    argv.length === 2 &&
+    argv[0] === "--backend-acceptance-admission"
+  ) {
+    const result = validateBackendAcceptanceAdmission(root, argv[1]);
+    process.stdout.write(
+      [
+        "BACKEND_ACCEPTANCE_DESIGN_ADMISSION=PASS",
+        `UNITS=${result.units}`,
+        `ADDED_OR_CHANGED=${result.addedOrChanged}`,
         "",
       ].join("\n"),
     );

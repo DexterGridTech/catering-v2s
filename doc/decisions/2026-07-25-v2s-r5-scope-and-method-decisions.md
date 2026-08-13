@@ -105,7 +105,7 @@ R5 implementation-facing design 必须指定并实现下列受管脚本契约；
 | --- | --- |
 | `dev start` / `dev restart` / `dev stop` | 使用 run-scoped manifest、结构化日志和远端依赖 readiness preflight；start/restart 只应用 additive Flyway，绝不 seed；stop 只清理其 manifest 所有的资源。 |
 | `dev reset` | 仅对明确的 DEV remote namespace/allowlist 做破坏性清理，记录清理前后 readback；reset 成功后仍不得自动 seed。 |
-| `dev seed --profile r5-full` | 显式、可重复、版本化的丰富数据装载；支持只读 dry-run 覆盖核验，写入后做批量 source-fact readback 与业务/cleanup 分账。 |
+| `dev seed --profile r5-full` | 显式、可重复、版本化的完整丰富数据装载：按基础 owner-command → catalog/inventory 运行，支持只读 dry-run 覆盖两个计划，写入后做批量 source-fact readback、组合 receipt 与业务/cleanup 分账。 |
 | `dev check` | 检查环境变量、远端依赖可达性、运行版本/contract 对齐、脚本参数和 seed profile 完整性；不得用人工口令、手工改库或旧数据冒充可测环境。 |
 
 `r5-full` seed 的最小业务覆盖必须让 Dexter 不手工补数据即可走完已批准 R5 用户任务：分离的
@@ -114,6 +114,10 @@ platform-admin 与 operations-admin 测试身份和会话；多个集团空间�
 启用/停用门店；五类已裁定扩展值宿主；合同货号二元组及 `OPERATING`/`PREPARING`/
 `NOT_OPERATING` 三种派生状态；以及每个列表、详情、失败恢复与负权限用例所需的 source fact。
 seed 身份是可审计的 DEV fixture，不是运行时默认账号、隐式 root 或绕过邀请/授权语义的后门。
+
+catalog/inventory 是上述完整 `r5-full` 的必经扩展，而非第二个由体验者手工选择的 profile：它保留
+canonical catalog source、媒体、双 owner scope 与 readback 的独立数据主权，但完整验收必须同时看到
+基础 32 场景和 catalog/inventory 的 73/72/1/34 分母。
 
 seed 构造业务事实的通道优先级固定如下：普通业务事实优先且默认必须经真实 edge/owner
 command；新增任职必须重放邀请与接受链，不得用直写伪造已生效任职。只有不存在产品 command

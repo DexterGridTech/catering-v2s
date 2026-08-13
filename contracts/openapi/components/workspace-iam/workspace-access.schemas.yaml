@@ -184,7 +184,8 @@
           "nextStep": {
             "type": "string",
             "enum": [
-              "VERIFY_MOBILE"
+              "VERIFY_MOBILE",
+              "FINALIZE"
             ]
           }
         }
@@ -403,6 +404,7 @@
           "roleNames",
           "maskedMobile",
           "status",
+          "nextStep",
           "expiresAt",
           "workspaceName",
           "operationsTitle"
@@ -454,6 +456,9 @@
           },
           "status": {
             "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+          },
+          "nextStep": {
+            "$ref": "#/components/schemas/PublicInvitationResumeStep"
           },
           "expiresAt": {
             "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
@@ -1107,6 +1112,15 @@
             "minimum": 0
           }
         }
+      },
+      "PublicInvitationResumeStep": {
+        "type": "string",
+        "enum": [
+          "ACCEPT",
+          "VERIFY_MOBILE",
+          "FINALIZE",
+          "TERMINAL"
+        ]
       },
       "WorkspaceInvitationSortKey": {
         "type": "string",

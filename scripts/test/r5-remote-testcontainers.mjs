@@ -23,6 +23,24 @@ const isBackendPerformance196Run = task === backendPerformance196Task
   && extraGradleArguments.length === 2
   && extraGradleArguments[0] === '--tests'
   && extraGradleArguments[1] === backendPerformance196Selector;
+const isBackendAcceptanceRun = process.env.V2S_BACKEND_ACCEPTANCE_EXECUTION === 'true'
+  && task === ':apps:backend:catering-business-server:test'
+  && extraGradleArguments.length === 2
+  && extraGradleArguments[0] === '--tests'
+  && extraGradleArguments[1] === 'com.catering.v2s.app.acceptance.BackendAcceptanceTest';
+const isBackendAcceptanceSuiteCleanup = process.env.V2S_BACKEND_ACCEPTANCE_SUITE_CLEANUP === 'true'
+  && task === '--cleanup-suite'
+  && extraGradleArguments.length === 0;
+const backendAcceptanceSourcePaths = Object.freeze([
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceHttpHarness.java',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceDatabaseMetricsSink.java',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationConfiguration.java',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationScenario.java',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceOwnerBootstrapConfiguration.java',
+  'scripts/test/catalog-inventory-api.mjs',
+  'tools/backend-acceptance/workload.mjs',
+]);
 const backendPerformance196ManagedReportName = 'backend-performance-testcontainers-196-managed-report.json';
 const backendPerformance196ManagedManifestName = 'backend-performance-testcontainers-196-managed-run-manifest.json';
 const backendPerformance196WorkloadResultName = 'backend-performance-196-workload-result.json';
@@ -63,10 +81,10 @@ const remoteHostTrust = resolveTrustedRemoteHost(process.env);
 const remoteHost = remoteHostTrust.host;
 const laneDockerHost = process.env.V2S_TESTCONTAINERS_DOCKER_HOST;
 const laneWorkspace = process.env.V2S_TESTCONTAINERS_LANE_WORKSPACE;
-if (laneDockerHost !== undefined && !/^unix:\/\/\/run\/catering-v2s-testcontainers\/daemon-[1-3]\/docker\.sock$/.test(laneDockerHost)) {
+if (laneDockerHost !== undefined && !/^unix:\/\/\/run\/catering-v2s-testcontainers\/daemon-[1-9][0-9]*\/docker\.sock$/.test(laneDockerHost)) {
   throw new Error('TESTCONTAINERS_LANE_DOCKER_HOST_INVALID');
 }
-if (laneWorkspace !== undefined && !/^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+\/lane-[1-3]\/workspace$/.test(laneWorkspace)) {
+if (laneWorkspace !== undefined && !/^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+\/lane-[1-9][0-9]*\/workspace$/.test(laneWorkspace)) {
   throw new Error('TESTCONTAINERS_LANE_WORKSPACE_INVALID');
 }
 const finalAdapterParentRunId = process.env.V2S_FINAL_ADAPTER_PARENT_RUN_ID;
@@ -75,6 +93,9 @@ const runId = `r5-tc-${Date.now()}-${process.pid}`;
 const finalPerformanceRunId = isBackendPerformance196Run ? `backend-performance-final-${Date.now()}-${randomUUID().slice(0, 8)}` : undefined;
 const finalPerformanceNamespace = finalPerformanceRunId ? `v2s-backend-performance-${finalPerformanceRunId.slice(-8)}` : undefined;
 const bootstrapLogin = finalPerformanceRunId ? `performance-admin-${finalPerformanceRunId.slice(-8)}` : undefined;
+const backendAcceptanceBootstrapLogin = isBackendAcceptanceRun
+  ? `backend-acceptance-${randomUUID().slice(0, 8)}`
+  : undefined;
 const remoteRoot = `/tmp/${runId}`;
 const remoteWorkspace = laneWorkspace ?? `${remoteRoot}/workspace`;
 const remoteResults = `${remoteRoot}/results`;
@@ -92,7 +113,40 @@ const stallTerminationSamples = 18;
 const now = () => new Date().toISOString();
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-export const workloadObservationKey = ({logBytes, workloadSha256, testResultBytes, runtimeEvidenceSha256 = 'NONE', runtimeEvidenceBytes = 0, childHeartbeatSequence = 0}) => `${logBytes}:${workloadSha256}:${testResultBytes}:${runtimeEvidenceSha256}:${runtimeEvidenceBytes}:${childHeartbeatSequence}`;
+export const workloadObservationKey = ({logBytes, testResultBytes, runtimeEvidenceSha256 = 'NONE', runtimeEvidenceBytes = 0}) => `${logBytes}:${testResultBytes}:${runtimeEvidenceSha256}:${runtimeEvidenceBytes}`;
+export const managedProcessMembershipScript = (variable = 'workload') => `${variable}=${String.raw`$(ps -eo pgid=,pid=,comm= | awk -v expected_pgid="$pgid" '$1 == expected_pgid {print $1 "/" $2 "/" $3}' | sort | sha256sum | awk '{print $1}')`}`;
+export const runtimeEvidencePathForRun = ({remoteResults, runType}) => {
+  if (typeof remoteResults !== 'string' || !path.isAbsolute(remoteResults)) throw new Error('R5_RUNTIME_EVIDENCE_ROOT_INVALID');
+  if (runType === 'backend-performance') return `${remoteResults}/backend-performance-196/catalog-runtime/results/catalog-inventory-api/events.jsonl`;
+  if (runType === 'backend-acceptance') return `${remoteResults}/http-request-events.jsonl`;
+  return null;
+};
+export function materializeBackendAcceptanceLaneContract({laneCount, laneId, databaseNamespace, objectStorageNamespace, dockerHost = null, workspace = null}) {
+  if (!Number.isSafeInteger(laneCount) || laneCount < 1 || !Number.isSafeInteger(laneId) || laneId < 1 || laneId > laneCount) {
+    throw new Error('BACKEND_ACCEPTANCE_LANE_CONTRACT_INVALID');
+  }
+  for (const [name, value] of [['databaseNamespace', databaseNamespace], ['objectStorageNamespace', objectStorageNamespace]]) {
+    if (typeof value !== 'string' || !/^[a-z][a-z0-9-]{2,63}$/.test(value)) throw new Error(`BACKEND_ACCEPTANCE_LANE_${name.toUpperCase()}_INVALID`);
+  }
+  if (dockerHost !== null && (typeof dockerHost !== 'string' || !/^unix:\/\/\/run\/catering-v2s-testcontainers\/daemon-[1-9][0-9]*\/docker\.sock$/.test(dockerHost))) {
+    throw new Error('BACKEND_ACCEPTANCE_LANE_DOCKER_HOST_INVALID');
+  }
+  if (workspace !== null && (typeof workspace !== 'string' || !/^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+\/lane-[1-9][0-9]*\/workspace$/.test(workspace))) {
+    throw new Error('BACKEND_ACCEPTANCE_LANE_WORKSPACE_INVALID');
+  }
+  return Object.freeze({laneCount, laneId, databaseNamespace, objectStorageNamespace, dockerHost, workspace});
+}
+const backendAcceptanceLaneContract = isBackendAcceptanceRun
+  ? materializeBackendAcceptanceLaneContract({
+    laneCount: Number(process.env.V2S_BACKEND_ACCEPTANCE_LANE_COUNT),
+    laneId: Number(process.env.V2S_BACKEND_ACCEPTANCE_LANE_ID ?? 1),
+    databaseNamespace: process.env.V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE,
+    objectStorageNamespace: process.env.V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE,
+    dockerHost: laneDockerHost ?? null,
+    workspace: laneWorkspace ?? null,
+  })
+  : null;
+const BACKEND_ACCEPTANCE_SUITE_ROOT_PATTERN = /^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+$/;
 const quote = (value) => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = (value, limit = 240) => String(value || 'FAILED').trim().replace(/\s+/g, '_').slice(0, limit);
 const script = (...lines) => lines.join('\n');
@@ -380,6 +434,32 @@ export const validateBackendPerformance196WorkloadResult = (workloadResult) => {
   }
   return workloadResult;
 };
+
+export const validateBackendAcceptanceWorkloadResult = (workloadResult, expectedOperationCount) => {
+  const reportedOperationCountIsSafe = Number.isSafeInteger(workloadResult?.expectedOperations) && workloadResult.expectedOperations >= 0;
+  const expectedOperationCountIsSafe = Number.isSafeInteger(expectedOperationCount) && expectedOperationCount >= 0;
+  if (workloadResult?.kind !== 'backend-acceptance-workload-result'
+      || !['PASS', 'FAIL'].includes(workloadResult.status)
+      || !['PASS', 'FAIL'].includes(workloadResult.contractStatus)
+      || !['PASS', 'FAIL'].includes(workloadResult.businessStatus)
+      || !['PASS', 'FAIL'].includes(workloadResult.performanceStatus)
+      || !['PASS', 'FAIL'].includes(workloadResult.cleanupStatus)
+      || !reportedOperationCountIsSafe
+      || !Number.isSafeInteger(workloadResult.completedOperations)
+      || workloadResult.completedOperations < 0
+      || workloadResult.completedOperations > workloadResult.expectedOperations
+      || (expectedOperationCountIsSafe && workloadResult.expectedOperations !== expectedOperationCount)) {
+    throw new Error('BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID');
+  }
+  if (workloadResult.status === 'PASS' && workloadResult.completedOperations !== workloadResult.expectedOperations) {
+    throw new Error('BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID');
+  }
+  if (workloadResult.status === 'PASS'
+      && (workloadResult.contractStatus !== 'PASS' || workloadResult.businessStatus !== 'PASS' || workloadResult.performanceStatus !== 'PASS' || workloadResult.cleanupStatus !== 'PASS')) {
+    throw new Error('BACKEND_ACCEPTANCE_WORKLOAD_RESULT_NOT_FOUR_DIMENSION_PASS');
+  }
+  return workloadResult;
+};
 export const deriveBackendPerformance196ChildFailure = ({workloadResult, gradleStatus}) => {
   if (workloadResult !== undefined && workloadResult !== null) {
     if (workloadResult.kind !== 'backend-performance-testcontainers-196-workload-result'
@@ -413,10 +493,11 @@ class ManagedRun {
       schemaVersion: 1, kind: 'r5-managed-testcontainers-run', runId, task, startedAt: now(),
       remote: {hostAlias: remoteHost, hostTrust: remoteHostTrust, root: remoteRoot, dependencyCache: remoteDependencyCache},
       ...(laneDockerHost ? {testcontainersLane: {dockerHost: laneDockerHost, workspace: remoteWorkspace}} : {}),
+      ...(backendAcceptanceLaneContract ? {backendAcceptanceLane: backendAcceptanceLaneContract} : {}),
       ...(finalAdapterBinding() ? {finalAdapterBinding: finalAdapterBinding()} : {}),
       ...(suiteTarget ? {suiteTarget} : {}),
       sourceSha256: sha256(readFileSync(process.argv[1], 'utf8')),
-      sourceSync: {status: 'PENDING', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : []},
+      sourceSync: {status: 'PENDING', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : isBackendAcceptanceRun ? [...backendAcceptanceSourcePaths] : []},
       gradleDistribution: {path: remoteGradleDistribution, sha256: gradleDistributionSha, localHome: gradleHome, localHomeSource: gradleHomeResolution.source, status: 'PENDING'},
       logPath: expected.logPath,
       phaseEvents: [], lifecycleEvents: [], heartbeats: [], childHeartbeatSequence: 0, stallDiagnostics: [], logInspection: {readCount: 0, observedBytes: 0, status: 'PENDING'},
@@ -474,12 +555,53 @@ const backendPerformanceProgress = () => {
   return {completed, total: 196, phase: phase || 'CATALOG_PHASE_UNKNOWN'};
 };
 
+const backendAcceptanceProgress = () => {
+  if (!isBackendAcceptanceRun) return undefined;
+  const total = Number(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT);
+  if (!Number.isSafeInteger(total) || total < 1) fail('BACKEND_ACCEPTANCE_PROGRESS_TOTAL_INVALID', 'ENVIRONMENT_BOUNDARY');
+  const runIdValue = process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID;
+  const result = remoteResult(backendAcceptanceProgressScript({
+    eventsPath: `${remoteResults}/http-request-events.jsonl`,
+    runId: runIdValue ?? '',
+    operationIds: process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_IDS ?? process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_ID ?? '',
+  }));
+  if (result.status !== 0) fail('BACKEND_ACCEPTANCE_PROGRESS_UNAVAILABLE', 'ENVIRONMENT_BOUNDARY');
+  const [completedText = '0', failedText = '0', firstFailure = 'NONE'] = result.stdout.trim().split('\t');
+  const completed = Number(completedText); const failed = Number(failedText);
+  if (!Number.isSafeInteger(completed) || completed < 0 || completed > total || !Number.isSafeInteger(failed) || failed < 0) fail('BACKEND_ACCEPTANCE_PROGRESS_INVALID', 'ENVIRONMENT_BOUNDARY');
+  return {
+    current: completed,
+    completed,
+    total,
+    remaining: Math.max(0, total - completed),
+    lane: Number(process.env.V2S_BACKEND_ACCEPTANCE_LANE_ID || 1),
+    firstFailure: firstFailure === 'NONE' ? null : firstFailure,
+    failed,
+  };
+};
+
+export const backendAcceptanceProgressScript = ({eventsPath, runId, operationIds} = {}) => {
+  const operationIdText = Array.isArray(operationIds) ? operationIds.join(',') : String(operationIds ?? '');
+  const succeededAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"operationId\":\"backendAcceptanceMeasurementSinkIntegrity\"") == 0 && index($0, "\"outcome\":\"SUCCEEDED\"") { op=$0; sub(/^.*"operationId":"/, "", op); sub(/".*$/, "", op); if (operation_ids == ",," || index(operation_ids, "," op ",") > 0) seen[op]=1 } END { count=0; for (op in seen) count++; print count + 0 }`;
+  const failedAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && (index($0, "\"observationError\":") || index($0, "\"status\":5")) { count++ } END { print count + 0 }`;
+  const firstFailureAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && (index($0, "\"observationError\":") || index($0, "\"status\":5")) { print "BACKEND_ACCEPTANCE_ROUTE_FAILED"; exit }`;
+  return script(
+    'set -euo pipefail',
+    `events=${quote(eventsPath)}`,
+    `run_id=${quote(runId ?? '')}`,
+    `operation_ids=${quote(`,${operationIdText},`)}`,
+    'completed=0; failed=0; first_failure=NONE',
+    `if [ -f "$events" ]; then completed=$(awk -v run_id="$run_id" -v operation_ids="$operation_ids" '${succeededAwk}' "$events"); failed=$(awk -v run_id="$run_id" '${failedAwk}' "$events"); first_failure=$(awk -v run_id="$run_id" '${firstFailureAwk}' "$events"); fi`,
+    'printf "%s\\t%s\\t%s\\n" "$completed" "$failed" "${first_failure:-NONE}"',
+  );
+};
+
 const uploadSource = async () => {
   if (laneWorkspace) {
     const initialized = remoteResult(script(
       'set -euo pipefail',
       `workspace=${quote(remoteWorkspace)}`,
-      'case "$workspace" in /tmp/r5-tc-suite-[0-9]*-[0-9]*/lane-[1-3]/workspace) ;; *) exit 64 ;; esac',
+      'if [[ ! "$workspace" =~ ^/tmp/r5-tc-suite-[0-9]+-[0-9]+/lane-[1-9][0-9]*/workspace$ ]]; then exit 64; fi',
       'if test -f "$workspace/.v2s-suite-source-ready"; then printf "REUSED\\n"; else mkdir -p "$workspace"; printf "SYNC_REQUIRED\\n"; fi',
     ));
     if (initialized.status !== 0) fail('SUITE_LANE_WORKSPACE_CHECK_FAILED', 'SOURCE_SYNC');
@@ -502,16 +624,29 @@ const uploadSource = async () => {
     const marked = remoteResult(script('set -euo pipefail', `workspace=${quote(remoteWorkspace)}`, 'touch "$workspace/.v2s-suite-source-ready"'));
     if (marked.status !== 0) fail('SUITE_LANE_WORKSPACE_MARK_FAILED', 'SOURCE_SYNC');
   }
-  if (isBackendPerformance196Run) {
+  if (isBackendPerformance196Run || isBackendAcceptanceRun) {
+    const requiredPaths = isBackendPerformance196Run ? backendPerformance196SourcePaths : backendAcceptanceSourcePaths;
     const sourceCheck = remoteResult(script(
       'set -euo pipefail',
       `workspace=${quote(remoteWorkspace)}`,
-      ...backendPerformance196SourcePaths.map((sourcePath) => `test -f "$workspace/${sourcePath}" || { printf 'BP_U06_REMOTE_SOURCE_MISSING:${sourcePath}\\n' >&2; exit 73; }`),
-      `printf 'SOURCE_SYNC_REQUIRED_PATHS=%s\\n' ${quote(backendPerformance196SourcePaths.join(','))}`,
+      ...requiredPaths.map((sourcePath) => `test -f "$workspace/${sourcePath}" || { printf '${isBackendPerformance196Run ? 'BP_U06_REMOTE_SOURCE_MISSING' : 'BACKEND_ACCEPTANCE_REMOTE_SOURCE_MISSING'}:${sourcePath}\\n' >&2; exit 73; }`),
+      `printf 'SOURCE_SYNC_REQUIRED_PATHS=%s\\n' ${quote(requiredPaths.join(','))}`,
     ));
-    if (sourceCheck.status !== 0) fail(`SOURCE_SYNC_REQUIRED_FILE_MISSING:${compact(sourceCheck.stderr || sourceCheck.stdout, 180)}`, 'SOURCE_SYNC');
+    if (sourceCheck.status !== 0) fail(`${isBackendPerformance196Run ? 'SOURCE_SYNC_REQUIRED_FILE_MISSING' : 'BACKEND_ACCEPTANCE_SOURCE_SYNC_REQUIRED_FILE_MISSING'}:${compact(sourceCheck.stderr || sourceCheck.stdout, 180)}`, 'SOURCE_SYNC');
   }
-  return {status: 'PASS', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : []};
+  return {status: 'PASS', workspace: remoteWorkspace, requiredPaths: isBackendPerformance196Run ? [...backendPerformance196SourcePaths] : isBackendAcceptanceRun ? [...backendAcceptanceSourcePaths] : []};
+};
+
+const readLaneEngineId = () => {
+  if (!laneDockerHost) return null;
+  const result = remoteResult(script(
+    'set -euo pipefail',
+    'engine_id=$(docker info --format "{{.ID}}")',
+    'printf "%s\\n" "$engine_id"',
+  ));
+  const engineId = result.stdout.trim();
+  if (result.status !== 0 || !/^[a-f0-9-]{32,128}$/i.test(engineId)) fail('BACKEND_ACCEPTANCE_LANE_ENGINE_ID_UNAVAILABLE', 'ENVIRONMENT_BOUNDARY');
+  return engineId;
 };
 
 const syncGradle = async (run) => {
@@ -563,6 +698,22 @@ const syncGradle = async (run) => {
   appendFileSync(syncLog, `${now()} event=GRADLE_DISTRIBUTION_${status} remote=${remoteHost}\n`);
 };
 
+export const managedProcessCompletionScript = ({heartbeat = 'emit RUNNING HEARTBEAT', sleep = 'sleep 15'} = {}) => [
+  // `kill -0` stays true for a zombie child. Read the process state so the wrapper reaches
+  // `wait`, records the real exit code, and still emits its failure artifacts.
+  'while [ -d "/proc/$gradle_pid" ]; do',
+  'gradle_state=$(ps -o stat= -p "$gradle_pid" 2>/dev/null | tr -d " ")',
+  'case "$gradle_state" in ""|Z*) break ;; esac',
+  heartbeat,
+  sleep,
+  'done',
+  'gradle_status=0',
+  'wait "$gradle_pid" || gradle_status=$?',
+].join('\n');
+
+export const managedGradleHomeScript = () => 'export V2S_GRADLE_HOME="$gradle"';
+export const backendAcceptanceFaultEnvironmentScript = () => ['export V2S_CATALOG_TEST_FAULTS=true'];
+
 const remoteRunScript = (commandSha256) => script(
   '#!/usr/bin/env bash', 'set -uo pipefail', `root=${quote(remoteRoot)}`, `workspace=${quote(remoteWorkspace)}`, `task=${quote(task)}`,
   `command_sha=${quote(commandSha256)}`, 'phase_file="$root/results/phase.jsonl"', 'log_file="$root/results/gradle.log"',
@@ -596,12 +747,43 @@ const remoteRunScript = (commandSha256) => script(
     `export V2S_BPF_WORKLOAD_RESULT="$root/results/${backendPerformance196WorkloadResultName}"`,
     `export V2S_BACKEND_PERFORMANCE_REPORT_PATH="$root/results/backend-performance-testcontainers-196-report.json"`,
     'export V2S_REMOTE_WORKSPACE="$workspace"',
+  ] : isBackendAcceptanceRun ? [
+    'export V2S_RUNTIME_ENVIRONMENT=non-production',
+    'export V2S_DEV_PROFILE=backend-acceptance',
+    `export V2S_DEV_NAMESPACE=${quote(process.env.V2S_DEV_NAMESPACE ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_RUN_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_MODE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_MODE ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_OPERATION_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_ID ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_OPERATION_IDS=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_IDS ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_LANE_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_LANE_ID ?? '1')}`,
+    `export V2S_BACKEND_ACCEPTANCE_LANE_COUNT=${quote(process.env.V2S_BACKEND_ACCEPTANCE_LANE_COUNT ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE ?? '')}`,
+    `export V2S_BACKEND_ACCEPTANCE_BOOTSTRAP_LOGIN=${quote(backendAcceptanceBootstrapLogin)}`,
+    `backend_acceptance_secret=${quote(process.env.V2S_BACKEND_ACCEPTANCE_SECRET ?? '')}`,
+    'test "${#backend_acceptance_secret}" -ge 24',
+    'printf "%s" "$backend_acceptance_secret" | grep -Eq "^[A-Za-z0-9._:-]+$"',
+    'db_hmac_key=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    'bootstrap_credential=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    'export V2S_BACKEND_ACCEPTANCE_SECRET="$backend_acceptance_secret"',
+    'export V2S_DB_OPERATIONS_HMAC_KEY="$db_hmac_key"',
+    'export V2S_BACKEND_ACCEPTANCE_BOOTSTRAP_CREDENTIAL="$bootstrap_credential"',
+    'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
+    ...backendAcceptanceFaultEnvironmentScript(),
+    'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
+    'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operations.jsonl"',
+    'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
+    'export V2S_BACKEND_ACCEPTANCE_RUNTIME_DIR="$root/results/backend-acceptance"',
+    'export V2S_BACKEND_ACCEPTANCE_WORKLOAD_RESULT="$root/results/backend-acceptance-workload-result.json"',
+    'export V2S_REMOTE_WORKSPACE="$workspace"',
   ] : []),
   `gradle=${quote(remoteGradleDistribution)}`,
   'test -x "$gradle/bin/gradle"',
+  managedGradleHomeScript(),
   'cd "$workspace"',
   `"$gradle/bin/gradle" "$task" ${extraGradleArguments.map(quote).join(' ')} --no-daemon > "$log_file" 2>&1 &`, 'gradle_pid=$!', 'emit RUNNING PASS',
-  'while kill -0 "$gradle_pid" 2>/dev/null; do emit RUNNING HEARTBEAT; sleep 15; done', 'wait "$gradle_pid"; gradle_status=$?',
+  managedProcessCompletionScript(),
   `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"`,
   `docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"`,
   'comm -13 "$root/before-container-ids" "$root/after-container-ids" > "$root/results/uncollected-container-ids"',
@@ -642,12 +824,18 @@ const remoteIdentity = (control) => {
     "boot=$(cat /proc/sys/kernel/random/boot_id); start=$(awk '{print $22}' \"/proc/$pid/stat\"); pgid=$(ps -o pgid= -p \"$pid\" | tr -d \" \")",
     "record_pid=$(grep -o '\"pid\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_pgid=$(grep -o '\"pgid\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_boot=$(grep -o '\"bootId\":\"[^\"]*\"' \"$control\" | head -n1 | cut -d'\"' -f4); record_start=$(grep -o '\"processStartTicks\":[0-9]*' \"$control\" | head -n1 | cut -d: -f2); record_sha=$(grep -o '\"commandSha256\":\"[a-f0-9]*\"' \"$control\" | head -n1 | cut -d'\"' -f4)",
     'if [ "$record_pid" != "$pid" ] || [ "$record_pgid" != "$pgid" ] || [ "$record_boot" != "$boot" ] || [ "$record_start" != "$start" ] || ! printf "%s" "$record_sha" | grep -Eq "^[a-f0-9]{64}$"; then printf \'{"state":"MISMATCH"}\\n\'; exit 0; fi',
-    "workload=$(ps -eo pgid=,pid=,stat=,time= | awk -v expected_pgid=\"$pgid\" '$1 == expected_pgid {print $2 \"/\" $3 \"/\" $4}' | sort | sha256sum | awk '{print $1}')",
+    managedProcessMembershipScript(),
     `workspace=${quote(remoteWorkspace)}`, "test_result_bytes=$(find \"$workspace\" -type f -path '*/build/test-results/test/TEST-*.xml' -printf '%s\\n' 2>/dev/null | awk '{total += $1} END {print total + 0}')",
-    ...(isBackendPerformance196Run ? [
-      `runtime_evidence=${quote(`${remoteResults}/backend-performance-196/catalog-runtime/results/catalog-inventory-api/events.jsonl`)}`,
-      'runtime_evidence_bytes=0; runtime_evidence_sha256=NONE; if [ -f "$runtime_evidence" ]; then runtime_evidence_bytes=$(wc -c < "$runtime_evidence" | tr -d " "); runtime_evidence_sha256=$(sha256sum "$runtime_evidence" | awk \'{print $1}\'); fi',
-    ] : ['runtime_evidence_bytes=0; runtime_evidence_sha256=NONE']),
+    ...((() => {
+      const runtimeEvidencePath = runtimeEvidencePathForRun({
+        remoteResults,
+        runType: isBackendPerformance196Run ? 'backend-performance' : isBackendAcceptanceRun ? 'backend-acceptance' : 'none',
+      });
+      return runtimeEvidencePath ? [
+        `runtime_evidence=${quote(runtimeEvidencePath)}`,
+        'runtime_evidence_bytes=0; runtime_evidence_sha256=NONE; if [ -f "$runtime_evidence" ]; then runtime_evidence_bytes=$(wc -c < "$runtime_evidence" | tr -d " "); runtime_evidence_sha256=$(sha256sum "$runtime_evidence" | awk \'{print $1}\'); fi',
+      ] : ['runtime_evidence_bytes=0; runtime_evidence_sha256=NONE'];
+    })()),
     'printf \'{"state":"MATCH","pid":%s,"pgid":%s,"bootId":"%s","processStartTicks":%s,"commandSha256":"%s","workloadSha256":"%s","testResultBytes":%s,"runtimeEvidenceSha256":"%s","runtimeEvidenceBytes":%s}\\n\' "$pid" "$pgid" "$boot" "$start" "$record_sha" "$workload" "$test_result_bytes" "$runtime_evidence_sha256" "$runtime_evidence_bytes"',
   ));
   if (result.status !== 0) fail('CONTROL_IDENTITY_READ_FAILED', 'ENVIRONMENT_BOUNDARY');
@@ -753,15 +941,17 @@ const reap = (run, control) => {
     'test "$boot" = "$expected_boot" && test "$start" = "$expected_start" && test "$pgid" = "$expected_pgid" || exit 70',
     'kill -TERM -- "-$pgid" 2>/dev/null || true', 'for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done', 'if kill -0 "$pid" 2>/dev/null; then kill -KILL -- "-$pgid" 2>/dev/null || true; fi', 'fi',
     'if kill -0 "$pid" 2>/dev/null; then exit 71; fi',
-    'container_status=PASS; volume_status=PASS',
+    'container_status=PASS; volume_status=PASS; workspace_status=NOT_APPLICABLE',
     'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/results/reap-container-ids"', 'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/results/reap-volume-ids"',
     'test ! -s "$root/results/reap-container-ids" || container_status=FAIL', 'test ! -s "$root/results/reap-volume-ids" || volume_status=FAIL',
     'rm -rf -- "$root"', 'scratch_status=PASS; test ! -e "$root" || scratch_status=FAIL',
-    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status"',
-    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS', 'printf "REAPED=PASS\\n"',
+    `workspace=${quote(remoteWorkspace)}`,
+    'case "$workspace" in /tmp/r5-tc-suite-[0-9]*-[0-9]*/lane-[1-9][0-9]*/workspace) lane_root=$(dirname "$workspace"); rm -rf -- "$lane_root"; test ! -e "$lane_root" && workspace_status=PASS || workspace_status=FAIL ;; esac',
+    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\nLANE_WORKSPACE_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status" "$workspace_status"',
+    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS && test "$workspace_status" != FAIL', 'printf "REAPED=PASS\\n"',
   ));
-  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL'};
-  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.values(receipt).every((value) => value === 'PASS') ? 'PASS' : 'FAIL';
+  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL', workspace: result.stdout.match(/LANE_WORKSPACE_CLEANUP=(PASS|NOT_APPLICABLE|FAIL)/)?.[1] ?? 'FAIL'};
+  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.entries(receipt).filter(([key]) => key !== 'workspace').every(([, value]) => value === 'PASS') && receipt.workspace !== 'FAIL' ? 'PASS' : 'FAIL';
   run.manifest.cleanup = {status, reaped: status === 'PASS', ...receipt, completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
   run.phase('CLEANUP', status);
   run.persist();
@@ -770,15 +960,17 @@ const reapUnlaunched = (run) => {
   const result = remoteResult(script(
     'set -euo pipefail', `root=${quote(remoteRoot)}`,
     'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
-    'container_status=PASS; volume_status=PASS',
+    'container_status=PASS; volume_status=PASS; workspace_status=NOT_APPLICABLE',
     'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/reap-container-ids"', 'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/reap-volume-ids"',
     'test ! -s "$root/reap-container-ids" || container_status=FAIL', 'test ! -s "$root/reap-volume-ids" || volume_status=FAIL',
     'rm -rf -- "$root"', 'scratch_status=PASS; test ! -e "$root" || scratch_status=FAIL',
-    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status"',
-    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS', 'printf "REAPED=PASS\\n"',
+    `workspace=${quote(remoteWorkspace)}`,
+    'case "$workspace" in /tmp/r5-tc-suite-[0-9]*-[0-9]*/lane-[1-9][0-9]*/workspace) lane_root=$(dirname "$workspace"); rm -rf -- "$lane_root"; test ! -e "$lane_root" && workspace_status=PASS || workspace_status=FAIL ;; esac',
+    'printf "PROCESS_CLEANUP=PASS\\nREMOTE_SCRATCH_CLEANUP=%s\\nTESTCONTAINERS_CONTAINER_CLEANUP=%s\\nTESTCONTAINERS_VOLUME_CLEANUP=%s\\nLANE_WORKSPACE_CLEANUP=%s\\n" "$scratch_status" "$container_status" "$volume_status" "$workspace_status"',
+    'test "$scratch_status" = PASS && test "$container_status" = PASS && test "$volume_status" = PASS && test "$workspace_status" != FAIL', 'printf "REAPED=PASS\\n"',
   ));
-  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL'};
-  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.values(receipt).every((value) => value === 'PASS') ? 'PASS' : 'FAIL';
+  const receipt = {process: result.stdout.includes('PROCESS_CLEANUP=PASS') ? 'PASS' : 'FAIL', scratch: result.stdout.includes('REMOTE_SCRATCH_CLEANUP=PASS') ? 'PASS' : 'FAIL', containers: result.stdout.includes('TESTCONTAINERS_CONTAINER_CLEANUP=PASS') ? 'PASS' : 'FAIL', volumes: result.stdout.includes('TESTCONTAINERS_VOLUME_CLEANUP=PASS') ? 'PASS' : 'FAIL', workspace: result.stdout.match(/LANE_WORKSPACE_CLEANUP=(PASS|NOT_APPLICABLE|FAIL)/)?.[1] ?? 'FAIL'};
+  const status = result.status === 0 && result.stdout.includes('REAPED=PASS') && Object.entries(receipt).filter(([key]) => key !== 'workspace').every(([, value]) => value === 'PASS') && receipt.workspace !== 'FAIL' ? 'PASS' : 'FAIL';
   run.manifest.cleanup = {status, reaped: status === 'PASS', ...receipt, completedAt: now(), output: compact(result.stdout || result.stderr, 500)};
   run.phase('CLEANUP', status);
   run.persist();
@@ -825,6 +1017,45 @@ const buildBackendPerformance196Report = (directory, remoteResult) => {
   return {report, managedReportPath, managedManifestPath};
 };
 
+const writeBackendAcceptanceChildResult = (run, directory) => {
+  if (!isBackendAcceptanceRun) return;
+  const parentRuntime = process.env.V2S_BACKEND_ACCEPTANCE_PARENT_RUNTIME;
+  if (typeof parentRuntime !== 'string' || !path.isAbsolute(parentRuntime)) return;
+  const workloadPath = path.join(directory, 'backend-acceptance-workload-result.json');
+  let workloadResult = null;
+  let workloadFailure = null;
+  if (existsSync(workloadPath)) {
+    try {
+      workloadResult = JSON.parse(readFileSync(workloadPath, 'utf8'));
+      validateBackendAcceptanceWorkloadResult(workloadResult, Number(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT));
+    } catch (error) {
+      workloadFailure = error instanceof Error ? error.message : 'BACKEND_ACCEPTANCE_WORKLOAD_RESULT_INVALID';
+    }
+  } else workloadFailure = 'BACKEND_ACCEPTANCE_WORKLOAD_RESULT_MISSING';
+  const businessStatus = workloadResult?.businessStatus === 'PASS' && run.manifest.business.status === 'PASS' ? 'PASS' : 'FAIL';
+  const performanceStatus = workloadResult?.performanceStatus === 'PASS' ? 'PASS' : 'FAIL';
+  const contractStatus = workloadResult?.contractStatus === 'PASS' ? 'PASS' : 'FAIL';
+  const cleanupStatus = run.manifest.cleanup.status === 'PASS' ? 'PASS' : 'FAIL';
+  const status = businessStatus === 'PASS' && performanceStatus === 'PASS' && contractStatus === 'PASS' && cleanupStatus === 'PASS' ? 'PASS' : 'FAIL';
+  const childResult = {
+    schemaVersion: 1,
+    kind: 'backend-acceptance-managed-child-result',
+    runId: process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID,
+    status,
+    contractStatus,
+    businessStatus,
+    performanceStatus,
+    cleanupStatus,
+    completedOperations: workloadResult?.completedOperations ?? 0,
+    business: {status: businessStatus, workload: workloadResult ? 'PASS' : 'FAIL'},
+    performance: {status: performanceStatus},
+    cleanup: {status: cleanupStatus, process: run.manifest.cleanup.process ?? 'FAIL', scratch: run.manifest.cleanup.scratch ?? 'FAIL', containers: run.manifest.cleanup.containers ?? 'FAIL', volumes: run.manifest.cleanup.volumes ?? 'FAIL', workspace: run.manifest.cleanup.workspace ?? 'NOT_APPLICABLE'},
+    firstFailure: workloadFailure || workloadResult?.firstFailure || run.manifest.firstFailure || null,
+    evidence: path.relative(root, directory),
+  };
+  atomicWrite(path.join(parentRuntime, 'managed-child-result.json'), `${JSON.stringify(childResult, null, 2)}\n`);
+};
+
 const execute = async () => {
   validateInvocation();
   try { validateGradleHome(gradleHome, typeof gradleHome === 'string' && existsSync(path.join(gradleHome, 'bin', 'gradle'))); }
@@ -840,7 +1071,12 @@ const execute = async () => {
     if (localBudget.status !== 0) fail('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED', 'ENVIRONMENT_BOUNDARY');
     const preflight = preflightResources(); run.manifest.resourceBudget.preflight = {status: 'PASS', ...preflight}; run.manifest.resourceBudget.samples.push({observedAt: now(), memoryAvailableMiB: preflight.memoryAvailableMiB, previousRssMiB: preflight.previousRssMiB}); run.persist();
     remote(script('set -euo pipefail', `root=${quote(remoteRoot)}`, `cache=${quote(remoteDependencyCache)}`, 'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac', 'case "$cache" in /tmp/catering-v2s-r5-gradle-cache) ;; *) exit 64 ;; esac', 'mkdir -p "$root/workspace" "$root/results" "$cache"', `docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"`, `docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/before-volume-ids"`)); remotePrepared = true;
-    run.manifest.sourceSync = await uploadSource(); run.persist(); run.phase('SOURCE_SYNCED', 'PASS');
+    run.manifest.sourceSync = await uploadSource();
+    if (laneDockerHost) {
+      const engineId = readLaneEngineId();
+      run.manifest.testcontainersLane = {...run.manifest.testcontainersLane, engineId};
+    }
+    run.persist(); run.phase('SOURCE_SYNCED', 'PASS');
     await syncGradle(run); run.phase('GRADLE_SYNCED', 'PASS');
     lifecycle = createLifecycleHarness(run, {launch, reconnect: reconnectControl, collect: () => collectArtifacts(run)});
     launchAttempted = true;
@@ -854,17 +1090,29 @@ const execute = async () => {
       run.manifest.logInspection = {readCount: run.manifest.logInspection.readCount + 1, observedBytes: logOffset, lastReadAt: now(), status: 'READ'}; run.persist();
       phaseOffset = collectPhase(run, phaseOffset);
       const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes, resource: {}});
-      const progress = backendPerformanceProgress();
+      const progress = isBackendAcceptanceRun ? backendAcceptanceProgress() : backendPerformanceProgress();
       if (progress) {
         run.manifest.progress = {...progress, observedAt: now()};
         run.persist();
       }
-      runnerEvent('HEARTBEAT', {RUN_ID: runId, ELAPSED_MS: Date.now() - run.startedEpochMillis, LOG_BYTES: logOffset, ...(progress ? {COMPLETED: progress.completed, TOTAL: progress.total, PHASE: progress.phase} : {PROGRESS: 'TASK_RUNNING'})});
+      runnerEvent('HEARTBEAT', {
+        RUN_ID: runId,
+        ELAPSED_MS: Date.now() - run.startedEpochMillis,
+        LOG_BYTES: logOffset,
+        ...(progress ? {
+          LANE: progress.lane ?? 'ALL',
+          CURRENT: progress.current ?? progress.completed,
+          COMPLETED: progress.completed,
+          TOTAL: progress.total,
+          REMAINING: progress.remaining ?? Math.max(0, progress.total - progress.completed),
+          FIRST_FAILURE: progress.firstFailure ?? 'NONE',
+        } : {PROGRESS: 'TASK_RUNNING'}),
+      });
       if (identity.state === 'REAPED') break;
       // A child heartbeat proves that the wrapper shell is alive, not that Gradle
       // or a Testcontainers pull is advancing.  Only observable workload output
       // may reset the no-progress diagnosis interval.
-      const observation = workloadObservationKey({logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes});
+      const observation = workloadObservationKey({logBytes: logOffset, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes});
       stalls = observation === previousObservation ? stalls + 1 : 0; previousObservation = observation;
       if (stalls === stallDiagnosticSamples) { diagnoseStall(run, control); run.phase('STALL_DIAGNOSING', 'PASS'); }
       if (stalls >= stallTerminationSamples) { diagnoseStall(run, control); run.phase('TERMINATING', 'PASS'); break; }
@@ -930,6 +1178,8 @@ const execute = async () => {
     }
   }
   try { parseAndValidateRunManifest(run.manifest); } catch (error) { if (!failure) failure = error; }
+  try { writeBackendAcceptanceChildResult(run, directory); }
+  catch (error) { if (!failure) failure = error instanceof Error ? error : new RunnerFailure(String(error), 'REPORT'); }
   if (isBackendPerformance196Run && managedManifestPath) atomicWrite(managedManifestPath, `${JSON.stringify(run.manifest, null, 2)}\n`);
   if (failure || run.manifest.business.status !== 'PASS' || run.manifest.cleanup.status !== 'PASS') {
     process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || 'BUSINESS_OR_CLEANUP_NOT_PASS')}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=${run.manifest.business.status}; CLEANUP=${run.manifest.cleanup.status}\n`);
@@ -987,6 +1237,24 @@ const suiteWorkspaceCleanup = (suiteRoot) => remote(script(
   'case "$suite_root" in /tmp/r5-tc-suite-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
   'rm -rf "$suite_root"', 'test ! -e "$suite_root"',
 ));
+const executeBackendAcceptanceSuiteCleanup = () => {
+  const suiteRoot = process.env.V2S_BACKEND_ACCEPTANCE_SUITE_ROOT;
+  if (!BACKEND_ACCEPTANCE_SUITE_ROOT_PATTERN.test(suiteRoot ?? '')) throw new Error('BACKEND_ACCEPTANCE_SUITE_ROOT_INVALID');
+  const result = remoteResult(script(
+    'set -euo pipefail',
+    `suite_root=${quote(suiteRoot)}`,
+    'case "$suite_root" in /tmp/r5-tc-suite-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
+    'rm -rf -- "$suite_root"',
+    'test ! -e "$suite_root"',
+    'printf "SUITE_WORKSPACE_CLEANUP=PASS\\n"',
+  ));
+  const status = result.status === 0 && result.stdout.includes('SUITE_WORKSPACE_CLEANUP=PASS') ? 'PASS' : 'FAIL';
+  process.stdout.write(`R5_TESTCONTAINERS_BACKEND_ACCEPTANCE_SUITE_CLEANUP STATUS=${status} SUITE_ROOT=${suiteRoot}\n`);
+  if (status !== 'PASS') {
+    process.stderr.write(`R5_TESTCONTAINERS_BACKEND_ACCEPTANCE_SUITE_CLEANUP=FAIL REASON=${compact(result.stderr || result.stdout || 'UNKNOWN')}\n`);
+    process.exitCode = 2;
+  }
+};
 const executeAll = async () => {
   const targets = discoverTestcontainersTargets().map((target) => Object.freeze({...target, inputSha256: testcontainersTargetInputFingerprint(target)}));
   const imageWarmup = warmTestcontainersImages();
@@ -1039,9 +1307,9 @@ const selfTest = async () => {
   const immediateExit = spawn(process.execPath, ['-e', 'process.exit(0)'], {stdio: 'ignore'});
   const immediateExitCode = await waitForClose(immediateExit);
   if (immediateExitCode !== 0) throw new Error('FAST_CHILD_CLOSE_OBSERVER_INVALID');
-  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-b', testResultBytes: 0})) throw new Error('WORKLOAD_PROGRESS_TREATED_AS_STALL');
+  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0}) !== workloadObservationKey({logBytes: 10, workloadSha256: 'worker-b', testResultBytes: 0})) throw new Error('PROCESS_MEMBERSHIP_TREATED_AS_PROGRESS');
   if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, runtimeEvidenceSha256: 'evidence-a', runtimeEvidenceBytes: 10}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, runtimeEvidenceSha256: 'evidence-b', runtimeEvidenceBytes: 20})) throw new Error('RUNTIME_EVIDENCE_PROGRESS_TREATED_AS_STALL');
-  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 1}) === workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 2})) throw new Error('HEARTBEAT_PROGRESS_TREATED_AS_STALL');
+  if (workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 1}) !== workloadObservationKey({logBytes: 10, workloadSha256: 'worker-a', testResultBytes: 0, childHeartbeatSequence: 2})) throw new Error('CHILD_HEARTBEAT_TREATED_AS_PROGRESS');
   const expected = {runId: 'r5-tc-12345678-123', remoteRoot: '/tmp/r5-tc-12345678-123', commandSha256: 'a'.repeat(64), logPath: '/tmp/r5-tc-12345678-123/results/gradle.log', phasePath: '/tmp/r5-tc-12345678-123/results/phase.jsonl'};
   const value = {...expected, pid: 1, pgid: 1, bootId: 'boot', processStartTicks: 1, phase: 'PROCESS_STARTED'};
   const lifecycleEvents = [];
@@ -1090,7 +1358,10 @@ const selfTest = async () => {
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;
-if (isMain && process.argv[2] === '--self-test') {
+if (isMain && isBackendAcceptanceSuiteCleanup) {
+  try { executeBackendAcceptanceSuiteCleanup(); }
+  catch (error) { process.stderr.write(`R5_TESTCONTAINERS_BACKEND_ACCEPTANCE_SUITE_CLEANUP=FAIL REASON=${compact(error?.message)}\n`); process.exitCode = 2; }
+} else if (isMain && process.argv[2] === '--self-test') {
   selfTest().catch((error) => { process.stderr.write(`R5_REMOTE_RUNNER_SELF_TEST=FAIL; REASON=${error instanceof Error ? error.message : String(error)}\n`); process.exitCode = 1; });
 } else if (isMain && discoverTestcontainers) {
   try { process.stdout.write(`${JSON.stringify({kind: 'r5-testcontainers-discovery', targets: discoverTestcontainersTargets()}, null, 2)}\n`); }

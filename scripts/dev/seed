@@ -8,24 +8,18 @@ if [[ "${1:-}" != "--profile" || -z "${2:-}" ]]; then
 fi
 profile="$2"
 if [[ "$profile" == "catalog-inventory" ]]; then
-  if [[ "${3:-}" == "--dry-run" ]]; then
-    exec node "$root_dir/scripts/dev/catalog-inventory-seed-plan.mjs"
-  fi
-  if [[ "${CATALOG_INVENTORY_SEED_CONFIRMATION:-}" != "EXPLICIT_CATALOG_INVENTORY_SEED" ]]; then
-    echo "CATALOG_INVENTORY_SEED=REFUSED; REASON=EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED" >&2
-    exit 2
-  fi
-  exec node "$root_dir/scripts/dev/catalog-inventory-seed-executor.mjs"
+  echo "SEED=REFUSED; REASON=PARTIAL_PROFILE_IS_INTERNAL; USE_PROFILE=r5-full" >&2
+  exit 2
 fi
 if [[ "$profile" != "r5-full" ]]; then
   echo "SEED=REFUSED; REASON=UNKNOWN_PROFILE" >&2
   exit 2
 fi
 if [[ "${3:-}" == "--dry-run" ]]; then
-  exec node "$root_dir/scripts/dev/r5-seed-plan.mjs"
+  exec node "$root_dir/scripts/dev/r5-complete-seed-executor.mjs" --dry-run
 fi
 if [[ "${R5_SEED_CONFIRMATION:-}" != "EXPLICIT_R5_SEED" ]]; then
   echo "R5_SEED=REFUSED; REASON=EXPLICIT_R5_SEED_CONFIRMATION_REQUIRED" >&2
   exit 2
 fi
-exec node "$root_dir/scripts/dev/owner-command-seed-executor.mjs"
+exec node "$root_dir/scripts/dev/r5-complete-seed-executor.mjs"

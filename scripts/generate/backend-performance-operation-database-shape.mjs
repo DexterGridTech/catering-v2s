@@ -16,6 +16,7 @@ const m1Path = "contracts/registry/backend-performance-m1-command-execution-matr
 const policyPath = "contracts/registry/task-read-surface-policy.json";
 const decisionPath = "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json";
 const shapePath = "contracts/registry/backend-performance-operation-database-shape-matrix.json";
+const ownerRegistryPath = "contracts/policy/backend-performance-owner-api-registry.json";
 
 const shapeClasses = new Set([
   "OWNER_COMMAND_SINGLE_OWNER",
@@ -111,9 +112,12 @@ function loaderRefs(inventoryRow, loadersById, operationId) {
   });
 }
 
-function profileShape(profileId, mode) {
+function profileShape(profileId, mode, ownerCount = 1) {
   if (mode === "READ") return profileId === "PROTOCOL_READ_EXEMPT" ? "PROTOCOL_READ_EXEMPT" : "TASK_READ";
-  if (profileId === "PLATFORM_OWNER_COMMAND" || profileId === "WORKSPACE_OWNER_COMMAND") return "OWNER_COMMAND_SINGLE_OWNER";
+  if (profileId === "PLATFORM_OWNER_COMMAND" || profileId === "WORKSPACE_OWNER_COMMAND") {
+    if (!Number.isInteger(ownerCount) || ownerCount < 1) fail("DBCR_U02_SHAPE_OWNER_COUNT_INVALID", profileId);
+    return ownerCount > 1 ? "OWNER_COMMAND_CROSS_OWNER" : "OWNER_COMMAND_SINGLE_OWNER";
+  }
   if (profileId === "PLATFORM_PROTOCOL" || profileId === "WORKSPACE_PROTOCOL" || profileId === "PUBLIC_PROTOCOL") return "PROTOCOL_COMMAND";
   fail("BP_U01_SHAPE_PROFILE_INVALID", profileId);
 }
@@ -210,6 +214,9 @@ function build() {
   const m1 = json(m1Path);
   const policy = json(policyPath);
   const decisions = json(decisionPath);
+  const ownerRegistry = json(ownerRegistryPath);
+  if (ownerRegistry.schemaVersion !== 1 || ownerRegistry.kind !== "backend-performance-owner-api-registry" || ownerRegistry.status !== "SOURCE_VERIFIED_STATIC" || !Array.isArray(ownerRegistry.targetOperations) || ownerRegistry.targetOperations.length !== 5) fail("DBCR_U02_SHAPE_OWNER_REGISTRY_INVALID");
+  const expectedOwnersById = new Map(ownerRegistry.targetOperations.map((entry) => [entry.operationId, entry.expectedOwners.slice().sort()]));
   if (!Array.isArray(bindings) || bindings.length !== 196) fail("BP_U01_SHAPE_BINDING_DENOMINATOR_DRIFT");
   if (inventory.schemaVersion !== 1 || inventory.kind !== "backend-performance-operation-source-inventory" || inventory.status !== "SOURCE_VERIFIED_STATIC" || !Array.isArray(inventory.rows) || inventory.rows.length !== 196) fail("BP_U01_SHAPE_SOURCE_INVENTORY_INVALID");
   if (loaders.schemaVersion !== 1 || loaders.kind !== "backend-performance-fact-loader-catalog" || !Array.isArray(loaders.rows) || loaders.rows.length !== 10) fail("BP_U01_SHAPE_LOADER_CATALOG_INVALID");
@@ -229,7 +236,16 @@ function build() {
     const sourceRow = inventoryById.get(binding.operationId);
     if (!sourceRow || sourceRow.rowId !== "BPF-SRC-" + String(index + 1).padStart(3, "0")) fail("BP_U01_SHAPE_SOURCE_ROW_ORDER_DRIFT", binding.operationId);
     const profileId = sourceRow.profileId;
-    const shapeClass = profileShape(profileId, binding.mode);
+    const sourceOwnerBindings = Array.isArray(sourceRow.ownerApiBindings) ? sourceRow.ownerApiBindings : [];
+    const sourceOwners = [...new Set(sourceOwnerBindings.map((entry) => entry?.owner))].sort();
+    const expectedOwners = expectedOwnersById.get(binding.operationId);
+    if (expectedOwners) {
+      if (binding.mode !== "COMMAND" || sourceRow.ownerApiDerivation !== "SOURCE_DERIVED_REQUIRED") fail("DBCR_U02_SHAPE_OWNER_DERIVATION_INVALID", binding.operationId);
+      exactSet(sourceOwners, expectedOwners, "DBCR_U02_SHAPE_OWNER_SET_DRIFT:" + binding.operationId);
+    } else if (sourceOwnerBindings.length !== 0 || sourceOwners.length !== 0) {
+      fail("DBCR_U02_SHAPE_UNEXPECTED_OWNER_BINDING", binding.operationId);
+    }
+    const preShapeClass = profileShape(profileId, binding.mode, 1);
     const facts = loaderRefs(sourceRow, loadersById, binding.operationId);
     const topologyRow = binding.mode === "COMMAND" ? topologyById.get(binding.operationId) : null;
     const policyRow = binding.mode === "READ" ? policyById.get(binding.operationId) : null;
@@ -253,8 +269,8 @@ function build() {
       }
       budget = commandBudget(sourceRow, idempotency.decision, readback.decision);
       finalReadbackDisposition = readback.decision;
-      ownerCount = 1;
-    } else if (shapeClass === "PROTOCOL_READ_EXEMPT") {
+      ownerCount = sourceOwners.length || 1;
+    } else if (preShapeClass === "PROTOCOL_READ_EXEMPT") {
       if (!policyRow) fail("BP_U01_SHAPE_EXEMPT_POLICY_ROW_MISSING", binding.operationId);
       budget = exemptionBudget(policyRow);
       origin = {decision: "OUTSIDE_TRANSACTION", status: "SOURCE_REOPENED_READ_POLICY", reason: "protocol/content read exemption has no task transaction origin", sourceDecisionReceipt: decisionPath + "#read-exemption[operationId=" + binding.operationId + "]"};
@@ -267,6 +283,8 @@ function build() {
       finalReadbackDisposition = "TASK_READ_RESPONSE_COMPLETION";
       ownerCount = Math.max(1, policyRow.primaryQueryCap || 1);
     }
+    const shapeClass = profileShape(profileId, binding.mode, ownerCount);
+    const coordinatedOwnerParticipations = ownerCount > 1 ? ownerCount - 1 : 0;
     const sourceInventoryRef = {inventoryRowId: sourceRow.rowId, inventoryDigest: rowDigest(sourceRow)};
     const topologyRefs = {
       bindingOperationId: binding.operationId,
@@ -297,6 +315,8 @@ function build() {
       topologyRefs,
       finalReadbackDisposition,
       ownerCount,
+      coordinatedOwnerParticipations,
+      coordinatedOwnerSet: sourceOwners,
       ownerLocalFoldProof: foldProof(sourceRow, binding.mode),
       measurementDisposition: "STATIC_DECLARATION_NOT_MEASUREMENT",
       redDiscriminator: "BPF-U04-RED:" + binding.operationId + ":missing-or-substituted-source-shape/fold-proof-must-fail",
@@ -309,7 +329,7 @@ function build() {
     kind: "backend-performance-operation-database-shape-matrix",
     status: "SOURCE_ANCHORED_STATIC_SHAPE_COMPLETE",
     authority: "The source inventory owns physical source anchors; this matrix may reference only inventory row IDs and digests, never Java paths or inferred helpers.",
-    denominator: {operations: 196, commands: 113, reads: 83, ownerCommands: 88, protocolCommands: 25, taskReads: 78, protocolReadExemptions: 5},
+    denominator: {operations: 196, commands: 113, reads: 83, ownerCommands: 88, protocolCommands: 25, taskReads: 78, protocolReadExemptions: 5, coordinatedOwnerOperations: 5},
     shapeClasses: [...shapeClasses].sort(),
     shapeCounts,
     inputs: {
@@ -322,6 +342,7 @@ function build() {
       m1Execution: {path: m1Path, sha256: fileHash(m1Path)},
       taskReadPolicy: {path: policyPath, sha256: fileHash(policyPath)},
       sourceDecisionReceipt: {path: decisionPath, sha256: fileHash(decisionPath)},
+      ownerApiRegistry: {path: ownerRegistryPath, sha256: fileHash(ownerRegistryPath)},
     },
     redlineChecklist: [
       {redlineId: "ONE_REQUEST_ONE_TRANSACTION_ORIGIN", enforcement: "transactionOrigin.kind/propagation and inventoryTransactionOriginRef exact join; edge origin is not admitted", machineGate: "scripts/check/backend-performance-operation-database-shape"},
@@ -357,6 +378,14 @@ function validateStructure(actual, expected) {
       const components = Object.values(row.budget.components || {});
       if (components.some((value) => !Number.isInteger(value) || value < 0) || components.reduce((sum, value) => sum + value, 0) !== row.budget.derivedFloor) fail("BP_U01_SHAPE_BUDGET_FORMULA_DRIFT", row.operationId);
     }
+    if (!Array.isArray(row.coordinatedOwnerSet) || new Set(row.coordinatedOwnerSet).size !== row.coordinatedOwnerSet.length || !Number.isInteger(row.ownerCount) || !Number.isInteger(row.coordinatedOwnerParticipations) || row.coordinatedOwnerParticipations !== Math.max(0, row.ownerCount - 1)) fail("DBCR_U02_SHAPE_OWNER_PARTICIPATION_INVALID", row.operationId);
+    if (JSON.stringify(row.coordinatedOwnerSet) !== JSON.stringify(original.coordinatedOwnerSet)) fail("DBCR_U02_SHAPE_OWNER_SET_DRIFT", row.operationId);
+    if (row.mode === "COMMAND" && row.coordinatedOwnerSet.length > 0 && row.ownerCount !== row.coordinatedOwnerSet.length) fail("DBCR_U02_SHAPE_OWNER_COUNT_DRIFT", row.operationId);
+    if (row.mode === "COMMAND" && row.coordinatedOwnerSet.length === 0 && row.ownerCount !== 1) fail("DBCR_U02_SHAPE_SINGLE_OWNER_COUNT_INVALID", row.operationId);
+    if (row.mode === "COMMAND" && (row.profileId === "PLATFORM_OWNER_COMMAND" || row.profileId === "WORKSPACE_OWNER_COMMAND")) {
+      const expectedShapeClass = row.ownerCount > 1 ? "OWNER_COMMAND_CROSS_OWNER" : "OWNER_COMMAND_SINGLE_OWNER";
+      if (row.shapeClass !== expectedShapeClass) fail("DBCR_U02_SHAPE_CLASS_DRIFT", row.operationId);
+    }
     if (row.measurementDisposition !== "STATIC_DECLARATION_NOT_MEASUREMENT" || typeof row.redDiscriminator !== "string" || row.redDiscriminator.length === 0) fail("BP_U01_SHAPE_EVIDENCE_DISPOSITION_INVALID", row.operationId);
   }
   if (seen.size !== 196) fail("BP_U01_SHAPE_OPERATION_SET_DRIFT");
@@ -389,8 +418,21 @@ function selfTest() {
   const budget = structuredClone(expected);
   budget.rows.find((row) => row.mode === "COMMAND").budget.components.connections += 1;
   try { validateStructure(budget, expected); fail("BP_U01_SHAPE_RED_NOT_DETECTED", "budget"); }
-  catch (error) { if (!String(error.message).startsWith("BP_U01_SHAPE_BUDGET_FORMULA_DRIFT")) throw error; }
-  process.stdout.write("BP_U01_DATABASE_SHAPE_SELF_TEST=PASS\nRED_MISSING_ROW=PASS\nRED_SOURCE_REF=PASS\nRED_LITERAL_SOURCE=PASS\nRED_FOLD_PROOF=PASS\nRED_BUDGET_FORMULA=PASS\nCLEANUP=PASS\n");
+    catch (error) { if (!String(error.message).startsWith("BP_U01_SHAPE_BUDGET_FORMULA_DRIFT")) throw error; }
+  const ownerCount = structuredClone(expected);
+  ownerCount.rows.find((row) => row.operationId === "createOperationsOrganizationStore").ownerCount = 1;
+  ownerCount.rows.find((row) => row.operationId === "createOperationsOrganizationStore").coordinatedOwnerParticipations = 0;
+  try { validateStructure(ownerCount, expected); fail("DBCR_U02_SHAPE_RED_MUTATION_NOT_DETECTED", "owner-count"); }
+  catch (error) { if (!String(error.message).startsWith("DBCR_U02_SHAPE_OWNER_COUNT_DRIFT")) throw error; }
+  const shapeClass = structuredClone(expected);
+  shapeClass.rows.find((row) => row.operationId === "releaseOperationsCatalogStagedAsset").shapeClass = "OWNER_COMMAND_SINGLE_OWNER";
+  try { validateStructure(shapeClass, expected); fail("DBCR_U02_SHAPE_RED_MUTATION_NOT_DETECTED", "shape-class"); }
+  catch (error) { if (!String(error.message).startsWith("DBCR_U02_SHAPE_CLASS_DRIFT")) throw error; }
+  const duplicateOwner = structuredClone(expected);
+  duplicateOwner.rows.find((row) => row.operationId === "transitionOperationsCatalogItemStatus").coordinatedOwnerSet.push("catalog");
+  try { validateStructure(duplicateOwner, expected); fail("DBCR_U02_SHAPE_RED_MUTATION_NOT_DETECTED", "duplicate-owner"); }
+  catch (error) { if (!String(error.message).startsWith("DBCR_U02_SHAPE_OWNER_PARTICIPATION_INVALID")) throw error; }
+  process.stdout.write("BP_U01_DATABASE_SHAPE_SELF_TEST=PASS\nRED_MISSING_ROW=PASS\nRED_SOURCE_REF=PASS\nRED_LITERAL_SOURCE=PASS\nRED_FOLD_PROOF=PASS\nRED_BUDGET_FORMULA=PASS\nDBCR_U02_RED_OWNER_COUNT=PASS\nDBCR_U02_RED_SHAPE_CLASS=PASS\nDBCR_U02_RED_SAME_OWNER_DUPLICATE=PASS\nCLEANUP=PASS\n");
 }
 
 function main() {

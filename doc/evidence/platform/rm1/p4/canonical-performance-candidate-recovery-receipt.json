@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "canonical-performance-candidate-recovery-receipt",
+  "expectedOldCandidateScan": {
+    "count": 721,
+    "fingerprint": "86515aa2e1af801e1aa561447d0f5f50b00a1e6d8267a994891b36fb0dbecddf"
+  },
+  "status": "OLD_ROW_SET_UNRECOVERABLE",
+  "locations": [
+    {
+      "path": "doc/evidence/platform/rm1/p4/2026-08-12-p4-runtime-ledger-rebaseline.json",
+      "sha256": "09b45c792b8fd5ce064b42841887790d74ad54957b220d6d202b32075658c12e",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/p4-ledger-authority-problem-family-discovery.json",
+      "sha256": "cefda7f029f3db2a8eadb9913f8f06d4d830e425f93e245e0496278fa079f6b9",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": "doc/evidence/platform/rm1/p4/rm1-u07-package-exit.json",
+      "sha256": "fc4872e54b8b0284d4eed2d2a7857b2c038957828dbbf09ed58c33bba7906cb0",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": ".runtime/compliance-control/hook-events/p4-final-candidate-fingerprint-14.pre.json",
+      "sha256": "a678da239a44d311ecd26025f84018fb9cfc093dfff3ae64b03736d5db71d1e5",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": ".runtime/compliance-control/hook-events/p4-final-candidate-fingerprint-14.post.json",
+      "sha256": "994b1166a5a9ef4f6bf2c63070b93bf6e6a6d7900b93f528742ef08a853f3b6e",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": ".runtime/compliance-control/hook-events/p4-refresh-canonical-ledger-final-source-20260729.pre.json",
+      "sha256": "94a303bc7b6cb6b898f5d1203b677f08a51a33d0cd4a4bd7a084c59995c35d86",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    },
+    {
+      "path": ".runtime/compliance-control/hook-events/p4-refresh-canonical-ledger-final-source-20260729.post.json",
+      "sha256": "2ea3f5145ed8f48bcca4a41c0cb4f86b4c9856fc7ee18b592b78e27bb46705b4",
+      "result": "NOT_PRESENT_OR_NO_ROW_SET"
+    }
+  ]
+}

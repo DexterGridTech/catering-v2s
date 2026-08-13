@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "db-call-reduction-implementation-package-input",
+  "packageId": "DB-CALL-REDUCTION-IMPLEMENTATION-20260812",
+  "status": "AUTHORIZED_IN_PROGRESS",
+  "implementationAuthority": true,
+  "runtimeAuthority": true,
+  "seedResetAuthority": true,
+  "l2": "EXCLUDED_BY_DEXTER",
+  "orderedDeliveryUnits": ["DBCR-U01", "DBCR-U02", "DBCR-U03", "DBCR-U04", "DBCR-U05"],
+  "designBinding": {
+    "path": "doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md",
+    "sha256": "120114f5d9852dd8db33e65c865bda2af84f27430c1a38ba07a97a03cf37f113"
+  },
+  "designManifestBinding": {
+    "path": "doc/evidence/platform/2026-08-12-v2s-db-call-reduction-design-granularity-manifest.json",
+    "sha256": "8db5219588751cb4784e72c3969df635758a9fbf0706c50f42cbe59c57320280"
+  },
+  "designReviewBinding": {
+    "path": "doc/review/platform/2026-08-12-v2s-db-call-reduction-design-review-claude.md",
+    "sha256": "61a2be0eb3f4eac441e5a7754a88d5d935eacb8ab38cf165364d2dca78e4a2b2",
+    "verdict": "GO",
+    "severity": {"M": 0, "S": 1, "N": 1}
+  },
+  "authority": {
+    "grantedBy": "Dexter",
+    "grantedAt": "2026-08-12T11:11:34Z",
+    "scope": "DBCR-U01_TO_U05_SINGLE_SEQUENTIAL_IMPLEMENTATION_THEN_MANAGED_RESET_DEV_R5_FULL_SEED",
+    "forbidden": ["L2", "UAT", "deployment", "manual SQL", "Git operations"]
+  },
+  "preBoundSourceSemantics": "PRE_BOUND_BEFORE_PRODUCTION_BEHAVIOR_CHANGE; exact path and sha256; absent create surfaces remain ABSENT",
+  "preBoundAt": "2026-08-12T11:11:34Z",
+  "preBoundSources": [
+    {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java","sha256":"1d922929fc3153e6abd36add558c135cd27d730b8d3db0e3bc9883dca5bbe9e2"},
+    {"path":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","sha256":"0e0a15959958a021ff57339ef6609d9886a51f541c1956ccfbfa204eedd1d4ae"},
+    {"path":"apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java","sha256":"243ef5d6ebffd3afd2edcf03e29cab0d74e2ae5ca1a4d3248a7fa6de290f4dc9"},
+    {"path":"apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java","sha256":"f1b2972f93bef19ee68e71b8c456032dca82c43a1fedbffd1cefa4ca452e29f6"},
+    {"path":"apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java","sha256":"95402e50086b9fe70b5074eddba6e0359d5e94f2d60c01fe4516ef8b3b1c42a5"},
+    {"path":"apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java","sha256":"44d626afdf1f76fcaa9d440a187086cfe6c02631c5492f5d379c5c32ed0d4864"},
+    {"path":"apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java","sha256":"affbe3aa490bedbebe145009d046a3db0137fde0924d27f0bb93f9ca552a3f2e"},
+    {"path":"contracts/policy/backend-performance-owner-api-registry.json","sha256":"ABSENT"},
+    {"path":"contracts/registry/backend-performance-operation-source-inventory.json","sha256":"80bb1575a621eada962c5b933bdd22002f8f53f630bc99814d525c419afb7daf"},
+    {"path":"contracts/registry/backend-performance-operation-database-shape-matrix.json","sha256":"318edda959bf0e50250c209b9f77fab783104959a1b356be0659151e11bec7ce"},
+    {"path":"scripts/generate/backend-performance-operation-source-inventory.mjs","sha256":"b4afb992a1926577d8652fae8f59de0e03110793538defafb41e4f9b2e2a4567"},
+    {"path":"scripts/generate/backend-performance-operation-source-inventory.test.mjs","sha256":"a8037a70b59c8294bf25ce808450f4ed9f2a75add7db0f4f72bf4781ab6d1fe0"},
+    {"path":"scripts/generate/backend-performance-operation-database-shape.mjs","sha256":"e9a4eff4931114b70b96a116693e25e6216d330d8d08f52d5adf5aa5bd85004a"},
+    {"path":"scripts/generate/backend-performance-operation-database-shape.test.mjs","sha256":"bd5f40b1f5df6d1ea362100180c5c0dba3f66e875e187e99df29b8ae07773b92"},
+    {"path":"tools/performance/canonical-ledger-scanner.mjs","sha256":"83549736b6f2d0f3a5bff6bcf21eb09fb2967e7f09f65bb6812dd8c9fc5a74b6"},
+    {"path":"doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","sha256":"d5f618fb685b82c8f712d5a74907ca96b7253c10be0b0e323fb39ddd6b5c3aed"},
+    {"path":"scripts/test/compare-backend-performance-seed-reports.mjs","sha256":"0a5e6c7d2b2318702307f32caa5aaa51035da0ab0dd31e06f80d1f0f6a17e38b"},
+    {"path":"scripts/test/compare-backend-performance-seed-reports.test.mjs","sha256":"cdbe8a1b9aed25d3b1e131246eb7d88a4228c5e612dedfcc71f9f5a6b119ba75"},
+    {"path":"scripts/test/seed-report.mjs","sha256":"8b18fb4a594d387cd375dc1f368935b854d16db558db4f4832f3c34820e98395"},
+    {"path":"scripts/test/seed-report.test.mjs","sha256":"0d08bd99940526a6bde844121e854a7cf4bf78523dc721b27b678a091e24f1cb"},
+    {"path":"scripts/dev/owner-command-seed-executor.mjs","sha256":"a9186340de42f656c343f28dba51a8f028113329d6d7756cea22286cc57efa4e"}
+  ],
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_REQUIREMENT","owner":"Dexter authority, revised requirement and design bindings","count":1,"rule":"implementation, runtime and seed/reset authority are explicit; L2 remains excluded"},
+    {"id":"TRANSACTION_OPERATION_DISPOSITION","owner":"CatalogInventoryCoordinator and typed owner read sources","count":16,"rule":"16/16 exact operation-to-coordinator-to-owner bindings; no legacy dispatcher or command transaction"},
+    {"id":"COORDINATED_OWNER_SHAPE","owner":"five production adapters plus source/shape generators","count":5,"rule":"five DECLARE_2 shapes with reachable owner API derivation and generated exact-set"},
+    {"id":"CANONICAL_LEDGER_AND_MEASUREMENT_MAPPING","owner":"canonical scanner, disposition artifacts and P4","count":730,"rule":"recovered exact delta or full current disposition; three method mappings"},
+    {"id":"ACCEPTED_BASELINE_RATCHET","owner":"accepted baseline and scanner","count":3,"rule":"three method cases with immutable accepted history and increase attribution"},
+    {"id":"PREVENTION_ACCEPTANCE_HANDOFF","owner":"static red mutations, managed reports, seed comparison and implementation review","count":5,"rule":"U01-U05 exact proof; same-basis 41-operation seed comparison; one final implementation review"}
+  ],
+  "dynamicEvidence": "PENDING_AFTER_STATIC_IMPLEMENTATION",
+  "business": "PENDING",
+  "cleanup": "PENDING"
+}

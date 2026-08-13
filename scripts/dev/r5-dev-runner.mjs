@@ -11,9 +11,12 @@ const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.ru
 const manifestPath = path.join(runtime, 'run-manifest.json');
 const readinessProgressPath = path.join(runtime, `readiness-${process.pid}.jsonl`);
 const portLockPath = path.join(root, '.runtime/r5/managed-port-lock');
-const localPostgresPort = String(process.env.V2S_DEV_LOCAL_POSTGRES_PORT ?? '25432');
-const localAssetPort = String(process.env.V2S_DEV_LOCAL_ASSET_PORT ?? '29000');
-if (!/^\d{4,5}$/.test(localPostgresPort) || !/^\d{4,5}$/.test(localAssetPort)) throw new Error('R5_DEV_LOCAL_PORT_INVALID');
+const defaultTunnelPortPairs = Object.freeze([
+  {postgres: '25432', asset: '29000'},
+  {postgres: '25433', asset: '29002'},
+  {postgres: '25434', asset: '29004'},
+  {postgres: '25435', asset: '29006'},
+]);
 const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const startToken = (pid) => canonicalStartToken(run('ps', ['-o', 'lstart=', '-p', String(pid)]));
 const readStartToken = (pid) => {
@@ -78,9 +81,31 @@ async function stopOwnedProcess(value) {
   if (value.runtimeIdentity) await stopOwnedIdentity({...value.runtimeIdentity, name: `${value.name}-runtime`});
   return stopOwnedIdentity(value);
 }
-function environment(mode) {
-  const stdout = run(process.execPath, [path.join(root, 'scripts/dev/r5-dev-environment.mjs'), mode, '--json']);
+function environment(mode, overrides = {}) {
+  const stdout = run(process.execPath, [path.join(root, 'scripts/dev/r5-dev-environment.mjs'), mode, '--json'], {env: {...process.env, ...overrides}});
   return JSON.parse(stdout);
+}
+function listenerPids(port) {
+  const listener = spawnSync('lsof', ['-nP', '-t', `-iTCP:${port}`, '-sTCP:LISTEN'], {encoding: 'utf8'});
+  if (listener.status === 1) return [];
+  if (listener.status !== 0) fail(`TUNNEL_PORT_LISTENER_READ_FAILED:${port}`);
+  return [...new Set(listener.stdout.split(/\s+/).filter(Boolean).map(Number).filter(Number.isInteger))];
+}
+function selectFirstAvailableTunnelPortPair(candidates, occupied) {
+  return candidates.find((candidate) => !occupied(candidate.postgres) && !occupied(candidate.asset)) ?? null;
+}
+function selectTunnelPorts() {
+  const requestedPostgres = process.env.V2S_DEV_LOCAL_POSTGRES_PORT;
+  const requestedAsset = process.env.V2S_DEV_LOCAL_ASSET_PORT;
+  if (Boolean(requestedPostgres) !== Boolean(requestedAsset)) fail('R5_DEV_LOCAL_PORT_PAIR_INCOMPLETE');
+  if (requestedPostgres && requestedAsset) {
+    if (!/^\d{4,5}$/.test(requestedPostgres) || !/^\d{4,5}$/.test(requestedAsset) || requestedPostgres === requestedAsset) fail('R5_DEV_LOCAL_PORT_INVALID');
+    if (listenerPids(requestedPostgres).length || listenerPids(requestedAsset).length) fail('R5_DEV_LOCAL_PORT_ALREADY_OCCUPIED');
+    return {postgres: requestedPostgres, asset: requestedAsset};
+  }
+  const selected = selectFirstAvailableTunnelPortPair(defaultTunnelPortPairs, (port) => listenerPids(port).length > 0);
+  if (!selected) fail('R5_DEV_TUNNEL_PORT_PAIR_UNAVAILABLE');
+  return selected;
 }
 function secret() { return crypto.randomBytes(24).toString('base64url'); }
 function acquirePortLock() {
@@ -156,13 +181,27 @@ function provisionObjectStorage(env, secrets) {
   if (!/^r5asset[a-f0-9]{16}$/.test(access) || !/^[A-Za-z0-9_-]{24,}$/.test(secretKey)) fail('ASSET_OBJECT_STORAGE_CREDENTIAL_READBACK_INVALID');
   return {access, secretKey};
 }
-function openTunnel(env) {
+async function openTunnel(env, ports) {
   const log = path.join(runtime, 'remote-postgres-tunnel.log');
   const logFd = openSync(log, 'w');
-  const tunnel = spawn('ssh', ['-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', `${localPostgresPort}:127.0.0.1:5432`, '-L', `${localAssetPort}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST], {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
+  const tunnel = spawn('ssh', ['-N', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=30', '-o', 'ServerAliveCountMax=3', '-L', `${ports.postgres}:127.0.0.1:5432`, '-L', `${ports.asset}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST], {cwd: root, detached: true, stdio: ['ignore', 'ignore', logFd]});
   if (!tunnel.pid) fail('REMOTE_TUNNEL_START_FAILED');
   tunnel.unref();
-  return {name: 'remote-dev-tunnels', pid: tunnel.pid, log, command: ['ssh', '-N', '-L', `${localPostgresPort}:127.0.0.1:5432`, '-L', `${localAssetPort}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST]};
+  const value = {name: 'remote-dev-tunnels', pid: tunnel.pid, pgid: Number(run('ps', ['-o', 'pgid=', '-p', String(tunnel.pid)]).trim()), startToken: startToken(tunnel.pid), log, command: ['ssh', '-N', '-L', `${ports.postgres}:127.0.0.1:5432`, '-L', `${ports.asset}:127.0.0.1:19000`, env.environment.V2S_DEV_REMOTE_HOST]};
+  try {
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      if (!pidAlive(value.pid) || readStartToken(value.pid) !== value.startToken) fail('REMOTE_TUNNEL_IDENTITY_DRIFT');
+      const postgresListeners = listenerPids(ports.postgres);
+      const assetListeners = listenerPids(ports.asset);
+      if (postgresListeners.length === 1 && assetListeners.length === 1 && postgresListeners[0] === value.pid && assetListeners[0] === value.pid) return value;
+      await delay(200);
+    }
+    fail('REMOTE_TUNNEL_LISTENER_IDENTITY_MISMATCH');
+  } catch (error) {
+    try { await stopOwnedIdentity(value); } catch { /* preserve the original tunnel failure */ }
+    throw error;
+  }
 }
 
 async function waitForBusinessReady(processValue) {
@@ -200,7 +239,9 @@ async function start() {
     fail('STALE_MANIFEST_REQUIRES_EXPLICIT_STOP');
   }
   mkdirSync(runtime, {recursive: true});
-  const env = environment('start');
+  const baselineEnvironment = environment('start');
+  const tunnelPorts = selectTunnelPorts();
+  const env = environment('start', {V2S_DEV_DATABASE_URL: `jdbc:postgresql://127.0.0.1:${tunnelPorts.postgres}/${baselineEnvironment.expectedDatabase}`});
   const catalogFaultFlag = process.env.V2S_CATALOG_TEST_FAULTS;
   if (catalogFaultFlag !== undefined && catalogFaultFlag !== 'true' && catalogFaultFlag !== 'false') fail('CATALOG_TEST_FAULTS_FLAG_INVALID');
   const catalogTestFaultsAdmitted = catalogFaultFlag === 'true' && env.environment.V2S_RUNTIME_ENVIRONMENT === 'non-production';
@@ -237,9 +278,9 @@ async function start() {
   const portLock = acquirePortLock();
   let processes = [];
   try {
-  const tunnel = openTunnel(env);
+  const tunnel = await openTunnel(env, tunnelPorts);
   const commands = [
-    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false', V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${localAssetPort}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
+    {name: 'business-server', command: 'gradle', args: ['--project-dir', root, ':apps:backend:catering-business-server:bootRun', '--no-daemon'], env: {CATERING_BUSINESS_DB_URL: env.environment.V2S_DEV_DATABASE_URL, CATERING_BUSINESS_DB_USERNAME: credential.values.V2S_DEV_DATABASE_USERNAME, CATERING_BUSINESS_DB_PASSWORD: credential.values.V2S_DEV_DATABASE_PASSWORD, CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_PLATFORM_RATE_LIMIT_HMAC_SECRET, CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET: credential.values.CATERING_WORKSPACE_RATE_LIMIT_HMAC_SECRET, CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true', V2S_RUNTIME_ENVIRONMENT: env.environment.V2S_RUNTIME_ENVIRONMENT, V2S_DEV_PROFILE: env.environment.V2S_DEV_PROFILE, V2S_DEV_NAMESPACE: env.namespace, V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false', V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE, V2S_SEED_REPORT_RUN_ID: runId, V2S_SEED_REPORT_SECRET: credential.values.V2S_SEED_REPORT_SECRET, V2S_SEED_REPORT_EVENTS: seedEventsPath, V2S_DB_OPERATIONS_EVENTS: dbOperationsPath, V2S_DB_OPERATIONS_HMAC_KEY: credential.values.V2S_DB_OPERATIONS_HMAC_KEY, V2S_DB_STATEMENT_DICTIONARY: statementDictionaryPath, CATERING_ASSET_OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${tunnelPorts.asset}`, CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: objectStorage.access, CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: objectStorage.secretKey, CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets', CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${tunnelPorts.asset}`, CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`}},
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: 'http://127.0.0.1:8080'}},
   ];
@@ -250,13 +291,14 @@ async function start() {
     child.unref();
     return {name: entry.name, pid: child.pid, log, command: [entry.command, ...entry.args]};
   })].map((value) => {
+    if (value.startToken) return {...value, tree: snapshotProcessTree(processIdentity(value))};
     const withIdentity = {...value, pgid: Number(run('ps', ['-o', 'pgid=', '-p', String(value.pid)]).trim()), startToken: startToken(value.pid)};
     return {...withIdentity, tree: snapshotProcessTree(processIdentity(withIdentity))};
   });
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
   businessServer.runtimeIdentity = readListeningProcessIdentity(8080, 'business-server-runtime');
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, imageBindEvidenceInputs, readinessProgressPath, processes, readiness}, null, 2) + '\n');
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, portLock, tunnelPorts, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, imageBindEvidenceInputs, readinessProgressPath, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     let cleanupStatus = 'PASS';
@@ -288,10 +330,14 @@ async function stop() {
     business: {status: 'PASS'}, cleanup: {status: cleanupStatus, failedProcessCount: failures.length},
   });
   if (failures.length > 0) fail(`R5_DEV_STOP_CLEANUP_FAILED:${failures.map((error) => error.message).join('|')}`);
-  releasePortLock(manifest.portLock); rmSync(manifestPath); process.stdout.write(`R5_DEV_STOP=PASS; TERMINAL_MANIFEST=${terminal}\n`);
+  const lockPath = manifest.portLock ?? path.join(runtime, 'managed-port-lock');
+  releasePortLock(lockPath); rmSync(manifestPath); process.stdout.write(`R5_DEV_STOP=PASS; TERMINAL_MANIFEST=${terminal}\n`);
 }
 const mode = process.argv[2];
 if (mode === '--self-test') {
+  const alternate = selectFirstAvailableTunnelPortPair([{postgres: '25432', asset: '29000'}, {postgres: '25433', asset: '29002'}], (port) => port === '25432' || port === '29000');
+  if (alternate?.postgres !== '25433' || alternate.asset !== '29002') fail('R5_DEV_TUNNEL_PORT_ALLOCATION_RED_NOT_DETECTED');
+  if (selectFirstAvailableTunnelPortPair([{postgres: '25432', asset: '29000'}], () => true) !== null) fail('R5_DEV_TUNNEL_PORT_EXHAUSTION_RED_NOT_DETECTED');
   const syntheticManifest = {kind: 'r5-dev-run-manifest', firstFailure: null, lastKnownGood: 'TREE_SNAPSHOT', brokenBoundary: null, business: 'PASS', cleanup: 'PENDING', processes: [{pid: 10, pgid: 10, startToken: 'root', tree: [{pid: 10, pgid: 10}, {pid: 11, pgid: 10}]}]};
   if (cleanupStatusFromTree(syntheticManifest.processes[0].tree) !== 'FAIL' || cleanupStatusFromTree([]) !== 'PASS') fail('R5_DEV_RUNNER_CLEANUP_TREE_RED_NOT_DETECTED');
   const processTable = [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}, {pid: 11, ppid: 10, pgid: 10, startToken: 'child', command: 'child'}];

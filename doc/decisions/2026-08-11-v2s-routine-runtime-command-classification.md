@@ -22,6 +22,13 @@ entrypoints. A request sequence may impose an operational order; for the current
 order is Testcontainers business and cleanup PASS, then reset, managed DEV start, then seed.
 Browser L2 is excluded.
 
+For this operational entry, `r5-full` means the complete DEV experience composition, not just the
+base owner fixture: it runs `owner-command` followed by `catalog-inventory`, validates one managed
+DEV run across both component receipts, and writes a composite report that links rather than merges
+their per-owner API/database reports. The catalog/inventory loader remains an internal component;
+there is no public partial seed profile. This does not make reset/start implicit or combine their
+destructive responsibilities with seed.
+
 ## Boundaries retained
 
 This decision does not permit local Docker, manual SSH, manual SQL, a remote application or

@@ -60,6 +60,28 @@ class WorkspaceInvitationPublicFlowTest {
         assertEquals(0, assignments(created.id()));
     }
 
+    @Test void publicInvitationResumesAfterBackOrRefreshWithoutASecondAcceptTransition() {
+        var created = invitations.create(workspaceId, "public-flow", "13800000017", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        assertEquals("ACCEPT", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals("VERIFY_MOBILE", invitations.acceptPublic("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals("VERIFY_MOBILE", invitations.acceptPublic("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals("VERIFY_MOBILE", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM workspace_iam.audit_event WHERE entity_ref_text=? AND action='WORKSPACE_INVITATION_ACCEPT_INTENT_RECORDED'", Integer.class, created.id().toString()));
+
+        String firstOtp = invitations.issueMobileVerificationOtp("public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
+        var firstVerification = invitations.verifyPublicOtp("public-flow", created.rawInvitationToken(), "13800000017", firstOtp);
+        assertEquals("VERIFY_MOBILE", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
+        String resumedOtp = invitations.issueMobileVerificationOtp("public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
+        var resumedVerification = invitations.verifyPublicOtp("public-flow", created.rawInvitationToken(), "13800000017", resumedOtp);
+        assertThrows(WorkspaceInvitationService.InvitationStateException.class, () -> invitations.savePublicCredentials("public-flow", created.rawInvitationToken(), firstVerification.verificationGrant(), "Resumed User", "resumed-user", "a-secure-password".toCharArray()));
+        invitations.savePublicCredentials("public-flow", created.rawInvitationToken(), resumedVerification.verificationGrant(), "Resumed User", "resumed-user", "a-secure-password".toCharArray());
+        assertEquals("FINALIZE", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals("FINALIZE", invitations.acceptPublic("public-flow", created.rawInvitationToken()).nextStep());
+        invitations.completePublic("public-flow", created.rawInvitationToken());
+        assertEquals("TERMINAL", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
+        assertEquals(1, assignments(created.id()));
+    }
+
     @Test void publicInvitationRejectsExpiredAndInvalidOtpStatesAndCompletionReplayPreservesOneAssignment() {
         var expired = invitations.create(workspaceId, "public-flow", "13800000004", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
         jdbc.update("UPDATE workspace_iam.invitation SET expires_at_epoch_millis=? WHERE id=?", NOW - 1, expired.id());

@@ -10,7 +10,8 @@
     "ownerCommands": 88,
     "protocolCommands": 25,
     "taskReads": 78,
-    "protocolReadExemptions": 5
+    "protocolReadExemptions": 5,
+    "coordinatedOwnerOperations": 5
   },
   "shapeClasses": [
     "OWNER_COMMAND_CROSS_OWNER",
@@ -21,22 +22,23 @@
   ],
   "shapeCounts": {
     "TASK_READ": 78,
-    "OWNER_COMMAND_SINGLE_OWNER": 88,
+    "OWNER_COMMAND_SINGLE_OWNER": 83,
+    "OWNER_COMMAND_CROSS_OWNER": 5,
     "PROTOCOL_COMMAND": 25,
     "PROTOCOL_READ_EXEMPT": 5
   },
   "inputs": {
     "bindings": {
       "path": "contracts/registry/operation-handler-bindings.json",
-      "sha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81"
+      "sha256": "48d4e144a46b8e9f6315ce74fff4e334cda65a5d7b6e7d4f981e01a049304dd6"
     },
     "sourceInventory": {
       "path": "contracts/registry/backend-performance-operation-source-inventory.json",
-      "sha256": "80bb1575a621eada962c5b933bdd22002f8f53f630bc99814d525c419afb7daf"
+      "sha256": "403a4612cc1ddafea3a807890b79b037fe5cbdfbe8fc056be04074587ca31e77"
     },
     "loaderCatalogue": {
       "path": "contracts/registry/backend-performance-fact-loader-catalog.json",
-      "sha256": "49b9254d8db1e320c82c0f83f84cc7d8fa4422c2f630595e079ab4db81bf2fea"
+      "sha256": "70afe11c93a218762d29204c58596158959df8d0c6f16f4e84ae56a4dbb09f37"
     },
     "commandCatalog": {
       "path": "doc/review/platform/2026-08-10-v2s-backend-performance-final-optimization-command-operation-catalog.json",
@@ -48,11 +50,11 @@
     },
     "commandTopology": {
       "path": "contracts/registry/backend-performance-command-topology-matrix.json",
-      "sha256": "8cefb6724da3a1ebbbfe2349abefcbff02f095ae8f34b55123f8a7fb317b92cd"
+      "sha256": "5bdb8d243dbf33339926b7be390a70a249276f957285806a536b9c62848eec2d"
     },
     "m1Execution": {
       "path": "contracts/registry/backend-performance-m1-command-execution-matrix.json",
-      "sha256": "1733c192673aa9a674e740ef105e84b3bdb7f17367e0932f298dcea3c550c141"
+      "sha256": "c3619ffe2c9687b65e3ca5af12ab8b9cfb5ee6b2bdd9bee2ff73b60a2f1f1994"
     },
     "taskReadPolicy": {
       "path": "contracts/registry/task-read-surface-policy.json",
@@ -60,7 +62,11 @@
     },
     "sourceDecisionReceipt": {
       "path": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json",
-      "sha256": "45f8a0d641975e690fdcaf2004bc6ef9e56c458c3e4ec8c0c002118896f50872"
+      "sha256": "2b21ee605941f875df40e8ffee828ac5e0340310f25eb035f029fcc63291fcc4"
+    },
+    "ownerApiRegistry": {
+      "path": "contracts/policy/backend-performance-owner-api-registry.json",
+      "sha256": "4003ebc0131ccf0453e732e45eed0fa56b75f5da52c7f80ed5aab5f73aabfd2c"
     }
   },
   "redlineChecklist": [
@@ -89,7 +95,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-001",
-        "inventoryDigest": "37c01a8f89910ccdb68f7f6ceea91afa3a5497c3e35d6cc59a9c2bc573e6f510"
+        "inventoryDigest": "9b10a7b557c49b475a92c429c4ba1261754b6c5f3edb82a82ba21449a4fb4e6d"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -97,7 +103,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-001",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -150,6 +156,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -173,7 +181,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-002",
-        "inventoryDigest": "27f7e46fc36eb7c621016b2ee0d13e5b4e108ad41172ea2fa03ec6136e9a2f08"
+        "inventoryDigest": "5a7c54e2a7e4c455f80476a95e4493d82882bc50f1de80264f184daa1847f8d6"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -181,7 +189,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-002",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -234,6 +242,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -257,7 +267,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-003",
-        "inventoryDigest": "929285509d29d052688642d1c86d7fa3ff657c4d68606fb0355621083dc45295"
+        "inventoryDigest": "127e1def655469e485935c422b3db98b3f3b866896cf272e6ab500b2d7e02ce7"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -265,7 +275,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-003",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -318,6 +328,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -341,7 +353,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-004",
-        "inventoryDigest": "08ed0f4e3fd9d518af5b5d53322fcb13782d800d21416cb0b99e7b5e59edfe78"
+        "inventoryDigest": "f0e385fae88b3c9cd79e9c6387868eeca75191a5418f284ef64076190e8ef1e6"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -349,7 +361,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-004",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -402,6 +414,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -425,7 +439,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-005",
-        "inventoryDigest": "00fc937ce882bed4fefa4460a29e39f3c65d85c4c0592ee6310626bd3433d14d"
+        "inventoryDigest": "3d8023d48e75880635ba790ce1f6d88e38e3ef62c9f7282c8aac689e6ae2677e"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -489,6 +503,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -512,7 +528,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-006",
-        "inventoryDigest": "da601b3c9431e81cab355b70bcce6c383d9b2a39a38678168015bef685a0dd25"
+        "inventoryDigest": "4cd78dd57a0c0ad08e9eee4096a87bb67ca4436db61bf2cbb2d6a863eafd6bb3"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -576,6 +592,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -595,11 +613,11 @@
       "rowId": "BPF-SHAPE-007",
       "operationId": "transitionOperationsCatalogItemStatus",
       "mode": "COMMAND",
-      "shapeClass": "OWNER_COMMAND_SINGLE_OWNER",
+      "shapeClass": "OWNER_COMMAND_CROSS_OWNER",
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-007",
-        "inventoryDigest": "6547c9c7e8c7714decb0a35a825008cda1d970c2ba9ee261c0a77cb44d67ac56"
+        "inventoryDigest": "ea5ef178a124a86227228af0e6b0c993b7f7904b02d8fa7cf954d28c15e283c9"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -662,7 +680,12 @@
         "m1BindingStatus": "DECLARED_M1_BINDING_REACHABILITY_BPF_U02"
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
-      "ownerCount": 1,
+      "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [
+        "catalog",
+        "inventory"
+      ],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -686,7 +709,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-008",
-        "inventoryDigest": "2fb86ba0f323434ec7992ad129a4cffcb6370b02a90a26528bafbda4a8e9fd77"
+        "inventoryDigest": "7de69e641bd9b7d975d3aa2e8901d3a783f11361e6d33a32dfa434c8b7c79c91"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -750,6 +773,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -773,7 +798,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-009",
-        "inventoryDigest": "a6e53c72ec95cd56df559f39db1a3f8b5eba03110161c31e5c81a8901eef11b3"
+        "inventoryDigest": "7ab61ff61257e1267277cc0cc32dc0614e2566f019791114c8b06251c2362f96"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -837,6 +862,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -860,7 +887,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-010",
-        "inventoryDigest": "87e37206441ca7489f2d4b852f0372df7bd6dfc5915e115fdd6f87ae386b18e8"
+        "inventoryDigest": "4f08f63da3f6ba052051919db8060ad8dc3abeba9a64aa8e063cf00d4756fb0f"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -924,6 +951,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -947,7 +976,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-011",
-        "inventoryDigest": "f37ecc9ef62aaed0c19276e0f0b94c9650973989dc8ba8013b71b66aa9678b92"
+        "inventoryDigest": "1ceb2d45790de76f3a11ddcaea2615510d76f149cf58257ea8ef5a00715cc9bd"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1011,6 +1040,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1034,7 +1065,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-012",
-        "inventoryDigest": "b908228ca8798ae1281d6464e34a0ca35b3987b295e809038311cfad0162da2b"
+        "inventoryDigest": "4aa0d7a73126217305978ac86db52f0a804bebf4306f536bb0540f51e31bb4e5"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -1042,7 +1073,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-012",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -1095,6 +1126,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1118,7 +1151,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-013",
-        "inventoryDigest": "ee731a03742649e88346f0c544aa243e60bff37cf0b3207f6e6ff2972615066a"
+        "inventoryDigest": "7820458118ab5c1edb8bdd5e43d587ea58d9dac79dbaa2f74d45e8b86f18230a"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1182,6 +1215,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1205,7 +1240,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-014",
-        "inventoryDigest": "af367041a1f0f23dd9e3c630b72b2ee92f100e2a874998588de5ff4d886c9ae0"
+        "inventoryDigest": "ac67bf870b7cfa264b94f78dbc865c0aa06a93beb26c01e9f1f40b1353d21163"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1269,6 +1304,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1292,7 +1329,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-015",
-        "inventoryDigest": "f9c6659fb38eeaae3e6b1042c1cda81db056290c281010a31ee9ca09dc89372e"
+        "inventoryDigest": "26bb1b87c011b920257fda93d3235b0fa6922d0e68ac96a638bb879444c9f22f"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1356,6 +1393,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1379,7 +1418,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-016",
-        "inventoryDigest": "9ef85dd59325d27ea825b60c68c9d7b06a86a1f872824c07cf270ddca1ed25aa"
+        "inventoryDigest": "93d639cfa63ae0ce775416a5218ef5a011604a72af8cd99034e5a4859c02bcbc"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1443,6 +1482,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1466,7 +1507,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-017",
-        "inventoryDigest": "a2a53c66ed8442b8afd53c76281a8a5f03a873373529aa66f079a3c52550c41b"
+        "inventoryDigest": "da1ab5d4ad0e1dc98ed9897056f1138cbb0d407a5ae743d9eba2518898dc2dc9"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -1474,7 +1515,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-017",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -1527,6 +1568,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1550,7 +1593,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-018",
-        "inventoryDigest": "9c5af507f90d573768fe71907afdb216bda67a06c44255162fb0209a85bae0e8"
+        "inventoryDigest": "9e1dcda8325f914aa79878f766fcae27504160890a9ad788ccb0f72c4ade7359"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1614,6 +1657,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1637,7 +1682,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-019",
-        "inventoryDigest": "c3088cdd5b8c5bf9a2c0ce4a9875b73c3c076b576a8969a955f2947cddf196e1"
+        "inventoryDigest": "c5f0381723f9714cd897737e60f5842cc1c88468a2742653f167e9e02df467ff"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1701,6 +1746,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1724,7 +1771,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-020",
-        "inventoryDigest": "d3cc1606b64627eb5ac89816eebaa387997edff9dd4f08d0f83684007bc0bd69"
+        "inventoryDigest": "74202aec49badf4c530662b8cf7c1b3c59a5fa39829f0fa19a932b0fbc1edcf9"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1788,6 +1835,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1811,7 +1860,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-021",
-        "inventoryDigest": "0e1e1bb03d6c3c285a13d7f2276c963be6c2b65678d23a59dd313cfb5a8e6610"
+        "inventoryDigest": "ca16df4298a9bd954d63afc5c17d6a6e58208036732d9747e45e595c357bd2dc"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -1819,7 +1868,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-021",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -1872,6 +1921,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1895,7 +1946,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-022",
-        "inventoryDigest": "ea8907330268482e4ab58ecdf47447ed72fcb77ffe462e794ba4ecde28258624"
+        "inventoryDigest": "8c5635f118fa6000697bc1f7e81212fb5da9faa28751ae349c7b16c016f6fae0"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -1959,6 +2010,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -1982,7 +2035,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-023",
-        "inventoryDigest": "c52f4f38f2c54b3690870fb1a47430a7e382f2c1c0e4d912b29cb0e616f21082"
+        "inventoryDigest": "781776e6a2ebc909aaeb8842fb132a6b48030708bb5fe11f0bc88b0c7ff01958"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -2046,6 +2099,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2069,7 +2124,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-024",
-        "inventoryDigest": "59583d62ff249e35ec92bfd1f732ae5abc326d8b6fba2a47500c6843d6133992"
+        "inventoryDigest": "9a217d781c840af5498cbaf552548d415abb1ca9e4a0bdb84f6272a0f979204c"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -2133,6 +2188,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2156,7 +2213,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-025",
-        "inventoryDigest": "eaeb95cf0b8fcddbd1ace83ec5374161d1c4e7044f73681ae7e910e46576f2e8"
+        "inventoryDigest": "d6430d802563b79da7c329b3bcfd99f106f2b1e8f8cbedf2c725ca8c93f6ec00"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -2220,6 +2277,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2243,7 +2302,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-026",
-        "inventoryDigest": "144cb0b29fea9994576341daea5681dfd431765e0eae9e2d4c7724801efdfcd6"
+        "inventoryDigest": "f2130413aefd82828c4697c147c2c9e32855a19ebcf6d2acdba9ed68d8939f77"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2251,7 +2310,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-026",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2304,6 +2363,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2327,7 +2388,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-027",
-        "inventoryDigest": "523db1a10e05f20663c7eaee7ebd53de41e6b2479ec8a33c3c23693226fb08a5"
+        "inventoryDigest": "20185bcfbea47a90c652810f2b9c059e9895574e6d59c2d51d9b325f9071d021"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -2391,6 +2452,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2414,7 +2477,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-028",
-        "inventoryDigest": "6e0bb68e71224f31ada6f14de232f83a58009ee94b3f20806d3fc188430655f5"
+        "inventoryDigest": "183cfb2906aa655eacf97524403270cd81c39b9a8b11e360a5e4fc398a6f8567"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -2478,6 +2541,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2501,7 +2566,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-029",
-        "inventoryDigest": "e0383037bcb9d0cb96d5843fa3afc46e3e0accd63da0db892d50d545d7ca8c5f"
+        "inventoryDigest": "9aced16f59bb82ea6d25ee8cfa97feed2933776c91a5f04127e3af68b0a1867c"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2509,7 +2574,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-029",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2562,6 +2627,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2585,7 +2652,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-030",
-        "inventoryDigest": "d24a384a19d1ded62427107586877d1ce99f88db0cd07fceeef18311219abc33"
+        "inventoryDigest": "7cde3b6f8e4a1a0c36f8fd053a9670f3095a46a589008c2211a6862833369d05"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2593,7 +2660,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-030",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2646,6 +2713,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2669,7 +2738,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-031",
-        "inventoryDigest": "bf088e2b2b3e3bcf40aee1388a2bdfdea33bec1a5dcd38923629f58b67b0afa9"
+        "inventoryDigest": "c34032a8fa9d2672693bce004dd4c923d172467e01337f8801b1134b217ff646"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2677,7 +2746,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-031",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2730,6 +2799,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2753,7 +2824,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-032",
-        "inventoryDigest": "5ec5723ff5199a38bc60c487c3457c4e9ab5439e9db6975a750796c87b780229"
+        "inventoryDigest": "62de85c9fcd12b68fe4abde8700668e47b0d4e8a3b0ca020b3f51d2547af0e3b"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2761,7 +2832,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-032",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2814,6 +2885,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2837,7 +2910,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-033",
-        "inventoryDigest": "76a472e0a7bd8ae21bcff61c71d676ef27f6d64c8fa7003c230cdfa5a2c4be03"
+        "inventoryDigest": "cdf3699e2409d3acfc5a67b56abdc6d5cabe1ab4cb78d2b9b3e27160ea4e96e1"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2845,7 +2918,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-033",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2898,6 +2971,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -2921,7 +2996,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-034",
-        "inventoryDigest": "61476e6e5d122bbce2b7fa160f1aafb8cced9a0a66646b0451868e96f4ad22c7"
+        "inventoryDigest": "8ae414e73a3abfa933c60d3a26e1da20017d9a0a8a1e98764563165505ac2ed0"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -2929,7 +3004,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-034",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -2982,6 +3057,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3005,7 +3082,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-035",
-        "inventoryDigest": "1c72023d118a138b9d7dc481f38f25f7f676accba1ee33afd1f5975b9a89ddeb"
+        "inventoryDigest": "59fbb4313cfa61e2df596c1950115ade2f6956b26236ca608883ea62080ddec8"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -3013,7 +3090,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-035",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -3066,6 +3143,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3089,7 +3168,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-036",
-        "inventoryDigest": "2899d27cc126455223fbcb318c6dc6c0f06bbea0dc61a3d6e7a30945b6ef6326"
+        "inventoryDigest": "799005b6ece2417d80b48a3d98f040306f8e7d8d70cf6b30f99606749f6f45c9"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3153,6 +3232,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3176,7 +3257,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-037",
-        "inventoryDigest": "f1275d9f5701bf33d6f3a914eae0a1abdee866e177ade6d57a5a71727f4d126b"
+        "inventoryDigest": "955c62e782f3e7ae1de2a36ce66524eacfb501f2f38fbd9e6ef936488bbecf17"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3240,6 +3321,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3263,7 +3346,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-038",
-        "inventoryDigest": "323620f478c3573fbf60cbd40ca3c43ce88b90b25a31545d3b83423ec53772fd"
+        "inventoryDigest": "4d28a568f43dab86e9237f87b2d66fc36c0e201909c81e15e31add760f7abce0"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3327,6 +3410,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3350,7 +3435,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-039",
-        "inventoryDigest": "bde57e42e86abc39f461c6757b9eab1eb96635578c962eb596f2969f546a361c"
+        "inventoryDigest": "546ac8cb563a4a27a50c61b5a85399bba7252a8bc950346d3a4e09efdc3d3bba"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3414,6 +3499,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3437,7 +3524,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-040",
-        "inventoryDigest": "9179e46e6e040dc989c323d4ab5ae0dc112371e2909410391a569968f10d55e2"
+        "inventoryDigest": "d09deb2f360c240fb40c0afd2250a87680b59809147da88217e2c84805f95e75"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3501,6 +3588,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3520,11 +3609,11 @@
       "rowId": "BPF-SHAPE-041",
       "operationId": "releaseOperationsCatalogStagedAsset",
       "mode": "COMMAND",
-      "shapeClass": "OWNER_COMMAND_SINGLE_OWNER",
+      "shapeClass": "OWNER_COMMAND_CROSS_OWNER",
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-041",
-        "inventoryDigest": "e817cd05772b9ddcb2ffd7b715ad023c1578711ffaf040e7cfac00dfbed27689"
+        "inventoryDigest": "0d4502b2e3aff8e790fff5d08a48aae7a3c08d7768416788895e1c2adec9a0df"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3532,7 +3621,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-041",
           "field": "transaction",
-          "sourceDigest": "810793f9f72b195f37613ac495d0cec9a1d3441d7baeee86ceb148cb87bbc2ef"
+          "sourceDigest": "8babb0248539bdb870e492ef9140aaacb00122a15ee4ee5f864af45716534066"
         },
         "classification": "M1_ORIGIN"
       },
@@ -3587,7 +3676,12 @@
         "m1BindingStatus": "DECLARED_M1_BINDING_REACHABILITY_BPF_U02"
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
-      "ownerCount": 1,
+      "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [
+        "catalog",
+        "platform-asset"
+      ],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3611,7 +3705,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-042",
-        "inventoryDigest": "9500f2b4780f92acdb5e50d709166bc277bdbea80f31f9b34724640371bcbaac"
+        "inventoryDigest": "4cb68d873fbb65b05bb43725a52afa7bc87de91d58ac85d85cb57b17f580883e"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -3619,7 +3713,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-042",
           "field": "transaction",
-          "sourceDigest": "52a0714ff228984cc396b580f90d00ebe65785705dfda482712c7e544db23b7b"
+          "sourceDigest": "ac79d2e5dd821a46786d20224ef2912819f8b6bd4034da4b68bd9a984bc848be"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -3672,6 +3766,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3695,7 +3791,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-043",
-        "inventoryDigest": "d3e3a44be0526f919e6620c44c17dde28a66857c3e38d3dbbb43516557964ebf"
+        "inventoryDigest": "b4c963b38772877d10f7ecaa7e9d57fe3e59865aebbb7d9049ae3b84662dd82b"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -3703,7 +3799,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-043",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -3754,6 +3850,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3777,7 +3875,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-044",
-        "inventoryDigest": "a29014cfac37046f3461598159e55647a8a76f823bfd67b2a8fe79fe4a394b16"
+        "inventoryDigest": "a327c6a1a958df92d6cb06697e014874e5f394ddb9bb151adcbc98475f15bd20"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3841,6 +3939,8 @@
       },
       "finalReadbackDisposition": "VALID_NO_CONTENT_SOURCE_PROOF",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3864,7 +3964,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-045",
-        "inventoryDigest": "591732159786800ce78cee4eab281063ece8b438bdeb18bfe7c988418261a71e"
+        "inventoryDigest": "47c038bbb5842665584d555737aed2c79d0479872ae2772783a9446ec0091f28"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -3928,6 +4028,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -3951,7 +4053,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-046",
-        "inventoryDigest": "c344fcb23c5b3119146f1865f5b94a41f0faf8651907c2802626db110038de42"
+        "inventoryDigest": "2736986f70e7425bba669bd3e447ad95e7c8ee3d1d055517c1390ac51f629467"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4015,6 +4117,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4038,7 +4142,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-047",
-        "inventoryDigest": "bdbe3d20d99d9b096bd90eeda10546c0f38a4519a0fe1b1ddd12402825433ccc"
+        "inventoryDigest": "fac736e9af70b5820b3621586a7ae2706bc83d3bf8167020332db0ef47f006ac"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4102,6 +4206,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4125,7 +4231,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-048",
-        "inventoryDigest": "31898449784aec788a2ade71e8c1da8d476b051888de909f3caf124659c4eebd"
+        "inventoryDigest": "52beb13bd379f89880010be3db3ffcd057d3a999be446954e1fa90a9e9c2d49e"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4189,6 +4295,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4212,7 +4320,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-049",
-        "inventoryDigest": "a4c1434053d003bb36cd258b61bbc49a93586285758befcfb10f1470f4a9f9da"
+        "inventoryDigest": "530c69e6e324d96b7f8a3d7162b57a405afab2fe280d20eb87c547232568769b"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4276,6 +4384,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4299,7 +4409,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-050",
-        "inventoryDigest": "6ad941f8bd80fc1e46071cb84f19c95fbf4f182681425becd1bf91c6983168dd"
+        "inventoryDigest": "8a9ec32341923a6a07f84a37a9b3c4f5b309da7d7ea1390bc83d09d9a59280bd"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4307,7 +4417,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-050",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -4363,6 +4473,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4386,7 +4498,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-051",
-        "inventoryDigest": "2cb9316b08b0754c94a4591a227eeb56e392c34f7d4d67155c1ae2310faa29e2"
+        "inventoryDigest": "6763ce8bd86b83de985201331e245b1d198dcb619fd8da2aea7ff5503f2a0a9a"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4450,6 +4562,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4473,7 +4587,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-052",
-        "inventoryDigest": "e4f1ff2bf2a1aa2e31217bf106348326b692a68737d8a2f2778fff2e409799fc"
+        "inventoryDigest": "9945c6ab81f4baa5706dfdd48e92e5c687e6295ad67c1cb7acec12d4125a2427"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4481,7 +4595,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-052",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -4532,6 +4646,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4555,7 +4671,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-053",
-        "inventoryDigest": "5ea41e5fe6864c831fdf80e590ef73649a3f167f8110b6f520556519ab9f4d83"
+        "inventoryDigest": "834e9307febfc36bfd845f258f99043c4237dc238273e013570a887ad7edd6ad"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4614,6 +4730,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4637,7 +4755,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-054",
-        "inventoryDigest": "5380fd5bf57f51711e3d42b6947ca3a1176946035968dc50a31d9c2b66d5cc36"
+        "inventoryDigest": "9a554fded3a845da36294c59862a76cfccd30900c898715269b75eb33112326a"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4701,6 +4819,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4724,7 +4844,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-055",
-        "inventoryDigest": "a755622e1dd2c589ecf86efb17dbedb728a12f9e8d5241843b3ec8c45fafd210"
+        "inventoryDigest": "9344d156d19bb979d221bd4c4daf82a8718f877d1edb1e1db93588f51b3445f2"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -4732,7 +4852,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-055",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -4783,6 +4903,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4806,7 +4928,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-056",
-        "inventoryDigest": "e28f065871e9a55a2d413e8236126409d3072d750919322cb06fa1b91c49db0c"
+        "inventoryDigest": "1ad65cbf8cf3a8f3c6e63f848499d8308478001f0be6532b1c76395572879e00"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4870,6 +4992,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4893,7 +5017,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-057",
-        "inventoryDigest": "96b548dbac7b00315838280b35a6c8ec2bcbe61b9b2485a502d9d78262ee5220"
+        "inventoryDigest": "7f4a441cbb7506ad517c1d7511b6c7207fd0d0538665e43b26040774a0658ae5"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -4957,6 +5081,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -4980,7 +5106,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-058",
-        "inventoryDigest": "5268b7b468e683d3c3db2ff78c30fe4d1ebe7c9b71d57f84d03118ab3f36eda7"
+        "inventoryDigest": "9ab3532917908d8178e220abefb55aceed9a73e77c2efd8d4c73c636f6db01aa"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5044,6 +5170,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5067,7 +5195,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-059",
-        "inventoryDigest": "dfa29f515824a74617b84ac285c5a4a154cb9cf88febcb16db6943ba37c8d909"
+        "inventoryDigest": "a2d3a9e9df84485f6d7402703e5527c9b1bdfd04dcc4967cda5578f15deb8c54"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5131,6 +5259,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5154,7 +5284,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-060",
-        "inventoryDigest": "4ca58399de858549929f5074655e675f5fc763c213aa975b5acacd4961410dd0"
+        "inventoryDigest": "693318a6627606a383dd530b5051e75abfdc02e09b1fd40fcbc66d0106222c85"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5218,6 +5348,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5237,11 +5369,11 @@
       "rowId": "BPF-SHAPE-061",
       "operationId": "createOperationsOrganizationStore",
       "mode": "COMMAND",
-      "shapeClass": "OWNER_COMMAND_SINGLE_OWNER",
+      "shapeClass": "OWNER_COMMAND_CROSS_OWNER",
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-061",
-        "inventoryDigest": "22dbd4f3dc2c92120d85aa08e20357827803a535502ac5b0f66de60155e56121"
+        "inventoryDigest": "1ece3d034da67797f2088a480dec89e1056c242c80493d3c195db5d08ad5526d"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5304,7 +5436,12 @@
         "m1BindingStatus": "DECLARED_M1_BINDING_REACHABILITY_BPF_U02"
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
-      "ownerCount": 1,
+      "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [
+        "contract",
+        "organization"
+      ],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5328,7 +5465,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-062",
-        "inventoryDigest": "05386ffedc613d8493b537a2fdc43f761e1ae81fec55671415e7d45d7147b460"
+        "inventoryDigest": "ce62c8b68d1e5db4c52aac30ab274a0be782f740d93631379293531ee9a26ec5"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5392,6 +5529,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5415,7 +5554,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-063",
-        "inventoryDigest": "24db1c481af0fa23c1b0561b439c8a7a333967bf36a5b22acb4013751312b4f0"
+        "inventoryDigest": "03af43c06f7b5823f9af2b80f3258eae241f7989117135c711389a7ef4fd2a26"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5479,6 +5618,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5502,7 +5643,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-064",
-        "inventoryDigest": "0e8687e782b67d261fd687bef34309de1019a0827fdbdd0e8adcd4ec12b8e09b"
+        "inventoryDigest": "90a44da8799fc0539315175c81649d73f9a4b60a8d1914ad5a8ff8a145ce043d"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5566,6 +5707,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5589,7 +5732,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-065",
-        "inventoryDigest": "35b48645d550579bf8fe603429a8ca4783114a3ddba9342a677f83fa09e40eaa"
+        "inventoryDigest": "68f98f54cd136885e3a485296104da8a7c7dcf182eb13ec18b5315ab49deba04"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5653,6 +5796,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5676,7 +5821,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-066",
-        "inventoryDigest": "2c054bd4987a0eba31ecd6446a56f480d8bc6843359d56d2b0050b3690073d47"
+        "inventoryDigest": "5d9382608b7495db84dfd39056feb1d6924e19a846eaa5850fffa8b982daad5f"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5740,6 +5885,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5763,7 +5910,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-067",
-        "inventoryDigest": "310fd934ffa5ab2dd8498bde3fae44fbb9f1a3b9df33a9cfb04d29d953555c83"
+        "inventoryDigest": "b772de2f7aa168fd5899a51832b2d46017ffd8e87bba2fd4e25b72a1c5842584"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -5827,6 +5974,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5850,7 +5999,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-068",
-        "inventoryDigest": "4fff12af6638b185839a8158f31a035744a748732e360567f2f66e5200f89439"
+        "inventoryDigest": "61127356aee1e4dc1a840fb5893f90ee54a5163afd013aabb33592bcc30fc631"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -5914,6 +6063,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -5937,7 +6088,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-069",
-        "inventoryDigest": "6d99fee4ea690fd6faabf4fd63e6d6e4fbc56ceb4cc2fcffed476a5eee6c3a0c"
+        "inventoryDigest": "b75d44cdd296a04466b9760ed703c384374310627780023cfae0503a005a602f"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -6001,6 +6152,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6024,7 +6177,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-070",
-        "inventoryDigest": "f91f847965b536ca57e8f31c51492b318652d4a4fc8b2b74ad5feef5737f4c88"
+        "inventoryDigest": "df3eb4e2c8c1bc9590fb751a4b044bb971b34c97640d9d7b8adc538c7054cfc5"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -6032,7 +6185,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-070",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -6088,6 +6241,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6111,7 +6266,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-071",
-        "inventoryDigest": "366018b118c51b7ca35d7a5ad7b79ad2506ea7eab83573e5f20671cbf7030bdf"
+        "inventoryDigest": "5c5ce6f606dad7bc771d8fb7410a32a35ea3cf5b2a09025ae06ad68186b1a9e2"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -6175,6 +6330,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6198,7 +6355,7 @@
       "profileId": "PROTOCOL_READ_EXEMPT",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-072",
-        "inventoryDigest": "cf78fc4d1e0be1151194267763d5f8a2ff5e74868c0ae822035eef73af06b74e"
+        "inventoryDigest": "6f57d644a5958b2c8e537ff8f6c8194f5ebc4953265a406c6316d1aaa8f8b69f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6248,6 +6405,8 @@
       },
       "finalReadbackDisposition": "REQUIRED_NO_BUDGET",
       "ownerCount": 0,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6271,7 +6430,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-073",
-        "inventoryDigest": "2993334b9bd5c1b0a90a6755ae5c9424c8cc2c8ad9017a81b33f3c6d38ccc56b"
+        "inventoryDigest": "9467e33646f95772f4991c361a2be41f63363a59af6ed3b9ff3f9002907cbf42"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6332,6 +6491,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6355,7 +6516,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-074",
-        "inventoryDigest": "b31996e0ca35c6094044e1ce76d7ef99f963b5f79457a8bcfcbf3cea5dae450e"
+        "inventoryDigest": "af603a23dacb1509d79a8af5511425efc9825d7efc2ab5c598dab5e54b5a26a0"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6416,6 +6577,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6439,7 +6602,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-075",
-        "inventoryDigest": "e6383c28757b02a60f2a891aab5f39e1909c043bed7996a4fb09395a35323e56"
+        "inventoryDigest": "3afbb994df2eae8aeb069c9ddcd74936eac5d0caabe4d47e34ff8d780fd369e4"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6500,6 +6663,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6523,7 +6688,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-076",
-        "inventoryDigest": "96501caa5b60e864b09f8db9118bc66b94f47db8fa0629c6c52840030195b32c"
+        "inventoryDigest": "ad13a5fb225be6b2f6be8429cfec3e1a4fbcbde0757fcb7ee61ef624aa43fb91"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6584,6 +6749,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6607,7 +6774,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-077",
-        "inventoryDigest": "f428ca44307da8c7900dab2a8f1a81e4f921a77b1e27429d2b394b168a3812c5"
+        "inventoryDigest": "74dd6b47624b59daf4542a58694f5a372dae5bc9a416799b73b619a043a8444f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6668,6 +6835,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6691,7 +6860,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-078",
-        "inventoryDigest": "481d610f60cbc0fe452c8f5560bb0c3eb14ef35f6c5f58d86c04309785782c76"
+        "inventoryDigest": "055ed8395808fd7bb35368d58c5a1a6b0630e46ab9392edc82daf8047ed5f7a0"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6752,6 +6921,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6775,7 +6946,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-079",
-        "inventoryDigest": "d4099269bde5cba07cedad80797d011a7de272f6945e1727b9f041a789a6b790"
+        "inventoryDigest": "ec81feb737f8e709c23147525637d584c309ebedda3daaf1612c49a91a12d772"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6836,6 +7007,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6859,7 +7032,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-080",
-        "inventoryDigest": "b2cbfaed1d5c0c56bc74ccdf5fe4ff584c6a7c227657b34c3518dc2515e0f02e"
+        "inventoryDigest": "b5e86dcf591a734ff4aba11c19bf03ca35c58d21e5d42480615d46e521023e51"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -6920,6 +7093,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -6943,7 +7118,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-081",
-        "inventoryDigest": "278c42b7d9b30a43de2c4ba445d3c7e36b5ac444e601ecf925f68651358e56fc"
+        "inventoryDigest": "8a5aeb9b033a5694687c63982e406743fb25ccd709dd7277d2b61e9b1cd58ec9"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7004,6 +7179,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7027,7 +7204,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-082",
-        "inventoryDigest": "0bcb7e01f99eee77541934a1176227affe9b307bbb5112a31870792c248ef86b"
+        "inventoryDigest": "dbb3c9b62b5dba976e8f3abe45fdf545a6b48ecc9eec50f773ac4d3c11ca6eaf"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7088,6 +7265,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7111,7 +7290,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-083",
-        "inventoryDigest": "306870745459ab4c985c60e78d6c1940d0bb12bbc4062222a33c8b311c1d4b2e"
+        "inventoryDigest": "8320976074ca783d864c790d1fe8cd5f9a70b4b001f565e75c5f292b4255da68"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7172,6 +7351,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7195,7 +7376,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-084",
-        "inventoryDigest": "689dbcd6632b4a0aa48d15ca2f45dc756eda69b2a29baada9aaa060b4f7cb139"
+        "inventoryDigest": "a0d6b06600b7039138c4844a9bee8c432f377512a65836fbe0db16c29efee330"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7256,6 +7437,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7279,7 +7462,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-085",
-        "inventoryDigest": "0922844b11f6fafe0805249c6f449284c7bbe963430aca32b69f3ccd207a170c"
+        "inventoryDigest": "1e01825760c8106d2aa47327e315937dfd2b66951624d24599821f7012224e00"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7340,6 +7523,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7363,7 +7548,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-086",
-        "inventoryDigest": "d39e4b742ee20bd72377d334fc518662595342fabb17664f4b946be87b5b8806"
+        "inventoryDigest": "0d45b59787dcfc4ecfded26c44e05407299f6ed6f9b78ebf1007d89d33d37713"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7424,6 +7609,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7447,7 +7634,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-087",
-        "inventoryDigest": "326eb47653d0ab76c421426d5408ae7f2468010082f37a7a331cab0d4588f2d6"
+        "inventoryDigest": "cc0efb4a8ee0fc247bdf78672bd78d2c871b0ec8c2988965a526234a91651679"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7508,6 +7695,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7531,7 +7720,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-088",
-        "inventoryDigest": "140d1665c47572310e0f9c5fca341972915c2c371d7cd53460fe70e58c260f01"
+        "inventoryDigest": "109882b435b89c841462abadf6e0c54a1b41d02a4538e98af84fa00209a87f48"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7592,6 +7781,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7615,7 +7806,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-089",
-        "inventoryDigest": "442fadde0ee14ac49bfa8d98c0e5781fb25508734642f0a5528f3a4d0ff6a06a"
+        "inventoryDigest": "1f083c63875d9158782af99ad3307ce3eacca93cfb52ea3d519707246d08582e"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7676,6 +7867,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7699,7 +7892,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-090",
-        "inventoryDigest": "5d75bd072363d79ad4b52c332251a0d7714a8e30d341a456d916c92224c785f3"
+        "inventoryDigest": "3249af6fadb1287da41d5438a219bf531c70df74293894381d25161699dccd60"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7760,6 +7953,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7783,7 +7978,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-091",
-        "inventoryDigest": "9965281c127a09af42727c1f5b12a1cefe51e49f2852351c68ff8d7a11926ac4"
+        "inventoryDigest": "6653c408750e3d13c0b95bfef2c29b2bf4a1ef1b88da44f20cfba5515335b72f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7844,6 +8039,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7867,7 +8064,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-092",
-        "inventoryDigest": "a03fa9b6d3721a94d0cbd5888ef768ef78bbde7b55fce5610d9d4ac064fd7e0f"
+        "inventoryDigest": "9da2c10e03921d2842bf16fd99c25e968ff414d4bd281a88c50112997d2f8d1f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -7928,6 +8125,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -7951,7 +8150,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-093",
-        "inventoryDigest": "73e6261e3e69f0352cd8fe0859a3bb66105f8f5779ff5e9de70dc22f7b38fd13"
+        "inventoryDigest": "ff456c783f1779c5a39b874c4ddc0125cef72d29a3abd4fd46758a5ca0aecc7f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8012,6 +8211,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8035,7 +8236,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-094",
-        "inventoryDigest": "028bf5ad3eb65a9642737772f507c85f1073eca084ffed87f3f22eec56d35f7e"
+        "inventoryDigest": "6baa841a2c69aca3c7981a9c9c2fb03f726d18821a39de2a1493ed23db71580a"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8096,6 +8297,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8119,7 +8322,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-095",
-        "inventoryDigest": "56706f029b6b67a12a2be9212f1f727e1e8ccd15fae7d2d789aa67d3b097ea37"
+        "inventoryDigest": "ffbfbfc7f04e3a69340b220ed0f556eab80651472c34d61cf4a61642afb566fd"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8180,6 +8383,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8203,7 +8408,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-096",
-        "inventoryDigest": "494b0d9ab9703edc79295d2072db54eb4b88e521b5ae2bfd567356f6bde1b5ed"
+        "inventoryDigest": "5ccda03b83e4a73be05cbb0f1461eb6e39512a2677ad2182cf3518b52785c9bc"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8264,6 +8469,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8287,7 +8494,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-097",
-        "inventoryDigest": "f7092356a22a334d729e323878b0611c424fd8cbe89c0c5eae425589e603fe4d"
+        "inventoryDigest": "9c288d0af8b791dd6741d5ddd769038779ee47f6cbf2d6e87d3dc18678506577"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8348,6 +8555,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8371,7 +8580,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-098",
-        "inventoryDigest": "7c3fcf1c27a5ea2ac0a9cd0647b8f05fe1c870619723c2bf64fe7c9f4514cdb2"
+        "inventoryDigest": "3579046320d236cde38f18b60b4802e638af8d58cc64624fea0fe2bf88fb4464"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8432,6 +8641,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8455,7 +8666,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-099",
-        "inventoryDigest": "3362d5f7db98025bcc7f7caf66bc9abe556812b81390607928ba80edc9e7d789"
+        "inventoryDigest": "a7ca3bcdbc3f383921b4a083b16f55bf59ae8530c8e3d1d957f7f4e696077240"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8516,6 +8727,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8539,7 +8752,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-100",
-        "inventoryDigest": "853f06544cc4273885fc437cc9cd91913df604bf6c634a6bf0fe097ae8c73000"
+        "inventoryDigest": "d97b1ab1b51bf6304b0740c177a0a63f36a3f18606cf91e913506b43d129c8e2"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8600,6 +8813,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8623,7 +8838,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-101",
-        "inventoryDigest": "587b63b50cf915876838c08c5dbd1be5556662a0bdc5b2b3e9a672ac27fe1687"
+        "inventoryDigest": "4e2223562f51601a358b6679717358312c1140d4f88a0b78e0b49840b04e2720"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8684,6 +8899,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8707,7 +8924,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-102",
-        "inventoryDigest": "cefba3dd733c6a8f5a81cdcc76bad5d8baf2b3e6fc4072699e877f4d6ed1a26e"
+        "inventoryDigest": "8c5a4a87a0b0fe98f2d4ff3f23fda61a9bc1cc16518e1345a7b6d894ee6d5427"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8768,6 +8985,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8791,7 +9010,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-103",
-        "inventoryDigest": "492c6fdb470976ada52ca0bbb156c53c821523406171e3196f191ac1c0d3c1c1"
+        "inventoryDigest": "de5dba006b7035c0a42f825ea55aabd7fdaf19c484ea27fe46507ee97d35c98a"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8852,6 +9071,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8875,7 +9096,7 @@
       "profileId": "PROTOCOL_READ_EXEMPT",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-104",
-        "inventoryDigest": "b9ff7783fea0b667ba36b1cb05ebc6fa1d15408feee31f6660ee6c58e8c7fb14"
+        "inventoryDigest": "5befd09539994de39e814705078cfcce0fc3591bdba7cb337e97f0df2d28c601"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -8925,6 +9146,8 @@
       },
       "finalReadbackDisposition": "REQUIRED_NO_BUDGET",
       "ownerCount": 0,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -8948,7 +9171,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-105",
-        "inventoryDigest": "08cfdf0d6fe768a0f691e1cf40243267b8d3b3ea71606b7fbf15288404a77725"
+        "inventoryDigest": "57bb7405eec69d5efb9b4f0549da9b3f875edcc7397b4ea1788f4569504e1079"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9009,6 +9232,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9032,7 +9257,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-106",
-        "inventoryDigest": "76684cb5db72e3395768c61619c078473f541d21986ea03d0f44a31a2857f7ae"
+        "inventoryDigest": "67c9f42d27b8d352e6db791062f9e566677bd82d9829b5a2f0bdf1d9b6c44222"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9093,6 +9318,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9116,7 +9343,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-107",
-        "inventoryDigest": "843203537bbfa16218279e66f9bb0fe761dca9527c8f367c90c1d962dc73491c"
+        "inventoryDigest": "06f1a21bd099b13aa9010acea3d1a0f2d6b29d14aa0eea105b5966be5ba9901d"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9177,6 +9404,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9200,7 +9429,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-108",
-        "inventoryDigest": "58ce2331d4cf2b6602cce64f52959225ae67783f824137faf1b5e382e6933536"
+        "inventoryDigest": "0d35ba5b12c63d11ee2389446505fee43c9043f97b53bc4bc5d214d5a4c6d925"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9261,6 +9490,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9284,7 +9515,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-109",
-        "inventoryDigest": "276e916ec8f90d91bad416ae6c67d9b7b3004b5e4dbb19aed90e24049777f7a9"
+        "inventoryDigest": "8f2580ccb97ec54528d00d61d188f39a77bb78eea6a6882a03dcb61063f7529c"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9345,6 +9576,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9368,7 +9601,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-110",
-        "inventoryDigest": "c4c9e9caf8f3241362e7da28764e6e896df8b256b9ca194aea8a5e0b2d589dcc"
+        "inventoryDigest": "2f18a1dd855d3f71817e33bd6f53357b85962def7912ab7d2189f2983b6d6332"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9429,6 +9662,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9452,7 +9687,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-111",
-        "inventoryDigest": "632a1114a91241d4b450b6a4a8da21acaf43fc03eefab58d302e68401bf698d9"
+        "inventoryDigest": "b0cec2f48667bf4f972a4dbf5af5aef6716f754d703a51dc955ac10d6066774d"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9513,6 +9748,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9536,7 +9773,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-112",
-        "inventoryDigest": "0729589b404b0aa7fac1ff8e4c55249f52944e1602cc64b85325f4ff2999f38b"
+        "inventoryDigest": "4092647bd918de21171701889140f8325432bcbcc09c5df8b3be7721717501b6"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9597,6 +9834,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9620,7 +9859,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-113",
-        "inventoryDigest": "e4d1c53a187a612cb4d497fbdac348f1e69e0de34c2d0c6d5f50e78dd7bdf062"
+        "inventoryDigest": "95c80551876f564a2b67eaf85dd71a8c9e516d39e7da7ca66b3242e83bc61aa4"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9635,7 +9874,7 @@
       "factLoaderRefs": [
         {
           "loaderId": "SESSION_ENTRY_AUTHENTICATION_FACT",
-          "loaderDigest": "706142e73f9ffc2c4c7cd8e8db615b3671566b0442af87e16ecc933fa8249b23"
+          "loaderDigest": "509176891e576bfaf239b8a3279e89bc205ff59dfa5a7c430b1162288e88f69c"
         },
         {
           "loaderId": "VISIBLE_ORGANIZATION_FACT",
@@ -9681,6 +9920,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9704,7 +9945,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-114",
-        "inventoryDigest": "a708bc82e301342ab47b7d46d6c1ed2e2fb0661d8b5479a7c504ec73aa1b58f6"
+        "inventoryDigest": "f643bedcca5562df2fbb4c159acf9aa4b359590235317c26b8a7bda8bab7c836"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9765,6 +10006,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9788,7 +10031,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-115",
-        "inventoryDigest": "fe2afe700c2ccabe162bf7528bcd6b778e764a52b915c3fbfce8ea4ac7c96377"
+        "inventoryDigest": "3fdb25dd04b004c4e614e62bf0a0f4ab693198bbe4337b155fda1a435ab2651f"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9849,6 +10092,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9872,7 +10117,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-116",
-        "inventoryDigest": "924066bf750d23a133cd14cb56d6bed5ace29109190c758e262198dde1aec328"
+        "inventoryDigest": "5b6cce1de6523f2f405de48e951012599d3248db4cdb4bb5f4654fdc31ae4612"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -9933,6 +10178,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -9956,7 +10203,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-117",
-        "inventoryDigest": "20bfa9c13ebdb5792e5c811f61e895b53292ffd5ecd095c61f0b5fc5131aa40b"
+        "inventoryDigest": "286fe425a0206d8b23d5b99e53462e72b6eeed74cc267b3eef200b297ee34ba8"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10017,6 +10264,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10040,7 +10289,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-118",
-        "inventoryDigest": "3d2a407932d861fd377c00592f02d8212da44228b655bedf27ed2659512d5f09"
+        "inventoryDigest": "59f8bb48fb53466ed8d405ab990ce9bb6e563e0acc3ad1b79f9d55e26a8ff1bf"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10097,6 +10346,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10120,7 +10371,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-119",
-        "inventoryDigest": "872d7ab53de4d2871c1c7788892667fe41a520bf32e4ae4333a82bb558f7138e"
+        "inventoryDigest": "2f88f746a5a3cbef9859b403ee01c98f238f11b84045af126e62c39a586575b4"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10177,6 +10428,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10200,7 +10453,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-120",
-        "inventoryDigest": "053ab7614041bee8a5906a159df64f7dc86eb200d3006d7408041a135468421e"
+        "inventoryDigest": "b02215beffb4263b1db2149c0415621546632e4524da0db6162bfe8881108100"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10208,7 +10461,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-120",
           "field": "transaction",
-          "sourceDigest": "de9a28a91740d3cc34eb959e83face6ef8a13a6e99bd494ecd6b39bd1ccca5f5"
+          "sourceDigest": "7b5fd9a41d360dafcf14edb28f480d3356f9d6912dca8fccb9c51c398c19c82c"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -10261,6 +10514,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10284,7 +10539,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-121",
-        "inventoryDigest": "38f871a1c988237831167835f080718d0a2807444c8ce574169a98803381c45b"
+        "inventoryDigest": "fe5e6ce9bec162e5af5e885e54cb90a9fffe14b8c2c5dd08689e67503d739cad"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10292,7 +10547,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-121",
           "field": "transaction",
-          "sourceDigest": "de9a28a91740d3cc34eb959e83face6ef8a13a6e99bd494ecd6b39bd1ccca5f5"
+          "sourceDigest": "7b5fd9a41d360dafcf14edb28f480d3356f9d6912dca8fccb9c51c398c19c82c"
         },
         "classification": "OUTSIDE_TRANSACTION"
       },
@@ -10345,6 +10600,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10368,7 +10625,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-122",
-        "inventoryDigest": "cd22594dad31e3aebb12b9c1843dd47ef7b09a793d9fdc1ebcd37f4fc441729c"
+        "inventoryDigest": "17cb75e43bb02064a0a466e6402f54e6b4c8414878fe865853d5e102606ea2a1"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10425,6 +10682,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10448,7 +10707,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-123",
-        "inventoryDigest": "b4caec1b358e17367ed4eb4cd3f11af640e436e114421513d37c715f1168dd54"
+        "inventoryDigest": "d05c84fe296dcd74200d1be124b2f04131a16c5c23a8ee3f994eb0104df96ac7"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10505,6 +10764,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 4,
+      "coordinatedOwnerParticipations": 3,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10528,7 +10789,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-124",
-        "inventoryDigest": "6d5317e71cb462c744b80960b7f93eba3c947e2aee4f3220553c59fadd660983"
+        "inventoryDigest": "3c898d1195e21958fbcc13c6f71405474cf2dd35238721c0f59caefb02979ecb"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10589,6 +10850,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10612,7 +10875,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-125",
-        "inventoryDigest": "c5307e9cf12161325c3255400e7f464eb39a5b9fca2a2ee410674753c00a0488"
+        "inventoryDigest": "e8e1b78357e127bb1a6c76d90812ad26caa26c872e639a4b71c978847a7de324"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10673,6 +10936,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10696,7 +10961,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-126",
-        "inventoryDigest": "60c815cc0c1dfd6414e39793cd1d595a832c3e27763c6b3e621e275a036f7bf4"
+        "inventoryDigest": "5d6db603508f8bf330527577a6da377c63fc16e1f7cb05b8fd78e780135d8d08"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10757,6 +11022,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10780,7 +11047,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-127",
-        "inventoryDigest": "adf5a4d4275aac7a0aec6217782450c9a9ec95e672feb8c0f221e07a37d9eb8b"
+        "inventoryDigest": "edc0775bb9c295f0605725d56db5df9600b05f55ccd45701d7403c30f8069d45"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10841,6 +11108,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10864,7 +11133,7 @@
       "profileId": "PROTOCOL_READ_EXEMPT",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-128",
-        "inventoryDigest": "e646f89a34b02bdc83f911ae9851b6abef8a1cae84d63cbdee97b3f3257477b7"
+        "inventoryDigest": "de41d668eef4cc96c7865f6b4ee07c36a8b0bf4e525d70e5a5956eacba66a8d7"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10914,6 +11183,8 @@
       },
       "finalReadbackDisposition": "REQUIRED_NO_BUDGET",
       "ownerCount": 0,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -10937,7 +11208,7 @@
       "profileId": "PROTOCOL_READ_EXEMPT",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-129",
-        "inventoryDigest": "61f93c84995b01febbd370f3c6fc601f19524dc387fdf274a5f931275e7e9b27"
+        "inventoryDigest": "24c9b8303a5acf866d58a225032e26279bc74dc845535ba1f1a39d55bc756a39"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -10987,6 +11258,8 @@
       },
       "finalReadbackDisposition": "REQUIRED_NO_BUDGET",
       "ownerCount": 0,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11010,7 +11283,7 @@
       "profileId": "PROTOCOL_READ_EXEMPT",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-130",
-        "inventoryDigest": "f74c0581946f2aad0d776cb5aed674d842dea20b212e6fe09251aab4f87109c6"
+        "inventoryDigest": "0f8102839c5e933f9ada03bfd71b4c99426cc526d8d13ce77b4d62739f38d441"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11060,6 +11333,8 @@
       },
       "finalReadbackDisposition": "REQUIRED_NO_BUDGET",
       "ownerCount": 0,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11083,7 +11358,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-131",
-        "inventoryDigest": "8d916d4e985bf0cc5e2db88f18dfd33b52cc950a0e5183ab263505daafd98fdf"
+        "inventoryDigest": "45eb387d8f6123f3fe8be5ad7f588ee98dbff598d091284722e1d359730444c0"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11144,6 +11419,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11167,7 +11444,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-132",
-        "inventoryDigest": "110ff778304a833b382abc96fd8f1ef00a739fa76b92bd59ae4e726a89663b00"
+        "inventoryDigest": "6fae48a2de101b8a664625d9a4fdbb192d38eee02efe4fe6bd060df136c5be8b"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11228,6 +11505,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11251,7 +11530,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-133",
-        "inventoryDigest": "9a33427942923081b502e807c264cba84169d46a9543659c2f2bc9a4428a7c68"
+        "inventoryDigest": "2395f4530b9909bae7f589ffa5a7fef469bd0e63a02c0b7bb38766129695db23"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11312,6 +11591,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11335,7 +11616,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-134",
-        "inventoryDigest": "d3ca72bba57eaf45468536299233ebad432ae0496290166f5c062e3a15b154bf"
+        "inventoryDigest": "e74c30baee6c1feb5b5cfa94d5a413d62084a2a72a3e97e2ca8b4678c6204037"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11396,6 +11677,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11419,7 +11702,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-135",
-        "inventoryDigest": "e8f3bdb59ba35b001860589fe6a4937be132e82f68133ba1219f4ed6c7c3e132"
+        "inventoryDigest": "8d23e51daab2b9f4e6f55bb88713f22b3cc488fcfed2da84a2e41246aeda2eb1"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11480,6 +11763,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11503,7 +11788,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-136",
-        "inventoryDigest": "f6cb2fc0b88540fcd1166f57380f076e1a62f37f9f4207ece95d7e544823ecc0"
+        "inventoryDigest": "7f1ba3f5e5e52653e9d3305ce0cb558b2b4ff8b55055a5a40ccc9e45ecbf0d76"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11564,6 +11849,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11587,7 +11874,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-137",
-        "inventoryDigest": "643c5e3f97ccbd1fe602b479bb231d7ac60007ffaeb1b056acac49f2ad146cfa"
+        "inventoryDigest": "87862674323b0e3b7982908c835eed22b07d1318f357cdc003b308fbc2698816"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11648,6 +11935,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11671,7 +11960,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-138",
-        "inventoryDigest": "b4b783fd701ac286e6d8188947428cb7f94dc281f92c87b0f5e86bbb9eba370a"
+        "inventoryDigest": "cd4fd6b9c1bfbaf687bf945ed61d5d553cb5d5bf4c5bcd20a84ff1527f7083bd"
       },
       "transactionOrigin": {
         "kind": "JOIN_EXISTING_REQUIRED_PARTICIPANT",
@@ -11735,6 +12024,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11758,7 +12049,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-139",
-        "inventoryDigest": "2e6cb4093b316bcaa64ae8530f8044c500e98ae098dd71ce4feec6ea93c0f11f"
+        "inventoryDigest": "f6854a6674648aed16b14f6edaa771932e1a4500d5f4ec555e46f20a5b0c4f06"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -11822,6 +12113,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11845,7 +12138,7 @@
       "profileId": "TASK_READ",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-140",
-        "inventoryDigest": "0fed7e2d0ed00eb5dff93589addc9ca7db9f7ffa15c217f3902d368dc255fa84"
+        "inventoryDigest": "c497c6eaa2c4ec27d936519584ad8b502c20d92d6b6ce00d012b6fe995fd7a1b"
       },
       "transactionOrigin": {
         "kind": "OUTSIDE_TRANSACTION",
@@ -11902,6 +12195,8 @@
       },
       "finalReadbackDisposition": "TASK_READ_RESPONSE_COMPLETION",
       "ownerCount": 3,
+      "coordinatedOwnerParticipations": 2,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -11925,7 +12220,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-141",
-        "inventoryDigest": "8c765e0aae52c826048460ff3b8dfb7d6879e361155d72b547fda668612ba3ce"
+        "inventoryDigest": "bb003ed34b9a7cc8817daa811ddfae8f15b7835c068d5d075aa7e1371484eae5"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -11933,7 +12228,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-141",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -11984,6 +12279,8 @@
       },
       "finalReadbackDisposition": "VALID_NO_CONTENT_SOURCE_PROOF",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12007,7 +12304,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-142",
-        "inventoryDigest": "29f6cabadb34ba4818c1747f62da5f294598b9e1550f5f29a028fab1150c928d"
+        "inventoryDigest": "fd8f2edd2a6bcac32257fa1f5097dfaa652b8f82391d22ecdee2468c4da0d118"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -12015,7 +12312,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-142",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -12066,6 +12363,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12089,7 +12388,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-143",
-        "inventoryDigest": "a1dc8ae3c2e844043c19f3cabb611540c25aaf7421e398a2f801d8c7db3bb6e2"
+        "inventoryDigest": "0b5a2d02e2fd583f771d9e6b1e6b439dfb2ce27866b9d07beaf509e0f09b6548"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -12153,6 +12452,8 @@
       },
       "finalReadbackDisposition": "VALID_NO_CONTENT_SOURCE_PROOF",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12176,7 +12477,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-144",
-        "inventoryDigest": "0b6da312b5011e2d057faa5a2624db1b9b3b93d923c2e90ab5f313e37c55a244"
+        "inventoryDigest": "8b6ae076b3bc1f2b8247a7018e090709ec62fa819944796d50f25d00195994b0"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -12240,6 +12541,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12263,7 +12566,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-145",
-        "inventoryDigest": "4b85ff02a87d4ea0bc854904ff0d083c5c89ebf4ce034ba3eb41bb2acbe0fa3b"
+        "inventoryDigest": "2a0116c11a0fd50096d252a596064f8eb10472f50d5fd5d14048df8475050952"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12327,6 +12630,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12350,7 +12655,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-146",
-        "inventoryDigest": "b3ae26a2fa73fecbf0c0099578bd594b62d9ba05f82fd21a2d647f31d36a2d33"
+        "inventoryDigest": "69102de40411d59602bf1c8dc7af8af85c1e6a227aa34bdda5baf83f78259ee6"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12414,6 +12719,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12437,7 +12744,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-147",
-        "inventoryDigest": "7a01bbd09824e8e905fc93edeefd2f725522612ed1517bc661b22aa0fd8496c0"
+        "inventoryDigest": "a120fe07e34d4ebb94113b26b8fcc98fba4cb53ea53b2c769ef6d696745c293e"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12501,6 +12808,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12524,7 +12833,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-148",
-        "inventoryDigest": "75cfcd10d461ec2a3809de6fd6179fe723d69c2618c6c36ae0c05418c8683267"
+        "inventoryDigest": "84ba8fe5ddaf95cafef2afed7b288e272609cf439ded7bb8f7d20e53204bccdc"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12588,6 +12897,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12611,7 +12922,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-149",
-        "inventoryDigest": "cc52fd4204d07293a2a573512fe2ab7891d0b80ee24db517a37f9166d4154945"
+        "inventoryDigest": "f37b6e6aa399b5d644ae019a3ac8a0c225f592b875a88da4883a476b21239cbb"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12675,6 +12986,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12698,7 +13011,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-150",
-        "inventoryDigest": "852d2393fa69fa339faa54d9516fc2311b98ac408079dadb3422a1fcd8650c8e"
+        "inventoryDigest": "25e1a9209cd2aeeda3b8b400dae6b99f4850097373466db14b03e7d39a489280"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -12706,7 +13019,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-150",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -12762,6 +13075,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12785,7 +13100,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-151",
-        "inventoryDigest": "4ab53cb4d49ce34978af60b128df347e9aab8cb8cd490587a99c40fc6fd75979"
+        "inventoryDigest": "c85de81f2bca479a038d75aca99c2b86af405fb5e8704fc43f0fcae07606927d"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -12793,7 +13108,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-151",
           "field": "transaction",
-          "sourceDigest": "4016e5a5e4cb00a15c28206be04996e493f255847161a3608ca6d358c1e47332"
+          "sourceDigest": "28087fe86fc38700f2f931c5fec7a2e8e0f8dc62ab7d74f297d3ad8e06b1549a"
         },
         "classification": "ORIGIN"
       },
@@ -12849,6 +13164,8 @@
       },
       "finalReadbackDisposition": "VALID_NO_CONTENT_SOURCE_PROOF",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12872,7 +13189,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-152",
-        "inventoryDigest": "74911c4911c6a6a81643547e9c4f47b20c0136a9e28b5a647ea619dc4ec021fe"
+        "inventoryDigest": "6147fe32aa6aaf8303c4e3589dade791062f36b9ba49dbfbabce1589b1c00830"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -12936,6 +13253,8 @@
       },
       "finalReadbackDisposition": "VALID_NO_CONTENT_SOURCE_PROOF",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -12959,7 +13278,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-153",
-        "inventoryDigest": "4b6e33cabd7a0c4195717f6dab6d4220c6926efb46329ef144eceafa237be46a"
+        "inventoryDigest": "bfec2996f07c93f772b861fb739aea18692bd5c0ac78f51015cd8d740826b8ff"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13023,6 +13342,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13046,7 +13367,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-154",
-        "inventoryDigest": "11c01a36a3aa729006469782b58f9c32c1a3e12e7ab2972477335e0d7eb6ceb8"
+        "inventoryDigest": "65d7615763c4b3665996b8ab2ce6f136c0bb2cdf3c432213dddea5c8dfc7b01a"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13110,6 +13431,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13133,7 +13456,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-155",
-        "inventoryDigest": "6049eb17b23ec644de46f4b2b6f54f1114b17c004ace4e9562b0e68322cb01d6"
+        "inventoryDigest": "9288b82c46767cea950a212f180e48892db4bae31595ce940f03c09dddf489f2"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13197,6 +13520,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13220,7 +13545,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-156",
-        "inventoryDigest": "9cd32617fef388ebfa0e2909eb416fdcf3b89e54167d7f106a1833a048acf3c8"
+        "inventoryDigest": "abf0911a32f5042cdf3dc70b973095720159cb373f987c56ffcad6fe6b0cb69d"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -13284,6 +13609,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13307,7 +13634,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-157",
-        "inventoryDigest": "7e4287fafd688db900fe1c25225b0048079489279792d582450fb8eccb0ebc0d"
+        "inventoryDigest": "2408bb7e7d4e95fada95ef1c6002a8197fef1443f2edb550668b4f6abd5a629a"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -13371,6 +13698,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13394,7 +13723,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-158",
-        "inventoryDigest": "d9e4912cea79b8fca25f197a261a6338da983476f00675858b93d55e7757bdf2"
+        "inventoryDigest": "7ceab99ab6b78e8e5b11bf6776e7c37c995c26d1725a2aeb1537599c50a9ccb9"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -13458,6 +13787,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13481,7 +13812,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-159",
-        "inventoryDigest": "9b624fe67a70fa399890b093ee049326371dd78e488ae0a8e8e9ae68033edd31"
+        "inventoryDigest": "72e4479e59793e5ee502721e68e9d0a1c6aeb195e3447e4104f25ae468de4639"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -13545,6 +13876,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13568,7 +13901,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-160",
-        "inventoryDigest": "e3b6efdd67aacdf3a660e3ebf09d5727f533fcffff63fd23d1006b7869a1d00e"
+        "inventoryDigest": "c17901c664c9b335a9eef641de2634e1564e5c633abc8f98f10e621e20de987f"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -13632,6 +13965,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13655,7 +13990,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-161",
-        "inventoryDigest": "0e83976fa2e0a1564da79da44625412d4f673fc609e9e18c7872cde21fd1c0cf"
+        "inventoryDigest": "dea5f039f834d139a804edb1fdbf74755689f7de73d6c1c2a15b75f20a46106a"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13719,6 +14054,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13742,7 +14079,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-162",
-        "inventoryDigest": "285aeef8e6dd262e57c0cd00ca684f5854a3b229120f07909194d1ac743d26a1"
+        "inventoryDigest": "ca71efb40d83bb3bc2f7bfc8de0ea99924ba018663519a87dbf5d10964c4c2d4"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13750,7 +14087,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-162",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -13801,6 +14138,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13824,7 +14163,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-163",
-        "inventoryDigest": "dee273f1a971f4b08c755c6e6a4e4a929492d2a91a383e869819b23543aeb256"
+        "inventoryDigest": "319da94d8d94205f4638eab362385be4934aa1771873f4ec45ea12f3c93ac8c9"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13832,7 +14171,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-163",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -13883,6 +14222,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13906,7 +14247,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-164",
-        "inventoryDigest": "37075a2a2e40ff1502e36ad98e9aafc5e044317230916306d72a1c628e58e980"
+        "inventoryDigest": "28e7521bd7dbe989ebe2f2851d8723cbd6bbc05d7574ebd10ab0cb1875942516"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -13914,7 +14255,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-164",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -13965,6 +14306,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -13988,7 +14331,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-165",
-        "inventoryDigest": "74911c9924731036c4d00bef4357f8ce9cb0d75f43560ff45a3a8a22fd6304dc"
+        "inventoryDigest": "7e13fc7912c9e7babb9615993a318a58de3e0965ddf9ab18ee6e58e75cf2ed2c"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14047,6 +14390,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14070,7 +14415,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-166",
-        "inventoryDigest": "477fa71b96be04b9fde0e4f17b4c2000823c29dc5801d2b7607042e1566c130d"
+        "inventoryDigest": "68363fb5d994da3f446c1a5a0304a73125d2bd25072cef8fd99a20c23adcc64a"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14078,7 +14423,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-166",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -14129,6 +14474,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14152,7 +14499,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-167",
-        "inventoryDigest": "afff166cdd4951ea89bc8a861895eeb18978ac1088d58dd5919549a09d945544"
+        "inventoryDigest": "89e48af9882081a6fb902d72cefdc2bc648a84ac83c5c09a8c8a66ea11167612"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14216,6 +14563,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14239,7 +14588,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-168",
-        "inventoryDigest": "237e25c89bab2d0528cda53db06cddcb8c93a09ea28cbc2002152cd152a0a506"
+        "inventoryDigest": "fc70bb8dbb1472366c71456a2b68671584ab6694739283fa6fb2a55671ab4346"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14303,6 +14652,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14326,7 +14677,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-169",
-        "inventoryDigest": "096052e1ea818647c0fa907b6ff6b179f81ac17bd6492d27247d6b7b5d3df0c5"
+        "inventoryDigest": "316dc20476586b614a317abcd67a83472f9793ff5e168a06a68c56511dd4a450"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14334,7 +14685,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-169",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -14385,6 +14736,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14408,17 +14761,17 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-170",
-        "inventoryDigest": "e60a8b18652eee0743270a94703bfa691d3d328289c668554e48835578ece9fd"
+        "inventoryDigest": "23acbfd82cc96f6944f002ab1ab173603c4031ab6ad3229afda54d527c061840"
       },
       "transactionOrigin": {
-        "kind": "ORIGIN",
+        "kind": "JOIN_EXISTING_REQUIRED_PARTICIPANT",
         "propagation": "REQUIRED",
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-170",
           "field": "transaction",
-          "sourceDigest": "4016e5a5e4cb00a15c28206be04996e493f255847161a3608ca6d358c1e47332"
+          "sourceDigest": "28087fe86fc38700f2f931c5fec7a2e8e0f8dc62ab7d74f297d3ad8e06b1549a"
         },
-        "classification": "ORIGIN"
+        "classification": "JOIN_EXISTING_REQUIRED_PARTICIPANT"
       },
       "factLoaderRefs": [
         {
@@ -14440,9 +14793,9 @@
           "sourceDecisionReceipt": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json#readbackDecisions[operationId=stagePlatformAsset]"
         },
         "origin": {
-          "decision": "ORIGIN",
+          "decision": "JOIN_EXISTING_REQUIRED_PARTICIPANT",
           "status": "SOURCE_REOPENED_CLOSED",
-          "reason": "physical method/class carries @Transactional",
+          "reason": "physical method has no transaction annotation; retained as participant pending owner-boundary proof",
           "sourceDecisionReceipt": "doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-bpf-u01-source-decision-receipt.json#originParticipationDecisions[operationId=stagePlatformAsset]"
         }
       },
@@ -14472,6 +14825,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14495,7 +14850,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-171",
-        "inventoryDigest": "0076e6d6bb7512f16cc5a44efac1fdc02841a2992c824196dfa11d83a99e9ad4"
+        "inventoryDigest": "0900a9238729709f611d62fe706c3d6028b4677ae9fd496b4cbe41c8cc024db5"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14554,6 +14909,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14577,7 +14934,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-172",
-        "inventoryDigest": "dcf3ccd6773fa372d85fd4212b24c1e0c3d3654feb2137e68514b1f3a980dd73"
+        "inventoryDigest": "c1c93afe1e5eca76ee23a6bf7c45c91f613bd6a3b9ee8fc2c8e3941fdff3f706"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -14641,6 +14998,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14664,7 +15023,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-173",
-        "inventoryDigest": "264352774cdc4df3572ba7fdbc86295970d74025e3cf644e77f1ab122343be6c"
+        "inventoryDigest": "cfef3baf2db3c0f1920574162bd2ee872e236dba4f1044c2ef87fa22d7dc96a7"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -14728,6 +15087,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14751,7 +15112,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-174",
-        "inventoryDigest": "f728a12a681dbbbce477fb9933cdf727c46846bc652399e7e201ae064201923e"
+        "inventoryDigest": "a002013cf42f8833cce4f6a39992b3b09417dde1d4e8c34861163c105fb7aa4f"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -14815,6 +15176,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14838,7 +15201,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-175",
-        "inventoryDigest": "9227ab30b87df40e3ae49490fcea4a86cc6da7ca843a1619015cbe69734c64c8"
+        "inventoryDigest": "a1fb69362e59b5e9f998e66fb1b6f64a24566f2fe31ac6c498daf1b91cdc67bf"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -14902,6 +15265,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -14921,11 +15286,11 @@
       "rowId": "BPF-SHAPE-176",
       "operationId": "transitionOperationsOrganizationStoreStatus",
       "mode": "COMMAND",
-      "shapeClass": "OWNER_COMMAND_SINGLE_OWNER",
+      "shapeClass": "OWNER_COMMAND_CROSS_OWNER",
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-176",
-        "inventoryDigest": "e8937604b5ef069bf6f134a43fe066da4d908b602bd59adb7c8865be98d1914f"
+        "inventoryDigest": "3cb0f73fa4046948451aab2a636f93b6f7e94bf73a444380289ab78b8f28500a"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -14988,7 +15353,12 @@
         "m1BindingStatus": "DECLARED_M1_BINDING_REACHABILITY_BPF_U02"
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
-      "ownerCount": 1,
+      "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [
+        "contract",
+        "organization"
+      ],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15012,7 +15382,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-177",
-        "inventoryDigest": "b8ed6a92911a9dd0ba2070f128ca6de9425a80836d818bde142ab8a32d2e3eae"
+        "inventoryDigest": "ea3d0e63e170b6f60398636528c1be2e40fe71dd899ebe61e4f9277efb26bfbc"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15076,6 +15446,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15099,7 +15471,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-178",
-        "inventoryDigest": "77dea7b59261b863c7583338154f0bb3feffdb8c898f13dfd5f8201a86b15fb8"
+        "inventoryDigest": "516ef8fe4be21de651faffaa2dc69dcaae735ee8de60f774b09ecf20a36ef6ba"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -15163,6 +15535,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15186,7 +15560,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-179",
-        "inventoryDigest": "1d5a7a575fb1d4bc6634d9151e8652585ae6b7eb7e7a9c49064c6e0c5494cc6e"
+        "inventoryDigest": "3db44839f131b959f473a666fc4e9952def360a6d34377266a3050e6f4213154"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -15250,6 +15624,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15273,7 +15649,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-180",
-        "inventoryDigest": "20783dfab3c20ed834524c85a80a25faea4d9899e70a395d84179916c16ea1bf"
+        "inventoryDigest": "0f2937e9d193de230626fd7b501454d9cc82d104bed6cf7ddcd0931eb73c3450"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -15337,6 +15713,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15360,7 +15738,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-181",
-        "inventoryDigest": "cef0f22f367bba9a9a5bf2ae5858165f9b3646d0c809be6f6a237f19a4a9c119"
+        "inventoryDigest": "13b619ab93ad30ec2530862e2806c57d1ad3db007ff1e4b0139aa2feda7e1789"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -15424,6 +15802,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15447,7 +15827,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-182",
-        "inventoryDigest": "e95fd0e8391e1e19008c2439adba2aabcacea73365b8e4adcce3851a2b2dcbad"
+        "inventoryDigest": "32e4762a3c524c2496fc28ff8295b3166a304011779aa9166801dd6ac8d65395"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15511,6 +15891,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15534,7 +15916,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-183",
-        "inventoryDigest": "5ad3283b8acdcb39adfafd494b4f58b10d1b131095a01d104d97337079834f40"
+        "inventoryDigest": "6eb127a445eba0bd13312a9d196ccc6cfa3be0e0b057e324e8a0f08e8e20d51a"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15598,6 +15980,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15621,7 +16005,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-184",
-        "inventoryDigest": "2502db433da89d5f7ab48dc29f2f1f40c6f380bce21b2c877573bb7eb6c1b276"
+        "inventoryDigest": "063080f729ab25a07c4a455dcf98be75c4b2050cbc5d3325cc20a8486c124f42"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15685,6 +16069,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15708,7 +16094,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-185",
-        "inventoryDigest": "db674d20525d99e2c832365daa06118ee96312e673c371180464ce0fad71faec"
+        "inventoryDigest": "5a0f6612dcb8dcc2773ec62362d2f26e6e79f9eede67c5da6406c143b460edf0"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15772,6 +16158,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15795,7 +16183,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-186",
-        "inventoryDigest": "f5b10f36548921f542083b61b63bffeaff8cb9717aa3075cb176a83feac45332"
+        "inventoryDigest": "f512419a916eddf6ceb7d9fcc1c76c1d99e765a880cdc1ea85dd302f59e5535b"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15859,6 +16247,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15878,11 +16268,11 @@
       "rowId": "BPF-SHAPE-187",
       "operationId": "updateOperationsOrganizationStore",
       "mode": "COMMAND",
-      "shapeClass": "OWNER_COMMAND_SINGLE_OWNER",
+      "shapeClass": "OWNER_COMMAND_CROSS_OWNER",
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-187",
-        "inventoryDigest": "db9860b1fb8b7eceaa01abf1dfd5e72790354f8d3f394c186978c5bf14d3677b"
+        "inventoryDigest": "6184a0c5a7f8023522d410de8eade84b9eb416ba619a7ec504a3ea9058d4b445"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -15945,7 +16335,12 @@
         "m1BindingStatus": "DECLARED_M1_BINDING_REACHABILITY_BPF_U02"
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
-      "ownerCount": 1,
+      "ownerCount": 2,
+      "coordinatedOwnerParticipations": 1,
+      "coordinatedOwnerSet": [
+        "contract",
+        "organization"
+      ],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -15969,7 +16364,7 @@
       "profileId": "WORKSPACE_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-188",
-        "inventoryDigest": "fa34ffd8ec0d4421421f7dcc10706fd2fee91d5afa6aa0005a6fd74fc878ff90"
+        "inventoryDigest": "6316fe18b367ae4ccf8e2bffdfce59e12b21cb1279b91b23bb456d88bf262a4b"
       },
       "transactionOrigin": {
         "kind": "M1_DECLARED_ORIGIN",
@@ -16033,6 +16428,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16056,7 +16453,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-189",
-        "inventoryDigest": "e8298e242388b5f0a3c9e75bc14fd7231c992a53fc09f621421150f67a4ce9bd"
+        "inventoryDigest": "25a3a0eb20b4f7c1307b4e81ff650fed83e3d6448aadd8635003dd436ef2a0ce"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16120,6 +16517,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16143,7 +16542,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-190",
-        "inventoryDigest": "8557def08fb870f09799d65f079b75475c83b74083b76e410d914e0df2c709f4"
+        "inventoryDigest": "351d8294be0e883a54605ed7a832d70c0bba99045c8f26553e381c09ab20f89f"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16207,6 +16606,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16230,7 +16631,7 @@
       "profileId": "PLATFORM_OWNER_COMMAND",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-191",
-        "inventoryDigest": "6f6738401a675eeae900b7337d7ee7ad2ecca5189b9b34224a0ea89aa6600dc6"
+        "inventoryDigest": "0ba313fab3a20863a3bf787f6f558ce43879c2f89306e39862035192cbc87101"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16294,6 +16695,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16317,7 +16720,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-192",
-        "inventoryDigest": "fe588d5f7d86f59395f073bbaf15b57dc6008f7013f2bedd6a213081c8c81f5e"
+        "inventoryDigest": "9586e26948bceb7ac43ac0d924bc23ff371bb121b9fcc668d0df80131b7ab43e"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16376,6 +16779,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16399,7 +16804,7 @@
       "profileId": "WORKSPACE_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-193",
-        "inventoryDigest": "35f386bed179e8fea19d047a4d0e3e5f0a896665931f097cd63a9347a0c633f8"
+        "inventoryDigest": "17cc56afed03421a6e11629e4c75f567bca82d6756ee59ebbe67a60159725939"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16407,7 +16812,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-193",
           "field": "transaction",
-          "sourceDigest": "a92dedadca7dd0d4ad166b038d518c64bae8dcb00618fd16bcb0a816105a47fe"
+          "sourceDigest": "4993545bb8649477f614af0cc12e1948301dcc4d40bb5671c114b7e8d444435f"
         },
         "classification": "ORIGIN"
       },
@@ -16458,6 +16863,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16481,7 +16888,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-194",
-        "inventoryDigest": "12fa8ddee47d8ba60b69cf3a4941d72bee18d971332d33cf429987c642fbeea1"
+        "inventoryDigest": "ab3ee10035f6ffbd19e5058c9334150ea1e832441d0a07f91d7ed5ea988e2377"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16545,6 +16952,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16568,7 +16977,7 @@
       "profileId": "PLATFORM_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-195",
-        "inventoryDigest": "29f251c9fdca9b1746a66491e3b071233b43a22fe153d00b02d48871cc63d416"
+        "inventoryDigest": "883b9e614e513aac2229e87660c7a39fde1b9f8b5482cc50d3183569fd544f06"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16632,6 +17041,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",
@@ -16655,7 +17066,7 @@
       "profileId": "PUBLIC_PROTOCOL",
       "sourceInventoryRef": {
         "inventoryRowId": "BPF-SRC-196",
-        "inventoryDigest": "55c1ff4225ff59742b9c085ee768fc721faf7e8010516c093c51762c19ff13b2"
+        "inventoryDigest": "f873e88d72a804a78e2c8dc3bcf89aa3ce0bb58580efc62cd6d2c83c09764366"
       },
       "transactionOrigin": {
         "kind": "ORIGIN",
@@ -16663,7 +17074,7 @@
         "inventoryTransactionOriginRef": {
           "inventoryRowId": "BPF-SRC-196",
           "field": "transaction",
-          "sourceDigest": "98832bc857a7e3b2b4783942b462817fb7a61962131364e50c134597ee1224ba"
+          "sourceDigest": "de8c8ae6211ec3482574af6d6412167ca9b0809cca20d71269020ecfddce0837"
         },
         "classification": "ORIGIN"
       },
@@ -16714,6 +17125,8 @@
       },
       "finalReadbackDisposition": "REQUIRE_FINAL_OWNER_READBACK",
       "ownerCount": 1,
+      "coordinatedOwnerParticipations": 0,
+      "coordinatedOwnerSet": [],
       "ownerLocalFoldProof": {
         "status": "NO_GENERIC_FOLD_APPROVED",
         "foldedJudgment": "No validation-read fold is authorized by this row without a separate owner-local proof.",

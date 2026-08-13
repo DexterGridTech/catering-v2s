@@ -15,6 +15,8 @@ const nodeTestFiles = Object.freeze([
   "scripts/dev/backend-performance-final-managed-adapter.test.mjs",
   "scripts/dev/backend-performance-runtime-runner.test.mjs",
   "scripts/dev/catalog-inventory-seed-executor.test.mjs",
+  "scripts/dev/r5-dev-command-wrapper.test.mjs",
+  "scripts/dev/r5-complete-seed-executor.test.mjs",
   "scripts/dev/http-diagnostic-runner.test.mjs",
   "scripts/dev/managed-diagnostic-protocol.test.mjs",
   "scripts/dev/managed-isolated-local-runtime.test.mjs",

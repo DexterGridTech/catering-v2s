@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "db-call-reduction-implementation-granularity-manifest",
+  "status": "IN_PROGRESS",
+  "packageId": "DB-CALL-REDUCTION-IMPLEMENTATION-20260812",
+  "implementationAuthority": true,
+  "runtimeAuthority": true,
+  "seedResetAuthority": true,
+  "l2": "EXCLUDED_BY_DEXTER",
+  "deliveryUnits": [
+    {
+      "unitId": "DBCR-U01",
+      "title": "Sixteen GET transaction topology",
+      "requirement": {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","anchor":"### 2.1 真实运行分母（**非** legacy dispatcher）"},
+      "design": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-01｜16 条 GET 的事务边界闭合"},
+      "serialPrecondition": "U05 comparator/schema preflight and PRE seed capture completed before production behavior edits",
+      "changeSurfaces": ["apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java","apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java","apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java","apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/BusinessEntityService.java","apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryControllerRouteTest.java","apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/application/CatalogInventoryReadTransactionTopologyTest.java"],
+      "proof": ["exact 16 route-to-coordinator set","runtime transaction topology test with isActualTransactionActive=false","legacy dispatcher exclusion red mutation"],
+      "business": "static only until managed verification",
+      "cleanup": "not applicable before managed verification"
+    },
+    {
+      "unitId": "DBCR-U02",
+      "title": "Five coordinated-owner command shapes",
+      "requirement": {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","anchor":"### 3.1 五条均为 `DECLARE_2 / KEEP_IMPLEMENTATION`"},
+      "design": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-02｜五条 coordinated-owner command shape"},
+      "serialPrecondition": "U01 static and focused proof closed",
+      "changeSurfaces": ["contracts/policy/backend-performance-owner-api-registry.json","scripts/generate/backend-performance-operation-source-inventory.mjs","scripts/generate/backend-performance-operation-source-inventory.test.mjs","contracts/registry/backend-performance-operation-source-inventory.json","scripts/generate/backend-performance-operation-database-shape.mjs","contracts/registry/backend-performance-operation-database-shape-matrix.json","scripts/generate/backend-performance-operation-database-shape.test.mjs"],
+      "proof": ["source-derived owner registry","reachable constructor owner API exact-set","same-owner dedupe and import-scan red mutations","regenerated source inventory and shape matrix"],
+      "business": "static only until managed verification",
+      "cleanup": "not applicable before managed verification"
+    },
+    {
+      "unitId": "DBCR-U03",
+      "title": "Canonical candidate reconciliation and three method budgets",
+      "requirement": {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","anchor":"### 4.1 前置：先修复台账当前漂移"},
+      "design": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-03｜canonical candidate 与三条方法级预算"},
+      "serialPrecondition": "U02 generated exact-set proof closed",
+      "changeSurfaces": ["tools/performance/canonical-ledger-scanner.mjs","doc/evidence/platform/rm1/p4/canonical-performance-candidate-recovery-receipt.json","doc/evidence/platform/rm1/p4/canonical-performance-candidate-disposition.json","doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java"],
+      "proof": ["finite recovery locations","OLD_ROW_SET_UNRECOVERABLE or exact recovered diff","730-row closed disposition","three method-level P4 mappings"],
+      "business": "static plus fresh P4 after managed verification",
+      "cleanup": "managed P4 cleanup required"
+    },
+    {
+      "unitId": "DBCR-U04",
+      "title": "Accepted SQL budget baseline ratchet",
+      "requirement": {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","anchor":"### 4.4 accepted baseline 与升值归因（棘轮的可执行形式）"},
+      "design": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-04｜accepted baseline 与只降不升棘轮"},
+      "serialPrecondition": "U03 current ledger and method mapping closed",
+      "changeSurfaces": ["doc/evidence/platform/rm1/p4/canonical-performance-accepted-baseline.json","tools/performance/canonical-ledger-scanner.mjs","doc/evidence/platform/rm1/p4/canonical-performance-ledger.json","apps/backend/catering-business-server/src/test/java/database/P4SqlOperationBudgetTest.java"],
+      "proof": ["separate append-only accepted history","pre-existing external authorization for increases","current/accepted exact-set","real increase/decrease red mutations"],
+      "business": "static plus fresh P4 after managed verification",
+      "cleanup": "managed P4 cleanup required"
+    },
+    {
+      "unitId": "DBCR-U05",
+      "title": "Seed comparator correction and single-batch acceptance",
+      "requirement": {"path":"doc/review/platform/2026-08-12-v2s-db-call-reduction-requirements-claude.md","anchor":"## 7. 动态验收（第 8 步）"},
+      "design": {"path":"doc/plans/platform/2026-08-12-v2s-db-call-reduction-implementation-design-codex.md","anchor":"### DBCR-05｜单批顺序实施与最终验收"},
+      "serialPrecondition": "U05 static comparator/schema preflight must precede PRE seed and production behavior edits",
+      "changeSurfaces": ["scripts/test/compare-backend-performance-seed-reports.mjs","scripts/test/compare-backend-performance-seed-reports.test.mjs","scripts/test/seed-report.mjs","scripts/test/seed-report.test.mjs","scripts/dev/owner-command-seed-executor.mjs"],
+      "proof": ["comparator self-test","same-basis 41-operation exact set","callCount/stageIds identity","business and cleanup separate","one implementation review only"],
+      "business": "POST seed comparison required",
+      "cleanup": "PRE and POST managed cleanup required"
+    }
+  ],
+  "orderedChain": ["U05 comparator/schema preflight", "PRE reset→DEV→r5-full seed", "DBCR-U01", "DBCR-U02", "DBCR-U03", "DBCR-U04", "DBCR-U05 remaining closure", "managed Testcontainers/P4", "POST reset→DEV→r5-full seed", "comparison", "one IMPLEMENTATION review"],
+  "forbiddenShortcuts": ["skip PRE seed", "copy seed endpoint counts into method budgets", "raise current and baseline together", "claim 41 operations means all interfaces", "run L2", "use retry or timeout as repair"],
+  "status": "IN_PROGRESS"
+}

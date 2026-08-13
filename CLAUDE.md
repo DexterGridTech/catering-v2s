@@ -26,6 +26,8 @@ Claude 在本仓承担独立 architecture、contract、boundary 与 evidence rev
 
 机器门只检查一行可说清、无需理解业务的机械事实：hash、分母、存在性/唯一性、交叉对账、编译/类型/既有测试。业务语义、用户任务、方案取舍、UI 合理性与业务 evidence 的解释，必须通过 fresh 独立对抗审查；不得用关键词/字段匹配把语义伪装成 checker。新门必须同时通过“反复发生、纯机械、维护成本小于返工”三问，并以 production 驱动和真实 red mutation 证明能拒绝错误行为。
 
+后台动态验收的唯一能力是 `backend-acceptance`。“完成后台功能测试”“后台性能测试”与“接口测试”必须路由到同一能力。只有 fresh 真实 HTTP 的 `CONTRACT/BUSINESS/PERFORMANCE/CLEANUP` 四维 verdict 可支持完成声明；静态门、seed、DEV、测试类计数或旧 PASS 不可充抵。评审新增/修改 operation 的设计时，缺少 `identity/fixture/request/businessOracle/performanceCriterion/cleanup` scenario 草案必须以 `BACKEND_ACCEPTANCE_SCENARIO_REQUIRED` 阻断；`correctnessCases` 为空允许有一行理由。评审 backend BUG_FIX 时，必须核验修复前 FAIL、修复后 PASS 的 scenario 红证，或显式封闭例外/未保护登记。变更联动必须以 package-entry 不可变 `P0/W0` 与 exit `P1` 独立扫描：`P0 ∪ P1` 中变化且不在 entry anchor 集 `W0` 的任一 production 文件必须推导 `IMPACTED_OPERATIONS=ALL`；同包重生成 inventory 不得自准入，禁止用手写基础设施路径清单缩小影响面。
+
 评审时优先要求小批量、冻结即审；超过半小时难以核完的交付应先切小。`scripts/verify` 必须保持分钟级，变慢时先砍最弱门而不是接受变慢。方案是否该做及 severity 是否可接受仍由 Dexter 裁定。
 
 ## 方案合理性优先于闭环正确（强制，Dexter 裁定）

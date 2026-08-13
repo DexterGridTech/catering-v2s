@@ -76,7 +76,7 @@ export function createDiagnosticWorkloadState() {
  * source, while this layer materializes only the generated operation template and guarantees the
  * only HTTP call is the correlated diagnostic interaction.
  */
-export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, scenarios, state = createDiagnosticWorkloadState(), performanceCanonicalOperationIds = [], fetchImpl}) {
+export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, scenarios, state = createDiagnosticWorkloadState(), performanceCanonicalOperationIds = [], fetchImpl, interaction = null}) {
   if (typeof manifestPath !== 'string' || !manifestPath || typeof baseUrl !== 'string' || !baseUrl || typeof secret !== 'string' || secret.length < 24 || !Array.isArray(scenarios)) {
     throw new Error('HTTP_DIAGNOSTIC_WORKLOAD_EXECUTOR_INPUT_INVALID');
   }
@@ -103,12 +103,15 @@ export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, s
       scenario,
       request: {replayKey, prerequisiteHandles: handles},
       invoke: async ({state: activeState}) => {
-        const {executeDiagnosticInteraction} = await import('./rm1-http-diagnostic.mjs');
-        const interaction = await executeDiagnosticInteraction({manifestPath, scenario, baseUrl, path, body, headers, secret, performanceCanonical, fetchImpl});
-        if (typeof capturePrivateResponse === 'function') capturePrivateResponse(interaction.privateResponse, activeState);
+        const executeInteraction = interaction ?? (async (options) => {
+          const {executeDiagnosticInteraction} = await import('./rm1-http-diagnostic.mjs');
+          return executeDiagnosticInteraction(options);
+        });
+        const result = await executeInteraction({manifestPath, scenario, baseUrl, path, body, headers, secret, performanceCanonical, fetchImpl});
+        if (typeof capturePrivateResponse === 'function') capturePrivateResponse(result.privateResponse, activeState);
         const observation = scenario.scenario === 'expectedRejected'
-          ? {...interaction.call, typedRejection: typedRejection(interaction.privateResponse)}
-          : interaction.call;
+          ? {...result.call, typedRejection: typedRejection(result.privateResponse)}
+          : result.call;
         return {observation};
       },
     });
@@ -121,12 +124,12 @@ export function createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, s
  * session material in memory and never writes Seed facts or SQL. The returned array contains
  * only report-safe observations.
  */
-export async function executePlatformFoundationWorkload({manifestPath, baseUrl, secret, scenarios, bootstrapLogin, bootstrapCredential, uniqueSuffix, performanceCanonicalOperationIds = [], fetchImpl}) {
+export async function executePlatformFoundationWorkload({manifestPath, baseUrl, secret, scenarios, bootstrapLogin, bootstrapCredential, uniqueSuffix, performanceCanonicalOperationIds = [], fetchImpl, interaction = null}) {
   if (typeof bootstrapLogin !== 'string' || !bootstrapLogin || typeof bootstrapCredential !== 'string' || bootstrapCredential.length < 12 || !/^[a-z0-9]{6,32}$/.test(uniqueSuffix ?? '')) {
     throw new Error('HTTP_DIAGNOSTIC_PLATFORM_FOUNDATION_INPUT_INVALID');
   }
   const state = createDiagnosticWorkloadState();
-  const execute = createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, scenarios, state, performanceCanonicalOperationIds, fetchImpl});
+  const execute = createDiagnosticRecipeExecutor({manifestPath, baseUrl, secret, scenarios, state, performanceCanonicalOperationIds, fetchImpl, interaction});
   const workspaceKey = `diag${uniqueSuffix}`;
   const idempotency = (name) => `diagnostic-${name}-${uniqueSuffix}`;
   const calls = [];

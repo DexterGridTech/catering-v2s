@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-tree-count-placement-bugfix-exit",
+  "packageId": "OPERATIONS-CATALOG-TREE-COUNT-PLACEMENT-20260812",
+  "status": "BLOCKED",
+  "staticProofStatus": "PASS",
+  "fullComplianceScan": "BLOCKED_ENTRY_LEDGER_TERMINAL_RECEIPT_MISSING",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+    "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogCategoryOwnerIntegrationTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java",
+    "apps/backend/catering-business-server/src/test/java/edge/problem/ContractProblemAdviceTypedOwnerMappingTest.java",
+    "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+    "doc/evidence/platform/2026-08-12-v2s-catalog-tree-count-placement-bugfix-input.json",
+    "doc/evidence/platform/2026-08-12-v2s-catalog-tree-count-placement-bugfix-exit.json"
+  ],
+  "controls": [
+    {"ruleId":"CATALOG_TREE_COUNT_AFTER_LABEL","state":"ACTIVE_RED_VERIFIED","proof":"CatalogTreeLine shared renderer now emits label before count for all count-bearing tree node families."},
+    {"ruleId":"FRONTEND_ARCHITECTURE_GATE","state":"ACTIVE_RED_VERIFIED","proof":"scripts/check/frontend-architecture PASS."},
+    {"ruleId":"OPERATIONS_ADMIN_TYPECHECK","state":"ACTIVE_RED_VERIFIED","proof":"yarn --cwd apps/frontend/operations-admin typecheck PASS."},
+    {"ruleId":"OPERATIONS_ADMIN_VITEST","state":"ACTIVE_RED_VERIFIED","proof":"operations-admin test PASS: 16 architecture tests and 19 Vitest tests."},
+    {"ruleId":"CATALOG_SELECTION_BEFORE_EXPAND_COLUMN","state":"ACTIVE_RED_VERIFIED","proof":"The catalog item ProTable explicitly supplies the official Table.SELECTION_COLUMN and Table.EXPAND_COLUMN markers. A local Ant Design SSR structural check emits ant-table-selection-column before ant-table-row-expand-icon-cell; rowSelection columnWidth 32, selected-row state, archived-row disabling, and controlled lazy SKU expansion remain unchanged."},
+    {"ruleId":"CATALOG_IDENTITY_V4_LAYOUT","state":"ACTIVE_RED_VERIFIED","proof":"The item identity renderer follows the v4 layout: a name link on the first line, the product code on the second, then the existing category/production-tag summary."},
+    {"ruleId":"CATALOG_VIEW_LABELS","state":"ACTIVE_RED_VERIFIED","proof":"The tree card is titled 商品视图和分类 and the result card title is 当前分类：<selected label>."},
+    {"ruleId":"CATALOG_CATEGORY_ACTION_EVENT_ISOLATION","state":"ACTIVE_RED_VERIFIED","proof":"The only per-category action Dropdown trigger is enclosed by a Tree-event boundary which stops click, double click, mouse down, and keyboard bubbling before it reaches Tree.onSelect; the Dropdown menu callback remains unchanged."},
+    {"ruleId":"CATALOG_TREE_DETERMINISTIC_DEFAULT_EXPANSION","state":"ACTIVE_RED_VERIFIED","proof":"Tree expandedKeys is controlled from the explicit shape-root/category-root default collection on initial render and brand switch, instead of relying on defaultExpandAll after asynchronous navigation data arrives."},
+    {"ruleId":"CATALOG_CATEGORY_STORE_COMMAND_HEADER","state":"ACTIVE_RED_VERIFIED","proof":"All four category commands derive headers from the common optional brand-header value and add only Idempotency-Key; the store path therefore omits X-Workspace-Brand-Ref instead of serializing an absent value as the literal string undefined."},
+    {"ruleId":"CATALOG_CATEGORY_MOVE_STATE_MACHINE","state":"ACTIVE_RED_VERIFIED","proof":"The UI disables impossible first-UP and last-DOWN actions from the same sorted sibling order used for display, constrains reparent targets to legal root categories, and the owner returns the generated-contract code MOVE_BOUNDARY for a server-side boundary race."},
+    {"ruleId":"CATALOG_CATEGORY_SAFE_ERROR_CONTRACT","state":"ACTIVE_RED_VERIFIED","proof":"The typed owner problem keeps the exact MOVE_BOUNDARY code and a safe actionable detail while retaining generic safe detail for other owner failures; the owner and advice regression tests compile."},
+    {"ruleId":"STYLELINT_BASELINE","state":"OUT_OF_SCOPE_THIS_PACKAGE","proof":"Existing operations-admin styles.css baseline reports 13 pre-existing disallowed-selector/function errors; this package does not change styles.css."},
+    {"ruleId":"ARCHITECTURE_LINT_BASELINE","state":"OUT_OF_SCOPE_THIS_PACKAGE","proof":"Existing LocalCatalogCopyDrawer.tsx has 2 unused imported types; this package does not change that file."}
+  ],
+  "validationNotes": [
+    "The count-bearing node families all use CatalogTreeLine: smart views, product shapes, uncategorized, and categories.",
+    "The count Tag remains flex-shrink-resistant and is now after the label with a 4px leading gap; trailing actions remain reserved by margin-left:auto.",
+    "The only operations-admin ProTable using expandedRowRender together with rowSelection is the catalog item table; its explicit marker order now matches the v4 second-column expander shape without changing the owner/API or SKU readback path.",
+    "The item identity renderer intentionally does not use NameCodeText because this table must match v4's two-line name/code hierarchy; NameCodeText remains used by category and SKU readback surfaces.",
+    "Every selectable category node is generated by the same renderCategory function. Its one action trigger now uses the shared wrapper boundary, while the non-selectable category-root create action continues to stop its own click event.",
+    "The default expansion set intentionally contains only 商品形态 and 商品分类, per the requested refresh behavior. User-triggered Tree.onExpand still owns subsequent manual expand/collapse state; search continues to compute the temporary match-path expansion set.",
+    "antd info Table and antd doc Table were used to verify showExpandColumn, rowSelection.columnWidth, and the supported Table column APIs; the final implementation uses non-deprecated column markers instead of expandIconColumnIndex.",
+    "A local SSR check of the same Ant Design column markers produced selection column before expand icon column; this proves structure, not browser pixel geometry.",
+    "The store-surface category failure was reproduced from structured backend diagnostics as PLATFORM_COMMON_VALIDATION_FAILED: an absent brand header had become literal undefined before organization owner selection. The fix covers create, rename, reparent, reorder, and delete because they share submitCategoryAction and one commandHeaders value.",
+    "The create-code control preserves the contract's uppercase code grammar and normalizes interactive lowercase input to uppercase; it does not loosen server or OpenAPI validation.",
+    "Gradle compileTestJava passed for the catalog owner and edge advice tests. Direct Java test execution was intentionally rejected by V2S_TESTCONTAINERS_REMOTE_REQUIRED; no remote Testcontainers run was authorized for this package, so no dynamic success is claimed.",
+    "Package exit is blocked by three pre-existing unmatched PRE events (17:19, 17:44, and 18:14) for this package. The append-only ledger has no authorized terminal-receipt repair command; the current fix's own new paths have complete PRE to POST chains. No ledger entry or receipt was deleted, edited, or synthesized.",
+    "No Testcontainers, DEV, L2, reset, seed, browser, deployment, manual SQL, or Git action was performed.",
+    "Stylelint and full architecture lint baseline failures were observed and reported separately, not attributed to this fix."
+  ],
+  "finalGateReceipt": {
+    "path": ".runtime/compliance-control/hook-events/final-exit-latest.json",
+    "sha256": "RECOMPUTED_AT_VALIDATION"
+  }
+}

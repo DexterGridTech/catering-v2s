@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "public-invitation-resumption-package-exit",
+  "packageId": "PUBLIC-INVITATION-RESUMPTION-REPAIR-20260812",
+  "status": "PASS",
+  "problemDisposition": "CONFIRMED_AND_REPAIRED",
+  "actualChangedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationService.java",
+    "apps/backend/catering-business-server/modules/workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationResumeStep.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/wire/PublicInvitationView.java",
+    "apps/frontend/operations-admin/src/app/api/generated/public-edge.ts",
+    "apps/frontend/operations-admin/src/features/invitation-acceptance/ui/PublicInvitationEntry.tsx",
+    "apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs",
+    "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
+    "doc/evidence/platform/2026-08-12-v2s-public-invitation-resumption-package-input.json",
+    "doc/evidence/platform/2026-08-12-v2s-public-invitation-resumption-package-exit.json"
+  ],
+  "sourceReconciliation": {
+    "interaction": "Refresh reconstructs the public invitation from get view; no assignment may exist before completion.",
+    "owner": "The owner derives a closed resume step from the invitation state and preserves a single accept transition/audit.",
+    "contract": "PublicInvitationView carries required nextStep; generated Java and TypeScript were written only by controlled edge-codegen.",
+    "consumer": "The public entry chooses its action from nextStep and normalizes known public Problem failures through operationsProblemOf."
+  },
+  "staticEvidence": [
+    "node scripts/generate/edge-codegen.mjs --write-receipt edge-codegen-public-invitation-resumption-20260812 => PASS (3 generated paths)",
+    "node scripts/generate/edge-codegen.mjs --check => PASS (269 files)",
+    "node --test apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs => PASS (1/1)",
+    "operations-admin yarn typecheck => PASS",
+    "scripts/check/backend-performance-sql-merge-coverage => PASS"
+  ],
+  "dynamicEvidence": {
+    "runner": "scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:workspace-iam:test --tests com.catering.v2s.workspace.iam.application.WorkspaceInvitationPublicFlowTest",
+    "runId": "r5-tc-1786509831298-878",
+    "evidence": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1786509831298-878",
+    "business": "PASS",
+    "cleanup": "PASS",
+    "firstFailure": null,
+    "durationMillis": 59682
+  },
+  "dev": {
+    "command": "scripts/dev/start",
+    "status": "PASS",
+    "runId": "rm1-seed-8ac85f54-8e40-472e-89af-58febd0134a4",
+    "seed": "NOT_RUN"
+  },
+  "authorizationBoundary": "This closure proves the focused public invitation repair and managed DEV restart only. It does not claim L2, reset, seed, UAT, deployment, performance, or BPF completion."
+}

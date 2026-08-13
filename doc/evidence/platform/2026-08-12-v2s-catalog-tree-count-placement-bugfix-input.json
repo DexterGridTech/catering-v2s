@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-tree-count-placement-bugfix-input",
+  "packageId": "OPERATIONS-CATALOG-TREE-COUNT-PLACEMENT-20260812",
+  "status": "PASS",
+  "userTask": "商品分类树数量标签紧跟分类文字显示，不能排在文字前或贴到整行最右侧；商品列表 checkbox 保持第一列、Ant Design 默认展开控件作为第二列并在商品图片左侧；商品名称与商品编码按 v4 拆成两行；左侧卡片标题改为“商品视图和分类”，右侧卡片标题改为“当前分类：XXX”；分类节点的“···”操作不得选择该节点；刷新后商品形态与商品分类必须默认展开。随后发现分类目录的重命名、换父分类与上下移动共同失败，要求按状态机及错误契约做根因修复。最后要求“全部商品”总入口显示后端权威数量，禁止在前端以分类、形态或分页结果推导。",
+  "rootCause": "CatalogTreeLine 的 flex 子项需要让文字可收缩但不主动扩张，才能使数量标签紧跟文字；商品列表的空白根因不是 Checkbox 内边距或 rowSelection 宽度，而是 v2s 使用 expandedRowRender 的 row-expansion 模式时，Ant Design 默认把独立 EXPAND_COLUMN 放在 selection column 前面。columnWidth 只能控制选择列宽度，不能改变两列顺序。对照 v4 的第二列独立展开控制，v2s 现在通过官方 Table.SELECTION_COLUMN 与 Table.EXPAND_COLUMN marker 固定为第一列选择框、第二列默认展开按钮、第三列商品列，保留现有受控展开状态与按需 SKU 明细读取。商品身份偏差则来自复用了将名称和编码内联拼接的 NameCodeText；列表行改为 v4 相同的名称链接第一行、安静的编码第二行与摘要第三行。分类节点的 Dropdown 触发器是可选择 Tree 节点 title 的子树，原实现缺少事件边界，导致鼠标和键盘事件冒泡给 Tree.onSelect；因此以触发器外层统一停止 click、double click、mouse down 与 key down 冒泡，保留 Dropdown 自身的菜单触发和菜单操作。Tree 的 defaultExpandAll 只在初始化时生效，导航数据是异步读入且品牌切换又把受控 expandedKeys 重置为 undefined，所以无法保证刷新后的展开状态；改为受控初始集合并在切换品牌时重新设为 shape-root、category-root。分类命令的共同失败根因是 store surface 没有 brandRef 时仍以 {'X-Workspace-Brand-Ref': undefined} 构造 Headers；Web Headers 会把它序列化为字符串 undefined，组织 owner 将其视为非法的品牌选择并在进入分类 owner 前以 422 拒绝。其次，UI 对明确不可移动的同级边界仍开放动作，且 owner 的 CATEGORY_REORDER_BOUNDARY 未对齐生成契约的 MOVE_BOUNDARY，导致合法状态机拒绝也无法得到精确的用户反馈。“全部商品”的问题则是导航 owner 已拥有该 scope/brand 的统计职责，但 CatalogNavigationView 的权威契约遗漏了 allCount，诱使 consumer 从 shapeCounts 相加。由于分类可多归属且形态是独立统计维度，浏览器推导没有契约地位；根因修复是在同一 owner 的 navigation readback 中按 SMART:ALL 的 scope、brand 与 status <> 'VOIDED' 谓词直接统计 allCount，并使设计覆盖、OpenAPI、生成 wire、decoder 与树节点同链路消费。",
+  "sourceDenominators": [
+    {"id":"CATALOG_TREE_AND_TABLE_RENDERER","owner":"apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx","entrySha256":"6046e1d73bcfc3ff9035eed8bb975ef0805cc8255d8eaddb2fb025392d8b5eef","capturedAt":"PACKAGE_CURRENT"},
+    {"id":"FRONTEND_ARCHITECTURE_GATE","owner":"scripts/check/frontend-architecture","entrySha256":"876d13ca056efbcc58ab860023bd7118518ff44add6d8fbb9c5a9b38c79cde94","capturedAt":"PACKAGE_CURRENT"},
+    {"id":"CATALOG_CATEGORY_OWNER_STATE_MACHINE","owner":"apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java","entrySha256":"24b579acc6a4459ae744ba62489620a791fb64c7be08cc9a4179f66e944ee457","capturedAt":"PACKAGE_CURRENT"},
+    {"id":"CATALOG_CATEGORY_ERROR_CONTRACT","owner":"apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java","entrySha256":"8953babd9a92d5eece0c34edf6d4dada664fd5689240dd141364e75b2fc6ceb1","capturedAt":"PACKAGE_CURRENT"}
+  ],
+  "proofBoundary": "STATIC_AND_LOCAL_FRONTEND_CHECKS_ONLY",
+  "dynamicEvidence": "NOT_AUTHORIZED_THIS_TASK"
+}

@@ -5,14 +5,39 @@ cd "$repo_root"
 
 node tools/project-memory/cli.mjs build --root "$repo_root" --check >/dev/null
 
+for alias in "完成后台功能测试" "后台统一测试" "后台验收" "backend acceptance" "后台功能测试" "后台性能测试" "接口测试"; do
+  resolved="$(node tools/project-memory/cli.mjs query --root "$repo_root" \
+    --task-kind "$alias" --domain backend --consumer-face backend --owner backend \
+    --impact evidence --trigger task-start)"
+  node -e 'const value=JSON.parse(process.argv[1]); if(value.route.taskKinds!=="backend-acceptance") process.exit(2)' "$resolved"
+done
+echo "PROJECT_MEMORY_BACKEND_ACCEPTANCE_ALIASES=PASS"
+
 fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/v2s-project-memory.XXXXXX")"
 cleanup() {
   rm -rf "$fixture_root"
 }
 trap cleanup EXIT
 cp -R project-memory "$fixture_root/project-memory"
-mkdir -p "$fixture_root/doc"
-cp -R doc/decisions doc/plans doc/roadmaps "$fixture_root/doc/"
+node - "$repo_root" "$fixture_root" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const repoRoot = process.argv[2];
+const fixtureRoot = process.argv[3];
+const inventory = JSON.parse(fs.readFileSync(path.join(repoRoot, "project-memory/required-inventory.json"), "utf8"));
+const sources = new Set();
+for (const entry of inventory.entries) {
+  sources.add(entry.path);
+  for (const sourceRef of entry.sourceRefs) sources.add(sourceRef);
+  for (const source of entry.assertionSources) sources.add(source.path);
+}
+for (const relativePath of sources) {
+  const sourcePath = path.join(repoRoot, relativePath);
+  const targetPath = path.join(fixtureRoot, relativePath);
+  fs.mkdirSync(path.dirname(targetPath), {recursive: true});
+  fs.copyFileSync(sourcePath, targetPath);
+}
+NODE
 
 node - "$fixture_root/project-memory/kernel/03-transaction-data-and-dependencies.md" <<'NODE'
 const fs = require("node:fs");
@@ -42,4 +67,23 @@ if node tools/project-memory/cli.mjs build --root "$fixture_root" >/dev/null 2>&
   exit 2
 fi
 echo "PROJECT_MEMORY_RED_SOURCE_SUBSTITUTION=PASS"
+
+rm -rf "$fixture_root/project-memory"
+cp -R project-memory "$fixture_root/project-memory"
+node - "$fixture_root/project-memory/routing-vocabulary.json" <<'NODE'
+const fs = require("node:fs");
+const path = process.argv[2];
+const value = JSON.parse(fs.readFileSync(path, "utf8"));
+value.aliases.taskKinds["后台性能测试"] = "testing";
+fs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+NODE
+resolved="$(node tools/project-memory/cli.mjs query --root "$fixture_root" \
+  --task-kind "后台性能测试" --domain backend --consumer-face backend --owner backend \
+  --impact evidence --trigger task-start 2>/dev/null || true)"
+if [ -n "$resolved" ] && node -e 'const value=JSON.parse(process.argv[1]); process.exit(value.route.taskKinds==="backend-acceptance" ? 1 : 0)' "$resolved"; then
+  echo "PROJECT_MEMORY_RED_BACKEND_PERFORMANCE_SPLIT_ROUTE=PASS"
+else
+  echo "PROJECT_MEMORY_RED_BACKEND_PERFORMANCE_SPLIT_ROUTE=FAIL"
+  exit 2
+fi
 echo "PROJECT_MEMORY_CHECK=PASS"

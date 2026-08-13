@@ -9,7 +9,7 @@
     },
     {
       "path": "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json",
-      "sha256": "3b6578c4da35a40c7d8716805003a65e8bd8b0c8a1d89c04f8e6feeacff47230",
+      "sha256": "8770dac5dc4a2ba9609e8e2d63da9749a4e20333b531c4f3891fd68ff09c3df2",
       "operationCount": 42
     }
   ],
@@ -32,7 +32,7 @@
   },
   "m1BindingPartition": {
     "sourcePath": "contracts/registry/operation-handler-bindings.json",
-    "sourceSha256": "13f08da276c5ca943836651a83c181fd9ccd76bae0f87b7c29cd1fd1b1c4ae81",
+    "sourceSha256": "48d4e144a46b8e9f6315ce74fff4e334cda65a5d7b6e7d4f981e01a049304dd6",
     "commandOperationIds": [
       "addOperationsOrganizationHeadCompanyBrandAuthorization",
       "adjustOperationsInventoryTarget",

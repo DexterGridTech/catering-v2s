@@ -42,40 +42,40 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     public InventoryOwnerService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) { this.jdbc = jdbc; this.mapper = mapper; this.time = time; }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargets(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
         requireStoreDataNodeType(dataNodeType); requireScope(dataNodeRef, brandRef);
         return targets(dataNodeRef, brandRef, requestId, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType) {
         requireStoreDataNodeType(dataNodeType); requireScope(dataNodeRef, brandRef);
         return current(dataNodeRef, brandRef, requestId, targetRef);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargetChangeSummary(String targetRef, String period) {
         return changeSummaryData(targetRef, period);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargetBusinessHistory(String targetRef, ObjectNode request, String requestId) {
         return history(requestId, targetRef, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return references(dataNodeRef, brandRef, requestId, targetRef, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargetLedger(String targetRef, ObjectNode request, String requestId) {
         return ledger(requestId, targetRef, request);
     }
 
-    @Override @Transactional(readOnly = true)
+    @Override
     public JsonNode readTargetDiagnostics(String targetRef, String requestId) {
         return diagnostics(requestId, targetRef);
     }
@@ -607,7 +607,6 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public JsonNode readCatalogInventoryDefinition(String scope, String brand, String itemRef, String requestId) {
         requireScope(scope, brand);
         UUID catalogItemRef = opaqueRef(itemRef, "itemRef");
@@ -692,7 +691,6 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public JsonNode readCatalogInventorySummary(String scope, String brand, ObjectNode request, String requestId, String dataNodeType) {
         requireCatalogDefinitionDataNodeType(dataNodeType);
         requireScope(scope, brand);

@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const INVENTORY_SHA256 = "5c3b1e23b8a5d3b2f32a880b1a674251d0d2958939a7d020003d2480bf5a5633";
+const INVENTORY_SHA256 = "af181d2f616e77fd4232f2a6fb07ce37c336e79e12853c6acd1fe42b3b876793";
 const dimensions = ["taskKinds", "domains", "consumerFaces", "owners", "impacts", "triggers"];
 const routeFlags = {
   taskKinds: "--task-kind",
@@ -55,6 +55,32 @@ function same(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function validateVocabulary(vocabulary) {
+  if (![1, 2].includes(vocabulary?.schemaVersion) || !vocabulary.dimensions) fail("invalid routing vocabulary envelope");
+  for (const dimension of dimensions) {
+    const values = vocabulary.dimensions[dimension];
+    if (!Array.isArray(values) || values.length === 0 || new Set(values).size !== values.length || !values.includes("all")) {
+      fail(`invalid routing vocabulary dimension: ${dimension}`);
+    }
+  }
+  const aliases = vocabulary.aliases || {};
+  for (const [dimension, mappings] of Object.entries(aliases)) {
+    if (!dimensions.includes(dimension) || !mappings || typeof mappings !== "object" || Array.isArray(mappings)) {
+      fail(`invalid routing vocabulary aliases: ${dimension}`);
+    }
+    for (const [alias, target] of Object.entries(mappings)) {
+      if (alias.trim() !== alias || alias.length === 0 || typeof target !== "string"
+        || target === "all" || !vocabulary.dimensions[dimension].includes(target)) {
+        fail(`invalid routing vocabulary alias: ${dimension}:${alias}`);
+      }
+    }
+  }
+}
+
+function canonicalRouteValue(vocabulary, dimension, value) {
+  return vocabulary.aliases?.[dimension]?.[value] || value;
+}
+
 function loadValidated(root) {
   const inventoryPath = resolve(root, "project-memory/required-inventory.json");
   const inventoryBytes = readFileSync(inventoryPath);
@@ -62,10 +88,11 @@ function loadValidated(root) {
     fail("required inventory differs from the independently approved current denominator");
   }
   const inventory = JSON.parse(inventoryBytes);
-  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 23) {
+  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 24) {
     fail("invalid required inventory envelope");
   }
   const vocabulary = JSON.parse(readFileSync(resolve(root, "project-memory/routing-vocabulary.json"), "utf8"));
+  validateVocabulary(vocabulary);
   const expectedPaths = new Set(inventory.entries.map((entry) => entry.path));
   const activeFiles = [];
   for (const entry of inventory.entries) {
@@ -207,8 +234,10 @@ function query(root) {
   const entries = loadValidated(root);
   const requested = {};
   const vocabulary = JSON.parse(readFileSync(resolve(root, "project-memory/routing-vocabulary.json"), "utf8"));
+  validateVocabulary(vocabulary);
   for (const dimension of dimensions) {
-    const value = argValue(routeFlags[dimension]);
+    const rawValue = argValue(routeFlags[dimension]);
+    const value = canonicalRouteValue(vocabulary, dimension, rawValue);
     if (!value) fail(`missing route dimension: ${routeFlags[dimension]}`);
     if (!vocabulary.dimensions[dimension].includes(value) || value === "all") fail(`unknown or non-specific route: ${dimension}:${value}`);
     requested[dimension] = value;

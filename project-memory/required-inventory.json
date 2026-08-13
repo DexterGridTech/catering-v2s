@@ -196,8 +196,8 @@
       "id": "operations.dev-command-separation",
       "path": "project-memory/operations/dev-command-separation.md",
       "layer": "routed",
-      "route": {"taskKinds":["runtime-management","testing"],"domains":["platform","backend"],"consumerFaces":["all"],"owners":["platform"],"impacts":["runtime","database","cleanup"],"triggers":["runtime","failure"]},
-      "requiredAssertions": ["START_RESTART_MIGRATE","START_RESTART_NO_SEED","RESET_SEPARATE_DESTRUCTIVE","LOCAL_EXECUTION_REMOTE_MIDDLEWARE","CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP","UAT_ALL_REMOTE_EXECUTION","REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS"],
+      "route": {"taskKinds":["runtime-management","testing","backend-acceptance"],"domains":["platform","backend"],"consumerFaces":["all"],"owners":["platform"],"impacts":["runtime","database","cleanup"],"triggers":["runtime","failure"]},
+      "requiredAssertions": ["START_RESTART_MIGRATE","START_RESTART_NO_SEED","RESET_SEPARATE_DESTRUCTIVE","LOCAL_EXECUTION_REMOTE_MIDDLEWARE","CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP","UAT_ALL_REMOTE_EXECUTION","REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS"],
       "assertionSources": [
         {"assertionKey":"START_RESTART_MIGRATE","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"},
         {"assertionKey":"START_RESTART_NO_SEED","path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"},
@@ -207,7 +207,7 @@
         {"assertionKey":"UAT_ALL_REMOTE_EXECUTION","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"},
-        {"assertionKey":"TESTCONTAINERS_AUTO_DISCOVERY_AND_PROGRESS","path":"scripts/README.md","anchor":"### 日常 Testcontainers 发现与进度"}
+        {"assertionKey":"BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS","path":"scripts/README.md","anchor":"### Backend acceptance（设计态，尚未实现）"}
       ],
       "sourceRefs": ["AGENTS.md","doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","scripts/README.md"]
     },
@@ -335,8 +335,8 @@
       "id": "operations.test-closed-loop",
       "path": "project-memory/operations/test-closed-loop.md",
       "layer": "routed",
-      "route": {"taskKinds":["implementation","testing","review"],"domains":["platform","backend","contract","admin-ui"],"consumerFaces":["all"],"owners":["platform","backend","frontend-platform"],"impacts":["evidence","governance","runtime","cleanup"],"triggers":["implementation","review","failure"]},
-      "requiredAssertions": ["TESTS_MUST_HAVE_EXECUTION_RECEIPT","STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION"],
+      "route": {"taskKinds":["backend-acceptance","implementation","testing","review"],"domains":["platform","backend","contract","admin-ui"],"consumerFaces":["all"],"owners":["platform","backend","frontend-platform"],"impacts":["evidence","governance","runtime","cleanup"],"triggers":["implementation","review","failure"]},
+      "requiredAssertions": ["TESTS_MUST_HAVE_EXECUTION_RECEIPT","STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED"],
       "assertionSources": [
         {"assertionKey":"TESTS_MUST_HAVE_EXECUTION_RECEIPT","path":"doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","anchor":"### THCL-04｜测试入口与自满足假绿"},
         {"assertionKey":"STATIC_PASS_NOT_DYNAMIC_PASS","path":"doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","anchor":"本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器 / UAT / 部署；不得据此宣称任何动态、业务、cleanup 或性能结果。Java 测试、Testcontainers、L2 三层本次未执行，相关判断均为静态。"},
@@ -344,9 +344,32 @@
         {"assertionKey":"LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","path":"project-memory/operations/verification-governance.md","anchor":"- `TEST_HEALTH_CLOSED_LOOP`: 测试健康闭环以有限执行分母、真实 receipt、断言级 oracle、typed first failure、前置迁移后退役和静态/动态边界分离为 review checklist；它不改变 `rules[]`、不替代语义 review，也不授权动态环境。"},
         {"assertionKey":"LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF","path":"scripts/check/backend-performance-sql-merge-coverage","anchor":"const hostExtensionFixturePaths = ["},
         {"assertionKey":"TESTS_MUST_HAVE_EXECUTION_RECEIPT","path":"scripts/test/test-health-entry-runner.mjs","anchor":"  const discoveredSet = new Set(discovered);"},
-        {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"}
+        {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 2. Operation 分母与四维职责"}
       ],
-      "sourceRefs": ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","project-memory/operations/verification-governance.md","scripts/check/backend-performance-sql-merge-coverage","scripts/test/test-health-entry-runner.mjs"]
+      "sourceRefs": ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","project-memory/operations/verification-governance.md","scripts/check/backend-performance-sql-merge-coverage","scripts/test/test-health-entry-runner.mjs"]
+    },
+    {
+      "id": "operations.backend-acceptance",
+      "path": "project-memory/operations/backend-acceptance.md",
+      "layer": "routed",
+      "route": {"taskKinds":["backend-acceptance","design","implementation","testing","review"],"domains":["backend","contract","platform"],"consumerFaces":["all"],"owners":["backend","contract","platform","product"],"impacts":["database","contract","evidence","runtime","cleanup","governance"],"triggers":["task-start","implementation","review","failure","runtime"]},
+      "requiredAssertions": ["BACKEND_ACCEPTANCE_SINGLE_CAPABILITY","BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR","BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT","BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION","BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION","BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY","BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING","BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION","BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY","BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE","BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF","SEED_IS_DEV_DATA_ONLY"],
+      "assertionSources": [
+        {"assertionKey":"BACKEND_ACCEPTANCE_SINGLE_CAPABILITY","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 1. 唯一术语与完成声明"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 2. Operation 分母与四维职责"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 2. Operation 分母与四维职责"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 3. Scenario contract 设计准入"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"### 4.1 计量完整性"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"### 4.2 Full-mode capacity"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"### 4.3 Owner provider 与 consumer disposition"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"### 4.3 Owner provider 与 consumer disposition"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"### 4.4 历史 seed finding 必须逐项迁移"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 5. 变更联动与反弱化"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 5. 变更联动与反弱化"},
+        {"assertionKey":"SEED_IS_DEV_DATA_ONLY","path":"doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","anchor":"## 6. Seed 与其他证明边界"}
+      ],
+      "sourceRefs": ["doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"]
     },
     {
       "id": "pitfalls.green-by-existence-check",

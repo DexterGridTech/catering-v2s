@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "per-edit-gate-control-plane-package-exit",
+  "packageId": "PER-EDIT-GATE-CONTROL-PLANE-REMEDIATION-20260812",
+  "status": "PASS",
+  "staticProofStatus": "PASS",
+  "fullComplianceScan": "PASS",
+  "business": "NOT_APPLICABLE",
+  "cleanup": "NOT_APPLICABLE",
+  "changedPaths": [
+    ".runtime/compliance-control/active-package.json",
+    "contracts/policy/mandatory-per-edit-gate-command-closure.json",
+    "contracts/policy/per-edit-control-plane-bootstrap-closure.json",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-control-plane-package-input.json",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-source-anchor-disposition.json",
+    "project-memory/operations/per-edit-gate-failure-and-bootstrap.md",
+    "project-memory/pitfalls/per-edit-gate-self-lock.md",
+    "scripts/README.md",
+    "scripts/check/per-edit-control-plane",
+    "scripts/check/per-edit-design-context",
+    "scripts/check/per-edit-runner-evidence",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-bootstrap-activation-request.json",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-bootstrap-activation-receipt.json",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-bootstrap-bridge-source.txt",
+    "doc/evidence/platform/2026-08-12-v2s-per-edit-gate-bootstrap-bridge-source.sha256",
+    "doc/review/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-review-codex.md",
+    "tools/compliance-control/cli.mjs"
+  ],
+  "controls": [
+    {"ruleId":"AUTHORITY_REQUIREMENT","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"BOOTSTRAP_CONTROL_SURFACE","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"ENTRY_LEDGER_RECEIPT","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"ARCHETYPE_PROFILE_PARTITION","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"SOURCE_ANCHOR_DISPOSITION","state":"ACTIVE_RED_VERIFIED"},
+    {"ruleId":"PREVENTION_AND_HANDOFF","state":"ACTIVE_RED_VERIFIED"}
+  ],
+  "finalGateReceipt": {
+    "path": ".runtime/compliance-control/hook-events/final-exit-latest.json",
+    "sha256": "RECOMPUTED_AT_VALIDATION"
+  }
+}

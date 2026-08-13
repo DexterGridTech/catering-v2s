@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "per-edit-gate-control-plane-package-input",
+  "packageId": "PER-EDIT-GATE-CONTROL-PLANE-REMEDIATION-20260812",
+  "status": "PASS",
+  "implementationAuthority": true,
+  "runtimeAuthority": false,
+  "seedResetAuthority": false,
+  "sourceComplianceDenominators": [
+    {"id":"AUTHORITY_REQUIREMENT","owner":"doc/plans/platform/2026-08-12-v2s-per-edit-gate-control-plane-remediation-implementation-design-codex.md","sha256":"887e783d61591025a39c059c6e671577b6be6be0e62584162f56624f5d832b62"},
+    {"id":"BOOTSTRAP_CONTROL_SURFACE","owner":"contracts/policy/per-edit-control-plane-bootstrap-closure.json","sha256":"c34913556266390e6b158ad712e2af4b36602966b9b171aed83e1d5efe07ec9b"},
+    {"id":"ENTRY_LEDGER_RECEIPT","owner":"tools/compliance-control/cli.mjs#validateControlPlaneEntryLedger","sha256":"b12cbd0ff9bb102a2d2dedd5b8fb7c1d672c48e030cb145aa03a47867cddf320"},
+    {"id":"ARCHETYPE_PROFILE_PARTITION","owner":"contracts/policy/mandatory-per-edit-gate-command-closure.json","sha256":"49f932281abb5a903413100f65e4758023b166dce72bd9efd64db617e7b91b98"},
+    {"id":"SOURCE_ANCHOR_DISPOSITION","owner":"doc/evidence/platform/2026-08-12-v2s-per-edit-source-anchor-disposition.json","sha256":"079133f0d78f18087495eb93c753590ed67fe7ccaad92690e9d19dac42457ecb"},
+    {"id":"PREVENTION_AND_HANDOFF","owner":"scripts/check/per-edit-control-plane","sha256":"8748ce77a9222edc3652a02b1d113bc5f0aa2d80095ffb0b81e5504efe735107"}
+  ],
+  "dynamicEvidence": "NOT_AUTHORIZED_THIS_PACKAGE"
+}
