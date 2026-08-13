@@ -28,8 +28,8 @@ class HttpRequestMetricsInterceptorTest {
 
     @Test
     void observationIsDefaultOffOutsideTheManagedNonProductionProfiles() throws Exception {
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "production", "rm1-http-diagnostic", "run-test-1234", "012345678901234567890123", "v2s-http-diagnostic-test", tempDirectory.resolve("events.jsonl").toString());
-        MockHttpServletRequest request = request("X-Http-Diagnostic", "getPlatformAdminPage");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "production", "backend-acceptance", "run-test-1234", "012345678901234567890123", "v2s-backend-acceptance-test", tempDirectory.resolve("events.jsonl").toString());
+        MockHttpServletRequest request = request("X-Backend-Acceptance", "getPlatformAdminPage");
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertTrue(interceptor.preHandle(request, response, new Object()));
         assertNull(response.getHeader("X-Correlation-Id"));
@@ -72,11 +72,11 @@ class HttpRequestMetricsInterceptorTest {
     }
 
     @Test
-    void invalidOperationMetadataKeepsTheScopeAndWritesAFailedManagedEvent() throws Exception {
+    void backendAcceptanceMetadataMismatchKeepsTheScopeAndWritesAFailedManagedEvent() throws Exception {
         Path events = tempDirectory.resolve("diagnostic-events.jsonl");
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "rm1-http-diagnostic", "run-test-1234", "012345678901234567890123", "v2s-http-diagnostic-test", events.toString());
-        MockHttpServletRequest request = request("X-Http-Diagnostic", "wrongOperation");
-        request.addHeader("X-Http-Diagnostic-Secret", "012345678901234567890123");
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "backend-acceptance", "run-test-1234", "012345678901234567890123", "v2s-backend-acceptance-test", events.toString());
+        MockHttpServletRequest request = request("X-Backend-Acceptance", "wrongOperation");
+        request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertTrue(interceptor.preHandle(request, response, new Object()));
         assertTrue(HttpRequestMetricsInterceptor.isManagedEventRequest(request));
@@ -84,55 +84,8 @@ class HttpRequestMetricsInterceptorTest {
         interceptor.afterCompletion(request, response, new Object(), null);
         String event = Files.readString(events);
         assertTrue(event.contains("\"outcome\":\"FAILED\""));
-        assertTrue(event.contains("HTTP_DIAGNOSTIC_OPERATION_METADATA_MISMATCH"));
+        assertTrue(event.contains("BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH"));
         assertFalse(DatabaseOperationTracker.isActive());
-    }
-
-    @Test
-    void finalPerformanceModeWritesOnlyValidatedFixtureMetadata() throws Exception {
-        Path events = tempDirectory.resolve("final-performance-events.jsonl");
-        String hmacKey = Base64.getUrlEncoder().withoutPadding().encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
-                new ObjectMapper(), "non-production", "backend-performance-final-acceptance", "run-test-1234", "012345678901234567890123",
-                "v2s-backend-performance-test", events.toString(), tempDirectory.resolve("final-performance-db.jsonl").toString(), hmacKey, tempDirectory.resolve("final-performance-dictionary.json").toString());
-        MockHttpServletRequest request = request("X-Backend-Performance", "getPlatformAdminPage");
-        request.addHeader("X-Backend-Performance-Secret", "012345678901234567890123");
-        request.addHeader("X-Backend-Performance-Fixture-Id", "BP-U05-TASK:getPlatformAdminPage");
-        request.addHeader("X-Backend-Performance-Area", "U05_TASK_READ");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        interceptor.preHandle(request, response, new Object());
-        executeObservedStatement();
-        interceptor.afterCompletion(request, response, new Object(), null);
-
-        String event = Files.readString(events);
-        assertTrue(event.contains("\"performanceFixtureId\":\"BP-U05-TASK:getPlatformAdminPage\""));
-        assertTrue(event.contains("\"performanceArea\":\"U05_TASK_READ\""));
-        assertTrue(event.contains("\"serverEvidenceHmac\":"));
-        assertTrue(Files.readString(tempDirectory.resolve("final-performance-db.jsonl")).contains("\"serverOperationHmac\":"));
-        assertTrue(event.contains("\"outcome\":\"SUCCEEDED\""));
-    }
-
-    @Test
-    void finalPerformanceModeRejectsInvalidFixtureMetadataWithoutRecordingIt() throws Exception {
-        Path events = tempDirectory.resolve("invalid-final-performance-events.jsonl");
-        String hmacKey = Base64.getUrlEncoder().withoutPadding().encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
-                new ObjectMapper(), "non-production", "backend-performance-final-acceptance", "run-test-1234", "012345678901234567890123",
-                "v2s-backend-performance-test", events.toString(), tempDirectory.resolve("invalid-final-performance-db.jsonl").toString(), hmacKey, tempDirectory.resolve("invalid-final-performance-dictionary.json").toString());
-        MockHttpServletRequest request = request("X-Backend-Performance", "getPlatformAdminPage");
-        request.addHeader("X-Backend-Performance-Secret", "012345678901234567890123");
-        request.addHeader("X-Backend-Performance-Fixture-Id", "raw payload forbidden");
-        request.addHeader("X-Backend-Performance-Area", "U05_TASK_READ");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        interceptor.preHandle(request, response, new Object());
-        interceptor.afterCompletion(request, response, new Object(), null);
-
-        String event = Files.readString(events);
-        assertFalse(event.contains("performanceFixtureId"));
-        assertTrue(event.contains("BACKEND_PERFORMANCE_FINAL_FIXTURE_METADATA_INVALID"));
-        assertTrue(event.contains("\"outcome\":\"FAILED\""));
     }
 
     @Test

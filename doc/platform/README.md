@@ -10,9 +10,11 @@ Roadmap 推导当前状态。
 4. `doc/platform/active-document-index.json`：当前 active document 与 ownership 导航；
 5. `doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md`：当前 program 的 state/authorization owner；
 6. `project-memory/index.md` 与 `scripts/memory/query`：确定性 memory 路由和原文入口；
-7. `contracts/policy/standards-coverage-matrix.json`：冻结标准的 trace/enforcement 分母；
-8. `scripts/README.md`：仓内标准动作和可复验命令；
-9. 当前批准的 decision、plan、contract、review 与 evidence：具体 Journey、实施范围和验收证据。
+7. `scripts/README.md`：仓内标准动作和可复验命令；
+8. 当前批准的 decision、plan、contract 与 review：具体 Journey、实施范围和验收依据。
+
+`standards-coverage`、manifest/hash/package traceability 已退役，不作为会话、设计、实施或
+评审入口；仍须亲验当前原始材料和真实源码。
 
 `catering-all-v2` 及其他旧仓只作为 Heritage 只读来源；不得作为 runtime/build fallback，
 也不得把旧仓状态复制为本仓当前状态。当前 R3 交付保持一个业务 deployable、一个 PostgreSQL

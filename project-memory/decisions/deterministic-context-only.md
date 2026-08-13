@@ -9,7 +9,7 @@ owners: ["platform","backend","product"]
 impacts: ["memory","session","architecture","transaction","database","contract","evidence","governance"]
 triggers: ["session-start","task-start","implementation","review","status-question"]
 assertions: ["NO_PROVIDER","NO_DAEMON","PROMPT_RECOMMENDS_ONLY","MACHINE_OR_REVIEW_DESTINATION","PHASE_DUE_FAILS","CLAUDE_ENTRY_INTENTIONAL","RETIRED_COMPLIANCE_CONTROL_TRACEABILITY"]
-sourceRefs: ["doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"]
+sourceRefs: ["doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md","doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"]
 ---
 # Deterministic context only
 

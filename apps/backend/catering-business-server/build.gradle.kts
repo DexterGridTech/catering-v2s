@@ -12,8 +12,6 @@ val catalogInventoryP1BackendWireOutput = layout.buildDirectory.dir("generated/s
 val backendPerformanceM1CommandExecutionOutput = layout.buildDirectory.dir("generated/sources/backend-performance-m1-command-execution/main/java")
 val catalogInventoryP1BackendWireInputs = listOf(
     "scripts/generate/catalog-inventory-p1.mjs",
-    "contracts/registry/catalog-inventory-p1-backend-wire-inputs.json",
-    "contracts/registry/backend-performance-m1-command-execution-matrix.json",
     "contracts/policy/catalog-inventory-copy-policy.json",
     "contracts/policy/catalog-inventory-design-byte-coverage.json",
     "contracts/policy/catalog-inventory-media-assets.json",
@@ -27,7 +25,7 @@ val catalogInventoryP1BackendWireInputs = listOf(
 ).map { rootProject.file(it) }
 val generateCatalogInventoryP1BackendWire = tasks.register<Exec>("generateCatalogInventoryP1BackendWire") {
     group = "build"
-    description = "Generates the matrix-admitted catalog-family backend P1 wire DTOs."
+    description = "Generates catalog-family backend wire DTOs from the catalog contract."
     inputs.files(catalogInventoryP1BackendWireInputs)
     inputs.dir(rootProject.file("contracts/policy/catalog-inventory-p1-media"))
     inputs.property("catalogInventoryP1BackendWireSourceRoot", catalogInventoryP1BackendWireOutput.get().asFile.absolutePath)
@@ -38,11 +36,10 @@ val generateCatalogInventoryP1BackendWire = tasks.register<Exec>("generateCatalo
 
 val generateBackendPerformanceM1CommandExecutionBindings = tasks.register<Exec>("generateBackendPerformanceM1CommandExecutionBindings") {
     group = "build"
-    description = "Generates source-anchored M1 command edge bindings."
+    description = "Generates typed operations command edge bindings from operation-handler bindings."
     dependsOn(generateCatalogInventoryP1BackendWire)
     inputs.files(
         rootProject.file("scripts/generate/backend-performance-m1-command-execution-bindings.mjs"),
-        rootProject.file("contracts/registry/backend-performance-m1-command-execution-matrix.json"),
         rootProject.file("contracts/registry/operation-handler-bindings.json")
     )
     inputs.dir(catalogInventoryP1BackendWireOutput)

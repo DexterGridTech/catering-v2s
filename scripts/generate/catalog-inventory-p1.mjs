@@ -14,8 +14,6 @@ const COPY_POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
 const MEDIA_ASSET_DIR = "contracts/policy/catalog-inventory-p1-media";
-const M1_EXECUTION_MATRIX_PATH = "contracts/registry/backend-performance-m1-command-execution-matrix.json";
-const BACKEND_WIRE_INPUTS_PATH = "contracts/registry/catalog-inventory-p1-backend-wire-inputs.json";
 const BACKEND_WIRE_SOURCE_ROOT = "apps/backend/catering-business-server/build/generated/sources/catalog-inventory-p1/main/java";
 const BACKEND_WIRE_PACKAGE = "com.catering.v2s.app.edge.generated.wire";
 // The media catalog retains the historical P1 representative-seed marker; the
@@ -72,33 +70,6 @@ for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
 if (mediaCatalog.coverage?.v4CatalogItemCount !== 73 || mediaCatalog.coverage?.v4MediaAssetCount !== 34 || mediaCatalog.coverage?.fullCatalogParityRequiredInP2 !== true) {
   throw new Error("P1_V4_SEED_PARITY_METADATA_INVALID");
 }
-function sameExactSet(left, right) {
-  return left.length === right.length && new Set(left).size === left.length && left.every((value) => right.includes(value));
-}
-function verifyBackendWireInputManifest() {
-  const manifest = readJson(BACKEND_WIRE_INPUTS_PATH);
-  if (manifest?.schemaVersion !== 1 || manifest.kind !== "catalog-inventory-p1-backend-wire-inputs" || !Array.isArray(manifest.inputs)) {
-    throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_INVALID");
-  }
-  const expectedPaths = [
-    REQUIREMENTS_PATH, IA_PATH, OPERATION_CONTRACT_PATH, CATEGORY_REMEDIATION_DESIGN_PATH,
-    REFERENCE_PATH_MATRIX, COPY_POLICY_PATH, DESIGN_COVERAGE_PATH, MEDIA_CATALOG_PATH,
-    "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
-    "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
-    M1_EXECUTION_MATRIX_PATH,
-    ...Object.values(mediaCatalog.assets || {}).map((asset) => path.join(MEDIA_ASSET_DIR, asset.fileName))
-  ].sort();
-  const actualPaths = manifest.inputs.map((input) => input?.path);
-  if (!sameExactSet(actualPaths, expectedPaths)) throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_PATH_SET_DRIFT");
-  for (const input of manifest.inputs) {
-    if (!input || typeof input.path !== "string" || typeof input.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(input.sha256) || fileHash(input.path) !== input.sha256) {
-      throw new Error("P1_BACKEND_WIRE_INPUT_MANIFEST_HASH_DRIFT:" + String(input?.path));
-    }
-  }
-  return manifest;
-}
-const backendWireInputManifest = verifyBackendWireInputManifest();
-const backendWireInputManifestHash = fileHash(BACKEND_WIRE_INPUTS_PATH);
 if (!copyPolicy.limits || !Number.isInteger(copyPolicy.limits.selectedItemCount) || !Number.isInteger(copyPolicy.limits.closureItemCount)) {
   throw new Error("P1_COPY_POLICY_INVALID");
 }
@@ -1310,26 +1281,21 @@ writeText("contracts/catalog/catalogInventoryEdgeWire.ts",
   "export const catalogInventoryEdgeWire = " + edgeWireJson + " as const;\n"
 );
 
-// The M1 command adapters consume concrete backend DTOs, never schema-name or
-// generic-JSON substitutes.  Keep the admitted set matrix-derived so adding a
-// catalog command cannot silently bypass the P1-generated source boundary.
-const m1ExecutionMatrix = readJson(M1_EXECUTION_MATRIX_PATH);
-const catalogM1Rows = (m1ExecutionMatrix.rows || []).filter((row) => row.routeRegistry === "catalog-inventory");
-if (catalogM1Rows.length !== 26) throw new Error("P1_BACKEND_WIRE_CATALOG_OPERATION_DENOMINATOR_INVALID:" + catalogM1Rows.length);
+// Typed backend DTOs follow the catalog operation contract that creates the
+// OpenAPI document in this same generator. They do not depend on the retired
+// backend-performance execution matrix.
+const catalogCommandOperations = operationMetadata.filter((entry) => entry.mutation);
+if (catalogCommandOperations.length === 0) throw new Error("P1_BACKEND_WIRE_CATALOG_COMMANDS_EMPTY");
 const backendWireTypes = new Map();
-for (const row of catalogM1Rows) {
-  for (const dto of [row.edge?.requestDto, row.edge?.responseDto]) {
-    if (!dto || !["GENERATED_P1_DTO_PENDING", "GENERATED_P1_DTO_SOURCE_ANCHORED"].includes(dto.kind) || typeof dto.contractName !== "string" || typeof dto.fqcn !== "string") {
-      throw new Error("P1_BACKEND_WIRE_MATRIX_DTO_INVALID:" + row.operationId);
+for (const operation of catalogCommandOperations) {
+  for (const componentName of [operation.requestComponent, operation.responseComponent]) {
+    if (typeof componentName !== "string" || !componentSchemas[componentName]) {
+      throw new Error("P1_BACKEND_WIRE_CONTRACT_COMPONENT_INVALID:" + operation.operationId + ":" + componentName);
     }
-    const expectedFqcn = BACKEND_WIRE_PACKAGE + "." + dto.contractName;
-    if (dto.fqcn !== expectedFqcn || !componentSchemas[dto.contractName]) {
-      throw new Error("P1_BACKEND_WIRE_MATRIX_CONTRACT_DRIFT:" + row.operationId + ":" + dto.contractName);
-    }
-    backendWireTypes.set(dto.contractName, componentSchemas[dto.contractName]);
+    backendWireTypes.set(componentName, componentSchemas[componentName]);
   }
 }
-if (backendWireTypes.size !== 42) throw new Error("P1_BACKEND_WIRE_DTO_DENOMINATOR_INVALID:" + backendWireTypes.size);
+if (backendWireTypes.size === 0) throw new Error("P1_BACKEND_WIRE_DTO_EMPTY");
 const javaKeyword = new Set(["abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false", "null", "record", "sealed", "permits", "var", "yield"]);
 const javaIdentifier = (value) => {
   const normalized = value.replace(/[^A-Za-z0-9_]/g, "_").replace(/^([^A-Za-z_])/, "_$1");
@@ -1430,16 +1396,13 @@ writeText(path.join(BACKEND_WIRE_SOURCE_ROOT, ...BACKEND_WIRE_PACKAGE.split(".")
 );
 const backendWireManifestSource =
   "package " + BACKEND_WIRE_PACKAGE + ";\n\n" +
-  "/** Generated P1 admission evidence for the catalog-family M1 DTO surface. */\n" +
+  "/** Generated typed DTO surface for catalog command operations. */\n" +
   "public final class CatalogInventoryP1BackendWireManifest {\n" +
-  "  public static final int CATALOG_M1_OPERATION_COUNT = " + catalogM1Rows.length + ";\n" +
+  "  public static final int CATALOG_COMMAND_OPERATION_COUNT = " + catalogCommandOperations.length + ";\n" +
   "  public static final int DTO_TYPE_COUNT = " + backendWireEntries.length + ";\n" +
   "  public static final String P1_GENERATOR_SHA256 = \"" + fileHash("scripts/generate/catalog-inventory-p1.mjs") + "\";\n" +
-  "  public static final String P1_INPUT_MANIFEST_SHA256 = \"" + backendWireInputManifestHash + "\";\n" +
-  "  public static final int P1_INPUT_COUNT = " + backendWireInputManifest.inputs.length + ";\n" +
   "  public static final String OPENAPI_ROOT_SHA256 = \"" + fileHash("contracts/openapi/catalog-inventory.openapi.yaml") + "\";\n" +
   "  public static final String OPENAPI_COMPONENTS_SHA256 = \"" + backendWireComponentDigest + "\";\n" +
-  "  public static final String EXECUTION_MATRIX_SHA256 = \"" + fileHash(M1_EXECUTION_MATRIX_PATH) + "\";\n" +
   "  public static final String GENERATED_TYPES_SHA256 = \"" + backendWireDigest + "\";\n" +
   "  public static final String[] DTO_TYPES = {" + backendWireEntries.map((entry) => "\"" + entry.name + "\"").join(", ") + "};\n" +
   "  private CatalogInventoryP1BackendWireManifest() {}\n" +

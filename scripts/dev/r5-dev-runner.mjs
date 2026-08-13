@@ -4,7 +4,6 @@ import {appendFileSync, chmodSync, existsSync, mkdirSync, openSync, readFileSync
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {canonicalStartToken, evaluateCleanupReadback, snapshotProcessTree, terminateOwnedProcessTree, readProcessTable} from './managed-process-tree.mjs';
-import {catalogImageBindEvidenceInputs} from '../test/catalog-image-bind-evidence-inputs.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -271,7 +270,6 @@ async function start() {
     correlationIdHeader: 'X-Correlation-Id',
     secretCredentialKey: 'V2S_SEED_REPORT_SECRET',
   };
-  const imageBindEvidenceInputs = catalogImageBindEvidenceInputs(root);
   const provision = provisionRemote(env, credential.values, requireFreshDatabase);
   if (requireFreshDatabase && !provision.freshDatabase) fail('FRESH_DATABASE_PROOF_MISSING');
   const objectStorage = provisionObjectStorage(env, credential.values);
@@ -298,7 +296,7 @@ async function start() {
   const businessServer = processes.find((value) => value.name === 'business-server');
   const readiness = await waitForBusinessReady(businessServer);
   businessServer.runtimeIdentity = readListeningProcessIdentity(8080, 'business-server-runtime');
-  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, portLock, tunnelPorts, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, imageBindEvidenceInputs, readinessProgressPath, processes, readiness}, null, 2) + '\n');
+  writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, portLock, tunnelPorts, seedEventsPath, dbOperationsPath, statementDictionaryPath, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, readinessProgressPath, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     let cleanupStatus = 'PASS';

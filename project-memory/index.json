@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
   "kind": "project-memory-index",
-  "denominatorSha256": "af181d2f616e77fd4232f2a6fb07ce37c336e79e12853c6acd1fe42b3b876793",
   "entries": [
     {
       "id": "kernel.workspace-roadmap",
@@ -58,8 +57,7 @@
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-r1-authorization.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ],
-      "sha256": "f8add1ef738e04ab52c16ac772e1c9dfba75f9b035c904100caf3ba61fd2bd63"
+      ]
     },
     {
       "id": "kernel.service-owner",
@@ -109,8 +107,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md"
-      ],
-      "sha256": "45a26072af6204752e73f43d449cd5ce65f75e9b4cf8963ccdad7c3edaddc032"
+      ]
     },
     {
       "id": "kernel.transaction-data",
@@ -173,8 +170,7 @@
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
-      ],
-      "sha256": "f01d8e4ea660d1add99368310f8304e828ea3decc8c6198334f5e4c1b8f85c44"
+      ]
     },
     {
       "id": "kernel.contract-admin",
@@ -269,8 +265,7 @@
         "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
         "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
-      ],
-      "sha256": "1f6d9efbe0208f5b164d12effd4a4c4ab8f2c297b9b000462dc96820c3efa88d"
+      ]
     },
     {
       "id": "kernel.evidence-runtime",
@@ -354,8 +349,7 @@
         "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ],
-      "sha256": "f5e219652484338467f0fc03be2bd02d96e09a4a27b812308200673ef720c736"
+      ]
     },
     {
       "id": "kernel.heritage-change",
@@ -405,8 +399,7 @@
       ],
       "sourceRefs": [
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ],
-      "sha256": "5c52b17aad29ba9d78e327ebe550a740d73f97402041c9f4d31c8df38615566c"
+      ]
     },
     {
       "id": "decisions.deterministic-context-only",
@@ -456,10 +449,10 @@
         "NO_PROVIDER",
         "NO_DAEMON",
         "PROMPT_RECOMMENDS_ONLY",
-        "CARRYOVER_STANDARDS_COVERAGE",
         "MACHINE_OR_REVIEW_DESTINATION",
         "PHASE_DUE_FAILS",
-        "CLAUDE_ENTRY_INTENTIONAL"
+        "CLAUDE_ENTRY_INTENTIONAL",
+        "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY"
       ],
       "assertionSources": [
         {
@@ -478,9 +471,9 @@
           "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
         },
         {
-          "assertionKey": "CARRYOVER_STANDARDS_COVERAGE",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "## Part B. 通用设计要求(去场景化沉淀)"
+          "assertionKey": "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY",
+          "path": "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
+          "anchor": "# evidence / package / hash-chain 控制面退役 · 执行清单"
         },
         {
           "assertionKey": "MACHINE_OR_REVIEW_DESTINATION",
@@ -500,9 +493,9 @@
       ],
       "sourceRefs": [
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ],
-      "sha256": "4c98ed79b0c8e4694893a29ed977fd2eccea6c1562f2d62f32c06dcbb5ac7e20"
+      ]
     },
     {
       "id": "decisions.independent-subagent-adversarial-review",
@@ -572,8 +565,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
-      ],
-      "sha256": "891fc8de061560796dc682c5749d73a5d47029592fca197f09f032e3018b4daf"
+      ]
     },
     {
       "id": "decisions.http-crud-efficiency-design-redlines",
@@ -690,8 +682,7 @@
         "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
-      ],
-      "sha256": "8c9b3d87089abf7989745f0bdfbba5c695e3bd8427c3f9dc9b4f592229255997"
+      ]
     },
     {
       "id": "decisions.distributed-topology-is-not-current",
@@ -747,8 +738,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md"
-      ],
-      "sha256": "c578afa258d1a7cb610aa87f8a80f5693f0477cfebd0795c8a5c863633c7664e"
+      ]
     },
     {
       "id": "operations.claude-review-handoff-standard",
@@ -805,8 +795,7 @@
       "sourceRefs": [
         "CLAUDE.md",
         "doc/platform/claude-review-handoff-template.md"
-      ],
-      "sha256": "35ee335e19c74ac3bdcd1e93281d60e2f36c5a4a9bf23ccf0759a43f9ab1137f"
+      ]
     },
     {
       "id": "operations.verification-governance",
@@ -851,7 +840,6 @@
         "DEXTER_OWNS_INTENT_AND_SEVERITY",
         "GATE_ADMISSION_THREE_QUESTIONS",
         "PRODUCTION_RED_MUTATION_REQUIRED",
-        "CONTROL_RETIREMENT_AFTER_FIVE_PACKAGES",
         "SMALL_BATCH_FREEZE_REVIEW",
         "VERIFY_MINUTE_BUDGET",
         "UI_INTERACTION_CONFORMANCE_BEFORE_L2"
@@ -893,11 +881,6 @@
           "anchor": "## 6. 效率红线"
         },
         {
-          "assertionKey": "CONTROL_RETIREMENT_AFTER_FIVE_PACKAGES",
-          "path": "project-memory/operations/verification-governance.md",
-          "anchor": "# Verification governance"
-        },
-        {
           "assertionKey": "UI_INTERACTION_CONFORMANCE_BEFORE_L2",
           "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
           "anchor": "### 3.2 UI 实施与 L2 前的交互符合性准入"
@@ -905,10 +888,8 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-verification-governance.md",
-        "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
-        "project-memory/operations/verification-governance.md"
-      ],
-      "sha256": "5e248d47091b2ff6122f9a0d7fa77793b21aef476add819cac59345d52312bc3"
+        "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md"
+      ]
     },
     {
       "id": "operations.dev-command-separation",
@@ -995,7 +976,7 @@
         {
           "assertionKey": "BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（设计态，尚未实现）"
+          "anchor": "### Backend acceptance（当前最小运行能力）"
         }
       ],
       "sourceRefs": [
@@ -1003,8 +984,7 @@
         "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
         "scripts/README.md"
-      ],
-      "sha256": "cf9e642b41e7c91004d67abcf988f60bf5d0105dbceccc0fd6066f246d0a87c1"
+      ]
     },
     {
       "id": "operations.roadmap-control-transfer",
@@ -1060,8 +1040,7 @@
       ],
       "sourceRefs": [
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ],
-      "sha256": "bcff1e0404176b55ed2b2d438bec47985e88bdaf2b190ec310d84d8d89419e10"
+      ]
     },
     {
       "id": "pitfalls.log-first-failure-retry",
@@ -1121,8 +1100,7 @@
       "sourceRefs": [
         "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
-      ],
-      "sha256": "044df40abd43efb5948e6457b29f770b7798252c614e53eae1a7a92c40e9e909"
+      ]
     },
     {
       "id": "decisions.confirmed-business-language-corpus",
@@ -1171,8 +1149,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
-      ],
-      "sha256": "3dba1c80579d4a0eca281efd59d27fbfb20aa86572648f8e36c83a68a603b4f3"
+      ]
     },
     {
       "id": "operations.business-corpus-adoption-and-read-policy",
@@ -1221,8 +1198,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
-      ],
-      "sha256": "d362c4f78c5fc0cb1225a7a4465f82ebbd0c41b886535d69b9f698ea162cd7a9"
+      ]
     },
     {
       "id": "operations.phase-retrospective-and-systemic-repair",
@@ -1421,8 +1397,7 @@
         "doc/evidence/platform/rm1/p6/rm1p6-u06-ui-interaction-conformance-record.json",
         "doc/review/platform/2026-07-25-v2s-all-v2-governance-disposition-ledger.md",
         "project-memory/operations/phase-retrospective-and-systemic-repair.md"
-      ],
-      "sha256": "a3b18747224364531419b1a1a8de01c610baa3a40daa5f9d1d0b4f754f1dadb3"
+      ]
     },
     {
       "id": "operations.business-corpus-parked-domain-intake",
@@ -1468,74 +1443,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
-      ],
-      "sha256": "739473d09701aba15332c6de72f1f1965b7b5048732fd60d3b97c7934febee9e"
-    },
-    {
-      "id": "decisions.incremental-compliance-hook",
-      "path": "project-memory/decisions/incremental-compliance-hook.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "platform",
-          "backend",
-          "contract",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "evidence",
-          "governance",
-          "memory"
-        ],
-        "triggers": [
-          "task-start",
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "INCREMENTAL_COMPLIANCE_HOOK_NO_CONTEXT_INJECTION",
-        "CODEX_MUTATION_HOOK_CONTRACT_UNVERIFIED",
-        "PACKAGE_EXIT_CHANGED_PATH_LIST_ONLY"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "INCREMENTAL_COMPLIANCE_HOOK_NO_CONTEXT_INJECTION",
-          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
-          "anchor": "### 2.3 hook 形状"
-        },
-        {
-          "assertionKey": "CODEX_MUTATION_HOOK_CONTRACT_UNVERIFIED",
-          "path": "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
-          "anchor": "### 2.3 hook 形状"
-        },
-        {
-          "assertionKey": "PACKAGE_EXIT_CHANGED_PATH_LIST_ONLY",
-          "path": "project-memory/decisions/incremental-compliance-hook.md",
-          "anchor": "## Assertions"
-        }
-      ],
-      "sourceRefs": [
-        "doc/plans/platform/2026-07-27-v2s-r5-compliance-remediation-implementation-design-and-plan.md",
-        "project-memory/decisions/incremental-compliance-hook.md"
-      ],
-      "sha256": "a75469c7eb945b35f06d95cead2e11c368cc4a47dca851f32652556546985f81"
+      ]
     },
     {
       "id": "operations.implementation-source-reread-discipline",
@@ -1585,8 +1493,7 @@
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
-      ],
-      "sha256": "6944ae47f0e059a52e75096b17620a3c43852e52a9b44e69737554ac646293ce"
+      ]
     },
     {
       "id": "operations.test-closed-loop",
@@ -1626,19 +1533,12 @@
         ]
       },
       "assertions": [
-        "TESTS_MUST_HAVE_EXECUTION_RECEIPT",
         "STATIC_PASS_NOT_DYNAMIC_PASS",
         "FAILURE_TAXONOMY_IS_TYPED",
-        "LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF",
         "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
-        "BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED"
+        "BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY"
       ],
       "assertionSources": [
-        {
-          "assertionKey": "TESTS_MUST_HAVE_EXECUTION_RECEIPT",
-          "path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
-          "anchor": "### THCL-04｜测试入口与自满足假绿"
-        },
         {
           "assertionKey": "STATIC_PASS_NOT_DYNAMIC_PASS",
           "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
@@ -1650,41 +1550,22 @@
           "anchor": "- heartbeat 进入 stall discriminator；readiness progress、terminal/preflight evidence、JSON `Content-Type` materialization 和 firstFailure 原码逐层透传都以 run manifest/report 为唯一事实。"
         },
         {
-          "assertionKey": "LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF",
-          "path": "project-memory/operations/verification-governance.md",
-          "anchor": "- `TEST_HEALTH_CLOSED_LOOP`: 测试健康闭环以有限执行分母、真实 receipt、断言级 oracle、typed first failure、前置迁移后退役和静态/动态边界分离为 review checklist；它不改变 `rules[]`、不替代语义 review，也不授权动态环境。"
-        },
-        {
-          "assertionKey": "LEGACY_TEST_RETIREMENT_REQUIRES_RETAINED_PROOF",
-          "path": "scripts/check/backend-performance-sql-merge-coverage",
-          "anchor": "const hostExtensionFixturePaths = ["
-        },
-        {
-          "assertionKey": "TESTS_MUST_HAVE_EXECUTION_RECEIPT",
-          "path": "scripts/test/test-health-entry-runner.mjs",
-          "anchor": "  const discoveredSet = new Set(discovered);"
-        },
-        {
           "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
           "path": "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
           "anchor": "## Decision"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_IS_OPERATION_SCOPED",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 2. Operation 分母与四维职责"
+          "assertionKey": "BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前最小运行能力）"
         }
       ],
       "sourceRefs": [
         "doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md",
-        "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
         "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
         "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-        "project-memory/operations/verification-governance.md",
-        "scripts/check/backend-performance-sql-merge-coverage",
-        "scripts/test/test-health-entry-runner.mjs"
-      ],
-      "sha256": "6503cadcc35afc01f3b2444cb230752b26e94d2bfc7ccba80d338745ab9a35c5"
+        "scripts/README.md"
+      ]
     },
     {
       "id": "operations.backend-acceptance",
@@ -1729,85 +1610,30 @@
         ]
       },
       "assertions": [
-        "BACKEND_ACCEPTANCE_SINGLE_CAPABILITY",
-        "BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR",
-        "BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT",
-        "BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION",
-        "BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION",
-        "BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY",
-        "BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING",
-        "BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION",
-        "BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY",
-        "BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE",
-        "BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF",
-        "SEED_IS_DEV_DATA_ONLY"
+        "BACKEND_ACCEPTANCE_ONE_REAL_OPERATION",
+        "BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED",
+        "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED"
       ],
       "assertionSources": [
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_SINGLE_CAPABILITY",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 1. 唯一术语与完成声明"
+          "assertionKey": "BACKEND_ACCEPTANCE_ONE_REAL_OPERATION",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前最小运行能力）"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_OPERATION_DENOMINATOR",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 2. Operation 分母与四维职责"
+          "assertionKey": "BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前最小运行能力）"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 2. Operation 分母与四维职责"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_SCENARIO_DESIGN_ADMISSION",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 3. Scenario contract 设计准入"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_MEASUREMENT_CALIBRATION",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "### 4.1 计量完整性"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "### 4.2 Full-mode capacity"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_OWNER_MODULE_MAPPING",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "### 4.3 Owner provider 与 consumer disposition"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_CONSUMER_DISPOSITION",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "### 4.3 Owner provider 与 consumer disposition"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_HISTORICAL_SEED_REPLAY",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "### 4.4 历史 seed finding 必须逐项迁移"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_CHANGE_IMPACT_FAIL_SAFE",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 5. 变更联动与反弱化"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 5. 变更联动与反弱化"
-        },
-        {
-          "assertionKey": "SEED_IS_DEV_DATA_ONLY",
-          "path": "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md",
-          "anchor": "## 6. Seed 与其他证明边界"
+          "assertionKey": "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前最小运行能力）"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"
-      ],
-      "sha256": "9771673f43447d9789fa1bc658c523657c51d7476d854f164c68079f5582fba5"
+        "scripts/README.md"
+      ]
     },
     {
       "id": "pitfalls.green-by-existence-check",
@@ -1845,7 +1671,6 @@
       },
       "assertions": [
         "EXISTENCE_IS_NOT_EXECUTION",
-        "EXACT_DENOMINATOR_REQUIRED",
         "EMPTY_GLOB_MUST_FAIL"
       ],
       "assertionSources": [
@@ -1855,34 +1680,15 @@
           "anchor": "## 3. C3 · 绿了是真的好"
         },
         {
-          "assertionKey": "EXACT_DENOMINATOR_REQUIRED",
-          "path": "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
-          "anchor": "### THCL-02｜ACTIVE 执行 exact-set 与 orphan disposition"
-        },
-        {
-          "assertionKey": "EXACT_DENOMINATOR_REQUIRED",
-          "path": "project-memory/operations/verification-governance.md",
-          "anchor": "- `TEST_HEALTH_CLOSED_LOOP`: 测试健康闭环以有限执行分母、真实 receipt、断言级 oracle、typed first failure、前置迁移后退役和静态/动态边界分离为 review checklist；它不改变 `rules[]`、不替代语义 review，也不授权动态环境。"
-        },
-        {
-          "assertionKey": "EXACT_DENOMINATOR_REQUIRED",
-          "path": "scripts/check/backend-performance-sql-merge-coverage",
-          "anchor": "function validateHostExtensionFixtureSet(fixturePaths = hostExtensionFixturePaths) {"
-        },
-        {
           "assertionKey": "EMPTY_GLOB_MUST_FAIL",
           "path": "scripts/test/test-health-entry-runner.mjs",
           "anchor": "  const broadNodeGlob = [\"**\", \"/*.test.mjs\"].join(\"\");"
         }
       ],
       "sourceRefs": [
-        "doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md",
         "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-        "project-memory/operations/verification-governance.md",
-        "scripts/check/backend-performance-sql-merge-coverage",
         "scripts/test/test-health-entry-runner.mjs"
-      ],
-      "sha256": "11168c34804228d5caf70ae0d4175d20a30c3a0342903d3b3732356037c36782"
+      ]
     }
   ]
 }

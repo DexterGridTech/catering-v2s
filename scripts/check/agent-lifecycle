@@ -14,8 +14,6 @@ validate_hooks_config() {
 const fs = require("node:fs");
 const value = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const expected = {
-  PreToolUse: { command: "scripts/hooks/pre-tool-compliance", matcher: ".*" },
-  PostToolUse: { command: "scripts/hooks/post-tool-compliance", matcher: ".*" },
   SessionStart: "scripts/hooks/session-start",
   UserPromptSubmit: "scripts/hooks/prompt-route",
   Stop: "scripts/hooks/stop"
@@ -90,18 +88,17 @@ echo "HOOKS_FLAT_REGISTRATION_RED=PASS"
 session_command="$(node -p "require('./.codex/hooks.json').hooks.SessionStart[0].hooks[0].command")"
 prompt_command="$(node -p "require('./.codex/hooks.json').hooks.UserPromptSubmit[0].hooks[0].command")"
 stop_command="$(node -p "require('./.codex/hooks.json').hooks.Stop[0].hooks[0].command")"
-pre_tool_command="$(node -p "require('./.codex/hooks.json').hooks.PreToolUse[0].hooks[0].command")"
-post_tool_command="$(node -p "require('./.codex/hooks.json').hooks.PostToolUse[0].hooks[0].command")"
-
 expected_session=$'STATUS=PASS\nCONTEXT_MODE=DETERMINISTIC_ONLY\nENTRY_1=AGENTS.md\nENTRY_2=PLATFORM-BLUEPRINT.md\nENTRY_3=doc/platform/roadmap-program-registry.json\nENTRY_4=selected Roadmap CURRENT_*\nENTRY_5=project-memory/index.md\nENTRY_6=scripts/README.md'
 actual_session="$(printf '{not-json' | "$repo_root/$session_command")"
 [[ "$actual_session" == "$expected_session" ]] || { echo "SESSION_START_CONTRACT=FAIL"; exit 2; }
 echo "SESSION_START_CONTRACT=PASS"
 
-for hook_command in "$pre_tool_command" "$post_tool_command"; do
-  [[ -x "$repo_root/$hook_command" ]] || { echo "COMPLIANCE_HOOK_EXECUTABLE=FAIL"; exit 2; }
-done
-echo "COMPLIANCE_HOOK_EXECUTABLE=PASS"
+if node -e 'const hooks=require("./.codex/hooks.json").hooks; process.exit(hooks.PreToolUse || hooks.PostToolUse ? 1 : 0)'; then
+  echo "RETIRED_COMPLIANCE_HOOKS_ABSENT=PASS"
+else
+  echo "RETIRED_COMPLIANCE_HOOKS_ABSENT=FAIL"
+  exit 2
+fi
 
 unknown_prompt="$(printf '%s' '{"prompt":"unrelated greeting"}' | "$repo_root/$prompt_command")"
 [[ "$unknown_prompt" == $'STATUS=PASS\nRECOMMENDED_SKILL=NONE\nCONTEXT_QUERY_PERFORMED=false' ]] ||

@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend","contract","platform","product"]
 impacts: ["database","contract","evidence","runtime","cleanup","governance"]
 triggers: ["task-start","implementation","review","failure","runtime"]
-assertions: ["BACKEND_ACCEPTANCE_BOOTSTRAP_OPERATION_ONLY","BACKEND_ACCEPTANCE_FOUR_DIMENSION_VERDICT","BACKEND_ACCEPTANCE_HISTORICAL_ASSETS_RETAINED"]
-sourceRefs: ["doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md"]
+assertions: ["BACKEND_ACCEPTANCE_ONE_REAL_OPERATION","BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED","BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED"]
+sourceRefs: ["scripts/README.md"]
 ---
 # Backend acceptance
 

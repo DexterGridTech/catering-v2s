@@ -9,7 +9,7 @@ owners: ["platform","backend","frontend-platform"]
 impacts: ["evidence","governance","runtime","cleanup"]
 triggers: ["implementation","review","failure"]
 assertions: ["STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY"]
-sourceRefs: ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/decisions/2026-08-13-v2s-backend-acceptance-standard.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","project-memory/operations/verification-governance.md","scripts/check/backend-performance-sql-merge-coverage","scripts/test/test-health-entry-runner.mjs"]
+sourceRefs: ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","scripts/README.md"]
 ---
 # Test closed loop
 

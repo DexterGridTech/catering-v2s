@@ -50,27 +50,16 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 ## Backend acceptance 设计红线
 
-后台动态功能与性能只允许由 `backend-acceptance` 一条能力共同承担。它以当前 semantic
-HTTP operation identity exact set 为分母，不以测试类、固定接口数或阶段名称为分母；
-operation row equality 与 route/binding projection digest freshness 必须分别校验。每条 route
-scenario 通过真实 HTTP 与真实 PostgreSQL/对象存储容器，在同一 correlation 下给出通用
-contract、业务真值、确定性结构 DB 计数与 cleanup。容器时延、预热、采样、percentile 和
-seed wall-clock 不构成硬性能预算。
+后台动态验收只有 `backend-acceptance` 一条能力。当前只验证
+`getPublicInvitationView`：真实 PostgreSQL/对象存储容器与真实 HTTP，手写 fixture、请求和
+业务字段断言，分别输出 CONTRACT、BUSINESS 和供人查看的 DB 操作数。
 
-任何新增或修改 operation 的 implementation-facing 设计必须先声明非空
-`identity/fixture/request/businessOracle/performanceCriterion/cleanup`；`correctnessCases`
-为空只需给出真实理由，contract oracle 由全局通用 validator 承担。迁移期未覆盖 operation
-只能存在于只减不增的 `KNOWN_UNCOVERED`，新 operation 不得加入。已有方法级行为测试和
-SQL 台账在其 assertion/route budget 迁移后删除；只有不触库、不过事务、不跨 owner 的纯
-算法、mapper、parser 可列入封闭保留清单。
+197 个 provider 与 scenario registry 是未来待办目录，不是实现或覆盖。新增 operation 时只
+复制当前真实场景的 fixture/request/business assertion 结构；必须能区分 HTTP 成功与业务
+断言成功，不能以 `response.ok`、路径字符串或“不抛异常”代替业务真值。
 
-改动与场景必须联动：package-entry 捕获不可变 production surface `P0` 与 anchor-covered
-set `W0`，exit 独立扫描同口径 `P1`；`P0 ∪ P1` 中存在性或全文件 hash 变化且不在 `W0`
-的任一 production 文件把影响面提升为 `ALL`，同包重生成 inventory 不得自准入。每个受影响
-operation 必须有可复算 disposition，`BEHAVIOR_UNCHANGED` 只能由 contract digest 未变和
-fresh 四维 accepted baseline 相等背书。BUG_FIX 至少一条 scenario 必须在修复前字节红、
-修复后字节绿；route/schema/error contract 变化还必须处置 `consumerFace`。不得以手写共享
-路径清单、删断言、调高预算或“测试跑不过”换取绿色。
+PERFORMANCE/CLEANUP verdict、baseline、known-uncovered、自动精确分母、lane/并行、校准和
+package/hash 记账均已退役。DB 调用数只用于人工观察，不设预算门或准入拦截。
 
 ## AI-first 与证据
 

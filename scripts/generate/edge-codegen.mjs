@@ -15,8 +15,6 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.yaml";
-const controlledWriteChannel = "EDGE_CODEGEN_CONTROLLED_WRITE";
-const mandatoryPerEditGateClosurePath = "contracts/policy/mandatory-per-edit-gate-command-closure.json";
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -823,124 +821,6 @@ function writeOutputs(base = root) {
     fs.writeFileSync(absolute, value);
   }
 }
-function outputSha256(absolute) {
-  return fs.existsSync(absolute)
-    ? crypto.createHash("sha256").update(fs.readFileSync(absolute)).digest("hex")
-    : "ABSENT";
-}
-function generatedOutputChanges(base, outputs) {
-  const changes = [];
-  for (const [relative, value] of outputs) {
-    const absolute = path.join(base, relative);
-    if (!fs.existsSync(absolute) || fs.readFileSync(absolute, "utf8") !== value) changes.push({relative, value});
-  }
-  const wireDirectory = path.join(base, targets.wireJavaRoot);
-  const expectedWireFiles = new Set([...outputs.keys()].filter((relative) => relative.startsWith(`${targets.wireJavaRoot}/`)).map((relative) => path.basename(relative)));
-  if (fs.existsSync(wireDirectory)) {
-    for (const name of fs.readdirSync(wireDirectory)) {
-      if (name.endsWith(".java") && !expectedWireFiles.has(name)) changes.push({relative: `${targets.wireJavaRoot}/${name}`, value: undefined});
-    }
-  }
-  return changes.sort((left, right) => left.relative.localeCompare(right.relative));
-}
-function validateControlledWriteMandatoryGate(base, activePackage) {
-  if (typeof activePackage.packageArchetype !== "string"
-    || !activePackage.mandatoryPerEditGate
-    || typeof activePackage.mandatoryPerEditGate.profileId !== "string"
-    || Object.keys(activePackage.mandatoryPerEditGate).some((key) => key !== "profileId")) {
-    fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_INVALID");
-  }
-  let closure;
-  try { closure = read(mandatoryPerEditGateClosurePath, base); } catch { fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_CLOSURE_MISSING"); }
-  const profile = closure?.profiles?.find((entry) => entry?.profileId === activePackage.mandatoryPerEditGate.profileId);
-  if (!profile || profile.status !== "ACTIVE_BOOTSTRAP_COMPATIBILITY"
-    || !Array.isArray(profile.compatiblePackageArchetypes)
-    || !profile.compatiblePackageArchetypes.includes(activePackage.packageArchetype)
-    || typeof profile.command !== "string" || !Array.isArray(profile.argv) || profile.argv.length !== 0
-    || typeof profile.commandSha256 !== "string" || !profile.independentReviewBinding
-    || profile.independentReviewBinding.verdict !== "GO") {
-    fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_PROFILE_INVALID", activePackage.mandatoryPerEditGate.profileId);
-  }
-}
-function controlledWritePackage(base) {
-  const activePackagePath = path.join(base, ".runtime/compliance-control/active-package.json");
-  if (!fs.existsSync(activePackagePath)) fail("R5_EDGE_CONTROLLED_WRITE_ACTIVE_PACKAGE_MISSING");
-  let activePackage;
-  try { activePackage = JSON.parse(fs.readFileSync(activePackagePath, "utf8")); } catch { fail("R5_EDGE_CONTROLLED_WRITE_ACTIVE_PACKAGE_INVALID"); }
-  if (!activePackage || activePackage.schemaVersion !== 1 || typeof activePackage.packageId !== "string" || !Array.isArray(activePackage.allowedChangeSurfaces)
-    || activePackage.allowedChangeSurfaces.some((surface) => typeof surface !== "string" || surface.length === 0 || path.isAbsolute(surface) || surface.includes(".."))) {
-    fail("R5_EDGE_CONTROLLED_WRITE_ACTIVE_PACKAGE_INVALID");
-  }
-  validateControlledWriteMandatoryGate(base, activePackage);
-  return activePackage;
-}
-function controlledWriteAllowed(activePackage, relative) {
-  return activePackage.allowedChangeSurfaces.some((surface) => relative === surface || relative.startsWith(`${surface.replace(/\/$/, "")}/`));
-}
-function controlledWriteInvocationId(value) {
-  if (typeof value !== "string" || !/^edge-codegen-[a-z0-9][a-z0-9-]{2,120}$/.test(value)) fail("R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID");
-  return value;
-}
-function controlledReceiptPath(base, invocationId, phase) {
-  return path.join(base, ".runtime/compliance-control/hook-events", `${invocationId}.${phase}.json`);
-}
-function assertControlledWriteReceipt(base, activePackage, invocationId, changes) {
-  const prePath = controlledReceiptPath(base, invocationId, "pre");
-  const postPath = controlledReceiptPath(base, invocationId, "post");
-  if (!fs.existsSync(prePath) || !fs.existsSync(postPath)) fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_MISSING", invocationId);
-  let pre;
-  let post;
-  try {
-    pre = JSON.parse(fs.readFileSync(prePath, "utf8"));
-    post = JSON.parse(fs.readFileSync(postPath, "utf8"));
-  } catch { fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_INVALID", invocationId); }
-  const expectedPaths = changes.map(({relative}) => relative);
-  const exactPaths = (receipt) => receipt?.schemaVersion === 1 && receipt.channel === controlledWriteChannel
-    && receipt.packageId === activePackage.packageId && receipt.invocationId === invocationId
-    && Array.isArray(receipt.paths) && receipt.paths.length === expectedPaths.length
-    && receipt.paths.every((entry, index) => entry?.path === expectedPaths[index]);
-  if (!exactPaths(pre) || !exactPaths(post)) fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_PATH_MISMATCH", invocationId);
-  for (let index = 0; index < changes.length; index += 1) {
-    if (pre.paths[index].beforeSha256 !== post.paths[index].beforeSha256 || post.paths[index].afterSha256 !== outputSha256(path.join(base, changes[index].relative))) {
-      fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH", changes[index].relative);
-    }
-  }
-}
-/**
- * This is a generator-owned write channel, not a desktop hook emulation. It
- * captures the exact changed generated-output set before writing, then records
- * the same-package pre/post receipt pair consumed by package-exit validation.
- */
-function writeOutputsWithReceipt(base, invocationId) {
-  const activePackage = controlledWritePackage(base);
-  const id = controlledWriteInvocationId(invocationId);
-  const outputs = expected(base);
-  const changes = generatedOutputChanges(base, outputs);
-  for (const {relative} of changes) if (!controlledWriteAllowed(activePackage, relative)) fail("R5_EDGE_CONTROLLED_WRITE_UNAUTHORIZED_OUTPUT", relative);
-  const prePath = controlledReceiptPath(base, id, "pre");
-  const postPath = controlledReceiptPath(base, id, "post");
-  if (fs.existsSync(prePath) || fs.existsSync(postPath)) fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_EXISTS", id);
-  const receiptPaths = changes.map(({relative}) => ({path: relative, beforeSha256: outputSha256(path.join(base, relative))}));
-  fs.mkdirSync(path.dirname(prePath), {recursive: true});
-  fs.writeFileSync(prePath, `${JSON.stringify({schemaVersion: 1, channel: controlledWriteChannel, packageId: activePackage.packageId, invocationId: id, paths: receiptPaths}, null, 2)}\n`);
-  for (const {relative, value} of changes) {
-    const absolute = path.join(base, relative);
-    if (value === undefined) fs.rmSync(absolute, {force: true});
-    else {
-      fs.mkdirSync(path.dirname(absolute), {recursive: true});
-      fs.writeFileSync(absolute, value);
-    }
-  }
-  fs.writeFileSync(postPath, `${JSON.stringify({
-    schemaVersion: 1,
-    channel: controlledWriteChannel,
-    packageId: activePackage.packageId,
-    invocationId: id,
-    paths: receiptPaths.map(({path: relative, beforeSha256}) => ({path: relative, beforeSha256, afterSha256: outputSha256(path.join(base, relative))})),
-  }, null, 2)}\n`);
-  assertControlledWriteReceipt(base, activePackage, id, changes);
-  return {packageId: activePackage.packageId, files: changes.length};
-}
 function checkOutputs(base = root) {
   const outputs = expected(base);
   const { operations, codesByFace } = load(base);
@@ -1006,28 +886,6 @@ function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-r5-codegen-"));
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
-    const selfTestActivePath = path.join(scratch, ".runtime/compliance-control/active-package.json");
-    const selfTestOutputs = [...expected(scratch).keys()].sort();
-    fs.writeFileSync(selfTestActivePath, `${JSON.stringify({schemaVersion:1, packageId:"R5-EDGE-CODEGEN-SELF-TEST", packageArchetype:"backend-performance-static", mandatoryPerEditGate:{profileId:"BACKEND_PERFORMANCE_TOPOLOGY_BOOTSTRAP"}, allowedChangeSurfaces:selfTestOutputs}, null, 2)}\n`);
-    const missingMandatoryGate = JSON.parse(fs.readFileSync(selfTestActivePath, "utf8"));
-    delete missingMandatoryGate.mandatoryPerEditGate;
-    fs.writeFileSync(selfTestActivePath, `${JSON.stringify(missingMandatoryGate, null, 2)}\n`);
-    try { controlledWritePackage(scratch); fail("R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_MANDATORY_GATE_INVALID") throw error; }
-    fs.writeFileSync(selfTestActivePath, `${JSON.stringify({schemaVersion:1, packageId:"R5-EDGE-CODEGEN-SELF-TEST", packageArchetype:"backend-performance-static", mandatoryPerEditGate:{profileId:"BACKEND_PERFORMANCE_TOPOLOGY_BOOTSTRAP"}, allowedChangeSurfaces:selfTestOutputs}, null, 2)}\n`);
-    writeOutputs(scratch);
-    const controlledTarget = path.join(scratch, targets.platformRtkTs);
-    fs.appendFileSync(controlledTarget, "// controlled-write red fixture\n");
-    const controlledChanges = generatedOutputChanges(scratch, expected(scratch));
-    const controlledResult = writeOutputsWithReceipt(scratch, "edge-codegen-self-test");
-    if (controlledResult.files !== controlledChanges.length || controlledResult.files === 0) fail("R5_EDGE_CONTROLLED_WRITE_FIXTURE_INVALID");
-    const controlledPackage = controlledWritePackage(scratch);
-    assertControlledWriteReceipt(scratch, controlledPackage, "edge-codegen-self-test", controlledChanges);
-    const controlledPostPath = controlledReceiptPath(scratch, "edge-codegen-self-test", "post");
-    const controlledPost = JSON.parse(fs.readFileSync(controlledPostPath, "utf8"));
-    controlledPost.paths[0].afterSha256 = "0".repeat(64);
-    fs.writeFileSync(controlledPostPath, `${JSON.stringify(controlledPost, null, 2)}\n`);
-    try { assertControlledWriteReceipt(scratch, controlledPackage, "edge-codegen-self-test", controlledChanges); fail("R5_EDGE_CONTROLLED_WRITE_RECEIPT_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH") throw error; }
-    try { controlledWriteInvocationId("invalid"); fail("R5_EDGE_CONTROLLED_WRITE_INVOCATION_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID") throw error; }
     writeOutputs(scratch);
     const rootOpenApiPath = "contracts/openapi/edge.openapi.yaml";
     const rootOpenApiSource = fs.readFileSync(path.join(scratch, rootOpenApiPath), "utf8");
@@ -1191,16 +1049,16 @@ function selfTest() {
     bodyRequest.required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
-    process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_CONTROLLED_WRITE_RECEIPT_HASH_MISMATCH,R5_EDGE_CONTROLLED_WRITE_INVOCATION_INVALID,R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_ADMIN_CATALOG_ROLE_HOME_RUNTIME_CARDINALITY_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
+    process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 try {
   const argumentsAfterScript = process.argv.slice(2);
   if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === "--self-test") selfTest();
   else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === "--check") process.stdout.write(`R5_EDGE_CODEGEN_CHECK=PASS\nFILES=${checkOutputs()}\n`);
-  else if (argumentsAfterScript.length === 2 && argumentsAfterScript[0] === "--write-receipt") {
-    const result = writeOutputsWithReceipt(root, argumentsAfterScript[1]);
-    process.stdout.write(`R5_EDGE_CODEGEN_CONTROLLED_WRITE=PASS\nPACKAGE=${result.packageId}\nFILES=${result.files}\n`);
-  } else if (argumentsAfterScript.length === 0) fail("R5_EDGE_CODEGEN_CONTROLLED_WRITE_REQUIRED");
+  else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === "--write") {
+    writeOutputs(root);
+    process.stdout.write(`R5_EDGE_CODEGEN_WRITE=PASS\nFILES=${expected(root).size}\n`);
+  } else if (argumentsAfterScript.length === 0) fail("R5_EDGE_CODEGEN_WRITE_REQUIRED");
   else fail("R5_EDGE_CODEGEN_ARGUMENT_INVALID");
 } catch (error) { process.stderr.write(`${error.code || "R5_EDGE_CODEGEN_FAIL"}: ${error.message}\n`); process.exitCode = 1; }

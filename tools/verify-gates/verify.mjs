@@ -1,19 +1,31 @@
 #!/usr/bin/env node
 
 import childProcess from "node:child_process";
-import crypto from "node:crypto";
-import fs from "node:fs";
 import path from "node:path";
-import {fileURLToPath, pathToFileURL} from "node:url";
+import {fileURLToPath} from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const executionCatalogPath = "contracts/policy/standards-enforcement-execution-catalog.json";
-const coverageCheckerPath = "scripts/check/standards-coverage";
-const rootRef = "scripts/verify";
 
-// These commands are not ACTIVE enforcement refs in the execution catalog. The
-// catalog is the only source for the 15 static children and the ArchUnit
-// selector; this list retains the separate runtime checks for normal mode.
+// `scripts/verify --validate-only` deliberately names the real static checks it
+// runs. It has no derived denominator, dependency digest, persistent execution artifact, or hook
+// contract: a check passes only when its current command actually passes.
+const staticCommands = Object.freeze([
+  ["logging-boundaries", "scripts/check/logging-boundaries", [], ["R4_LOGGING_BOUNDARIES=PASS"]],
+  ["database-boundaries", "scripts/check/database-boundaries", [], ["R4_DATABASE_BOUNDARIES=PASS"]],
+  ["backend-boundaries", "scripts/check/backend-boundaries", [], ["R4_BACKEND_BOUNDARIES=PASS"]],
+  ["frontend-architecture", "scripts/check/frontend-architecture", [], ["R5_FRONTEND_ARCHITECTURE=PASS"]],
+  ["openapi-contracts", "scripts/check/openapi-contracts", [], ["R5_OPENAPI_CONTRACTS=PASS"]],
+  ["ui-wireframe-traceability", "scripts/check/ui-wireframe-traceability", [], ["R4_UI_WIREFRAME_TRACEABILITY=PASS"]],
+  ["business-terminology-traceability", "scripts/check/business-terminology-traceability", [], ["R4_BUSINESS_TERMINOLOGY_TRACEABILITY=PASS"]],
+  ["code-layout", "scripts/check/code-layout", [], ["CODE_LAYOUT=PASS"]],
+  [
+    "backend-archunit",
+    "gradle",
+    [":apps:backend:catering-business-server:backendModuleBoundariesArchunitSelector", "--no-daemon"],
+    ["BUILD SUCCESSFUL"],
+  ],
+]);
+
 const runtimeCommands = [
   ["U01-face", "scripts/check/contract-face", []],
   ["U01-codegen", "scripts/check/edge-codegen", []],
@@ -49,81 +61,6 @@ function fail(reason) {
   throw new Error(reason);
 }
 
-function sha256(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-function readJson(root, relativePath) {
-  const absolute = path.join(root, relativePath);
-  try {
-    return JSON.parse(fs.readFileSync(absolute, "utf8"));
-  } catch {
-    fail(`VERIFY_INPUT_INVALID:${relativePath}`);
-  }
-}
-
-function createRootRunId(randomUUID = crypto.randomUUID) {
-  const rootRunId = randomUUID();
-  if (typeof rootRunId !== "string" || rootRunId.length === 0) fail("VERIFY_ROOT_RUN_ID_INVALID");
-  return rootRunId;
-}
-
-function receiptPaths(root, rootRunId) {
-  const directory = path.resolve(root, ".runtime/verification/test-health", rootRunId);
-  return {
-    directory,
-    root: path.join(directory, "root-receipt.json"),
-    selector: path.join(directory, "selector-receipt.json"),
-  };
-}
-
-function reserveReceiptPath(absolutePath) {
-  try {
-    return fs.openSync(absolutePath, "wx");
-  } catch (error) {
-    if (error?.code === "EEXIST") fail("VERIFY_RECEIPT_PATH_EXISTS");
-    fail(`VERIFY_RECEIPT_PATH_RESERVATION_FAILED:${path.basename(absolutePath)}`);
-  }
-}
-
-function releaseReservation(absolutePath, descriptor) {
-  if (descriptor !== undefined && descriptor !== null) {
-    try { fs.closeSync(descriptor); } catch { /* descriptor is owned by this invocation */ }
-  }
-  try { fs.unlinkSync(absolutePath); } catch (error) {
-    if (error?.code !== "ENOENT") fail(`VERIFY_RECEIPT_RESERVATION_CLEANUP_FAILED:${path.basename(absolutePath)}`);
-  }
-}
-
-function writeReservedReceipt(absolutePath, descriptor, receipt) {
-  const content = `${JSON.stringify(receipt, null, 2)}\n`;
-  try {
-    fs.ftruncateSync(descriptor, 0);
-    fs.writeSync(descriptor, content, 0, "utf8");
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
-  } catch {
-    try { fs.closeSync(descriptor); } catch { /* best effort close of owned descriptor */ }
-    fail(`VERIFY_RECEIPT_WRITE_FAILED:${path.basename(absolutePath)}`);
-  }
-}
-
-function dependencyDigestsForExecution(root, entry) {
-  const digests = {};
-  for (const dependency of entry.dependencies) {
-    const absolute = path.join(root, dependency.path);
-    if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
-      fail(`VERIFY_DEPENDENCY_MISSING:${entry.ref}:${dependency.path}`);
-    }
-    const actual = sha256(fs.readFileSync(absolute));
-    if (actual !== dependency.sha256) {
-      fail(`VERIFY_DEPENDENCY_HASH_DRIFT:${entry.ref}:${dependency.path}`);
-    }
-    digests[dependency.path] = actual;
-  }
-  return digests;
-}
-
 function commandExecutable(root, command) {
   return command.includes("/") ? path.join(root, command) : command;
 }
@@ -139,126 +76,19 @@ function spawnAndForward({root, command, args, spawnSyncImpl, env = process.env}
   return result;
 }
 
-function executeCatalogEntry({root, entry, rootRunId, sequence, spawnSyncImpl, now}) {
-  const dependencyDigests = dependencyDigestsForExecution(root, entry);
-  const [command, ...args] = entry.command;
+function runStaticCommand({root, commandTuple, spawnSyncImpl}) {
+  const [label, command, args, successMarkers] = commandTuple;
   const result = spawnAndForward({root, command, args, spawnSyncImpl});
-  if (result?.error) fail(`VERIFY_CHILD_SPAWN_FAILURE:${entry.ref}`);
-  if (result?.status !== 0) fail(`VERIFY_CHILD_EXIT_NONZERO:${entry.ref}`);
-  const markerResults = entry.successMarkers.map((marker) => ({marker, matched: String(result?.stdout || "").includes(marker) || String(result?.stderr || "").includes(marker)}));
-  const missingMarker = markerResults.find((markerResult) => !markerResult.matched);
-  if (missingMarker) fail(`VERIFY_CHILD_MARKER_MISSING:${entry.ref}:${missingMarker.marker}`);
-  return {
-    schemaVersion: 2,
-    rootRef,
-    rootRunId,
-    sequence,
-    ref: entry.ref,
-    dependencyDigests,
-    exitStatus: 0,
-    markerResults,
-    completedAt: now(),
-  };
+  if (result?.error) fail(`R5_VERIFY_STATIC_SPAWN_FAILURE:${label}`);
+  if (result?.status !== 0) fail(`R5_VERIFY_STATIC_FIRST_FAILURE:${label}`);
+  const output = `${result?.stdout || ""}\n${result?.stderr || ""}`;
+  const missingMarker = successMarkers.find((marker) => !output.includes(marker));
+  if (missingMarker) fail(`R5_VERIFY_STATIC_MARKER_MISSING:${label}:${missingMarker}`);
 }
 
-function invokeReceiptValidator({root, receiptPath, rootRunId, spawnSyncImpl}) {
-  const result = spawnAndForward({
-    root,
-    command: coverageCheckerPath,
-    args: ["--validate-active-receipts", receiptPath, "--expected-root-run-id", rootRunId],
-    spawnSyncImpl,
-  });
-  if (result?.error) fail("VERIFY_RECEIPT_VALIDATOR_SPAWN_FAILURE");
-  if (result?.status !== 0) fail("VERIFY_RECEIPT_VALIDATOR_FAILURE");
-}
-
-function executeStaticRoot({root, entries, rootRunId, spawnSyncImpl = childProcess.spawnSync, now = () => new Date().toISOString()}) {
-  const rootEntry = entries.find((entry) => entry.kind === "VERIFY_ROOT");
-  const childEntries = entries.filter((entry) => entry.kind === "VERIFY_CHILD");
-  const selectorEntry = entries.find((entry) => entry.kind === "ARCHUNIT_SELECTOR");
-  if (!rootEntry || childEntries.length !== 15 || !selectorEntry) fail("VERIFY_CATALOG_KIND_PARTITION_INVALID");
-
-  const paths = receiptPaths(root, rootRunId);
-  fs.mkdirSync(paths.directory, {recursive: true});
-  let rootDescriptor;
-  let selectorDescriptor;
-  let rootReserved = false;
-  let selectorReserved = false;
-  let rootCommitted = false;
-  let selectorCommitted = false;
-  try {
-    rootDescriptor = reserveReceiptPath(paths.root);
-    rootReserved = true;
-    selectorDescriptor = reserveReceiptPath(paths.selector);
-    selectorReserved = true;
-
-    const childReceipts = childEntries.map((entry, index) => executeCatalogEntry({
-      root,
-      entry,
-      rootRunId,
-      sequence: index + 1,
-      spawnSyncImpl,
-      now,
-    }));
-    const selectorReceipt = executeCatalogEntry({
-      root,
-      entry: selectorEntry,
-      rootRunId,
-      sequence: 1,
-      spawnSyncImpl,
-      now,
-    });
-    writeReservedReceipt(paths.selector, selectorDescriptor, selectorReceipt);
-    selectorDescriptor = undefined;
-    selectorCommitted = true;
-
-    const rootReceipt = {
-      schemaVersion: 2,
-      rootRef,
-      rootRunId,
-      ref: rootEntry.ref,
-      dependencyDigests: dependencyDigestsForExecution(root, rootEntry),
-      exitStatus: 0,
-      markerResults: [],
-      sequence: childReceipts,
-      completedAt: now(),
-    };
-    writeReservedReceipt(paths.root, rootDescriptor, rootReceipt);
-    rootDescriptor = undefined;
-    rootCommitted = true;
-    invokeReceiptValidator({root, receiptPath: paths.root, rootRunId, spawnSyncImpl});
-    return {rootRunId, paths, childCount: childReceipts.length, selectorRef: selectorEntry.ref};
-  } catch (error) {
-    if (!rootCommitted && rootReserved) releaseReservation(paths.root, rootDescriptor);
-    else if (rootDescriptor !== undefined) {
-      try { fs.closeSync(rootDescriptor); } catch { /* owned descriptor */ }
-    }
-    if (!selectorCommitted && selectorReserved) releaseReservation(paths.selector, selectorDescriptor);
-    else if (selectorDescriptor !== undefined) {
-      try { fs.closeSync(selectorDescriptor); } catch { /* owned descriptor */ }
-    }
-    throw error;
-  }
-}
-
-async function loadCoverageChecker(root) {
-  return import(pathToFileURL(path.join(root, "scripts/check/standards-coverage")).href);
-}
-
-async function executeRoot({
-  root = repositoryRoot,
-  matrix,
-  catalogPath = executionCatalogPath,
-  spawnSyncImpl = childProcess.spawnSync,
-  randomUUID = crypto.randomUUID,
-  now = () => new Date().toISOString(),
-  coverageChecker,
-} = {}) {
-  const coverage = coverageChecker || await loadCoverageChecker(root);
-  const resolvedMatrix = matrix || readJson(root, "contracts/policy/standards-coverage-matrix.json");
-  const {entries} = coverage.validateExecutionCatalog({root, matrix: resolvedMatrix, catalogPath});
-  const rootRunId = createRootRunId(randomUUID);
-  return executeStaticRoot({root, entries, rootRunId, spawnSyncImpl, now});
+function runStatic({root = repositoryRoot, commands = staticCommands, spawnSyncImpl = childProcess.spawnSync} = {}) {
+  for (const commandTuple of commands) runStaticCommand({root, commandTuple, spawnSyncImpl});
+  return {count: commands.length};
 }
 
 function parseMode(argv) {
@@ -277,11 +107,10 @@ function runRuntimeCommand({root, commandTuple, spawnSyncImpl}) {
 
 async function runVerify({argv = process.argv.slice(2), root = repositoryRoot, spawnSyncImpl = childProcess.spawnSync} = {}) {
   const mode = parseMode(argv);
-  const staticResult = await executeRoot({root, spawnSyncImpl});
+  const staticResult = runStatic({root, spawnSyncImpl});
   if (mode === "validate-only") {
     console.log("R5_VERIFY_VALIDATE_ONLY=PASS");
-    console.log(`EXECUTED=${staticResult.childCount}/${staticResult.childCount}`);
-    console.log("ARCHUNIT_SELECTOR=PASS");
+    console.log(`EXECUTED=${staticResult.count}/${staticResult.count}`);
     console.log("CLEANUP=NOT_APPLICABLE_STATIC_ONLY");
     return {mode, ...staticResult};
   }
@@ -305,11 +134,9 @@ if (isMain) {
 }
 
 export {
-  createRootRunId,
-  executeRoot,
-  executeStaticRoot,
   parseMode,
-  runtimeCommands,
-  receiptPaths,
+  runStatic,
   runVerify,
+  runtimeCommands,
+  staticCommands,
 };

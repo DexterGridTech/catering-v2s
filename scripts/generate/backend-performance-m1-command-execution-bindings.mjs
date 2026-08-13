@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const matrixPath = "contracts/registry/backend-performance-m1-command-execution-matrix.json";
 const bindingsPath = "contracts/registry/operation-handler-bindings.json";
 const generatedSourcePath = "apps/backend/catering-business-server/build/generated/sources/backend-performance-m1-command-execution/main/java/com/catering/v2s/app/edge/generated/backendperformancem1/BackendPerformanceM1CommandExecutionBindings.java";
-const catalogP1OutputRoot = "apps/backend/catering-business-server/build/generated/sources/catalog-inventory-p1/main/java";
 const catalogP1TaskName = "generateCatalogInventoryP1BackendWire";
 const selectedTuple = Object.freeze({
   face: "operations-admin",
@@ -18,60 +15,36 @@ const selectedTuple = Object.freeze({
   transactionMode: "REQUIRED",
   contextKind: "WORKSPACE_EXECUTION_CONTEXT",
 });
-const pendingStatus = "DECLARED_RUNTIME_SOURCE_PENDING";
-const implementedStatus = "IMPLEMENTED_SOURCE_ANCHORED";
-const generatedP1SourceAnchored = "GENERATED_P1_DTO_SOURCE_ANCHORED";
-const presentEdgeJavaWire = "PRESENT_EDGE_JAVA_WIRE";
-const allowedOwnerKinds = new Set(["CURRENT_NAMED_OWNER_API", "TYPED_OWNER_API", "MIGRATION_SOURCE_GENERIC_COORDINATOR"]);
-const bannedText = /\b(?:Map|ObjectNode|Function|callback|operationId\s*(?:switch|dispatch|lookup)|reflection|bean\s*scan|service\s*locator)\b/i;
 
 function fail(code) { throw new Error(code); }
 function readJson(relative) { return JSON.parse(fs.readFileSync(path.join(root, relative), "utf8")); }
-function sha256(relative) { return crypto.createHash("sha256").update(fs.readFileSync(path.join(root, relative))).digest("hex"); }
-function exactSet(values) { return new Set(values); }
-function sameSet(left, right) { return left.size === right.size && [...left].every((value) => right.has(value)); }
-function requireString(value, code) { if (typeof value !== "string" || value.length === 0) fail(code); return value; }
-function containsForbidden(value) {
-  if (typeof value === "string") return /UNRESOLVED/i.test(value) || bannedText.test(value);
-  if (Array.isArray(value)) return value.some(containsForbidden);
-  if (value && typeof value === "object") return Object.values(value).some(containsForbidden);
-  return false;
+function bindingMethodName(operationId) {
+  return `bind${operationId.slice(0, 1).toUpperCase()}${operationId.slice(1)}`;
 }
 
 function selectedRows(bindings) {
-  return bindings.operations.filter((row) => Object.entries(selectedTuple).every(([key, value]) => row[key] === value));
+  return bindings.operations
+    .filter((row) => Object.entries(selectedTuple).every(([key, value]) => row[key] === value))
+    .map((row) => ({...row, adapterFqcn: row.adapter, edge: {methodName: bindingMethodName(row.operationId)}}));
 }
 
-function validate(matrix, bindings) {
-  if (matrix?.schemaVersion !== 1 || matrix?.kind !== "backend-performance-m1-command-execution-matrix") fail("BP_M1_EXECUTION_MATRIX_IDENTITY_INVALID");
-  if (matrix?.source?.path !== bindingsPath || matrix.source.sha256 !== sha256(bindingsPath)) fail("BP_M1_EXECUTION_MATRIX_SOURCE_HASH_DRIFT");
-  if (matrix?.catalogWireAdmission?.kind !== "GENERATED_P1_DTO_PENDING" || matrix.catalogWireAdmission.generatorPath !== "scripts/generate/catalog-inventory-p1.mjs" || matrix.catalogWireAdmission.targetSourceRoot !== catalogP1OutputRoot) fail("BP_M1_CATALOG_P1_ADMISSION_INVALID");
-  if (!Array.isArray(matrix.rows) || matrix.rows.length !== 68) fail("BP_M1_EXECUTION_MATRIX_DENOMINATOR_INVALID");
-  const sourceById = new Map(selectedRows(bindings).map((row) => [row.operationId, row]));
-  if (sourceById.size !== 68 || !sameSet(exactSet(matrix.rows.map((row) => row.operationId)), exactSet(sourceById.keys()))) fail("BP_M1_EXECUTION_MATRIX_OPERATION_SET_DRIFT");
+function validate(bindings) {
+  if (bindings?.schemaVersion !== 1 || bindings?.kind !== "operation-handler-bindings" || !Array.isArray(bindings.operations)) fail("OPERATION_COMMAND_BINDINGS_SOURCE_INVALID");
+  const rows = selectedRows(bindings);
+  if (rows.length === 0) fail("OPERATION_COMMAND_BINDINGS_SOURCE_EMPTY");
   const seen = new Set();
-  for (const row of matrix.rows) {
-    if (seen.has(row.operationId)) fail("BP_M1_EXECUTION_MATRIX_OPERATION_DUPLICATE");
+  for (const row of rows) {
+    if (seen.has(row.operationId)) fail("OPERATION_COMMAND_BINDINGS_DUPLICATE:" + row.operationId);
     seen.add(row.operationId);
-    const source = sourceById.get(row.operationId);
-    if (!source || row.adapterFqcn !== source.adapter || row.owner !== source.owner || row.face !== source.face || row.routeRegistry !== source.routeRegistry || row.path !== source.path) fail("BP_M1_EXECUTION_MATRIX_REGISTRY_DRIFT:" + row.operationId);
-    if (![pendingStatus, implementedStatus].includes(row.implementationStatus)) fail("BP_M1_EXECUTION_MATRIX_IMPLEMENTATION_STATUS_INVALID:" + row.operationId);
-    requireString(row.adapterSourcePath, "BP_M1_EXECUTION_MATRIX_ADAPTER_PATH_INVALID:" + row.operationId);
-    if (row.topologyOperationId !== row.operationId) fail("BP_M1_EXECUTION_MATRIX_TOPOLOGY_ID_INVALID:" + row.operationId);
-    if (row?.transactionEntry?.className !== row.adapterFqcn || row.transactionEntry.methodName !== "execute" || row.transactionEntry.propagation !== "REQUIRED") fail("BP_M1_EXECUTION_MATRIX_TRANSACTION_ENTRY_INVALID:" + row.operationId);
-    if (!row.edge || !requireString(row.edge.className, "BP_M1_EXECUTION_MATRIX_EDGE_CLASS_INVALID:" + row.operationId) || !requireString(row.edge.methodName, "BP_M1_EXECUTION_MATRIX_EDGE_METHOD_INVALID:" + row.operationId) || !requireString(row.edge.sourcePath, "BP_M1_EXECUTION_MATRIX_EDGE_PATH_INVALID:" + row.operationId)) fail("BP_M1_EXECUTION_MATRIX_EDGE_INVALID:" + row.operationId);
-    if (!row.edge.requestDto || !row.edge.responseDto || !requireString(row.edge.requestDto.fqcn, "BP_M1_EXECUTION_MATRIX_REQUEST_DTO_INVALID:" + row.operationId) || !requireString(row.edge.responseDto.fqcn, "BP_M1_EXECUTION_MATRIX_RESPONSE_DTO_INVALID:" + row.operationId)) fail("BP_M1_EXECUTION_MATRIX_DTO_INVALID:" + row.operationId);
-    if (!row.context || row.context.contextKind !== selectedTuple.contextKind || !requireString(row.context.resolverFqcn, "BP_M1_EXECUTION_MATRIX_RESOLVER_INVALID:" + row.operationId)) fail("BP_M1_EXECUTION_MATRIX_CONTEXT_INVALID:" + row.operationId);
-    if (!row.ownerInvocation || !allowedOwnerKinds.has(row.ownerInvocation.kind) || !requireString(row.ownerInvocation.sourceAnchor, "BP_M1_EXECUTION_MATRIX_OWNER_INVALID:" + row.operationId)) fail("BP_M1_EXECUTION_MATRIX_OWNER_INVALID:" + row.operationId);
-    if (!["OWNER_READBACK", "NO_CONTENT"].includes(row.responseMode) || !Array.isArray(row.sourceAnchors) || row.sourceAnchors.length === 0 || row.sourceAnchors.some((anchor) => typeof anchor !== "string" || anchor.length === 0)) fail("BP_M1_EXECUTION_MATRIX_READBACK_OR_ANCHOR_INVALID:" + row.operationId);
-    if (containsForbidden(row)) fail("BP_M1_EXECUTION_MATRIX_FORBIDDEN_GENERIC_OR_UNRESOLVED_VALUE:" + row.operationId);
+    if (typeof row.adapter !== "string" || row.adapter.length === 0 || typeof row.owner !== "string" || row.owner.length === 0 || !emitters.has(row.operationId)) {
+      fail("OPERATION_COMMAND_BINDING_EMITTER_MISSING:" + row.operationId);
+    }
   }
+  return rows;
 }
 
 function emitCountOperationsInventoryTarget(row) {
-  if (row.edge.requestDto.fqcn !== "com.catering.v2s.app.edge.generated.wire.InventoryCountRequest"
-      || row.edge.responseDto.fqcn !== "com.catering.v2s.app.edge.generated.wire.InventoryWriteReadback"
-      || row.adapterFqcn !== "com.catering.v2s.inventory.application.CountOperationsInventoryTargetOperation") {
+  if (row.adapterFqcn !== "com.catering.v2s.inventory.application.CountOperationsInventoryTargetOperation") {
     fail("BP_M1_COUNT_BINDING_SOURCE_DRIFT");
   }
   return `    public InventoryWriteReadback ${row.edge.methodName}(InventoryCountRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String targetRef, String idempotencyKey) {\n        return countOperationsInventoryTarget.execute(new CountOperationsInventoryTargetOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, targetRef, idempotencyKey));\n    }`;
@@ -311,38 +284,10 @@ function renderFocusedBindingFactories(className, allDependencies, factoryDefini
   }).join("\n\n");
 }
 
-function sourceAnchoredRows(matrix) {
-  return matrix.rows.filter((row) => row.implementationStatus === implementedStatus);
-}
-
-function expectedSourceAnchoredWireKind(row) {
-  if (row.routeRegistry === "catalog-inventory") return generatedP1SourceAnchored;
-  if (row.routeRegistry === "edge-face") return presentEdgeJavaWire;
-  fail(`BP_M1_SOURCE_ANCHORED_ROUTE_REGISTRY_INVALID:${row.operationId}`);
-}
-
-function validateSourceAnchoredWireKinds(row) {
-  const expected = expectedSourceAnchoredWireKind(row);
-  if (row.edge.requestDto.kind !== expected || row.edge.responseDto.kind !== expected) {
-    fail(`BP_M1_SOURCE_ANCHORED_DTO_KIND_ROUTE_INVALID:${row.operationId}`);
-  }
-}
-
-function selfTest(matrix) {
-  const catalog = structuredClone(sourceAnchoredRows(matrix).find((row) => row.routeRegistry === "catalog-inventory"));
-  const edge = structuredClone(matrix.rows.find((row) => row.routeRegistry === "edge-face"));
-  if (!catalog || !edge) fail("BP_M1_SOURCE_ANCHORED_SELF_TEST_FIXTURE_INVALID");
-  catalog.edge.requestDto.kind = presentEdgeJavaWire;
-  edge.implementationStatus = implementedStatus;
-  edge.edge.responseDto.kind = generatedP1SourceAnchored;
-  for (const row of [catalog, edge]) {
-    try {
-      validateSourceAnchoredWireKinds(row);
-      fail("BP_M1_SOURCE_ANCHORED_RED_MUTATION_ACCEPTED");
-    } catch (error) {
-      if (!String(error?.message ?? error).startsWith("BP_M1_SOURCE_ANCHORED_DTO_KIND_ROUTE_INVALID:")) throw error;
-    }
-  }
+function selfTest(rows) {
+  const catalog = rows.find((row) => row.routeRegistry === "catalog-inventory");
+  if (!catalog || catalog.edge.methodName !== bindingMethodName(catalog.operationId)) fail("OPERATION_COMMAND_BINDING_METHOD_NAME_DRIFT");
+  if (bindingMethodName(catalog.operationId) === catalog.operationId) fail("OPERATION_COMMAND_BINDING_METHOD_RED_MUTATION_ACCEPTED");
   const factoryDependencies = [
     {type: "CreateFixtureOperation", field: "createFixture"},
     {type: "InvalidateFixtureOperation", field: "invalidateFixture"},
@@ -354,7 +299,7 @@ function selfTest(matrix) {
   if (!orderedFactory.includes(expectedSignature)) fail("BP_M1_FOCUSED_FACTORY_PARAMETER_ORDER_INVALID");
   const redFactory = renderFocusedBindingFactories("FixtureBindings", factoryDependencies, [{name: "forFixture", fields: ["createFixture", "invalidateFixture", "updateFixture"]}]);
   if (redFactory.includes(expectedSignature)) fail("BP_M1_FOCUSED_FACTORY_ORDER_RED_MUTATION_ACCEPTED");
-  process.stdout.write("BP_M1_SOURCE_ANCHORED_DTO_KIND_RED_MUTATIONS=PASS\n");
+  process.stdout.write("OPERATION_COMMAND_BINDING_RED_MUTATIONS=PASS\n");
 }
 
 function emit(rows) {
@@ -378,20 +323,11 @@ try {
   const emitRequested = argumentsAfterScript.includes("--emit");
   const selfTestRequested = argumentsAfterScript.includes("--self-test");
   if (argumentsAfterScript.some((argument) => !["--emit", "--check", "--self-test"].includes(argument)) || (selfTestRequested && argumentsAfterScript.length !== 1)) fail("USAGE: backend-performance-m1-command-execution-bindings [--check|--emit|--self-test]");
-  const matrix = readJson(matrixPath);
   const bindings = readJson(bindingsPath);
-  validate(matrix, bindings);
-  const sourceAnchored = sourceAnchoredRows(matrix);
-  for (const row of sourceAnchored) {
-    validateSourceAnchoredWireKinds(row);
-    if (!["CURRENT_NAMED_OWNER_API", "TYPED_OWNER_API"].includes(row.ownerInvocation.kind) || !emitters.has(row.operationId)) {
-      fail(`BP_M1_SOURCE_ANCHORED_BINDING_EMITTER_MISSING:${row.operationId}`);
-    }
-  }
-  if (selfTestRequested) selfTest(matrix);
-  const pending = matrix.rows.length - sourceAnchored.length;
-  if (emitRequested) emit(sourceAnchored);
-  process.stdout.write(`M1_EXECUTION_BINDINGS=${emitRequested ? "PARTIAL_EMITTED" : "PARTIAL_VALIDATED"}\nROWS=68\nEMITTED=${sourceAnchored.length}\nPENDING=${pending}\nCATALOG_P1_TASK=${catalogP1TaskName}\nOUTPUT=${generatedSourcePath}\n`);
+  const commandRows = validate(bindings);
+  if (selfTestRequested) selfTest(commandRows);
+  if (emitRequested) emit(commandRows);
+  process.stdout.write(`OPERATION_COMMAND_BINDINGS=${emitRequested ? "EMITTED" : "VALIDATED"}\nROWS=${commandRows.length}\nEMITTED=${commandRows.length}\nCATALOG_P1_TASK=${catalogP1TaskName}\nOUTPUT=${generatedSourcePath}\n`);
 } catch (error) {
   process.stderr.write(`M1_EXECUTION_BINDINGS=FAIL\nREASON=${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;

@@ -1,10 +1,7 @@
 #!/usr/bin/env node
-import { createHash, randomUUID } from "node:crypto";
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const INVENTORY_SHA256 = "af181d2f616e77fd4232f2a6fb07ce37c336e79e12853c6acd1fe42b3b876793";
 const dimensions = ["taskKinds", "domains", "consumerFaces", "owners", "impacts", "triggers"];
 const routeFlags = {
   taskKinds: "--task-kind",
@@ -18,10 +15,6 @@ const routeFlags = {
 function fail(message) {
   process.stderr.write(`PROJECT_MEMORY=FAIL\nREASON=${message}\n`);
   process.exit(2);
-}
-
-function sha256(bytes) {
-  return createHash("sha256").update(bytes).digest("hex");
 }
 
 function argValue(name, fallback) {
@@ -84,16 +77,12 @@ function canonicalRouteValue(vocabulary, dimension, value) {
 function loadValidated(root) {
   const inventoryPath = resolve(root, "project-memory/required-inventory.json");
   const inventoryBytes = readFileSync(inventoryPath);
-  if (sha256(inventoryBytes) !== INVENTORY_SHA256) {
-    fail("required inventory differs from the independently approved current denominator");
-  }
   const inventory = JSON.parse(inventoryBytes);
-  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || inventory.entries.length !== 24) {
+  if (inventory.schemaVersion !== 1 || inventory.kind !== "project-memory-required-inventory" || !Array.isArray(inventory.entries)) {
     fail("invalid required inventory envelope");
   }
   const vocabulary = JSON.parse(readFileSync(resolve(root, "project-memory/routing-vocabulary.json"), "utf8"));
   validateVocabulary(vocabulary);
-  const expectedPaths = new Set(inventory.entries.map((entry) => entry.path));
   const activeFiles = [];
   for (const entry of inventory.entries) {
     const absolute = resolve(root, entry.path);
@@ -135,32 +124,11 @@ function loadValidated(root) {
       route,
       assertions: entry.requiredAssertions,
       assertionSources: entry.assertionSources,
-      sourceRefs: entry.sourceRefs,
-      sha256: sha256(bytes)
+      sourceRefs: entry.sourceRefs
     });
   }
 
-  // Extra active Markdown entries are forbidden even though discovery never defines the denominator.
-  for (const path of walkMemoryMarkdown(root)) {
-    const parsed = parseFrontmatter(readFileSync(resolve(root, path), "utf8"), path);
-    if (parsed.attributes.status === "active" && !expectedPaths.has(path)) fail(`extra active memory: ${path}`);
-  }
   return activeFiles;
-}
-
-function walkMemoryMarkdown(root) {
-  const results = [];
-  function walk(relative) {
-    const absolute = resolve(root, relative);
-    if (!existsSync(absolute)) return;
-    for (const entry of readdirSync(absolute, { withFileTypes: true })) {
-      const child = `${relative}/${entry.name}`;
-      if (entry.isDirectory()) walk(child);
-      else if (entry.isFile() && child.endsWith(".md") && !child.endsWith("/index.md")) results.push(child);
-    }
-  }
-  walk("project-memory");
-  return results.sort();
 }
 
 function renderMarkdown(index) {
@@ -172,24 +140,14 @@ function renderMarkdown(index) {
     "## Always-read kernel"
   ];
   for (const entry of index.entries.filter((candidate) => candidate.layer === "kernel")) {
-    lines.push(`- [${entry.id}](../${entry.path}) \`${entry.sha256}\``);
+    lines.push(`- [${entry.id}](../${entry.path})`);
   }
   lines.push("", "## Routed memory");
   for (const entry of index.entries.filter((candidate) => candidate.layer === "routed")) {
-    lines.push(`- [${entry.id}](../${entry.path}) \`${entry.sha256}\``);
+    lines.push(`- [${entry.id}](../${entry.path})`);
   }
   lines.push("");
   return lines.join("\n");
-}
-
-function recordDeterministicIndexWrite(root, phase, event) {
-  const command = phase === "pre" ? "deterministic-index-write-pre" : "deterministic-index-write-post";
-  const result = spawnSync(process.execPath, [resolve(root, "tools/compliance-control/cli.mjs"), command], {
-    cwd: root,
-    encoding: "utf8",
-    input: `${JSON.stringify(event)}\n`,
-  });
-  if (result.status !== 0) fail(`deterministic index ${phase} receipt rejected: ${(result.stderr || result.stdout || "unknown").trim()}`);
 }
 
 function build(root, checkOnly) {
@@ -197,7 +155,6 @@ function build(root, checkOnly) {
   const index = {
     schemaVersion: 1,
     kind: "project-memory-index",
-    denominatorSha256: INVENTORY_SHA256,
     entries
   };
   const json = `${JSON.stringify(index, null, 2)}\n`;
@@ -211,19 +168,8 @@ function build(root, checkOnly) {
     const changed = !existsSync(jsonPath) || !existsSync(markdownPath)
       || readFileSync(jsonPath, "utf8") !== json || readFileSync(markdownPath, "utf8") !== markdown;
     if (changed) {
-      const event = {
-        cwd: root,
-        tool_name: "project-memory-index-build",
-        tool_use_id: `project-memory-index-build-${randomUUID()}`,
-        tool_input: {
-          writer: "project-memory-index-build",
-          paths: ["project-memory/index.json", "project-memory/index.md"],
-        },
-      };
-      recordDeterministicIndexWrite(root, "pre", event);
       writeFileSync(jsonPath, json);
       writeFileSync(markdownPath, markdown);
-      recordDeterministicIndexWrite(root, "post", event);
     }
   }
   const kernelCount = entries.filter((entry) => entry.layer === "kernel").length;

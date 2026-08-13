@@ -33,31 +33,11 @@ scripts/check/handoff-debt
 scripts/check/heritage-registry
 ```
 
-每个 checker 的 `--self-test` 运行其 clean/red controls。R1 聚合：
-
-```bash
-scripts/check/baseline-closure --pre-transfer
-scripts/check/baseline-closure --final
-```
-
-`--pre-transfer` 只证明 implementation 与 prepared transfer 输入就绪；`--final` 还必须看到 Registry-last owner、immutable receipt 与 post-transfer closure。两者均不授权后继步骤。
-
-初始 baseline aggregate 的 exact path allowlist 只裁决 immutable R1 baseline。R2 或后续步骤产生新路径后，不得把 `baseline-closure --final` 对当前 worktree 的预期失败误报为 R1 历史 evidence 失效；当前步骤必须验证 immutable R1 hash 链、`roadmap-control-plane-transfer` 与本步骤自己的 denominator。
-
-## Standards coverage
-
-```bash
-scripts/check/standards-coverage --phase R2
-scripts/check/standards-coverage --self-test
-```
-
-以上命令是 R2 closure 的已接受 baseline。任何后继 design、implementation、review 或 testing 会话必须按 Roadmap 的 `CURRENT_STEP` 传入 phase；进入 R3/R4 closure 时，到期仍未接线即 FAIL。
-
-`contracts/policy/standards-coverage-matrix.json` 精确覆盖冻结 manifest Part B-D 的 150 个结构单元。R2 允许尚未到期的 `PLANNED`；active gate/fixture 引用必须真实存在，机器不能判定的规则必须绑定矩阵内 review checklist。
+以上 R1 checker 只用于读取冻结的历史记录，不构成当前会话的 evidence/package/hash 准入。
 
 ## R4 verification
 
-`scripts/verify` is the sole R4 aggregate entry. It runs phase-R4 standards coverage, each production validator, the native Gradle suite, and the disposable Testcontainers PostgreSQL proof. It derives the active Docker context only for that test process, does not start DEV, seed, or reset, and fails if Testcontainers resources remain after the suite. Business output is deliberately `NOT_APPLICABLE_R4_TECHNICAL_STEP`; cleanup is reported separately. Every R4 validator has a scratch-copy `--self-test` mutation using the same production path.
+`scripts/verify` 聚合编译、类型、既有测试、契约生成与架构边界检查。它不启动 DEV、seed、reset 或浏览器；静态通过不能冒充动态业务验收。
 
 ## R5 remote Testcontainers
 
@@ -150,7 +130,7 @@ R3–R6 及后续步骤遵循 `doc/decisions/2026-07-24-v2s-verification-governa
 ## 测试健康闭环
 
 - `scripts/test/test-health-entry-runner.mjs --self-test` 只验证显式 Node 测试入口的分母与红变异；`--node` 才执行这份有限清单，并要求 `DISCOVERED_TEST_FILES` 与 `EXECUTED_TEST_FILES` 精确相等。新增目录必须作为显式入口加入，禁止用宽 glob 掩盖空匹配。
-- `scripts/check/backend-performance-sql-merge-coverage` 对 host-extension fixture 使用精确集合和真实 red mutations。旧 `r5-platform-admin-l2.mjs`、fixture seed 与对应测试已在能力迁移和 predecessor proof 后退役；历史 hash-bound 文档与 evidence 保留，不能把历史引用误当当前执行入口。
+- 旧 performance、HTTP diagnostic、baseline 与 lane 资产已退役；历史文档不能被当作当前执行入口。
 - 静态/本机单元与契约检查的 PASS 只证明对应静态范围；不得写成 Testcontainers、DEV、seed、受管 L2、浏览器、业务、cleanup、UAT 或性能 PASS。动态状态必须由独立授权的受管 runner、business evidence 和 cleanup evidence 关闭。
 
 ## 对抗式 review
@@ -163,20 +143,6 @@ scripts/check/codex-self-review --self-test
 ```
 
 production gate 会拒绝缺少上述必要内容的 reviewer verdict 或作者 intake，closure-only red fixture 证明“只验代码/报告完整”不能通过，blind-finding-acceptance red fixture 证明“因为 reviewer 说了所以全盘接受”也不能通过。Claude 独立 review 继续遵守同一质量底线，但不能替代独立子 agent 审查。规则 owner 为 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md`。
-
-Implementation-facing design handoff 还必须运行：
-
-```bash
-scripts/check/implementation-design-granularity --manifest <manifest.json> --review <adversarial-review.json>
-scripts/check/implementation-design-granularity --self-test
-```
-
-production validator 复算 design/authorization/reviewer/source/checker hash，要求唯一 source/design anchor，逐 delivery unit 检查 path、ordered/serial boundary、data/UI applicability、L1/L2/L3/business/cleanup、forbidden pseudo-fix 与 discriminator，并双向核对 review finding↔unit verdict、severity count 和最多两轮。对声明独立盲审 policy 的新 cycle，它只机械验证 `reviewerKind`、输入清单 path+hash、盲审声明和清单文件存在；不判断清单语义。self-test 的 design-hash drift、missing business evidence、severity-count mismatch、round-three、missing finding-unit link、错误 reviewerKind 与缺失输入清单必须真红。
-第二轮 hard stop 后若作者按 finding 修复 manifest，禁止回填历史 review hash；可按
-`2026-07-26-v2s-post-remediation-review-binding-governance.md` 声明
-`postRemediationDeclaration`。checker 只验 review/intake path+hash 与诚实字段，并输出
-`DECLARED_POST_REMEDIATION_AWAITING_CLAUDE`；这不表示 current bytes 已被子 agent review，
-也不产生实施授权。self-test 另含无声明漂移与缺 intake 两个真红。
 
 收到任何 reviewer finding 后，Codex 不得全盘接受或直接拒绝：逐条重开 owning source/代码/evidence，对外部漂移事实查官方一手资料或做可复现实验，主动寻找反例与适用条件，并写明 `CONFIRMED / PARTIALLY_CONFIRMED / REJECTED_WITH_EVIDENCE / UNVERIFIED_REQUIRES_EVIDENCE / DEXTER_DECISION`。只有已确认部分能驱动修订；修复还要与更小方案比较，避免审查诱发过度设计，信息不全不得武断扩范围。
 
@@ -198,6 +164,3 @@ production validator 复算 design/authorization/reviewer/source/checker hash，
 - 若未来存在 `.runtime/agent-sessions/<sessionId>.json`，Stop 只检查该 session 与其显式 `managedRunIds`；
 - `start/restart` 未来必须迁移 schema 但不得 seed；`seed/reset` 始终独立；
 - 不执行 Git stage、commit、push；Git 归 Dexter。
-# Per-edit control-plane checks
-
-The `scripts/check/per-edit-control-plane` adapter runs the control-plane self-tests and validates the finite source-anchor disposition. It is a static implementation control only; it does not start Testcontainers, DEV, L2, reset, seed, or a browser. `mandatory-per-edit-gate-self-test` and `active-package-recovery-self-test` remain CLI subcommands owned by `tools/compliance-control/cli.mjs`.

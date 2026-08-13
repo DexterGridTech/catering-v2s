@@ -9,7 +9,7 @@ owners: ["platform", "backend", "contract", "frontend-platform", "product"]
 impacts: ["evidence", "governance"]
 triggers: ["implementation", "review", "runtime"]
 assertions: ["MACHINE_GATES_MECHANICAL_ONLY", "SEMANTIC_QUALITY_INDEPENDENT_REVIEW", "DEXTER_OWNS_INTENT_AND_SEVERITY", "GATE_ADMISSION_THREE_QUESTIONS", "PRODUCTION_RED_MUTATION_REQUIRED", "SMALL_BATCH_FREEZE_REVIEW", "VERIFY_MINUTE_BUDGET", "UI_INTERACTION_CONFORMANCE_BEFORE_L2"]
-sourceRefs: ["doc/decisions/2026-07-24-v2s-verification-governance.md", "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md", "project-memory/operations/verification-governance.md"]
+sourceRefs: ["doc/decisions/2026-07-24-v2s-verification-governance.md", "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md"]
 ---
 
 # Verification governance

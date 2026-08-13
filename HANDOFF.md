@@ -44,6 +44,6 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 - `L2_UNCOVERED_SURFACES`：audit-history、platform-admin 的密码找回/改密、workspace-administration 的源码文本断言已按本包规则删除；本次不得据此宣称这些 UI 行为已由日常回归覆盖，缺口保留为未来行为验证范围。
 - `STATIC_ONLY_BOUNDARY`：本包的静态 checker、Node/Vitest/foundation proof、fixture contract cross-check 和 `--validate-only` 均不等于 Testcontainers、DEV、seed、受管 L2、浏览器、业务、cleanup 或性能成功；这些状态仍须独立授权与各自 runner evidence。
 
-## Backend acceptance 后置性能研究
+## Backend acceptance 未完成项
 
-- `REAL_DATA_LATENCY_STUDY`：`backend-acceptance` 本轮只把 logical SQL、QUERY、UPDATE、CONNECTION borrow、TRANSACTION 与 batch 退化设为确定性硬预算。真实数据量下的延迟、吞吐、percentile、JIT/容器预热与宿主噪声不进入唯一后台行为门，避免 flaky 迫使整套保护被绕过。未来只有出现明确容量目标、稳定执行环境和可复现数据规模时，另行设计性能研究；它不得恢复 performance-only 验收能力，也不得用 seed wall-clock 充当基线。
+- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前只有 `getPublicInvitationView` 具备真实 fixture、HTTP 请求与业务字段断言；其余 197 个 provider/registry 条目只是待办目录。下次扩覆盖时从 `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java` 复制并按目标 operation 写真实业务 oracle；DB 操作数只供人工观察，不设预算门。
