@@ -112,6 +112,8 @@ public interface CatalogOwnerApi {
                                                            CatalogItemStatusTransitionCommand command, String idempotencyKey);
     /** Resolves a catalog business code to the catalog-owned opaque ref for the typed VOID dependency judgment. */
     UUID resolveCatalogItemRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemCode);
+    /** Catalog-owned inbound-reference fact used before the typed VOID orchestration. */
+    boolean catalogItemReferencedByOtherItems(WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID itemRef);
     CatalogItemSaveReadback saveCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                             CatalogItemSaveCommand command, String idempotencyKey);
     TemporaryPromotionPreflightReadback preflightTemporaryCatalogItemPromotion(WorkspaceExecutionContext<CatalogAuthorizationScope> context,

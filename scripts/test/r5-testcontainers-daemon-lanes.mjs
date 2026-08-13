@@ -27,8 +27,9 @@ const lanes = Object.freeze([1, 2, 3].map((lane) => Object.freeze({
   config: `${configRoot}/daemon-${lane}.json`,
   service: `${servicePrefix}@${lane}.service`,
 })));
+export const backendAcceptanceDaemonLaneCapacity = () => lanes.length;
 export function materializeBackendAcceptanceDaemonLanes({laneCount, daemonRootPath = daemonRoot, runtimeRootPath = runtimeRoot, configRootPath = configRoot, servicePrefixValue = servicePrefix}) {
-  if (!Number.isSafeInteger(laneCount) || laneCount < 1 || laneCount > 254) throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_COUNT_INVALID');
+  if (!Number.isSafeInteger(laneCount) || laneCount < 1 || laneCount > backendAcceptanceDaemonLaneCapacity()) throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_COUNT_INVALID');
   if (![daemonRootPath, runtimeRootPath, configRootPath, servicePrefixValue].every((value) => typeof value === 'string' && value.length > 0)) {
     throw new Error('BACKEND_ACCEPTANCE_DAEMON_LANE_PATH_INVALID');
   }
@@ -59,6 +60,48 @@ const event = (name, fields = {}) => process.stdout.write(`R5_TESTCONTAINERS_DAE
 const atomicWrite = (target, value) => { const temp = `${target}.${process.pid}.${randomUUID()}.tmp`; writeFileSync(temp, value); renameSync(temp, target); };
 const remoteResult = (body) => spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', trust.host, 'bash', '-s'], {cwd: root, input: body, encoding: 'utf8'});
 const remote = (body) => { const result = remoteResult(body); if (result.status !== 0) fail(`DAEMON_REMOTE_COMMAND_FAILED:${String(result.stderr || result.stdout).trim().replace(/\s+/g, '_').slice(0, 240)}`); return result.stdout; };
+const terminatorSourceRoots = Object.freeze([
+  '/etc/systemd/system', '/usr/lib/systemd/system', '/lib/systemd/system',
+  '/etc/systemd/user', '/usr/lib/systemd/user', '/lib/systemd/user',
+  '/etc/cron.d', '/etc/cron.daily', '/etc/cron.hourly', '/etc/cron.monthly', '/etc/cron.weekly',
+  '/var/spool/cron', '/var/spool/cron/crontabs', '/root/.config/systemd/user',
+]);
+const terminatorSourceRootPattern = new RegExp(`^(?:${terminatorSourceRoots.map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:/|$)`);
+export const parseRemoteTerminatorGovernance = (output) => {
+  if (typeof output !== 'string') fail('BACKEND_ACCEPTANCE_TERMINATOR_GOVERNANCE_INVALID');
+  const lines = output.split(/\r?\n/).filter(Boolean);
+  const bootId = lines.find((line) => line.startsWith('TERMINATOR_HOST_BOOT_ID='))?.slice('TERMINATOR_HOST_BOOT_ID='.length);
+  if (!/^[a-f0-9-]{36}$/i.test(bootId ?? '')) fail('BACKEND_ACCEPTANCE_TERMINATOR_GOVERNANCE_INVALID');
+  const sources = [];
+  const processes = [];
+  for (const line of lines) {
+    if (line.startsWith('TERMINATOR_SOURCE\t')) {
+      const [, sourcePath, sourceSha256] = line.split('\t');
+      if (!terminatorSourceRootPattern.test(sourcePath ?? '') || !/^[a-f0-9]{64}$/i.test(sourceSha256 ?? '')) fail('BACKEND_ACCEPTANCE_TERMINATOR_GOVERNANCE_INVALID');
+      sources.push(Object.freeze({sourcePath, sourceSha256}));
+    }
+    if (line.startsWith('TERMINATOR_PROCESS\t')) {
+      const [, pid, ppid, comm, cgroupSha256] = line.split('\t');
+      if (![pid, ppid].every((value) => /^[1-9][0-9]*$/.test(value ?? '')) || !['pkill', 'killall'].includes(comm) || !/^[a-f0-9]{64}$/i.test(cgroupSha256 ?? '')) fail('BACKEND_ACCEPTANCE_TERMINATOR_GOVERNANCE_INVALID');
+      processes.push(Object.freeze({pid: Number(pid), ppid: Number(ppid), comm, cgroupSha256}));
+    }
+  }
+  return Object.freeze({bootId, sources: Object.freeze(sources), processes: Object.freeze(processes)});
+};
+const terminatorGovernanceDiagnosticScript = () => [
+  'printf "TERMINATOR_HOST_BOOT_ID=%s\\n" "$(cat /proc/sys/kernel/random/boot_id)"',
+  `for source_root in ${terminatorSourceRoots.map(quote).join(' ')}; do`,
+  '  test -d "$source_root" || continue',
+  '  while IFS= read -r -d "" source_path; do',
+  '    if grep -Eqs "(pkill|killall)" "$source_path"; then source_sha256=$(sha256sum "$source_path" | awk \'{print $1}\'); printf "TERMINATOR_SOURCE\\t%s\\t%s\\n" "$source_path" "$source_sha256"; fi',
+  '  done < <(find "$source_root" -xdev -type f -print0 2>/dev/null || true)',
+  'done',
+  'while read -r pid ppid comm; do',
+  '  test -n "$pid" || continue; test -r "/proc/$pid/cgroup" || continue',
+  '  cgroup_sha256=$(sha256sum "/proc/$pid/cgroup" | awk \'{print $1}\')',
+  '  printf "TERMINATOR_PROCESS\\t%s\\t%s\\t%s\\t%s\\n" "$pid" "$ppid" "$comm" "$cgroup_sha256"',
+  'done < <(ps -eo pid=,ppid=,comm= | awk \'$3 == "pkill" || $3 == "killall" {print $1, $2, $3}\')',
+];
 const walkJavaSources = (directory) => readdirSync(directory, {withFileTypes: true}).flatMap((entry) => {
   const child = path.join(directory, entry.name);
   if (entry.isDirectory()) return walkJavaSources(child);
@@ -239,7 +282,8 @@ const status = () => {
   return {status: 'PASS', lanes: lanes.map((lane, index) => ({lane: lane.lane, socket: lane.socket, engineId: engineIds[index]}))};
 };
 
-const diagnose = () => remote(script(
+const diagnose = () => {
+  const output = remote(script(
   'set -u',
   ...lanes.flatMap((lane) => [
     `printf 'UNIT_${lane.lane}_ACTIVE=%s\\n' "$(systemctl is-active ${quote(lane.service)} 2>/dev/null || true)"`,
@@ -250,7 +294,10 @@ const diagnose = () => remote(script(
     `journalctl -u ${quote(lane.service)} -n 40 --no-pager 2>&1 || true`,
     `printf 'UNIT_${lane.lane}_JOURNAL_END\\n'`,
   ]),
-));
+  ...terminatorGovernanceDiagnosticScript(),
+  ));
+  return Object.freeze({output, terminatorGovernance: parseRemoteTerminatorGovernance(output)});
+};
 
 const execute = () => {
   if (!['--preflight', '--apply', '--repair', '--warm-images', '--status', '--diagnose'].includes(mode)) fail('DAEMON_LANES_MODE_INVALID');
@@ -261,11 +308,11 @@ const execute = () => {
       manifest.preflight = preflight();
       event('PREFLIGHT', {RUN_ID: runId, STATUS: 'PASS', MEMORY_AVAILABLE_MIB: manifest.preflight.memoryAvailableMiB, DISK_AVAILABLE_MIB: manifest.preflight.diskAvailableMiB});
     }
-    if (mode === '--apply') { manifest.deployment = apply(); manifest.business = {status: 'PASS'}; event('APPLIED', {RUN_ID: runId, STATUS: 'PASS', LANES: 3}); }
-    if (mode === '--repair') { manifest.deployment = apply({repair: true}); manifest.business = {status: 'PASS'}; event('REPAIRED', {RUN_ID: runId, STATUS: 'PASS', LANES: 3}); }
+    if (mode === '--apply') { manifest.deployment = apply(); manifest.business = {status: 'PASS'}; event('APPLIED', {RUN_ID: runId, STATUS: 'PASS', LANES: backendAcceptanceDaemonLaneCapacity()}); }
+    if (mode === '--repair') { manifest.deployment = apply({repair: true}); manifest.business = {status: 'PASS'}; event('REPAIRED', {RUN_ID: runId, STATUS: 'PASS', LANES: backendAcceptanceDaemonLaneCapacity()}); }
     if (mode === '--warm-images') { manifest.imageWarmup = warmTestcontainersImages(); manifest.business = {status: 'PASS'}; event('WARMED_IMAGES', {RUN_ID: runId, STATUS: 'PASS', IMAGES: manifest.imageWarmup.images.join(',')}); }
-    if (mode === '--status') { manifest.deployment = status(); manifest.business = {status: 'PASS'}; event('STATUS', {RUN_ID: runId, STATUS: 'PASS', LANES: 3}); }
-    if (mode === '--diagnose') { manifest.diagnosis = diagnose(); manifest.business = {status: 'PASS'}; process.stdout.write(manifest.diagnosis); event('DIAGNOSED', {RUN_ID: runId, STATUS: 'PASS'}); }
+    if (mode === '--status') { manifest.deployment = status(); manifest.business = {status: 'PASS'}; event('STATUS', {RUN_ID: runId, STATUS: 'PASS', LANES: backendAcceptanceDaemonLaneCapacity()}); }
+    if (mode === '--diagnose') { manifest.diagnosis = diagnose(); manifest.business = {status: 'PASS'}; process.stdout.write(manifest.diagnosis.output); event('DIAGNOSED', {RUN_ID: runId, STATUS: 'PASS'}); }
     if (mode === '--preflight') manifest.business = {status: 'PASS'};
   } catch (error) {
     manifest.business = {status: 'FAIL', reason: error instanceof Error ? error.message : String(error)};

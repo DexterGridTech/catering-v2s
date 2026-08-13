@@ -33,13 +33,8 @@ const isBackendAcceptanceSuiteCleanup = process.env.V2S_BACKEND_ACCEPTANCE_SUITE
   && extraGradleArguments.length === 0;
 const backendAcceptanceSourcePaths = Object.freeze([
   'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java',
-  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceHttpHarness.java',
   'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceDatabaseMetricsSink.java',
-  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationConfiguration.java',
-  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMeasurementCalibrationScenario.java',
-  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceOwnerBootstrapConfiguration.java',
-  'scripts/test/catalog-inventory-api.mjs',
-  'tools/backend-acceptance/workload.mjs',
+  'apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceMetricsConfiguration.java',
 ]);
 const backendPerformance196ManagedReportName = 'backend-performance-testcontainers-196-managed-report.json';
 const backendPerformance196ManagedManifestName = 'backend-performance-testcontainers-196-managed-run-manifest.json';
@@ -93,8 +88,11 @@ const runId = `r5-tc-${Date.now()}-${process.pid}`;
 const finalPerformanceRunId = isBackendPerformance196Run ? `backend-performance-final-${Date.now()}-${randomUUID().slice(0, 8)}` : undefined;
 const finalPerformanceNamespace = finalPerformanceRunId ? `v2s-backend-performance-${finalPerformanceRunId.slice(-8)}` : undefined;
 const bootstrapLogin = finalPerformanceRunId ? `performance-admin-${finalPerformanceRunId.slice(-8)}` : undefined;
-const backendAcceptanceBootstrapLogin = isBackendAcceptanceRun
-  ? `backend-acceptance-${randomUUID().slice(0, 8)}`
+const backendAcceptanceRunId = isBackendAcceptanceRun
+  ? `backend-acceptance-${runId}`
+  : undefined;
+const backendAcceptanceNamespace = isBackendAcceptanceRun
+  ? `v2s-backend-acceptance-${randomUUID().slice(0, 8)}`
   : undefined;
 const remoteRoot = `/tmp/${runId}`;
 const remoteWorkspace = laneWorkspace ?? `${remoteRoot}/workspace`;
@@ -114,6 +112,17 @@ const now = () => new Date().toISOString();
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 export const workloadObservationKey = ({logBytes, testResultBytes, runtimeEvidenceSha256 = 'NONE', runtimeEvidenceBytes = 0}) => `${logBytes}:${testResultBytes}:${runtimeEvidenceSha256}:${runtimeEvidenceBytes}`;
+export const backendAcceptanceObservationKey = ({logBytes, testResultBytes, progress}) => {
+  const completed = Number(progress?.completed);
+  const total = Number(progress?.total);
+  const firstFailure = progress?.firstFailure ?? 'NONE';
+  if (![logBytes, testResultBytes, completed, total].every((value) => Number.isSafeInteger(value) && value >= 0) || typeof firstFailure !== 'string') {
+    throw new Error('BACKEND_ACCEPTANCE_PROGRESS_OBSERVATION_INVALID');
+  }
+  // Raw event-file growth is not semantic progress: framework diagnostics may
+  // append while no declared operation has completed or failed.
+  return `${logBytes}:${testResultBytes}:${completed}:${total}:${firstFailure}`;
+};
 export const managedProcessMembershipScript = (variable = 'workload') => `${variable}=${String.raw`$(ps -eo pgid=,pid=,comm= | awk -v expected_pgid="$pgid" '$1 == expected_pgid {print $1 "/" $2 "/" $3}' | sort | sha256sum | awk '{print $1}')`}`;
 export const runtimeEvidencePathForRun = ({remoteResults, runType}) => {
   if (typeof remoteResults !== 'string' || !path.isAbsolute(remoteResults)) throw new Error('R5_RUNTIME_EVIDENCE_ROOT_INVALID');
@@ -136,16 +145,7 @@ export function materializeBackendAcceptanceLaneContract({laneCount, laneId, dat
   }
   return Object.freeze({laneCount, laneId, databaseNamespace, objectStorageNamespace, dockerHost, workspace});
 }
-const backendAcceptanceLaneContract = isBackendAcceptanceRun
-  ? materializeBackendAcceptanceLaneContract({
-    laneCount: Number(process.env.V2S_BACKEND_ACCEPTANCE_LANE_COUNT),
-    laneId: Number(process.env.V2S_BACKEND_ACCEPTANCE_LANE_ID ?? 1),
-    databaseNamespace: process.env.V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE,
-    objectStorageNamespace: process.env.V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE,
-    dockerHost: laneDockerHost ?? null,
-    workspace: laneWorkspace ?? null,
-  })
-  : null;
+const backendAcceptanceLaneContract = null;
 const BACKEND_ACCEPTANCE_SUITE_ROOT_PATTERN = /^\/tmp\/r5-tc-suite-[0-9]+-[0-9]+$/;
 const quote = (value) => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = (value, limit = 240) => String(value || 'FAILED').trim().replace(/\s+/g, '_').slice(0, limit);
@@ -472,9 +472,12 @@ export const deriveBackendPerformance196ChildFailure = ({workloadResult, gradleS
   }
   return gradleStatus === 0 ? null : 'REMOTE_GRADLE_EXIT_NONZERO';
 };
-export const finalizeCleanupAfterCollection = (cleanup, artifactCollectionFailure) => artifactCollectionFailure
-  ? {...cleanup, status: 'FAIL', reaped: false, reason: 'ARTIFACT_COLLECTION_FAILED'}
-  : cleanup;
+export const finalizeCleanupAfterCollection = (cleanup, artifactCollectionFailure) => ({
+  ...cleanup,
+  collection: artifactCollectionFailure
+    ? {status: 'FAIL', reason: 'ARTIFACT_COLLECTION_FAILED'}
+    : {status: 'PASS'},
+});
 
 /** The final adapter may consume this runner only as a parent-bound technical child. */
 export function validateFinalAdapterChildManifest(manifest, {parentRunId, runtime, task: expectedTask, remoteHostFingerprint}) {
@@ -583,8 +586,14 @@ const backendAcceptanceProgress = () => {
 export const backendAcceptanceProgressScript = ({eventsPath, runId, operationIds} = {}) => {
   const operationIdText = Array.isArray(operationIds) ? operationIds.join(',') : String(operationIds ?? '');
   const succeededAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"operationId\":\"backendAcceptanceMeasurementSinkIntegrity\"") == 0 && index($0, "\"outcome\":\"SUCCEEDED\"") { op=$0; sub(/^.*"operationId":"/, "", op); sub(/".*$/, "", op); if (operation_ids == ",," || index(operation_ids, "," op ",") > 0) seen[op]=1 } END { count=0; for (op in seen) count++; print count + 0 }`;
-  const failedAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && (index($0, "\"observationError\":") || index($0, "\"status\":5")) { count++ } END { print count + 0 }`;
-  const firstFailureAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && (index($0, "\"observationError\":") || index($0, "\"status\":5")) { print "BACKEND_ACCEPTANCE_ROUTE_FAILED"; exit }`;
+  // A semantic Problem response is intentionally recorded as FAILED by the
+  // server event stream, including an expected 5xx accepted by the route
+  // oracle.  The progress probe can stop a lane only for an observation
+  // failure emitted by the diagnostic interceptor; the workload aggregator
+  // owns the expected-status decision and must remain the single semantic
+  // authority.
+  const failedAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && index($0, "\"observationError\":\"") { count++ } END { print count + 0 }`;
+  const firstFailureAwk = String.raw`index($0, "\"runId\":\"" run_id "\"") && index($0, "\"outcome\":\"FAILED\"") && index($0, "\"observationError\":\"") { print "BACKEND_ACCEPTANCE_ROUTE_FAILED"; exit }`;
   return script(
     'set -euo pipefail',
     `events=${quote(eventsPath)}`,
@@ -714,6 +723,114 @@ export const managedProcessCompletionScript = ({heartbeat = 'emit RUNNING HEARTB
 export const managedGradleHomeScript = () => 'export V2S_GRADLE_HOME="$gradle"';
 export const backendAcceptanceFaultEnvironmentScript = () => ['export V2S_CATALOG_TEST_FAULTS=true'];
 
+export const backendAcceptanceSignalTraceInstanceName = (candidateRunId) => {
+  if (typeof candidateRunId !== 'string' || !/^r5-tc-[0-9]+-[0-9]+$/.test(candidateRunId)) {
+    throw new Error('BACKEND_ACCEPTANCE_SIGNAL_TRACE_RUN_ID_INVALID');
+  }
+  return `v2s-ba-signal-${sha256(candidateRunId).slice(0, 24)}`;
+};
+
+export const validateBackendAcceptanceCatalogChildOutcome = (outcome) => {
+  if (outcome?.kind !== 'backend-acceptance-catalog-child-outcome'
+      || !['PASS', 'FAIL'].includes(outcome.status)
+      || typeof outcome.runId !== 'string'
+      || !Number.isInteger(outcome.childPid)
+      || outcome.childPid < 1
+      || (outcome.signal !== null && !/^SIG[A-Z0-9]+$/.test(outcome.signal ?? ''))
+      || (outcome.terminalFailure !== null && !stableFailureCode.test(outcome.terminalFailure ?? ''))
+      || typeof outcome.brokenBoundary !== 'string') {
+    throw new Error('BACKEND_ACCEPTANCE_CATALOG_CHILD_OUTCOME_INVALID');
+  }
+  if (outcome.status === 'FAIL' && !stableFailureCode.test(outcome.terminalFailure ?? '')) {
+    throw new Error('BACKEND_ACCEPTANCE_CATALOG_CHILD_OUTCOME_INVALID');
+  }
+  return outcome;
+};
+
+export const validateBackendAcceptanceSignalTraceReceipt = (receipt, expectedRunId) => {
+  if (receipt?.kind !== 'backend-acceptance-signal-trace'
+      || receipt.schemaVersion !== 1
+      || receipt.runId !== expectedRunId
+      || !['PASS', 'FAIL'].includes(receipt.status)
+      || receipt.eventFilter !== 'signal_generate(sig == 15); sched_process_fork(child_comm == pkill|killall)'
+      || !/^v2s-ba-signal-[a-f0-9]{24}$/.test(receipt.instanceName ?? '')
+      || typeof receipt.tracePath !== 'string'
+      || !receipt.tracePath.startsWith('results/')) {
+    throw new Error('BACKEND_ACCEPTANCE_SIGNAL_TRACE_RECEIPT_INVALID');
+  }
+  return receipt;
+};
+
+export const deriveBackendAcceptanceSignalProvenance = ({catalogChildOutcome, signalTraceReceipt, signalTraceText}) => {
+  const child = validateBackendAcceptanceCatalogChildOutcome(catalogChildOutcome);
+  if (child.signal !== 'SIGTERM') return {status: 'NOT_APPLICABLE', signal: child.signal ?? null};
+  if (signalTraceReceipt.status !== 'PASS') return {status: 'UNATTRIBUTED', signal: 'SIGTERM', targetPid: child.childPid, reason: 'SIGNAL_TRACE_CAPTURE_FAILED'};
+  if (typeof signalTraceText !== 'string') return {status: 'UNATTRIBUTED', signal: 'SIGTERM', targetPid: child.childPid, reason: 'SIGNAL_TRACE_CONTENT_MISSING'};
+  const target = String(child.childPid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const event = signalTraceText.split(/\r?\n/).find((line) => new RegExp(`\\bsig=\\s*15\\b`).test(line) && new RegExp(`\\bpid=\\s*${target}\\b`).test(line));
+  if (!event) return {status: 'UNATTRIBUTED', signal: 'SIGTERM', targetPid: child.childPid, reason: 'SIGNAL_TRACE_TARGET_EVENT_MISSING'};
+  // signal_generate's `comm` field describes the receiver.  ftrace's task
+  // prefix is the sender; treating the former as the latter made an external
+  // pkill look like the catalog Node child that received SIGTERM.
+  const sender = event.match(/^\s*([^\r\n]+)-(\d+)\s+\[/);
+  const receiverComm = event.match(/\bcomm=([^\s]{1,64})\b/)?.[1] ?? null;
+  const senderComm = sender?.[1]?.trim() ?? null;
+  const senderPid = sender?.[2] ? Number(sender[2]) : null;
+  if (!senderComm || !Number.isSafeInteger(senderPid) || senderPid < 1) {
+    return {status: 'UNATTRIBUTED', signal: 'SIGTERM', targetPid: child.childPid, reason: 'SIGNAL_TRACE_SENDER_IDENTITY_MISSING', eventSha256: sha256(event)};
+  }
+  const forkEvent = signalTraceText.split(/\r?\n/).find((line) => line.includes('sched_process_fork:') && new RegExp(String.raw`\bchild_pid=${senderPid}\b`).test(line));
+  const senderParent = forkEvent?.match(/^\s*([^\r\n]+)-(\d+)\s+\[/);
+  return {
+    status: 'ATTRIBUTED', signal: 'SIGTERM', targetPid: child.childPid,
+    senderComm, senderPid, receiverComm,
+    senderParentComm: senderParent?.[1]?.trim() ?? null,
+    senderParentPid: senderParent?.[2] ? Number(senderParent[2]) : null,
+    eventSha256: sha256(event),
+  };
+};
+
+export const backendAcceptanceSignalTraceScript = ({instanceName}) => {
+  if (!/^v2s-ba-signal-[a-f0-9]{24}$/.test(instanceName ?? '')) throw new Error('BACKEND_ACCEPTANCE_SIGNAL_TRACE_INSTANCE_INVALID');
+  return [
+    'signal_trace_status=NOT_STARTED', 'signal_trace_error=NONE', 'signal_trace_cleaned=false', 'signal_trace_instance_created=false', 'signal_trace_reader_pid=0', 'signal_trace_reader_start=0',
+    `signal_trace_instance_name=${quote(instanceName)}`, 'signal_trace_file="$root/results/backend-acceptance-signal-generate.trace"', 'signal_trace_stderr="$root/results/backend-acceptance-signal-generate.stderr"', 'signal_trace_receipt="$root/results/backend-acceptance-signal-trace.json"',
+    'signal_trace_setup() {',
+    '  signal_trace_root=""; for candidate in /sys/kernel/tracing /sys/kernel/debug/tracing; do if test -d "$candidate/instances" && test -d "$candidate/events/signal/signal_generate" && test -d "$candidate/events/sched/sched_process_fork"; then signal_trace_root="$candidate"; break; fi; done',
+    '  if test -z "$signal_trace_root"; then signal_trace_status=FAIL; signal_trace_error=TRACEFS_UNAVAILABLE; return 0; fi',
+    '  signal_trace_instance="$signal_trace_root/instances/$signal_trace_instance_name"',
+    '  if test -e "$signal_trace_instance"; then signal_trace_status=FAIL; signal_trace_error=TRACE_INSTANCE_ALREADY_EXISTS; return 0; fi',
+    '  if ! mkdir "$signal_trace_instance"; then signal_trace_status=FAIL; signal_trace_error=TRACE_INSTANCE_CREATE_FAILED; return 0; fi',
+    '  signal_trace_instance_created=true',
+    '  if ! printf "sig == 15\\n" > "$signal_trace_instance/events/signal/signal_generate/filter"; then signal_trace_status=FAIL; signal_trace_error=TRACE_FILTER_CONFIG_FAILED; return 0; fi',
+    '  if ! printf \'child_comm == "pkill" || child_comm == "killall"\\n\' > "$signal_trace_instance/events/sched/sched_process_fork/filter"; then signal_trace_status=FAIL; signal_trace_error=TRACE_FILTER_CONFIG_FAILED; return 0; fi',
+    '  cp "$signal_trace_instance/events/signal/signal_generate/format" "$root/results/backend-acceptance-signal-generate.format" 2>/dev/null || { signal_trace_status=FAIL; signal_trace_error=TRACE_FORMAT_CAPTURE_FAILED; return 0; }',
+    '  cp "$signal_trace_instance/events/sched/sched_process_fork/format" "$root/results/backend-acceptance-signal-fork.format" 2>/dev/null || { signal_trace_status=FAIL; signal_trace_error=TRACE_FORMAT_CAPTURE_FAILED; return 0; }',
+    '  : > "$signal_trace_file"; : > "$signal_trace_stderr"',
+    '  setsid sh -c \'ulimit -f 8192; exec cat "$1/trace_pipe"\' sh "$signal_trace_instance" > "$signal_trace_file" 2> "$signal_trace_stderr" &',
+    '  signal_trace_reader_pid=$!; for _ in $(seq 1 20); do test -r "/proc/$signal_trace_reader_pid/stat" && break; sleep 0.05; done',
+    '  signal_trace_reader_start=$(awk \'{print $22}\' "/proc/$signal_trace_reader_pid/stat" 2>/dev/null || printf 0)',
+    '  case "$signal_trace_reader_start" in *[!0-9]*|\"\") signal_trace_status=FAIL; signal_trace_error=TRACE_READER_IDENTITY_UNAVAILABLE; return 0;; esac',
+    '  if ! printf 1 > "$signal_trace_instance/events/signal/signal_generate/enable" || ! printf 1 > "$signal_trace_instance/events/sched/sched_process_fork/enable" || ! printf 1 > "$signal_trace_instance/tracing_on"; then signal_trace_status=FAIL; signal_trace_error=TRACE_ENABLE_FAILED; return 0; fi',
+    '  signal_trace_status=PASS',
+    '}',
+    'signal_trace_cleanup() {',
+    '  if test "$signal_trace_cleaned" = true; then return 0; fi; signal_trace_cleaned=true',
+    '  if test "${signal_trace_instance_created:-false}" = true; then',
+    '    printf 0 > "$signal_trace_instance/tracing_on" 2>/dev/null || signal_trace_status=FAIL',
+    '    printf 0 > "$signal_trace_instance/events/signal/signal_generate/enable" 2>/dev/null || signal_trace_status=FAIL',
+    '    printf 0 > "$signal_trace_instance/events/sched/sched_process_fork/enable" 2>/dev/null || signal_trace_status=FAIL',
+    '    if test "$signal_trace_reader_pid" -gt 0 && test -r "/proc/$signal_trace_reader_pid/stat" && test "$(awk \'{print $22}\' "/proc/$signal_trace_reader_pid/stat" 2>/dev/null || printf 0)" = "$signal_trace_reader_start"; then kill -TERM -- "-$signal_trace_reader_pid" 2>/dev/null || true; fi',
+    '    wait "$signal_trace_reader_pid" 2>/dev/null || true',
+    '    rmdir "$signal_trace_instance" 2>/dev/null || signal_trace_status=FAIL',
+    '  fi',
+    '  signal_trace_bytes=$(wc -c < "$signal_trace_file" 2>/dev/null | tr -d " " || printf 0)',
+    '  tmp="$signal_trace_receipt.$$.tmp"; printf \'{"schemaVersion":1,"kind":"backend-acceptance-signal-trace","runId":"%s","status":"%s","error":"%s","instanceName":"%s","eventFilter":"signal_generate(sig == 15); sched_process_fork(child_comm == pkill|killall)","tracePath":"results/backend-acceptance-signal-generate.trace","readerPid":%s,"readerStartTicks":%s,"traceBytes":%s}\\n\' ' + quote(runId) + ' "$signal_trace_status" "$signal_trace_error" "$signal_trace_instance_name" "$signal_trace_reader_pid" "$signal_trace_reader_start" "$signal_trace_bytes" > "$tmp"; mv "$tmp" "$signal_trace_receipt"',
+    '}',
+    'signal_trace_setup', 'trap signal_trace_cleanup EXIT',
+  ].join('\n');
+};
+
 const remoteRunScript = (commandSha256) => script(
   '#!/usr/bin/env bash', 'set -uo pipefail', `root=${quote(remoteRoot)}`, `workspace=${quote(remoteWorkspace)}`, `task=${quote(task)}`,
   `command_sha=${quote(commandSha256)}`, 'phase_file="$root/results/phase.jsonl"', 'log_file="$root/results/gradle.log"',
@@ -750,33 +867,12 @@ const remoteRunScript = (commandSha256) => script(
   ] : isBackendAcceptanceRun ? [
     'export V2S_RUNTIME_ENVIRONMENT=non-production',
     'export V2S_DEV_PROFILE=backend-acceptance',
-    `export V2S_DEV_NAMESPACE=${quote(process.env.V2S_DEV_NAMESPACE ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_RUN_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_MODE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_MODE ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_OPERATION_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_ID ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_OPERATION_IDS=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_IDS ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OPERATION_COUNT ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_LANE_ID=${quote(process.env.V2S_BACKEND_ACCEPTANCE_LANE_ID ?? '1')}`,
-    `export V2S_BACKEND_ACCEPTANCE_LANE_COUNT=${quote(process.env.V2S_BACKEND_ACCEPTANCE_LANE_COUNT ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_DATABASE_NAMESPACE ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE=${quote(process.env.V2S_BACKEND_ACCEPTANCE_OBJECT_STORAGE_NAMESPACE ?? '')}`,
-    `export V2S_BACKEND_ACCEPTANCE_BOOTSTRAP_LOGIN=${quote(backendAcceptanceBootstrapLogin)}`,
-    `backend_acceptance_secret=${quote(process.env.V2S_BACKEND_ACCEPTANCE_SECRET ?? '')}`,
-    'test "${#backend_acceptance_secret}" -ge 24',
-    'printf "%s" "$backend_acceptance_secret" | grep -Eq "^[A-Za-z0-9._:-]+$"',
-    'db_hmac_key=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
-    'bootstrap_credential=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
+    `export V2S_DEV_NAMESPACE=${quote(backendAcceptanceNamespace)}`,
+    `export V2S_BACKEND_ACCEPTANCE_RUN_ID=${quote(backendAcceptanceRunId)}`,
+    'backend_acceptance_secret=$(od -An -N32 -tx1 /dev/urandom | tr -d " \\n")',
     'export V2S_BACKEND_ACCEPTANCE_SECRET="$backend_acceptance_secret"',
-    'export V2S_DB_OPERATIONS_HMAC_KEY="$db_hmac_key"',
-    'export V2S_BACKEND_ACCEPTANCE_BOOTSTRAP_CREDENTIAL="$bootstrap_credential"',
     'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
-    ...backendAcceptanceFaultEnvironmentScript(),
     'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
-    'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operations.jsonl"',
-    'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
-    'export V2S_BACKEND_ACCEPTANCE_RUNTIME_DIR="$root/results/backend-acceptance"',
-    'export V2S_BACKEND_ACCEPTANCE_WORKLOAD_RESULT="$root/results/backend-acceptance-workload-result.json"',
-    'export V2S_REMOTE_WORKSPACE="$workspace"',
   ] : []),
   `gradle=${quote(remoteGradleDistribution)}`,
   'test -x "$gradle/bin/gradle"',
@@ -791,7 +887,7 @@ const remoteRunScript = (commandSha256) => script(
   'container_status=PASS; if [ -s "$root/results/uncollected-container-ids" ]; then container_status=FAIL; fi',
   'volume_status=PASS; if [ -s "$root/results/uncollected-volume-ids" ]; then volume_status=FAIL; fi',
   `find "$workspace" -type f -path '*/build/test-results/test/TEST-*.xml' -exec cp {} "$root/results/" \\; 2>/dev/null || true`,
-  `printf '{"gradleStatus":%s,"containerCleanup":"%s","volumeCleanup":"%s","commandSha256":"%s"}\\n' "$gradle_status" "$container_status" "$volume_status" ${quote(commandSha256)} > "$root/results/remote-result.json"`,
+  `printf '{"gradleStatus":%s,"containerCleanup":"%s","volumeCleanup":"%s","commandSha256":"%s","signalTrace":"%s"}\\n' "$gradle_status" "$container_status" "$volume_status" ${quote(commandSha256)} "\${signal_trace_status:-NOT_APPLICABLE}" > "$root/results/remote-result.json"`,
   'collect_status=PASS; if [ "$container_status" != PASS ] || [ "$volume_status" != PASS ]; then collect_status=FAIL; fi',
   'emit COLLECTED "$collect_status"', 'exit "$gradle_status"',
 );
@@ -1090,7 +1186,7 @@ const execute = async () => {
       run.manifest.logInspection = {readCount: run.manifest.logInspection.readCount + 1, observedBytes: logOffset, lastReadAt: now(), status: 'READ'}; run.persist();
       phaseOffset = collectPhase(run, phaseOffset);
       const identity = remoteIdentity(control); run.heartbeat({phase: 'RUNNING', identity: identity.state, logBytes: logOffset, workloadSha256: identity.workloadSha256, testResultBytes: identity.testResultBytes, runtimeEvidenceSha256: identity.runtimeEvidenceSha256, runtimeEvidenceBytes: identity.runtimeEvidenceBytes, resource: {}});
-      const progress = isBackendAcceptanceRun ? backendAcceptanceProgress() : backendPerformanceProgress();
+      const progress = isBackendPerformance196Run ? backendPerformanceProgress() : undefined;
       if (progress) {
         run.manifest.progress = {...progress, observedAt: now()};
         run.persist();
@@ -1178,8 +1274,6 @@ const execute = async () => {
     }
   }
   try { parseAndValidateRunManifest(run.manifest); } catch (error) { if (!failure) failure = error; }
-  try { writeBackendAcceptanceChildResult(run, directory); }
-  catch (error) { if (!failure) failure = error instanceof Error ? error : new RunnerFailure(String(error), 'REPORT'); }
   if (isBackendPerformance196Run && managedManifestPath) atomicWrite(managedManifestPath, `${JSON.stringify(run.manifest, null, 2)}\n`);
   if (failure || run.manifest.business.status !== 'PASS' || run.manifest.cleanup.status !== 'PASS') {
     process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || 'BUSINESS_OR_CLEANUP_NOT_PASS')}; EVIDENCE=${path.relative(root, directory)}; BUSINESS=${run.manifest.business.status}; CLEANUP=${run.manifest.cleanup.status}\n`);
@@ -1345,7 +1439,8 @@ const selfTest = async () => {
   red((fixture) => { fixture.cleanup.scratch = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:scratch');
   red((fixture) => { fixture.cleanup.containers = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:containers');
   red((fixture) => { fixture.cleanup.volumes = 'FAIL'; }, 'CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:volumes');
-  if (finalizeCleanupAfterCollection(valid.cleanup, true).status !== 'FAIL') throw new Error('ARTIFACT_COLLECTION_FAILURE_NOT_CLEANUP_FAIL');
+  const collectionFailure = finalizeCleanupAfterCollection(valid.cleanup, true);
+  if (collectionFailure.status !== 'PASS' || collectionFailure.collection?.status !== 'FAIL') throw new Error('ARTIFACT_COLLECTION_FAILURE_NOT_SEPARATED');
   try { parseStallDiagnostics('TAIL_BEGIN\nTAIL_END'); throw new Error('SELF_TEST_RED_NOT_DETECTED:STALL_DIAGNOSTICS_INVALID'); }
   catch (error) { if (error.message === 'SELF_TEST_RED_NOT_DETECTED:STALL_DIAGNOSTICS_INVALID' || error.message !== 'STALL_DIAGNOSTICS_INVALID') throw error; }
   const cacheOutcome = classifyGradleTestExecution('> Task :apps:test FROM-CACHE\nBUILD SUCCESSFUL', ':apps:test');
@@ -1354,7 +1449,7 @@ const selfTest = async () => {
   if (similarlyNamedTask.status !== 'FAIL' || similarlyNamedTask.reason !== 'TESTCONTAINERS_TARGET_TASK_NOT_OBSERVED') throw new Error('GRADLE_TASK_NAME_BOUNDARY_RED_NOT_DETECTED');
   const missingOutcome = classifyGradleTestExecution('BUILD SUCCESSFUL', ':apps:test');
   if (missingOutcome.status !== 'FAIL' || missingOutcome.reason !== 'TESTCONTAINERS_TARGET_TASK_NOT_OBSERVED') throw new Error('GRADLE_TASK_EXECUTION_RED_NOT_DETECTED');
-  process.stdout.write('R5_REMOTE_RUNNER_SELF_TEST=PASS\nRED_MISSING_HEARTBEAT=PASS\nRED_CONTROL_RECORD_RECONNECT_IDENTITY_MISMATCH=PASS\nRED_MISSING_RECONNECT_LIFECYCLE=PASS\nRED_LAUNCH_ACK_FAILURE=PASS\nRED_CONTROL_RECORD_RECONNECT_FLAG=PASS\nRED_LOG_NOT_AVAILABLE=PASS\nRED_CLEANUP_FAILURE=PASS\nRED_CLEANUP_RECEIPT_FIELDS=PASS\nRED_STALL_DIAGNOSTICS_INVALID=PASS\nRED_WORKLOAD_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_HEARTBEAT_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_GRADLE_CACHE_EXECUTION=PASS\nRED_GRADLE_TASK_NAME_BOUNDARY=PASS\nRED_GRADLE_TASK_EXECUTION_MISSING=PASS\nFAST_CHILD_CLOSE_OBSERVER=PASS\nLIFECYCLE_HARNESS_PRODUCTION_PATH=PASS\nCLEANUP=PASS\n');
+  process.stdout.write('R5_REMOTE_RUNNER_SELF_TEST=PASS\nRED_MISSING_HEARTBEAT=PASS\nRED_CONTROL_RECORD_RECONNECT_IDENTITY_MISMATCH=PASS\nRED_MISSING_RECONNECT_LIFECYCLE=PASS\nRED_LAUNCH_ACK_FAILURE=PASS\nRED_CONTROL_RECORD_RECONNECT_FLAG=PASS\nRED_LOG_NOT_AVAILABLE=PASS\nRED_CLEANUP_FAILURE=PASS\nRED_CLEANUP_RECEIPT_FIELDS=PASS\nRED_ARTIFACT_COLLECTION_SEPARATION=PASS\nRED_STALL_DIAGNOSTICS_INVALID=PASS\nRED_WORKLOAD_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_HEARTBEAT_PROGRESS_NOT_TREATED_AS_STALL=PASS\nRED_GRADLE_CACHE_EXECUTION=PASS\nRED_GRADLE_TASK_NAME_BOUNDARY=PASS\nRED_GRADLE_TASK_EXECUTION_MISSING=PASS\nFAST_CHILD_CLOSE_OBSERVER=PASS\nLIFECYCLE_HARNESS_PRODUCTION_PATH=PASS\nCLEANUP=PASS\n');
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;

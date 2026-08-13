@@ -112,7 +112,7 @@ function emitTransitionOperationsProductionTagStatus(row) {
 }
 
 function emitStageOperationsCatalogAsset(row) {
-  return `    public StagedCatalogAsset ${row.edge.methodName}(CatalogAssetStageRequest request, long contentLength, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String idempotencyKey) {\n        return stageOperationsCatalogAsset.execute(new StageOperationsCatalogAssetMultipartOperation.Invocation(request, contentLength, sessionCredential, requestedBrandRef, correlationId, requestId, idempotencyKey));\n    }`;
+  return `    public StagedCatalogAsset ${row.edge.methodName}(CatalogAssetStageRequest request, long contentLength, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String testFailurePoint, String idempotencyKey) {\n        return stageOperationsCatalogAsset.execute(new StageOperationsCatalogAssetMultipartOperation.Invocation(request, contentLength, sessionCredential, requestedBrandRef, correlationId, requestId, testFailurePoint, idempotencyKey));\n    }`;
 }
 
 function emitReleaseOperationsCatalogStagedAsset(row) {
@@ -148,7 +148,7 @@ function emitCatalogItemCreate(row) {
 }
 
 function emitCatalogItemTransition(row) {
-  return `    public com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String idempotencyKey) {\n        return transitionOperationsCatalogItemStatus.execute(new com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, itemCode, idempotencyKey));\n    }`;
+  return `    public com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String testFailurePoint, String idempotencyKey) {\n        return transitionOperationsCatalogItemStatus.execute(new com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, itemCode, testFailurePoint, idempotencyKey));\n    }`;
 }
 
 function emitCatalogItemSave(row) {
@@ -176,7 +176,7 @@ function emitBrandCopyPreflight(row) {
 }
 
 function emitBrandCopyExecute(row) {
-  return `    public com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.BrandCopyExecuteRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String idempotencyKey) {\n        return executeOperationsBrandCatalogCopy.execute(new com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, idempotencyKey));\n    }`;
+  return `    public com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.BrandCopyExecuteRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String testFailurePoint, String idempotencyKey) {\n        return executeOperationsBrandCatalogCopy.execute(new com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, testFailurePoint, idempotencyKey));\n    }`;
 }
 
 function emitWorkspaceInvitationCreate(row, adapterType, field) {

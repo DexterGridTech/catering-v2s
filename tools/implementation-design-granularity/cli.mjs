@@ -38,6 +38,8 @@ const backendAcceptanceUnitIds = [
   "BA-U05",
   "BA-U06",
 ];
+const legacyBackendAcceptancePackageId = "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813";
+const successorBackendAcceptancePackageId = /^BACKEND-ACCEPTANCE-IMPLEMENTATION-\d{8}-SUCCESSOR$/;
 const flowIdentifier = /(?:^|[\\/._-])(?:(?:r|u|j|jg|pkg)\d+[a-z0-9_-]*|g-\d+[a-z0-9_-]*)(?=$|[\\/._-])/i;
 
 function fail(reason) {
@@ -432,13 +434,30 @@ function validateBackendAcceptanceAdmission(root, admissionPath) {
     "BACKEND_ACCEPTANCE_ADMISSION",
   );
   const admission = admissionFile.value;
-  if (
-    admission?.schemaVersion !== 1 ||
-    admission.kind !== "backend-acceptance-design-admission" ||
-    admission.status !== "ACTIVE_IMPLEMENTATION" ||
-    admission.packageId !== "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813"
-  ) {
+  const legacy = admission?.packageId === legacyBackendAcceptancePackageId;
+  const successor = successorBackendAcceptancePackageId.test(admission?.packageId || "");
+  if (admission?.schemaVersion !== 1 || admission.kind !== "backend-acceptance-design-admission"
+    || (!legacy && !successor)
+    || (legacy && admission.status !== "ACTIVE_IMPLEMENTATION")
+    || (successor && admission.status !== "SUCCESSOR_I0_AUTHORIZED")) {
     fail("BACKEND_ACCEPTANCE_ADMISSION_IDENTITY_INVALID");
+  }
+  if (successor) {
+    const identity = admission.successorIdentityBinding;
+    if (!identity || identity.kind !== "backend-acceptance-successor-design-admission-binding"
+      || identity.predecessorPackageId !== legacyBackendAcceptancePackageId) {
+      fail("BACKEND_ACCEPTANCE_SUCCESSOR_ADMISSION_IDENTITY_INVALID");
+    }
+    const predecessor = validateArtifactBinding(root, identity.predecessorTerminal, "BACKEND_ACCEPTANCE_SUCCESSOR_PREDECESSOR");
+    const authorization = validateArtifactBinding(root, identity.authorization, "BACKEND_ACCEPTANCE_SUCCESSOR_AUTHORIZATION");
+    if (predecessor.value?.kind !== "backend-acceptance-predecessor-terminal-record"
+      || predecessor.value?.status !== "PERMANENTLY_UNCLOSABLE_I0_INVALIDATED"
+      || predecessor.value?.successorPackageId !== admission.packageId
+      || authorization.value?.kind !== "backend-acceptance-successor-package-authorization"
+      || authorization.value?.status !== "DEXTER_EXPLICIT_AUTHORIZATION"
+      || authorization.value?.successorPackageId !== admission.packageId) {
+      fail("BACKEND_ACCEPTANCE_SUCCESSOR_ADMISSION_IDENTITY_INVALID");
+    }
   }
   const sourceBindings = admission.sourceBindings;
   if (!sourceBindings || typeof sourceBindings !== "object") {
@@ -449,7 +468,7 @@ function validateBackendAcceptanceAdmission(root, admissionPath) {
     ["requirements", "BACKEND_ACCEPTANCE_ADMISSION_REQUIREMENTS"],
     ["designReview", "BACKEND_ACCEPTANCE_ADMISSION_DESIGN_REVIEW"],
     ["executionContract", "BACKEND_ACCEPTANCE_ADMISSION_EXECUTION_CONTRACT"],
-    ["implementationManifest", "BACKEND_ACCEPTANCE_ADMISSION_IMPLEMENTATION_MANIFEST"],
+    ...(legacy ? [["implementationManifest", "BACKEND_ACCEPTANCE_ADMISSION_IMPLEMENTATION_MANIFEST"]] : []),
   ]) {
     validateArtifactBinding(root, sourceBindings[key], label);
   }

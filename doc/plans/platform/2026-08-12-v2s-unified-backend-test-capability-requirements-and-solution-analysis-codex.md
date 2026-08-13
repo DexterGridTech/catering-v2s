@@ -10,6 +10,10 @@ author: Codex
 independence: 本文在 Claude 独立稿产生前形成；未读取或继承 Claude 对本议题的结论
 ---
 
+# SUPERSEDED — 2026-08-14 Dexter 裁定：provider/registry 是待办目录，不是 scenario 实现；当前唯一目标是 getPublicInvitationView 的真实 HTTP CONTRACT/BUSINESS 断言与信息性 DB 调用数。
+
+不得再以本文重开 package entry/exit、P0/W0/P1、receipt、hash-chain 或 successor I0；保留的历史 scenario、lane 与测试骨架不构成本批交付。
+
 # 1. 结论先行
 
 Dexter 的目标可以实现，而且应该收敛成一个公开的**后台 API 行为验收能力**：它从当前 HTTP 契约动态发现全部后台 operation，在真实 Spring Boot + PostgreSQL/对象存储依赖上，通过真实 HTTP 执行 source-based 场景，并在同一次场景中同时判定：

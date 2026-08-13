@@ -35,10 +35,10 @@ public class ExecuteOperationsBrandCatalogCopyOperation {
             invocation.correlationId(), invocation.requestId());
         var readback = composition.executeBrandCopy(context, new CatalogOwnerApi.BrandCopyExecuteCommand(
             request.selectedItemCodes(), request.targetDataNodeRef(), "", request.expectedSourceVersion(), request.expectedTargetVersion(), ""),
-            request.preflightDigest(), invocation.idempotencyKey());
+            request.preflightDigest(), invocation.idempotencyKey(), invocation.testFailurePoint());
         return CopyPreflightWireShape.brandReadback(context.requestId(), readback.catalog(), readback.ownerReadbacks());
     }
 
     public record Invocation(BrandCopyExecuteRequest request, String sessionCredential, String requestedBrandRef,
-                             String correlationId, String requestId, String idempotencyKey) { }
+                             String correlationId, String requestId, String testFailurePoint, String idempotencyKey) { }
 }

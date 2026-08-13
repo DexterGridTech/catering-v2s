@@ -255,9 +255,7 @@ public class CatalogInventoryCoordinator {
         if (fileName == null || fileName.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "fileName is required");
         if (mediaType == null || mediaType.isBlank() || bytes == null || bytes.length == 0) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "multipart content is required");
         if (!stagedDigestMatches(contentDigest, bytes)) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "contentDigest does not match content");
-        if ("asset-processing".equals(testFailurePoint) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) {
-            throw new CatalogOwnerApi.Problem("ASSET_PROCESSING_FAILED", 422, "资产处理失败");
-        }
+        failForManagedTestPoint(testFailurePoint, "asset-processing", "ASSET_PROCESSING_FAILED", 422, "资产处理失败");
         try {
             StageReadback staged = assets.stageCatalogContent(context, mediaType, bytes.length, new ByteArrayInputStream(bytes), idempotencyKey);
             AssetReadback asset = assets.require(staged.assetRef());
@@ -394,6 +392,12 @@ public class CatalogInventoryCoordinator {
     public BrandCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                                      CatalogOwnerApi.BrandCopyExecuteCommand command,
                                                      String submittedDigest, String idempotencyKey) {
+        return executeBrandCopy(context, command, submittedDigest, idempotencyKey, null);
+    }
+
+    public BrandCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                     CatalogOwnerApi.BrandCopyExecuteCommand command,
+                                                     String submittedDigest, String idempotencyKey, String testFailurePoint) {
         CatalogOwnerApi.BrandCopyPreflightCommand current = new CatalogOwnerApi.BrandCopyPreflightCommand(command.selectedItemCodes(), command.targetDataNodeRef());
         JsonNode catalogPreflight = parseLocalCopyJson(catalog.preflightBrandCopy(context, current).canonicalJson());
         CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
@@ -405,6 +409,7 @@ public class CatalogInventoryCoordinator {
         CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement())).merge(ownerReferencePlan(owners.productionJudgement()));
         CatalogOwnerApi.CopyExecutionReadback catalogReadback = catalog.executeBrandCopy(context, new CatalogOwnerApi.BrandCopyExecuteCommand(
             command.selectedItemCodes(), command.targetDataNodeRef(), catalogDigest, command.expectedSourceVersion(), command.expectedTargetVersion(), canonicalReferencePlan(executionPlan)), idempotencyKey);
+        failForManagedTestPoint(testFailurePoint, "owner-failure", "RESULT_UNKNOWN", 500, "受控 owner failure fixture");
         java.util.ArrayList<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks = new java.util.ArrayList<>(catalogReadback.ownerReadbacks());
         InventoryOwnerApi.LocalCopyExecutionReadback inventoryReadback = inventory.executeBrandCopy(context, new InventoryOwnerApi.BrandCopyExecuteCommand(
             command.selectedItemCodes(), command.targetDataNodeRef(), owners.inventoryDigest(), canonicalReferencePlan(executionPlan)), idempotencyKey);
@@ -459,7 +464,7 @@ public class CatalogInventoryCoordinator {
         CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement())).merge(ownerReferencePlan(owners.productionJudgement()));
         catalogRequest.put("preflightDigest", catalogDigest); applyCopyReferencePlan(catalogRequest, executionPlan);
         JsonNode result = catalog.copy(context, catalogRequest, idempotencyKey);
-        if ("owner-failure".equals(testFailurePoint) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "受控 owner failure fixture");
+        failForManagedTestPoint(testFailurePoint, "owner-failure", "RESULT_UNKNOWN", 500, "受控 owner failure fixture");
         ObjectNode inventoryRequest = request.deepCopy(); inventoryRequest.put("inventoryPreflightDigest", owners.inventoryDigest()); applyCopyReferencePlan(inventoryRequest, executionPlan);
         result = appendOwnerReadback(result, inventory.copy(context, inventoryRequest, idempotencyKey), "inventory");
         ObjectNode productionRequest = request.deepCopy(); productionRequest.put("productionPreflightDigest", owners.productionDigest()); applyCopyReferencePlan(productionRequest, executionPlan);
@@ -621,11 +626,27 @@ public class CatalogInventoryCoordinator {
             if (!parsed.isObject()) throw new IllegalArgumentException("request must be object");
             ObjectNode request = (ObjectNode) parsed;
             JsonNode draft = request.path("sections").path("catalogDraft");
-            if (draft.isObject()) omitTypedNullFields(draft, "/sections/catalogDraft");
+            if (draft.isObject()) {
+                promoteMaterialRoleFromOpaqueProfile((ObjectNode) draft);
+                omitTypedNullFields(draft, "/sections/catalogDraft");
+            }
             return request;
         } catch (Exception failure) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "catalog save request is invalid", failure);
         }
+    }
+
+    /**
+     * The generated catalog draft has no typed materialRole field; the edge
+     * request therefore preserves it only inside the opaque item profile.
+     * Promote that one public catalog field before the owner command while
+     * leaving the rest of the profile opaque and owner-owned.
+     */
+    private static void promoteMaterialRoleFromOpaqueProfile(ObjectNode draft) {
+        JsonNode explicit = draft.get("materialRole");
+        if (explicit != null && !explicit.isNull()) return;
+        JsonNode opaque = draft.path("productionProfiles").path("item").path("materialRole");
+        if (opaque.isTextual() && !opaque.asText().isBlank()) draft.set("materialRole", opaque.deepCopy());
     }
 
     /**
@@ -727,6 +748,12 @@ public class CatalogInventoryCoordinator {
             if ("CATALOG_ITEM".equals(mapping.path("objectType").asText()) && itemSeen.add(mapping.path("sourceRef").asText())) itemRefs.add(mapping.path("sourceRef").asText());
             if ("PRODUCTION_TAG".equals(mapping.path("objectType").asText()) && tagSeen.add(mapping.path("sourceRef").asText())) productionTagRefs.add(mapping.path("sourceRef").asText());
         }
+        JsonNode closureEdges = preflightData(ownerResponse).path("closureEdges");
+        if (closureEdges.isArray()) for (JsonNode edge : closureEdges) {
+            if (!"PRODUCTION_TAG".equals(edge.path("referenceKind").asText())) continue;
+            String tagRef = requiredOpaqueCopyRef(edge, "toRef");
+            if (tagSeen.add(tagRef)) productionTagRefs.add(tagRef);
+        }
         if (itemRefs.isEmpty()) throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "复制预检未提供商品 closureItemRefs");
         return new CopyReferencePlan(itemRefs, productionTagRefs, normalizedMappings);
     }
@@ -825,22 +852,25 @@ public class CatalogInventoryCoordinator {
 
     private int appendOwnerArrays(ObjectNode target, JsonNode owner) {
         if (owner == null) return 0;
-        appendArray(target, "closureItems", owner, "closureItems", false);
-        appendArray(target, "mappingPreview", owner, "mappingPreview", false);
-        appendArray(target, "objectVersions", owner, "versions", true);
+        JsonNode ownerData = preflightData(owner);
+        appendArray(target, "closureItems", ownerData, "closureItems", false);
+        appendArray(target, "mappingPreview", ownerData, "mappingPreview", false);
+        appendArray(target, "objectVersions", ownerData, "versions", true);
         int blocking = 0;
-        if (owner.path("compatibilityResults").isArray()) {
-            for (JsonNode result : owner.path("compatibilityResults")) {
+        if (ownerData.path("compatibilityResults").isArray()) {
+            for (JsonNode result : ownerData.path("compatibilityResults")) {
                 if ("BLOCKED".equals(result.path("result").asText())) blocking++;
             }
         }
-        appendArray(target, "compatibilityResults", owner, "compatibilityResults", false);
-        appendArray(target, "referenceRewritePreview", owner, "referenceRewritePreview", false);
+        appendArray(target, "compatibilityResults", ownerData, "compatibilityResults", false);
+        appendArray(target, "referenceRewritePreview", ownerData, "referenceRewritePreview", false);
         return blocking;
     }
 
     private int ownerResultCount(JsonNode owner) {
-        return owner != null && owner.path("compatibilityResults").isArray() ? owner.path("compatibilityResults").size() : 0;
+        if (owner == null) return 0;
+        JsonNode ownerData = preflightData(owner);
+        return ownerData.path("compatibilityResults").isArray() ? ownerData.path("compatibilityResults").size() : 0;
     }
     private int appendArray(ObjectNode target, String targetName, JsonNode owner, String sourceName, boolean versions) {
         if (owner == null || !owner.path(sourceName).isArray()) return 0;
@@ -1267,9 +1297,7 @@ public class CatalogInventoryCoordinator {
         // seam explicit, disabled by default, and only available to the
         // managed API runner so this case exercises the declared typed
         // problem without making production behavior client-controlled.
-        if ("asset-processing".equals(testFailurePoint) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) {
-            throw new CatalogOwnerApi.Problem("ASSET_PROCESSING_FAILED", 422, "资产处理失败");
-        }
+        failForManagedTestPoint(testFailurePoint, "asset-processing", "ASSET_PROCESSING_FAILED", 422, "资产处理失败");
         StageReadback staged;
         try {
             staged = assets.stageCatalogContent(workspaceUuid, groupWorkspaceKey, ownerScopeGrant.targetId().toString(), ownerScopeGrant.targetType(),
@@ -1319,6 +1347,11 @@ public class CatalogInventoryCoordinator {
     }
 
     private static String required(ObjectNode request, String key, String fallback) { JsonNode value = request == null ? null : request.get(key); if (value == null || value.isNull() || value.asText().isBlank()) { if (fallback != null && !fallback.isBlank()) return fallback; throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required"); } return value.asText(); }
+    private static void failForManagedTestPoint(String actual, String expected, String code, int status, String message) {
+        if (expected.equals(actual) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) {
+            throw new CatalogOwnerApi.Problem(code, status, message);
+        }
+    }
     private static int parsePageCursor(String value) {
         if (value == null || value.isBlank()) return 0;
         try { int parsed = Integer.parseInt(value); if (parsed < 0) throw new NumberFormatException(); return parsed; }

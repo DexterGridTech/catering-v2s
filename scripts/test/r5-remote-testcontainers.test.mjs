@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
 import test from 'node:test';
-import {backendAcceptanceFaultEnvironmentScript, backendAcceptanceProgressScript, backendPerformance196SourcePaths, classifyGradleTestExecution, createDynamicLaneScheduler, deriveBackendPerformance196ChildFailure, finalizeCleanupAfterCollection, initialLaneQueues, isReusableSuiteTargetPass, managedGradleHomeScript, managedProcessCompletionScript, managedProcessMembershipScript, materializeBackendAcceptanceLaneContract, parseAndValidateRunManifest, remoteGradleDistributionPath, resolveGradleHome, runtimeEvidencePathForRun, testcontainersTargetForSource, validateBackendAcceptanceWorkloadResult, validateBackendPerformance196SourcePaths, validateBackendPerformance196WorkloadResult, validateCleanupReceipt, validateFinalAdapterChildManifest, validateGradleDistribution, validateGradleHome, workloadObservationKey} from './r5-remote-testcontainers.mjs';
+import {backendAcceptanceFaultEnvironmentScript, backendAcceptanceObservationKey, backendAcceptanceProgressScript, backendAcceptanceSignalTraceInstanceName, backendAcceptanceSignalTraceScript, backendPerformance196SourcePaths, classifyGradleTestExecution, createDynamicLaneScheduler, deriveBackendAcceptanceSignalProvenance, deriveBackendPerformance196ChildFailure, finalizeCleanupAfterCollection, initialLaneQueues, isReusableSuiteTargetPass, managedGradleHomeScript, managedProcessCompletionScript, managedProcessMembershipScript, materializeBackendAcceptanceLaneContract, parseAndValidateRunManifest, remoteGradleDistributionPath, resolveGradleHome, runtimeEvidencePathForRun, testcontainersTargetForSource, validateBackendAcceptanceCatalogChildOutcome, validateBackendAcceptanceSignalTraceReceipt, validateBackendAcceptanceWorkloadResult, validateBackendPerformance196SourcePaths, validateBackendPerformance196WorkloadResult, validateCleanupReceipt, validateFinalAdapterChildManifest, validateGradleDistribution, validateGradleHome, workloadObservationKey} from './r5-remote-testcontainers.mjs';
 
 const control = {runId: 'r5-tc-12345678-123', remoteRoot: '/tmp/r5-tc-12345678-123', pid: 1, pgid: 1, bootId: 'boot', processStartTicks: 1, commandSha256: 'a'.repeat(64), phase: 'PROCESS_STARTED', logPath: '/tmp/r5-tc-12345678-123/results/gradle.log', phasePath: '/tmp/r5-tc-12345678-123/results/phase.jsonl'};
 const phases = ['PREPARED', 'SOURCE_SYNCED', 'GRADLE_SYNCED', 'PROCESS_STARTED', 'RUNNING', 'COLLECTED', 'CLEANUP'].map((phase, index) => ({sequence: index + 1, phase, outcome: 'PASS'}));
@@ -30,7 +30,8 @@ test('cleanup receipt fails closed when any process, scratch, container, or volu
     assert.throws(() => validateCleanupReceipt(missing), new RegExp(`CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:${component}`));
     assert.throws(() => validateCleanupReceipt({...cleanup, [component]: 'FAIL'}), new RegExp(`CLEANUP_RECEIPT_MISSING_OR_NOT_PASS:${component}`));
   }
-  assert.deepEqual(finalizeCleanupAfterCollection(cleanup, true), {...cleanup, status: 'FAIL', reaped: false, reason: 'ARTIFACT_COLLECTION_FAILED'});
+  assert.deepEqual(finalizeCleanupAfterCollection(cleanup, true), {...cleanup, collection: {status: 'FAIL', reason: 'ARTIFACT_COLLECTION_FAILED'}});
+  assert.deepEqual(finalizeCleanupAfterCollection(cleanup, false), {...cleanup, collection: {status: 'PASS'}});
 });
 
 test('196 workload result may delegate cleanup only to Testcontainers plus the managed runner', () => {
@@ -55,6 +56,31 @@ test('backend-acceptance child preserves lane denominator while allowing a parti
 
 test('managed backend-acceptance enables the catalog fault seams required by route red proofs', () => {
   assert.deepEqual(backendAcceptanceFaultEnvironmentScript(), ['export V2S_CATALOG_TEST_FAULTS=true']);
+});
+
+test('backend-acceptance signal trace is run-owned and attributes only the traced child receiver', () => {
+  const runId = 'r5-tc-12345678-123';
+  const instanceName = backendAcceptanceSignalTraceInstanceName(runId);
+  assert.match(instanceName, /^v2s-ba-signal-[a-f0-9]{24}$/);
+  assert.throws(() => backendAcceptanceSignalTraceInstanceName('foreign'), /BACKEND_ACCEPTANCE_SIGNAL_TRACE_RUN_ID_INVALID/);
+  const script = backendAcceptanceSignalTraceScript({instanceName});
+  assert.match(script, /signal_generate\/filter/);
+  assert.match(script, /sched_process_fork\/enable/);
+  assert.match(script, /child_comm == "pkill" \|\| child_comm == "killall"/);
+  assert.doesNotMatch(script, /sched_process_exec/);
+  assert.match(script, /rmdir "\$signal_trace_instance"/);
+  const receipt = validateBackendAcceptanceSignalTraceReceipt({schemaVersion: 1, kind: 'backend-acceptance-signal-trace', runId, status: 'PASS', error: 'NONE', instanceName, eventFilter: 'signal_generate(sig == 15); sched_process_fork(child_comm == pkill|killall)', tracePath: 'results/backend-acceptance-signal-generate.trace', readerPid: 12, readerStartTicks: 34, traceBytes: 56}, runId);
+  const childOutcome = validateBackendAcceptanceCatalogChildOutcome({kind: 'backend-acceptance-catalog-child-outcome', status: 'FAIL', runId: 'backend-acceptance-test', childPid: 4321, signal: 'SIGTERM', terminalFailure: 'BACKEND_ACCEPTANCE_CATALOG_CHILD_SIGNAL_SIGTERM', brokenBoundary: 'READBACK->CHILD_PROCESS_EXIT', lastEvent: {status: 'FOUND'}});
+  const attributed = deriveBackendAcceptanceSignalProvenance({catalogChildOutcome: childOutcome, signalTraceReceipt: receipt, signalTraceText: [
+    ' systemd-1 [001] ...: sched_process_fork: comm=systemd pid=1 child_comm=pkill child_pid=444',
+    ' pkill-444 [001] ...: signal_generate: sig=15 errno=0 code=0x0 comm=node pid=4321 grp=0 res=0',
+  ].join('\n')});
+  assert.deepEqual({...attributed, eventSha256: undefined}, {status: 'ATTRIBUTED', signal: 'SIGTERM', targetPid: 4321, senderComm: 'pkill', senderPid: 444, receiverComm: 'node', senderParentComm: 'systemd', senderParentPid: 1, eventSha256: undefined});
+  const receiverAsSenderRed = deriveBackendAcceptanceSignalProvenance({catalogChildOutcome: childOutcome, signalTraceReceipt: receipt, signalTraceText: ' pkill-444 [001] ...: signal_generate: sig=15 errno=0 code=0x0 comm=node pid=4321 grp=0 res=0\n'});
+  assert.equal(receiverAsSenderRed.senderComm, 'pkill');
+  assert.notEqual(receiverAsSenderRed.senderComm, receiverAsSenderRed.receiverComm);
+  assert.equal(deriveBackendAcceptanceSignalProvenance({catalogChildOutcome: childOutcome, signalTraceReceipt: receipt, signalTraceText: ' pkill-444 [001] ...: signal_generate: sig=15 errno=0 code=0x0 comm=node pid=9999 grp=0 res=0\n'}).status, 'UNATTRIBUTED');
+  assert.throws(() => validateBackendAcceptanceSignalTraceReceipt({...receipt, eventFilter: 'sig == 9'}, runId), /BACKEND_ACCEPTANCE_SIGNAL_TRACE_RECEIPT_INVALID/);
 });
 
 test('remote runner requires an explicit usable Gradle distribution and never falls back to a machine path', () => {
@@ -123,6 +149,15 @@ test('backend-acceptance stall observation binds the same HTTP event artifact as
   assert.equal(runtimeEvidencePathForRun({remoteResults, runType: 'other'}), null);
 });
 
+test('backend-acceptance stall observation ignores raw event bytes until a semantic operation progresses', () => {
+  const initial = backendAcceptanceObservationKey({logBytes: 10257, testResultBytes: 0, progress: {completed: 0, total: 1, firstFailure: null}});
+  const rawBytesOnly = backendAcceptanceObservationKey({logBytes: 10257, testResultBytes: 0, progress: {completed: 0, total: 1, firstFailure: null}});
+  assert.equal(initial, rawBytesOnly);
+  assert.notEqual(initial, backendAcceptanceObservationKey({logBytes: 10257, testResultBytes: 0, progress: {completed: 1, total: 1, firstFailure: null}}));
+  assert.notEqual(initial, backendAcceptanceObservationKey({logBytes: 10257, testResultBytes: 0, progress: {completed: 0, total: 1, firstFailure: 'BACKEND_ACCEPTANCE_ROUTE_FAILED'}}));
+  assert.throws(() => backendAcceptanceObservationKey({logBytes: 10257, testResultBytes: 0, progress: {completed: -1, total: 1, firstFailure: null}}), /BACKEND_ACCEPTANCE_PROGRESS_OBSERVATION_INVALID/);
+});
+
 test('remote runner preserves the deepest workload firstFailure before Gradle exit classification', () => {
   const childFailure = 'BP_U06_REMOTE_WORKLOAD_CATALOG_HTTP_FAILED:CATALOG_FIXTURE_HTTP_422';
   assert.equal(deriveBackendPerformance196ChildFailure({workloadResult: {
@@ -166,9 +201,23 @@ test('backend-acceptance progress probe keeps success and failure predicates syn
     assert.equal(success.stdout, '1\t0\tNONE\n');
 
     writeFileSync(eventsPath, `${JSON.stringify({runId, operationId: 'operation-a', outcome: 'FAILED', status: 500})}\n`);
+    const expectedProblem = runProbe();
+    assert.equal(expectedProblem.status, 0, expectedProblem.stderr);
+    assert.equal(expectedProblem.stdout, '0\t0\tNONE\n');
+
+    writeFileSync(eventsPath, `${JSON.stringify({runId, operationId: 'operation-a', outcome: 'FAILED', status: 500, observationError: 'REQUEST_EXCEPTION'})}\n`);
     const failure = runProbe();
     assert.equal(failure.status, 0, failure.stderr);
     assert.equal(failure.stdout, '0\t1\tBACKEND_ACCEPTANCE_ROUTE_FAILED\n');
+
+    const observationErrorMarker = String.raw`index($0, "\"observationError\":\"")`;
+    const redScript = backendAcceptanceProgressScript({eventsPath, runId, operationIds})
+      .replaceAll(observationErrorMarker, String.raw`(index($0, "\"observationError\":\"") || index($0, "\"status\":5"))`);
+    assert.notEqual(redScript, backendAcceptanceProgressScript({eventsPath, runId, operationIds}));
+    writeFileSync(eventsPath, `${JSON.stringify({runId, operationId: 'operation-a', outcome: 'FAILED', status: 500})}\n`);
+    const redMutation = spawnSync('bash', ['-s'], {input: redScript, encoding: 'utf8'});
+    assert.equal(redMutation.status, 0, redMutation.stderr);
+    assert.equal(redMutation.stdout, '0\t1\tBACKEND_ACCEPTANCE_ROUTE_FAILED\n');
   } finally {
     rmSync(directory, {recursive: true, force: true});
   }

@@ -20,8 +20,8 @@ sourceRefs: ["doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-revi
   self-assessment or disposition.
 - `AUTHOR_INTAKE_ONLY`: the author reopens sources and performs dialectical finding intake;
   the author cannot write the adversarial verdict.
-- `SUBAGENT_INPUT_CHECKLIST_REQUIRED`: each round records the mandatory entry chain as a
-  path-and-hash checklist; absence invalidates that round.
+- `SUBAGENT_INPUT_CHECKLIST_REQUIRED`: each round records the mandatory entry-chain paths;
+  the retired hash checklist is not required. Absence of required source reading invalidates that round.
 
 This rule does not reopen already closed cycles. The owning decision is
 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md`.

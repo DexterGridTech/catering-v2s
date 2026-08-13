@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "kind": "backend-acceptance-implementation-scope-amendment",
+  "status": "APPROVED_FOR_CURRENT_IMPLEMENTATION_PACKAGE",
+  "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+  "machineId": "backend-acceptance",
+  "authority": {
+    "implementationAuthority": true,
+    "runtimeAuthority": true,
+    "runtimeAuthorityScope": "MANAGED_BACKEND_ACCEPTANCE_TESTCONTAINERS_ONLY",
+    "seedResetAuthority": false,
+    "excluded": ["DEV", "L2", "reset", "seed", "browser", "UAT", "deployment", "manual SQL", "Git"]
+  },
+  "sourceBindings": {
+    "requirements": {
+      "path": "doc/plans/platform/2026-08-12-v2s-unified-backend-test-capability-merged-requirements.md",
+      "sha256": "12e8f75cdf267eae2fa3c5d7a2bb0ba061d8cf95202677423cbb95133a3738bb"
+    },
+    "implementationDesign": {
+      "path": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md",
+      "sha256": "11d88e9cf5f1ce9063293cff1f2067816982aaecdbd1ccf4c453999adb1f3a56"
+    },
+    "designGranularityManifest": {
+      "path": "doc/evidence/platform/2026-08-13-v2s-backend-acceptance-design-granularity-manifest.json",
+      "sha256": "2dd8312b1808d30565af91c8dea7c13aa887cce0110bf7277ac84795509c088a"
+    },
+    "implementationManifest": {
+      "path": "doc/evidence/platform/backend-acceptance/implementation-manifest.json",
+      "sha256": "c914372e5b1ca037773f2a37ea098f128a38965d91411246ddac6a838c9ef17f"
+    },
+    "packageInput": {
+      "path": "doc/evidence/platform/backend-acceptance/implementation-package-input.json",
+      "sha256": "3462fa636025fed2f92bbf2f0a7570bab01d291181205fc533416b828d749f0e"
+    },
+    "activePackage": {
+      "path": ".runtime/compliance-control/active-package.json",
+      "sha256": "5d07d990ef266298280be6ff97c11170180719627542a7d9841e1d191e8786eb"
+    }
+  },
+  "amendmentReason": {
+    "kind": "FINDING_FAMILY_ROOT_CAUSE_EXPANSION",
+    "summary": "Fresh managed run r17 exposed a typed M1 bypass family and a public brand-copy structural compatibility family; the originally declared source surface did not include every owning boundary required to repair either root cause.",
+    "notAdenominatorReduction": true,
+    "notAStaticPassSubstitution": true,
+    "dynamicEvidenceAnchor": "backend-acceptance-1786591109131-b7edd321"
+  },
+  "problemFamilies": [
+    {
+      "familyId": "BA-FAMILY-TYPED-M1-ENTRYPOINT-BYPASS",
+      "status": "CONFIRMED",
+      "finiteDenominator": [
+        "CI-API-006-09",
+        "CI-API-009-01",
+        "CI-API-022-02"
+      ],
+      "rootCause": "Typed catalog-inventory M1 entrypoints bypass the legacy inbound-reference guard or omit the existing env-gated failure seam because the generated typed Invocation/controller path carries no testFailurePoint and does not expose the owner fact needed for the void decision.",
+      "sameRootScan": [
+        "TransitionOperationsCatalogItemStatusOperation",
+        "StageOperationsCatalogAssetMultipartOperation",
+        "ExecuteOperationsBrandCatalogCopyOperation",
+        "OperationsCatalogInventoryController typed bindings",
+        "backend-performance-m1-command-execution-bindings generator",
+        "CatalogOwnerApi and CatalogOwnerService owner judgments",
+        "CatalogInventoryCoordinator legacy fault seams and typed brand-copy composition"
+      ],
+      "counterexamples": [
+        "Legacy catalog coordinator transition path already rechecks inbound references.",
+        "Asset and owner failure seams remain env-gated and must not become unconditional production faults."
+      ],
+      "minimalRepairBoundary": [
+        "typed invocation/controller/generator propagation of testFailurePoint",
+        "narrow CatalogOwnerApi fact for inbound item reference",
+        "typed operation checks before owner command, coordinator seam reuse, and closure-edge production-tag projection",
+        "transactional rollback proof"
+      ]
+    },
+    {
+      "familyId": "BA-FAMILY-BRAND-COPY-PUBLIC-STRUCTURE-COMPATIBILITY",
+      "status": "CONFIRMED",
+      "finiteDenominator": ["CI-API-018-14"],
+      "rootCause": "The public BrandCopyPreflightRequest contract intentionally accepts only selectedItemCodes, targetDataNodeRef, and dataNodeRef; the fixture/scenario attempted to add owner-controlled referenceMappings, while production-tag compatibility facts are owned by the production-tag owner and were not projected into the catalog coordinator plan.",
+      "sameRootScan": [
+        "BrandCopyPreflightRequest schema and controller",
+        "catalog copyReferencePlan and closureEdges",
+        "production-tag owner preflight compatibility",
+        "FIXTURE-REFERENCE-MAPPING-MISSING fixture construction",
+        "CI-API-018 scenario/oracle"
+      ],
+      "counterexamples": [
+        "Public contract additionalProperties=false is intentional and must remain unchanged.",
+        "FIXTURE-REFERENCE-MAPPING-MISSING is owner-controlled evidence for CI-API-020 and must not be moved into the public request contract."
+      ],
+      "minimalRepairBoundary": [
+        "derive production tag source refs from catalog closureEdges for owner preflight",
+        "keep owner target mapping and incompatibility decision in production-tag owner",
+        "make CI-API-018-14 send only the public fields and use real production-tag mismatch fixture"
+      ]
+    }
+  ],
+  "addedRoots": [
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/ExecuteOperationsBrandCatalogCopyOperation.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/TransitionOperationsCatalogItemStatusOperation.java",
+    "apps/backend/catering-business-server/src/main/java/com/catering/v2s/platform/asset/application/StageOperationsCatalogAssetMultipartOperation.java",
+    "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java",
+    "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+    "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java",
+    "scripts/generate/backend-performance-m1-command-execution-bindings.mjs"
+  ],
+  "scopeDecision": "EXACT_ROOTS_ADDED_TO_ACTIVE_PACKAGE_BEFORE_TYPED_M1_AND_018_REPAIR; COORDINATOR_ROOT_COVERS_TYPED_FAULT_SEAM_AND_CLOSURE_EDGE_PROJECTION; NO_WILDCARDS; NO_OPERATION_DENOMINATOR_CHANGE",
+  "preventionDestination": {
+    "kind": "EXISTING_MACHINE_CONTROL_PLUS_REVIEW_CHECKLIST",
+    "controls": [
+      "backend-acceptance-change-impact",
+      "backend-acceptance production-surface derivation",
+      "backend-acceptance scenario/fixture source review",
+      "implementation review same-root scan and findings/prevention set equality"
+    ]
+  }
+}

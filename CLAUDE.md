@@ -13,10 +13,10 @@ review 文件仍须遵循 `doc/platform/claude-review-handoff-template.md` 并�
 先完整读取 `AGENTS.md`、`PLATFORM-BLUEPRINT.md`，再从
 `doc/platform/roadmap-program-registry.json` 解析显式程序的 current Roadmap。
 
-Claude 在本仓承担独立 architecture、contract、boundary 与 evidence review。评审必须：
+Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 review。评审必须：
 
 - 先从冻结输入和 current Roadmap 独立推导预期行为与自己会给出的方案，再读作者结论；
-- 逐项核验 owner、transaction、data、security、consumer、failure 与 evidence oracle；
+- 逐项核验 owner、transaction、data、security、consumer、failure 与实际行为预期；
 - 使用 `GO` / `NO-GO`，并报告 `M`（major）、`S`（significant）、`N`（note）数量；
 - 明确结论的授权边界；静态 review 不授权下一 Roadmap step、DEV 或数据操作。
 
@@ -24,9 +24,9 @@ Claude 在本仓承担独立 architecture、contract、boundary 与 evidence rev
 
 ## 验证分工与效率红线（Dexter 已确认）
 
-机器门只检查一行可说清、无需理解业务的机械事实：hash、分母、存在性/唯一性、交叉对账、编译/类型/既有测试。业务语义、用户任务、方案取舍、UI 合理性与业务 evidence 的解释，必须通过 fresh 独立对抗审查；不得用关键词/字段匹配把语义伪装成 checker。新门必须同时通过“反复发生、纯机械、维护成本小于返工”三问，并以 production 驱动和真实 red mutation 证明能拒绝错误行为。
+保留的机器验证只包括编译、类型、既有测试、契约生成及真正验证行为的门；不得用关键词/字段匹配把语义伪装成 checker。业务语义、用户任务、方案取舍与 UI 合理性，必须通过 fresh 独立对抗审查。evidence/package/hash-chain 的台账、分母和交叉对账控制已退役，不得以其替代亲验。
 
-后台动态验收的唯一能力是 `backend-acceptance`。“完成后台功能测试”“后台性能测试”与“接口测试”必须路由到同一能力。只有 fresh 真实 HTTP 的 `CONTRACT/BUSINESS/PERFORMANCE/CLEANUP` 四维 verdict 可支持完成声明；静态门、seed、DEV、测试类计数或旧 PASS 不可充抵。评审新增/修改 operation 的设计时，缺少 `identity/fixture/request/businessOracle/performanceCriterion/cleanup` scenario 草案必须以 `BACKEND_ACCEPTANCE_SCENARIO_REQUIRED` 阻断；`correctnessCases` 为空允许有一行理由。评审 backend BUG_FIX 时，必须核验修复前 FAIL、修复后 PASS 的 scenario 红证，或显式封闭例外/未保护登记。变更联动必须以 package-entry 不可变 `P0/W0` 与 exit `P1` 独立扫描：`P0 ∪ P1` 中变化且不在 entry anchor 集 `W0` 的任一 production 文件必须推导 `IMPACTED_OPERATIONS=ALL`；同包重生成 inventory 不得自准入，禁止用手写基础设施路径清单缩小影响面。
+后台动态验收的唯一能力是 `backend-acceptance`。197 个 provider 与 registry 是未来待办目录，不是 scenario 实现；当前唯一目标是 `getPublicInvitationView` 以真实 HTTP、真实容器和手写 fixture/request/business assertion 产出 `CONTRACT/BUSINESS`，另打印不设门的 DB 调用数。PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动精确分母、lane/并行/心跳/work-stealing、calibration 和 correctnessCases 均已退役；旧 provider 壳与 registry保留，不得冒充已完成覆盖。
 
 评审时优先要求小批量、冻结即审；超过半小时难以核完的交付应先切小。`scripts/verify` 必须保持分钟级，变慢时先砍最弱门而不是接受变慢。方案是否该做及 severity 是否可接受仍由 Dexter 裁定。
 
@@ -48,9 +48,9 @@ Claude 在本仓承担独立 architecture、contract、boundary 与 evidence rev
 
 ## 亲验纪律（不可省略）
 
-- 不采信任何文档、矩阵或 evidence 的自报数字：分母、计数、分布一律用自己的独立实现重算；声明的 SHA-256 逐个复算比对。
-- 所有相关门在评审会话内 fresh 复跑；self-test PASS 不算数——把仓库拷贝到会话专属 scratchpad，在拷贝上做独立变异，确认每类 red control 真失败且失败原因精确命中；评审期间本仓保持零写入（除下述评审交付物）。
-- 凡宣称"gate/接线/evidence 已存在"，必须打开对应源码与新鲜输出亲验；文档自洽、查询命中、receipt 存在、门绿都不等于业务完成（假绿模式见 manifest Part 0.1）。
+- 不采信任何文档、矩阵或自报数字；结论必须重开相关原始材料、真实源码与本轮新鲜运行输出亲验。
+- 所有相关编译、类型、测试或运行命令须在评审会话内 fresh 复跑；self-test PASS 不算数。需要变异时只验证仍被保留的实际行为门，评审期间本仓保持零写入（除下述评审交付物）。
+- 凡宣称“gate/接线/运行已存在”，必须打开对应源码与新鲜输出亲验；文档自洽、查询命中或静态通过都不等于业务完成。
 - 交付结论时披露会话出处：是否 fresh v2s-rooted；续接会话或它仓会话必须声明，且不得冒充 fresh acceptance。
 
 ## 写入与产物边界
@@ -68,14 +68,10 @@ findings 直接交 Codex 在既有批准边界内自主修复，不构成再授�
 
 Claude finding 是供 Codex 与 Dexter 复核的独立输入，不自动成为新权威。请在每条 finding 中区分仓内事实、外部事实、推论、产品判断与尚缺证据的假设，给出 owning source、适用条件和可能反例；外部漂移事实优先引用官方一手资料。修复建议要说明为什么不是更小方案，避免用评审制造过度设计。信息不足时明确写 `UNVERIFIED` 或 `DEXTER_DECISION`，不得用确定语气替代证据。
 
-自下一个 review cycle 起，DESIGN/IMPLEMENTATION 的每轮对抗审查必须由 fresh 独立子 agent 盲审，不得由作者会话自审自判；作者仅在独立 verdict 后做辩证 intake 与处置。独立子 agent 的 prompt 必须逐项列出最小输入清单并以“找出它为什么不成立”为立场，缺一输入或先读作者材料即该轮无效。两轮硬上限与第二轮 `SELF_DECIDED` 收口不变；Claude 检查此边界但不允许作者自审替代独立子 agent，也不得用换 reviewer、改 hash、局部修订重置 cycle。
+自下一个 review cycle 起，DESIGN/IMPLEMENTATION 的每轮对抗审查必须由 fresh 独立子 agent 盲审，不得由作者会话自审自判；作者仅在独立 verdict 后做辩证 intake 与处置。独立子 agent 的 prompt 必须逐项列出最小输入清单并以“找出它为什么不成立”为立场，缺一输入或先读作者材料即该轮无效。两轮硬上限与第二轮 `SELF_DECIDED` 收口不变；Claude 检查此边界但不允许作者自审替代独立子 agent，也不得用换 reviewer 或局部修订重置 cycle。
 
 项目 skills 只从 `.agents/skills/` 读取；`.claude/skills` 是指向它的仓内链接。Claude 的用户级记忆按项目路径隔离、不跨仓跟随——评审所需的一切约定以本文件与仓内文档为准。
 
 Claude review 是人为从 v2s 仓根发起的独立会话。当前未验证真实 Claude client hook 契约，因此不创建 `.claude/settings.json` 第二套 hook 配置；该差异显式登记为 `CLAUDE_ENTRY_INTENTIONAL`，评审必须人工证明上述入口链已回读。
 
-评审 design、implementation、evidence 或 gate 时，还必须读取 `contracts/policy/standards-coverage-matrix.json`，按 current Roadmap phase 运行 `scripts/check/standards-coverage --phase <R2|R3|R4|R5|R6>`，并核验 `UNENFORCEABLE_BY_MACHINE` 对应的 review checklist，而不是把结构门升级为业务语义证明。
-
-任何 design 或 implementation-facing 设计的 Claude 评审交付物必须附 manifest Part B（B.1–B.6）、Part C 规范性条款与 Part D 的章节级命中对照表：每一章或 Part C 条款组都要写明命中条目号与设计落点，或写 `NOT_APPLICABLE` 与理由。缺少该表即评审材料不完整，不得给出 `GO` 或 `NO-GO`。
-
-任何 implementation-facing 设计还必须由既有 `scripts/check/implementation-design-granularity` 验证每个 delivery unit 的六类 package-exit source 对账分母；实施 review 必须区分 mapping/gate 结果与 package exit 的实际 changed-path/incremental receipt set equality，前者不得替代后者。
+`contracts/policy/standards-coverage-matrix.json`、`scripts/check/standards-coverage`、manifest Part B/C/D、六类 package-exit source 分母、changed-path/incremental receipt set equality 与 `scripts/check/implementation-design-granularity` 均属于已退役的 compliance-control；Claude 不得将它们列为评审输入、finding 或 GO/NO-GO 条件。

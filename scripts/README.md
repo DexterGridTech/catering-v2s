@@ -73,31 +73,17 @@ The root Gradle build has a fail-closed guard for every test source that imports
 
 All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
 
-### Backend acceptance（设计态，尚未实现）
+### Backend acceptance（当前最小运行能力）
 
-未来唯一公共后台动态验收入口是 `scripts/test/backend-acceptance`，名称不含接口数量、
-Roadmap/Journey 或阶段编号。本文件只登记已批准的 implementation-facing contract；当前文件
-不存在即表示能力尚未实施，不得把旧 Testcontainers runner 或历史 PASS 改称为该能力。
+2026-08-14 起，唯一公共入口是
+`scripts/test/backend-acceptance --operation getPublicInvitationView`。它在真实远端 Testcontainers
+中启动应用，经真实 HTTP 运行一条手写 fixture/request/business assertion，并打印 `CONTRACT`、
+`BUSINESS` 与只供人工比较的 `DB_OPERATIONS`。provider 壳与 scenario registry 保留为未来待办目录，
+不是已实现 coverage；不得从其路径字符串推导测试已经完成。
 
-入口每次从当前 semantic OpenAPI route registry 与 operation-handler bindings 推导 operation
-identity exact set，并分别验证 row equality 与 projection digest freshness，再映射到 owning
-route-behavior unit。测试类与 `@Testcontainers` 注解不构成覆盖分母。昂贵初始化前必须完成
-scenario admission：每个 operation 的 `identity/fixture/request/businessOracle/
-performanceCriterion/cleanup` 非空，`correctnessCases` 为空时有理由；缺项使用稳定 typed
-failure。
-
-per-edit 运行机器推导的 impacted operations；package-exit 运行全量。任何未被动态
-package-entry 捕获不可变 production surface `P0` 与 source-anchor-covered `W0`，exit 独立扫描
-`P1`；`P0 ∪ P1` 中变化但不在 `W0` 的任一 production 文件令 impacted set 为 `ALL`，同包
-重生成 inventory 不得自准入。lane 数可配置，
-每 lane 独立容器、可写数据库/schema 与对象存储 namespace；单 lane 首败仅停本 lane，其他
-lane 继续并汇集各自首败。报告固定落在 `.runtime/backend-acceptance/<runId>/`，输出 run/lane、
-分母、当前 operation、passed/failed/remaining、心跳、耗时、首败、单 operation 重跑命令、
-四维 verdict 和 cleanup。并行资源不足时先增加 lane；任何情况下不得缩覆盖。
-
-旧 `scripts/test/r5-remote-testcontainers.mjs` 与其他分立行为入口在迁移期保持 predecessor
-身份，只有 route 断言、结构预算与 red control 已进入新能力后才按先建后删退役。它们不再是
-独立功能或性能契约。
+PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动发现/精确集合、lane/并行/
+心跳/work-stealing、calibration 与 correctnessCases 已退役。下一条 operation 仅复制这一条的真实
+fixture、HTTP request 与业务断言，不恢复全量迁移或预算门。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
 `NO-SOURCE`, or `SKIPPED`: the build keeps compile/dependency preparation reusable but disables

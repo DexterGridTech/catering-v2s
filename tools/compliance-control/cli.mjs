@@ -58,8 +58,6 @@ const baselineRecoveryPaths = new Set([
 const derivedDirectoryNames = new Set(["build", "dist", "node_modules", ".gradle"]);
 const problemIntakeDirectory = ".runtime/compliance-control/problem-intakes";
 const problemDispositionDirectory = ".runtime/compliance-control/problem-family-dispositions";
-const backendAcceptancePackageId = "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813";
-const backendAcceptanceEntrySnapshotPath = "doc/evidence/platform/backend-acceptance/entry-impact-snapshot.json";
 
 function isDerivedPath(relativePath) {
   return relativePath.split("/").some((segment) => derivedDirectoryNames.has(segment));
@@ -1504,12 +1502,9 @@ function readActivePackage(root) {
 }
 
 function readBackendAcceptanceControlPackage(root) {
-  const active = readActivePackage(root);
-  if (active.packageId !== backendAcceptancePackageId
-    || active.implementationAuthority !== true
-    || active.runtimeAuthority !== true
-    || active.seedResetAuthority !== false
-    || active.packageArchetype !== "backend-source") {
+  const active = backendAcceptanceImpact.loadActiveBackendAcceptancePackage({repositoryRoot: root});
+  if (active.implementationAuthority !== true || active.runtimeAuthority !== true
+    || active.seedResetAuthority !== false || active.packageArchetype !== "backend-source") {
     throw new Error("BACKEND_ACCEPTANCE_IMPLEMENTATION_PACKAGE_NOT_ACTIVE");
   }
   return active;
@@ -1519,13 +1514,11 @@ function backendAcceptanceEntryGuard() {
   const root = process.cwd();
   const active = readBackendAcceptanceControlPackage(root);
   const entry = backendAcceptanceImpact.loadEntrySnapshot({ repositoryRoot: root });
-  const snapshotPath = active.entryImpactSnapshotPath || backendAcceptanceEntrySnapshotPath;
-  const snapshotAbsolute = requireFile(root, snapshotPath, "BACKEND_ACCEPTANCE_ENTRY_IMPACT_MISSING");
   if (entry.active.packageId !== active.packageId
-    || hashOrAbsent(snapshotAbsolute) !== entry.input.entrySnapshot?.entryImpactSnapshotSha256) {
+    || entry.entryBundle.pointer.activePackage?.path !== ".runtime/compliance-control/active-package.json") {
     throw new Error("BACKEND_ACCEPTANCE_ENTRY_SNAPSHOT_BINDING_INVALID");
   }
-  process.stdout.write(`BACKEND_ACCEPTANCE_ENTRY_GUARD=PASS\nPACKAGE_ID=${active.packageId}\nENTRY_SNAPSHOT=${snapshotPath}\nCLEANUP=PASS\n`);
+  process.stdout.write(`BACKEND_ACCEPTANCE_ENTRY_GUARD=PASS\nPACKAGE_ID=${active.packageId}\nENTRY_BUNDLE=${entry.entryBundle.pointer.bundlePath}\nCLEANUP=PASS\n`);
 }
 
 function backendAcceptancePackageExit() {
@@ -1546,7 +1539,7 @@ function backendAcceptancePackageExit() {
     backendAcceptanceImpact.validateChangeDispositions({
       impact,
       dispositions,
-      packageKind: process.env.V2S_BACKEND_ACCEPTANCE_PACKAGE_KIND || "BACKEND_SOURCE",
+      packageKind: "BACKEND_SOURCE",
     });
   } else if (impact.impactedOperationIds.length > 0) {
     throw new Error("BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING");

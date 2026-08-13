@@ -270,6 +270,14 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return requireItem(scope.dataNodeId().toString(), scope.brandRef(), itemCode).ref();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean catalogItemReferencedByOtherItems(WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID itemRef) {
+        CatalogAuthorizationScope scope = typedCommandScope(context, "transitionOperationsCatalogItemStatus");
+        if (itemRef == null) throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "itemRef is required");
+        return itemReferencedByOtherItems(scope.dataNodeId().toString(), scope.brandRef(), itemRef);
+    }
+
     /** Named owner boundary for the whole save; free request fields stay canonical text until this owner validates them. */
     @Override @Transactional
     public CatalogOwnerApi.CatalogItemSaveReadback saveCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
@@ -1761,9 +1769,12 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             || (sections.path("skus").isArray() && sections.path("skus").size() > 0);
     }
     private boolean itemReferencedByOtherItems(String scope, String brand, ItemRow current) {
-        String itemRef = current.ref().toString();
+        return itemReferencedByOtherItems(scope, brand, current.ref());
+    }
+    private boolean itemReferencedByOtherItems(String scope, String brand, UUID currentRef) {
+        String itemRef = currentRef.toString();
         return jdbc.query("SELECT sections::text FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' AND item_ref <> ?", s -> {
-            s.setString(1, scope); s.setString(2, brand); s.setObject(3, current.ref());
+            s.setString(1, scope); s.setString(2, brand); s.setObject(3, currentRef);
         }, r -> { while (r.next()) { if (itemReferenceRefs(json(r.getString(1))).contains(itemRef)) return true; } return false; });
     }
     private void lockAndValidateCategoryRefs(String scope, String brand, JsonNode sections) {
@@ -1967,7 +1978,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
     private LinkedHashSet<String> itemReferenceRefs(JsonNode node) {
         LinkedHashSet<String> refs = new LinkedHashSet<>();
-        typedReferences(node).stream().filter(ref -> "CATALOG_ITEM".equals(ref.referenceKind())).forEach(ref -> refs.add(ref.ref()));
+        typedReferences(node).stream().filter(ref -> Set.of("CATALOG_ITEM", "COMPOSITE_COMPONENT", "BOM_COMPONENT").contains(ref.referenceKind())).forEach(ref -> refs.add(ref.ref()));
         return refs;
     }
     private boolean itemExistsByRef(String scope, String brand, String itemRef) {

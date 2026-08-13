@@ -13,6 +13,10 @@ sourceRefs: ["AGENTS.md","PLATFORM-BLUEPRINT.md","doc/decisions/2026-07-26-v2s-r
 ---
 # Phase retrospective and systemic repair
 
+## Compliance-control retirement — 2026-08-13
+
+本文件中凡将 `MEMORY_DELTA`、prompt hash intake、Pre/Post hook、active package、allowed-change surface、package entry/exit、receipt、hash、manifest 或 set equality 设为实施、评审或关闭条件的子句均已退役，不得恢复。根因分析、同根扫描、反例边界、最小修复与真实运行/测试亲验继续有效；上述记账机制不能替代它们。
+
 ## Dexter mandated managed R5 reset and full-seed discipline
 
 - `MANAGED_RESET_SEQUENCE_NO_COMMAND_GUESSING`: 受管 reset 不得猜测命令、环境或替代路径。必须在仓根按以下顺序执行：

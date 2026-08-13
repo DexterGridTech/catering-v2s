@@ -21,12 +21,22 @@ public class TransitionOperationsCatalogItemStatusOperation {
     public CatalogItemCommandReadback execute(Invocation invocation) {
         var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
-        if ("VOIDED".equals(request.targetStatus())
-            && inventory.catalogItemVoidDependencies(context, catalog.resolveCatalogItemRef(context, invocation.itemCode()).toString()).hasDependentFacts()) {
-            throw new CatalogOwnerApi.Problem("DEPENDENT_FACTS_BLOCK_VOID", 422, "库存对象或 BOM 仍存在，不能作废商品");
+        var itemRef = "VOIDED".equals(request.targetStatus()) ? catalog.resolveCatalogItemRef(context, invocation.itemCode()) : null;
+        if ("VOIDED".equals(request.targetStatus())) {
+            if (catalog.catalogItemReferencedByOtherItems(context, itemRef)) {
+                throw new CatalogOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, "商品仍被其他商品引用，不能作废");
+            }
+            if (inventory.catalogItemVoidDependencies(context, itemRef.toString()).hasDependentFacts()) {
+                throw new CatalogOwnerApi.Problem("DEPENDENT_FACTS_BLOCK_VOID", 422, "库存对象或 BOM 仍存在，不能作废商品");
+            }
         }
         return CreateOperationsCatalogItemOperation.response(context.requestId(), catalog.transitionCatalogItemStatus(context, new CatalogOwnerApi.CatalogItemStatusTransitionCommand(invocation.itemCode(), requiredLong(request.expectedVersion(), "expectedVersion"), request.targetStatus()), invocation.idempotencyKey()));
     }
-    public record Invocation(CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String idempotencyKey) { }
+    public record Invocation(CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String testFailurePoint, String idempotencyKey) {
+        public Invocation(CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef,
+                          String correlationId, String requestId, String itemCode, String idempotencyKey) {
+            this(request, sessionCredential, requestedBrandRef, correlationId, requestId, itemCode, null, idempotencyKey);
+        }
+    }
     private static long requiredLong(Long value, String field) { if (value == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required"); return value; }
 }

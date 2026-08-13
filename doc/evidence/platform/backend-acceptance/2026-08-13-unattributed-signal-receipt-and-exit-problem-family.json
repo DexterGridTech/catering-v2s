@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "kind": "problem-family-discovery",
+  "problemFamilyId": "BACKEND_ACCEPTANCE_UNATTRIBUTED_SIGNAL_RECEIPT_AND_EXIT_GAP_20260813",
+  "provenance": {
+    "kind": "INDEPENDENT_IMPLEMENTATION_REVIEW_AND_FRESH_MANAGED_RUN",
+    "reviewCycleId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
+    "reviewRound": 1,
+    "reviewerKinds": [
+      "INDEPENDENT_SUBAGENT",
+      "INDEPENDENT_SUBAGENT"
+    ],
+    "runIds": [
+      "backend-acceptance-1786618913661-9dde6383",
+      "backend-acceptance-1786619640901-1d44700d"
+    ]
+  },
+  "genericProblem": "A backend-acceptance implementation can pass static admission while its managed runtime evidence loses the sender and lifecycle facts required to explain a terminal signal, and while its package-exit denominator remains wholly unclosed. Retrying a focused child process then consumes time without producing an admissible full four-dimension verdict.",
+  "rootCauseClass": "RUNTIME_SIGNAL_PROVENANCE_RECEIPT_CONTINUITY_EXECUTION_PLANE_RESOURCE_ADMISSION_HOST_GOVERNANCE_SEMANTIC_PROGRESS_PARENT_CHILD_PROGRESS_PROTOCOL_CLEANUP_DIMENSION_SEPARATION_AND_PACKAGE_EXIT_DENOMINATOR_GAP",
+  "finiteDenominator": [
+    {
+      "id": "PF-01-SIGNAL-PROVENANCE",
+      "surfaces": [
+        "tools/backend-acceptance/workload.mjs",
+        "scripts/test/catalog-inventory-api.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs"
+      ],
+      "scope": "Every detached catalog workload child and its remote managed wrapper in backend-acceptance."
+    },
+    {
+      "id": "PF-02-RUNTIME-RECEIPT-CONTINUITY",
+      "surfaces": [
+        "tools/backend-acceptance/runner.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        ".runtime/backend-acceptance/*/run-manifest.json"
+      ],
+      "scope": "Every focused or full backend-acceptance run whose final receipt must retain admission order, child first failure, last known good boundary, and cleanup independently."
+    },
+    {
+      "id": "PF-03-PACKAGE-EXIT-DISPOSITIONS",
+      "surfaces": [
+        "scripts/check/backend-acceptance-change-impact",
+        "doc/evidence/platform/backend-acceptance/change-dispositions.json",
+        "doc/evidence/platform/backend-acceptance/entry-impact-snapshot.json"
+      ],
+      "scope": "All 196 current semantic operations after the P0/W0/P1 check correctly promotes current changes to ALL."
+    },
+    {
+      "id": "PF-04-OPERATION-MIGRATION",
+      "surfaces": [
+        "contracts/registry/backend-acceptance-scenarios.json",
+        "contracts/registry/backend-acceptance-known-uncovered.json",
+        "contracts/registry/backend-acceptance-accepted-baseline.json",
+        "doc/evidence/platform/backend-acceptance-historical-seed-dispositions.json"
+      ],
+      "scope": "The complete current 196-operation provider, scenario, receipt, baseline, and historical-replay denominator."
+    },
+    {
+      "id": "PF-05-RUNTIME-NAMING",
+      "surfaces": [
+        "tools/backend-acceptance/cli.mjs",
+        "tools/backend-acceptance/runner.mjs",
+        "tools/backend-acceptance/impact.mjs"
+      ],
+      "scope": "All runtime and test-support BA-U step identifiers; doc/evidence/review/gate-catalog metadata are explicit counterexamples."
+    },
+    {
+      "id": "PF-06-REMOTE-JVM-BOUNDARY",
+      "surfaces": [
+        "tools/backend-acceptance/runner.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "build.gradle.kts",
+        "scripts/test/backend-acceptance.test.mjs"
+      ],
+      "scope": "The local public orchestration process, the managed remote shell, and every Docker-backed Gradle JVM guarded by V2S_TESTCONTAINERS_EXECUTION_PLANE."
+    },
+    {
+      "id": "PF-07-MANAGED-RESOURCE-PREFLIGHT",
+      "surfaces": [
+        "tools/backend-acceptance/lanes.mjs",
+        "tools/backend-acceptance/runner.mjs",
+        "scripts/test/r5-testcontainers-daemon-lanes.mjs",
+        "scripts/test/backend-acceptance.test.mjs"
+      ],
+      "scope": "Every backend-acceptance admission from public CLI through the current remote daemon status manifest to its isolated lane and writable namespace plan."
+    },
+    {
+      "id": "PF-08-REMOTE-TERMINATOR-HOST-GOVERNANCE",
+      "surfaces": [
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "scripts/test/r5-testcontainers-daemon-lanes.mjs",
+        "scripts/test/r5-remote-testcontainers.test.mjs",
+        "scripts/test/backend-acceptance.test.mjs"
+      ],
+      "scope": "Every managed SIGTERM trace whose sender is external to the run-owned process tree, plus the fixed remote systemd, cron and active terminator-process denominator."
+    },
+    {
+      "id": "PF-09-SEMANTIC-PROGRESS-AND-CLEANUP-SEPARATION",
+      "surfaces": [
+        "scripts/test/r5-remote-testcontainers.mjs",
+        "scripts/test/r5-remote-testcontainers.test.mjs",
+        "tools/backend-acceptance/runner.mjs"
+      ],
+      "scope": "Every backend-acceptance monitored child where raw artifact writes, terminal-result collection, resource cleanup, and semantic HTTP completion have distinct meanings."
+    },
+    {
+      "id": "PF-10-PARENT-CHILD-PROGRESS-PROTOCOL",
+      "surfaces": [
+        "tools/backend-acceptance/runner.mjs",
+        "scripts/test/r5-remote-testcontainers.mjs",
+        ".runtime/backend-acceptance/*/runner.jsonl"
+      ],
+      "scope": "Every parent runner parsing a child heartbeat, including legacy CURRENT/TOTAL and managed r5 CURRENT/COMPLETED/TOTAL records."
+    }
+  ],
+  "searchedSurfaces": [
+    ".runtime/backend-acceptance/backend-acceptance-1786618913661-9dde6383",
+    ".runtime/backend-acceptance/backend-acceptance-1786619640901-1d44700d",
+    "tools/backend-acceptance/workload.mjs",
+    "tools/backend-acceptance/runner.mjs",
+    "scripts/test/catalog-inventory-api.mjs",
+    "scripts/test/r5-remote-testcontainers.mjs",
+    "scripts/check/backend-acceptance-change-impact",
+    "contracts/registry/backend-acceptance-known-uncovered.json",
+    "contracts/registry/backend-acceptance-accepted-baseline.json"
+  ],
+  "searchQueries": [
+    "catalog-child-outcome.json SIGTERM supervisorSignal forwardedSignals signalDispatches",
+    "containerInitializationStartedAt admissionCompletedAt childWorkload brokenBoundary",
+    "BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING",
+    "KNOWN_UNCOVERED_OPEN BASELINE_MEASURED DYNAMIC=NOT_CLOSED",
+    "BA-U01 BA-U02 BA-U03 BA-U04 BA-U05 BA-U06 outside doc evidence review memory gate metadata",
+    "V2S_TESTCONTAINERS_REMOTE_REQUIRED public backend-acceptance local orchestration remote JVM",
+    "BACKEND_ACCEPTANCE_RESOURCE_MAXIMUM_INVALID backend-acceptance public runner managed daemon status resource manifest"
+    ,"signal_generate comm receiver task prefix sender pkill sched_process_fork child_comm filter remote terminator source roots"
+    ,"runtimeEvidenceBytes operation progress collection failure cleanup components pass"
+    ,"CURRENT COMPLETED TOTAL parent child heartbeat progress protocol"
+  ],
+  "counterexamples": [
+    {
+      "id": "STATIC_ADMISSION",
+      "boundary": "Static self-tests and standards coverage prove mechanical controls, not sender attribution or a fresh four-dimension dynamic verdict."
+    },
+    {
+      "id": "FOCUSED_OPERATION",
+      "boundary": "A named 1/196 catalog operation may provide local regression evidence but cannot close the 196-operation ledger, accepted baseline, historical replay, or package exit."
+    },
+    {
+      "id": "CLEANUP_ONLY",
+      "boundary": "A PASS for declared process, scratch, container, and volume cleanup cannot offset a business failure, lost first-failure receipt, or an unattributed signal."
+    },
+    {
+      "id": "SUPERVISOR_NEGATIVE_EVIDENCE",
+      "boundary": "A null supervisor signal and empty dispatch list exclude the recorded supervisor path only; they do not identify the remote OS or external sender."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "PF-01",
+      "status": "CONFIRMED",
+      "genericProblem": "Terminal child signals are receiver-only evidence, so a repeated SIGTERM cannot be attributed to a sender or causal process tree.",
+      "evidence": [
+        "backend-acceptance-1786618913661-9dde6383 firstFailure=BACKEND_ACCEPTANCE_CATALOG_CHILD_SIGNAL_SIGTERM",
+        "backend-acceptance-1786619640901-1d44700d firstFailure=BACKEND_ACCEPTANCE_CATALOG_CHILD_SIGNAL_SIGTERM",
+        "catalog child outcome records supervisorSignal=null, forwardedSignals=[], and signalDispatches=[]"
+      ],
+      "minimalRepair": "Create a run-owned, script-managed remote signal trace with receiver and sender identity, preserve it with the child outcome, and fail a terminal signal as UNATTRIBUTED_SIGNAL when the trace cannot establish provenance."
+    },
+    {
+      "findingId": "PF-02",
+      "status": "CONFIRMED",
+      "genericProblem": "The final runner manifest is rebuilt from the pre-start manifest and the remote bridge flattens a schema-bearing child failure, losing required admission ordering and broken-boundary facts.",
+      "evidence": [
+        "tools/backend-acceptance/runner.mjs marks container initialization in startedManifest but builds finished from manifest",
+        "backend-acceptance-1786619640901-1d44700d run-manifest has containerInitializationStartedAt=null and childWorkload=null",
+        "scripts/test/r5-remote-testcontainers.mjs converts a nonzero backend-acceptance Gradle result to REMOTE_TEST_OR_CONTAINER_CLEANUP_FAILED"
+      ],
+      "minimalRepair": "Carry one current manifest through completion and validate/map the backend-acceptance child receipt without lossy error folding; add red mutations for timestamp loss and child-boundary loss."
+    },
+    {
+      "findingId": "PF-03",
+      "status": "CONFIRMED",
+      "genericProblem": "Production-surface changes correctly produce ALL impact but no machine-valid change disposition exists for the resulting 196-operation denominator.",
+      "evidence": [
+        "scripts/check/backend-acceptance-change-impact --package-exit returns BACKEND_ACCEPTANCE_CHANGE_DISPOSITIONS_MISSING",
+        "P0=633, P1=633, and 14 changed P1 paths are outside W0, so impactMode=ALL is correct"
+      ],
+      "minimalRepair": "Do not weaken impact derivation; generate and validate complete, source-backed dispositions only as each affected operation obtains its required scenario/regression or fresh behavior-unchanged proof."
+    },
+    {
+      "findingId": "PF-04",
+      "status": "CONFIRMED",
+      "genericProblem": "The static registry creates 196 providers but has migrated none of the 196 operations to a measured, receipt-backed dynamic baseline.",
+      "evidence": [
+        "preflight reports OPERATIONS=196, PROVIDERS=196, KNOWN_UNCOVERED_OPEN=196, KNOWN_UNCOVERED_COVERED=0, BASELINE_MEASURED=0, DYNAMIC=NOT_CLOSED",
+        "historical replay denominator remains 6 PERFORMANCE + 15 HTTP + 8 NON_ROUTE"
+      ],
+      "minimalRepair": "After signal/receipt repair, migrate owner-derived scenarios in finite owner batches; each batch needs source reread, route red/green, fresh four-dimension receipt, historical disposition, and ledger removal only when justified."
+    },
+    {
+      "findingId": "PF-05",
+      "status": "CONFIRMED",
+      "genericProblem": "Step identifiers appear in runtime and test-support source even though only evidence and gate metadata may carry journey/step names.",
+      "evidence": [
+        "tools/backend-acceptance/cli.mjs references BA-U01 through BA-U06 in executable source",
+        "tools/backend-acceptance/runner.mjs and tools/backend-acceptance/impact.mjs also contain BA-U step identifiers"
+      ],
+      "minimalRepair": "Move step labels to manifest or gate-catalog metadata, use capability names in runtime source, and add an admitted red mutation covering the complete runtime/test-support denominator."
+    },
+    {
+      "findingId": "PF-06",
+      "status": "CONFIRMED",
+      "genericProblem": "A local Node orchestration boundary can incorrectly enforce the remote-JVM Testcontainers opt-in before it launches the managed remote runner, making every public backend-acceptance invocation fail before resource admission or first-failure evidence.",
+      "evidence": [
+        "2026-08-13 public scripts/test/backend-acceptance --operation preflightOperationsBrandCatalogCopy exited before container initialization with V2S_TESTCONTAINERS_REMOTE_REQUIRED",
+        "tools/backend-acceptance/runner.mjs execute called requireManagedPlane(environment) in the local orchestrator",
+        "scripts/test/r5-remote-testcontainers.mjs exports V2S_TESTCONTAINERS_EXECUTION_PLANE=remote immediately before remote Gradle, and build.gradle.kts guards Docker-backed Gradle tasks"
+      ],
+      "minimalRepair": "Remove the JVM-only guard from the local orchestrator; mechanically prove the local/remote/Gradle three-part boundary, including red mutations for each link."
+    },
+    {
+      "findingId": "PF-07",
+      "status": "CONFIRMED",
+      "genericProblem": "A public backend-acceptance runner can require a capacity and namespace environment value that no managed entrypoint supplies, failing before it writes an admissible resource manifest or performs the remote preflight required to establish actual isolated capacity.",
+      "evidence": [
+        "2026-08-13 public scripts/test/backend-acceptance --operation preflightOperationsBrandCatalogCopy passed static admission then failed with BACKEND_ACCEPTANCE_RESOURCE_MAXIMUM_INVALID before container initialization",
+        "tools/backend-acceptance/lanes.mjs read V2S_BACKEND_ACCEPTANCE_ISOLATED_RESOURCE_MAXIMUM and V2S_BACKEND_ACCEPTANCE_NAMESPACE_PREFIX directly from an unconfigured caller environment",
+        "scripts/test/r5-testcontainers-daemon-lanes.mjs already owns current remote daemon status and writes a run-scoped manifest with distinct daemon engine IDs",
+        "Initial PF-07 control red mutation found that daemon-status manifests carry raw socket paths while child environment values carry unix:// URI strings; receipt validation must preserve that schema distinction"
+      ],
+      "minimalRepair": "Use the managed daemon-status receipt as the authoritative current resource preflight, validate its raw socket-path schema separately from the child URI environment schema, record it in backend-acceptance admission, derive a run-scoped namespace prefix, permit only a bounded requested lane count, and reject shell overrides of observed capacity or namespace."
+    },
+    {
+      "findingId": "PF-08",
+      "status": "CONFIRMED",
+      "genericProblem": "A signal trace can record the receiver as its sender and omit the fork/exec lineage needed to distinguish run-owned shutdown from an external terminator; without a bounded remote source/process diagnostic, an observed pkill cannot be governed safely.",
+      "evidence": [
+        "backend-acceptance-1786621821294-edf49294 records raw ftrace pkill-169192 signal_generate comm=node pid=168517",
+        "the former parser assigned comm=node to senderComm even though the ftrace task prefix identifies pkill-169192",
+        "the former trace captured only signal_generate and the existing daemon diagnosis had no systemd/cron/active-terminator receipt"
+      ],
+      "minimalRepair": "Derive sender identity from the ftrace task prefix, preserve receiver separately, capture a run-scoped sched_process_fork lineage filtered to pkill/killall, and extend the existing managed daemon diagnosis with a boot-bound, content-hash-only scan of fixed systemd/cron roots plus active pkill/killall identities."
+    },
+    {
+      "findingId": "PF-09",
+      "status": "CONFIRMED",
+      "genericProblem": "A monitored backend-acceptance run can treat raw event-file bytes as semantic operation progress, and can then turn a separately proven resource cleanup into CLEANUP FAIL merely because terminal business artifacts were unavailable after a controlled stop.",
+      "evidence": [
+        "backend-acceptance-1786622516349-4ff98616 remained at operation=0 with Gradle log fixed at 10257B while runtimeEvidenceBytes grew",
+        "the controlled stop was identity-bound and r5 recorded process/scratch/containers/volumes PASS",
+        "r5 firstFailure=REMOTE_RESULT_NOT_AVAILABLE and finalizeCleanupAfterCollection changed cleanup status/reaped to FAIL despite all resource components PASS"
+      ],
+      "minimalRepair": "For backend-acceptance use only Gradle/test-result and semantic completed-or-firstFailure state as the stall observation; retain resource cleanup verdict from its component evidence and record artifact collection failure separately as business/evidence failure."
+    },
+    {
+      "findingId": "PF-10",
+      "status": "CONFIRMED",
+      "genericProblem": "The parent runner can either require adjacent CURRENT and TOTAL fields although the managed r5 child inserts COMPLETED, or accept a malformed interleaved counter without checking that it agrees with CURRENT; either outcome makes live parent progress untrustworthy.",
+      "evidence": [
+        "backend-acceptance-1786622984669-a3c8cb2c runner.jsonl records R5_TESTCONTAINERS_HEARTBEAT CURRENT=1 COMPLETED=1 TOTAL=1 while parent progress remained 0/1 until collection",
+        "tools/backend-acceptance/runner.mjs initially parsed only CURRENT=(number) followed immediately by TOTAL=(number), then its optional COMPLETED form accepted a mismatched value",
+        "the M-01 red proof executed runner selfTest with CURRENT=1 COMPLETED=0 TOTAL=2 and failed BACKEND_ACCEPTANCE_RUNNER_SELF_TEST_INCONSISTENT_R5_PROGRESS_ACCEPTED",
+        "repository-wide protocol scan found parent-owned CURRENT/TOTAL output plus the managed r5 child’s structured CURRENT/COMPLETED/TOTAL emission; no third format was found"
+      ],
+      "minimalRepair": "Accept exactly the two known event/layout pairs, require the interleaved COMPLETED value to equal CURRENT, retain total/range guards and first-failure monotonicity, and keep executable red proof for malformed interleaved and unknown layouts."
+    }
+  ],
+  "preventionDispositions": [
+    {
+      "findingId": "PF-01",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/r5-remote-testcontainers.mjs and scripts/test/r5-remote-testcontainers.test.mjs",
+      "reason": "The managed remote wrapper must fail closed when a terminal child signal lacks run-owned provenance evidence."
+    },
+    {
+      "findingId": "PF-02",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/backend-acceptance/runner.mjs and scripts/test/backend-acceptance.test.mjs",
+      "reason": "Receipt continuity is mechanically assertable by static red mutation before a managed run is attempted."
+    },
+    {
+      "findingId": "PF-03",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/backend-acceptance-change-impact",
+      "reason": "The existing P0/W0/P1 control already promotes uncovered production changes to ALL and must remain fail closed."
+    },
+    {
+      "findingId": "PF-04",
+      "preventionDestination": "REVIEW_CHECKLIST",
+      "owningSourceOrControl": "doc/plans/platform/2026-08-13-v2s-backend-acceptance-implementation-design-and-plan-codex.md#owner-migration-order",
+      "reason": "No static count or focused run can substitute for owner-source-derived provider migration and fresh full-denominator evidence."
+    },
+    {
+      "findingId": "PF-05",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/check/code-layout",
+      "reason": "The existing code-layout control owns the runtime/test-support journey naming prohibition and needs a complete-denominator red mutation."
+    },
+    {
+      "findingId": "PF-06",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/backend-acceptance.test.mjs",
+      "reason": "The control binds the local orchestrator, managed remote shell, and Gradle Testcontainers guard, and rejects removal or inversion of any one boundary."
+    },
+    {
+      "findingId": "PF-07",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/backend-acceptance/lanes.mjs, tools/backend-acceptance/runner.mjs, and scripts/test/backend-acceptance.test.mjs",
+      "reason": "The control rejects capacity and namespace spoofing, unavailable or malformed daemon-status receipts, and any lane count outside the managed daemon denominator."
+    },
+    {
+      "findingId": "PF-08",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/r5-remote-testcontainers.mjs, scripts/test/r5-testcontainers-daemon-lanes.mjs, scripts/test/r5-remote-testcontainers.test.mjs, and scripts/test/backend-acceptance.test.mjs",
+      "reason": "The controls reject receiver-as-sender parsing, missing filtered fork trace coverage, and unbounded or unparseable remote terminator governance evidence before any host process is considered for action."
+    },
+    {
+      "findingId": "PF-09",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "scripts/test/r5-remote-testcontainers.mjs and scripts/test/r5-remote-testcontainers.test.mjs",
+      "reason": "Focused red mutations prove that raw event bytes cannot reset a zero-operation stall and that artifact collection failure cannot overwrite independently proven process, scratch, container, or volume cleanup."
+    },
+    {
+      "findingId": "PF-10",
+      "preventionDestination": "EXISTING_MACHINE_CONTROL",
+      "owningSourceOrControl": "tools/backend-acceptance/runner.mjs selfTest",
+      "reason": "The runner self-test has real red proof for a mismatched interleaved counter and now proves both finite source-observed layouts, known event kinds, total/range guards, and first-failure monotonicity."
+    }
+  ]
+}

@@ -27,6 +27,7 @@ const backendPerformanceFixturePath = path.join(root, 'contracts/policy/backend-
 const backendAcceptanceCatalogMode = process.env.V2S_BACKEND_ACCEPTANCE_CATALOG_MODE === 'true';
 const backendAcceptanceRunId = process.env.V2S_BACKEND_ACCEPTANCE_RUN_ID || null;
 const backendAcceptanceSecret = process.env.V2S_BACKEND_ACCEPTANCE_SECRET || null;
+const CATALOG_CHILD_SIGNAL_NAMES = Object.freeze(['SIGTERM', 'SIGINT', 'SIGHUP']);
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const backendPerformanceFixtures = new Map(readJson(backendPerformanceFixturePath).rows.filter((row) => row.area === 'U07_ROUTE').map((row) => [row.operationId, row]));
@@ -34,6 +35,8 @@ const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const compact = (value, max = 240) => String(value ?? 'UNKNOWN').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').slice(0, max);
 const fail = (code) => { const error = new Error(code); error.code = code; throw error; };
 const required = (value, name) => { if (value === null || value === undefined || value === '') fail(name); return value; };
+const versionValue = (value, fallback) => Number(value ?? fallback);
+const catalogObjectVersion = (data, code, field, fallback = 1) => versionValue(data?.objectVersions?.find((entry) => entry.objectType === 'CATALOG_ITEM' && entry.code === code)?.[field], fallback);
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
 const envelopeData = (json) => json?.data ?? json;
 const responseErrorCode = (json) => json?.errorCode ?? json?.code ?? json?.problemCode ?? json?.error?.code ?? null;
@@ -158,6 +161,77 @@ function assertEnvelope(json, code = 'API_ENVELOPE_INVALID') {
   assertThat(typeof json === 'object' && json !== null, code);
   assertThat(typeof json.revision === 'string' && json.revision.length > 0, `${code}:REVISION`);
   assertThat(typeof json.requestId === 'string' && json.requestId.length > 0, `${code}:REQUEST_ID`);
+}
+
+function catalogChildSignalEvidencePath() {
+  const runtimeDirectory = process.env.V2S_RUNTIME_DIR;
+  return typeof runtimeDirectory === 'string' && runtimeDirectory.trim() !== ''
+    ? path.join(path.resolve(runtimeDirectory), 'results/catalog-inventory-api/child-signal-events.jsonl')
+    : null;
+}
+
+function probeProcessIdentity(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return {status: 'INVALID_PID', identity: null};
+  if (process.platform !== 'linux') return {status: 'PLATFORM_UNSUPPORTED', identity: null, platform: process.platform};
+  let raw;
+  try { raw = fs.readFileSync(`/proc/${pid}/stat`, 'utf8'); }
+  catch { return {status: 'PROC_STAT_UNAVAILABLE', identity: null}; }
+  const closingParenthesis = raw.lastIndexOf(')');
+  if (closingParenthesis < 0) return {status: 'PROC_STAT_FORMAT_INVALID', identity: null};
+  const fields = raw.slice(closingParenthesis + 2).trim().split(/\s+/);
+  if (fields.length < 20 || !/^\d+$/.test(fields[19])) return {status: 'PROC_STAT_FIELDS_INVALID', identity: null};
+  let bootId;
+  try { bootId = fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(); }
+  catch { return {status: 'BOOT_ID_UNAVAILABLE', identity: null}; }
+  if (!/^[0-9a-f-]{16,64}$/i.test(bootId)) return {status: 'BOOT_ID_INVALID', identity: null};
+  const identity = {
+    pid,
+    state: fields[0],
+    parentPid: Number(fields[1]),
+    processGroupId: Number(fields[2]),
+    sessionId: Number(fields[3]),
+    terminalProcessGroupId: Number(fields[5]),
+    startTimeTicks: fields[19],
+    bootId,
+  };
+  if ([identity.parentPid, identity.processGroupId, identity.sessionId]
+    .some((value) => !Number.isSafeInteger(value) || value < 0)
+    || !Number.isSafeInteger(identity.terminalProcessGroupId) || identity.terminalProcessGroupId < -1) return {status: 'PROC_STAT_VALUES_INVALID', identity: null};
+  return {status: 'PASS', identity};
+}
+
+function readProcessIdentity(pid) {
+  return probeProcessIdentity(pid).identity;
+}
+
+function recordCatalogChildSignal(signal) {
+  const target = catalogChildSignalEvidencePath();
+  if (!target) return;
+  const processIdentityProbe = probeProcessIdentity(process.pid);
+  const parentIdentityProbe = probeProcessIdentity(process.ppid);
+  fs.mkdirSync(path.dirname(target), {recursive: true, mode: 0o700});
+  fs.appendFileSync(target, `${JSON.stringify({
+    schemaVersion: 1,
+    kind: 'backend-acceptance-catalog-child-signal',
+    runId: backendAcceptanceRunId,
+    signal,
+    pid: process.pid,
+    parentPid: process.ppid,
+    processIdentity: processIdentityProbe.identity,
+    processIdentityStatus: processIdentityProbe.status,
+    parentIdentity: parentIdentityProbe.identity,
+    parentIdentityStatus: parentIdentityProbe.status,
+    at: new Date().toISOString(),
+  })}\n`, {mode: 0o600});
+}
+
+for (const signal of CATALOG_CHILD_SIGNAL_NAMES) {
+  const handler = () => {
+    recordCatalogChildSignal(signal);
+    process.removeListener(signal, handler);
+    process.kill(process.pid, signal);
+  };
+  process.once(signal, handler);
 }
 
 async function execute() {
@@ -454,17 +528,17 @@ async function execute() {
         let version = 1;
         if (existing.status === 404) {
           const created = await createItem(client, `API_BASE_CREATE_${fixtureId}_${client.scopeType}_${code}`, code, item.shapeKey);
-          version = Number(itemResult(created.json)?.version || 1);
+          version = versionValue(itemResult(created.json)?.version, 1);
         } else {
           const current = envelopeData(existing.json)?.item || envelopeData(existing.json);
           assertThat(current?.shapeKey === item.shapeKey, `API_BASE_SHAPE_${code}`);
-          version = Number(current?.version || 1);
+          version = versionValue(current?.version, 1);
         }
         const saved = await saveItem(client, `API_BASE_SAVE_${fixtureId}_${client.scopeType}_${code}`, code, version, apiFixtureDraft(client, fixtureId, item));
         assertThat(itemResult(saved.json)?.version !== undefined, `API_BASE_SAVE_READBACK_${code}`);
         const stored = await recordItemRefs(client, `API_BASE_${fixtureId}_${client.scopeType}_${code}`, code);
         if (client.scopeType === 'STORE' && item.shapeKey === 'MATERIAL') {
-          const configured = await saveItem(client, `API_BASE_CONFIG_${fixtureId}_${client.scopeType}_${code}`, code, Number(stored.version || 1), apiFixtureDraft(client, fixtureId, item), apiMaterialConfig(client, item.code));
+          const configured = await saveItem(client, `API_BASE_CONFIG_${fixtureId}_${client.scopeType}_${code}`, code, versionValue(stored.version, 1), apiFixtureDraft(client, fixtureId, item), apiMaterialConfig(client, item.code));
           assertThat(itemResult(configured.json)?.version !== undefined, `API_BASE_CONFIG_READBACK_${code}`);
         }
       }
@@ -475,7 +549,7 @@ async function execute() {
   const mutateItem = async (client, phase, code, marker) => {
     const detail = envelopeData((await getDetail(client, `${phase}_READ`, code)).json);
     const item = detail.item || detail;
-    const saved = await saveItem(client, `${phase}_WRITE`, code, Number(item.version || detail.version || 1), {
+    const saved = await saveItem(client, `${phase}_WRITE`, code, versionValue(item.version ?? detail.version, 1), {
       name: item.name || code,
       shapeKey: item.shapeKey || 'STANDARD_SALE_COUNTED',
       attributes: {...(item.attributes || {}), __apiMutation: marker},
@@ -484,7 +558,7 @@ async function execute() {
       categoryRefs: Array.isArray(item.categoryRefs) ? item.categoryRefs : [],
     });
     const readback = envelopeData((await getDetail(client, `${phase}_READBACK`, code)).json);
-    return {version: Number((readback.item || readback).version || readback.version || item.version || 1), response: saved};
+    return {version: versionValue((readback.item || readback).version ?? readback.version ?? item.version, 1), response: saved};
   };
   const shape = envelopeData((await request('SHAPE_MANIFEST', 'getOperationsCatalogShapeManifest', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
   const storePage = envelopeData((await getItems(store, 'STORE_ITEMS')).json);
@@ -565,14 +639,14 @@ async function execute() {
     const consumer = await createItem(store, 'VOID_INBOUND_CONSUMER_CREATE', consumerCode);
     await recordItemRefs(store, 'VOID_INBOUND_TARGET', targetCode);
     await recordItemRefs(store, 'VOID_INBOUND_CONSUMER', consumerCode);
-    const consumerVersion = Number(itemResult(consumer.json)?.version || 1);
+    const consumerVersion = versionValue(itemResult(consumer.json)?.version, 1);
     await saveItem(store, 'VOID_INBOUND_CONSUMER_SAVE', consumerCode, consumerVersion, {
       name: consumerCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
       ...compositeGroups(store, [targetCode], consumerCode),
     });
     const targetDetail = envelopeData((await getDetail(store, 'VOID_INBOUND_TARGET_DETAIL', targetCode)).json);
-    inboundVoidFixture = {targetCode, targetVersion: Number(targetDetail.item?.version || targetDetail.version || itemResult(target.json)?.version || 1)};
+    inboundVoidFixture = {targetCode, targetVersion: versionValue(targetDetail.item?.version ?? targetDetail.version ?? itemResult(target.json)?.version, 1)};
     bindFixture('FIXTURE-VOID-INBOUND-REFERENCE', {catalogItemCodes: [targetCode, consumerCode], primaryCatalogItemCode: targetCode});
     return inboundVoidFixture;
   };
@@ -581,7 +655,7 @@ async function execute() {
     const code = `API-VOID-DEPENDENT-${Date.now()}`;
     const created = await createItem(store, 'VOID_DEPENDENT_CREATE', code);
     await recordItemRefs(store, 'VOID_DEPENDENT', code);
-    const version = Number(itemResult(created.json)?.version || 1);
+    const version = versionValue(itemResult(created.json)?.version, 1);
     const saved = await saveItem(store, 'VOID_DEPENDENT_SAVE', code, version, {
       name: code,
       shapeKey: 'STANDARD_SALE_COUNTED',
@@ -589,7 +663,7 @@ async function execute() {
       nodes: [{nodeType: 'ITEM', itemCode: code, itemRef: itemRef(refsFor(store), code), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '1', allowNegative: false}}],
     });
     const detail = envelopeData((await getDetail(store, 'VOID_DEPENDENT_DETAIL', code)).json);
-    dependentVoidFixture = {code, version: Number(detail.item?.version || detail.version || itemResult(saved.json)?.version || version + 1)};
+    dependentVoidFixture = {code, version: versionValue(detail.item?.version ?? detail.version ?? itemResult(saved.json)?.version, version + 1)};
     bindFixture('FIXTURE-VOID-DEPENDENT-FACT', {catalogItemCodes: [code], primaryCatalogItemCode: code});
     return dependentVoidFixture;
   };
@@ -606,7 +680,7 @@ async function execute() {
     await createItemsInBatches(head, 'COPY_CLOSURE_CREATE', [...componentCodes, overflowCode]);
     for (const code of [rootCode, ...componentCodes, overflowCode]) await recordItemRefs(head, 'COPY_CLOSURE', code);
     const rootDetail = envelopeData((await getDetail(head, 'COPY_CLOSURE_ROOT_DETAIL', rootCode)).json);
-    await saveItem(head, 'COPY_CLOSURE_ROOT_SAVE', rootCode, Number(rootDetail.item?.version || rootDetail.version || 1), {
+    await saveItem(head, 'COPY_CLOSURE_ROOT_SAVE', rootCode, versionValue(rootDetail.item?.version ?? rootDetail.version, 1), {
       name: rootCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
       ...compositeGroups(head, componentCodes, rootCode),
@@ -618,7 +692,7 @@ async function execute() {
   const addClosureOverflowComponent = async (fixture) => {
     if (fixture.overflowApplied) return fixture;
     const detail = envelopeData((await getDetail(head, 'COPY_CLOSURE_OVERFLOW_ROOT_DETAIL', fixture.rootCode)).json);
-    await saveItem(head, 'COPY_CLOSURE_OVERFLOW_ROOT_SAVE', fixture.rootCode, Number(detail.item?.version || detail.version || 1), {
+    await saveItem(head, 'COPY_CLOSURE_OVERFLOW_ROOT_SAVE', fixture.rootCode, versionValue(detail.item?.version ?? detail.version, 1), {
       name: fixture.rootCode,
       shapeKey: 'STANDARD_SALE_COUNTED',
       ...compositeGroups(head, [...fixture.componentCodes, fixture.overflowCode], fixture.rootCode),
@@ -676,7 +750,7 @@ async function execute() {
       // The request helper derives idempotency from phase.  Each node link is
       // a distinct command, so keep its phase/key distinct as well; reusing a
       // phase would correctly surface IDEMPOTENCY_MISMATCH on the second node.
-      await saveItem(head, `DAG_SOURCE_LINK_${code}`, code, Number(detail.item?.version || detail.version || 1), {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(head, components, code)});
+      await saveItem(head, `DAG_SOURCE_LINK_${code}`, code, versionValue(detail.item?.version ?? detail.version, 1), {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ...compositeGroups(head, components, code)});
     }
     dagFixture = {rootCode, middleCode, leafCode, inboundOnlyCode, targetConflictCode: rootCode};
     bindFixture('FIXTURE-DAG-CYCLE', {catalogItemCodes: [rootCode, middleCode, leafCode, inboundOnlyCode], primaryCatalogItemCode: rootCode});
@@ -689,44 +763,74 @@ async function execute() {
     const shapeCode = `API-COMPAT-SHAPE-${stamp}`;
     const skuCode = `API-COMPAT-SKU-${stamp}`;
     const unitCode = `API-COMPAT-UNIT-${stamp}`;
-    const pairs = [reuseCode, shapeCode, skuCode, unitCode];
+    const referenceCode = `API-COMPAT-REFERENCE-${stamp}`;
+    const pairs = [reuseCode, shapeCode, skuCode, unitCode, referenceCode];
     await createItemsInBatches(head, 'COMPAT_SOURCE_CREATE', pairs);
     await createItemsInBatches(store, 'COMPAT_TARGET_CREATE', pairs.filter((code) => code !== shapeCode));
     await createItem(store, 'COMPAT_TARGET_SHAPE_CREATE', shapeCode, 'MATERIAL');
     for (const code of pairs) await recordItemRefs(head, 'COMPAT_SOURCE', code);
     for (const code of pairs) await recordItemRefs(store, 'COMPAT_TARGET', code);
+    const productionTagCode = `API-COMPAT-PRODUCTION-TAG-${stamp}`;
+    await request('COMPAT_SOURCE_PRODUCTION_TAG_CREATE', 'createOperationsProductionTag', {}, {
+      cookie: head.cookie, brandRef: head.brandRef, expected: [200],
+      idempotencyKey: `catalog-api-compat-production-tag-${runId}-head`,
+      body: {dataNodeRef: head.dataNodeRef, code: productionTagCode, tagKind: 'PRODUCTION', name: `${productionTagCode}-SOURCE`},
+    });
+    await request('COMPAT_TARGET_PRODUCTION_TAG_CREATE', 'createOperationsProductionTag', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, expected: [200],
+      idempotencyKey: `catalog-api-compat-production-tag-${runId}-store`,
+      body: {dataNodeRef: store.dataNodeRef, code: productionTagCode, tagKind: 'PRODUCTION', name: `${productionTagCode}-TARGET`},
+    });
+    const sourceTags = envelopeData((await request('COMPAT_SOURCE_PRODUCTION_TAG_READBACK', 'getOperationsProductionTags', {}, {
+      cookie: head.cookie, brandRef: head.brandRef, queryParameters: {dataNodeRef: head.dataNodeRef},
+    })).json);
+    const targetTags = envelopeData((await request('COMPAT_TARGET_PRODUCTION_TAG_READBACK', 'getOperationsProductionTags', {}, {
+      cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
+    })).json);
+    const sourceProductionTag = (sourceTags.entries || sourceTags.items || []).find((entry) => entry.code === productionTagCode);
+    const targetProductionTag = (targetTags.entries || targetTags.items || []).find((entry) => entry.code === productionTagCode);
+    const sourceProductionTagRef = requiredUuid(sourceProductionTag?.tagRef, `PRODUCTION_TAG:${productionTagCode}:source`);
+    requiredUuid(targetProductionTag?.tagRef, `PRODUCTION_TAG:${productionTagCode}:target`);
     const sourceShape = envelopeData((await getDetail(head, 'COMPAT_SOURCE_DETAIL', shapeCode)).json);
     const targetShape = envelopeData((await getDetail(store, 'COMPAT_TARGET_DETAIL', shapeCode)).json);
     const sourceSku = envelopeData((await getDetail(head, 'COMPAT_SOURCE_SKU_DETAIL', skuCode)).json);
     const targetSku = envelopeData((await getDetail(store, 'COMPAT_TARGET_SKU_DETAIL', skuCode)).json);
     const sourceUnit = envelopeData((await getDetail(head, 'COMPAT_SOURCE_UNIT_DETAIL', unitCode)).json);
     const targetUnit = envelopeData((await getDetail(store, 'COMPAT_TARGET_UNIT_DETAIL', unitCode)).json);
-    await saveItem(head, 'COMPAT_SHAPE_SAVE', shapeCode, Number(sourceShape.item?.version || sourceShape.version || 1), {name: shapeCode, shapeKey: 'STANDARD_SALE_COUNTED'});
-    await saveItem(store, 'COMPAT_SHAPE_SAVE_TARGET', shapeCode, Number(targetShape.item?.version || targetShape.version || 1), {name: shapeCode, shapeKey: 'MATERIAL'});
+    const sourceReference = envelopeData((await getDetail(head, 'COMPAT_SOURCE_REFERENCE_DETAIL', referenceCode)).json);
+    const targetReference = envelopeData((await getDetail(store, 'COMPAT_TARGET_REFERENCE_DETAIL', referenceCode)).json);
+    await saveItem(head, 'COMPAT_SHAPE_SAVE', shapeCode, versionValue(sourceShape.item?.version ?? sourceShape.version, 1), {name: shapeCode, shapeKey: 'STANDARD_SALE_COUNTED'});
+    await saveItem(store, 'COMPAT_SHAPE_SAVE_TARGET', shapeCode, versionValue(targetShape.item?.version ?? targetShape.version, 1), {name: shapeCode, shapeKey: 'MATERIAL'});
+    // Row 14 is a production-tag owner conflict.  The catalog item stores the
+    // opaque source tag ref; the target owner has the same code but a different
+    // semantic name, so the public copy request remains contract-valid and the
+    // owner preflight supplies the blocking fact.
+    await saveItem(head, 'COMPAT_REFERENCE_SAVE', referenceCode, versionValue(sourceReference.item?.version ?? sourceReference.version, 1), {name: referenceCode, shapeKey: 'STANDARD_SALE_COUNTED', productionTagRefs: [sourceProductionTagRef]});
+    await saveItem(store, 'COMPAT_REFERENCE_SAVE_TARGET', referenceCode, versionValue(targetReference.item?.version ?? targetReference.version, 1), {name: referenceCode, shapeKey: 'STANDARD_SALE_COUNTED', productionTagRefs: []});
     const skuDraft = (client, size, owner) => ({
       productSkuRef: localRef(refsFor(client), `COMPAT-SKU:${skuCode}:${owner}`),
       skuCode: 'SKU-001', skuName: `${skuCode}-${size}`,
       attributeValueRefs: [{attributeRef: dictionaryRef(refsFor(client), 'SKU_ATTRIBUTE', 'SIZE'), attributeCode: 'SIZE', attributeName: 'Size', attributeValueRef: dictionaryRef(refsFor(client), 'SKU_ATTRIBUTE_VALUE', size), valueCode: size, valueLabel: size, displayOrder: 0, status: 'ENABLED'}],
       skuBarcode: `API-${skuCode}-${owner}`, standardSalePrice: 100, isDefault: true, status: 'ENABLED', version: 1, mediaRefs: [],
     });
-    await saveItem(head, 'COMPAT_SKU_SAVE', skuCode, Number(sourceSku.item?.version || sourceSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(head, 'SMALL', 'HEAD')]});
-    await saveItem(store, 'COMPAT_SKU_SAVE_TARGET', skuCode, Number(targetSku.item?.version || targetSku.version || 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(store, 'LARGE', 'STORE')]});
+    await saveItem(head, 'COMPAT_SKU_SAVE', skuCode, versionValue(sourceSku.item?.version ?? sourceSku.version, 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(head, 'SMALL', 'HEAD')]});
+    await saveItem(store, 'COMPAT_SKU_SAVE_TARGET', skuCode, versionValue(targetSku.item?.version ?? targetSku.version, 1), {name: skuCode, shapeKey: 'STANDARD_SALE_COUNTED', skus: [skuDraft(store, 'LARGE', 'STORE')]});
     // Consumption units belong to the inventory owner, not to the catalog
     // draft.  Keep the fixture contract-valid by creating the real stock
     // targets through the whole-save inventory configuration section; this is
     // also what makes the inventory owner's compatibility result observable
     // during brand-copy preflight.
-    await saveItem(head, 'COMPAT_UNIT_SAVE', unitCode, Number(sourceUnit.item?.version || sourceUnit.version || 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
+    await saveItem(head, 'COMPAT_UNIT_SAVE', unitCode, versionValue(sourceUnit.item?.version ?? sourceUnit.version, 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
       nodes: [{nodeType: 'ITEM', itemCode: unitCode, itemRef: itemRef(refsFor(head), unitCode), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'GRAM', configuration: {countingUnit: 'GRAM', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
     });
-    await saveItem(store, 'COMPAT_UNIT_SAVE_TARGET', unitCode, Number(targetUnit.item?.version || targetUnit.version || 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
+    await saveItem(store, 'COMPAT_UNIT_SAVE_TARGET', unitCode, versionValue(targetUnit.item?.version ?? targetUnit.version, 1), {name: unitCode, shapeKey: 'STANDARD_SALE_COUNTED'}, {
       nodes: [{nodeType: 'ITEM', itemCode: unitCode, itemRef: itemRef(refsFor(store), unitCode), productSkuRef: null, mode: 'INDEPENDENT_STOCK', consumptionUnit: 'EACH', configuration: {countingUnit: 'EACH', conversionFactor: '1', lowStockThreshold: '0', allowNegative: false}}],
     });
-    compatibilityFixture = {reuseCode, shapeCode, skuCode, unitCode};
+    compatibilityFixture = {reuseCode, shapeCode, skuCode, unitCode, referenceCode, productionTagCode};
     bindFixture('FIXTURE-COMPATIBILITY-MATRIX', {catalogItemCodes: pairs, primaryCatalogItemCode: reuseCode});
     bindFixture('FIXTURE-SKU-STRUCTURE-CONFLICT', {catalogItemCodes: [skuCode], primaryCatalogItemCode: skuCode});
     bindFixture('FIXTURE-UNIT-GRAM-EACH', {catalogItemCodes: [unitCode], primaryCatalogItemCode: unitCode});
-    bindFixture('FIXTURE-REFERENCE-MAPPING-MISSING', {catalogItemCodes: [shapeCode, reuseCode], primaryCatalogItemCode: shapeCode});
+    bindFixture('FIXTURE-REFERENCE-MAPPING-MISSING', {catalogItemCodes: [referenceCode, reuseCode], primaryCatalogItemCode: referenceCode});
     return compatibilityFixture;
   };
   const ensureStaleFixture = async () => {
@@ -748,7 +852,7 @@ async function execute() {
     await request('TAG_STORE_CREATE', 'createOperationsProductionTag', {}, {cookie: store.cookie, brandRef: store.brandRef, expected: [200], idempotencyKey: `catalog-api-tag-${runId}-store`, body: body(store)});
     const storeTags = envelopeData((await request('TAG_STORE_READBACK', 'getOperationsProductionTags', {}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
     const storeTag = (storeTags.items || storeTags.entries || []).find((entry) => entry.code === code);
-    productionTagFixture = {code, version: Number(storeTag?.version || 1)};
+    productionTagFixture = {code, version: versionValue(storeTag?.version, 1)};
     bindFixture('FIXTURE-OWNER-SCOPE', {productionTagCodes: [code], primaryProductionTagCode: code});
     return productionTagFixture;
   };
@@ -792,7 +896,7 @@ async function execute() {
     assertThat(assetRef, 'VOID_ASSET_STAGE_READBACK');
     assertThat(bindGrant, 'VOID_ASSET_STAGE_BIND_GRANT_READBACK');
     const currentItem = sampleDetail.item || sampleDetail;
-    const imageSaved = await saveItem(store, 'VOID_ASSET_CLAIM', sampleStoreCode, Number(currentItem.version || sampleDetail.version || 1), {
+    const imageSaved = await saveItem(store, 'VOID_ASSET_CLAIM', sampleStoreCode, versionValue(currentItem.version ?? sampleDetail.version, 1), {
       name: currentItem.name || sampleStoreCode,
       shapeKey: currentItem.shapeKey || 'STANDARD_SALE_COUNTED',
       images: [assetRef],
@@ -800,7 +904,7 @@ async function execute() {
     assertThat(itemResult(imageSaved.json)?.version !== undefined, 'VOID_ASSET_CLAIM_READBACK');
 
     const currentAfterAsset = envelopeData((await getDetail(store, 'VOID_BOM_PARENT_DETAIL', sampleStoreCode)).json);
-    const parentVersion = Number(currentAfterAsset.item?.version || currentAfterAsset.version || 1);
+    const parentVersion = versionValue(currentAfterAsset.item?.version ?? currentAfterAsset.version, 1);
     const bomDraft = preserveFixtureWholeSaveImages(currentAfterAsset, {
       name: currentAfterAsset.item?.name || sampleStoreCode,
       shapeKey: currentAfterAsset.item?.shapeKey || 'STANDARD_SALE_COUNTED',
@@ -821,7 +925,7 @@ async function execute() {
     // A second whole-save of the same BOM must update that row rather than
     // create a duplicate or escape through a PostgreSQL inference error.
     const repeatDetail = envelopeData((await getDetail(store, 'VOID_BOM_REPEAT_DETAIL', sampleStoreCode)).json);
-    const repeatVersion = Number(repeatDetail.item?.version || repeatDetail.version || 1);
+    const repeatVersion = versionValue(repeatDetail.item?.version ?? repeatDetail.version, 1);
     // The detail row's itemCode is the BOM owner (the parent item), not the
     // component item code carried by the write draft.  Identity for this
     // focused proof is therefore the same owner identity used by the
@@ -856,7 +960,7 @@ async function execute() {
     const disabledCode = `API-SKU-DISABLED-${stamp}`;
     const saveSkuItem = async (code, status) => {
       const created = await createItem(store, `HAS_SKU_${status}_CREATE`, code, 'SKU_VARIANT_SALE_COUNTED');
-      const version = Number(itemResult(created.json)?.version || 1);
+      const version = versionValue(itemResult(created.json)?.version, 1);
       await saveItem(store, `HAS_SKU_${status}_SAVE`, code, version, {
         name: code,
         shapeKey: 'SKU_VARIANT_SALE_COUNTED',
@@ -953,26 +1057,41 @@ async function execute() {
     return result;
   };
 
+  const catalogRouteCoverageOperationIds = (catalogOperationIds) => new Set(all
+    .filter((operation) => catalogOperationIds.has(operation.operationId)
+      && backendPerformanceFixtures.get(operation.operationId)?.area === 'U07_ROUTE')
+    .map((operation) => operation.operationId));
+
   /**
-   * Final U07 catalog calls are deliberately issued one-by-one through the
-   * generated operation registry.  Preparation calls above remain ordinary
-   * owner HTTP calls; only these 42 requests receive the final performance
-   * headers and therefore can contribute to the 196-row request/event join.
+   * Final catalog route calls are deliberately issued one-by-one through the
+   * generated operation registry.  The same source-informed recipe serves
+   * backend-acceptance and the predecessor performance adapter; only the
+   * latter adds performance metadata. Preparation calls above remain ordinary
+   * owner HTTP calls.
    */
-  const executeBackendPerformanceCanonicalRoutes = async (onProgress = () => {}) => {
+  const executeCatalogRouteCoverage = async ({onProgress = () => {}, performanceCanonical = false} = {}) => {
     const catalogOperationIds = new Set(readJson(registryCatalogPath).operations.map((operation) => operation.operationId));
-    const expectedOperationIds = validateBackendPerformanceCanonicalOperationIds(all, catalogOperationIds);
+    const expectedOperationIds = performanceCanonical
+      ? validateBackendPerformanceCanonicalOperationIds(all, catalogOperationIds)
+      : catalogRouteCoverageOperationIds(catalogOperationIds);
     const seen = [];
     const canonical = async (phase, operationId, pathParameters = {}, options = {}) => {
-      if (seen.includes(operationId)) fail(`BP_U07_CANONICAL_DUPLICATE:${operationId}`);
+      if (seen.includes(operationId)) fail(`${performanceCanonical ? 'BP_U07_CANONICAL' : 'BACKEND_ACCEPTANCE_CATALOG_ROUTE'}_DUPLICATE:${operationId}`);
       seen.push(operationId);
       onProgress([...seen]);
-      return request(phase, operationId, pathParameters, {...options, performanceCanonical: true});
+      const routePhase = performanceCanonical ? phase : phase.replace(/^BP_U07_/, 'BA_CATALOG_');
+      return request(routePhase, operationId, pathParameters, {...options, performanceCanonical});
+    };
+    const expectedProblemCanonical = async (phase, operationId, pathParameters, options, problemCode, statuses) => {
+      if (seen.includes(operationId)) fail(`${performanceCanonical ? 'BP_U07_CANONICAL' : 'BACKEND_ACCEPTANCE_CATALOG_ROUTE'}_DUPLICATE:${operationId}`);
+      seen.push(operationId);
+      onProgress([...seen]);
+      const routePhase = performanceCanonical ? phase : phase.replace(/^BP_U07_/, 'BA_CATALOG_');
+      return expectedProblem(routePhase, operationId, pathParameters, {...options, performanceCanonical}, problemCode, statuses);
     };
     const resultOf = (response) => itemResult(response.json) || envelopeData(response.json);
     const versionOf = (response, fallback) => Number(resultOf(response)?.version ?? response.json?.version ?? fallback);
     const entriesOf = (response) => envelopeData(response.json)?.entries || envelopeData(response.json)?.items || [];
-    const objectVersion = (data, code, field, fallback = 1) => Number(data?.objectVersions?.find((entry) => entry.objectType === 'CATALOG_ITEM' && entry.code === code)?.[field] ?? fallback);
 
     const context = await canonical('BP_U07_CONTEXT', 'getOperationsCatalogWorkbenchContext', {}, {
       cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
@@ -1043,7 +1162,7 @@ async function execute() {
     });
     const categoryResult = resultOf(category);
     const categoryRef = required(categoryResult?.categoryRef, 'BP_U07_CATEGORY_REF');
-    let categoryVersion = Number(categoryResult?.version || 1);
+    let categoryVersion = versionValue(categoryResult?.version, 1);
     const categoryUpdated = await canonical('BP_U07_CATEGORY_UPDATE', 'updateOperationsCatalogCategory', {categoryRef}, {
       cookie: store.cookie, brandRef: store.brandRef,
       idempotencyKey: `bpf-u07-category-update-${runId}`,
@@ -1086,7 +1205,7 @@ async function execute() {
       body: {dataNodeRef: store.dataNodeRef, dictionaryKind, orderedCodes: [dictionaryCode, ...existingDictionaryCodes]},
     });
     const reorderedEntry = entriesOf(reordered).find((entry) => entry.code === dictionaryCode);
-    dictionaryVersion = Number(reorderedEntry?.version || dictionaryVersion + 1);
+    dictionaryVersion = versionValue(reorderedEntry?.version, dictionaryVersion + 1);
     await canonical('BP_U07_DICTIONARY_TRANSITION', 'transitionOperationsCatalogDictionaryEntryStatus', {dictionaryKind, entryCode: dictionaryCode}, {
       cookie: store.cookie, brandRef: store.brandRef,
       idempotencyKey: `bpf-u07-dictionary-transition-${runId}`,
@@ -1135,8 +1254,8 @@ async function execute() {
         targetItemCode: localCopy.targetCode,
         selectedSections: ['BASIC_INFO'],
         preflightDigest: required(localData?.preflightDigest, 'BP_U07_LOCAL_PREFLIGHT_DIGEST'),
-        expectedSourceVersion: objectVersion(localData, localCopy.sourceCode, 'sourceVersion'),
-        expectedTargetVersion: objectVersion(localData, localCopy.targetCode, 'targetVersion'),
+        expectedSourceVersion: catalogObjectVersion(localData, localCopy.sourceCode, 'sourceVersion'),
+        expectedTargetVersion: catalogObjectVersion(localData, localCopy.sourceCode, 'targetVersion'),
       },
     });
 
@@ -1158,8 +1277,8 @@ async function execute() {
         selectedItemCodes: [brandCopy.sourceCode],
         targetDataNodeRef: store.dataNodeRef,
         preflightDigest: required(brandData?.preflightDigest, 'BP_U07_BRAND_PREFLIGHT_DIGEST'),
-        expectedSourceVersion: objectVersion(brandData, brandCopy.sourceCode, 'sourceVersion'),
-        expectedTargetVersion: objectVersion(brandData, brandCopy.sourceCode, 'targetVersion', 0),
+        expectedSourceVersion: catalogObjectVersion(brandData, brandCopy.sourceCode, 'sourceVersion'),
+        expectedTargetVersion: catalogObjectVersion(brandData, brandCopy.sourceCode, 'targetVersion', 0),
       },
     });
 
@@ -1231,45 +1350,74 @@ async function execute() {
     });
     const stagedResult = resultOf(staged);
     const assetRef = required(stagedResult?.assetRef, 'BP_U07_ASSET_REF');
-    const assetVersion = Number(stagedResult?.version || 1);
+    const assetVersion = versionValue(stagedResult?.version, 1);
     await canonical('BP_U07_ASSET_RELEASE', 'releaseOperationsCatalogStagedAsset', {assetRef}, {
       cookie: store.cookie, brandRef: store.brandRef,
       idempotencyKey: `bpf-u07-asset-release-${runId}`,
       body: {dataNodeRef: store.dataNodeRef, assetRef, expectedVersion: assetVersion},
     });
 
-    // The source-owned external-order item is intentionally not fabricated by
-    // this phase.  The two promotion routes still belong to the closed 42-row
-    // U07 set, so the canonical run requires an explicitly run-scoped fixture
-    // supplied by the approved ingress owner.  Missing state is a hard red,
-    // never a normal-item fallback or a skipped operation.
-    const temporaryCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_ITEM_CODE, 'BP_U07_TEMPORARY_OWNER_FIXTURE_REQUIRED');
-    const temporaryDetail = envelopeData((await request('BP_U07_TEMPORARY_FIXTURE_READBACK', 'getOperationsCatalogItem', {itemCode: temporaryCode}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
-    const temporaryItem = temporaryDetail?.item || temporaryDetail;
-    assertThat(temporaryItem?.source === 'TEMPORARY' || temporaryItem?.source === 'EXTERNAL_ORDER_TEMPORARY', 'BP_U07_TEMPORARY_OWNER_FACT_REQUIRED');
-    const temporaryVersion = Number(temporaryItem.version);
-    const formalCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_FORMAL_CODE, 'BP_U07_TEMPORARY_FORMAL_CODE_REQUIRED');
-    const promotionBody = {dataNodeRef: store.dataNodeRef, itemCode: temporaryCode, formalCode, shapeKey: temporaryItem.shapeKey || 'STANDARD_SALE_COUNTED', name: temporaryItem.name || temporaryCode, shortName: temporaryItem.shortName || undefined, attributes: temporaryItem.attributes || {fixtureRef: 'BPF-U07-TEMPORARY'}, expectedSourceVersion: temporaryVersion};
-    const promotionPreflight = await canonical('BP_U07_TEMPORARY_PREFLIGHT', 'preflightOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
-      cookie: store.cookie, brandRef: store.brandRef,
-      idempotencyKey: `bpf-u07-temporary-preflight-${runId}`,
-      body: promotionBody,
-    });
-    const promotionData = envelopeData(promotionPreflight.json);
-    assertThat(promotionData?.canPromote === true, 'BP_U07_TEMPORARY_PROMOTION_NOT_READY');
-    await canonical('BP_U07_TEMPORARY_EXECUTE', 'executeOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
-      cookie: store.cookie, brandRef: store.brandRef,
-      idempotencyKey: `bpf-u07-temporary-execute-${runId}`,
-      body: {...promotionBody, expectedVersion: temporaryVersion, preflightDigest: required(promotionData.preflightDigest, 'BP_U07_TEMPORARY_PREFLIGHT_DIGEST')},
-    });
+    if (backendAcceptanceMode) {
+      // The approved catalog fixture generator explicitly excludes the
+      // EXTERNAL_ORDER_TEMPORARY ingress chain in this phase.  Still execute
+      // both semantic routes through their public HTTP boundary and prove the
+      // owner-level NOT_FOUND contract for a run-scoped absent source item;
+      // never fabricate an ingress fact or silently omit the operation.
+      const temporaryCode = `BA-TEMPORARY-INGRESS-UNAVAILABLE-${Date.now()}`;
+      const promotionBody = {
+        dataNodeRef: store.dataNodeRef,
+        itemCode: temporaryCode,
+        formalCode: `BA-TEMPORARY-FORMAL-${Date.now()}`,
+        shapeKey: 'STANDARD_SALE_COUNTED',
+        name: temporaryCode,
+        attributes: {fixtureRef: 'NO_APPROVED_INGRESS_THIS_PHASE'},
+        expectedSourceVersion: 1,
+      };
+      await expectedProblemCanonical('BA_CATALOG_TEMPORARY_PREFLIGHT', 'preflightOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+        cookie: store.cookie,
+        brandRef: store.brandRef,
+        idempotencyKey: `backend-acceptance-temporary-preflight-${runId}`,
+        body: promotionBody,
+      }, 'NOT_FOUND', [404]);
+      await expectedProblemCanonical('BA_CATALOG_TEMPORARY_EXECUTE', 'executeOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+        cookie: store.cookie,
+        brandRef: store.brandRef,
+        idempotencyKey: `backend-acceptance-temporary-execute-${runId}`,
+        body: {...promotionBody, expectedVersion: 1, preflightDigest: 'NO_APPROVED_INGRESS_THIS_PHASE'},
+      }, 'NOT_FOUND', [404]);
+    } else {
+      // The source-owned external-order item is intentionally not fabricated
+      // by this predecessor performance adapter.  Missing state remains a
+      // hard red there and never falls back to a normal catalog item.
+      const temporaryCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_ITEM_CODE, 'BP_U07_TEMPORARY_OWNER_FIXTURE_REQUIRED');
+      const temporaryDetail = envelopeData((await request('BP_U07_TEMPORARY_FIXTURE_READBACK', 'getOperationsCatalogItem', {itemCode: temporaryCode}, {cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef}})).json);
+      const temporaryItem = temporaryDetail?.item || temporaryDetail;
+      assertThat(temporaryItem?.source === 'TEMPORARY' || temporaryItem?.source === 'EXTERNAL_ORDER_TEMPORARY', 'BP_U07_TEMPORARY_OWNER_FACT_REQUIRED');
+      const temporaryVersion = Number(temporaryItem.version);
+      const formalCode = required(process.env.CATALOG_INVENTORY_PERFORMANCE_TEMPORARY_FORMAL_CODE, 'BP_U07_TEMPORARY_FORMAL_CODE_REQUIRED');
+      const promotionBody = {dataNodeRef: store.dataNodeRef, itemCode: temporaryCode, formalCode, shapeKey: temporaryItem.shapeKey || 'STANDARD_SALE_COUNTED', name: temporaryItem.name || temporaryCode, shortName: temporaryItem.shortName || undefined, attributes: temporaryItem.attributes || {fixtureRef: 'BPF-U07-TEMPORARY'}, expectedSourceVersion: temporaryVersion};
+      const promotionPreflight = await canonical('BP_U07_TEMPORARY_PREFLIGHT', 'preflightOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+        cookie: store.cookie, brandRef: store.brandRef,
+        idempotencyKey: `bpf-u07-temporary-preflight-${runId}`,
+        body: promotionBody,
+      });
+      const promotionData = envelopeData(promotionPreflight.json);
+      assertThat(promotionData?.canPromote === true, 'BP_U07_TEMPORARY_PROMOTION_NOT_READY');
+      await canonical('BP_U07_TEMPORARY_EXECUTE', 'executeOperationsTemporaryCatalogItemPromotion', {itemCode: temporaryCode}, {
+        cookie: store.cookie, brandRef: store.brandRef,
+        idempotencyKey: `bpf-u07-temporary-execute-${runId}`,
+        body: {...promotionBody, expectedVersion: temporaryVersion, preflightDigest: required(promotionData.preflightDigest, 'BP_U07_TEMPORARY_PREFLIGHT_DIGEST')},
+      });
+    }
 
     await canonical('BP_U07_SHAPE_MANIFEST', 'getOperationsCatalogShapeManifest', {}, {
       cookie: store.cookie, brandRef: store.brandRef, queryParameters: {dataNodeRef: store.dataNodeRef},
     });
 
-    assertThat(seen.length === 42, 'BP_U07_CANONICAL_OPERATION_COUNT');
-    assertThat(seen.every((operationId) => expectedOperationIds.has(operationId)), 'BP_U07_CANONICAL_UNKNOWN_OPERATION');
-    assertThat(expectedOperationIds.size === new Set(seen).size && [...expectedOperationIds].every((operationId) => seen.includes(operationId)), 'BP_U07_CANONICAL_OPERATION_SET');
+    const routeCode = (suffix) => `${performanceCanonical ? 'BP_U07_CANONICAL' : 'BACKEND_ACCEPTANCE_CATALOG_ROUTE'}_${suffix}`;
+    assertThat(seen.length === expectedOperationIds.size, routeCode('OPERATION_COUNT'));
+    assertThat(seen.every((operationId) => expectedOperationIds.has(operationId)), routeCode('UNKNOWN_OPERATION'));
+    assertThat(expectedOperationIds.size === new Set(seen).size && [...expectedOperationIds].every((operationId) => seen.includes(operationId)), routeCode('OPERATION_SET'));
     return {status: 'PASS', operationIds: seen};
   };
 
@@ -1302,16 +1450,28 @@ async function execute() {
     log('SHARED_FIXTURE_BARRIER', 'FAIL', {reason});
   }
   let backendPerformanceCanonical = {status: 'NOT_RUN', operationIds: []};
+  let backendAcceptanceRouteCoverage = {status: 'NOT_RUN', operationIds: []};
   let canonicalSeen = [];
   if (performanceCanonicalMode && sharedFixtureBarrier.status === 'PASS') {
     try {
-      backendPerformanceCanonical = await executeBackendPerformanceCanonicalRoutes((operationIds) => { canonicalSeen = operationIds; });
+      backendPerformanceCanonical = await executeCatalogRouteCoverage({onProgress: (operationIds) => { canonicalSeen = operationIds; }, performanceCanonical: true});
       log('BACKEND_PERFORMANCE_CANONICAL_42', 'PASS', {operationCount: backendPerformanceCanonical.operationIds.length});
     } catch (error) {
       const reason = error.code || compact(error.message);
       firstFailure ??= `BACKEND_PERFORMANCE_CANONICAL:${reason}`;
       backendPerformanceCanonical = canonicalFailureResult(canonicalSeen, reason);
       log('BACKEND_PERFORMANCE_CANONICAL_42', 'FAIL', {reason});
+    }
+  }
+  if (backendAcceptanceMode && sharedFixtureBarrier.status === 'PASS') {
+    try {
+      backendAcceptanceRouteCoverage = await executeCatalogRouteCoverage({onProgress: (operationIds) => { canonicalSeen = operationIds; }, performanceCanonical: false});
+      log('BACKEND_ACCEPTANCE_CATALOG_ROUTE_COVERAGE', 'PASS', {operationCount: backendAcceptanceRouteCoverage.operationIds.length});
+    } catch (error) {
+      const reason = error.code || compact(error.message);
+      firstFailure ??= `BACKEND_ACCEPTANCE_CATALOG_ROUTE_COVERAGE:${reason}`;
+      backendAcceptanceRouteCoverage = canonicalFailureResult(canonicalSeen, reason);
+      log('BACKEND_ACCEPTANCE_CATALOG_ROUTE_COVERAGE', 'FAIL', {reason});
     }
   }
   if (!performanceCanonicalMode && sharedFixtureBarrier.status === 'PASS') {
@@ -1380,14 +1540,14 @@ async function execute() {
       if (entry.caseId.startsWith('CI-API-008-')) {
         const code = `API-LIFE-${entry.caseId.slice(-2)}-${Date.now()}`;
         const created = await createItem(store, `LIFECYCLE_CREATE_${entry.caseId}`, code);
-        let version = Number(itemResult(created.json)?.version || 1);
+        let version = versionValue(itemResult(created.json)?.version, 1);
         if (p.lifecycleCase === 'status-transition') {
-          const saved = await saveItem(store, 'LIFECYCLE_SAVE', code, version, {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}}); version = Number(itemResult(saved.json)?.version || version + 1);
+          const saved = await saveItem(store, 'LIFECYCLE_SAVE', code, version, {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}}); version = versionValue(itemResult(saved.json)?.version, version + 1);
           const transitioned = await request('LIFECYCLE_ENABLE', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: code, expectedVersion: version, targetStatus: 'ENABLED'}});
-          assertThat(Number(itemResult(transitioned.json)?.version || 0) === version + 1, 'LIFECYCLE_TRANSITION_READBACK');
+          assertThat(versionValue(itemResult(transitioned.json)?.version, 0) === version + 1, 'LIFECYCLE_TRANSITION_READBACK');
         } else if (p.lifecycleCase === 'version-conflict') {
           const saved = await saveItem(store, 'LIFECYCLE_CAS_SAVE', code, version, {name: code, shapeKey: 'STANDARD_SALE_COUNTED', ordering: {priceGranularity: 'ITEM', standardSalePrice: 100, listedSalePrice: 100, missingPriceCount: 0}});
-          version = Number(itemResult(saved.json)?.version || version + 1);
+          version = versionValue(itemResult(saved.json)?.version, version + 1);
           await expectedProblem('LIFECYCLE_CAS', 'transitionOperationsCatalogItemStatus', {itemCode: code}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, itemCode: code, expectedVersion: version + 1, targetStatus: 'ENABLED'}}, 'VERSION_CONFLICT', [409]);
         } else {
           const key = `api-idempotency-${runId}-${entry.caseId}`;
@@ -1407,13 +1567,13 @@ async function execute() {
         }
         const staged = await request('ASSET_STAGE', 'stageOperationsCatalogAsset', {}, {cookie: store.cookie, brandRef: store.brandRef, form});
         const stagedResult = itemResult(staged.json);
-        const assetRef = stagedResult?.assetRef; const bindGrant = stagedResult?.bindGrant; const assetVersion = Number(stagedResult?.version || 1);
+        const assetRef = stagedResult?.assetRef; const bindGrant = stagedResult?.bindGrant; const assetVersion = versionValue(stagedResult?.version, 1);
         assertThat(assetRef, 'ASSET_STAGE_READBACK');
         assertThat(bindGrant, 'ASSET_STAGE_BIND_GRANT_READBACK');
         if (p.variant === 2) {
           const holderCode = `API-ASSET-HOLDER-${Date.now()}`;
           const holder = await createItem(store, 'ASSET_HOLDER_CREATE', holderCode);
-          const holderVersion = Number(itemResult(holder.json)?.version || 1);
+          const holderVersion = versionValue(itemResult(holder.json)?.version, 1);
           await saveItem(store, 'ASSET_HOLDER_SAVE', holderCode, holderVersion, {name: holderCode, images: [assetRef]}, {nodes: []}, [], {[assetRef]: bindGrant});
           await expectedProblem('ASSET_REFERENCE_PROTECTED', 'releaseOperationsCatalogStagedAsset', {assetRef}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, assetRef, expectedVersion: assetVersion}, idempotencyKey: `api-asset-release-${runId}`}, 'ASSET_REFERENCE_PROTECTED', [409]);
         }
@@ -1486,12 +1646,17 @@ async function execute() {
         const closureCodes = (data.closureItems || []).map((item) => item.code);
         if (p.variant === 1) {
           assertThat(new Set(closureCodes).size === 3 && [fixture.rootCode, fixture.middleCode, fixture.leafCode].every((code) => closureCodes.includes(code)) && !closureCodes.includes(fixture.inboundOnlyCode), 'DAG_VISITED_FIXED_POINT');
-          assertThat((data.closureEdges || []).filter((edge) => edge.referenceKind === 'COMPOSITE_COMPONENT').length >= 3, 'DAG_EDGE_READBACK');
+          const publicItemMappings = (data.referenceMappings || []).filter((mapping) => mapping?.objectType === 'CATALOG_ITEM');
+          assertThat(publicItemMappings.length >= 3
+            && publicItemMappings.every((mapping) => typeof mapping.sourceRef === 'string' && mapping.sourceRef.length > 0
+              && typeof mapping.targetRef === 'string' && mapping.targetRef.length > 0
+              && typeof mapping.targetCode === 'string'
+              && [fixture.rootCode, fixture.middleCode, fixture.leafCode].includes(mapping.targetCode)), 'DAG_REFERENCE_MAPPINGS_READBACK');
         } else {
           await expectedProblem('DAG_STRUCTURAL_BLOCK', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {
             dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.rootCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest,
-            expectedSourceVersion: Number(data.objectVersions?.find((value) => value.code === fixture.rootCode)?.sourceVersion || 1),
-            expectedTargetVersion: Number(data.objectVersions?.find((value) => value.code === fixture.rootCode)?.targetVersion || 0),
+            expectedSourceVersion: catalogObjectVersion(data, fixture.rootCode, 'sourceVersion'),
+            expectedTargetVersion: catalogObjectVersion(data, fixture.rootCode, 'targetVersion', 0),
           }}, 'STRUCTURE_INCOMPATIBLE', [422]);
         }
         return;
@@ -1515,18 +1680,13 @@ async function execute() {
       if (entry.caseId.startsWith('CI-API-018-')) {
         const fixture = await ensureCompatibilityFixture();
         const code = p.outcome === 'STRUCTURAL_BLOCK'
-          ? ({10: fixture.shapeCode, 11: fixture.skuCode, 12: fixture.unitCode, 13: fixture.shapeCode, 14: fixture.shapeCode, 15: fixture.unitCode}[p.matrixRow] || fixture.shapeCode)
+          ? ({10: fixture.shapeCode, 11: fixture.skuCode, 12: fixture.unitCode, 13: fixture.shapeCode, 14: fixture.referenceCode, 15: fixture.unitCode}[p.matrixRow] || fixture.shapeCode)
           : fixture.reuseCode;
-        const expectedCode = ({10: 'STRUCTURE_INCOMPATIBLE', 11: 'STRUCTURE_INCOMPATIBLE', 12: 'CONSUMPTION_UNIT_INCOMPATIBLE', 13: 'STRUCTURE_INCOMPATIBLE', 14: 'REFERENCE_MAPPING_UNRESOLVED', 15: 'CONSUMPTION_UNIT_INCOMPATIBLE'})[p.matrixRow] || 'STRUCTURE_INCOMPATIBLE';
+        const expectedCode = ({10: 'STRUCTURE_INCOMPATIBLE', 11: 'STRUCTURE_INCOMPATIBLE', 12: 'CONSUMPTION_UNIT_INCOMPATIBLE', 13: 'STRUCTURE_INCOMPATIBLE', 14: 'STRUCTURE_INCOMPATIBLE', 15: 'CONSUMPTION_UNIT_INCOMPATIBLE'})[p.matrixRow] || 'STRUCTURE_INCOMPATIBLE';
         const body = {
           dataNodeRef: store.dataNodeRef,
           selectedItemCodes: [code],
           targetDataNodeRef: store.dataNodeRef,
-          ...(Number(p.matrixRow) === 14 ? {referenceMappings: [{
-            objectType: 'CATALOG_ITEM',
-            sourceRef: itemRef(refsFor(head), fixture.shapeCode),
-            targetRef: itemRef(refsFor(store), fixture.reuseCode),
-          }]} : {}),
         };
         const preflight = await request('COMPATIBILITY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, idempotencyKey: `catalog-api-compat-preflight-${runId}-${p.matrixRow}`, body});
         const data = envelopeData(preflight.json);
@@ -1536,18 +1696,19 @@ async function execute() {
         // carries the code.  These fixtures each select one item without
         // dependent closure rows, so select the owner row by its exact type
         // rather than inventing an uncontracted code field.
-        const result = [12, 15].includes(Number(p.matrixRow))
+        const result = Number(p.matrixRow) === 14
+          ? data.compatibilityResults?.find((value) => value.objectType === 'PRODUCTION_TAG')
+          : [12, 15].includes(Number(p.matrixRow))
           ? data.compatibilityResults?.find((value) => value.objectType === 'STOCK_TARGET')
           : data.compatibilityResults?.find((value) => value.objectType === 'CATALOG_ITEM');
         assertThat(result, `COMPATIBILITY_RESULT_ROW_${p.matrixRow}`);
         if (p.outcome === 'STRUCTURAL_BLOCK') {
           assertThat(data.blockingCount > 0 && result?.result === 'BLOCKED', `COMPATIBILITY_BLOCK_ROW_${p.matrixRow}`);
-          const versions = data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === code) || {};
           await expectedProblem(`COMPATIBILITY_BLOCK_EXECUTE_${p.matrixRow}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {
             ...body,
             preflightDigest: data.preflightDigest,
-            expectedSourceVersion: Number(versions.sourceVersion || 1),
-            expectedTargetVersion: Number(versions.targetVersion || 0),
+            expectedSourceVersion: catalogObjectVersion(data, code, 'sourceVersion'),
+            expectedTargetVersion: catalogObjectVersion(data, code, 'targetVersion', 0),
           }}, expectedCode, [422]);
         } else {
           assertThat(data.blockingCount === 0 && ['REUSE', 'REUSE_OR_CREATE', 'CREATE'].includes(result?.result), `COMPATIBILITY_REUSE_ROW_${p.matrixRow}`);
@@ -1563,20 +1724,27 @@ async function execute() {
         assertThat(result, `UNIT_CONFLICT_RESULT_ROW_${p.variant}`);
         assertThat(result?.result === 'BLOCKED', `UNIT_CONFLICT_RESULT_${p.variant}`);
         assertThat(String(result?.reason || '').includes('消耗单位'), `UNIT_CONFLICT_REASON_${p.variant}`);
-        const versions = data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.unitCode) || {};
-        await expectedProblem(`UNIT_CONFLICT_EXECUTE_${p.variant}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(versions.sourceVersion || 1), expectedTargetVersion: Number(versions.targetVersion || 0)}}, 'CONSUMPTION_UNIT_INCOMPATIBLE', [422]);
+        await expectedProblem(`UNIT_CONFLICT_EXECUTE_${p.variant}`, 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.unitCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: catalogObjectVersion(data, fixture.unitCode, 'sourceVersion'), expectedTargetVersion: catalogObjectVersion(data, fixture.unitCode, 'targetVersion', 0)}}, 'CONSUMPTION_UNIT_INCOMPATIBLE', [422]);
         return;
       }
       if (entry.caseId === 'CI-API-020-01') {
         const fixture = await ensureLocalCopyMappingFixture();
         const preflight = await request('LOCAL_COPY_MAPPING_PREFLIGHT', 'preflightOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO']}});
         const data = envelopeData(preflight.json);
-        const executed = await request('LOCAL_COPY_NORMAL_EXECUTE', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.targetCode)?.targetVersion || 1)}});
+        const executed = await request('LOCAL_COPY_NORMAL_EXECUTE', 'executeOperationsLocalCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, sourceItemCode: fixture.sourceCode, targetItemCode: fixture.targetCode, selectedSections: ['BASIC_INFO'], preflightDigest: data.preflightDigest, expectedSourceVersion: catalogObjectVersion(data, fixture.sourceCode, 'sourceVersion'), expectedTargetVersion: catalogObjectVersion(data, fixture.sourceCode, 'targetVersion')}});
         assertThat(envelopeData(executed.json).ownerReadbacks?.some((readback) => readback.owner === 'catalog' && readback.status === 'COMMITTED'), 'LOCAL_COPY_OWNER_COMMITTED');
         return;
       }
       if (entry.caseId === 'CI-API-020-02') {
-        const preflight = await request('BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [sampleHeadCode], targetDataNodeRef: store.dataNodeRef}}); assertThat(Array.isArray(envelopeData(preflight.json).referenceRewritePreview), 'REFERENCE_REWRITE_PREVIEW'); return;
+        const preflight = await request('BRAND_COPY_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [sampleHeadCode], targetDataNodeRef: store.dataNodeRef}});
+        const data = envelopeData(preflight.json);
+        const mappings = data.referenceMappings;
+        assertThat(Array.isArray(mappings) && mappings.length > 0, 'REFERENCE_MAPPINGS_READBACK');
+        assertThat(mappings.every((mapping) => mapping && typeof mapping.objectType === 'string' && mapping.objectType.length > 0
+          && typeof mapping.sourceRef === 'string' && mapping.sourceRef.length > 0
+          && typeof mapping.targetRef === 'string' && mapping.targetRef.length > 0
+          && mapping.sourceRef !== mapping.targetRef), 'REFERENCE_MAPPING_ROWS_COMPLETE');
+        return;
       }
       if (entry.caseId.startsWith('CI-API-021-')) {
         const fixture = await ensureStaleFixture();
@@ -1584,8 +1752,8 @@ async function execute() {
         const data = envelopeData(preflight.json);
         const row = data.objectVersions?.find((v) => v.objectType === 'CATALOG_ITEM' && v.code === fixture.code);
         assertThat(row?.code === fixture.code, 'STALE_PREFLIGHT_EXACT_OBJECT_VERSION');
-        const expectedSource = Number(row?.sourceVersion || 1);
-        const expectedTarget = Number(row?.targetVersion || 0);
+        const expectedSource = versionValue(row?.sourceVersion, 1);
+        const expectedTarget = versionValue(row?.targetVersion, 0);
         if (p.variant === 1) await mutateItem(head, 'STALE_SOURCE_MUTATE', fixture.code, `source:${runId}`);
         else await mutateItem(store, 'STALE_TARGET_MUTATE', fixture.code, `target:${runId}`);
         await expectedProblem('STALE_EXECUTE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.code], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: expectedSource, expectedTargetVersion: expectedTarget}}, 'STALE_COPY_PREFLIGHT', [409]); return;
@@ -1597,7 +1765,7 @@ async function execute() {
         const fixture = await ensureOwnerFailureFixture();
         const preflight = await request('OWNER_FAILURE_PREFLIGHT', 'preflightOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef}});
         const data = envelopeData(preflight.json);
-        await expectedProblem('OWNER_FAILURE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, testFailurePoint: 'owner-failure', body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.sourceVersion || 1), expectedTargetVersion: Number(data.objectVersions?.find((value) => value.objectType === 'CATALOG_ITEM' && value.code === fixture.sourceCode)?.targetVersion || 0)}}, 'RESULT_UNKNOWN', [500]);
+        await expectedProblem('OWNER_FAILURE', 'executeOperationsBrandCatalogCopy', {}, {cookie: store.cookie, brandRef: store.brandRef, testFailurePoint: 'owner-failure', body: {dataNodeRef: store.dataNodeRef, selectedItemCodes: [fixture.sourceCode], targetDataNodeRef: store.dataNodeRef, preflightDigest: data.preflightDigest, expectedSourceVersion: catalogObjectVersion(data, fixture.sourceCode, 'sourceVersion'), expectedTargetVersion: catalogObjectVersion(data, fixture.sourceCode, 'targetVersion', 0)}}, 'RESULT_UNKNOWN', [500]);
         return;
       }
       if (entry.caseId === 'CI-API-023-01') {
@@ -1661,8 +1829,15 @@ async function execute() {
 
   const passCount = caseResults.filter((result) => result.status === 'PASS').length;
   const failCount = caseResults.length - passCount;
+  const catalogOperationIds = new Set(readJson(registryCatalogPath).operations.map((operation) => operation.operationId));
+  const catalogRouteCoverageCount = catalogRouteCoverageOperationIds(catalogOperationIds).size;
   const businessPass = sharedFixtureBarrier.status === 'PASS'
-    && (performanceCanonicalMode ? backendPerformanceCanonical.status === 'PASS' && backendPerformanceCanonical.operationIds.length === 42 : failCount === 0 && caseResults.length === scenarioCatalog.caseCount);
+    && (performanceCanonicalMode
+      ? backendPerformanceCanonical.status === 'PASS' && backendPerformanceCanonical.operationIds.length === catalogRouteCoverageCount
+      : backendAcceptanceMode
+        ? backendAcceptanceRouteCoverage.status === 'PASS' && backendAcceptanceRouteCoverage.operationIds.length === catalogRouteCoverageCount
+          && failCount === 0 && caseResults.length === scenarioCatalog.caseCount
+        : failCount === 0 && caseResults.length === scenarioCatalog.caseCount);
   const report = {
     schemaVersion: 1,
     kind: 'catalog-inventory-api-runtime-report',
@@ -1675,7 +1850,7 @@ async function execute() {
     finishedAt: new Date().toISOString(),
     imageBindEvidenceInputs,
     sourceBindings: {scenarioCatalog: {path: path.relative(root, scenarioPath), sha256: sha256(fs.readFileSync(scenarioPath))}, fixtureCatalog: {path: path.relative(root, fixturePath), sha256: sha256(fs.readFileSync(fixturePath))}, copyPolicy: {path: path.relative(root, copyPolicyPath), sha256: sha256(fs.readFileSync(copyPolicyPath))}, generatedShape: {path: path.relative(root, shapePath), sha256: sha256(fs.readFileSync(shapePath))}},
-    denominator: {scenarioCount: scenarioCatalog.scenarioCount, caseCount: scenarioCatalog.caseCount, caseResults: caseResults.length, passed: passCount, failed: failCount, backendPerformanceCanonicalOperations: backendPerformanceCanonical.operationIds.length},
+    denominator: {scenarioCount: scenarioCatalog.scenarioCount, caseCount: scenarioCatalog.caseCount, caseResults: caseResults.length, passed: passCount, failed: failCount, backendPerformanceCanonicalOperations: backendPerformanceCanonical.operationIds.length, backendAcceptanceRouteCoverageOperations: backendAcceptanceRouteCoverage.operationIds.length},
     caseResults,
     calls,
     events,
@@ -1684,6 +1859,7 @@ async function execute() {
     fixtureSetup: 'OWNER_HTTP_ONLY',
     sharedFixtureBarrier,
     backendPerformanceCanonical,
+    backendAcceptanceRouteCoverage,
     seedDependency: 'NONE',
     firstFailure,
     businessStatus: businessPass ? 'PASS' : 'FAIL',

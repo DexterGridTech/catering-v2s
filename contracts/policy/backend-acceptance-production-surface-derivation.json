@@ -3,16 +3,17 @@
   "kind": "backend-acceptance-production-surface-derivation",
   "status": "ACTIVE_IMPLEMENTATION_BOOTSTRAP",
   "packageId": "BACKEND-ACCEPTANCE-IMPLEMENTATION-20260813",
-  "algorithmVersion": "V1_MAIN_SOURCE_AND_TASK_INPUTS_WITH_SOURCE_INVENTORY_ANCHORS",
-  "productionRoots": [
-    "apps/backend/catering-business-server/src/main/java",
-    "apps/backend/catering-business-server/src/main/resources",
-    "apps/backend/catering-business-server/modules"
-  ],
+  "algorithmVersion": "V2_GRADLE_MODEL_MAIN_SOURCE_AND_TASK_INPUTS",
+  "gradleModel": {
+    "executable": "gradle",
+    "arguments": ["--no-daemon", "--console=plain", "-q", ":apps:backend:catering-business-server:backendAcceptanceProductionSurface"],
+    "outputPrefix": "BACKEND_ACCEPTANCE_GRADLE_SURFACE="
+  },
   "productionFileRules": [
-    "include files under app src/main/java and src/main/resources",
-    "include files under every catering-business-server module src/main/java and src/main/resources",
-    "include app and module build.gradle.kts task inputs",
+    "derive business deployable project closure from Gradle runtimeClasspath project dependencies",
+    "include actual main source sets and all repository-owned source/resource files",
+    "for every generated main source root, fail closed unless an Exec or JavaExec producer declares it; include that producer's repository-owned task inputs",
+    "include settings root/app/closure build provenance and Gradle properties",
     "normalize every path to a repository-relative POSIX path and hash full bytes",
     "exclude build outputs, test sources, test fixtures, generated reports and runtime evidence"
   ],

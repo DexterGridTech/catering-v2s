@@ -78,7 +78,7 @@ is operation-specific, not a global performance threshold.
   The exact applicable operation set and the source anchors for this pattern must be guarded by the
   existing `scripts/check/backend-performance-sql-merge-coverage` gate after **every** source or test
   change in its implementation package; a skipped gate is a failed implementation check, not a later
-  package-exit omission. The gate derives every `OWNER_COMMAND + REQUIRED +
+  later bookkeeping omission. The gate derives every `OWNER_COMMAND + REQUIRED +
   WORKSPACE_EXECUTION_CONTEXT` row from the operation-handler registry on each run: each row has one
   exact named application handler, its own `REQUIRED` entry and in-transaction context resolution, while
   edge has neither transaction nor command-context resolution. A future matching registry row without
