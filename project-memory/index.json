@@ -976,7 +976,7 @@
         {
           "assertionKey": "BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前最小运行能力）"
+          "anchor": "### Backend acceptance（当前真实业务能力）"
         }
       ],
       "sourceRefs": [
@@ -1536,7 +1536,7 @@
         "STATIC_PASS_NOT_DYNAMIC_PASS",
         "FAILURE_TAXONOMY_IS_TYPED",
         "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
-        "BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY"
+        "BACKEND_ACCEPTANCE_REAL_SCENARIOS"
       ],
       "assertionSources": [
         {
@@ -1555,9 +1555,9 @@
           "anchor": "## Decision"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY",
+          "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前最小运行能力）"
+          "anchor": "### Backend acceptance（当前真实业务能力）"
         }
       ],
       "sourceRefs": [
@@ -1610,28 +1610,35 @@
         ]
       },
       "assertions": [
-        "BACKEND_ACCEPTANCE_ONE_REAL_OPERATION",
-        "BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED",
-        "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED"
+        "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
+        "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
+        "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
+        "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD"
       ],
       "assertionSources": [
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_ONE_REAL_OPERATION",
+          "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前最小运行能力）"
+          "anchor": "### Backend acceptance（当前真实业务能力）"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED",
+          "assertionKey": "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前最小运行能力）"
+          "anchor": "### Backend acceptance（当前真实业务能力）"
         },
         {
           "assertionKey": "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
           "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前最小运行能力）"
+          "anchor": "### Backend acceptance（当前真实业务能力）"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD",
+          "path": "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
+          "anchor": "## 3. 每条真实业务场景必须写什么"
         }
       ],
       "sourceRefs": [
+        "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
         "scripts/README.md"
       ]
     },

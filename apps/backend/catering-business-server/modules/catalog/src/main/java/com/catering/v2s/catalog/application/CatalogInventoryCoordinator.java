@@ -86,7 +86,6 @@ public class CatalogInventoryCoordinator {
         this.productionReads = new ProductionTagTaskReadService(production);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogWorkbenchContext(String dataNodeRef, String brandRef, String requestId, String dataNodeType, String headCompanyRef,
                                                 UUID workspaceUuid, String groupWorkspaceKey) {
         JsonNode result = catalogReads.workbenchContext(dataNodeRef, brandRef, requestId);
@@ -94,26 +93,22 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogNavigation(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         return catalogReads.navigation(dataNodeRef, brandRef, request, requestId);
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
         JsonNode result = catalogReads.items(dataNodeRef, brandRef, request, requestId);
         enrichCatalogItems(result, dataNodeRef, brandRef, requestId, dataNodeType);
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogItem(String dataNodeRef, String brandRef, String itemCode, ObjectNode request, String requestId) {
         JsonNode result = catalogReads.item(dataNodeRef, brandRef, itemCode, requestId);
         enrichInventory(result, dataNodeRef, brandRef, request, requestId);
         return result;
     }
 
-    @Transactional(readOnly = true)
     public JsonNode readCatalogDictionary(String dataNodeRef, String brandRef, String dictionaryKind, ObjectNode request, String requestId) {
         return catalogReads.dictionary(dataNodeRef, brandRef, dictionaryKind, request, requestId);
     }
@@ -128,7 +123,6 @@ public class CatalogInventoryCoordinator {
 
     public JsonNode readCatalogShapeManifest(String requestId) { return catalogReads.shapeManifest(requestId); }
 
-    @Transactional(readOnly = true)
     public JsonNode readInventoryTargets(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
         ObjectNode inventoryRequest = request;
         JsonNode prefetchedCatalog = null;

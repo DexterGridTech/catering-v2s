@@ -10,7 +10,7 @@ let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 /** Successful generated commands publish here; read models remain app-owned subscribers. */
 export const platformRefreshSignal = createRefreshSignal();
 
-export function recordPlatformRenderError(error: Error) {
+export function recordPlatformRenderError(_error: Error) {
   logger.error({event: 'frontend.render.failed', phase: 'render', outcome: 'ERROR', errorCode: 'UI_RENDER_ERROR'});
 }
 

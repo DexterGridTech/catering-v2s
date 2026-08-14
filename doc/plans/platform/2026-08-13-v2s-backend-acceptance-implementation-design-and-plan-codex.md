@@ -2,6 +2,8 @@
 
 不得再以本文重开 package entry/exit、P0/W0/P1、receipt、hash-chain 或 successor I0；保留的历史 scenario、lane 与测试骨架不构成本批交付。
 
+当前主动规范改读 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`。
+
 # Backend acceptance 整体 implementation-facing 详设与单批实施计划
 
 - status: `DESIGN_GO_ROUND2_REMEDIATED_NOT_IMPLEMENTED`

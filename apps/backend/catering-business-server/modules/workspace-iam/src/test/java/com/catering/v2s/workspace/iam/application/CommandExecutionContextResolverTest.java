@@ -131,7 +131,7 @@ class CommandExecutionContextResolverTest {
     private static WorkspaceSessionReadback session(String capability) {
         return new WorkspaceSessionReadback(UUID.randomUUID(), WORKSPACE, GROUP, UUID.randomUUID(), ASSIGNMENT,
             WorkspaceSessionEntryReadback.ScopeContext.empty(),
-            7L, 11L, Set.of(), Set.of(capability), "命令上下文测试人员");
+            7L, 11L, Set.of(), Set.of(capability), "命令上下文测试人员", "STORE", STORE);
     }
 
     private static WorkspaceCommandAuthorizationFacts commandFacts(WorkspaceSessionReadback session) {

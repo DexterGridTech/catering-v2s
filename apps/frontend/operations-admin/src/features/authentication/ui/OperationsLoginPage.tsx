@@ -5,6 +5,7 @@ import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle}
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {operationsClient, operationsProblemOf, type ApiProblem} from '../../../app/api/OperationsTransport';
+import {operationsLoginFormPageLayout} from './loginFormPageLayout';
 import type {WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
 
 type EntryState =
@@ -90,12 +91,13 @@ export function OperationsLoginPage({groupWorkspaceKey, onEntry}: {groupWorkspac
     }
   };
 
-  if (entryState.kind === 'loading') return <LoginFormPage form={form} className="auth-login-page operations-login-page" logo={<LockOutlined/>}><Skeleton active paragraph={{rows: 4}} {...testId('operations-login-loading')}/></LoginFormPage>;
+  if (entryState.kind === 'loading') return <LoginFormPage form={form} {...operationsLoginFormPageLayout} logo={<LockOutlined/>}><Skeleton active paragraph={{rows: 4}} {...testId('operations-login-loading')}/></LoginFormPage>;
   if (entryState.kind === 'missing') return <Result status="404" title="入口不存在"/>;
   if (entryState.kind === 'disabled') return <Result status="warning" title="该集团空间暂不可进入运营管理后台"/>;
   if (entryState.kind === 'failed') return <Result status="error" title="暂时无法打开登录入口，请稍后重试" extra={<Button onClick={() => setEntryReload((value) => value + 1)}>重试</Button>}/>;
   return <LoginFormPage<LoginFields>
     className="auth-login-page operations-login-page"
+    {...operationsLoginFormPageLayout}
     logo={entryState.logoUrl ? <img src={entryState.logoUrl} alt=""/> : <LockOutlined/>}
     title={entryState.workspaceName}
     subTitle={entryState.operationsTitle}

@@ -206,7 +206,7 @@
         {"assertionKey":"UAT_ALL_REMOTE_EXECUTION","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"REMOTE_TESTCONTAINERS_NOT_BROWSER_L2","path":"AGENTS.md","anchor":"- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"},
         {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"},
-        {"assertionKey":"BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS","path":"scripts/README.md","anchor":"### Backend acceptance（当前最小运行能力）"}
+        {"assertionKey":"BACKEND_ACCEPTANCE_OPERATION_DISCOVERY_AND_PROGRESS","path":"scripts/README.md","anchor":"### Backend acceptance（当前真实业务能力）"}
       ],
       "sourceRefs": ["AGENTS.md","doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","scripts/README.md"]
     },
@@ -322,12 +322,12 @@
       "path": "project-memory/operations/test-closed-loop.md",
       "layer": "routed",
       "route": {"taskKinds":["backend-acceptance","implementation","testing","review"],"domains":["platform","backend","contract","admin-ui"],"consumerFaces":["all"],"owners":["platform","backend","frontend-platform"],"impacts":["evidence","governance","runtime","cleanup"],"triggers":["implementation","review","failure"]},
-      "requiredAssertions": ["STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY"],
+      "requiredAssertions": ["STATIC_PASS_NOT_DYNAMIC_PASS","FAILURE_TAXONOMY_IS_TYPED","ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","BACKEND_ACCEPTANCE_REAL_SCENARIOS"],
       "assertionSources": [
         {"assertionKey":"STATIC_PASS_NOT_DYNAMIC_PASS","path":"doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","anchor":"本文档是需求分析，不是实施授权，也不是评审结论。未运行 Testcontainers / DEV / L2 / reset / seed / 浏览器 / UAT / 部署；不得据此宣称任何动态、业务、cleanup 或性能结果。Java 测试、Testcontainers、L2 三层本次未执行，相关判断均为静态。"},
         {"assertionKey":"FAILURE_TAXONOMY_IS_TYPED","path":"doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","anchor":"- heartbeat 进入 stall discriminator；readiness progress、terminal/preflight evidence、JSON `Content-Type` materialization 和 firstFailure 原码逐层透传都以 run manifest/report 为唯一事实。"},
         {"assertionKey":"ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION","path":"doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","anchor":"## Decision"},
-        {"assertionKey":"BACKEND_ACCEPTANCE_BOOTSTRAP_ONLY","path":"scripts/README.md","anchor":"### Backend acceptance（当前最小运行能力）"}
+        {"assertionKey":"BACKEND_ACCEPTANCE_REAL_SCENARIOS","path":"scripts/README.md","anchor":"### Backend acceptance（当前真实业务能力）"}
       ],
       "sourceRefs": ["doc/decisions/2026-08-11-v2s-routine-runtime-command-classification.md","doc/plans/platform/2026-08-11-v2s-test-delivery-and-process-remediation-implementation-design-codex.md","doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md","scripts/README.md"]
     },
@@ -336,13 +336,14 @@
       "path": "project-memory/operations/backend-acceptance.md",
       "layer": "routed",
       "route": {"taskKinds":["backend-acceptance","design","implementation","testing","review"],"domains":["backend","contract","platform"],"consumerFaces":["all"],"owners":["backend","contract","platform","product"],"impacts":["database","contract","evidence","runtime","cleanup","governance"],"triggers":["task-start","implementation","review","failure","runtime"]},
-      "requiredAssertions": ["BACKEND_ACCEPTANCE_ONE_REAL_OPERATION","BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED","BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED"],
+      "requiredAssertions": ["BACKEND_ACCEPTANCE_REAL_SCENARIOS","BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED","BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED","BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD"],
       "assertionSources": [
-        {"assertionKey":"BACKEND_ACCEPTANCE_ONE_REAL_OPERATION","path":"scripts/README.md","anchor":"### Backend acceptance（当前最小运行能力）"},
-        {"assertionKey":"BACKEND_ACCEPTANCE_TODO_SHELLS_RETAINED","path":"scripts/README.md","anchor":"### Backend acceptance（当前最小运行能力）"},
-        {"assertionKey":"BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED","path":"scripts/README.md","anchor":"### Backend acceptance（当前最小运行能力）"}
+        {"assertionKey":"BACKEND_ACCEPTANCE_REAL_SCENARIOS","path":"scripts/README.md","anchor":"### Backend acceptance（当前真实业务能力）"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED","path":"scripts/README.md","anchor":"### Backend acceptance（当前真实业务能力）"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED","path":"scripts/README.md","anchor":"### Backend acceptance（当前真实业务能力）"},
+        {"assertionKey":"BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD","path":"doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md","anchor":"## 3. 每条真实业务场景必须写什么"}
       ],
-      "sourceRefs": ["scripts/README.md"]
+      "sourceRefs": ["doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md","scripts/README.md"]
     },
     {
       "id": "pitfalls.green-by-existence-check",

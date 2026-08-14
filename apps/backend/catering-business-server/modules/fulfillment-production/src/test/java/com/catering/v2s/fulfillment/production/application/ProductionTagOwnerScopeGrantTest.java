@@ -2,17 +2,27 @@ package com.catering.v2s.fulfillment.production.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
+import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -78,20 +88,37 @@ class ProductionTagOwnerScopeGrantTest {
         verifyNoInteractions(jdbc);
     }
 
-    @SuppressWarnings("unchecked")
     private static WorkspaceExecutionContext<CatalogAuthorizationScope> typedContext(UUID targetId) {
-        WorkspaceExecutionContext<CatalogAuthorizationScope> context = mock(WorkspaceExecutionContext.class);
-        CatalogAuthorizationScope scope = mock(CatalogAuthorizationScope.class);
-        when(context.workspaceUuid()).thenReturn(UUID.randomUUID());
-        when(context.groupWorkspaceKey()).thenReturn("production-owner-test");
-        when(context.consumerFace()).thenReturn("operations-admin");
-        when(context.operationToken()).thenReturn(CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG);
-        when(context.ownerScope()).thenReturn(scope);
-        when(context.ownerGrant()).thenReturn(mock(com.catering.v2s.platform.command.OwnerGrant.class));
-        when(scope.dataNodeType()).thenReturn("STORE");
-        when(scope.dataNodeId()).thenReturn(targetId);
-        when(scope.brandRef()).thenReturn("brand");
-        return context;
+        UUID workspaceId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        var token = CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG;
+        var selectedStore = new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
+            "STORE", targetId, "Production test store", "PRODUCTION-TEST-STORE", List.of(),
+            null, null, targetId, null
+        );
+        WorkspaceSessionReadback session = new WorkspaceSessionReadback(
+            UUID.randomUUID(), workspaceId, "production-owner-test", accountId, assignmentId,
+            new WorkspaceSessionEntryReadback.ScopeContext(null, null, selectedStore, null),
+            1L, 1L, Set.of(), Set.of(token.capabilityFor("STORE")), "production test", "STORE", targetId
+        );
+        WorkspaceAuthenticationService sessions = mock(WorkspaceAuthenticationService.class);
+        when(sessions.commandAuthorizationFacts("typed-context-session"))
+            .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
+                session, UUID.randomUUID(), "STORE", targetId));
+        WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
+        when(capabilities.resolveGeneratedOperation(any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any()))
+            .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                WorkspaceCapabilityScopeResolver.Decision.ALLOW, "EDIT_STORE_INVENTORY",
+                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                    workspaceId, "production-owner-test", "STORE", targetId, "STORE", targetId, List.of(targetId))
+            ));
+        CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
+        when(catalogScopes.resolveCatalogBrand(any(), anyString(), eq("STORE"), eq(targetId), any()))
+            .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment("brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
+        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions).resolveCatalog(
+            "typed-context-session", token, targetId.toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue("brand"),
+            "typed-correlation", "typed-request");
     }
 
     private static OperationsOwnerScopeGrant grant(UUID workspaceId, String groupWorkspaceKey, UUID targetId) {

@@ -39,7 +39,9 @@ class OperationsHeadCompanyAuthorizationControllerTest {
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals(null, response.getBody());
-        verify(fixture.entities()).addHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId));
+        verify(fixture.entities()).addHeadCompanyBrandAuthorization(new com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyBrandAuthorizationCommand(
+            fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId)
+        ));
         verifyNoMoreInteractions(fixture.entities());
     }
 
@@ -54,7 +56,9 @@ class OperationsHeadCompanyAuthorizationControllerTest {
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals(null, response.getBody());
-        verify(fixture.entities()).removeHeadCompanyBrandAuthorization(fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId));
+        verify(fixture.entities()).removeHeadCompanyBrandAuthorization(new com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi.HeadCompanyBrandAuthorizationCommand(
+            fixture.workspaceId(), WORKSPACE_KEY, headCompanyId, brandId, IDEMPOTENCY_KEY, fixture.actor(), grant(fixture, "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId)
+        ));
         verifyNoMoreInteractions(fixture.entities());
     }
 
@@ -73,6 +77,9 @@ class OperationsHeadCompanyAuthorizationControllerTest {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         when(authentication.session("operations-session")).thenReturn(session);
+        var commandFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(commandFacts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         BusinessEntityService entities = mock(BusinessEntityService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
         OperationsHeadCompanyAuthorizationController controller = new OperationsHeadCompanyAuthorizationController(new OperationsSessionResolver(authentication), entities, capabilityScopes);

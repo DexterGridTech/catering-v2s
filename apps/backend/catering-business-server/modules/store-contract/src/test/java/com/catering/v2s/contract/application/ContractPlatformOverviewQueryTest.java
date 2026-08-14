@@ -18,13 +18,13 @@ class ContractPlatformOverviewQueryTest {
 
         assertEquals(73, page.metadata().total());
         assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM contract.store_contract"), jdbc.listSql.indexOf(" ORDER BY")));
-        assertEquals(18, jdbc.countArgs.length);
-        assertEquals(20, jdbc.listArgs.length);
-        assertEquals(20, jdbc.listArgs[18]);
-        assertEquals(40, jdbc.listArgs[19]);
+        assertEquals(20, jdbc.countArgs.length);
+        assertEquals(22, jdbc.listArgs.length);
+        assertEquals(20, jdbc.listArgs[20]);
+        assertEquals(40, jdbc.listArgs[21]);
         org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("s.project_id=?"));
-        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("s.id=?"));
-        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("t.id=?"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("c.store_id=?"));
+        org.junit.jupiter.api.Assertions.assertTrue(jdbc.countSql.contains("c.tenant_id=?"));
         org.junit.jupiter.api.Assertions.assertFalse(jdbc.countSql.contains("s.name ILIKE"));
         org.junit.jupiter.api.Assertions.assertFalse(jdbc.countSql.contains("t.code ILIKE"));
         assertEquals(1, occurrences(jdbc.listSql, "LIMIT ? OFFSET ?"));

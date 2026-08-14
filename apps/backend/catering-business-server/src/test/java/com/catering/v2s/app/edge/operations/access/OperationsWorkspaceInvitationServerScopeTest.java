@@ -92,7 +92,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         var response = fixture.controller.storeCreate(fixture.request, KEY, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationCreateRequest(scopeRef.toString(), "13800000000", List.of(roleId.toString()), IDEMPOTENCY_KEY));
 
         assertEquals(201, response.getStatusCode().value());
-        verify(fixture.authentication).session("operations-session");
+        verify(fixture.authentication).commandAuthorizationFacts("operations-session");
         verify(fixture.commands).createInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "STORE".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && command.roleIds().equals(List.of(roleId))));
         verifyNoInteractions(fixture.user, fixture.invitations);
     }
@@ -120,7 +120,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "CANCELLED", 2L, 100L, 2L, 10L, null, null, 11L, null);
         when(fixture.commands.cancelInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
-        var result = fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), 1L, fixture.session.contextVersion(), IDEMPOTENCY_KEY));
+        var result = fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
 
         assertEquals(WorkspaceInvitationStatus.CANCELLED, result.status());
         assertTrue(List.of(WorkspaceOperationsInvitationActionRequest.class.getRecordComponents()).stream().anyMatch(component -> component.getName().equals("scopeRef")));
@@ -137,7 +137,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "ACTIVE", 2L, 120L, 2L, 20L, null, null, null, null);
         when(fixture.commands.reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
-        var result = fixture.controller.projectReissue(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), 1L, fixture.session.contextVersion(), IDEMPOTENCY_KEY));
+        var result = fixture.controller.projectReissue(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
 
         assertEquals(WorkspaceInvitationStatus.ACTIVE, result.status());
         verify(fixture.commands).reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L));
@@ -149,7 +149,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         Fixture fixture = fixture();
         UUID invitationId = UUID.randomUUID();
 
-        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class, () -> fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(UUID.randomUUID().toString(), 1L, fixture.session.contextVersion() + 1, IDEMPOTENCY_KEY)));
+        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class, () -> fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(UUID.randomUUID().toString(), fixture.session.contextVersion() + 1, 1L, IDEMPOTENCY_KEY)));
 
         verifyNoInteractions(fixture.user, fixture.invitations);
     }
@@ -161,7 +161,11 @@ class OperationsWorkspaceInvitationServerScopeTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
+        var commandFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(commandFacts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         OperationsSessionResolver sessions = new OperationsSessionResolver(authentication);
         WorkspaceInvitationService invitations = mock(WorkspaceInvitationService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);

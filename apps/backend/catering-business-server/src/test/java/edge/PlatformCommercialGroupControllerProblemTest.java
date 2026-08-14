@@ -36,7 +36,7 @@ class PlatformCommercialGroupControllerProblemTest {
             .validation(new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_REQUIRED, "missing root"), request());
         Problem problem = response.getBody();
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), response.getStatusCode().value());
         assertEquals(MediaType.valueOf("application/problem+json"), response.getHeaders().getContentType());
         assertNotNull(problem);
         assertEquals("VALIDATION_FAILED", problem.errorCode());

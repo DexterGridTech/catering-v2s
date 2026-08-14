@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import type {ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {LocalCopyCandidatePage, LocalCopyPreflight, LocalCopyReadback} from '../../../app/api/generated/catalog-inventory-edge';
+import type {LocalCopyCandidatePage} from '../../../app/api/generated/catalog-inventory-edge';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
   decodeLocalCopyCandidatePage,

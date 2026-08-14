@@ -90,6 +90,7 @@ class OperationsBusinessEntityControllerTest {
             var response = controller.headCompanies(request, WORKSPACE_KEY, 1L, null, null, null, null, null, "NAME", "ASC", 1, itemCount);
 
             assertEquals(itemCount, response.items().size());
+            verify(entities).pageEntities("HEAD_COMPANY", workspaceId, WORKSPACE_KEY, null, null, null, null, null, "NAME", "ASC", 1, itemCount);
         }
         verifyNoMoreInteractions(entities);
     }
@@ -102,6 +103,7 @@ class OperationsBusinessEntityControllerTest {
     private static void readFacts(WorkspaceAuthenticationService authentication, WorkspaceSessionReadback session) {
         var facts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(facts.sessionReadback()).thenReturn(session);
+        when(facts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(facts);
     }
 }

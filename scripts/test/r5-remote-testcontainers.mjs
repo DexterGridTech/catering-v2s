@@ -22,6 +22,55 @@ const compact = (value, limit = 240) => String(value ?? 'FAILED').trim().replace
 const script = (...lines) => lines.join('\n');
 const runnerEvent = (event, fields = {}) => process.stdout.write(`R5_TESTCONTAINERS_${event} ${Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
 
+export const backendAcceptanceEnvironment = (runId, operation = 'all') => runId === null ? [] : [
+  'export V2S_RUNTIME_ENVIRONMENT=non-production',
+  'export V2S_DEV_PROFILE=backend-acceptance',
+  `export V2S_DEV_NAMESPACE=${quote(`v2s-backend-acceptance-${sha256(runId).slice(0, 16)}`)}`,
+  `export V2S_BACKEND_ACCEPTANCE_RUN_ID=${quote(runId)}`,
+  'export V2S_BACKEND_ACCEPTANCE_SECRET="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
+  'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
+  'export V2S_BACKEND_ACCEPTANCE_RESULT="$root/results/backend-acceptance-result.jsonl"',
+  `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(operation)}`,
+  'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
+];
+
+export const parseBackendAcceptanceResult = (contents) => {
+  const rows = String(contents ?? '').trim().split(/\r?\n/).filter(Boolean);
+  if (rows.length < 2) throw new Error('BACKEND_ACCEPTANCE_RESULT_CARDINALITY_INVALID');
+  const parsed = rows.map((row) => {
+    try {
+      return JSON.parse(row);
+    } catch {
+      throw new Error('BACKEND_ACCEPTANCE_RESULT_INVALID_JSON');
+    }
+  });
+  const discovery = parsed.filter((row) => row?.type === 'discovery');
+  const scenarios = parsed.filter((row) => row?.type !== 'discovery');
+  if (discovery.length !== 1 || scenarios.length === 0) throw new Error('BACKEND_ACCEPTANCE_RESULT_CARDINALITY_INVALID');
+  const [discoveryRow] = discovery;
+  if (!Number.isInteger(discoveryRow.discovered) || discoveryRow.discovered < 1 || !Number.isInteger(discoveryRow.selected) || discoveryRow.selected < 1 || discoveryRow.selected > discoveryRow.discovered) {
+    throw new Error('BACKEND_ACCEPTANCE_DISCOVERY_INVALID');
+  }
+  for (const result of scenarios) {
+    if (!result || typeof result.operation !== 'string' || typeof result.module !== 'string' || !['PASS', 'FAIL'].includes(result.contract) || !['PASS', 'FAIL'].includes(result.business) || !['REAL', 'STUB'].includes(result.businessMode) || !Number.isInteger(result.dbOperations) || result.dbOperations < 0 || !['PASS', 'FAIL'].includes(result.status)) {
+      throw new Error('BACKEND_ACCEPTANCE_RESULT_INVALID');
+    }
+    if (result.businessMode === 'STUB') throw new Error('BACKEND_ACCEPTANCE_RESULT_STUB_BUSINESS');
+  }
+  if (scenarios.length !== discoveryRow.selected) throw new Error('BACKEND_ACCEPTANCE_RESULT_SELECTION_MISMATCH');
+  const failureCategories = Object.fromEntries(Object.entries(Object.groupBy(scenarios.filter((row) => row.status === 'FAIL' || row.contract === 'FAIL' || row.business === 'FAIL'), (row) => row.failureCategory ?? 'UNKNOWN')).map(([key, values]) => [key, values.length]));
+  const summary = {
+    discovered: discoveryRow.discovered,
+    selected: discoveryRow.selected,
+    httpSuccess: scenarios.filter((row) => row.contract === 'PASS').length,
+    realBusinessAssertions: scenarios.filter((row) => row.businessMode === 'REAL').length,
+    stubOnly: scenarios.filter((row) => row.businessMode === 'STUB').length,
+    directFailures: scenarios.filter((row) => row.status === 'FAIL' || row.contract === 'FAIL' || row.business === 'FAIL').length,
+    failureCategories,
+  };
+  return {rows: scenarios, discovery: discoveryRow, summary};
+};
+
 export const resolveGradleHome = ({environment = process.env, execute = spawnSync, resolvePath = realpathSync, exists = existsSync} = {}) => {
   if (typeof environment.V2S_GRADLE_HOME === 'string' && environment.V2S_GRADLE_HOME.trim() !== '') {
     return {path: environment.V2S_GRADLE_HOME, source: 'V2S_GRADLE_HOME'};
@@ -229,16 +278,9 @@ const cleanupRemoteWorkspace = (remoteRoot) => {
   return result.status === 0 ? 'PASS' : 'FAIL';
 };
 
-const runScript = ({remoteRoot, remoteWorkspace, remoteResults, distribution, invocation, backendAcceptanceRunId}) => {
+const runScript = ({remoteRoot, remoteWorkspace, remoteResults, distribution, invocation, backendAcceptanceRunId, backendAcceptanceOperation}) => {
   const selectorArguments = invocation.extraArguments.map(quote).join(' ');
-  const acceptanceEnvironment = backendAcceptanceRunId === null ? [] : [
-    'export V2S_RUNTIME_ENVIRONMENT=non-production',
-    'export V2S_DEV_PROFILE=backend-acceptance',
-    `export V2S_DEV_NAMESPACE=${quote(`v2s-backend-acceptance-${sha256(backendAcceptanceRunId).slice(0, 16)}`)}`,
-    `export V2S_BACKEND_ACCEPTANCE_RUN_ID=${quote(backendAcceptanceRunId)}`,
-    'export V2S_BACKEND_ACCEPTANCE_SECRET="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
-    'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
-  ];
+  const acceptanceEnvironment = backendAcceptanceEnvironment(backendAcceptanceRunId, backendAcceptanceOperation);
   return script(
     '#!/usr/bin/env bash', 'set -uo pipefail',
     `root=${quote(remoteRoot)}`, `workspace=${quote(remoteWorkspace)}`, `results=${quote(remoteResults)}`,
@@ -281,6 +323,7 @@ const execute = async () => {
   const backendAcceptanceRunId = process.env.V2S_BACKEND_ACCEPTANCE_EXECUTION === 'true' && invocation.extraArguments.includes(backendAcceptanceSelector)
     ? `backend-acceptance-${runId}`
     : null;
+  const backendAcceptanceOperation = process.env.V2S_BACKEND_ACCEPTANCE_OPERATION ?? 'all';
   mkdirSync(directory, {recursive: true});
   const manifestPath = path.join(directory, 'run-manifest.json');
   const manifest = {
@@ -302,6 +345,7 @@ const execute = async () => {
   let remotePrepared = false;
   let remoteRun;
   let failure;
+  let backendAcceptanceResult;
   runnerEvent('STARTED', {RUN_ID: runId, TASK: invocation.task, MODE: 'FOCUSED'});
   try {
     const localBudget = commandResult(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')]);
@@ -318,7 +362,7 @@ const execute = async () => {
     manifest.sourceSync = {status: 'PASS', workspace: remoteWorkspace};
     manifest.gradleDistribution = await syncGradle({directory, remoteRoot, distribution});
     persist();
-    remoteRun = await streamRemoteRun(runScript({remoteRoot, remoteWorkspace, remoteResults, distribution: manifest.gradleDistribution, invocation, backendAcceptanceRunId}));
+    remoteRun = await streamRemoteRun(runScript({remoteRoot, remoteWorkspace, remoteResults, distribution: manifest.gradleDistribution, invocation, backendAcceptanceRunId, backendAcceptanceOperation}));
     if (remoteRun.status !== 0) throw new Error(`REMOTE_RUNNER_UNAVAILABLE:${compact(remoteRun.stderrTail || remoteRun.stdoutTail)}`);
     collectArtifacts(remoteResults, directory);
     const gradleLog = readFileSync(path.join(directory, 'gradle.log'), 'utf8');
@@ -334,9 +378,14 @@ const execute = async () => {
       testcontainersContainers: containers === 'PASS' ? 'PASS' : 'FAIL',
       testcontainersVolumes: volumes === 'PASS' ? 'PASS' : 'FAIL',
     };
+    if (backendAcceptanceRunId !== null && existsSync(path.join(directory, 'backend-acceptance-result.jsonl'))) {
+      backendAcceptanceResult = parseBackendAcceptanceResult(readFileSync(path.join(directory, 'backend-acceptance-result.jsonl'), 'utf8'));
+    }
     if (actualExecution.status !== 'PASS') throw new Error(actualExecution.reason);
     if (remoteGradleStatus !== '0') throw new Error('REMOTE_GRADLE_EXIT_NONZERO');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
+    if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
+    if (backendAcceptanceResult?.summary.directFailures > 0) throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));
     manifest.firstFailure = failure.message;
@@ -354,6 +403,12 @@ const execute = async () => {
   }
   if (manifest.status === 'PASS') {
     parseAndValidateRunManifest(manifest);
+    if (backendAcceptanceResult) {
+      for (const row of backendAcceptanceResult.rows) {
+        process.stdout.write(`BACKEND_ACCEPTANCE_RESULT SCENARIO=${row.operation} MODULE=${row.module} CONTRACT=${row.contract} BUSINESS=${row.business} DB_OPERATIONS=${row.dbOperations}\n`);
+      }
+      process.stdout.write(`BACKEND_ACCEPTANCE_SUMMARY DISCOVERED=${backendAcceptanceResult.summary.discovered} SELECTED=${backendAcceptanceResult.summary.selected} HTTP_SUCCESS=${backendAcceptanceResult.summary.httpSuccess} REAL_BUSINESS_ASSERTIONS=${backendAcceptanceResult.summary.realBusinessAssertions} STUB_ONLY=${backendAcceptanceResult.summary.stubOnly} DIRECT_FAILURES=${backendAcceptanceResult.summary.directFailures}\n`);
+    }
     process.stdout.write(`R5_REMOTE_TESTCONTAINERS=PASS; TASK=${invocation.task}; EVIDENCE=${path.relative(root, directory)}; RESOURCE_CLEANUP=PASS\n`);
   } else {
     process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(failure?.message || manifest.firstFailure || 'TEST_OR_RESOURCE_CLEANUP_FAILED')}; EVIDENCE=${path.relative(root, directory)}; RESOURCE_CLEANUP=${manifest.cleanup.status}\n`);

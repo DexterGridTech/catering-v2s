@@ -146,6 +146,28 @@ class OperationsContractControllerScopeAndCandidateTest {
             List.of(new ContractTaskReadService.Item("SKU-1", "货号一")),
             "一期"
         ));
+        when(fixture.reads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(fixture.workspaceId, KEY, contractId)))
+            .thenReturn(new OperationsStoreContractCommandApi.StoreContractTaskReadback(
+                contractId,
+                KEY,
+                new OperationsStoreContractCommandApi.Reference(scopedProjectId, "PRJ-01", "项目一"),
+                new OperationsStoreContractCommandApi.Reference(storeId, "STORE-01", "门店一"),
+                new OperationsStoreContractCommandApi.Reference(tenantId, "TEN-01", "经营主体一"),
+                "一期",
+                "HT-001",
+                LocalDate.parse("2026-07-30"),
+                null,
+                "备注",
+                List.of(),
+                0L,
+                "VALID",
+                3L,
+                "MANUAL",
+                10L,
+                11L,
+                List.of(new OperationsStoreContractCommandApi.ItemReadback("SKU-1", "货号一")),
+                "一期"
+            ));
 
         var response = fixture.controller.create(
             fixture.request,
@@ -214,7 +236,11 @@ class OperationsContractControllerScopeAndCandidateTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
+        var commandFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(commandFacts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         ContractCommandService contracts = mock(ContractCommandService.class);
         ContractTaskReadService reads = mock(ContractTaskReadService.class);
         ExtensionDefinitionService definitions = mock(ExtensionDefinitionService.class);

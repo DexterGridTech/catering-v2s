@@ -378,6 +378,7 @@ public class WorkspaceAuthenticationService {
         };
     }
     static boolean isSupportedServiceNodeType(String type) {
+        if (type == null) return false;
         return switch (type) {
             case ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT, ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> true;
             default -> false;

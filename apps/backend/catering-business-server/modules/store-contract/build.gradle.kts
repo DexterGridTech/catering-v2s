@@ -1,6 +1,5 @@
 plugins {
     `java-library`
-    `java-test-fixtures`
 }
 
 dependencies {
@@ -20,5 +19,4 @@ dependencies {
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testRuntimeOnly("org.postgresql:postgresql:42.7.7")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testFixturesImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:asset")))
 }

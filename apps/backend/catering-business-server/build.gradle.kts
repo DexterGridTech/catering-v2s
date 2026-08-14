@@ -1,6 +1,3 @@
-import java.io.File
-import org.gradle.api.artifacts.ProjectDependency
-
 plugins {
     java
 }
@@ -58,97 +55,6 @@ tasks.named("compileJava") {
     dependsOn(generateBackendPerformanceM1CommandExecutionBindings)
 }
 
-// Capturing the Gradle model occurs after all projects are configured.  The task action below
-// only walks the immutable repository-owned file candidates, so it never resolves a dependent
-// module's classpath or reads a cross-project task graph while Gradle holds another project lock.
-val backendAcceptanceSurfaceInputs = linkedMapOf<File, MutableSet<String>>()
-gradle.projectsEvaluated {
-    val repositoryRoot = rootProject.projectDir.toPath().toAbsolutePath().normalize()
-    val excludedSegments = setOf("build", ".gradle", ".runtime", "node_modules")
-    fun relative(file: File): String? {
-        val candidate = file.toPath().toAbsolutePath().normalize()
-        if (!candidate.startsWith(repositoryRoot)) return null
-        val value = repositoryRoot.relativize(candidate).toString().replace(File.separatorChar, '/')
-        return if (value.split('/').any { it in excludedSegments }) null else value
-    }
-    fun capture(file: File, owner: String) {
-        val value = relative(file) ?: return
-        if (!file.exists()) throw GradleException("BACKEND_ACCEPTANCE_GRADLE_INPUT_MISSING:$value")
-        if (file.isDirectory) file.walkTopDown().filter { it.isFile }.forEach { child ->
-            backendAcceptanceSurfaceInputs.getOrPut(child.canonicalFile) { sortedSetOf() }.add(owner)
-        } else {
-            backendAcceptanceSurfaceInputs.getOrPut(file.canonicalFile) { sortedSetOf() }.add(owner)
-        }
-    }
-    val projects = linkedSetOf<org.gradle.api.Project>()
-    fun includeProject(candidate: org.gradle.api.Project) {
-        if (!projects.add(candidate)) return
-        candidate.configurations.findByName("runtimeClasspath")?.allDependencies
-            ?.withType(ProjectDependency::class.java)
-            ?.forEach { dependency: ProjectDependency -> includeProject(rootProject.project(dependency.path)) }
-    }
-    includeProject(project)
-    capture(rootProject.file("settings.gradle.kts"), "gradle-model:settings")
-    capture(rootProject.buildFile, "gradle-model:root-build")
-    val properties = rootProject.file("gradle.properties")
-    if (properties.exists()) capture(properties, "gradle-model:properties")
-    for (backendProject in projects.sortedBy { it.path }) {
-        capture(backendProject.buildFile, "gradle-model:${backendProject.path}:build-script")
-        val sourceSets = backendProject.extensions.findByType(org.gradle.api.tasks.SourceSetContainer::class.java)
-            ?: throw GradleException("BACKEND_ACCEPTANCE_GRADLE_MAIN_SOURCE_SET_MISSING:${backendProject.path}")
-        val main = sourceSets.findByName("main")
-            ?: throw GradleException("BACKEND_ACCEPTANCE_GRADLE_MAIN_SOURCE_SET_MISSING:${backendProject.path}")
-        main.allSource.files.forEach { source -> capture(source, "gradle-source-set:${backendProject.path}:main") }
-        val generatedRoots = main.allSource.srcDirs.filter { source ->
-            source.toPath().toAbsolutePath().normalize().startsWith(backendProject.layout.buildDirectory.get().asFile.toPath().toAbsolutePath().normalize())
-        }
-        for (generatedRoot in generatedRoots) {
-            val generators = backendProject.tasks.filter { task ->
-                (task is org.gradle.api.tasks.AbstractExecTask<*> || task is org.gradle.api.tasks.JavaExec)
-                    && task.outputs.files.files.any { output ->
-                        val outputPath = output.toPath().toAbsolutePath().normalize()
-                        val generatedPath = generatedRoot.toPath().toAbsolutePath().normalize()
-                        outputPath == generatedPath || outputPath.startsWith(generatedPath) || generatedPath.startsWith(outputPath)
-                    }
-            }
-            if (generators.isEmpty()) throw GradleException("BACKEND_ACCEPTANCE_GRADLE_GENERATOR_SOURCE_ROOT_UNTRACKED:${backendProject.path}:${generatedRoot}");
-            for (generator in generators) {
-                val key = "${generator.project.path}:${generator.name}"
-                generator.inputs.files.files.forEach { input -> capture(input, "gradle-generator:$key") }
-            }
-        }
-    }
-}
-
-// Emits the repository-owned production inputs that Gradle actually uses for this deployable.
-// The backend-acceptance impact owner consumes this report for both P0 and P1.
-tasks.register("backendAcceptanceProductionSurface") {
-    group = "verification"
-    description = "Emits the Gradle-derived repository-owned production surface for backend acceptance."
-    doLast {
-        val repositoryRoot = rootProject.projectDir.toPath().toAbsolutePath().normalize()
-        val excludedSegments = setOf("build", ".gradle", ".runtime", "node_modules")
-        fun relative(file: File): String? {
-            val candidate = file.toPath().toAbsolutePath().normalize()
-            if (!candidate.startsWith(repositoryRoot)) return null
-            val value = repositoryRoot.relativize(candidate).toString().replace(File.separatorChar, '/')
-            return if (value.split('/').any { it in excludedSegments }) null else value
-        }
-        fun json(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-        val ownersByPath = sortedMapOf<String, MutableSet<String>>()
-        for ((file, owners) in backendAcceptanceSurfaceInputs) {
-            val value = relative(file) ?: continue
-            if (!file.isFile) throw GradleException("BACKEND_ACCEPTANCE_GRADLE_INPUT_MISSING:$value")
-            ownersByPath.getOrPut(value) { sortedSetOf() }.addAll(owners)
-        }
-        if (ownersByPath.isEmpty()) throw GradleException("BACKEND_ACCEPTANCE_GRADLE_SURFACE_EMPTY")
-        val entries = ownersByPath.entries.joinToString(",") { (inputPath, owners) ->
-            "{\"path\":${json(inputPath)},\"derivationOwner\":${json(owners.joinToString(";"))}}"
-        }
-        println("BACKEND_ACCEPTANCE_GRADLE_SURFACE={\"schemaVersion\":1,\"kind\":\"backend-acceptance-gradle-production-surface\",\"algorithmVersion\":\"V2_GRADLE_MODEL_MAIN_SOURCE_AND_TASK_INPUTS\",\"entries\":[$entries]}")
-    }
-}
-
 dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:execution-context"))
     implementation(project(":apps:backend:catering-business-server:modules:foundation"))
@@ -176,16 +82,6 @@ dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:asset")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:catalog")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:store-contract")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:extension")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:fulfillment-production")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:inventory")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:organization")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:platform-admin-iam")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:workspace")))
-    testImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:workspace-iam")))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

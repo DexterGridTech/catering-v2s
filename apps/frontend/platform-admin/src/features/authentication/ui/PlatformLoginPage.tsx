@@ -36,6 +36,9 @@ export function PlatformLoginPage({onSession}: {onSession: (session: PlatformLog
   };
   return <LoginFormPage<LoginValue>
     className="auth-login-page"
+    style={{display: 'block', minHeight: '100vh'}}
+    containerStyle={{width: '100%', maxWidth: '100%', margin: 0, padding: 32, border: '1px solid var(--platform-admin-color-border)', borderRadius: 12, background: 'var(--platform-admin-color-bg-container)', boxShadow: 'var(--platform-admin-box-shadow-secondary)'}}
+    mainStyle={{width: '100%', margin: '0 auto'}}
     logo={<LockOutlined/>}
     title={adminCatalog.platformShellCopy[platformShellCopyKeys.PlatformShellBrand]}
     subTitle="请使用账号登录"

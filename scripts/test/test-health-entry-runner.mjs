@@ -20,6 +20,7 @@ const nodeTestFiles = Object.freeze([
   "scripts/dev/r5-otp-debug-exposure.test.mjs",
   "scripts/dev/r5-reset.test.mjs",
   "scripts/dev/terminal-fixture-state.test.mjs",
+  "scripts/test/backend-acceptance-structure.test.mjs",
   "scripts/test/catalog-inventory-query-envelope.test.mjs",
   "scripts/test/r5-remote-testcontainers.test.mjs",
   "scripts/test/seed-report.test.mjs",

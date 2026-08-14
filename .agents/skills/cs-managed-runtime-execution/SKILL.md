@@ -15,8 +15,8 @@ Dexter's operational ruling is explicit: `backend-acceptance`, managed DEV start
 managed reset, and explicit `r5-full` seed are routine managed runtime commands, not
 implementation work. `backend-acceptance` is independently invokable: it has no active
 implementation-package, numbered/static-predecessor, implementation-design,
-implementation-review, or historical-report prerequisite. It derives its finite denominator
-from the current semantic HTTP operation contract inside the run. Invoking any routine command
+implementation-review, or historical-report prerequisite. Its finite denominator is the current
+explicit Java scenario catalog, selected by scenario ID or operation name. Invoking any routine command
 does not, by itself, require an implementation or source-change package.
 
 This classification does not waive the execution boundary. Each command still uses its
@@ -27,74 +27,44 @@ smallest authorized source scope, then the routine command may be rerun without 
 implementation-package or historical-predecessor prerequisite. A timeout extension, retry,
 fixture deletion, or status rewrite is never a routine-command fix.
 
-The future public whole-suite entry is `scripts/test/backend-acceptance`; until the approved
-implementation creates it, this paragraph is a design contract and must not be used to claim the
-capability exists. Discovery starts from the current semantic OpenAPI route registry and
-operation-handler bindings, verifies both identity-row exact equality and projection digest
-freshness, then maps every operation to exactly one owning route-behavior unit. Java test classes,
-annotations and a historical interface count are implementation details, never the denominator.
+The public whole-suite entry is `scripts/test/backend-acceptance`; it is active and may be invoked
+independently. Discovery is the explicit Java catalog in
+`BackendAcceptanceScenarioCatalog`: it owns the four domain groups
+`IamAcceptanceScenarios`, `OrganizationAcceptanceScenarios`, `CommercialContractAcceptanceScenarios`,
+and `AssetAcceptanceScenarios`, then discovers their `@AcceptanceScenario` methods. The old
+provider/registry and historical interface-count denominator are retired.
 
-Before any container is initialized, admission requires every current operation to have non-empty
-`identity`, `fixture`, `request`, `businessOracle`, `performanceCriterion`, and `cleanup` declarations.
-`correctnessCases` may be empty only with a one-line reason. Contract shape is checked by one generic
-OpenAPI/envelope/Problem validator. Missing or stale inputs fail with typed errors before expensive
-initialization.
+Before a scenario is added, its design and code must have non-empty `identity`, `fixture`, `request`,
+and `businessOracle` intent. The oracle names real business fields or side effects and covers the
+applicable permission, isolation, state, masking, write/readback, no-write, or idempotency fact.
+`performanceCriterion`, scenario-level `cleanup`, `correctnessCases`, accepted baselines and
+performance gates are retired and must not be added. A status-only, `response.ok`, no-exception, or
+path-string declaration is not a business oracle.
 
-The runner has two modes: per-edit executes only the mechanically derived impacted operations;
-package-exit executes the full current denominator. Impact calculation binds an immutable package-entry
-production surface `P0` and anchor-covered set `W0`, then independently scans the same exit surface
-`P1`. Any existence or full-file hash change in `P0 union P1` outside `W0` makes the impacted set
-`ALL`; regenerating the inventory in the same package cannot self-admit a path. Lane count is
-configurable rather than fixed. Each lane owns an independent container set, writable database or
-schema, and object-storage namespace; a lane stops at its own first failure while other lanes finish
-and retain their first failures. An idle lane may take only an unstarted unit whose fixture ownership
-is independent. Each lane initializes its environment once.
+Each run selects one catalog-discovered scenario or `all` and executes serially in the managed
+remote Testcontainers environment. There is no package-exit, P0/W0/P1, lane, exact-set or
+performance-baseline admission step. The scenario limit is 80; do not reduce business assertions
+to meet a runtime target.
 
-Treat `ALL` as the normal per-edit capacity model, not a rare fallback: the accepted design found
-128 anchored files among 571 checked-in production Java files. Derive the minimum isolated lane
-count from the full current denominator's fresh scheduling weights and the per-edit target before
-initialization. If the resource manifest cannot provide that many isolated lanes, fail closed with
-`BACKEND_ACCEPTANCE_FULL_MODE_CAPACITY_INSUFFICIENT`; never meet time by reducing operations,
-dimensions, fixtures, or cleanup. A future reduction in ALL frequency may come only from higher
-source-derived anchor coverage, never path exemptions.
+Each scenario reports two business dimensions, `CONTRACT` and `BUSINESS`, plus informational
+`DB_OPERATIONS` from the production interceptor. `BUSINESS` must be a hand-written real assertion;
+stub-only output is invalid. Runner resource cleanup remains a separate safety condition for the
+JVM, Testcontainers containers, volumes and temporary workspace, but it is not a scenario-level
+business dimension or cleanup oracle.
 
-Before any operation batch, first baseline write, or baseline decrease, run the fixture-derived
-known-cost measurement calibration for LOGICAL_SQL, QUERY, UPDATE, CONNECTION, TRANSACTION, and
-BATCH. Expected values come from the immutable fixture definition, never measured output. A no-op
-sink, a missing metric, a count mismatch, or correlation drift fails
-`MEASUREMENT_SINK_INTEGRITY_FAILED`; a calibration failure forbids baseline creation or acceptance.
+The initial backend-acceptance migration and its historical performance/seed finding replay are
+retired. Do not reopen provider/registry assets, historical baselines or migration ledgers for a
+new business scenario unless Dexter explicitly changes the active decision and this skill is updated.
 
-During the first unified migration, do not infer the historical replay scope from chat or from a
-generic phrase. Read
-`doc/evidence/platform/2026-08-13-v2s-backend-acceptance-historical-seed-findings.json` and close its
-exact 6 structural-performance rows, 15 HTTP failure families, and 8 seed/client/fixture failure
-families by `findingId`. The six structural regressions require route regression cases and jointly
-enforce per-call QUERY, CONNECTION, and TRANSACTION at or below each row's DBCR-pre baseline;
-connection-only recovery is not closure. Each of the six also requires `QUERY_REDUCED_TO_<n>` with
-merge evidence or `QUERY_ALREADY_MINIMAL` with a per-statement necessity account. Restoring a
-read-only transaction is allowed only for connection economy, never as a stable-snapshot claim under
-default READ COMMITTED, and never closes the finding by itself. A seed-only
-disposition for any other row still requires the owning source, affected-route exact set, and fresh
-contract/business/cleanup route proof; non-route rows also require the source-derived affected-route
-derivation method and its owning source. Historical seed reports are inputs, never current PASS.
-
-Module-owned scenario providers use the reviewed execution contract's closed owner-to-Gradle-module
-and test-fixtures-root mapping. Do not derive module paths from owner spelling or centralize providers
-in the app suite. Unknown owners and provider path collisions fail before writes. Consumer-face
-dispositions also use the contract's closed enum and required evidence; free text, pending work, or
-"later" is not a disposition.
+Business fixture and oracle code stays in the owning domain group. Shared helpers belong in
+`BackendAcceptanceTest` only when they are genuinely shared by multiple domains; do not derive paths
+from owner spelling or centralize all business knowledge in the app entry suite.
 
 The fresh report root is `.runtime/backend-acceptance/<runId>/` and includes a run manifest,
-structured logs, operation receipts, four-dimensional verdict and cleanup evidence. The invocation
-must print run/lane IDs, denominator, current operation, passed/failed/remaining counts, heartbeat,
-elapsed time, first failure and a focused rerun command. `CONTRACT`, `BUSINESS`, deterministic
-structural `PERFORMANCE`, and `CLEANUP` share one operation identity and correlation; any failed or
-missing dimension prevents `OVERALL=PASS`. Container latency, percentile sampling and seed timing are
-not hard performance budgets.
-
-During migration, existing numbered or split Testcontainers runners are predecessor assets only.
-They are retired after their route assertions and structural budgets are represented in
-`backend-acceptance`; they never remain as an independent functional or performance contract.
+structured logs, scenario results and resource cleanup evidence. The invocation must print run ID,
+discovered/selected counts, current scenario, first failure, `CONTRACT`, `BUSINESS`, business mode,
+DB operations and a focused rerun command. Existing provider/registry and split functional/performance
+assets are retired and never become a second contract.
 
 ## 1. Recover the execution truth before touching an environment
 
@@ -106,7 +76,7 @@ plane from a loopback URL, an absent local tool, a historical runner, or an old 
 | `reset` | Explicit destructive action through its managed runner. Validate the prior manifest, exact non-production namespace and remote host binding; stop only a runner-owned DEV tree; terminate connections, drop the exact database, then read back absence. | Bare local `psql`, local Docker, a self-made tunnel, guessed database names, or a manual SQL sequence. |
 | DEV `start` / `restart` | Local Spring Boot, `platform-admin`, and `operations-admin`; managed tunnel to remote non-production middleware; additive Flyway is allowed only when the approved runner does it. | Remote app/Vite/browser execution, treating `127.0.0.1` tunnel ingress as local middleware, or implicit seed. |
 | `seed --profile r5-full` | Separate, explicitly authorized destructive action after the required reset/start readiness. Use owner HTTP commands and owner readbacks; only the explicitly approved bootstrap/terminal-fixture exception may use the managed control plane. | Seed-on-start, generic SQL data writes, invented default accounts, or declaring fixture completion without per-scenario readback. |
-| `backend-acceptance` | The repository's single managed remote JVM/Docker backend acceptance runner after implementation, with operation-derived units and fresh four-dimensional evidence. | Local Docker/Colima probing, a local Docker fallback, class-count discovery, a split performance lane, or describing it as browser L2/UAT. |
+| `backend-acceptance` | The repository's single managed remote JVM/Docker backend acceptance runner, with catalog-discovered real business scenarios and separate CONTRACT/BUSINESS plus informational DB operations. | Local Docker/Colima probing, a local Docker fallback, response.ok-only checks, a split performance lane, or describing it as browser L2/UAT. |
 | Managed browser L2 | Local app processes and local Playwright, one isolated remote database/asset namespace per run, run-scoped manifest/logs and both-side cleanup. | Persistent DEV data, a remote browser, a static/type result, or Testcontainers technical proof. |
 | UAT | Fully remote application and browser execution, and only under separate Dexter authorization. | Local DEV, local browser L2, or an unapproved deployment. |
 

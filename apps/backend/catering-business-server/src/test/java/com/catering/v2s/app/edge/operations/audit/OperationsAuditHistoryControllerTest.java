@@ -54,6 +54,7 @@ class OperationsAuditHistoryControllerTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         OperationsAuditTaskReadService reads = mock(OperationsAuditTaskReadService.class);
         AuditHistoryPage empty = new AuditHistoryPage(List.of(), 1L, 10L, 0L);

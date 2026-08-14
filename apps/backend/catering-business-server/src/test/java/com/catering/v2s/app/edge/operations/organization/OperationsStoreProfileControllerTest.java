@@ -31,6 +31,7 @@ class OperationsStoreProfileControllerTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
         ContractTaskReadService reads = mock(ContractTaskReadService.class);
         when(reads.operationsFixedStoreContractPage(workspaceId, "store-profile-test", storeId, ContractTaskReadService.FixedStoreContractViewState.PENDING_EFFECTIVE, 2, 10)).thenReturn(new ContractTaskReadService.FixedStoreContractPage(

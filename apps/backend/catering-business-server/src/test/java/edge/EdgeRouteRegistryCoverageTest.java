@@ -4,9 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.app.bootstrap.CateringV2sApplication;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -71,14 +70,7 @@ class EdgeRouteRegistryCoverageTest {
             }
         });
 
-        JsonNode registry;
-        try (InputStream source = getClass().getClassLoader().getResourceAsStream("generated/edge-route-face-registry.json")) {
-            registry = new ObjectMapper().readTree(source);
-        }
-        Set<String> expected = new HashSet<>();
-        for (JsonNode operation : registry.path("operations")) {
-            expected.add(operation.path("method").asText() + " " + operation.path("path").asText());
-        }
+        Set<String> expected = new HashSet<>(EdgeRouteFaceRegistry.loadExtended(new ObjectMapper()).keySet());
         Set<String> r24 = expected.stream()
             .filter(route -> route.contains("/head-companies/{headCompanyId}/brand-authorizations"))
             .collect(Collectors.toSet());

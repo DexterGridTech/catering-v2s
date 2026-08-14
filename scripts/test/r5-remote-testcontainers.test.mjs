@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
-import {classifyGradleTestExecution, managedGradleHomeScript, parseAndValidateRunManifest, remoteGradleDistributionPath, resolveGradleHome, validateCleanupReceipt, validateGradleDistribution, validateGradleHome, validateInvocationArguments} from './r5-remote-testcontainers.mjs';
+import {backendAcceptanceEnvironment, classifyGradleTestExecution, managedGradleHomeScript, parseAndValidateRunManifest, parseBackendAcceptanceResult, remoteGradleDistributionPath, resolveGradleHome, validateCleanupReceipt, validateGradleDistribution, validateGradleHome, validateInvocationArguments} from './r5-remote-testcontainers.mjs';
 
 const task = ':apps:backend:catering-business-server:test';
 const distribution = {sha256: 'a'.repeat(64), path: remoteGradleDistributionPath('a'.repeat(64)), status: 'REUSED'};
@@ -25,6 +25,26 @@ test('focused runner accepts one task with explicit selectors only', () => {
   assert.deepEqual(validateInvocationArguments([task, '--tests', 'com.example.FocusedContainerTest']), {task, extraArguments: ['--tests', 'com.example.FocusedContainerTest']});
   assert.throws(() => validateInvocationArguments(['--unsupported']), /TASK_MUST_BE_A_SINGLE_TEST_TASK/);
   assert.throws(() => validateInvocationArguments([task, '--stacktrace']), /FOCUSED_TEST_SELECTOR_REQUIRED/);
+});
+
+test('backend acceptance supplies every non-production server prerequisite and selection', () => {
+  assert.deepEqual(backendAcceptanceEnvironment(null), []);
+  const environment = backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all').join('\n');
+  for (const required of ['V2S_RUNTIME_ENVIRONMENT=non-production', 'V2S_DEV_PROFILE=backend-acceptance', 'V2S_BACKEND_ACCEPTANCE_RUN_ID=', 'V2S_BACKEND_ACCEPTANCE_SECRET=', 'V2S_BACKEND_ACCEPTANCE_EVENTS=', 'V2S_BACKEND_ACCEPTANCE_RESULT=', 'V2S_BACKEND_ACCEPTANCE_OPERATION=', 'CATERING_OTP_DEBUG_CODE_EXPOSURE=true']) {
+    assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+});
+
+test('backend acceptance result keeps discovery, contract, business, and DB observations separate', () => {
+  const result = parseBackendAcceptanceResult([
+    '{"type":"discovery","discovered":2,"selected":2,"operation":"all"}',
+    '{"operation":"iam.public-invitation-view","module":"IAM","contract":"PASS","business":"PASS","businessMode":"REAL","dbOperations":11,"status":"PASS"}',
+    '{"operation":"org.capability-denial","module":"ORG","contract":"PASS","business":"PASS","businessMode":"REAL","dbOperations":8,"status":"PASS"}',
+  ].join('\n'));
+  assert.equal(result.rows.length, 2);
+  assert.deepEqual(result.summary, {discovered: 2, selected: 2, httpSuccess: 2, realBusinessAssertions: 2, stubOnly: 0, directFailures: 0, failureCategories: {}});
+  assert.throws(() => parseBackendAcceptanceResult(''), /BACKEND_ACCEPTANCE_RESULT_CARDINALITY_INVALID/);
+  assert.throws(() => parseBackendAcceptanceResult('{"type":"discovery","discovered":1,"selected":1}\n{"operation":"iam.public-invitation-view","module":"IAM","contract":"PASS","business":"PASS","businessMode":"STUB","dbOperations":11,"status":"PASS"}'), /BACKEND_ACCEPTANCE_RESULT_STUB_BUSINESS/);
 });
 
 test('focused runner accepts only a non-cached actual Gradle Test task', () => {

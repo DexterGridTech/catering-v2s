@@ -53,13 +53,27 @@ The root Gradle build has a fail-closed guard for every test source that imports
 
 All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
 
-### Backend acceptance（当前最小运行能力）
+### Backend acceptance（当前真实业务能力）
+
+当前场景扩展的主动设计规范是
+`doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`；后续新增业务
+测试必须先读该规范，再按业务域写入对应的 `*AcceptanceScenarios.java`。
 
 2026-08-14 起，唯一公共入口是
-`scripts/test/backend-acceptance --operation getPublicInvitationView`。它在真实远端 Testcontainers
-中启动应用，经真实 HTTP 运行一条手写 fixture/request/business assertion，并打印 `CONTRACT`、
-`BUSINESS` 与只供人工比较的 `DB_OPERATIONS`。provider 壳与 scenario registry 保留为未来待办目录，
-不是已实现 coverage；不得从其路径字符串推导测试已经完成。
+`scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。它在真实远端
+Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 18 条手写 fixture/request/business
+assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和只供人工比较的 `DB_OPERATIONS`；结果还明确标记
+`businessMode=REAL`，桩断言不得通过。当前 18 条覆盖 IAM、ORG、商业合同和 asset 的权限、隔离、状态
+迁移、字段脱敏与写入回读。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再作为
+测试入口或覆盖依据。`BackendAcceptanceTest.java` 只保留唯一 Testcontainers/HTTP 入口与共享支撑；新增业务断言应按业务域修改
+`apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/IamAcceptanceScenarios.java`、
+`OrganizationAcceptanceScenarios.java`、`CommercialContractAcceptanceScenarios.java` 或
+`AssetAcceptanceScenarios.java`，由 `BackendAcceptanceScenarioCatalog` 自动发现。
+
+新增场景必须同时写真实 fixture、真实 HTTP request 和真实业务 oracle；不得只断言 response.ok、
+状态码或“不抛异常”。报告只把 `CONTRACT`、`BUSINESS` 和信息性 `DB_OPERATIONS` 分开列出，
+`BUSINESS` 必须是 `businessMode=REAL`。受管 Testcontainers 资源仍须 cleanup PASS，但 cleanup
+不是场景业务维度。
 
 PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动发现/精确集合、lane/并行/
 心跳/work-stealing、calibration 与 correctnessCases 已退役。下一条 operation 仅复制这一条的真实

@@ -43,7 +43,9 @@ class OperationsOrganizationHierarchyControllerTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
+        commandFacts(authentication, session);
         OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
         OrganizationCommandService commercialGroups = mock(OrganizationCommandService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
@@ -58,7 +60,10 @@ class OperationsOrganizationHierarchyControllerTest {
         when(commercialGroups.requireCommercialGroup(WORKSPACE_KEY)).thenReturn(new CommercialGroupReadback(groupId, WORKSPACE_KEY, "GROUP-02", "Existing group", 4L, "platform-origin", 100L, 200L, Map.of(), 0L));
         when(capabilityScopes.resolve(eq(session), eq("REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP"), eq(new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId))))
             .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-GROUP-EDIT", predicate));
-        when(commercialGroups.execute(eq(workspaceId), eq(WORKSPACE_KEY), eq(IDEMPOTENCY_KEY), eq("GROUP-02"), eq("Updated group"), eq(4L), eq(Map.of()), eq(new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester")), eq(ownerGrant)))
+        when(commercialGroups.update(eq(new com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi.UpdateCommand(
+            workspaceId, WORKSPACE_KEY, IDEMPOTENCY_KEY, "GROUP-02", "Updated group", 4L,
+            new com.catering.v2s.extension.api.ExtensionSubmission(java.util.List.of()), new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), ownerGrant
+        ))))
             .thenReturn(new CommercialGroupReadback(groupId, WORKSPACE_KEY, "GROUP-02", "Updated group", 5L, "platform-origin", 100L, 200L, Map.of(), 0L));
         OperationsOrganizationHierarchyController controller = new OperationsOrganizationHierarchyController(new OperationsSessionResolver(authentication), hierarchy, commercialGroups, capabilityScopes);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
@@ -69,7 +74,10 @@ class OperationsOrganizationHierarchyControllerTest {
         assertEquals("Updated group", response.groupName());
         assertEquals(5L, response.version());
         verify(capabilityScopes).resolve(session, "REQ_UPDATE_OPERATIONS_COMMERCIAL_GROUP", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
-        verify(commercialGroups).execute(workspaceId, WORKSPACE_KEY, IDEMPOTENCY_KEY, "GROUP-02", "Updated group", 4L, Map.of(), new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), ownerGrant);
+        verify(commercialGroups).update(new com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi.UpdateCommand(
+            workspaceId, WORKSPACE_KEY, IDEMPOTENCY_KEY, "GROUP-02", "Updated group", 4L,
+            new com.catering.v2s.extension.api.ExtensionSubmission(java.util.List.of()), new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), ownerGrant
+        ));
     }
 
     @Test
@@ -78,6 +86,7 @@ class OperationsOrganizationHierarchyControllerTest {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, UUID.randomUUID(), UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         when(authentication.session("operations-session")).thenReturn(session);
+        commandFacts(authentication, session);
         OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
         OrganizationCommandService commercialGroups = mock(OrganizationCommandService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
@@ -92,8 +101,7 @@ class OperationsOrganizationHierarchyControllerTest {
             controller.updateCommercialGroup(request, WORKSPACE_KEY, IDEMPOTENCY_KEY, new CommercialGroupUpdateRequest("GROUP-02", "Updated group", null, 4L))
         );
 
-        verify(commercialGroups, never()).execute(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        verify(commercialGroups, never()).execute(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(commercialGroups, never()).update(org.mockito.ArgumentMatchers.any(com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi.UpdateCommand.class));
     }
 
     @Test
@@ -103,6 +111,7 @@ class OperationsOrganizationHierarchyControllerTest {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         when(authentication.session("operations-session")).thenReturn(session);
+        commandFacts(authentication, session);
         OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
         OrganizationCommandService commercialGroups = mock(OrganizationCommandService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
@@ -128,10 +137,10 @@ class OperationsOrganizationHierarchyControllerTest {
         verify(capabilityScopes).resolve(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_PROJECT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", regionId));
         verify(capabilityScopes).resolve(session, "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", regionId));
         verify(capabilityScopes).resolveStatusTransition(session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", regionId));
-        verify(hierarchy, never()).createRegion(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        verify(hierarchy, never()).createProject(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        verify(hierarchy, never()).update(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        verify(hierarchy, never()).transitionStatus(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(hierarchy, never()).createRegion(org.mockito.ArgumentMatchers.any(com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.CreateRegionCommand.class));
+        verify(hierarchy, never()).createProject(org.mockito.ArgumentMatchers.any(com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.CreateProjectCommand.class));
+        verify(hierarchy, never()).updateNode(org.mockito.ArgumentMatchers.any(com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.UpdateNodeCommand.class));
+        verify(hierarchy, never()).transitionNodeStatus(org.mockito.ArgumentMatchers.any(com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.TransitionNodeStatusCommand.class));
     }
 
     @Test
@@ -143,6 +152,7 @@ class OperationsOrganizationHierarchyControllerTest {
         WorkspaceAuthenticationService authentication = mock(WorkspaceAuthenticationService.class);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, WORKSPACE_KEY, accountId, UUID.randomUUID(), com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), Set.of(), "Operations tester");
         when(authentication.session("operations-session")).thenReturn(session);
+        commandFacts(authentication, session);
         OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
         OrganizationCommandService commercialGroups = mock(OrganizationCommandService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
@@ -162,10 +172,25 @@ class OperationsOrganizationHierarchyControllerTest {
         when(capabilityScopes.resolve(session, "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", regionId))).thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-REGION-EDIT", regionPredicate));
         when(capabilityScopes.resolveStatusTransition(session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_NODE_STATUS", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", regionId))).thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-REGION-STATUS", regionPredicate));
         AuditActor actor = new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester");
-        when(hierarchy.createRegion(workspaceId, WORKSPACE_KEY, "REGION-02", "New region", null, Map.of(), IDEMPOTENCY_KEY, actor, groupGrant)).thenReturn(region);
-        when(hierarchy.createProject(workspaceId, WORKSPACE_KEY, regionId, "PROJECT-02", "New project", null, java.util.List.of(), Map.of(), IDEMPOTENCY_KEY, actor, projectGrant)).thenReturn(project);
-        when(hierarchy.update(workspaceId, WORKSPACE_KEY, regionId, "REGION-01", "Changed region", null, null, java.util.List.of(), 4L, Map.of(), IDEMPOTENCY_KEY, actor, updateGrant)).thenReturn(region);
-        when(hierarchy.transitionStatus(workspaceId, WORKSPACE_KEY, regionId, 4L, "DISABLED", IDEMPOTENCY_KEY, actor, transitionGrant)).thenReturn(region);
+        var regionCommand = new com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.CreateRegionCommand(
+            workspaceId, WORKSPACE_KEY, "REGION-02", "New region", null,
+            new com.catering.v2s.extension.api.ExtensionSubmission(java.util.List.of()), IDEMPOTENCY_KEY, actor, groupGrant
+        );
+        var projectCommand = new com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.CreateProjectCommand(
+            workspaceId, WORKSPACE_KEY, regionId, "PROJECT-02", "New project", null, java.util.List.of(),
+            new com.catering.v2s.extension.api.ExtensionSubmission(java.util.List.of()), IDEMPOTENCY_KEY, actor, projectGrant
+        );
+        var updateCommand = new com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.UpdateNodeCommand(
+            workspaceId, WORKSPACE_KEY, regionId, "REGION-01", "Changed region", null, null, java.util.List.of(), 4L,
+            new com.catering.v2s.extension.api.ExtensionSubmission(java.util.List.of()), IDEMPOTENCY_KEY, actor, updateGrant
+        );
+        var transitionCommand = new com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi.TransitionNodeStatusCommand(
+            workspaceId, WORKSPACE_KEY, regionId, 4L, "DISABLED", IDEMPOTENCY_KEY, actor, transitionGrant
+        );
+        when(hierarchy.createRegion(regionCommand)).thenReturn(region);
+        when(hierarchy.createProject(projectCommand)).thenReturn(project);
+        when(hierarchy.updateNode(updateCommand)).thenReturn(region);
+        when(hierarchy.transitionNodeStatus(transitionCommand)).thenReturn(region);
         OperationsOrganizationHierarchyController controller = new OperationsOrganizationHierarchyController(new OperationsSessionResolver(authentication), hierarchy, commercialGroups, capabilityScopes);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
 
@@ -174,9 +199,15 @@ class OperationsOrganizationHierarchyControllerTest {
         controller.update(request, WORKSPACE_KEY, regionId, IDEMPOTENCY_KEY, new OrganizationNodeUpdateRequest("REGION-01", "Changed region", null, null, null, 4L, null));
         controller.transition(request, WORKSPACE_KEY, regionId, IDEMPOTENCY_KEY, new OrganizationNodeStatusTransitionRequest("DISABLED", 4L));
 
-        verify(hierarchy).createRegion(workspaceId, WORKSPACE_KEY, "REGION-02", "New region", null, Map.of(), IDEMPOTENCY_KEY, actor, groupGrant);
-        verify(hierarchy).createProject(workspaceId, WORKSPACE_KEY, regionId, "PROJECT-02", "New project", null, java.util.List.of(), Map.of(), IDEMPOTENCY_KEY, actor, projectGrant);
-        verify(hierarchy).update(workspaceId, WORKSPACE_KEY, regionId, "REGION-01", "Changed region", null, null, java.util.List.of(), 4L, Map.of(), IDEMPOTENCY_KEY, actor, updateGrant);
-        verify(hierarchy).transitionStatus(workspaceId, WORKSPACE_KEY, regionId, 4L, "DISABLED", IDEMPOTENCY_KEY, actor, transitionGrant);
+        verify(hierarchy).createRegion(regionCommand);
+        verify(hierarchy).createProject(projectCommand);
+        verify(hierarchy).updateNode(updateCommand);
+        verify(hierarchy).transitionNodeStatus(transitionCommand);
+    }
+
+    private static void commandFacts(WorkspaceAuthenticationService authentication, WorkspaceSessionReadback session) {
+        var facts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(facts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(facts);
     }
 }

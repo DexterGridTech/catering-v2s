@@ -5,6 +5,7 @@ import {testId, useAsyncGenerationGuard, useOverlayLock, useSubmissionLifecycle}
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {operationsClient, publicClient} from '../../../app/api/OperationsTransport';
+import {operationsLoginFormPageLayout} from './loginFormPageLayout';
 
 type Branding = {workspaceName: string; operationsTitle: string; logoUrl?: string};
 type EntryState = {kind: 'loading'} | {kind: 'ready'; branding: Branding} | {kind: 'unavailable'};
@@ -92,11 +93,12 @@ export function OperationsPasswordRecoveryVerifyPage({groupWorkspaceKey}: {group
     }
   };
 
-  if (entryState.kind === 'loading') return <LoginFormPage form={form} logo={<LockOutlined/>}><Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
+  if (entryState.kind === 'loading') return <LoginFormPage form={form} {...operationsLoginFormPageLayout} logo={<LockOutlined/>}><Steps current={0} items={[{title: '验证身份'}, {title: '设置新密码'}, {title: '完成'}]}/></LoginFormPage>;
   if (entryState.kind === 'unavailable') return <Result status="error" title="暂时无法打开恢复入口，请稍后重试" extra={<Button onClick={() => setEntryReload((value) => value + 1)} {...testId('operations-recovery-retry-entry')}>重试</Button>}/>;
   const {branding} = entryState;
   return <LoginFormPage<Fields>
     className="auth-login-page"
+    {...operationsLoginFormPageLayout}
     logo={branding.logoUrl ? <img src={branding.logoUrl} alt=""/> : <LockOutlined/>}
     title={branding.workspaceName}
     subTitle={branding.operationsTitle}

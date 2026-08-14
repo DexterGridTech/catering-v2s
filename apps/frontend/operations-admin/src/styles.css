@@ -79,10 +79,8 @@ body {
   font-weight: 500;
 }
 
-/* ProTable may wrap an ellipsized cell value in Typography, whose text color
- * otherwise overrides the semantic color of its enclosing link button. */
-.operations-content .ant-btn-link > .ant-typography {
-  color: inherit !important;
+.operations-contract-number-label {
+  color: var(--operations-admin-color-primary) !important;
 }
 
 .operations-contract-effective-range {
@@ -132,7 +130,7 @@ body {
   border-top: 1px solid var(--operations-admin-color-border);
 }
 
-.operations-scope-trigger.ant-btn {
+.operations-scope-trigger {
   width: 100%;
   height: auto;
   padding: 10px 8px;
@@ -177,76 +175,4 @@ body {
 .auth-card,
 .login-card {
   width: min(100%, 520px);
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-notice {
-  display: none;
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-left {
-  display: block;
-  flex: 0 1 auto;
-  width: min(calc(100vw - 48px), 520px);
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page {
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 !important;
-  padding: 32px;
-  border: 1px solid var(--operations-admin-color-border);
-  border-radius: 12px;
-  background: var(--operations-admin-color-bg-container);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 8%);
-}
-
-/* Keep the workspace mark inside the existing LoginFormPage brand block, but
- * let it use the full block height instead of the default 44px header icon. */
-body:has(.operations-login-page) .ant-pro-form-login-page-top {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  grid-template-rows: 44px 20px;
-  column-gap: 16px;
-  row-gap: 12px;
-  margin-bottom: 20px;
-}
-
-body:has(.operations-login-page) .ant-pro-form-login-page-header {
-  display: contents;
-}
-
-body:has(.operations-login-page) .ant-pro-form-login-page-logo {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  width: 76px;
-  height: 76px;
-  margin: 0;
-}
-
-body:has(.operations-login-page) .ant-pro-form-login-page-logo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-body:has(.operations-login-page) .ant-pro-form-login-page-title {
-  grid-column: 2;
-  grid-row: 1;
-  text-align: left;
-}
-
-body:has(.operations-login-page) .ant-pro-form-login-page-desc {
-  grid-column: 2;
-  grid-row: 2;
-  margin: 0;
-  text-align: left;
 }

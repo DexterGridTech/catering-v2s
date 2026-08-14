@@ -203,12 +203,24 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         selectedProject(fixture, scopedProjectId);
         when(fixture.capabilityScopes.resolve(fixture.session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
             .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(WorkspaceCapabilityScopeResolver.Decision.ALLOW, "BC-ORG-STORE-CREATE", new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(fixture.workspaceId, KEY, "PROJECT", scopedProjectId, "PROJECT", scopedProjectId, List.of(scopedProjectId))));
+        var extensionSubmission = new com.catering.v2s.extension.api.ExtensionSubmission(List.of(
+            new com.catering.v2s.extension.api.ExtensionSubmission.ExtensionFieldValue("remark", "\"test\"", com.catering.v2s.extension.api.ExtensionSubmission.Mode.SET)
+        ));
         var command = new OperationsStoreCommandApi.CreateStoreCommand(
             fixture.workspaceId, KEY, scopedProjectId, tenantId, brandId, headCompanyId,
-            "STORE-01", "门店一", "备注", new com.catering.v2s.extension.api.ExtensionSubmission(List.of()),
+            "STORE-01", "门店一", "备注", extensionSubmission,
             IDEMPOTENCY_KEY, fixture.actor, grant
         );
         when(fixture.entities.createStore(command)).thenReturn(new OrganizationEntityReadback(storeId, "STORE", fixture.workspaceId, KEY, "STORE-01", "门店一", null, null, "ENABLED", 3L, null, null, "备注", 0L, 10L, 11L, Map.of()));
+        when(fixture.overview.readStoreDetail(new OperationsStoreCommandApi.StoreDetailQuery(fixture.workspaceId, KEY, storeId)))
+            .thenReturn(new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
+                new OperationsStoreCommandApi.Reference(scopedProjectId, "PRJ-01", "项目一"),
+                new OperationsStoreCommandApi.Reference(brandId, "BR-01", "品牌一"),
+                new OperationsStoreCommandApi.Reference(tenantId, "TEN-01", "经营主体一"),
+                new OperationsStoreCommandApi.Reference(headCompanyId, "HC-01", "总公司一")
+            ));
+        when(fixture.contracts.readDerivedStoreStatus(new com.catering.v2s.contract.api.OperationsStoreContractCommandApi.StoreStatusQuery(fixture.workspaceId, KEY, storeId)))
+            .thenReturn(new com.catering.v2s.contract.api.OperationsStoreContractCommandApi.StoreDerivedStatusReadback("OPERATING"));
         when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId)).thenReturn(new OrganizationOverviewTaskReadService.Item(
             storeId,
             KEY,
@@ -279,6 +291,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
             "Operations tester"
         );
         Fixture fixture = fixture(session);
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, null)).thenThrow(new WorkspaceAuthenticationService.SessionInvalidException());
 
         assertThrows(
             WorkspaceAuthenticationService.SessionInvalidException.class,
@@ -302,7 +315,11 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         when(authentication.session("operations-session")).thenReturn(session);
         var readFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts.class);
         when(readFacts.sessionReadback()).thenReturn(session);
+        when(readFacts.groupWorkspaceKey()).thenReturn(session.groupWorkspaceKey());
         when(authentication.readAuthorizationFacts("operations-session")).thenReturn(readFacts);
+        var commandFacts = mock(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts.class);
+        when(commandFacts.sessionReadback()).thenReturn(session);
+        when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         BusinessEntityService entities = mock(BusinessEntityService.class);
         StoreCandidateTaskReadService storeCandidates = mock(StoreCandidateTaskReadService.class);
         OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);

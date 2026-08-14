@@ -134,7 +134,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
     }
 
     private static void assertProblem(ResponseEntity<ContractProblemAdvice.Problem> response, HttpStatus status, String code) {
-        assertEquals(status, response.getStatusCode());
+        assertEquals(status.value(), response.getStatusCode().value());
         assertEquals(code, response.getBody().errorCode());
         assertEquals(status.value(), response.getBody().status());
     }

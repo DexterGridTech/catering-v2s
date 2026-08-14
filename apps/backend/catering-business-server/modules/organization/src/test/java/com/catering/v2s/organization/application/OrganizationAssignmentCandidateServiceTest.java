@@ -56,11 +56,11 @@ class OrganizationAssignmentCandidateServiceTest {
     }
 
     @Test
-    void typedCandidateInputsRejectAnUnboundedPage() {
+    void typedCandidateInputsRejectInvalidPageAndNullTargetReference() {
         assertThrows(IllegalArgumentException.class, () ->
             new PlatformInvitationCandidateQuery(InvitationTargetType.REGION, null, 0, 20)
         );
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(NullPointerException.class, () ->
             new InvitationTargetRef(InvitationTargetType.REGION, null)
         );
     }

@@ -27,20 +27,17 @@ reusable remedy. Route it to project-memory, an existing mechanically admitted c
 production red mutation, an explicit review checklist, or a justified
 `NOT_APPLICABLE_WITH_REASON`. A repaired symptom without a prevention disposition remains open.
 
-For a backend `BUG_FIX`, closure also requires a `backend-acceptance` regression case that is proven
-FAIL on the preserved pre-fix bytes and PASS on the fixed bytes. A case that is green on both byte
-sets has no regression value and fails with `BACKEND_ACCEPTANCE_BUG_FIX_RED_PROOF_REQUIRED`.
-If the defect cannot be expressed at the route boundary, place it in the finite route-unexpressible
-exception list with evidence; if no protection can be built, explicitly register an unprotected fix.
-Neither path permits silent completion. Scenario relaxation or structural-budget increase must cite
-the applicable product/contract source and accepted-baseline authorization; “the test blocks the
-fix” is never a reason.
+For a backend `BUG_FIX`, closure should add or strengthen a current `backend-acceptance` route
+scenario when the defect is visible at HTTP boundary. The regression must assert the real business
+outcome, not merely the status code or lack of an exception; it must preserve a meaningful negative
+case when the defect can be reproduced before the fix. Do not introduce performance baselines,
+scenario cleanup or package-exit artifacts as part of this regression. If the defect cannot be
+expressed at the route boundary, record the finite reason and the remaining unprotected surface.
 
-When the implementation unit is the initial backend-acceptance migration, reopen the exact historical
-finding row before diagnosis. Six cataloged CONNECTION regressions must become route regression cases;
-the fifteen historical HTTP failures and eight seed/client/fixture failures must each be classified
-against owning source and an explicit affected-route set. Never treat a later seed PASS, a shorter seed
-duration, or an unqualified "already fixed" statement as root-cause or regression evidence.
+The initial backend-acceptance migration and its historical performance/seed finding replay are
+retired. For current scenario work, reopen the active business/design standard, the owning production
+source and the actual scenario implementation; do not treat historical reports or provider/registry
+assets as current coverage evidence.
 
 Any debugging record starts with:
 

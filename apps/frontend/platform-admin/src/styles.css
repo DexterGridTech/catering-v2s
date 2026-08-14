@@ -82,19 +82,20 @@ body {
   flex-direction: column;
 }
 
-.platform-organization-hierarchy-panel > .ant-card-body {
+.platform-organization-hierarchy-tree-panel-body,
+.platform-organization-hierarchy-detail-panel-body {
   min-height: 0;
   flex: 1 1 auto;
 }
 
-.platform-organization-hierarchy-tree-panel > .ant-card-body {
+.platform-organization-hierarchy-tree-panel-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .platform-organization-hierarchy-tree-scroll,
-.platform-organization-hierarchy-detail-panel > .ant-card-body {
+.platform-organization-hierarchy-detail-panel-body {
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
@@ -124,35 +125,6 @@ body {
 
 .auth-card {
   width: min(100%, 520px);
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-notice {
-  display: none;
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-left {
-  display: block;
-  flex: 0 1 auto;
-  width: min(calc(100vw - 48px), 520px);
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page {
-  display: flex;
-  width: 100%;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-}
-
-body:has(.auth-login-page) .ant-pro-form-login-page-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 !important;
-  padding: 32px;
-  border: 1px solid var(--platform-admin-color-border);
-  border-radius: 12px;
-  background: var(--platform-admin-color-bg-container);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 8%);
 }
 
 .workspace-role-permission-grid {

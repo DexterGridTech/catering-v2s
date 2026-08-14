@@ -1,6 +1,5 @@
 plugins {
     `java-library`
-    `java-test-fixtures`
 }
 
 dependencies {
@@ -21,5 +20,4 @@ dependencies {
     testImplementation("org.flywaydb:flyway-database-postgresql:11.11.2")
     testRuntimeOnly("org.postgresql:postgresql:42.7.7")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testFixturesImplementation(testFixtures(project(":apps:backend:catering-business-server:modules:asset")))
 }
