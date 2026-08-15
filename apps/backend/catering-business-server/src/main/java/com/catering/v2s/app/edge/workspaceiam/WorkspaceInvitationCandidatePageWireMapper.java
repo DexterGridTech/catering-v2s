@@ -17,11 +17,11 @@ public final class WorkspaceInvitationCandidatePageWireMapper {
     }
 
     private static WorkspaceInvitationCandidatePageMetadata metadata(WorkspaceUserService.CandidateQueryMetadata value) {
-        return value == null ? null : new WorkspaceInvitationCandidatePageMetadata(value.subjectType(), value.queryText(), Long.valueOf(value.page()), Long.valueOf(value.pageSize()), value.total(), value.selectedOrganizationRef() == null ? null : value.selectedOrganizationRef().toString());
+        return value == null ? null : new WorkspaceInvitationCandidatePageMetadata(value.subjectType(), value.queryText(), Long.valueOf(value.page()), Long.valueOf(value.pageSize()), value.total(), value.selectedOrganizationRef());
     }
 
     private static WorkspaceInvitationCandidatePageOrganizationsItem organization(WorkspaceUserService.CandidateOrganization value) {
-        return new WorkspaceInvitationCandidatePageOrganizationsItem(value.serviceNodeType(), value.organizationRef().toString(), value.path());
+        return new WorkspaceInvitationCandidatePageOrganizationsItem(value.serviceNodeType(), value.organizationRef(), value.path());
     }
 
     private static WorkspaceRole role(WorkspaceRoleReadback value) {

@@ -6,7 +6,7 @@ public record GroupWorkspaceDisplayUpdateRequest(
     String operationsTitle,
     String notes,
     String logoIntent,
-    String logoAssetRef,
+    java.util.UUID logoAssetRef,
     String logoBindGrant,
     Long expectedVersion,
     String idempotencyKey

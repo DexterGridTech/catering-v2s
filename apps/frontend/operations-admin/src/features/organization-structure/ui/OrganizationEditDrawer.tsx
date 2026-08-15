@@ -6,7 +6,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operati
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {ProjectPhaseFieldList} from './ProjectPhaseFieldList';
 import {issue, organizationProjectEditLabel, organizationRegionEditLabel, projectPhaseDrafts, projectPhasePayload, type HierarchyRow} from './organizationStructureShared';
-import {hydrateOrganizationExtensionValues, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
+import {extensionValuesForGeneratedRequest, hydrateOrganizationExtensionValues, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {code: string; name: string; notes?: string; phaseDrafts?: Array<{name?: string}>; extensionValues?: OrganizationExtensionFormValues};
 
@@ -46,7 +46,7 @@ export function OrganizationEditDrawer({node, parentName, queryContext, onClose,
     try {
       const updated = await operationsClient.updateOperationsOrganizationNode(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, nodeId: node.id},
-        {body: {code: values.code.trim(), name: values.name.trim(), parentId: node.parentId, phases: node.nodeType === 'PROJECT' ? projectPhasePayload(values.phaseDrafts) : [], notes: values.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues, node.extensionValues), expectedVersion: node.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {code: values.code.trim(), name: values.name.trim(), parentId: node.parentId, phases: node.nodeType === 'PROJECT' ? projectPhasePayload(values.phaseDrafts) : [], notes: values.notes?.trim() || null, extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, values.extensionValues, node.extensionValues)), expectedVersion: node.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated({id: updated.id, nodeType: updated.nodeType, parentId: updated.parentId, code: updated.code, name: updated.name, notes: updated.notes, extensionValues: updated.extensionValues, status: updated.status, phases: updated.phases.map((phase) => phase.name), revision: updated.revision});

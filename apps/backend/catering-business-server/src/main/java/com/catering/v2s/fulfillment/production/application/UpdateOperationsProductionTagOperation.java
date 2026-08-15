@@ -29,7 +29,7 @@ public class UpdateOperationsProductionTagOperation {
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_PRODUCTION_TAG,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
@@ -37,7 +37,7 @@ public class UpdateOperationsProductionTagOperation {
         ProductionTagUpdateRequest request = invocation.request();
         ProductionTagOwnerApi.ProductionTagCommandReadback readback = productionTags.updateTag(
             context, new ProductionTagOwnerApi.UpdateTagCommand(invocation.tagCode(), requiredLong(request.expectedVersion(), "expectedVersion"), request.tagKind(), request.name()), invocation.idempotencyKey());
-        return new ProductionTagReadback(REVISION, context.requestId(), new ProductionTagReadback.Result(readback.code(), readback.tagKind(), readback.name(),
+        return new ProductionTagReadback(REVISION, context.requestId(), new ProductionTagReadback.Result(readback.tagRef(), readback.code(), readback.tagKind(), readback.name(),
             new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION), readback.status(), readback.version()), readback.version());
     }
 

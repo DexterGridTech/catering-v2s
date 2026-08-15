@@ -472,18 +472,18 @@
           "fixtureRef": "FIXTURE-SMART-VIEWS",
           "parameterization": "canonical",
           "parameter": {
-            "viewKey": "GOVERNANCE_PENDING",
+            "viewKey": "EXTERNAL_ORDER_TEMP",
             "fixtureRef": "FIXTURE-SMART-VIEWS"
           },
           "expected": {
-            "assertionKey": "CI-API-004:GOVERNANCE_PENDING/FIXTURE-SMART-VIEWS",
+            "assertionKey": "CI-API-004:EXTERNAL_ORDER_TEMP/FIXTURE-SMART-VIEWS",
             "fixtureRef": "FIXTURE-SMART-VIEWS",
             "parameter": {
-              "viewKey": "GOVERNANCE_PENDING",
+              "viewKey": "EXTERNAL_ORDER_TEMP",
               "fixtureRef": "FIXTURE-SMART-VIEWS"
             }
           },
-          "expectedBusinessResult": "六智能视图计数与需处理不进入 stockState；case={\"viewKey\":\"GOVERNANCE_PENDING\",\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}",
+          "expectedBusinessResult": "六智能视图计数与需处理不进入 stockState；case={\"viewKey\":\"EXTERNAL_ORDER_TEMP\",\"fixtureRef\":\"FIXTURE-SMART-VIEWS\"}",
           "polarity": "POSITIVE",
           "expectationKind": "FACT"
         }

@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record AuditHistoryItem(
-    String id,
+    java.util.UUID id,
     Long occurredAt,
     String actorDisplayName,
     String actionSummary,

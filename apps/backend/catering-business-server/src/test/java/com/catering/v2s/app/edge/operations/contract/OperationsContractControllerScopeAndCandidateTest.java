@@ -9,11 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.generated.wire.StoreContractInvalidateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreContractItem;
 import com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequest;
-import com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -51,7 +49,7 @@ class OperationsContractControllerScopeAndCandidateTest {
     void parsesExplicitExtensionSubmissionWithTheGeneratedJackson3RequestType() throws Exception {
         StoreContractCreateRequest request = JSON.readValue("{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"contractNo\":\"HT-001\",\"effectiveFrom\":\"2026-08-01\",\"extensionValues\":[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}],\"items\":[{\"code\":\"SKU-1\",\"name\":\"商品一\"}]}", StoreContractCreateRequest.class);
 
-        assertEquals(new StoreContractCreateRequestExtensionValuesItem("remark", "\"test\"", "SET"), request.extensionValues().getFirst());
+        assertEquals("\"test\"", request.extensionValues().path(0).path("valueJson").asText());
     }
 
     @Test
@@ -180,7 +178,8 @@ class OperationsContractControllerScopeAndCandidateTest {
                 "2026-07-30",
                 null,
                 "备注",
-                List.of(),
+                JSON.createArrayNode(),
+                null,
                 List.of(new StoreContractItem("SKU-1", "货号一")),
                 "一期"
             )
@@ -213,7 +212,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                 KEY,
                 contractId,
                 IDEMPOTENCY_KEY,
-                new StoreContractUpdateRequest("一期", "2026-07-30", null, "备注", List.of(new StoreContractUpdateRequestExtensionValuesItem("remark", "\"test\"", "SET")), 3L, List.of(new StoreContractItem("SKU-1", "货号一")), "一期")
+                new StoreContractUpdateRequest("一期", "2026-07-30", null, "备注", JSON.createArrayNode().addObject().put("fieldKey", "remark").put("valueJson", "\"test\"").put("mode", "SET"), null, 3L, List.of(new StoreContractItem("SKU-1", "货号一")), "一期")
             )
         );
         assertThrows(

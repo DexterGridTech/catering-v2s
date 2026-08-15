@@ -19,20 +19,20 @@ public final class InventoryTaskReadService {
         return primary(() -> owner.readTarget(dataNodeRef, brandRef, targetRef, requestId, dataNodeType));
     }
 
-    public JsonNode changeSummary(String targetRef, String period) {
-        return primary(() -> owner.readTargetChangeSummary(targetRef, period));
+    public JsonNode changeSummary(String dataNodeRef, String brandRef, String targetRef, String period, String dataNodeType) {
+        return primary(() -> owner.readTargetChangeSummary(dataNodeRef, brandRef, targetRef, period, dataNodeType));
     }
 
-    public JsonNode businessHistory(String targetRef, ObjectNode request, String requestId) {
-        return primary(() -> owner.readTargetBusinessHistory(targetRef, request, requestId));
+    public JsonNode businessHistory(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType) {
+        return primary(() -> owner.readTargetBusinessHistory(dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType));
     }
 
     public JsonNode consumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId) {
         return primary(() -> owner.readTargetConsumptionReferences(dataNodeRef, brandRef, targetRef, request, requestId));
     }
 
-    public JsonNode ledger(String targetRef, ObjectNode request, String requestId) {
-        return primary(() -> owner.readTargetLedger(targetRef, request, requestId));
+    public JsonNode ledger(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType) {
+        return primary(() -> owner.readTargetLedger(dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType));
     }
 
     public JsonNode diagnostics(String targetRef, String requestId) {

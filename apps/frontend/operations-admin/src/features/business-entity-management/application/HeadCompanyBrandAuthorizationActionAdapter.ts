@@ -4,6 +4,7 @@ import {
   type ApiProblem,
 } from '../../../app/api/OperationsTransport';
 import type {BrandPage, HeadCompany} from '../../../app/api/generated/operations-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 
 type OperationsClient = typeof operationsClient;
 
@@ -103,8 +104,8 @@ export class HeadCompanyBrandAuthorizationActionAdapter {
     const path = {groupWorkspaceKey: context.groupWorkspaceKey, headCompanyId: context.headCompanyId};
     const headers = {'Idempotency-Key': intent.idempotencyKey};
     return action === 'add'
-      ? this.client.addOperationsOrganizationHeadCompanyBrandAuthorization(path, {body: {brandId: intent.brandId}, headers})
-      : this.client.removeOperationsOrganizationHeadCompanyBrandAuthorization({...path, brandId: intent.brandId}, {headers});
+      ? this.client.addOperationsOrganizationHeadCompanyBrandAuthorization(path, {body: {brandId: wireUuid(intent.brandId)}, headers})
+      : this.client.removeOperationsOrganizationHeadCompanyBrandAuthorization({...path, brandId: wireUuid(intent.brandId)}, {headers});
   }
 }
 

@@ -273,7 +273,13 @@
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
+    },
+    {
+      "operationId": "batchTransitionOperationsCatalogItemStatus",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-workbench.paths.yaml"
     }
   ],
-  "placementDigest": "40f00563383b9787e253d3b7b3699e414f054777720bc7ee09d0a5c2fa00a1a1"
+  "placementDigest": "550628e988f3538f76ad1fd648d15cbf626dc86dc587967b892d7f8b9e9a5100"
 }

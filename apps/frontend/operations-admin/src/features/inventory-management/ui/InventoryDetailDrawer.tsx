@@ -3,11 +3,13 @@ import {adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps, NameCodeT
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
+import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {INVENTORY_ACTION_TRIGGER_TEST_IDS, InventoryActionModal, type InventoryActionKind} from './InventoryActionModal';
 import {envelopeData, shouldRequestInventoryDiagnostics, type CursorPage, type InventoryCurrentView, type InventoryDiagnostics, type InventoryHistoryEntry, type InventoryLedgerEntry, type InventoryReference} from './inventoryManagementModel';
 
-type Props = {targetRef?: string; canEdit: boolean; queryContext: OperationsPageContext; onClose: () => void; onListChanged: () => void};
+type Props = {targetRef?: Uuid; canEdit: boolean; queryContext: OperationsPageContext; onClose: () => void; onListChanged: () => void};
 type InventoryZone = 'current' | 'changes' | 'history' | 'references' | 'ledger' | 'diagnostics';
 
 function ZoneProblem({title, onRetry}: {title: string; onRetry: () => void}) {
@@ -32,7 +34,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     actionTriggerRef.current = null;
   }, [targetRef]);
   const zoneLoaded = (zone: InventoryZone) => zone === 'current' ? open : open && expandedZones.includes(zone);
-  const path = {targetRef: targetRef ?? ''};
+  const path = {targetRef: wireUuid(targetRef ?? '')};
   const historyCursor = historyCursors[historyCursors.length - 1] ?? '';
   const referenceCursor = referenceCursors[referenceCursors.length - 1] ?? '';
   const ledgerCursor = ledgerCursors[ledgerCursors.length - 1] ?? '';
@@ -99,7 +101,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     onListChanged();
   };
   const handleZoneChange = (keys: string | string[]) => setExpandedZones(Array.isArray(keys) ? keys : [keys]);
-  const title = currentView ? `库存对象详情：${currentView.target.productName}` : '库存对象详情';
+  const title = currentView ? <Space size={4}>库存对象详情：<NameCodeText name={currentView.target.productName ?? currentView.target.productCode} code={currentView.target.productCode}/></Space> : '库存对象详情';
   const identityBlocked = Boolean(current.error);
   const zoneItems = [
     {key: 'current', label: '① 当前状态', children: <Card size="small" title="① 当前状态" {...testId('inventory-zone-current')}>
@@ -115,9 +117,14 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
       ]}/>
     </Card>},
     {key: 'changes', label: '② 库存变化', children: <Card size="small" title="② 库存变化" {...testId('inventory-zone-changes')}>
-      {(changesToday.error || changes7d.error || changes30d.error) ? <ZoneProblem title="库存变化" onRetry={() => { void changesToday.refetch(); void changes7d.refetch(); void changes30d.refetch(); }}/> : (changesToday.isLoading || changes7d.isLoading || changes30d.isLoading) && !changesToday.data && !changes7d.data && !changes30d.data ? <Skeleton active/> : periodChanges.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无库存变化"/> : <Table size="small" rowKey="period" pagination={false} dataSource={periodChanges} columns={[
-        {title: '周期', dataIndex: 'period'}, {title: '增加', dataIndex: 'increase'}, {title: '减少', dataIndex: 'decrease'}, {title: '净变化', dataIndex: 'netChange'}, {title: '变化数', dataIndex: 'entryCount'},
-      ]}/>} 
+      {(changesToday.error || changes7d.error || changes30d.error) ? <ZoneProblem title="库存变化" onRetry={() => { void changesToday.refetch(); void changes7d.refetch(); void changes30d.refetch(); }}/> : (changesToday.isLoading || changes7d.isLoading || changes30d.isLoading) && !changesToday.data && !changes7d.data && !changes30d.data ? <Skeleton active/> : <Space direction="vertical" size={12} style={{display: 'flex'}}>
+        {periodChanges.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无库存变化"/> : <Table size="small" rowKey="period" pagination={false} dataSource={periodChanges} columns={[
+          {title: '周期', dataIndex: 'period'}, {title: '变化量', dataIndex: 'netChange'},
+        ]}/>}
+        {currentView?.recentChanges?.length ? <Table size="small" rowKey={(row, index) => `${row.occurredAt}-${row.changeType}-${index}`} pagination={false} dataSource={currentView.recentChanges} columns={[
+          {title: '最近变化', dataIndex: 'changeType'}, {title: '数量', dataIndex: 'quantity'}, {title: '来源', dataIndex: 'source'}, {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
+        ]}/> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无最近变化明细"/>}
+      </Space>}
     </Card>},
     {key: 'history', label: '③ 盘点与库存增加历史', children: <Card size="small" title="③ 盘点与库存增加历史" {...testId('inventory-zone-business-history')}>
       {history.error ? <ZoneProblem title="盘点与库存增加历史" onRetry={() => void history.refetch()}/> : history.isLoading && !history.data ? <Skeleton active/> : !historyPage?.entries.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无盘点或库存增加记录"/> : <Table size="small" rowKey="entryRef" pagination={{current: historyCursors.length, pageSize: 20, total: historyPage.total, showSizeChanger: false, onChange: (page) => setHistoryCursors(current => page < current.length ? current.slice(0, page) : page > current.length && historyPage.cursor ? [...current, historyPage.cursor] : current)}} dataSource={historyPage.entries} columns={[
@@ -125,8 +132,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
       ]}/>} 
     </Card>},
     {key: 'references', label: '④ 关联商品与扣减规则', children: <Card size="small" title="④ 关联商品与扣减规则" {...testId('inventory-zone-consumption-references')}>
-      {references.error ? <ZoneProblem title="关联商品与扣减规则" onRetry={() => void references.refetch()}/> : references.isLoading && !references.data ? <Skeleton active/> : !referencePage?.entries.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无关联商品或扣减规则"/> : <Table size="small" rowKey="sourceCode" pagination={{current: referenceCursors.length, pageSize: 20, total: referencePage.total, showSizeChanger: false, onChange: (page) => setReferenceCursors(current => page < current.length ? current.slice(0, page) : page > current.length && referencePage.cursor ? [...current, referencePage.cursor] : current)}} dataSource={referencePage.entries} columns={[
-        {title: '来源对象', render: (_, row) => <NameCodeText name={row.sourceName ?? row.sourceKind} code={row.sourceCode}/>}, {title: '来源层级', render: (_, row) => row.ownerScope?.ownerType ?? '—'}, {title: '每份消耗', render: (_, row) => `${row.quantity} ${row.unit}`}, {title: '时机', dataIndex: 'timing'}, {title: '状态', dataIndex: 'status'},
+      {references.error ? <ZoneProblem title="关联商品与扣减规则" onRetry={() => void references.refetch()}/> : references.isLoading && !references.data ? <Skeleton active/> : !referencePage?.entries.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无关联商品或扣减规则"/> : <Table size="small" rowKey={(row, index) => `${row.sourceKind}-${row.sourceCode}-${index}`} pagination={{current: referenceCursors.length, pageSize: 20, total: referencePage.total, showSizeChanger: false, onChange: (page) => setReferenceCursors(current => page < current.length ? current.slice(0, page) : page > current.length && referencePage.cursor ? [...current, referencePage.cursor] : current)}} dataSource={referencePage.entries} columns={[
+        {title: '来源对象', render: (_, row) => <NameCodeText name={row.sourceName ?? row.sourceKind} code={row.sourceCode}/>}, {title: '来源层级', render: (_, row) => row.ownerScope ? `${row.ownerScope.ownerType} / ${row.ownerScope.ownerRef}` : '—'}, {title: '每份消耗', render: (_, row) => `${row.quantity} ${row.unit}`}, {title: '时机', dataIndex: 'timing'}, {title: '状态', dataIndex: 'status'},
       ]}/>} 
     </Card>},
     {key: 'ledger', label: '⑤ 全部变化记录', children: <Card size="small" title="⑤ 全部变化记录" {...testId('inventory-zone-ledger')}>

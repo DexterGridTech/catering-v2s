@@ -184,8 +184,7 @@
           "nextStep": {
             "type": "string",
             "enum": [
-              "VERIFY_MOBILE",
-              "FINALIZE"
+              "VERIFY_MOBILE"
             ]
           }
         }
@@ -458,7 +457,13 @@
             "$ref": "#/components/schemas/WorkspaceInvitationStatus"
           },
           "nextStep": {
-            "$ref": "#/components/schemas/PublicInvitationResumeStep"
+            "type": "string",
+            "enum": [
+              "ACCEPT",
+              "VERIFY_MOBILE",
+              "FINALIZE",
+              "TERMINAL"
+            ]
           },
           "expiresAt": {
             "$ref": "../common/time.schemas.yaml#/components/schemas/EpochMillis"
@@ -915,7 +920,8 @@
                 "organizationRef": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 64
+                  "maxLength": 64,
+                  "format": "uuid"
                 },
                 "path": {
                   "type": "string",
@@ -971,7 +977,8 @@
               "selectedOrganizationRef": {
                 "type": "string",
                 "nullable": true,
-                "maxLength": 64
+                "maxLength": 64,
+                "format": "uuid"
               }
             }
           }
@@ -1006,7 +1013,8 @@
           "targetOrganizationRef": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           },
           "roleIds": {
             "type": "array",
@@ -1112,15 +1120,6 @@
             "minimum": 0
           }
         }
-      },
-      "PublicInvitationResumeStep": {
-        "type": "string",
-        "enum": [
-          "ACCEPT",
-          "VERIFY_MOBILE",
-          "FINALIZE",
-          "TERMINAL"
-        ]
       },
       "WorkspaceInvitationSortKey": {
         "type": "string",
@@ -1365,7 +1364,8 @@
           "scopeRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 240
+            "maxLength": 240,
+            "format": "uuid"
           },
           "scopeName": {
             "type": "string",
@@ -1457,7 +1457,8 @@
           "scopeRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 240
+            "maxLength": 240,
+            "format": "uuid"
           },
           "expectedContextVersion": {
             "type": "integer",
@@ -1488,7 +1489,8 @@
           "scopeRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 240
+            "maxLength": 240,
+            "format": "uuid"
           },
           "mobile": {
             "type": "string",

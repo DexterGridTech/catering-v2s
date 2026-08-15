@@ -56,7 +56,8 @@
             "properties": {
               "entryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "action": {
                 "type": "string",
@@ -152,11 +153,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -223,7 +226,8 @@
             "properties": {
               "entryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "source": {
                 "type": "string",
@@ -387,7 +391,8 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "keyword": {
           "type": "string",
@@ -699,6 +704,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         }
       }
@@ -1086,7 +1092,8 @@
             "properties": {
               "entryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "source": {
                 "type": "string",
@@ -1162,6 +1169,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         },
         "period": {
@@ -1179,6 +1187,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         },
         "cursor": {
@@ -1200,6 +1209,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         },
         "cursor": {
@@ -1221,6 +1231,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         },
         "cursor": {
@@ -1242,6 +1253,7 @@
       "properties": {
         "targetRef": {
           "type": "string",
+          "format": "uuid",
           "description": "inventory target reference"
         }
       }
@@ -1271,7 +1283,8 @@
           "properties": {
             "targetRef": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "before": {
               "type": "string",
@@ -1290,7 +1303,8 @@
             },
             "ledgerEntryRef": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "stockState": {
               "type": "string",

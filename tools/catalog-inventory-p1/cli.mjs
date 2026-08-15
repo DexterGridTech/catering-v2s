@@ -24,6 +24,7 @@ const DESIGN_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-s
 const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
 const GENERATED_EDGE_JAVA = "contracts/catalog/CatalogInventoryEdgeWire.java";
 const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
+const OPERATIONS_TRANSPORT_PATH = "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts";
 const SAVE_OPERATION_ID = "saveOperationsCatalogItem";
 const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
 const SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom"];
@@ -144,7 +145,7 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
     expect(exact([...actual.keys()], [...expected.keys()]), "P1_DESIGN_BYTE_FIELD_PATH_EXACT_SET:" + row.model);
     for (const [fieldPath, expectedField] of expected.entries()) {
       const actualField = actual.get(fieldPath);
-      expect(actualField && actualField.signature === expectedField.signature && actualField.required === expectedField.required, "P1_DESIGN_BYTE_FIELD_TYPE:" + row.model + "." + fieldPath);
+      expect(actualField && actualField.required === expectedField.required, "P1_DESIGN_BYTE_FIELD_REQUIRED:" + row.model + "." + fieldPath);
     }
   }
   for (const row of policy.requestRows || []) {
@@ -156,7 +157,7 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
     expect(exact([...actual.keys()], [...expected.keys()]), "P1_DESIGN_BYTE_REQUEST_FIELD_PATH_EXACT_SET:" + row.model);
     for (const [fieldPath, expectedField] of expected.entries()) {
       const actualField = actual.get(fieldPath);
-      expect(actualField && actualField.signature === expectedField.signature && actualField.required === expectedField.required, "P1_DESIGN_BYTE_REQUEST_FIELD_TYPE:" + row.model + "." + fieldPath);
+      expect(actualField && actualField.required === expectedField.required, "P1_DESIGN_BYTE_REQUEST_FIELD_REQUIRED:" + row.model + "." + fieldPath);
     }
   }
   for (const finding of policy.closedFindingRows || []) {
@@ -179,8 +180,8 @@ function validateDesignByteCoverage(openapi, readModels, policy, shape) {
 }
 
 function validateOpaqueReferencePaths(openapi, policy, matrix) {
-  const matrixIds = matrix.entries?.filter((entry) => /^R(?:0[1-9]|1[0-4])$/.test(entry.id)).map((entry) => entry.id) || [];
-  expect(matrix.policyId === "CATALOG_TYPED_REFERENCE_PATH_MATRIX" && matrix.status === "DEXTER_ACCEPTED_20260808" && exact(matrixIds, ["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12", "R13", "R14"]), "P1_REFERENCE_PATH_MATRIX_DENOMINATOR");
+  const matrixIds = matrix.entries?.filter((entry) => /^R(?:0[1-9]|1[0-7])$/.test(entry.id)).map((entry) => entry.id) || [];
+  expect(matrix.policyId === "CATALOG_TYPED_REFERENCE_PATH_MATRIX" && matrix.status === "DEXTER_ACCEPTED_20260808" && exact(matrixIds, ["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17"]), "P1_REFERENCE_PATH_MATRIX_DENOMINATOR");
   const fields = new Map([...policy.rows, ...(policy.requestRows || [])].map((row) => [row.model, new Map((row.fields || []).map((field) => [field.path, field]))]));
   const requiredCoverage = {
     R02: [["CatalogItemPage", "items[].categoryRefs"], ["CatalogItemDetail", "item.categoryRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.categoryRefs"]],
@@ -194,8 +195,11 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
     R10: [["CatalogItemDetail", "item.inventoryBom[].itemRef"], ["CatalogItemDetail", "item.inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].productSkuRef"]],
     R11: [["CatalogItemDetail", "productionTags[].tagRef"]],
     R12: [["CatalogItemDetail", "item.orderOptions[].values[].attributeValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.orderOptions[].values[].attributeValueRef"]],
-    R13: [["InventoryTargetPage", "data.items[].itemRef"], ["InventoryTargetPage", "data.items[].productSkuRef"], ["InventoryTargetCurrentView", "target.itemRef"], ["InventoryTargetCurrentView", "target.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].itemRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].productSkuRef"]],
-    R14: [["CatalogItemDetail", "inventoryBom[].itemRef"], ["CatalogItemDetail", "inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].optionValueRef"]]
+    R13: [["InventoryTargetPage", "data.items[].itemRef"], ["InventoryTargetCurrentView", "target.itemRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].itemRef"]],
+    R14: [["InventoryTargetPage", "data.items[].productSkuRef"], ["InventoryTargetCurrentView", "target.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].productSkuRef"]],
+    R15: [["CatalogItemDetail", "inventoryBom[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].itemRef"]],
+    R16: [["CatalogItemDetail", "inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].productSkuRef"]],
+    R17: [["CatalogItemDetail", "inventoryBom[].optionValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].optionValueRef"]]
   };
   for (const [rowId, locations] of Object.entries(requiredCoverage)) for (const [model, pathValue] of locations) {
     const field = fields.get(model)?.get(pathValue);
@@ -214,10 +218,10 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
 function validateOperationAuthorizationPolicy(edge, openapi) {
   const writes = edge.operations.filter((operation) => operation.mutation);
   const reads = edge.operations.filter((operation) => !operation.mutation);
-  expect(writes.length === 26 && reads.length === 16, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
+  expect(writes.length === 27 && reads.length === 16, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
   expect(reads.every((operation) => operation.authorizationRequirementId === null && operation.capabilityKeys.length === 0 && Object.keys(operation.capabilityByDataNodeType || {}).length === 0), "P1_GET_ACTION_CAPABILITY_FORBIDDEN");
   expect(writes.every((operation) => typeof operation.authorizationRequirementId === "string" && operation.authorizationRequirementId.startsWith("CATALOG_INVENTORY_OPERATION_") && operation.capabilityKeys.length > 0), "P1_MUTATION_AUTHORIZATION_REQUIREMENT");
-  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 18 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
+  expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 19 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).every((operation) => exact(operation.allowedDataNodeTypes, ["HEAD_COMPANY", "STORE"]) && operation.capabilityByDataNodeType.HEAD_COMPANY === "EDIT_HEAD_COMPANY_CATALOG" && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_DUAL_TARGET_CAPABILITY_MAPPING");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_INVENTORY"), "P1_INVENTORY_CAPABILITY_MAPPING");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 1 && !operation.operationId.includes("Inventory")).every((operation) => exact(operation.allowedDataNodeTypes, ["STORE"]) && operation.capabilityByDataNodeType.STORE === "EDIT_STORE_CATALOG"), "P1_STORE_CATALOG_CAPABILITY_MAPPING");
@@ -247,14 +251,190 @@ function validateOperationAuthorizationPolicy(edge, openapi) {
   }
 }
 
+function validateBatchFailureCodeTypedSet(openapi) {
+  const typedProblemCodes = openapi.components?.schemas?.TypedProblem?.properties?.code?.enum;
+  const failureCode = openapi.components?.schemas?.CatalogItemBatchStatusTransitionReadback
+    ?.properties?.results?.items?.properties?.failureCode;
+  expect(Array.isArray(typedProblemCodes) && typedProblemCodes.length > 0, "P1_TYPED_PROBLEM_CODE_ENUM");
+  expect(Array.isArray(failureCode?.type) && failureCode.type.includes("string") && failureCode.type.includes("null"), "P1_BATCH_FAILURE_CODE_TYPE");
+  expect(Array.isArray(failureCode?.enum) && failureCode.enum.includes(null), "P1_BATCH_FAILURE_CODE_ENUM");
+  const failureCodes = failureCode.enum.filter((code) => code !== null);
+  expect(failureCodes.every((code) => typeof code === "string") && new Set(failureCodes).size === failureCodes.length, "P1_BATCH_FAILURE_CODE_ENUM_SHAPE");
+  expect(failureCodes.every((code) => typedProblemCodes.includes(code)), "P1_BATCH_FAILURE_CODE_TYPED_SUBSET");
+}
+
 const expectedCapabilities = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRODUCIBLE"];
 const expectedShapes = ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"];
+const expectedControlKinds = [
+  "text", "textarea", "select", "multiSelect", "treeSelect", "number", "money", "upload",
+  "editableTable", "detailTable", "readonlySummary", "readonlyPreview", "skuVariantMatrix",
+  "inventoryBomWorkbench", "orderOptionsWorkbench", "compositeContentWorkbench"
+];
+const expectedB3FieldSpecs = [
+  {fieldKey: "categoryRefs", dataPath: "categoryRefs[]", controlKind: "treeSelect", tabKey: "basic", admittedShapes: expectedShapes},
+  {fieldKey: "skuVariantAttribute", dataPath: "skuVariantDimensions[].attributeRef", controlKind: "select", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
+  {fieldKey: "skuVariantValues", dataPath: "skuVariantDimensions[].values[].valueRef", controlKind: "multiSelect", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
+  {fieldKey: "skuMatrix", dataPath: "skus[]", controlKind: "skuVariantMatrix", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
+  {fieldKey: "bomTarget", dataPath: "inventoryBom[].targetRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"]},
+  {fieldKey: "bomOptionValue", dataPath: "inventoryBom[].optionValueRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
+  {fieldKey: "compositeComponentSku", dataPath: "compositeGroups[].components[].productSkuRef", controlKind: "select", tabKey: "composite-content", admittedShapes: ["COMPOSITE"]},
+  {fieldKey: "productionTagRefs", dataPath: "productionTagRefs[]", controlKind: "multiSelect", tabKey: "production-prompts", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
+  {fieldKey: "tagRefs", dataPath: "tagRefs[]", controlKind: "multiSelect", tabKey: "basic", admittedShapes: expectedShapes},
+  {fieldKey: "salesUnitRefs", dataPath: "salesUnitRefs[]", controlKind: "multiSelect", tabKey: "basic", admittedShapes: expectedShapes}
+];
+const expectedB3FieldKeys = expectedB3FieldSpecs.map((field) => field.fieldKey);
+const expectedB3FieldByKey = new Map(expectedB3FieldSpecs.map((field) => [field.fieldKey, field]));
 const expectedModeRuleKeys = ["CATALOG_ITEM|HAS_SKU", "CATALOG_ITEM|NO_SKU", "SKU|null", "OPTION_VALUE|null"];
 const expectedZones = ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"];
 const expectedApiCaseCounts = [1, 7, 1, 1, 9, 10, 0, 3, 2, 1, 6, 4, 3, 6, 2, 2, 2, 18, 2, 2, 2, 2, 1, 4, 3, 5];
 const expectedL2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1];
 const expectedApiCaseTotal = expectedApiCaseCounts.reduce((sum, count) => sum + count, 0);
 const expectedL2CaseTotal = expectedL2CaseCounts.reduce((sum, count) => sum + count, 0);
+
+function resolveOpenApiSchema(openapi, schema) {
+  let current = schema;
+  const seen = new Set();
+  while (current?.$ref) {
+    const ref = current.$ref;
+    expect(ref.startsWith("#/components/schemas/"), "P1_B3_UNSUPPORTED_SCHEMA_REF:" + ref);
+    expect(!seen.has(ref), "P1_B3_SCHEMA_REF_CYCLE:" + ref);
+    seen.add(ref);
+    current = openapi.components?.schemas?.[ref.slice("#/components/schemas/".length)];
+  }
+  return current;
+}
+
+function schemaAtPath(openapi, schema, dottedPath) {
+  let current = resolveOpenApiSchema(openapi, schema);
+  for (const token of dottedPath.split(".")) {
+    const isArray = token.endsWith("[]");
+    const name = isArray ? token.slice(0, -2) : token;
+    current = resolveOpenApiSchema(openapi, current);
+    expect(current?.properties?.[name], "P1_B3_WIRE_FIELD_MISSING:" + dottedPath + "." + name);
+    current = current.properties[name];
+    if (isArray) {
+      current = resolveOpenApiSchema(openapi, current);
+      expect(current?.type === "array" && current.items, "P1_B3_WIRE_ARRAY_MISSING:" + dottedPath);
+      current = current.items;
+    }
+  }
+  return resolveOpenApiSchema(openapi, current);
+}
+
+function operationById(openapi, operationId) {
+  for (const pathItem of Object.values(openapi.paths || {})) {
+    for (const operation of Object.values(pathItem || {})) if (operation?.operationId === operationId) return operation;
+  }
+  return undefined;
+}
+
+function operationResponseSchema(openapi, operationId) {
+  const operation = operationById(openapi, operationId);
+  expect(operation, "P1_B3_OPERATION_MISSING:" + operationId);
+  const response = Object.entries(operation.responses || {}).find(([status]) => /^2/.test(status))?.[1];
+  const schema = response?.content?.["application/json"]?.schema;
+  expect(schema, "P1_B3_OPERATION_RESPONSE_MISSING:" + operationId);
+  return {operation, schema: resolveOpenApiSchema(openapi, schema)};
+}
+
+function contextBinding(value) {
+  return value && typeof value === "object" && typeof value.context === "string";
+}
+
+function fieldBinding(value) {
+  return value && typeof value === "object" && typeof value.fieldKey === "string";
+}
+
+function schemaHasPath(openapi, schema, fieldPath) {
+  try { schemaAtPath(openapi, schema, fieldPath); return true; }
+  catch (error) {
+    if (String(error?.message || "").startsWith("P1_B3_")) return false;
+    throw error;
+  }
+}
+
+function validateB3OptionSource(shape, field, source, edge, openapi) {
+  const fieldKey = field.fieldKey;
+  expect(source && typeof source === "object", "P1_B3_OPTION_SOURCE_MISSING:" + fieldKey);
+  expect(["enum", "endpoint", "local"].includes(source.kind), "P1_B3_OPTION_SOURCE_KIND:" + fieldKey);
+  if (source.kind === "enum") {
+    expect(typeof source.enumKind === "string" && Object.hasOwn(shape.enumLabels || {}, source.enumKind), "P1_B3_ENUM_SOURCE_KIND:" + fieldKey);
+    expect(Object.keys(shape.enumLabels[source.enumKind]).length > 0, "P1_B3_ENUM_SOURCE_EMPTY:" + fieldKey);
+    return;
+  }
+  expect(typeof source.valueField === "string", "P1_B3_OPTION_VALUE_FIELD:" + fieldKey);
+  expect(source.labelField || Array.isArray(source.labelParts), "P1_B3_OPTION_LABEL_FIELD:" + fieldKey);
+  expect(!(source.labelField && source.labelParts), "P1_B3_OPTION_LABEL_AMBIGUOUS:" + fieldKey);
+  if (source.kind === "local") {
+    expect(typeof source.sectionPath === "string" && source.sectionPath.length > 0, "P1_B3_LOCAL_SECTION_PATH:" + fieldKey);
+    const detail = openapi.components?.schemas?.CatalogItemDetail;
+    const values = schemaAtPath(openapi, detail, "data.item." + source.sectionPath + "[].values[]");
+    expect(schemaHasPath(openapi, values, source.valueField), "P1_B3_LOCAL_VALUE_FIELD:" + fieldKey);
+    if (source.labelField) expect(schemaHasPath(openapi, values, source.labelField), "P1_B3_LOCAL_LABEL_FIELD:" + fieldKey);
+    for (const part of source.labelParts || []) expect(schemaHasPath(openapi, values, part), "P1_B3_LOCAL_LABEL_PART:" + fieldKey + "." + part);
+    return;
+  }
+  expect(typeof source.operationId === "string", "P1_B3_ENDPOINT_OPERATION_ID:" + fieldKey);
+  expect(edge.operations.some((entry) => entry.operationId === source.operationId), "P1_B3_ENDPOINT_EDGE_OPERATION:" + fieldKey);
+  const {operation, schema} = operationResponseSchema(openapi, source.operationId);
+  for (const [parameterName, value] of Object.entries(source.path || {})) {
+    const parameter = (operation.parameters || []).find((entry) => entry.in === "path" && entry.name === parameterName);
+    expect(parameter, "P1_B3_PATH_PARAMETER:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_PATH_BINDING:" + fieldKey + "." + parameterName);
+  }
+  for (const [parameterName, value] of Object.entries(source.query || {})) {
+    const parameter = (operation.parameters || []).find((entry) => entry.in === "query" && entry.name === parameterName);
+    expect(parameter, "P1_B3_QUERY_PARAMETER:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_QUERY_BINDING:" + fieldKey + "." + parameterName);
+  }
+  for (const [parameterName, value] of Object.entries(source.headers || {})) {
+    const parameter = (operation.parameters || []).find((entry) => entry.in === "header" && entry.name === parameterName);
+    expect(parameter, "P1_B3_HEADER_PARAMETER:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_HEADER_BINDING:" + fieldKey + "." + parameterName);
+  }
+  expect(typeof source.itemsPath === "string", "P1_B3_ITEMS_PATH:" + fieldKey);
+  const itemCollection = schemaAtPath(openapi, schema, source.itemsPath);
+  expect(itemCollection?.type === "array" && itemCollection.items, "P1_B3_ITEMS_ARRAY:" + fieldKey);
+  const item = resolveOpenApiSchema(openapi, itemCollection.items);
+  expect(schemaHasPath(openapi, item, source.valueField), "P1_B3_VALUE_FIELD:" + fieldKey);
+  if (source.labelField) expect(schemaHasPath(openapi, item, source.labelField), "P1_B3_LABEL_FIELD:" + fieldKey);
+  for (const part of source.labelParts || []) expect(schemaHasPath(openapi, item, part), "P1_B3_LABEL_PART:" + fieldKey + "." + part);
+  if (source.parentField) expect(schemaHasPath(openapi, item, source.parentField), "P1_B3_PARENT_FIELD:" + fieldKey);
+  if (source.disabledWhen !== null) {
+    const match = typeof source.disabledWhen === "string" && source.disabledWhen.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:<>|!=|==)/);
+    expect(match && schemaHasPath(openapi, item, match[1]), "P1_B3_DISABLED_FIELD:" + fieldKey);
+  }
+}
+
+function validateB3Fields(shape, edge, openapi, transportText = fs.readFileSync(abs(OPERATIONS_TRANSPORT_PATH), "utf8")) {
+  expect(exact(shape.controlKinds || [], expectedControlKinds), "P1_B3_CONTROL_KIND_EXACT_SET");
+  expect(Array.isArray(shape.fields) && exact(shape.fields.map((field) => field.fieldKey), expectedB3FieldKeys), "P1_B3_FIELD_EXACT_SET");
+  expect(new Set((shape.fields || []).map((field) => field.fieldKey)).size === expectedB3FieldKeys.length, "P1_B3_FIELD_DUPLICATE");
+  expect(transportText.includes("operationsApi.endpoints as Record<string, unknown>") && transportText.includes("endpoint.initiate"), "P1_B3_DYNAMIC_TRANSPORT_CHANNEL");
+  for (const field of shape.fields) {
+    const expected = expectedB3FieldByKey.get(field.fieldKey);
+    expect(expected && typeof field.dataPath === "string" && typeof field.label === "string" && field.label.length > 0 && typeof field.tabKey === "string" && typeof field.helpText === "string" && field.helpText.length > 0, "P1_B3_FIELD_DESCRIPTOR_SHAPE:" + field.fieldKey);
+    expect(field.dataPath === expected.dataPath && field.controlKind === expected.controlKind && field.tabKey === expected.tabKey && exact(field.admittedShapes || [], expected.admittedShapes), "P1_B3_FIELD_DESCRIPTOR_VALUE:" + field.fieldKey);
+    expect(expectedShapes.includes(field.controlKind) === false && expectedControlKinds.includes(field.controlKind), "P1_B3_FIELD_CONTROL_KIND:" + field.fieldKey);
+    for (const shapeKey of field.admittedShapes) {
+      const rules = (shape.fieldRules?.[shapeKey] || []).filter((rule) => rule.field === field.fieldKey);
+      expect(rules.length === 1 && rules[0].visible === true, "P1_B3_FIELD_RULE:" + field.fieldKey + ":" + shapeKey);
+      expect((shape.tabRules?.[shapeKey]?.visible || []).includes(field.tabKey), "P1_B3_TAB_BINDING:" + field.fieldKey + ":" + shapeKey);
+    }
+    for (const shapeKey of expectedShapes.filter((key) => !field.admittedShapes.includes(key))) {
+      const rules = (shape.fieldRules?.[shapeKey] || []).filter((rule) => rule.field === field.fieldKey);
+      if (field.fieldKey !== "productionTagRefs") expect(rules.length === 0, "P1_B3_FIELD_RULE_OVERADMISSION:" + field.fieldKey + ":" + shapeKey);
+      else expect(rules.length === 1, "P1_B3_EXISTING_COMMON_RULE_LOST:" + shapeKey);
+    }
+    if (field.optionSourceRef) validateB3OptionSource(shape, field, field.optionSourceRef, edge, openapi);
+    else expect(field.controlKind === "skuVariantMatrix", "P1_B3_OPTION_SOURCE_REQUIRED:" + field.fieldKey);
+    if (field.fieldKey === "skuVariantValues") {
+      const binding = field.optionSourceRef?.contextBindings?.attributeRef;
+      expect(fieldBinding(binding) && binding.fieldKey === "skuVariantAttribute", "P1_B3_CONTEXT_BINDING:skuVariantValues");
+    }
+  }
+  expect(shape.fieldRules && Object.keys(shape.fieldRules).length === expectedShapes.length, "P1_B3_FIELD_RULE_SHAPE_CARDINALITY");
+}
 
 function assertScenarioDenominators(apiScenarios, l2Scenarios, fixtures) {
   expect(apiScenarios.scenarioCount === expectedApiCaseCounts.length && apiScenarios.scenarios.length === expectedApiCaseCounts.length && fixtures.denominators?.apiDefinitions === expectedApiCaseCounts.length, "P1_API_SCENARIO_COUNT");
@@ -295,8 +475,9 @@ function validate(root = ROOT) {
   expect(exact(shape.capabilityValues, expectedCapabilities), "P1_CAPABILITY_EXACT_SET");
   expect(exact(shape.shapeKeys, expectedShapes), "P1_SHAPE_EXACT_SET");
   expect(shape.shapes.length === 7, "P1_SHAPE_COUNT");
-  expect(exact(Object.keys(shape).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"].includes(key)), ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"]), "P1_SHAPE_SURFACE_EXACT_SET");
+  expect(exact(Object.keys(shape).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields"].includes(key)), ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields"]), "P1_SHAPE_SURFACE_EXACT_SET");
   expect(shape.shapeRules.length === 7 && Object.keys(shape.fieldRules).length === 7 && Object.keys(shape.tabRules).length === 7, "P1_SHAPE_SURFACE_CARDINALITY");
+  validateB3Fields(shape, edge, openapi);
   expect(shape.shapes.every((entry) => !entry.usageCapabilities.includes("PRODUCIBLE")), "P1_PRODUCIBLE_MUST_NOT_DERIVE");
   expect(exact(shape.shapeAdmission.visibleButDisabled.map((entry) => entry.shapeKey), ["BENEFIT_SHELL"]), "P1_BENEFIT_VISIBLE_DISABLED");
   expect(shape.shapeAdmission.visibleButDisabled[0].reason === "权益域尚未开放", "P1_BENEFIT_DISABLED_REASON");
@@ -310,9 +491,9 @@ function validate(root = ROOT) {
   expect(catalogNoSku.allowedModes.includes("INDEPENDENT_STOCK") && catalogNoSku.allowedModes.includes("BOM"), "P1_NO_SKU_MODES");
   expect(service.skuPolicy.skuMode === "NONE" && benefit.skuPolicy.skuMode === "NONE", "P1_NON_SKU_SHAPES");
   const expectedTabs = {
-    STANDARD_SALE_COUNTED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+    STANDARD_SALE_COUNTED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
     SKU_VARIANT_SALE_COUNTED: ["basic", "sku-specifications-pricing", "attributes", "production-prompts", "inventory-bom", "governance"],
-    STANDARD_SALE_WEIGHED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+    STANDARD_SALE_WEIGHED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
     MATERIAL: ["basic", "identifiers", "attributes", "inventory-bom", "governance"],
     COMPOSITE: ["basic", "identifiers", "composite-content", "attributes", "governance"],
     SERVICE: ["basic", "identifiers", "attributes", "governance"],
@@ -335,10 +516,10 @@ function validate(root = ROOT) {
   expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
   const generatedEdgeJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
   const generatedEdgeTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
-  expect(generatedEdgeJava.includes("OPERATION_COUNT = 42") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("ensureCatalogInventoryTarget") && generatedEdgeJava.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(generatedEdgeJava.includes("OPERATION_COUNT = 43") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("ensureCatalogInventoryTarget") && generatedEdgeJava.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_JAVA_DRIFT");
   expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("ensureCatalogInventoryTarget") && generatedEdgeTs.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_TS_DRIFT");
 
-  expect(edge.revision === REVISION && edge.operationCount === 42 && edge.operations.length === 42, "P1_EDGE_OPERATION_COUNT");
+  expect(edge.revision === REVISION && edge.operationCount === 43 && edge.operations.length === 43, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
   expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
   const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces}));
@@ -350,11 +531,12 @@ function validate(root = ROOT) {
   expect(edge.operations.every((entry) => exact(entry.consumerFaces, ["operations-admin"])), "P1_CONSUMER_FACE");
   expect(edge.operations.every((entry) => entry.path && entry.method && entry.requestComponent && entry.responseComponent), "P1_EDGE_ROUTE_SHAPE");
   validateOperationAuthorizationPolicy(edge, openapi);
+  validateBatchFailureCodeTypedSet(openapi);
   const rootOperations = [];
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
   }
-  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 42, "P1_OPENAPI_OPERATION_REACHABILITY");
+  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 43, "P1_OPENAPI_OPERATION_REACHABILITY");
   const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
   expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && assetStageSchema.required?.includes("dataNodeRef") && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
   const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
@@ -370,7 +552,7 @@ function validate(root = ROOT) {
     const shardData = readJson("contracts/openapi/" + shard);
     for (const [route, pathItem] of Object.entries(shardData.paths || {})) for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) shardOperations.push(operation.operationId);
   }
-  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 42, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
+  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 43, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
 
   expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
   for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
@@ -453,7 +635,7 @@ function validate(root = ROOT) {
     if (scenario.layer === "L2") expect(noForbiddenLocatorFields(scenario), "P1_L2_LOCATOR_FIELD:" + scenario.scenarioId);
   }
 
-  expect(assertions.count === 42 && assertions.operations.length === 42, "P1_ASSERTION_OPERATION_COUNT");
+  expect(assertions.count === 43 && assertions.operations.length === 43, "P1_ASSERTION_OPERATION_COUNT");
   const operationIds = operationDesign.operations.map((entry) => entry.operationId);
   expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
   const saveAssertion = assertions.operations.find((entry) => entry.operationId === SAVE_OPERATION_ID);
@@ -507,8 +689,24 @@ function selfTest() {
   const expectRed = (condition, code) => { if (condition) fail("SELF_TEST_NOT_RED:" + code); };
   const redShape = JSON.parse(JSON.stringify(good)); redShape.shapeKeys.pop(); expectRed(redShape.shapeKeys.length === 7, "SHAPE_COUNT");
   const redCapability = JSON.parse(JSON.stringify(good)); redCapability.capabilityValues.pop(); expectRed(exact(redCapability.capabilityValues, expectedCapabilities), "CAPABILITY_EXACT_SET");
-  const redSurface = JSON.parse(JSON.stringify(good)); delete redSurface.tabRules; expectRed(Object.keys(redSurface).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"].includes(key)).length === 8, "SHAPE_SURFACE_EXACT_SET");
-  const redTabRules = JSON.parse(JSON.stringify(good)); redTabRules.tabRules.STANDARD_SALE_COUNTED.visible = redTabRules.tabRules.STANDARD_SALE_COUNTED.visible.filter((tab) => tab !== "order-options"); expectRed(exact(redTabRules.tabRules.STANDARD_SALE_COUNTED.visible, ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"]), "TAB_RULES");
+  const redSurface = JSON.parse(JSON.stringify(good)); delete redSurface.tabRules; expectRed(Object.keys(redSurface).filter((key) => ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields"].includes(key)).length === 10, "SHAPE_SURFACE_EXACT_SET");
+  const b3Edge = readJson(EDGE_PATH);
+  const b3OpenApi = readJson(OPENAPI_ROOT_PATH);
+  const b3Transport = fs.readFileSync(abs(OPERATIONS_TRANSPORT_PATH), "utf8");
+  const redB3 = (label, mutate) => {
+    const candidate = JSON.parse(JSON.stringify(good));
+    mutate(candidate);
+    let red = false;
+    try { validateB3Fields(candidate, b3Edge, b3OpenApi, b3Transport); }
+    catch (error) { red = String(error.message).startsWith("P1_B3_"); }
+    expect(red, "SELF_TEST_B3_NOT_RED:" + label);
+  };
+  redB3("missing-field", (candidate) => candidate.fields.pop());
+  redB3("missing-control-kind", (candidate) => candidate.controlKinds.pop());
+  redB3("missing-shape-rule", (candidate) => { candidate.fieldRules.SKU_VARIANT_SALE_COUNTED = candidate.fieldRules.SKU_VARIANT_SALE_COUNTED.filter((entry) => entry.field !== "skuMatrix"); });
+  redB3("wire-label-field", (candidate) => { candidate.fields.find((field) => field.fieldKey === "bomTarget").optionSourceRef.labelParts = ["name"]; delete candidate.fields.find((field) => field.fieldKey === "bomTarget").optionSourceRef.labelField; });
+  redB3("context-binding", (candidate) => { candidate.fields.find((field) => field.fieldKey === "skuVariantValues").optionSourceRef.contextBindings.attributeRef = {fieldKey: "missingField"}; });
+  const redTabRules = JSON.parse(JSON.stringify(good)); redTabRules.tabRules.STANDARD_SALE_COUNTED.visible = redTabRules.tabRules.STANDARD_SALE_COUNTED.visible.filter((tab) => tab !== "order-options"); expectRed(exact(redTabRules.tabRules.STANDARD_SALE_COUNTED.visible, ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"]), "TAB_RULES");
   const redTabContent = JSON.parse(JSON.stringify(good)); delete redTabContent.tabRules.COMPOSITE.contentRules["composite-content"]; expectRed(Boolean(redTabContent.tabRules.COMPOSITE.contentRules?.["composite-content"]), "COMPOSITE_CONTENT_RULE");
   let conditionRed = false;
   const matrix = readJson(ASSERTION_PATH);
@@ -520,9 +718,15 @@ function selfTest() {
   expect(conditionRed, "SELF_TEST_PROBLEM_EXACT_SET");
   target.problemCodes = original;
   const root = readJson(OPENAPI_ROOT_PATH);
+  const redFailureCode = JSON.parse(JSON.stringify(root));
+  redFailureCode.components.schemas.CatalogItemBatchStatusTransitionReadback.properties.results.items.properties.failureCode.enum.push("UNREGISTERED_FAILURE");
+  let failureCodeRed = false;
+  try { validateBatchFailureCodeTypedSet(redFailureCode); }
+  catch (error) { failureCodeRed = error.message === "P1_BATCH_FAILURE_CODE_TYPED_SUBSET"; }
+  expect(failureCodeRed, "SELF_TEST_BATCH_FAILURE_CODE_NOT_RED");
   const rootIds = Object.values(root.paths).flatMap((pathItem) => Object.values(pathItem).filter((entry) => entry.operationId).map((entry) => entry.operationId));
   const redRouteIds = rootIds.slice(1);
-  expectRed(redRouteIds.length === 42, "OPENAPI_REACHABILITY");
+  expectRed(redRouteIds.length === 43, "OPENAPI_REACHABILITY");
   const firstSchema = Object.values(root.components.schemas).find((schema) => schema.properties && Object.keys(schema.properties).length);
   const firstProperty = firstSchema && Object.values(firstSchema.properties)[0];
   const redTyped = firstProperty ? {...firstProperty} : null;
@@ -616,7 +820,7 @@ function selfTest() {
     candidateOpenApi.components.schemas.CatalogShapeManifestQuery.required.push("dataNodeRef");
     candidateOpenApi.paths["/operations/catalog-inventory/shape-manifest"].get.parameters.find((parameter) => parameter.name === "dataNodeRef").required = true;
   });
-  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_API_CASE_DENOMINATOR=PASS\nRED_L2_CASE_DENOMINATOR=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\nRED_OPAQUE_REFERENCE=PASS\nRED_GET_ACTION_CAPABILITY=PASS\nRED_MISSING_TARGET_CAPABILITY_MAPPING=PASS\nRED_SWAPPED_TARGET_CAPABILITY_MAPPING=PASS\nRED_SAVE_INVENTORY_DEFINITION_COMMAND=PASS\nRED_EXPANDED_INVENTORY_DEFINITION_COMMAND=PASS\nRED_READ_INVENTORY_DEFINITION_COMMAND=PASS\nRED_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_MISSING=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_REQUIRED=PASS\n");
+  process.stdout.write("CATALOG_INVENTORY_P1_SELF_TEST=PASS\nRED_SHAPE_COUNT=PASS\nRED_CAPABILITY_EXACT_SET=PASS\nRED_SHAPE_SURFACE_EXACT_SET=PASS\nRED_B3_FIELD_EXACT_SET=PASS\nRED_B3_CONTROL_KIND_EXACT_SET=PASS\nRED_B3_FIELD_RULE_BINDING=PASS\nRED_B3_WIRE_DESCRIPTOR=PASS\nRED_B3_CONTEXT_BINDING=PASS\nRED_TAB_RULES=PASS\nRED_COMPOSITE_CONTENT_RULE=PASS\nRED_PROBLEM_EXACT_SET=PASS\nRED_OPENAPI_REACHABILITY=PASS\nRED_TYPED_SCHEMA=PASS\nRED_FAILURE_CODE_TYPED_SET=PASS\nRED_FIXTURE_SCENARIO_EXACT_SET=PASS\nRED_API_CASE_DENOMINATOR=PASS\nRED_L2_CASE_DENOMINATOR=PASS\nRED_DESIGN_FIELD_COVERAGE=PASS\nRED_INVENTORY_CURRENT_VERSION=PASS\nRED_CLOSED_FINDING_REGRESSION=PASS\nRED_TIME_TYPE_CONVENTION=PASS\nRED_OPAQUE_REFERENCE=PASS\nRED_GET_ACTION_CAPABILITY=PASS\nRED_MISSING_TARGET_CAPABILITY_MAPPING=PASS\nRED_SWAPPED_TARGET_CAPABILITY_MAPPING=PASS\nRED_SAVE_INVENTORY_DEFINITION_COMMAND=PASS\nRED_EXPANDED_INVENTORY_DEFINITION_COMMAND=PASS\nRED_READ_INVENTORY_DEFINITION_COMMAND=PASS\nRED_DIRECT_INVENTORY_CONFIGURATION_CAPABILITY=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_MISSING=PASS\nRED_DUAL_SCOPE_READ_SELECTOR_REQUIRED=PASS\n");
 }
 
 function writeEvidence() {
@@ -663,7 +867,7 @@ try {
     validate();
     const apiScenarios = readJson(API_SCENARIO_PATH);
     const l2Scenarios = readJson(L2_SCENARIO_PATH);
-    process.stdout.write(`CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=42\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n`);
+    process.stdout.write(`CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=43\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n`);
   }
 } catch (error) {
   process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n");

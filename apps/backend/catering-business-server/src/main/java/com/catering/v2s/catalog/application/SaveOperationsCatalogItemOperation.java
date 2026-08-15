@@ -31,7 +31,7 @@ public class SaveOperationsCatalogItemOperation {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode must match the save request");
         }
         var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.SAVE_OPERATIONS_CATALOG_ITEM,
-            request.dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
+            request.dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(), invocation.requestId());
         try {
             String canonicalRequestJson = mapper.writeValueAsString(request);

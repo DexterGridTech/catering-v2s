@@ -28,19 +28,20 @@ public class AdjustOperationsInventoryTargetOperation {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public InventoryWriteReadback execute(Invocation invocation) {
+        InventoryAdjustmentRequest request = invocation.request();
+        UUID targetRef = InventoryTargetRefConsistency.requireSame(invocation.targetRef(), request.targetRef());
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.ADJUST_OPERATIONS_INVENTORY_TARGET,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
         );
-        InventoryAdjustmentRequest request = invocation.request();
         InventoryOwnerApi.InventoryMutationReadback readback = inventory.adjustTarget(
             context,
             new InventoryOwnerApi.AdjustTargetCommand(
-                requiredUuid(invocation.targetRef(), "targetRef"),
+                targetRef,
                 requiredLong(request.expectedVersion(), "expectedVersion"),
                 request.direction(),
                 requiredDecimal(request.quantity(), "quantity"),
@@ -51,21 +52,12 @@ public class AdjustOperationsInventoryTargetOperation {
             invocation.idempotencyKey()
         );
         return new InventoryWriteReadback(REVISION, context.requestId(), new InventoryWriteReadback.Result(
-            readback.targetRef().toString(), decimal(readback.before()), decimal(readback.change()), decimal(readback.after()),
-            readback.ledgerEntryRef().toString(), readback.stockState(), readback.version()), readback.version());
+            readback.targetRef(), decimal(readback.before()), decimal(readback.change()), decimal(readback.after()),
+            readback.ledgerEntryRef(), readback.stockState(), readback.version()), readback.version());
     }
 
     public record Invocation(InventoryAdjustmentRequest request, String sessionCredential, String requestedBrandRef,
                              String correlationId, String requestId, String targetRef, String idempotencyKey) { }
-
-    private static UUID requiredUuid(String value, String field) {
-        try {
-            if (value == null || value.isBlank()) throw new IllegalArgumentException();
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException invalid) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a UUID");
-        }
-    }
 
     private static long requiredLong(Long value, String field) {
         if (value == null) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");

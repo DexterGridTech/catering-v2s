@@ -7,5 +7,5 @@ public record OrganizationCandidatePageMetadata(
     Long page,
     Long pageSize,
     Long total,
-    String selectedId
+    java.util.UUID selectedId
 ) {}

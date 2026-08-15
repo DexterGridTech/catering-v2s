@@ -8,5 +8,5 @@ public record OrganizationStoreCreateRequest(
     String code,
     String name,
     String notes,
-    java.util.List<OrganizationStoreCreateRequestExtensionValuesItem> extensionValues
+    tools.jackson.databind.JsonNode extensionValues
 ) {}

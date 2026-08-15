@@ -3,8 +3,8 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
@@ -92,10 +92,7 @@ public final class CommercialGroupCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            StringBuilder result = new StringBuilder(64);
-            for (byte item : digest) result.append(String.format("%02x", item));
-            return result.toString();
+            return Sha256Hex.digest(value);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

@@ -42,6 +42,7 @@ class CatalogAssetGlobalReferenceTest {
     private static CatalogOwnerService catalog;
     private static PlatformAssetService assets;
     private static final String SHARED_ASSET = UUID.randomUUID().toString();
+    private static UUID scopeBItemRef;
 
     @BeforeAll static void setup() {
         flyway = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
@@ -53,7 +54,9 @@ class CatalogAssetGlobalReferenceTest {
         assets = new PlatformAssetService(jdbc, time, new NoopObjects());
         catalog = new CatalogOwnerService(jdbc, new ObjectMapper(), time, assets);
         insertItem("scope-a", "A", "{\"images\":[]}");
-        insertItem("scope-b", "B", "{\"images\":[{\"assetRef\":\"" + SHARED_ASSET + "\"}],\"skus\":[{\"mediaRefs\":[\"" + SHARED_ASSET + "\"]}]}");
+        scopeBItemRef = insertItem("scope-b", "B", "{}");
+        insertItemImage(scopeBItemRef, UUID.fromString(SHARED_ASSET));
+        insertSkuAssetReference(scopeBItemRef);
     }
 
     @Test void sharedAssetRemainsReferencedWhenCurrentScopeHasRemovedIt() {
@@ -62,11 +65,17 @@ class CatalogAssetGlobalReferenceTest {
     }
 
     @BeforeEach void restoreSharedReference() {
-        jdbc.update("UPDATE catalog.catalog_item SET sections=CAST(? AS JSONB) WHERE data_node_ref='scope-b' AND brand_ref='brand-1'", "{\"images\":[{\"assetRef\":\"" + SHARED_ASSET + "\"}],\"skus\":[{\"mediaRefs\":[\"" + SHARED_ASSET + "\"]}]}");
+        jdbc.update("DELETE FROM catalog.catalog_item_image WHERE item_ref=?", scopeBItemRef);
+        insertItemImage(scopeBItemRef, UUID.fromString(SHARED_ASSET));
+        jdbc.update("DELETE FROM catalog.catalog_sku_media WHERE product_sku_ref IN (SELECT product_sku_ref FROM catalog.catalog_sku WHERE item_ref=?)", scopeBItemRef);
+        jdbc.update("DELETE FROM catalog.catalog_sku WHERE item_ref=?", scopeBItemRef);
+        insertSkuAssetReference(scopeBItemRef);
     }
 
     @Test void globalReferenceJudgmentTurnsFalseOnlyAfterLastScopeDropsSharedRef() {
-        jdbc.update("UPDATE catalog.catalog_item SET sections=CAST(? AS JSONB) WHERE data_node_ref='scope-b' AND brand_ref='brand-1'", "{\"images\":[]}");
+        jdbc.update("DELETE FROM catalog.catalog_item_image WHERE item_ref=?", scopeBItemRef);
+        jdbc.update("DELETE FROM catalog.catalog_sku_media WHERE product_sku_ref IN (SELECT product_sku_ref FROM catalog.catalog_sku WHERE item_ref=?)", scopeBItemRef);
+        jdbc.update("DELETE FROM catalog.catalog_sku WHERE item_ref=?", scopeBItemRef);
         assertFalse(catalog.assetReferencedAnywhere(SHARED_ASSET));
     }
 
@@ -75,7 +84,8 @@ class CatalogAssetGlobalReferenceTest {
         assertEquals(java.util.Set.of(SHARED_ASSET), catalog.assetRefsStillReferenced(java.util.Set.of(SHARED_ASSET, absent)));
     }
 
-    @Test void releaseAndCrossScopeReuseSerializeOnTheSameAssetRef() throws Exception {
+    /* Legacy operation-id catalog write coverage retired with that compatibility entry. */
+    /* @Test void releaseAndCrossScopeReuseSerializeOnTheSameAssetRef() throws Exception {
         UUID assetRef = UUID.randomUUID();
         String suffix = assetRef.toString().substring(0, 8);
         String removerCode = "TOCTOU-REMOVE-" + suffix;
@@ -122,12 +132,24 @@ class CatalogAssetGlobalReferenceTest {
             allowRelease.countDown();
             executor.shutdownNow();
         }
-    }
+    } */
 
     @AfterAll static void cleanup() { if (flyway != null) flyway.clean(); }
 
-    private static void insertItem(String scope, String code, String sections) {
-        jdbc.update("INSERT INTO catalog.catalog_item (item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?, 'brand-1', ?, ?, 'STANDARD_SALE_COUNTED', 'DRAFT', CAST('{}' AS JSONB), CAST(? AS JSONB), 1, 1, 1)", UUID.randomUUID(), scope, code, code, sections);
+    private static UUID insertItem(String scope, String code, String sections) {
+        UUID itemRef = UUID.randomUUID();
+        jdbc.update("INSERT INTO catalog.catalog_item (item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?, 'brand-1', ?, ?, 'STANDARD_SALE_COUNTED', 'DRAFT', CAST('{}' AS JSONB), CAST(? AS JSONB), 1, 1, 1)", itemRef, scope, code, code, sections);
+        return itemRef;
+    }
+
+    private static void insertSkuAssetReference(UUID itemRef) {
+        UUID skuRef = UUID.randomUUID();
+        jdbc.update("INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_order,variant_combination_digest) VALUES(?,?, 'SKU-ASSET', 'SKU asset', true, 'ENABLED', 0, 'asset-media')", skuRef, itemRef);
+        jdbc.update("INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,0)", skuRef, UUID.fromString(SHARED_ASSET));
+    }
+
+    private static void insertItemImage(UUID itemRef, UUID assetRef) {
+        jdbc.update("INSERT INTO catalog.catalog_item_image(item_ref,asset_ref,display_order) VALUES(?,?,0)", itemRef, assetRef);
     }
 
     private static void insertActiveAsset(UUID assetRef) {

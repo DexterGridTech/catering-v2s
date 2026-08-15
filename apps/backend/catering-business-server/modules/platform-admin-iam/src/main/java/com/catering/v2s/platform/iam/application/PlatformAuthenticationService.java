@@ -6,11 +6,11 @@ import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -550,7 +550,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private String newToken() { byte[] bytes = new byte[32]; secureRandom.nextBytes(bytes); return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes); }
     private String newOtp() { return String.format("%06d", secureRandom.nextInt(1_000_000)); }
     private static String hash(String value) {
-        try { return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); }
+        try { return Sha256Hex.digest(value); }
         catch (Exception exception) { throw new IllegalStateException("SHA-256 unavailable", exception); }
     }
     private record CredentialRow(UUID platformAdminId, String displayName, String status, String passwordHash, Long lockedUntilEpochMillis) { }

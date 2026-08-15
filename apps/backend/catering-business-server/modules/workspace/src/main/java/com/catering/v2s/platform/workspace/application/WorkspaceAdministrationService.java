@@ -36,18 +36,18 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
 
     @Transactional
     public WorkspaceAdministrationReadback create(String key, String name, String operationsTitle, UUID logoAssetRef, String logoBindGrant, String notes, String idempotencyKey, AuditActor actor) {
-        return receipts.execute(idempotencyKey, canonical("create", key, name, operationsTitle, String.valueOf(logoAssetRef), notes), () -> createNew(key, name, operationsTitle, logoAssetRef, logoBindGrant, notes, actor));
+        return receipts.execute(key, idempotencyKey, canonical("create", key, name, operationsTitle, String.valueOf(logoAssetRef), notes), () -> createNew(key, name, operationsTitle, logoAssetRef, logoBindGrant, notes, actor));
     }
 
     private WorkspaceAdministrationReadback createNew(String key, String name, String operationsTitle, UUID logoAssetRef, String logoBindGrant, String notes, AuditActor actor) {
         String normalizedKey = requiredKey(key);
         String normalizedName = requiredName(name);
         long now = time.currentEpochMillis();
-        UUID id = UUID.randomUUID();
+        UUID workspaceUuid = UUID.randomUUID();
         try {
-            jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, logo_asset_ref, notes, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, 1, ?, ?, ?)", id, normalizedKey, name.trim(), normalizedName, requiredTitle(operationsTitle, name), requiredLogo(logoAssetRef).toString(), optionalNotes(notes), now, now, now);
+            jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, logo_asset_ref, notes, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, 1, ?, ?, ?)", workspaceUuid, normalizedKey, name.trim(), normalizedName, requiredTitle(operationsTitle, name), requiredLogo(logoAssetRef).toString(), optionalNotes(notes), now, now, now);
         } catch (DuplicateKeyException exception) { throw new WorkspaceConflictException(); }
-        assets.claim(logoAssetRef, id, normalizedKey, requiredGrant(logoBindGrant));
+        assets.claim(logoAssetRef, workspaceUuid, normalizedKey, requiredGrant(logoBindGrant));
         WorkspaceAdministrationReadback created = require(normalizedKey);
         audit(created, "GROUP_WORKSPACE_CREATED", now, actor, "[{\"fieldKey\":\"groupWorkspaceKey\",\"after\":\"" + json(created.groupWorkspaceKey()) + "\"},{\"fieldKey\":\"name\",\"after\":\"" + json(created.name()) + "\"},{\"fieldKey\":\"operationsTitle\",\"after\":\"" + json(created.operationsTitle()) + "\"},{\"fieldKey\":\"logo\",\"after\":\"已配置\"}" + (created.notes() == null ? "]" : ",{\"fieldKey\":\"notes\",\"after\":\"" + json(created.notes()) + "\"}]"));
         return created;
@@ -100,7 +100,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
 
     @Transactional
     public WorkspaceAdministrationReadback updateDisplay(String key, String name, String operationsTitle, String notes, String logoIntent, UUID nextLogoAssetRef, String logoBindGrant, long expectedVersion, String idempotencyKey, AuditActor actor) {
-        return receipts.execute(idempotencyKey, canonical("updateDisplay", key, name, operationsTitle, notes, logoIntent, String.valueOf(nextLogoAssetRef), String.valueOf(expectedVersion)), () -> updateDisplayNew(key, name, operationsTitle, notes, logoIntent, nextLogoAssetRef, logoBindGrant, expectedVersion, actor));
+        return receipts.execute(key, idempotencyKey, canonical("updateDisplay", key, name, operationsTitle, notes, logoIntent, String.valueOf(nextLogoAssetRef), String.valueOf(expectedVersion)), () -> updateDisplayNew(key, name, operationsTitle, notes, logoIntent, nextLogoAssetRef, logoBindGrant, expectedVersion, actor));
     }
 
     private WorkspaceAdministrationReadback updateDisplayNew(String key, String name, String operationsTitle, String notes, String logoIntent, UUID nextLogoAssetRef, String logoBindGrant, long expectedVersion, AuditActor actor) {
@@ -129,7 +129,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
 
     @Transactional
     public WorkspaceAdministrationReadback transitionStatus(String key, String status, long expectedVersion, String idempotencyKey, AuditActor actor) {
-        return receipts.execute(idempotencyKey, canonical("transitionStatus", key, status, String.valueOf(expectedVersion)), () -> transitionStatusNew(key, status, expectedVersion, actor));
+        return receipts.execute(key, idempotencyKey, canonical("transitionStatus", key, status, String.valueOf(expectedVersion)), () -> transitionStatusNew(key, status, expectedVersion, actor));
     }
 
     private WorkspaceAdministrationReadback transitionStatusNew(String key, String status, long expectedVersion, AuditActor actor) {

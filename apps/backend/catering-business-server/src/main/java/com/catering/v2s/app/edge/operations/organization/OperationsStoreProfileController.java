@@ -64,7 +64,7 @@ public final class OperationsStoreProfileController {
         return sessions.requireWorkspaceReadAtContextVersion(request, key, expected);
     }
     private static StoreContractPage contractPage(ContractTaskReadService.FixedStoreContractPage value) {
-        return new StoreContractPage(new StoreContractPageMetadata(value.groupWorkspaceKey(), value.project().id().toString(), value.project().name(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.CONTRACT_NO, StoreContractSortDirection.ASC), value.items().stream().map(OperationsStoreProfileController::contract).toList());
+        return new StoreContractPage(new StoreContractPageMetadata(value.groupWorkspaceKey(), value.project().id(), value.project().name(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.CONTRACT_NO, StoreContractSortDirection.ASC), value.items().stream().map(OperationsStoreProfileController::contract).toList());
     }
     private static StoreContract contract(ContractTaskReadService.StoreContractView value) {
         return new StoreContract(value.id().toString(), value.groupWorkspaceKey(), referenceProject(value.project()), referenceStore(value.store()), referenceTenant(value.tenant()), value.phaseName(), value.contractNo(), value.effectiveFrom().toString(), value.effectiveTo() == null ? null : value.effectiveTo().toString(), value.note(), extensionValues(value.extensionValues()), value.extensionRuleRevision(), StoreContractStatus.valueOf(value.status()), value.revision(), value.source(), value.createdAt(), value.updatedAt(), value.items().stream().map(item -> new StoreContractItem(item.code(), item.name())).toList(), value.phaseNameSnapshot());

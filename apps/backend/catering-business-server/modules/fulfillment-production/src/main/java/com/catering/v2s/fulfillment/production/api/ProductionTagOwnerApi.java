@@ -19,12 +19,13 @@ public interface ProductionTagOwnerApi {
     ProductionTagCommandReadback createTag(WorkspaceExecutionContext<CatalogAuthorizationScope> context, CreateTagCommand command, String idempotencyKey);
     ProductionTagCommandReadback updateTag(WorkspaceExecutionContext<CatalogAuthorizationScope> context, UpdateTagCommand command, String idempotencyKey);
     ProductionTagCommandReadback transitionTagStatus(WorkspaceExecutionContext<CatalogAuthorizationScope> context, TransitionTagStatusCommand command, String idempotencyKey);
+    UUID resolveProductionTagRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String tagCode);
 
     record CreateTagCommand(String code, String tagKind, String name) { }
     record UpdateTagCommand(String tagCode, long expectedVersion, String tagKind, String name) { }
     record TransitionTagStatusCommand(String tagCode, long expectedVersion, String targetStatus) { }
     /** Owner-native command readback; edge contract serialization is deliberately separate. */
-    record ProductionTagCommandReadback(String code, String tagKind, String name, String status, long version) { }
+    record ProductionTagCommandReadback(UUID tagRef, String code, String tagKind, String name, String status, long version) { }
 
     /**
      * Brand-copy composition carries only opaque owner-produced plan text between owners.

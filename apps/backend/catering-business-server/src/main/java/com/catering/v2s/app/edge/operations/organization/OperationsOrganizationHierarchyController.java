@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.organization;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationHierarchySnapshot;
+import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.OrganizationNode;
 import com.catering.v2s.app.edge.generated.wire.OrganizationNodeCreateRequest;
@@ -31,6 +32,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolv
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import java.util.List;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -176,9 +178,9 @@ public final class OperationsOrganizationHierarchyController {
         if (values == null) return List.of();
         return values.stream().map(OrganizationNodeUpdateRequestPhasesItem::name).toList();
     }
-    private static ExtensionSubmission regionSubmission(List<com.catering.v2s.app.edge.generated.wire.OrganizationNodeCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission projectSubmission(List<com.catering.v2s.app.edge.generated.wire.OrganizationProjectCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission nodeSubmission(List<com.catering.v2s.app.edge.generated.wire.OrganizationNodeUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission commercialGroupSubmission(List<com.catering.v2s.app.edge.generated.wire.CommercialGroupUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission regionSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission projectSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission nodeSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission commercialGroupSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
     private static ExtensionSubmission submission(List<ExtensionSubmission.ExtensionFieldValue> values) { return new ExtensionSubmission(values); }
 }

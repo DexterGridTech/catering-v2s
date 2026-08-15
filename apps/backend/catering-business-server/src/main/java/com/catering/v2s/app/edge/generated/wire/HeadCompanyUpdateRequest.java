@@ -7,6 +7,7 @@ public record HeadCompanyUpdateRequest(
     String legalName,
     String unifiedSocialCreditCode,
     String remark,
-    java.util.List<HeadCompanyUpdateRequestExtensionValuesItem> extensionValues,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long expectedExtensionRuleRevision,
     Long expectedVersion
 ) {}

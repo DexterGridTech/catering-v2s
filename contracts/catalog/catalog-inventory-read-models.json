@@ -5,7 +5,7 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "27fb6774660c6da0fea005ba2b13876ff7e750d2477dffe4e6a6ee725aafc703"
+      "sha256": "594a024b1ab6474fcfcc4c1ba30f7f64c3a9ac2690f42784231a68d5b29997c9"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "5c6edebff250549a7c90cf12024992ddd6b426b4cf801d515c68abf192f8ff10"
+      "sha256": "7f8b202b8cdc9c668c92ba604bda1d4764c153d411a4951cce72142d578dd65c"
     }
   },
   "models": [
@@ -427,6 +427,9 @@
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
+        "controlKinds",
+        "fields",
+        "enumLabels",
         "modeRules",
         "shapeRules",
         "fieldRules",

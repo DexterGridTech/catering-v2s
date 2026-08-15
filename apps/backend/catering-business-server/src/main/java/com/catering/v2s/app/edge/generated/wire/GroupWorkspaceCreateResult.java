@@ -5,7 +5,7 @@ public record GroupWorkspaceCreateResult(
     String groupWorkspaceKey,
     String name,
     String operationsTitle,
-    String logoAssetRef,
+    java.util.UUID logoAssetRef,
     String notes,
     GroupWorkspaceStatus status,
     Long statusChangedAt,

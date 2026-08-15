@@ -5,7 +5,7 @@ public record GroupWorkspaceCreateRequest(
     String groupWorkspaceKey,
     String name,
     String operationsTitle,
-    String logoAssetRef,
+    java.util.UUID logoAssetRef,
     String logoBindGrant,
     String notes,
     String idempotencyKey

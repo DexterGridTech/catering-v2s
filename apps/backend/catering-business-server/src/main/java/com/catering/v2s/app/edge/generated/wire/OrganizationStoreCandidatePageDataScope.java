@@ -3,6 +3,6 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStoreCandidatePageDataScope(
     String nodeType,
-    String nodeRef,
+    java.util.UUID nodeRef,
     String nodeName
 ) {}

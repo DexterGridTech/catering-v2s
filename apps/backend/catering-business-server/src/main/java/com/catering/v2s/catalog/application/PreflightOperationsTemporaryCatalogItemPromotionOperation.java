@@ -19,7 +19,7 @@ public class PreflightOperationsTemporaryCatalogItemPromotionOperation {
     public PreflightOperationsTemporaryCatalogItemPromotionOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public TemporaryPromotionPreflight execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         return response(context.requestId(), catalog.preflightTemporaryCatalogItemPromotion(context, new CatalogOwnerApi.TemporaryPromotionPreflightCommand(invocation.itemCode(), request.formalCode(), request.shapeKey(), request.name(), request.shortName(), request.materialRole(), canonicalJson(request.attributes()), requiredLong(request.expectedSourceVersion(), "expectedSourceVersion")), invocation.idempotencyKey()));
     }

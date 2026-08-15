@@ -105,17 +105,15 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },
@@ -363,36 +361,6 @@
           }
         }
       },
-      "HeadCompanySummary": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "groupWorkspaceKey",
-          "code",
-          "name",
-          "legalName",
-          "unifiedSocialCreditCode",
-          "remark",
-          "status",
-          "revision",
-          "createdAt",
-          "updatedAt"
-        ],
-        "properties": {
-          "id": {"type": "string", "minLength": 1, "maxLength": 64},
-          "groupWorkspaceKey": {"type": "string", "minLength": 1, "maxLength": 64},
-          "code": {"type": "string", "minLength": 1, "maxLength": 64},
-          "name": {"type": "string", "minLength": 1, "maxLength": 120},
-          "legalName": {"type": "string", "minLength": 1, "maxLength": 200},
-          "unifiedSocialCreditCode": {"type": "string", "minLength": 1, "maxLength": 32},
-          "remark": {"type": "string", "nullable": true, "maxLength": 2000},
-          "status": {"$ref": "#/components/schemas/BusinessEntityStatus"},
-          "revision": {"type": "integer", "format": "int64", "minimum": 0},
-          "createdAt": {"type": "integer", "format": "int64", "minimum": 0},
-          "updatedAt": {"type": "integer", "format": "int64", "minimum": 0}
-        }
-      },
       "HeadCompanyCreateRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -429,17 +397,15 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },
@@ -493,7 +459,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/HeadCompanySummary"
+              "$ref": "#/components/schemas/HeadCompany"
             }
           }
         }
@@ -636,17 +602,15 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },

@@ -17,10 +17,10 @@ const OUTPUT_ROOT = "contracts/registry/generated/operation-handler-bindings";
 const JAVA_OUTPUT_ROOT = `${OUTPUT_ROOT}/java`;
 const JAVA_PACKAGE_ROOT = "com.catering.v2s.generated.operationbindings";
 const EXPECTED_COUNTS = Object.freeze({
-  operations: 196,
+  operations: 197,
   reads: 83,
-  commands: 113,
-  operationsAdminCommands: 75,
+  commands: 114,
+  operationsAdminCommands: 76,
   platformAdminCommands: 29,
   publicCommands: 9,
 });
@@ -108,7 +108,7 @@ const COMMAND_BOUNDARY_BY_OPERATION = Object.freeze({
 const RUNTIME_INTEGRATION = Object.freeze({
   status: "IMPLEMENTED_BP_U06",
   legacyDispatcher: "NO_LEGACY_DISPATCH",
-  reason: "BP-U06 completed the 42-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth.",
+  reason: "BP-U06 completed the 43-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth.",
 });
 
 function fail(code, detail = "") {
@@ -223,7 +223,7 @@ function routeOperations(root) {
   const ids = operations.map(({ operationId }) => operationId);
   if (new Set(ids).size !== ids.length) fail("BP_U02_ROUTE_OPERATION_DUPLICATE", ids.find((id, index) => ids.indexOf(id) !== index));
   const registryCounts = Object.fromEntries(Object.keys(ROUTE_REGISTRIES).map((registry) => [registry, operations.filter((operation) => operation.routeRegistry === registry).length]));
-  if (registryCounts["catalog-inventory"] !== 42 || registryCounts["edge-face"] !== 154) {
+  if (registryCounts["catalog-inventory"] !== 43 || registryCounts["edge-face"] !== 154) {
     fail("BP_U02_ROUTE_REGISTRY_COUNT_DRIFT", JSON.stringify(registryCounts));
   }
   return operations;

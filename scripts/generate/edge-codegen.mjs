@@ -229,7 +229,7 @@ function loadAdminCatalog(base = root) {
   if (!sameSet(actionKeys, manifestActions) || actionKeys.length !== manifestActions.length) fail("R5_ADMIN_CATALOG_ACTION_SET_DRIFT");
   if (new Set(pageKeys).size !== pageKeys.length || new Set(actionKeys).size !== actionKeys.length) fail("R5_ADMIN_CATALOG_DUPLICATE_KEY");
   if (shellCopy.length !== 4 || shellCopy.some((node) => node.consumerFace !== "platform-admin")) fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT");
-  if (actionGroups.length !== 5 || navigationGroups.length < 4) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
+  if (actionGroups.length !== 5 || navigationGroups.length !== 5) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
   const navigationByKey = new Map(navigationGroups.map((node) => [node.key, node]));
   const actionGroupByKey = new Map(actionGroups.map((node) => [node.key, node]));
   const navigationIconKeys = new Set(["WORKBENCH", "ACCESS", "ORGANIZATION", "STORE_OPERATIONS", "CATALOG_SERVICES"]);
@@ -240,7 +240,7 @@ function loadAdminCatalog(base = root) {
   const operationsNodes = pages.filter((node) => node.consumerFace === "operations-admin");
   const roleHomes = operationsNodes.filter((node) => node.page?.kind === "ROLE_HOME");
   const businessPages = operationsNodes.filter((node) => node.page?.kind === "BUSINESS");
-  if (platformNodes.length !== 8 || roleHomes.length !== 5 || businessPages.length !== operationsNodes.length - roleHomes.length || operationsNodes.length < 17) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
+  if (platformNodes.length !== 8 || roleHomes.length !== 5 || businessPages.length !== operationsNodes.length - roleHomes.length || operationsNodes.length !== 20) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
   if (new Set(roleHomes.map((node) => node.page.roleHomeForNodeType)).size !== 5) fail("R5_ADMIN_CATALOG_ROLE_HOME_INVALID");
   const experienceOf = (node) => {
     const experience = node.experience;
@@ -421,13 +421,14 @@ function referenceName(reference) {
 function pascal(value) { return String(value).split(/[^A-Za-z0-9]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join("") || "Value"; }
 function javaType(schema, components, inlineName) {
   if (!schema || typeof schema !== "object") return "tools.jackson.databind.JsonNode";
+  if (schema.format === "uuid") return "java.util.UUID";
   if (typeof schema.$ref === "string") {
     const name = referenceName(schema.$ref);
     const target = components.get(name);
     if (target?.type === "integer") return "Long";
     if (target?.type === "number") return "java.math.BigDecimal";
     if (target?.type === "boolean") return "Boolean";
-    if (target?.type === "string" && !Array.isArray(target.enum)) return "String";
+    if (target?.type === "string" && !Array.isArray(target.enum)) return target.format === "uuid" ? "java.util.UUID" : "String";
     return name;
   }
   if (schema.type === "array") return `java.util.List<${javaType(schema.items, components, `${inlineName}Item`)}>`;
@@ -510,7 +511,16 @@ function tsPropertyName(value) {
 function tsSchemaType(schema, components, context) {
   if (!schema || typeof schema !== "object" || Array.isArray(schema)) fail("R5_EDGE_TS_SCHEMA_INVALID", context);
   let type;
-  if (Array.isArray(schema.allOf)) {
+  if (Array.isArray(schema.type)) {
+    const variants = schema.type.map((entry) => {
+      // OpenAPI nullable unions must not carry string-only format metadata into
+      // their null branch. Otherwise {type:[string,null],format:uuid} becomes
+      // Uuid | Uuid and the generated consumer silently loses nullability.
+      const variantSchema = entry === "null" ? {type: entry} : {...schema, type: entry};
+      return tsSchemaType(variantSchema, components, `${context}:${entry}`);
+    });
+    type = [...new Set(variants)].join(" | ");
+  } else if (Array.isArray(schema.allOf)) {
     if (schema.allOf.length === 0) fail("R5_EDGE_TS_ALLOF_EMPTY", context);
     type = schema.allOf.map((part, index) => `(${tsSchemaType(part, components, `${context}.allOf[${index}]`)})`).join(" & ");
   } else if (typeof schema.$ref === "string") {
@@ -538,7 +548,7 @@ function tsSchemaType(schema, components, context) {
     }
     type = additionalType ? (fields.length > 0 ? `(${objectType}) & ${additionalType}` : additionalType) : objectType;
   } else if (schema.type === "string") {
-    type = schema.format === "binary" ? "Blob" : "string";
+    type = schema.format === "uuid" ? "string & { readonly __uuid: \"Uuid\" }" : (schema.format === "binary" ? "Blob" : "string");
   } else if (schema.type === "integer" || schema.type === "number") {
     type = "number";
   } else if (schema.type === "boolean") {
@@ -548,7 +558,7 @@ function tsSchemaType(schema, components, context) {
   } else {
     fail("R5_EDGE_TS_SCHEMA_UNSUPPORTED", `${context}:${schema.type || "missing-type"}`);
   }
-  return schema.nullable === true && type !== "null" ? `(${type}) | null` : type;
+  return schema.nullable === true && type !== "null" && !type.split(" | ").includes("null") ? `(${type}) | null` : type;
 }
 function tsReachableComponentNames(selected, components) {
   const names = new Set(["Problem"]);
@@ -613,12 +623,13 @@ function tsClientMethod(operation) {
 }
 function tsFace(face, operations, codes, components) {
   const selected = operations.filter((operation) => operation.face === face);
-  const componentTypes = tsReachableComponentNames(selected, components)
-    .map((name) => {
+  const componentTypes = [
+    "export type Uuid = string & { readonly __uuid: \"Uuid\" };",
+    ...tsReachableComponentNames(selected, components).map((name) => {
       const type = tsSchemaType(components.get(name), components, name);
       return `export type ${name} = ${name === "Problem" ? type.replace("errorCode: string;", "errorCode: EdgeProblemCode;") : type};`;
     })
-    .join("\n\n");
+  ].join("\n\n");
   const operationContracts = selected.map((operation) => tsOperationContractEntry(operation, components)).join("\n");
   const clientMethods = selected.map(tsClientMethod).join(",\n");
   const operationSymbol = `${face.replaceAll("-", "_").toUpperCase()}_OPERATIONS`;

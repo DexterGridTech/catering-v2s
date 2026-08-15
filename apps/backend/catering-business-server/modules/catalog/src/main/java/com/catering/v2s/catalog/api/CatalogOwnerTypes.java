@@ -7,7 +7,7 @@ public final class CatalogOwnerTypes {
     private CatalogOwnerTypes() { }
 
     public static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
-    public static final List<String> SHAPES = List.of(CatalogInventoryShapeManifest.SHAPE_KEYS);
-    public static final List<String> STATUSES = List.of("DRAFT", "ENABLED", "DISABLED", "ARCHIVED", "VOIDED");
-    public static final List<String> CAPABILITIES = List.of(CatalogInventoryShapeManifest.CAPABILITY_VALUES);
+    public static final List<String> SHAPES = CatalogInventoryShapeManifest.enumValues("shapeKey");
+    public static final List<String> STATUSES = CatalogInventoryShapeManifest.enumValues("catalogItemStatus");
+    public static final List<String> CAPABILITIES = CatalogInventoryShapeManifest.enumValues("usageCapability");
 }

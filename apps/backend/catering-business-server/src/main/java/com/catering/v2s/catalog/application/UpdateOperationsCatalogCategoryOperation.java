@@ -18,7 +18,7 @@ public class UpdateOperationsCatalogCategoryOperation {
     public UpdateOperationsCatalogCategoryOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogCategoryReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_CATEGORY, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_CATEGORY, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         return CreateOperationsCatalogCategoryOperation.response(context.requestId(), catalog.updateCategory(context, new CatalogOwnerApi.CategoryUpdateCommand(CreateOperationsCatalogCategoryOperation.requiredUuid(invocation.categoryRef(), "categoryRef"), CreateOperationsCatalogCategoryOperation.requiredLong(request.expectedVersion(), "expectedVersion"), request.name()), invocation.idempotencyKey()));
     }

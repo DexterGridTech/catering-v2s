@@ -5,6 +5,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ApiFailure, operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {SortDirection, WorkspaceAccountStatus, WorkspaceUser, WorkspaceUserPage as WorkspaceUserPageResult, WorkspaceUserSortKey} from '../../../app/api/generated/operations-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {adminCatalog, userManagementFor, type UserManagementPageDesignKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -102,7 +103,7 @@ export function WorkspaceUserPage({
     const scoped = contextScopedQueryArgs({
       userName: filters.userName?.trim() || undefined,
       mobile: filters.mobile?.trim() || undefined,
-      roleId: filters.roleId,
+      roleId: filters.roleId ? wireUuid(filters.roleId) : undefined,
       status: filters.status,
       page,
       pageSize,

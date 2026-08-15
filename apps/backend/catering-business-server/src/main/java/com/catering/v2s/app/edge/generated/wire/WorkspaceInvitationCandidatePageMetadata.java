@@ -7,5 +7,5 @@ public record WorkspaceInvitationCandidatePageMetadata(
     Long page,
     Long pageSize,
     Long total,
-    String selectedOrganizationRef
+    java.util.UUID selectedOrganizationRef
 ) {}

@@ -7,7 +7,7 @@ import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-e
 import {ACTION_CAPABILITIES, adminCatalog, type AdminActionCapabilityKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
-import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
+import {extensionValuesForGeneratedRequest, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type BusinessEntityFormValues = {
   code: string;
@@ -111,7 +111,7 @@ export function BusinessEntityCreateDrawer({open, kind, queryContext, onClose, o
     try {
       const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey};
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const extensionValues = serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues);
+      const extensionValues = extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues));
       const entity = kind === 'BRAND'
         ? await operationsClient.createOperationsOrganizationBrand(path, {body: {code: requiredValue(value.code), name: requiredValue(value.name), alias: value.alias?.trim() || null, remark: value.remark?.trim() || null, extensionValues}, headers})
         : kind === 'TENANT'

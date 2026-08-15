@@ -66,6 +66,11 @@ public final class OperationsHeadCompanyAuthorizationController {
         }
     }
 
+    private static UUID requiredUuid(UUID value) {
+        if (value == null) throw new InvalidEdgeRequestException("brand id is required");
+        return value;
+    }
+
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(WorkspaceSessionReadback session, String requirementId, UUID headCompanyId) {
         var resolution = capabilityScopes.resolve(session, requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.HEAD_COMPANY, headCompanyId));
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();

@@ -18,7 +18,7 @@ public class ExecuteOperationsTemporaryCatalogItemPromotionOperation {
     public ExecuteOperationsTemporaryCatalogItemPromotionOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogItemCommandReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         return CreateOperationsCatalogItemOperation.response(context.requestId(), catalog.executeTemporaryCatalogItemPromotion(context, new CatalogOwnerApi.TemporaryPromotionExecuteCommand(invocation.itemCode(), request.formalCode(), request.shapeKey(), request.name(), request.shortName(), request.materialRole(), canonicalJson(request.attributes()), requiredLong(request.expectedSourceVersion(), "expectedSourceVersion"), requiredLong(request.expectedVersion(), "expectedVersion"), request.preflightDigest()), invocation.idempotencyKey()));
     }

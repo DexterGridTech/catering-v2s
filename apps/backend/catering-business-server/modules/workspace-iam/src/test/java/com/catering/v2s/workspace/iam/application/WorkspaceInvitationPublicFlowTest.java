@@ -6,7 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OrganizationAssignmentCandidateService;
+import com.catering.v2s.organization.application.OrganizationCommandService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.organization.application.OrganizationTaskPathService;
+import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
+import com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.List;
 import java.util.Set;
@@ -14,10 +19,13 @@ import java.util.UUID;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.time.Instant;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class WorkspaceInvitationPublicFlowTest {
     @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-    private static Flyway flyway; private static JdbcTemplate jdbc; private static WorkspaceInvitationService invitations; private static WorkspaceAuthenticationService authentication; private static WorkspaceUserService user; private static UUID workspaceId; private static UUID groupId; private static UUID roleId;
+    private static Flyway flyway; private static JdbcTemplate jdbc; private static WorkspaceInvitationService invitations; private static WorkspaceAuthenticationService authentication; private static WorkspaceUserService user; private static UUID workspaceId; private static UUID groupId; private static UUID regionId; private static UUID roleId;
     private static final long NOW = 1_785_000_000_000L;
 
     @BeforeAll static void setup() {
@@ -36,11 +44,21 @@ class WorkspaceInvitationPublicFlowTest {
         jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())); TimeProvider time = () -> NOW; workspaceId = UUID.randomUUID();
         jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, 'public-flow', 'Public flow', 'public flow', 'Public flow', 'ENABLED', 1, 1, ?, ?, ?)", workspaceId, NOW, NOW, NOW);
         ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time); OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time); BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy); WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, time);
-        groupId = hierarchy.create(workspaceId, "public-flow", "REGION", null, "region", "Region").id(); roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of()).id(); invitations = new WorkspaceInvitationService(jdbc, time, roles, hierarchy, entities, entities); authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities); user = new WorkspaceUserService(jdbc, hierarchy, entities, roles);
+        OrganizationCommandService groups = new OrganizationCommandService(jdbc, null, time);
+        long groupWorkspaceId = jdbc.queryForObject("SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?", Long.class, workspaceId, "public-flow");
+        groups.execute(new com.catering.v2s.platform.access.PlatformExecutionContext("public-flow", "platform-admin", Instant.ofEpochMilli(NOW + 60_000L), "public-flow"), workspaceId, "public-flow", groupWorkspaceId, "public-flow-commercial-group-0001", "PUBLIC-FLOW-GROUP", "Public Flow Group", AuditActor.system());
+        groupId = jdbc.queryForObject("SELECT commercial_group_uuid FROM organization.commercial_group WHERE group_workspace_key=?", UUID.class, "public-flow");
+        regionId = hierarchy.create(workspaceId, "public-flow", "REGION", null, "region", "Region").id();
+        roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of()).id();
+        OrganizationTaskPathService taskPaths = new OrganizationTaskPathService(jdbc, groups);
+        WorkspaceUserService user = new WorkspaceUserService(jdbc, hierarchy, entities, roles);
+        ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer = Mockito.mock(ObjectProvider.class);
+        invitations = new WorkspaceInvitationService(jdbc, time, roles, hierarchy, entities, entities, groups, new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), new WorkspaceCommandAuthorizationService(jdbc), user, taskPaths, new OrganizationAssignmentCandidateService(jdbc, groups, taskPaths), new OtpDebugExposurePolicy("", false), fixedOtpIssuer);
+        authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities); WorkspaceInvitationPublicFlowTest.user = user;
     }
 
     @Test void onlyFinalizeCreatesAssignmentsAfterAcceptOtpAndCredentialDraft() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000001", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000001", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         invitations.acceptPublic("public-flow", created.rawInvitationToken());
         String otp = invitations.issueMobileVerificationOtp("public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
         var verified = invitations.verifyPublicOtp("public-flow", created.rawInvitationToken(), "13800000001", otp);
@@ -52,7 +70,7 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
     @Test void publicOtpCannotBeSentOrVerifiedForAnotherMobile() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000002", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000002", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         invitations.acceptPublic("public-flow", created.rawInvitationToken());
         assertThrows(WorkspaceInvitationService.InvitationValidationException.class, () -> invitations.sendPublicOtp("public-flow", created.rawInvitationToken(), "13800000003"));
         String otp = invitations.issueMobileVerificationOtp("public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
@@ -61,7 +79,7 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
     @Test void publicInvitationResumesAfterBackOrRefreshWithoutASecondAcceptTransition() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000017", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000017", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         assertEquals("ACCEPT", invitations.publicView("public-flow", created.rawInvitationToken()).nextStep());
         assertEquals("VERIFY_MOBILE", invitations.acceptPublic("public-flow", created.rawInvitationToken()).nextStep());
         assertEquals("VERIFY_MOBILE", invitations.acceptPublic("public-flow", created.rawInvitationToken()).nextStep());
@@ -83,11 +101,11 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
     @Test void publicInvitationRejectsExpiredAndInvalidOtpStatesAndCompletionReplayPreservesOneAssignment() {
-        var expired = invitations.create(workspaceId, "public-flow", "13800000004", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var expired = invitations.create(workspaceId, "public-flow", "13800000004", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         jdbc.update("UPDATE workspace_iam.invitation SET expires_at_epoch_millis=? WHERE id=?", NOW - 1, expired.id());
         assertThrows(WorkspaceInvitationService.InvitationStateException.class, () -> invitations.acceptPublic("public-flow", expired.rawInvitationToken()));
 
-        var created = invitations.create(workspaceId, "public-flow", "13800000005", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000005", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         assertThrows(WorkspaceInvitationService.InvitationStateException.class, () -> invitations.sendPublicOtp("public-flow", created.rawInvitationToken(), "13800000005"));
         invitations.acceptPublic("public-flow", created.rawInvitationToken());
         String otp = invitations.issueMobileVerificationOtp("public-flow", created.rawInvitationToken(), NOW + 5 * 60 * 1000L);
@@ -134,11 +152,11 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
     @Test void platformInvitationPageAllowsEachOptionalAssignmentFilterIndependently() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000011", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000011", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         UUID groupRoleId = new WorkspaceRoleService(jdbc, () -> NOW).create(workspaceId, "public-flow", "Group user", "GROUP", null, Set.of(), Set.of()).id();
         var differentType = invitations.create(workspaceId, "public-flow", "13800000014", List.of(new WorkspaceInvitationService.AssignmentIntent(groupRoleId, "GROUP", groupId)), NOW + 60 * 60 * 1000L);
         var byType = invitations.managementPage(workspaceId, "public-flow", pageRequest("REGION", null, null));
-        var byOrganization = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, groupId, null));
+        var byOrganization = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, regionId, null));
         var byRole = invitations.managementPage(workspaceId, "public-flow", pageRequest(null, null, roleId));
         assertEquals(true, byType.items().stream().anyMatch(item -> item.id().equals(created.id())));
         assertEquals(false, byType.items().stream().anyMatch(item -> item.id().equals(differentType.id())));
@@ -147,7 +165,7 @@ class WorkspaceInvitationPublicFlowTest {
     }
 
     @Test void invitationMobileFilterMatchesNormalizedOwnerFactRatherThanMaskedDisplayText() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000012", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000012", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         var page = invitations.managementPage(workspaceId, "public-flow", new WorkspaceInvitationService.ManagementInvitationPageRequest("138 0000-0012", null, null, null, null, null, null, "CREATED_AT", "DESC", 1, 20));
         assertEquals(List.of(created.id()), page.items().stream().filter(item -> item.id().equals(created.id())).map(WorkspaceInvitationService.ManagementInvitationView::id).toList());
     }
@@ -172,20 +190,20 @@ class WorkspaceInvitationPublicFlowTest {
     @Test void platformInvitationCreationRejectsMixedTargetsBeforePersistence() {
         UUID otherRegionId = new OrganizationHierarchyService(jdbc, () -> NOW).create(workspaceId, "public-flow", "REGION", null, "mixed-region", "Mixed region").id();
         assertThrows(WorkspaceInvitationService.InvitationValidationException.class, () -> invitations.create(workspaceId, "public-flow", "13800000015", List.of(
-            new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId),
+            new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId),
             new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", otherRegionId)
         ), NOW + 60 * 60 * 1000L));
     }
 
     @Test void managementPageRetainsCreatedInvitationTokenForTheExistingPublicLink() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000012", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L);
+        var created = invitations.create(workspaceId, "public-flow", "13800000012", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L);
         var item = invitations.managementPage(workspaceId, "public-flow", pageRequest("REGION", null, null)).items().stream().filter(value -> value.id().equals(created.id())).findFirst().orElseThrow();
         assertEquals(created.rawInvitationToken(), jdbc.queryForObject("SELECT invitation_token FROM workspace_iam.invitation WHERE id=?", String.class, created.id()));
         assertEquals("/operations/invitations/public-flow/" + created.rawInvitationToken(), item.invitationPageUrl());
     }
 
     @Test void managementDetailPersistsIssuerSnapshotInsteadOfDerivingItFromAuditHistory() {
-        var created = invitations.create(workspaceId, "public-flow", "13800000016", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", groupId)), NOW + 60 * 60 * 1000L, new AuditActor("PLATFORM_ADMIN", UUID.randomUUID(), "值班管理员"));
+        var created = invitations.create(workspaceId, "public-flow", "13800000016", List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", regionId)), NOW + 60 * 60 * 1000L, new AuditActor("PLATFORM_ADMIN", UUID.randomUUID(), "值班管理员"));
         var detail = invitations.managementInvitation(workspaceId, "public-flow", created.id());
         assertEquals("13800000016", detail.mobile());
         assertEquals("值班管理员", detail.issuerDisplayName());

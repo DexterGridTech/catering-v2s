@@ -13,7 +13,8 @@
 
 `backend-acceptance` 是后台统一测试的唯一能力。它在真实远端 Testcontainers 中启动真实
 业务应用，通过真实 HTTP 串行执行当前已实现的业务场景。当前场景覆盖 IAM、ORG、商业合同
-和 asset；后续按业务价值逐条扩展，总数不得超过 80 条。
+和 asset；P3-1 中的 Catalog 组仅在其全部真实场景验证后才计入当前能力。后续按业务价值逐条扩展，
+总数不得超过 80 条。
 
 一次场景结果必须分开表达：
 
@@ -35,14 +36,15 @@
 该类负责 JUnit/Testcontainers 生命周期、真实 HTTP 上下文、共享 fixture/helper、DB 计数和结果
 写入；不得继续向其中堆积业务 scenario 方法。
 
-业务 scenario 按 owner 业务域放在以下四个类中：
+业务 scenario 按 owner 业务域放在以下四个已验证类中；P3-1 完成后加入第五个 Catalog 类：
 
 - `IamAcceptanceScenarios.java`
 - `OrganizationAcceptanceScenarios.java`
 - `CommercialContractAcceptanceScenarios.java`
 - `AssetAcceptanceScenarios.java`
+- `CatalogAcceptanceScenarios.java`
 
-`BackendAcceptanceScenarioCatalog` 显式持有这四个 domain group，通过 `@AcceptanceScenario`
+`BackendAcceptanceScenarioCatalog` 显式持有已验证的 domain group，通过 `@AcceptanceScenario`
 发现方法并按稳定 ID 排序。新增 scenario 必须放入正确的 domain group，使用唯一的
 `module.operation` ID，并让 catalog 自动发现；不得新增 provider 壳、共享 SPI、JSON registry、
 按接口数量生成的目录或中央巨型 workload。
@@ -119,4 +121,3 @@ oracle 保留在对应 domain group，防止业务知识重新集中化。
 - 断言覆盖该 operation 适用的业务权限、隔离、状态、脱敏或写入后果；
 - focused run 和适用的全量 run 均通过，受管资源 cleanup PASS；
 - 代码、设计、项目记忆与 skill 引用使用同一当前口径。
-

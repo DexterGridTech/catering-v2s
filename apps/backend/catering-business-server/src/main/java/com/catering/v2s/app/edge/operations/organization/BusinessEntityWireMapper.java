@@ -4,7 +4,6 @@ import com.catering.v2s.app.edge.generated.wire.Brand;
 import com.catering.v2s.app.edge.generated.wire.BusinessEntityStatus;
 import com.catering.v2s.app.edge.generated.wire.HeadCompany;
 import com.catering.v2s.app.edge.generated.wire.HeadCompanyAuthorizedBrandsItem;
-import com.catering.v2s.app.edge.generated.wire.HeadCompanySummary;
 import com.catering.v2s.app.edge.generated.wire.Tenant;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import tools.jackson.databind.JsonNode;
@@ -33,8 +32,8 @@ final class BusinessEntityWireMapper {
         return new HeadCompany(value.id().toString(), value.groupWorkspaceKey(), value.code(), value.name(), value.legalName(), value.creditCode(), value.remark(), brands, extensionValues(value), value.extensionRuleRevision(), status(value), value.version(), value.createdAt(), value.updatedAt());
     }
 
-    static HeadCompanySummary headCompanySummary(OrganizationEntityReadback value) {
-        return new HeadCompanySummary(value.id().toString(), value.groupWorkspaceKey(), value.code(), value.name(), value.legalName(), value.creditCode(), value.remark(), status(value), value.version(), value.createdAt(), value.updatedAt());
+    static HeadCompany headCompanySummary(OrganizationEntityReadback value) {
+        return new HeadCompany(value.id().toString(), value.groupWorkspaceKey(), value.code(), value.name(), value.legalName(), value.creditCode(), value.remark(), List.of(), extensionValues(value), value.extensionRuleRevision(), status(value), value.version(), value.createdAt(), value.updatedAt());
     }
 
     static Map<String, String> requestValues(JsonNode values) {

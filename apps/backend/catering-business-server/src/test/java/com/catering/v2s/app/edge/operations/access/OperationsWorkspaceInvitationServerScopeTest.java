@@ -23,21 +23,9 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceInvitationOperation;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
@@ -89,7 +77,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(created.id(), KEY, "138****0000", "13800000000", "平台管理员", "STORE", "group/store", List.of("Store manager"), "PENDING", 1L, 100L, 1L, 10L, null, null, null, null);
         when(fixture.commands.createInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "STORE".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && command.roleIds().equals(List.of(roleId)) && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
-        var response = fixture.controller.storeCreate(fixture.request, KEY, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationCreateRequest(scopeRef.toString(), "13800000000", List.of(roleId.toString()), IDEMPOTENCY_KEY));
+        var response = fixture.controller.storeCreate(fixture.request, KEY, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationCreateRequest(scopeRef, "13800000000", List.of(roleId.toString()), IDEMPOTENCY_KEY));
 
         assertEquals(201, response.getStatusCode().value());
         verify(fixture.authentication).commandAuthorizationFacts("operations-session");
@@ -120,7 +108,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "CANCELLED", 2L, 100L, 2L, 10L, null, null, 11L, null);
         when(fixture.commands.cancelInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
-        var result = fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
+        var result = fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef, fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
 
         assertEquals(WorkspaceInvitationStatus.CANCELLED, result.status());
         assertTrue(List.of(WorkspaceOperationsInvitationActionRequest.class.getRecordComponents()).stream().anyMatch(component -> component.getName().equals("scopeRef")));
@@ -137,7 +125,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceInvitationService.ManagementInvitationView view = new WorkspaceInvitationService.ManagementInvitationView(invitationId, KEY, "138****0000", "13800000000", "平台管理员", "PROJECT", "group/project", List.of("Project manager"), "ACTIVE", 2L, 120L, 2L, 20L, null, null, null, null);
         when(fixture.commands.reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L && IDEMPOTENCY_KEY.equals(command.idempotencyKey()) && fixture.actor.equals(command.actor())))).thenReturn(view);
 
-        var result = fixture.controller.projectReissue(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef.toString(), fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
+        var result = fixture.controller.projectReissue(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(scopeRef, fixture.session.contextVersion(), 1L, IDEMPOTENCY_KEY));
 
         assertEquals(WorkspaceInvitationStatus.ACTIVE, result.status());
         verify(fixture.commands).reissueInvitation(argThat(command -> command.facts().sessionReadback() == fixture.session && "PROJECT".equals(command.expectedTargetType()) && scopeRef.equals(command.requestedScopeRef()) && invitationId.equals(command.invitationId()) && command.expectedVersion() == 1L));
@@ -149,7 +137,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         Fixture fixture = fixture();
         UUID invitationId = UUID.randomUUID();
 
-        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class, () -> fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(UUID.randomUUID().toString(), fixture.session.contextVersion() + 1, 1L, IDEMPOTENCY_KEY)));
+        assertThrows(WorkspaceAuthenticationService.SessionConflictException.class, () -> fixture.controller.projectCancel(fixture.request, KEY, invitationId, IDEMPOTENCY_KEY, new WorkspaceOperationsInvitationActionRequest(UUID.randomUUID(), fixture.session.contextVersion() + 1, 1L, IDEMPOTENCY_KEY)));
 
         verifyNoInteractions(fixture.user, fixture.invitations);
     }
@@ -172,9 +160,7 @@ class OperationsWorkspaceInvitationServerScopeTest {
         WorkspaceOperationsCommandApi commands = mock(WorkspaceOperationsCommandApi.class);
         EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie("operations-session"), null, null, null);
         return new Fixture(new OperationsWorkspaceInvitationController(sessions, invitations, user, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(user, invitations, authentication),
-            new CreateOperationsWorkspaceGroupInvitationOperation(commands), new CreateOperationsWorkspaceRegionInvitationOperation(commands), new CreateOperationsWorkspaceProjectInvitationOperation(commands), new CreateOperationsWorkspaceHeadCompanyInvitationOperation(commands), new CreateOperationsWorkspaceStoreInvitationOperation(commands),
-            new CancelOperationsWorkspaceGroupInvitationOperation(commands), new CancelOperationsWorkspaceRegionInvitationOperation(commands), new CancelOperationsWorkspaceProjectInvitationOperation(commands), new CancelOperationsWorkspaceHeadCompanyInvitationOperation(commands), new CancelOperationsWorkspaceStoreInvitationOperation(commands),
-            new ReissueOperationsWorkspaceGroupInvitationOperation(commands), new ReissueOperationsWorkspaceRegionInvitationOperation(commands), new ReissueOperationsWorkspaceProjectInvitationOperation(commands), new ReissueOperationsWorkspaceHeadCompanyInvitationOperation(commands), new ReissueOperationsWorkspaceStoreInvitationOperation(commands)),
+            new CancelOperationsWorkspaceInvitationOperation(commands), new CreateOperationsWorkspaceInvitationOperation(commands), new ReissueOperationsWorkspaceInvitationOperation(commands)),
             sessions, authentication, invitations, user, commands, request, new AuditActor("WORKSPACE_ACCOUNT", accountId, "Operations tester"), session);
     }
 

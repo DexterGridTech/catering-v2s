@@ -22,6 +22,110 @@
     "BOM_COMPONENT",
     "PRODUCIBLE"
   ],
+  "enumLabels": {
+    "catalogItemStatus": {
+      "DRAFT": "草稿",
+      "ENABLED": "启用",
+      "DISABLED": "停用",
+      "ARCHIVED": "已归档",
+      "VOIDED": "已作废"
+    },
+    "skuStatus": {
+      "ENABLED": "启用",
+      "DISABLED": "停用",
+      "ARCHIVED": "已归档"
+    },
+    "dictionaryEntryStatus": {
+      "ENABLED": "启用",
+      "DISABLED": "停用",
+      "VOIDED": "已作废"
+    },
+    "smartViewKey": {
+      "ALL": "全部商品",
+      "EXTERNAL_ORDER_TEMP": "外部订单临时商品",
+      "INACTIVE": "未启用商品",
+      "ARCHIVED": "已归档商品",
+      "RECENTLY_UPDATED": "最近更新",
+      "AUTO_SYNC": "自动同步商品"
+    },
+    "catalogSource": {
+      "SELF_MANAGED": "自主维护",
+      "COPIED": "复制引入",
+      "AUTO_SYNC": "自动同步",
+      "TEMPORARY": "临时商品"
+    },
+    "categoryMoveAction": {
+      "REPARENT": "调整父分类",
+      "UP": "上移",
+      "DOWN": "下移"
+    },
+    "productionTagKind": {
+      "PRODUCTION": "制作",
+      "PACKAGE": "包装",
+      "LABEL": "标签",
+      "HANDOFF": "交接",
+      "REVIEW": "审核",
+      "OTHER": "其他"
+    },
+    "countSemantics": {
+      "SELF_ONLY": "仅本分类",
+      "SELF_AND_DESCENDANTS": "本分类及子分类"
+    },
+    "shapeKey": {
+      "STANDARD_SALE_COUNTED": "普通销售商品",
+      "SKU_VARIANT_SALE_COUNTED": "按 SKU 管理商品",
+      "STANDARD_SALE_WEIGHED": "称重销售商品",
+      "MATERIAL": "原材料/半成品/包装物",
+      "COMPOSITE": "商品型套餐",
+      "SERVICE": "服务/费用商品",
+      "BENEFIT_SHELL": "权益商品壳"
+    },
+    "itemKind": {
+      "STANDARD_ITEM": "标准商品",
+      "COMPOSITE_ITEM": "套餐商品",
+      "SERVICE_ITEM": "服务商品",
+      "BENEFIT_ITEM": "权益商品"
+    },
+    "measureMode": {
+      "COUNTED": "计数销售",
+      "WEIGHED": "称重销售"
+    },
+    "usageCapability": {
+      "SELLABLE": "可销售",
+      "STOCK_MANAGED": "库存管理",
+      "BOM_COMPONENT": "可作为 BOM 组件",
+      "PRODUCIBLE": "可制作"
+    },
+    "skuMode": {
+      "NONE": "无 SKU",
+      "OPTIONAL_TABLE": "可选 SKU",
+      "REQUIRED_MATRIX": "规格矩阵 SKU"
+    },
+    "priceGranularity": {
+      "ITEM": "商品级定价",
+      "SKU": "SKU 级定价"
+    },
+    "inventoryNodeType": {
+      "CATALOG_ITEM": "商品",
+      "SKU": "SKU",
+      "OPTION_VALUE": "点单选项值"
+    },
+    "inventoryMode": {
+      "NONE": "无库存控制",
+      "INDEPENDENT_STOCK": "独立库存",
+      "BOM": "BOM 消耗"
+    },
+    "catalogSection": {
+      "BASIC_INFO": "基本信息",
+      "SKU_STRUCTURE": "SKU 结构",
+      "SKU_BOM": "SKU BOM",
+      "ORDER_OPTIONS": "点单选项",
+      "OPTION_VALUE_BOM": "选项值 BOM",
+      "ITEM_BOM": "商品 BOM",
+      "PACKAGE_STRUCTURE": "套餐结构",
+      "PRODUCTION_PROMPTS": "制作提示"
+    }
+  },
   "shapeKeys": [
     "STANDARD_SALE_COUNTED",
     "SKU_VARIANT_SALE_COUNTED",
@@ -85,6 +189,309 @@
     ],
     "backendMustRecheck": true
   },
+  "controlKinds": [
+    "text",
+    "textarea",
+    "select",
+    "multiSelect",
+    "treeSelect",
+    "number",
+    "money",
+    "upload",
+    "editableTable",
+    "detailTable",
+    "readonlySummary",
+    "readonlyPreview",
+    "skuVariantMatrix",
+    "inventoryBomWorkbench",
+    "orderOptionsWorkbench",
+    "compositeContentWorkbench"
+  ],
+  "fields": [
+    {
+      "fieldKey": "categoryRefs",
+      "dataPath": "categoryRefs[]",
+      "label": "分类",
+      "controlKind": "treeSelect",
+      "tabKey": "basic",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL",
+        "COMPOSITE",
+        "SERVICE",
+        "BENEFIT_SHELL"
+      ],
+      "helpText": "选择商品所属分类。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogNavigation",
+        "path": {},
+        "query": {
+          "viewKey": "ALL",
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.tree",
+        "valueField": "categoryRef",
+        "labelField": "name",
+        "parentField": "parentCategoryRef",
+        "disabledWhen": null
+      }
+    },
+    {
+      "fieldKey": "skuVariantAttribute",
+      "dataPath": "skuVariantDimensions[].attributeRef",
+      "label": "规格属性",
+      "controlKind": "select",
+      "tabKey": "sku-specifications-pricing",
+      "admittedShapes": [
+        "SKU_VARIANT_SALE_COUNTED"
+      ],
+      "helpText": "选择该商品用于生成 SKU 矩阵的规格属性。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogDictionary",
+        "path": {
+          "dictionaryKind": "SKU_ATTRIBUTE"
+        },
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.entries",
+        "valueField": "entryRef",
+        "labelField": "name",
+        "disabledWhen": "status<>\"ENABLED\""
+      }
+    },
+    {
+      "fieldKey": "skuVariantValues",
+      "dataPath": "skuVariantDimensions[].values[].valueRef",
+      "label": "规格属性值",
+      "controlKind": "multiSelect",
+      "tabKey": "sku-specifications-pricing",
+      "admittedShapes": [
+        "SKU_VARIANT_SALE_COUNTED"
+      ],
+      "helpText": "只选择当前商品已选规格属性下的有效属性值。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogDictionary",
+        "path": {
+          "dictionaryKind": "SKU_ATTRIBUTE_VALUE"
+        },
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.entries",
+        "valueField": "entryRef",
+        "labelField": "name",
+        "disabledWhen": "status<>\"ENABLED\"",
+        "contextBindings": {
+          "attributeRef": {
+            "fieldKey": "skuVariantAttribute"
+          }
+        }
+      }
+    },
+    {
+      "fieldKey": "skuMatrix",
+      "dataPath": "skus[]",
+      "label": "SKU 矩阵",
+      "controlKind": "skuVariantMatrix",
+      "tabKey": "sku-specifications-pricing",
+      "admittedShapes": [
+        "SKU_VARIANT_SALE_COUNTED"
+      ],
+      "helpText": "按已选规格属性和属性值维护 SKU 矩阵。"
+    },
+    {
+      "fieldKey": "bomTarget",
+      "dataPath": "inventoryBom[].targetRef",
+      "label": "库存对象",
+      "controlKind": "select",
+      "tabKey": "inventory-bom",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL"
+      ],
+      "helpText": "选择用于库存消耗的库存对象。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsInventoryTargets",
+        "path": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.items",
+        "valueField": "targetRef",
+        "labelParts": [
+          "productName",
+          "skuName",
+          "productCode",
+          "skuCode"
+        ],
+        "disabledWhen": null
+      }
+    },
+    {
+      "fieldKey": "bomOptionValue",
+      "dataPath": "inventoryBom[].optionValueRef",
+      "label": "所属选项值",
+      "controlKind": "select",
+      "tabKey": "inventory-bom",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED"
+      ],
+      "helpText": "选择当前商品点单选项页签中已有的选项值。",
+      "optionSourceRef": {
+        "kind": "local",
+        "sectionPath": "orderOptions",
+        "valueField": "attributeValueRef",
+        "labelField": "name"
+      }
+    },
+    {
+      "fieldKey": "compositeComponentSku",
+      "dataPath": "compositeGroups[].components[].productSkuRef",
+      "label": "组件 SKU",
+      "controlKind": "select",
+      "tabKey": "composite-content",
+      "admittedShapes": [
+        "COMPOSITE"
+      ],
+      "helpText": "选择已选组件商品中的 SKU。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogItem",
+        "path": {
+          "itemCode": {
+            "context": "compositeGroups[].components[].itemCode"
+          }
+        },
+        "query": {},
+        "headers": {},
+        "itemsPath": "data.item.skus",
+        "valueField": "productSkuRef",
+        "labelParts": [
+          "skuCode",
+          "skuName"
+        ],
+        "disabledWhen": null
+      }
+    },
+    {
+      "fieldKey": "productionTagRefs",
+      "dataPath": "productionTagRefs[]",
+      "label": "生产标签",
+      "controlKind": "multiSelect",
+      "tabKey": "production-prompts",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED"
+      ],
+      "helpText": "生产标签描述制作处理方式，不代表岗位、设备或队列。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsProductionTags",
+        "path": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.entries",
+        "valueField": "tagRef",
+        "labelField": "name",
+        "disabledWhen": "status<>\"ENABLED\""
+      }
+    },
+    {
+      "fieldKey": "tagRefs",
+      "dataPath": "tagRefs[]",
+      "label": "商品标签",
+      "controlKind": "multiSelect",
+      "tabKey": "basic",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL",
+        "COMPOSITE",
+        "SERVICE",
+        "BENEFIT_SHELL"
+      ],
+      "helpText": "选择用于检索和归类商品的标签。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogDictionary",
+        "path": {
+          "dictionaryKind": "TAG"
+        },
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.entries",
+        "valueField": "entryRef",
+        "labelField": "name",
+        "disabledWhen": "status<>\"ENABLED\""
+      }
+    },
+    {
+      "fieldKey": "salesUnitRefs",
+      "dataPath": "salesUnitRefs[]",
+      "label": "销售单位",
+      "controlKind": "multiSelect",
+      "tabKey": "basic",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL",
+        "COMPOSITE",
+        "SERVICE",
+        "BENEFIT_SHELL"
+      ],
+      "helpText": "选择商品可使用的销售单位。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "getOperationsCatalogDictionary",
+        "path": {
+          "dictionaryKind": "SALES_UNIT"
+        },
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.entries",
+        "valueField": "entryRef",
+        "labelField": "name",
+        "disabledWhen": "status<>\"ENABLED\""
+      }
+    }
+  ],
   "shapes": [
     {
       "key": "STANDARD_SALE_COUNTED",
@@ -341,6 +748,7 @@
   "shapeRules": [
     {
       "shapeKey": "STANDARD_SALE_COUNTED",
+      "label": "普通销售商品",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "OPTIONAL_TABLE",
@@ -354,6 +762,7 @@
     },
     {
       "shapeKey": "SKU_VARIANT_SALE_COUNTED",
+      "label": "按 SKU 管理商品",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "REQUIRED_MATRIX",
@@ -367,6 +776,7 @@
     },
     {
       "shapeKey": "STANDARD_SALE_WEIGHED",
+      "label": "称重销售商品",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "WEIGHED",
       "skuMode": "OPTIONAL_TABLE",
@@ -380,6 +790,7 @@
     },
     {
       "shapeKey": "MATERIAL",
+      "label": "原材料/半成品/包装物",
       "itemKind": "STANDARD_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "NONE",
@@ -394,6 +805,7 @@
     },
     {
       "shapeKey": "COMPOSITE",
+      "label": "商品型套餐",
       "itemKind": "COMPOSITE_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "OPTIONAL_TABLE",
@@ -407,6 +819,7 @@
     },
     {
       "shapeKey": "SERVICE",
+      "label": "服务/费用商品",
       "itemKind": "SERVICE_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "NONE",
@@ -420,6 +833,7 @@
     },
     {
       "shapeKey": "BENEFIT_SHELL",
+      "label": "权益商品壳",
       "itemKind": "BENEFIT_ITEM",
       "measureMode": "COUNTED",
       "skuMode": "NONE",
@@ -535,6 +949,61 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomTarget",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomOptionValue",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "SKU_VARIANT_SALE_COUNTED": [
@@ -639,6 +1108,83 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "skuVariantAttribute",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "skuVariantValues",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "skuMatrix",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomTarget",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "STANDARD_SALE_WEIGHED": [
@@ -743,6 +1289,61 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomTarget",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomOptionValue",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "MATERIAL": [
@@ -847,6 +1448,50 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "bomTarget",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "COMPOSITE": [
@@ -951,6 +1596,50 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "compositeComponentSku",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "SERVICE": [
@@ -1055,6 +1744,39 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ],
     "BENEFIT_SHELL": [
@@ -1159,6 +1881,39 @@
           "view": true
         },
         "quickManage": "production-tag-owner"
+      },
+      {
+        "field": "categoryRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "tagRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "salesUnitRefs",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
       }
     ]
   },
@@ -1167,7 +1922,6 @@
       "visible": [
         "basic",
         "identifiers",
-        "ordering",
         "order-options",
         "attributes",
         "production-prompts",
@@ -1189,8 +1943,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1214,7 +1967,6 @@
         "create": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1224,7 +1976,6 @@
         "update": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1234,7 +1985,6 @@
         "view": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1267,8 +2017,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1319,7 +2068,6 @@
       "visible": [
         "basic",
         "identifiers",
-        "ordering",
         "order-options",
         "attributes",
         "production-prompts",
@@ -1341,8 +2089,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1366,7 +2113,6 @@
         "create": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1376,7 +2122,6 @@
         "update": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1386,7 +2131,6 @@
         "view": [
           "basic",
           "identifiers",
-          "ordering",
           "order-options",
           "attributes",
           "production-prompts",
@@ -1418,8 +2162,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1486,8 +2229,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1553,8 +2295,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1617,8 +2358,7 @@
             "groupRules",
             "valueRules",
             "pricingEffects",
-            "productionEffects",
-            "ordering"
+            "productionEffects"
           ]
         },
         "composite-content": {
@@ -1789,9 +2529,7 @@
       "SKU_VARIANT_SALE_COUNTED": {
         "allowedNodeTypes": [
           "CATALOG_ITEM",
-          "SKU",
-          "OPTION_GROUP",
-          "OPTION_VALUE"
+          "SKU"
         ],
         "inventoryBom": true
       },
@@ -1932,7 +2670,6 @@
     "create": [
       "basic",
       "identifiers",
-      "ordering",
       "attributes",
       "production-prompts",
       "inventory-bom"
@@ -1940,7 +2677,6 @@
     "update": [
       "basic",
       "identifiers",
-      "ordering",
       "attributes",
       "production-prompts",
       "inventory-bom",
@@ -1954,7 +2690,6 @@
     "readonly": [
       "basic",
       "identifiers",
-      "ordering",
       "attributes",
       "production-prompts",
       "inventory-bom",
@@ -1977,7 +2712,9 @@
     "typeEffects",
     "saveSections",
     "detailSections",
-    "modeRules"
+    "modeRules",
+    "controlKinds",
+    "fields"
   ],
   "readModelNames": [
     "CatalogWorkbenchContext",
@@ -2175,6 +2912,9 @@
       "manifestDigest",
       "shapeKeys",
       "capabilityValues",
+      "controlKinds",
+      "fields",
+      "enumLabels",
       "modeRules",
       "shapeRules",
       "fieldRules",
@@ -2185,5 +2925,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "27b0b0fd30232446b318350e2dca69e6342bf91bede430af84a259ef8816ae5a"
+  "manifestDigest": "81d6fc0f7825e40c31ae87bb7ada6621cf95a3cc3a8b2b926553325b2325c3a5"
 }

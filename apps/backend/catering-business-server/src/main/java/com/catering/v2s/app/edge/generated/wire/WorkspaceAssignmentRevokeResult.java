@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceAssignmentRevokeResult(
-    String assignmentId,
+    java.util.UUID assignmentId,
     String status,
     Long version,
     Long revokedAt

@@ -20,10 +20,10 @@ final class WorkspaceSessionWireMapper {
     }
 
     private static WorkspaceSessionEntryCandidatesItem candidate(WorkspaceSessionEntryReadback.RoleAssignmentCandidate value) {
-        return new WorkspaceSessionEntryCandidatesItem(value.roleAssignmentId().toString(), value.roleId().toString(), value.roleName(), value.roleNodeId().toString(), value.roleNodeType(), value.roleNodeName(), value.homePageDesignKey(), value.pageDesignKeys(), value.navigation().stream().map(WorkspaceSessionWireMapper::candidateNavigation).toList());
+        return new WorkspaceSessionEntryCandidatesItem(value.roleAssignmentId(), value.roleId().toString(), value.roleName(), value.roleNodeId(), value.roleNodeType(), value.roleNodeName(), value.homePageDesignKey(), value.pageDesignKeys(), value.navigation().stream().map(WorkspaceSessionWireMapper::candidateNavigation).toList());
     }
     private static WorkspaceSessionEntrySelected selected(WorkspaceSessionEntryReadback.RoleAssignmentCandidate value, long contextVersion) {
-        return new WorkspaceSessionEntrySelected(value.roleAssignmentId().toString(), value.roleId().toString(), value.roleName(), value.roleNodeId().toString(), value.roleNodeType(), value.roleNodeName(), value.homePageDesignKey(), value.pageDesignKeys(), value.navigation().stream().map(WorkspaceSessionWireMapper::selectedNavigation).toList(), contextVersion);
+        return new WorkspaceSessionEntrySelected(value.roleAssignmentId(), value.roleId().toString(), value.roleName(), value.roleNodeId(), value.roleNodeType(), value.roleNodeName(), value.homePageDesignKey(), value.pageDesignKeys(), value.navigation().stream().map(WorkspaceSessionWireMapper::selectedNavigation).toList(), contextVersion);
     }
     private static WorkspaceSessionEntryCandidatesItemNavigationItem candidateNavigation(WorkspaceSessionEntryReadback.NavigationItem value) {
         return new WorkspaceSessionEntryCandidatesItemNavigationItem(value.pageDesignKey(), value.title(), value.menuGroup(), (long) value.menuOrder(), value.kind(), value.pageAccessManaged(), value.requiredDataNodeType());
@@ -35,7 +35,7 @@ final class WorkspaceSessionWireMapper {
         return value == null ? null : new WorkspaceScopeContext(dataNode(value.region()), dataNode(value.project()), dataNode(value.store()), dataNode(value.headCompany()));
     }
     private static WorkspaceScopeNode dataNode(WorkspaceSessionEntryReadback.VisibleDataNodeCandidate value) {
-        return value == null ? null : new WorkspaceScopeNode(value.dataNodeType(), value.dataNodeId().toString(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), nullable(value.regionId()), nullable(value.projectId()), nullable(value.storeId()), nullable(value.headCompanyId()));
+        return value == null ? null : new WorkspaceScopeNode(value.dataNodeType(), value.dataNodeId(), value.dataNodeName(), value.dataNodeCode(), value.ancestorPath(), nullable(value.regionId()), nullable(value.projectId()), nullable(value.storeId()), nullable(value.headCompanyId()));
     }
     private static String logoUrl(String assetRef, PlatformAssetService assets) {
         if (assetRef == null) return null;
@@ -45,5 +45,5 @@ final class WorkspaceSessionWireMapper {
             return null;
         }
     }
-    private static String nullable(java.util.UUID value) { return value == null ? null : value.toString(); }
+    private static java.util.UUID nullable(java.util.UUID value) { return value; }
 }

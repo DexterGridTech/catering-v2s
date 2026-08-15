@@ -40,6 +40,6 @@ public final class OperationsOrganizationCandidateController {
             ? null
             : session.scopeContext().project().dataNodeId();
         var value = candidates.operationsCandidatePage(session.workspaceUuid(), groupWorkspaceKey, session.currentAssignmentId(), selectedProjectId, subjectType, candidateUsage, queryText, page, pageSize, selectedId, projectId, brandId, tenantId);
-        return new OrganizationCandidatePage(new OrganizationCandidatePageMetadata(OrganizationCandidateQuerySubjectType.valueOf(value.metadata().subjectType()), value.metadata().queryText(), (long) value.metadata().page(), (long) value.metadata().pageSize(), value.metadata().total(), value.metadata().selectedId() == null ? null : value.metadata().selectedId().toString()), value.items().stream().map(item -> new OrganizationCandidatePageItemsItem(item.id().toString(), item.code(), item.name())).toList());
+        return new OrganizationCandidatePage(new OrganizationCandidatePageMetadata(OrganizationCandidateQuerySubjectType.valueOf(value.metadata().subjectType()), value.metadata().queryText(), (long) value.metadata().page(), (long) value.metadata().pageSize(), value.metadata().total(), value.metadata().selectedId()), value.items().stream().map(item -> new OrganizationCandidatePageItemsItem(item.id(), item.code(), item.name())).toList());
     }
 }

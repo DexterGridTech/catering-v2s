@@ -3,12 +3,12 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceScopeNode(
     String dataNodeType,
-    String dataNodeRef,
+    java.util.UUID dataNodeRef,
     String dataNodeName,
     String dataNodeCode,
     java.util.List<String> ancestorPath,
-    String regionRef,
-    String projectRef,
-    String storeRef,
-    String headCompanyRef
+    java.util.UUID regionRef,
+    java.util.UUID projectRef,
+    java.util.UUID storeRef,
+    java.util.UUID headCompanyRef
 ) {}

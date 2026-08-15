@@ -46,4 +46,14 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 
 ## Backend acceptance 未完成项
 
-- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前只有 `getPublicInvitationView` 具备真实 fixture、HTTP 请求与业务字段断言；其余 197 个 provider/registry 条目只是待办目录。下次扩覆盖时从 `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BackendAcceptanceTest.java` 复制并按目标 operation 写真实业务 oracle；DB 操作数只供人工观察，不设预算门。
+- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前已有 18 条 IAM、ORG、商业合同和 asset 的真实 fixture、HTTP 请求与业务字段断言；原 196 个 provider 壳、共享 SPI 与 registry 已下线。下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在对应的 `*AcceptanceScenarios.java` 增加真实业务 oracle；DB 操作数只供人工观察，不设预算门。
+
+## 第二部分整改后续项
+
+以下四项是 `doc/review/platform/2026-08-14-v2s-part-two-batches-claude.md` 的明确移出项；本节只保留边界，不构成实施授权。
+
+- `PART_TWO_S12_DEAD_INDEXES`：inventory 与 fulfillment-production 的三条候选死索引尚无覆盖其 schema 的真实 workload，不能以 `idx_scan = 0` 判断。待真实 acceptance 覆盖到相关查询后，结合完整生产 SQL 使用面再判定。
+- `PART_TWO_S13_MIGRATION_IF_NOT_EXISTS`：版本化迁移的 `IF NOT EXISTS` 形状漂移在当前可重建的单人阶段库没有可证伪收益；特别关注 `V20260812_130000_000` 对自动生成约束名的 `DROP CONSTRAINT IF EXISTS`，未来必须以第二 workspace 同内容 logo 的失败形态验证。
+- `PART_TWO_M02_PLATFORM_ASSET_FULL_SCAN`：裁定甲下的全平台资产引用扫描是纯性能项；任何按 workspace 收窄都须先证明四种 JSONB 引用形态不漏判，且有真实成本数据，不能复用已作废的单一 `GIN + @>` 方案。
+- `PART_TWO_RLS`：行级安全仍是这类跨 workspace SQL 风险的结构性解法；本部分点修不关闭“未来新增 SQL 漏加 scope”的风险。
+- `INVENTORY_CURSOR_CONTRACT`：保留当前 Inventory 数字 offset continuation token，不在本部分把它改名或伪装为 keyset cursor。只有获批的分页契约修订后，才可设计并实现真正 keyset pagination；本决定对应第二部分 §2.III 的契约裁定边界。

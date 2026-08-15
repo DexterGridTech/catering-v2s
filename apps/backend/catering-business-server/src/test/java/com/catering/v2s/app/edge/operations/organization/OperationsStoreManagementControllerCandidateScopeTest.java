@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
-import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequestExtensionValuesItem;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortDirection;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
@@ -35,10 +34,12 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import tools.jackson.databind.ObjectMapper;
 
 class OperationsStoreManagementControllerCandidateScopeTest {
     private static final String KEY = "operations-store-scope-test";
     private static final String IDEMPOTENCY_KEY = "operations-store-scope-idempotency";
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     @Test
     void candidatesUseTheRetainedSelectedProjectAndCascadeFiltersToOwner() {
@@ -258,7 +259,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 "STORE-01",
                 "门店一",
                 "备注",
-                List.of(new OrganizationStoreCreateRequestExtensionValuesItem("remark", "\"test\"", "SET"))
+                JSON.createObjectNode().put("remark", "test")
             )
         );
 

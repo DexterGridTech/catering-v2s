@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
   @Transactional(readOnly = true) public AuditHistoryPage readPlatformAdmin(String platformAdminId, long page, long pageSize) {
     if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported platform IAM audit target");
     long offset = Math.multiplyExact(page - 1, pageSize);
-    PageProjection value = jdbc.query("""
+    AuditHistoryResultSetReader.TargetProjection value = jdbc.query("""
         WITH target AS (SELECT 1 FROM platform_iam.platform_admin WHERE id::text=?),
         events AS (
           SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text,
@@ -41,19 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
         """, statement -> {
           statement.setString(1, platformAdminId); statement.setString(2, platformAdminId);
           statement.setLong(3, pageSize); statement.setLong(4, offset);
-        }, PlatformIamAuditHistoryService::projection);
+        }, AuditHistoryResultSetReader::readTarget);
     if (!value.targetExists()) throw new PlatformAuthenticationService.PlatformAdminNotFoundException();
     return new AuditHistoryPage(value.items(), page, pageSize, value.total());
   }
 
-  private static PageProjection projection(java.sql.ResultSet rows) throws java.sql.SQLException {
-    boolean targetExists = false; long total = 0; List<AuditHistoryItem> items = new java.util.ArrayList<>();
-    while (rows.next()) {
-      targetExists = rows.getBoolean("target_exists"); total = rows.getLong("total");
-      UUID id = rows.getObject("event_id", UUID.class);
-      if (id != null) items.add(new AuditHistoryItem(id, rows.getLong("occurred_at_epoch_millis"), rows.getString("actor_display_snapshot"), rows.getString("action"), new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")), AuditChangeJson.read(rows.getString("changes_json"))));
-    }
-    return new PageProjection(targetExists, List.copyOf(items), total);
-  }
-  private record PageProjection(boolean targetExists, List<AuditHistoryItem> items, long total) { }
 }

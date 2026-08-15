@@ -85,7 +85,7 @@ public final class PlatformWorkspaceAdministrationController {
     ) {
         PlatformSessionReadback session = sessions.require(request);
         requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
-        WorkspaceAdministrationReadback created = workspaces.create(body.groupWorkspaceKey(), body.name(), body.operationsTitle(), uuid(body.logoAssetRef()), body.logoBindGrant(), body.notes(), body.idempotencyKey(), sessions.actor(session));
+        WorkspaceAdministrationReadback created = workspaces.create(body.groupWorkspaceKey(), body.name(), body.operationsTitle(), body.logoAssetRef(), body.logoBindGrant(), body.notes(), body.idempotencyKey(), sessions.actor(session));
         return ResponseEntity.status(HttpStatus.CREATED).body(toCreateResult(created));
     }
 
@@ -106,7 +106,7 @@ public final class PlatformWorkspaceAdministrationController {
         PlatformExecutionContext context = context(session, request);
         requireMatchingKey(headerIdempotencyKey, body.idempotencyKey());
         if (body.expectedVersion() == null) throw new InvalidEdgeRequestException("expected version is required");
-        return toLegacyDetail(context, workspaces.updateDisplay(groupWorkspaceKey, body.name(), body.operationsTitle(), body.notes(), body.logoIntent(), nullableUuid(body.logoAssetRef()), body.logoBindGrant(), body.expectedVersion(), body.idempotencyKey(), sessions.actor(session)));
+        return toLegacyDetail(context, workspaces.updateDisplay(groupWorkspaceKey, body.name(), body.operationsTitle(), body.notes(), body.logoIntent(), body.logoAssetRef(), body.logoBindGrant(), body.expectedVersion(), body.idempotencyKey(), sessions.actor(session)));
     }
 
     @PostMapping("/{groupWorkspaceKey}/status")
@@ -127,7 +127,7 @@ public final class PlatformWorkspaceAdministrationController {
         var legacy = initializationFacts.detail(context, value.groupWorkspaceKey()).orElse(null);
         GroupWorkspaceDetailCommercialGroupRoot root = legacy == null || legacy.commercialGroup() == null ? null : new GroupWorkspaceDetailCommercialGroupRoot(String.valueOf(legacy.commercialGroup().id()), value.groupWorkspaceKey(), legacy.commercialGroup().commercialGroupCode(), legacy.commercialGroup().commercialGroupName(), legacy.commercialGroup().version(), legacy.commercialGroup().createdAtEpochMillis(), legacy.commercialGroup().createdAtEpochMillis(), extensionValues(legacy.commercialGroup().extensionValuesJson()), legacy.commercialGroup().extensionRuleRevision());
         GroupWorkspaceDetailCommercialGroup commercialGroup = new GroupWorkspaceDetailCommercialGroup(root != null, root);
-        return new GroupWorkspaceDetail(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl(value.logoAssetRef()), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, workspaces.accountCount(value.workspaceUuid()), workspaces.roleCount(value.workspaceUuid()));
+        return new GroupWorkspaceDetail(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), nullableUuid(value.logoAssetRef()), logoUrl(value.logoAssetRef()), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, "AVAILABLE", value.updatedAtEpochMillis(), null, workspaces.accountCount(value.workspaceUuid()), workspaces.roleCount(value.workspaceUuid()));
     }
 
     private GroupWorkspaceDetail toDetail(PlatformWorkspaceAdministrationTaskReadService.DetailReadback value) {
@@ -136,14 +136,14 @@ public final class PlatformWorkspaceAdministrationController {
         GroupWorkspaceDetailCommercialGroupRoot root = commercial == null ? null : new GroupWorkspaceDetailCommercialGroupRoot(String.valueOf(commercial.id()), workspace.groupWorkspaceKey(), commercial.commercialGroupCode(), commercial.commercialGroupName(), commercial.revision(), commercial.createdAtEpochMillis(), commercial.updatedAtEpochMillis(), JSON.valueToTree(commercial.extensionValues()), commercial.extensionRuleRevision());
         GroupWorkspaceDetailCommercialGroup commercialGroup = new GroupWorkspaceDetailCommercialGroup(root != null, root);
         String logoUrl = value.logoReference() == null ? null : value.logoReference().publicUrl();
-        return new GroupWorkspaceDetail(workspace.groupWorkspaceKey(), workspace.name(), workspace.operationsTitle(), workspace.logoAssetRef(), logoUrl, workspace.notes(), GroupWorkspaceStatus.valueOf(workspace.status()), workspace.statusChangedAtEpochMillis(), workspace.version(), workspace.createdAtEpochMillis(), workspace.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", workspace.updatedAtEpochMillis(), null, "AVAILABLE", workspace.updatedAtEpochMillis(), null, "AVAILABLE", workspace.updatedAtEpochMillis(), null, value.accountAndRoleSummary().accountCount(), value.accountAndRoleSummary().roleCount());
+        return new GroupWorkspaceDetail(workspace.groupWorkspaceKey(), workspace.name(), workspace.operationsTitle(), nullableUuid(workspace.logoAssetRef()), logoUrl, workspace.notes(), GroupWorkspaceStatus.valueOf(workspace.status()), workspace.statusChangedAtEpochMillis(), workspace.version(), workspace.createdAtEpochMillis(), workspace.updatedAtEpochMillis(), commercialGroup, "AVAILABLE", workspace.updatedAtEpochMillis(), null, "AVAILABLE", workspace.updatedAtEpochMillis(), null, "AVAILABLE", workspace.updatedAtEpochMillis(), null, value.accountAndRoleSummary().accountCount(), value.accountAndRoleSummary().roleCount());
     }
 
     private GroupWorkspacePageItemsItem listItem(WorkspaceAdministrationReadback value, java.util.Map<String, com.catering.v2s.organization.api.OrganizationGroupWorkspaceInitializationLookup.InitializationState> initialization, java.util.Map<UUID, PlatformAssetService.PublicAssetReference> logoUrls) {
         var initialized = initialization.get(value.groupWorkspaceKey());
         GroupWorkspacePageItemsItemCommercialGroup commercialGroup = new GroupWorkspacePageItemsItemCommercialGroup(initialized != null && initialized.commercialGroupInitialized(), null);
         String logoUrl = value.logoAssetRef() == null ? null : logoUrls.get(UUID.fromString(value.logoAssetRef())).publicUrl();
-        return new GroupWorkspacePageItemsItem(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), logoUrl, commercialGroup, GroupWorkspaceStatus.valueOf(value.status()), value.updatedAtEpochMillis());
+        return new GroupWorkspacePageItemsItem(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), nullableUuid(value.logoAssetRef()), logoUrl, commercialGroup, GroupWorkspaceStatus.valueOf(value.status()), value.updatedAtEpochMillis());
     }
 
     private String logoUrl(String value) { return value == null ? null : assets.requireActivePublicReference(UUID.fromString(value)).publicUrl(); }
@@ -157,5 +157,5 @@ public final class PlatformWorkspaceAdministrationController {
     private static void requireMatchingKey(String header, String body) { if (header == null || body == null || !header.equals(body) || header.length() < 16 || header.length() > 128) throw new InvalidEdgeRequestException("invalid idempotency key"); }
     private static UUID uuid(String value) { try { return UUID.fromString(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid asset ref"); } }
     private static UUID nullableUuid(String value) { return value == null ? null : uuid(value); }
-    private static GroupWorkspaceCreateResult toCreateResult(WorkspaceAdministrationReadback value) { return new GroupWorkspaceCreateResult(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), value.logoAssetRef(), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis()); }
+    private static GroupWorkspaceCreateResult toCreateResult(WorkspaceAdministrationReadback value) { return new GroupWorkspaceCreateResult(value.groupWorkspaceKey(), value.name(), value.operationsTitle(), nullableUuid(value.logoAssetRef()), value.notes(), GroupWorkspaceStatus.valueOf(value.status()), value.statusChangedAtEpochMillis(), value.version(), value.createdAtEpochMillis(), value.updatedAtEpochMillis()); }
 }

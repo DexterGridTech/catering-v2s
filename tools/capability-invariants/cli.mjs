@@ -212,8 +212,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 95;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "542028c938f0c7b12dcbf4d4cb9d573ca0fe1587f35e37106042e18828f465e9";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 97;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "3e7daf5e844cbbcc0fd4a8ab3b0a4de67d6b153996ec3a52deb2767ba027143d";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];
@@ -450,7 +450,7 @@ function exactStringList(left, right) {
 function catalogInventoryContractOperations(root) {
   if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
   const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
-  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 42) {
+  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 43) {
     fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
   }
   const rows = new Map();
@@ -505,7 +505,7 @@ function catalogInventoryContractOperations(root) {
     }
     rows.set(identity, operation);
   }
-  if (mutations !== 26 || reads !== 16) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  if (mutations !== 27 || reads !== 16) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
   return rows;
 }
 

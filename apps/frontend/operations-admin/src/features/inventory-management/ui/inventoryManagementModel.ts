@@ -1,4 +1,4 @@
-import type {CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
+import type {CatalogInventoryEnvelope, Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 
 export const EDIT_STORE_INVENTORY = 'EDIT_STORE_INVENTORY';
 
@@ -7,7 +7,7 @@ export type StockView = 'ALL' | 'NEEDS_ATTENTION' | 'LOW' | 'OUT' | 'NEGATIVE' |
 export type InventoryCounts = Record<StockView, number>;
 
 export type InventoryTargetSummary = {
-  targetRef: string;
+  targetRef: Uuid;
   targetType: string;
   productCode: string;
   productName: string;
@@ -33,9 +33,9 @@ export type InventoryTargetSummary = {
 };
 
 export type PeriodChange = {period?: string; increase: string; decrease: string; netChange: string; entryCount: number};
-export type InventoryLedgerEntry = {entryRef: string; source: string; reasonCode: string; beforeQuantity: string; changeQuantity: string; afterQuantity: string; occurredAt: number};
-export type InventoryHistoryEntry = {entryRef: string; action: string; quantity: string; beforeQuantity: string; afterQuantity: string; occurredAt: number; source: string; reasonCode: string};
-export type InventoryReference = {sourceCode: string; sourceKind: string; sourceName?: string; ownerScope?: {ownerType: string; ownerRef: string; brandRef: string}; quantity: string; unit: string; timing: string; status: string};
+export type InventoryLedgerEntry = {entryRef: Uuid; source: string; reasonCode: string; beforeQuantity: string; changeQuantity: string; afterQuantity: string; occurredAt: number};
+export type InventoryHistoryEntry = {entryRef: Uuid; action: string; quantity: string; beforeQuantity: string; afterQuantity: string; occurredAt: number; source: string; reasonCode: string};
+export type InventoryReference = {sourceCode: string; sourceKind: string; sourceName?: string; ownerScope?: {ownerType: string; ownerRef: Uuid; brandRef: Uuid}; quantity: string; unit: string; timing: string; status: string};
 export type InventoryDiagnostics = {permission: {granted: boolean; reason: string | null}; queries: Array<{queryName: string; databaseOperationCount: number; durationMillis: number}>; timings: Array<{queryName: string; durationMillis: number}>; warnings: Array<{code: string; message: string}>};
 
 export type InventoryCurrentView = {
@@ -57,7 +57,7 @@ export type InventoryCurrentView = {
 
 export type InventoryPage = {items: InventoryTargetSummary[]; cursor: string; total: number; generation: string; counts?: Partial<InventoryCounts>};
 export type CursorPage<T> = {entries: T[]; cursor: string; total: number};
-export type InventoryWriteResult = {targetRef: string; before: string; change: string; after: string; ledgerEntryRef: string; stockState: string; version: number};
+export type InventoryWriteResult = {targetRef: Uuid; before: string; change: string; after: string; ledgerEntryRef: Uuid | '—'; stockState: string; version: number};
 
 export function envelopeData<T>(envelope: CatalogInventoryEnvelope | undefined): T | undefined {
   // Page reads are enveloped, while detail/zone reads are typed raw models in

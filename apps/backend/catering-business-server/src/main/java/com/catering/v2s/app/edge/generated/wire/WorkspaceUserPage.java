@@ -7,7 +7,7 @@ public record WorkspaceUserPage(
     Long pageSize,
     Long total,
     ServiceNodeType targetOrganizationType,
-    String scopeRef,
+    java.util.UUID scopeRef,
     String scopeName,
     Long contextVersion,
     WorkspaceUserPageCriteria criteria

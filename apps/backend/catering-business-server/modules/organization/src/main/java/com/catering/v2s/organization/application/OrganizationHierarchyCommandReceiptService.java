@@ -3,11 +3,10 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -122,7 +121,7 @@ public final class OrganizationHierarchyCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+            return Sha256Hex.digest(value);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

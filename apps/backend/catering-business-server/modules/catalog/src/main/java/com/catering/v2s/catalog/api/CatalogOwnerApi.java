@@ -10,8 +10,6 @@ import java.util.UUID;
 
 /** Public owner boundary for catalog facts and commands. Coordinators may not issue catalog SQL. */
 public interface CatalogOwnerApi {
-    JsonNode read(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId);
-
     /** Typed task-read boundaries.  The legacy operation-id entrypoint remains deferred to BP-U06. */
     JsonNode readWorkbenchContext(String dataNodeRef, String brandRef, String requestId);
     JsonNode readNavigation(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
@@ -21,13 +19,6 @@ public interface CatalogOwnerApi {
     JsonNode readLocalCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
     JsonNode readBrandCopyCandidates(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
     JsonNode readShapeManifest(String requestId);
-
-    /**
-     * Mutating owner boundary. The coordinator must carry the live server-minted grant;
-     * the catalog owner rechecks it before command receipt replay or mutation.
-     */
-    JsonNode write(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
-                   UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
 
     /** Typed command boundary; derives operation, target and grant requirement from the resolver-owned context. */
     JsonNode write(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);
@@ -57,7 +48,7 @@ public interface CatalogOwnerApi {
     record DictionaryDependentFact(String factKind, String factRef) { }
     record DictionaryVoidAvailability(boolean canVoid, List<DictionaryBlockingReference> blockingReferences,
                                       List<DictionaryDependentFact> dependentFacts) { }
-    record DictionaryEntryView(String code, String name, String status, String ownerType, String ownerRef,
+    record DictionaryEntryView(String entryRef, String code, String name, String status, String ownerType, String ownerRef,
                                String brandRef, long version, long updatedAt,
                                DictionaryVoidAvailability voidAvailability) { }
     record DictionaryViewReadback(String dictionaryKind, List<DictionaryEntryView> entries, String cursor,
@@ -66,6 +57,11 @@ public interface CatalogOwnerApi {
     /** Catalog-owned free attributes cross this public boundary only as canonical JSON text. */
     record CatalogItemCreateCommand(String name, String code, String shapeKey, String attributesJson) { }
     record CatalogItemStatusTransitionCommand(String itemCode, long expectedVersion, String targetStatus) { }
+    record CatalogItemBatchStatusTransitionItem(UUID itemRef, long expectedVersion) { }
+    record CatalogItemBatchStatusTransitionCommand(String targetStatus, List<CatalogItemBatchStatusTransitionItem> items) { }
+    record CatalogItemBatchStatusTransitionResult(UUID itemRef, boolean ok, String failureCode, Long version) { }
+    record CatalogItemBatchStatusTransitionReadback(String revision, String requestId,
+                                                     List<CatalogItemBatchStatusTransitionResult> results) { }
     record TemporaryPromotionPreflightCommand(String itemCode, String formalCode, String shapeKey, String name,
                                               String shortName, String materialRole, String attributesJson,
                                               long expectedSourceVersion) { }
@@ -110,6 +106,9 @@ public interface CatalogOwnerApi {
                                                  CatalogItemCreateCommand command, String idempotencyKey);
     CatalogItemCommandReadback transitionCatalogItemStatus(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                                            CatalogItemStatusTransitionCommand command, String idempotencyKey);
+    CatalogItemBatchStatusTransitionReadback transitionCatalogItemStatuses(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+                                                                            CatalogItemBatchStatusTransitionCommand command,
+                                                                            String idempotencyKey);
     /** Resolves a catalog business code to the catalog-owned opaque ref for the typed VOID dependency judgment. */
     UUID resolveCatalogItemRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemCode);
     /** Catalog-owned inbound-reference fact used before the typed VOID orchestration. */
@@ -133,12 +132,13 @@ public interface CatalogOwnerApi {
      * must never decode an owner receipt after the owner has written.
      */
     record CopyObjectReadback(String objectType, String code) { }
+    record CopySkippedReadback(String section, String reasonCode) { }
     record CopyReferenceMapping(String objectType, String sourceRef, String targetRef,
                                 String targetCode, String targetSkuCode, String targetOptionValueCode) { }
     record CopyTargetVersion(String targetRef, long version) { }
     record CopyOwnerReadback(String owner, String status, long version) { }
     record CopyExecutionReadback(String preflightDigest, List<CopyObjectReadback> created,
-                                 List<CopyObjectReadback> reused, List<CopyObjectReadback> skipped,
+                                 List<CopyObjectReadback> reused, List<CopySkippedReadback> skipped,
                                  List<CopyReferenceMapping> referenceMappings,
                                  List<CopyTargetVersion> targetVersions,
                                  List<CopyOwnerReadback> ownerReadbacks) { }
@@ -148,10 +148,6 @@ public interface CatalogOwnerApi {
     record BrandCopyExecuteCommand(List<String> selectedItemCodes, String targetDataNodeRef, String catalogPreflightDigest, long expectedSourceVersion, long expectedTargetVersion, String referencePlanJson) { }
     CopyPreflightReadback preflightBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
     CopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyExecuteCommand command, String idempotencyKey);
-
-    /** The copy grant always binds the target scope, never the brand-copy source. */
-    JsonNode copy(String operationId, String sourceDataNodeRef, String targetDataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
-                  UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, OperationsOwnerScopeGrant ownerScopeGrant);
 
     /** Typed copy boundary; the source is resolved only from the context's static copy policy. */
     JsonNode copy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey);

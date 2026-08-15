@@ -8,7 +8,8 @@ public record StoreContractCreateRequest(
     String effectiveFrom,
     String effectiveTo,
     String note,
-    java.util.List<StoreContractCreateRequestExtensionValuesItem> extensionValues,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long expectedExtensionRuleRevision,
     java.util.List<StoreContractItem> items,
     String phaseNameSnapshot
 ) {}

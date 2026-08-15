@@ -6,5 +6,6 @@ public record BrandCreateRequest(
     String name,
     String alias,
     String remark,
-    java.util.List<BrandCreateRequestExtensionValuesItem> extensionValues
+    tools.jackson.databind.JsonNode extensionValues,
+    Long expectedExtensionRuleRevision
 ) {}

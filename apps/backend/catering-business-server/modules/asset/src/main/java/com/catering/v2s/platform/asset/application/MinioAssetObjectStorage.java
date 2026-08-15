@@ -10,6 +10,8 @@ import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
+import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,10 @@ import org.springframework.stereotype.Component;
 /** S3-compatible object adapter; callers receive public URLs but never manufacture them. */
 @Component
 final class MinioAssetObjectStorage implements AssetObjectStorage {
+    static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ofSeconds(30);
+    static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
+    static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(60);
     private final MinioClient client;
     private final String bucket;
     private final String publicBaseUrl;
@@ -32,7 +38,19 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         @Value("${catering.asset.public-base-url}") String publicBaseUrl,
         @Value("${catering.asset.object-storage.object-prefix}") String objectPrefix
     ) {
-        this(MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build(), bucket, publicBaseUrl, objectPrefix);
+        this(endpoint, accessKey, secretKey, bucket, publicBaseUrl, objectPrefix, DEFAULT_CALL_TIMEOUT);
+    }
+
+    MinioAssetObjectStorage(
+        String endpoint,
+        String accessKey,
+        String secretKey,
+        String bucket,
+        String publicBaseUrl,
+        String objectPrefix,
+        Duration callTimeout
+    ) {
+        this(boundedClient(endpoint, accessKey, secretKey, callTimeout), bucket, publicBaseUrl, objectPrefix);
     }
 
     MinioAssetObjectStorage(MinioClient client, String bucket, String publicBaseUrl, String objectPrefix) {
@@ -40,6 +58,17 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         this.bucket = requiredBucket(bucket);
         this.publicBaseUrl = normalizeBase(publicBaseUrl);
         this.objectPrefix = requiredPrefix(objectPrefix);
+    }
+
+    private static MinioClient boundedClient(String endpoint, String accessKey, String secretKey, Duration callTimeout) {
+        if (callTimeout == null || callTimeout.isZero() || callTimeout.isNegative()) throw new IllegalArgumentException("asset object storage call timeout must be positive");
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
+            .writeTimeout(DEFAULT_WRITE_TIMEOUT)
+            .readTimeout(DEFAULT_READ_TIMEOUT)
+            .callTimeout(callTimeout)
+            .build();
+        return MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).httpClient(httpClient).build();
     }
 
     private synchronized void ensureBucket() {

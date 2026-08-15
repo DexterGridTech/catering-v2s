@@ -62,7 +62,7 @@ const copyPolicy = readJson(COPY_POLICY_PATH);
 const designCoverage = readJson(DESIGN_COVERAGE_PATH);
 const mediaCatalog = readJson(MEDIA_CATALOG_PATH);
 if (designCoverage.kind !== "catalog-inventory-design-byte-coverage" || designCoverage.schemaVersion !== 1) throw new Error("P1_DESIGN_COVERAGE_POLICY_INVALID");
-if (referencePathMatrix.policyId !== "CATALOG_TYPED_REFERENCE_PATH_MATRIX" || referencePathMatrix.status !== "DEXTER_ACCEPTED_20260808" || !Array.isArray(referencePathMatrix.entries) || referencePathMatrix.entries.filter((entry) => /^R(?:0[1-9]|1[0-4])$/.test(entry.id)).length !== 14) throw new Error("P1_REFERENCE_PATH_MATRIX_INVALID");
+if (referencePathMatrix.policyId !== "CATALOG_TYPED_REFERENCE_PATH_MATRIX" || referencePathMatrix.status !== "DEXTER_ACCEPTED_20260808" || !Array.isArray(referencePathMatrix.entries) || referencePathMatrix.entries.filter((entry) => /^R(?:0[1-9]|1[0-7])$/.test(entry.id)).length !== 17) throw new Error("P1_REFERENCE_PATH_MATRIX_INVALID");
 for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
   const assetPath = path.join(ROOT, MEDIA_ASSET_DIR, asset.fileName);
   if (!fs.existsSync(assetPath) || fileHash(path.join(MEDIA_ASSET_DIR, asset.fileName)) !== asset.sha256) throw new Error("P1_MEDIA_ASSET_HASH_INVALID:" + assetKey);
@@ -152,11 +152,11 @@ const routeByOrdinal = {
   39: "/operations/catalog-inventory/inventory-targets/{targetRef}/configuration",
   40: "/operations/catalog-inventory/assets/stage",
   41: "/operations/catalog-inventory/assets/{assetRef}/release",
-  42: "/operations/catalog-inventory/shape-manifest"
+  42: "/operations/catalog-inventory/shape-manifest",
+  43: "/operations/catalog-inventory/items/status"
 };
 if (Object.keys(routeByOrdinal).length !== operationRows.length) throw new Error("P1_ROUTE_MAP_CARDINALITY_INVALID");
 
-const capabilityValues = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRODUCIBLE"];
 const shapes = [
   ["STANDARD_SALE_COUNTED", "普通销售商品", "STANDARD_ITEM", "COUNTED", ["SELLABLE"], "OPTIONAL_TABLE", "ITEM", false, false, null],
   ["SKU_VARIANT_SALE_COUNTED", "按 SKU 管理商品", "STANDARD_ITEM", "COUNTED", ["SELLABLE"], "REQUIRED_MATRIX", "SKU", false, false, null],
@@ -174,6 +174,34 @@ const shapes = [
     evidenceRefs: ["CATALOG_V6", "CATALOG_V1", "V4_MANIFEST"]
   };
 });
+
+// This is the only hand-authored catalog enum vocabulary.  Runtime validation,
+// the wire manifest and generated contract artifacts are all derived below.
+// Values that are intrinsic to a shape are deliberately derived from `shapes`,
+// so a shape key and its Chinese label cannot drift into separate lists.
+const enumLabels = {
+  catalogItemStatus: {DRAFT: "草稿", ENABLED: "启用", DISABLED: "停用", ARCHIVED: "已归档", VOIDED: "已作废"},
+  skuStatus: {ENABLED: "启用", DISABLED: "停用", ARCHIVED: "已归档"},
+  dictionaryEntryStatus: {ENABLED: "启用", DISABLED: "停用", VOIDED: "已作废"},
+  smartViewKey: {ALL: "全部商品", EXTERNAL_ORDER_TEMP: "外部订单临时商品", INACTIVE: "未启用商品", ARCHIVED: "已归档商品", RECENTLY_UPDATED: "最近更新", AUTO_SYNC: "自动同步商品"},
+  catalogSource: {SELF_MANAGED: "自主维护", COPIED: "复制引入", AUTO_SYNC: "自动同步", TEMPORARY: "临时商品"},
+  categoryMoveAction: {REPARENT: "调整父分类", UP: "上移", DOWN: "下移"},
+  productionTagKind: {PRODUCTION: "制作", PACKAGE: "包装", LABEL: "标签", HANDOFF: "交接", REVIEW: "审核", OTHER: "其他"},
+  countSemantics: {SELF_ONLY: "仅本分类", SELF_AND_DESCENDANTS: "本分类及子分类"},
+  shapeKey: Object.fromEntries(shapes.map((shape) => [shape.key, shape.label])),
+  itemKind: Object.fromEntries([...new Set(shapes.map((shape) => shape.itemKind))].map((value) => [value, ({STANDARD_ITEM: "标准商品", COMPOSITE_ITEM: "套餐商品", SERVICE_ITEM: "服务商品", BENEFIT_ITEM: "权益商品"})[value]])),
+  measureMode: {COUNTED: "计数销售", WEIGHED: "称重销售"},
+  usageCapability: {SELLABLE: "可销售", STOCK_MANAGED: "库存管理", BOM_COMPONENT: "可作为 BOM 组件", PRODUCIBLE: "可制作"},
+  skuMode: {NONE: "无 SKU", OPTIONAL_TABLE: "可选 SKU", REQUIRED_MATRIX: "规格矩阵 SKU"},
+  priceGranularity: {ITEM: "商品级定价", SKU: "SKU 级定价"},
+  inventoryNodeType: {CATALOG_ITEM: "商品", SKU: "SKU", OPTION_VALUE: "点单选项值"},
+  inventoryMode: {NONE: "无库存控制", INDEPENDENT_STOCK: "独立库存", BOM: "BOM 消耗"},
+  catalogSection: {BASIC_INFO: "基本信息", SKU_STRUCTURE: "SKU 结构", SKU_BOM: "SKU BOM", ORDER_OPTIONS: "点单选项", OPTION_VALUE_BOM: "选项值 BOM", ITEM_BOM: "商品 BOM", PACKAGE_STRUCTURE: "套餐结构", PRODUCTION_PROMPTS: "制作提示"}
+};
+const enumLabelEntries = Object.entries(enumLabels).flatMap(([kind, values]) => Object.entries(values).map(([value, label]) => ({kind, value, label})));
+const enumValues = (kind) => Object.keys(enumLabels[kind] || {});
+const capabilityValues = enumValues("usageCapability");
+
 
 const modeRules = [
   {nodeType: "CATALOG_ITEM", condition: "HAS_SKU", allowedModes: ["NONE"], defaultMode: "NONE", disabledModes: [
@@ -199,9 +227,9 @@ const commonFieldRules = [
   {field: "productionTagRefs", visible: true, required: false, readonly: false, readonlyWhen: {create: false, update: false, view: true}, quickManage: "production-tag-owner"}
 ];
 const tabRulesByShape = {
-  STANDARD_SALE_COUNTED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+  STANDARD_SALE_COUNTED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
   SKU_VARIANT_SALE_COUNTED: ["basic", "sku-specifications-pricing", "attributes", "production-prompts", "inventory-bom", "governance"],
-  STANDARD_SALE_WEIGHED: ["basic", "identifiers", "ordering", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
+  STANDARD_SALE_WEIGHED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
   MATERIAL: ["basic", "identifiers", "attributes", "inventory-bom", "governance"],
   COMPOSITE: ["basic", "identifiers", "composite-content", "attributes", "governance"],
   SERVICE: ["basic", "identifiers", "attributes", "governance"],
@@ -213,7 +241,7 @@ const tabContentRules = {
     layout: "GROUP_DETAIL_PREVIEW",
     owner: "catalog",
     source: "sections.orderOptions",
-    semantics: ["groupRules", "valueRules", "pricingEffects", "productionEffects", "ordering"]
+    semantics: ["groupRules", "valueRules", "pricingEffects", "productionEffects"]
   },
   "composite-content": {
     admittedShapes: ["COMPOSITE"],
@@ -227,9 +255,88 @@ const tabRules = Object.fromEntries(shapes.map((shape) => [shape.key, {
   visible: tabRulesByShape[shape.key], disabled: [], reasonByTab: {}, contentRules: tabContentRules,
   lifecycle: {create: tabRulesByShape[shape.key], update: tabRulesByShape[shape.key], view: tabRulesByShape[shape.key]}
 }]));
+
+// B3 is the first consumer of the shared field descriptor mechanism.  Keep
+// the descriptor source beside the shape vocabulary so the generated manifest,
+// OpenAPI and frontend wire all receive the same values.  Context bindings are
+// deliberately data, not executable expressions: the later resolver may only
+// interpret the declared scope/field/section references.
+const controlKindValues = Object.freeze([
+  "text", "textarea", "select", "multiSelect", "treeSelect", "number", "money", "upload",
+  "editableTable", "detailTable", "readonlySummary", "readonlyPreview",
+  "skuVariantMatrix", "inventoryBomWorkbench", "orderOptionsWorkbench", "compositeContentWorkbench"
+]);
+const allShapeKeys = shapes.map((shape) => shape.key);
+const scopeBinding = (path) => ({context: path});
+const fieldBinding = (fieldKey) => ({fieldKey});
+const sectionBinding = (path) => ({sectionPath: path});
+const endpointSource = ({operationId, path = {}, query = {}, headers = {}, itemsPath, valueField, labelField, labelParts, parentField, disabledWhen, contextBindings}) => ({
+  kind: "endpoint", operationId, path, query, headers, itemsPath, valueField,
+  ...(labelField ? {labelField} : {}), ...(labelParts ? {labelParts} : {}),
+  ...(parentField ? {parentField} : {}), disabledWhen,
+  ...(contextBindings ? {contextBindings} : {})
+});
+const localSource = ({sectionPath, valueField, labelField, labelParts}) => ({
+  kind: "local", sectionPath, valueField,
+  ...(labelField ? {labelField} : {}), ...(labelParts ? {labelParts} : {})
+});
+const fieldDescriptors = [
+  {
+    fieldKey: "categoryRefs", dataPath: "categoryRefs[]", label: "分类", controlKind: "treeSelect", tabKey: "basic",
+    admittedShapes: allShapeKeys, helpText: "选择商品所属分类。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogNavigation", query: {viewKey: "ALL", dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.tree", valueField: "categoryRef", labelField: "name", parentField: "parentCategoryRef", disabledWhen: null})
+  },
+  {
+    fieldKey: "skuVariantAttribute", dataPath: "skuVariantDimensions[].attributeRef", label: "规格属性", controlKind: "select", tabKey: "sku-specifications-pricing",
+    admittedShapes: ["SKU_VARIANT_SALE_COUNTED"], helpText: "选择该商品用于生成 SKU 矩阵的规格属性。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "SKU_ATTRIBUTE"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
+  },
+  {
+    fieldKey: "skuVariantValues", dataPath: "skuVariantDimensions[].values[].valueRef", label: "规格属性值", controlKind: "multiSelect", tabKey: "sku-specifications-pricing",
+    admittedShapes: ["SKU_VARIANT_SALE_COUNTED"], helpText: "只选择当前商品已选规格属性下的有效属性值。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "SKU_ATTRIBUTE_VALUE"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\"", contextBindings: {attributeRef: fieldBinding("skuVariantAttribute")}})
+  },
+  {
+    fieldKey: "skuMatrix", dataPath: "skus[]", label: "SKU 矩阵", controlKind: "skuVariantMatrix", tabKey: "sku-specifications-pricing",
+    admittedShapes: ["SKU_VARIANT_SALE_COUNTED"], helpText: "按已选规格属性和属性值维护 SKU 矩阵。"
+  },
+  {
+    fieldKey: "bomTarget", dataPath: "inventoryBom[].targetRef", label: "库存对象", controlKind: "select", tabKey: "inventory-bom",
+    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"], helpText: "选择用于库存消耗的库存对象。",
+    optionSourceRef: endpointSource({operationId: "getOperationsInventoryTargets", query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.items", valueField: "targetRef", labelParts: ["productName", "skuName", "productCode", "skuCode"], disabledWhen: null})
+  },
+  {
+    fieldKey: "bomOptionValue", dataPath: "inventoryBom[].optionValueRef", label: "所属选项值", controlKind: "select", tabKey: "inventory-bom",
+    admittedShapes: ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"], helpText: "选择当前商品点单选项页签中已有的选项值。",
+    optionSourceRef: localSource({sectionPath: "orderOptions", valueField: "attributeValueRef", labelField: "name"})
+  },
+  {
+    fieldKey: "compositeComponentSku", dataPath: "compositeGroups[].components[].productSkuRef", label: "组件 SKU", controlKind: "select", tabKey: "composite-content",
+    admittedShapes: ["COMPOSITE"], helpText: "选择已选组件商品中的 SKU。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogItem", path: {itemCode: {context: "compositeGroups[].components[].itemCode"}}, itemsPath: "data.item.skus", valueField: "productSkuRef", labelParts: ["skuCode", "skuName"], disabledWhen: null})
+  },
+  {
+    fieldKey: "productionTagRefs", dataPath: "productionTagRefs[]", label: "生产标签", controlKind: "multiSelect", tabKey: "production-prompts",
+    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"], helpText: "生产标签描述制作处理方式，不代表岗位、设备或队列。",
+    optionSourceRef: endpointSource({operationId: "getOperationsProductionTags", query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "tagRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
+  },
+  {
+    fieldKey: "tagRefs", dataPath: "tagRefs[]", label: "商品标签", controlKind: "multiSelect", tabKey: "basic",
+    admittedShapes: allShapeKeys, helpText: "选择用于检索和归类商品的标签。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "TAG"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
+  },
+  {
+    fieldKey: "salesUnitRefs", dataPath: "salesUnitRefs[]", label: "销售单位", controlKind: "multiSelect", tabKey: "basic",
+    admittedShapes: allShapeKeys, helpText: "选择商品可使用的销售单位。",
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "SALES_UNIT"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
+  }
+];
+const fieldDescriptorByKey = new Map(fieldDescriptors.map((field) => [field.fieldKey, field]));
+if (fieldDescriptors.length !== 10 || new Set(fieldDescriptors.map((field) => field.fieldKey)).size !== 10) throw new Error("P1_B3_FIELD_DESCRIPTOR_DENOMINATOR_INVALID");
+if (controlKindValues.length !== 16 || new Set(controlKindValues).size !== 16) throw new Error("P1_B3_CONTROL_KIND_DENOMINATOR_INVALID");
 const shapeNodeAdmission = {
   STANDARD_SALE_COUNTED: {allowedNodeTypes: ["CATALOG_ITEM", "OPTION_GROUP", "OPTION_VALUE", "SKU"], inventoryBom: true},
-  SKU_VARIANT_SALE_COUNTED: {allowedNodeTypes: ["CATALOG_ITEM", "SKU", "OPTION_GROUP", "OPTION_VALUE"], inventoryBom: true},
+  SKU_VARIANT_SALE_COUNTED: {allowedNodeTypes: ["CATALOG_ITEM", "SKU"], inventoryBom: true},
   STANDARD_SALE_WEIGHED: {allowedNodeTypes: ["CATALOG_ITEM", "OPTION_GROUP", "OPTION_VALUE", "SKU"], inventoryBom: true},
   MATERIAL: {allowedNodeTypes: ["CATALOG_ITEM"], inventoryBom: true},
   COMPOSITE: {allowedNodeTypes: ["CATALOG_ITEM", "COMPOSITE_COMPONENT"], inventoryBom: false},
@@ -237,10 +344,15 @@ const shapeNodeAdmission = {
   BENEFIT_SHELL: {allowedNodeTypes: ["CATALOG_ITEM"], inventoryBom: false}
 };
 const shapeRules = shapes.map((shape) => ({
-  shapeKey: shape.key, itemKind: shape.itemKind, measureMode: shape.measureMode, skuMode: shape.skuPolicy.skuMode, priceGranularity: shape.skuPolicy.priceGranularity,
+  shapeKey: shape.key, label: enumLabels.shapeKey[shape.key], itemKind: shape.itemKind, measureMode: shape.measureMode, skuMode: shape.skuPolicy.skuMode, priceGranularity: shape.skuPolicy.priceGranularity,
   usageCapabilities: shape.usageCapabilities, createAllowed: !shape.disabledReason, visibleButDisabled: Boolean(shape.disabledReason), disabledReason: shape.disabledReason
 }));
-const fieldRules = Object.fromEntries(shapes.map((shape) => [shape.key, commonFieldRules.map((rule) => ({...rule}))]));
+const fieldRules = Object.fromEntries(shapes.map((shape) => [shape.key, [
+  ...commonFieldRules.map((rule) => ({...rule})),
+  ...fieldDescriptors
+    .filter((field) => field.admittedShapes.includes(shape.key) && !commonFieldRules.some((rule) => rule.field === field.fieldKey))
+    .map((field) => ({field: field.fieldKey, visible: true, required: false, readonly: false, readonlyWhen: {create: false, update: false, view: true}}))
+]]));
 const linkageRules = {
   sku: {owner: "catalog", parentField: "itemCode", tuple: ["itemCode", "skuCode"], hasSkuStatuses: ["ENABLED", "DISABLED"]},
   optionValue: {owner: "catalog", parentField: "optionGroupCode", bomAllowedModes: ["NONE", "BOM"]},
@@ -259,8 +371,8 @@ const typeEffects = {
   hasSku: {positiveStatuses: ["ENABLED", "DISABLED"], excludedStatuses: ["ARCHIVED"]},
   producible: {retainedInCapabilityEnum: true, derivedByShapes: []}
 };
-const saveSections = {create: ["basic", "identifiers", "ordering", "attributes", "production-prompts", "inventory-bom"], update: ["basic", "identifiers", "ordering", "attributes", "production-prompts", "inventory-bom", "governance"], immutable: ["code"]};
-const detailSections = {readonly: ["basic", "identifiers", "ordering", "attributes", "production-prompts", "inventory-bom", "governance"], inventory: ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"]};
+const saveSections = {create: ["basic", "identifiers", "attributes", "production-prompts", "inventory-bom"], update: ["basic", "identifiers", "attributes", "production-prompts", "inventory-bom", "governance"], immutable: ["code"]};
+const detailSections = {readonly: ["basic", "identifiers", "attributes", "production-prompts", "inventory-bom", "governance"], inventory: ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"]};
 
 const readModelNames = [
   "CatalogWorkbenchContext", "CatalogNavigationView", "CatalogItemPage", "CatalogItemDetail", "CatalogDictionaryView", "ProductionTagPage",
@@ -281,6 +393,7 @@ const shapeManifest = {
     v4Manifest: {path: "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts", authority: "read-only baseline"}
   },
   capabilityValues: capabilityValues,
+  enumLabels,
   shapeKeys: shapes.map((entry) => entry.key),
   itemKinds: Array.from(new Set(shapes.map((entry) => entry.itemKind))),
   measureModes: Array.from(new Set(shapes.map((entry) => entry.measureMode))),
@@ -293,9 +406,10 @@ const shapeManifest = {
     visibleButDisabled: shapes.filter((entry) => entry.disabledReason).map((entry) => ({shapeKey: entry.key, reason: entry.disabledReason})),
     backendMustRecheck: true
   },
+  controlKinds: controlKindValues, fields: fieldDescriptors,
   shapes: shapes, modeRules: modeRules, shapeRules: shapeRules, fieldRules: fieldRules, tabRules: tabRules,
   linkageRules: linkageRules, typeEffects: typeEffects, saveSections: saveSections, detailSections: detailSections,
-  contractSurfaceKeys: ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules"],
+  contractSurfaceKeys: ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields"],
   readModelNames: readModelNames, readModelRequirements: readModelRequired, manifestDigest: ""
 };
 const shapeManifestWithDigest = writeDigested("contracts/catalog/catalog-item-editor-manifest.json", shapeManifest, "manifestDigest");
@@ -428,6 +542,21 @@ const placement = {
 writeDigested("contracts/catalog/catalog-inventory-edge-placement.json", placement, "placementDigest");
 
 const stringField = (description) => ({type: "string", description});
+const uuidField = (description) => ({type: "string", format: "uuid", description});
+const uuidReferenceExceptions = new Set(["sourceOrderRef", "sourceRecordRef", "sourceItemRef"]);
+const uuidReferenceCollections = new Set(["mediaRefs"]);
+const isUuidReferenceName = (field) => field.endsWith("Ref") && !uuidReferenceExceptions.has(field);
+const normalizeReferenceSchema = (schema, field) => {
+  if (!schema || typeof schema !== "object") return schema;
+  const normalized = {...schema};
+  const scalarString = normalized.type === "string"
+    || (Array.isArray(normalized.type) && normalized.type.includes("string") && normalized.type.every((type) => type === "string" || type === "null"));
+  if (isUuidReferenceName(field) && scalarString && !normalized.format) normalized.format = "uuid";
+  if (uuidReferenceCollections.has(field) && normalized.type === "array" && normalized.items?.type === "string" && !normalized.items.format) {
+    normalized.items = {...normalized.items, format: "uuid"};
+  }
+  return normalized;
+};
 const binaryField = (description) => ({type: "string", format: "binary", description});
 const integerField = (description) => ({type: "integer", description});
 const epochMillisField = (description) => ({type: "integer", format: "epoch-millis", description});
@@ -435,8 +564,19 @@ const centsField = (description) => ({type: "integer", format: "cents", descript
 const decimalField = (description) => ({type: "string", format: "decimal", description});
 const booleanField = (description) => ({type: "boolean", description});
 const arrayField = (description, item = {type: "string"}) => ({type: "array", description, items: item});
+const copySectionsField = (description) => ({
+  type: "array",
+  description,
+  minItems: 1,
+  uniqueItems: true,
+  items: {
+    type: "string",
+    enum: ["BASIC_INFO", "SKU_STRUCTURE", "SKU_BOM", "ORDER_OPTIONS", "OPTION_VALUE_BOM", "ITEM_BOM", "PACKAGE_STRUCTURE", "PRODUCTION_PROMPTS"]
+  }
+});
 const objectField = (description, additionalProperties = false) => ({type: "object", description, additionalProperties, properties: {factType: {type: "string", description: "typed fact discriminator"}, revision: {type: "string", description: "fact revision"}}});
 const fieldSchema = (model, field) => {
+  if (isUuidReferenceName(field)) return uuidField("P1 opaque UUID reference " + model + "." + field);
   if (field === "revision" || field === "requestId" || field === "generation" || field === "cursor" || field === "preflightDigest" || field.endsWith("Ref") || field.endsWith("Code")) return stringField("P1 typed field " + model + "." + field);
   if (["total", "entryCount", "pageSize", "version", "sourceVersion", "targetVersion", "selectedCount", "closureCount"].includes(field)) return integerField("P1 typed count/version " + model + "." + field);
   if (["loading", "error", "empty", "ready", "diagnosticsAvailability", "permission"].includes(field)) return objectField("P1 state fact " + model + "." + field);
@@ -456,19 +596,22 @@ const copyReferenceMappingSchema = typedEntry({
   targetSkuCode: {type: ["string", "null"], description: "optional target SKU business-code label"},
   targetOptionValueCode: {type: ["string", "null"], description: "optional target option-value business-code label"}
 }, ["objectType", "sourceRef", "targetRef", "targetCode"]);
-function schemaFromCoverageField(spec) {
+function schemaFromCoverageField(spec, field) {
   const schema = {type: spec.type, description: spec.description || "design-bound field"};
   if (spec.format) schema.format = spec.format;
   if (spec.enum) schema.enum = spec.enum;
+  if (spec.enumSource) schema.enum = enumValues(spec.enumSource);
   if (spec.type === "object" || (Array.isArray(spec.type) && spec.type.includes("object"))) {
     schema.additionalProperties = spec.additionalProperties ?? false;
     schema.properties = {};
     schema.required = [];
   }
   if (spec.type === "array") {
-    schema.items = spec.itemType === "object" ? {type: "object", additionalProperties: false, properties: {}, required: []} : {type: spec.itemType || "string", ...(spec.itemFormat ? {format: spec.itemFormat} : {})};
+    schema.items = spec.itemType === "object"
+      ? {type: "object", additionalProperties: false, properties: {}, required: []}
+      : {type: spec.itemType || "string", ...(spec.itemFormat ? {format: spec.itemFormat} : {}), ...(spec.itemEnum ? {enum: spec.itemEnum} : {})};
   }
-  return schema;
+  return normalizeReferenceSchema(schema, field);
 }
 function coveragePathSegments(pathValue) {
   return pathValue.split(".").flatMap((segment) => segment.endsWith("[]") ? [{key: segment.slice(0, -2), array: true}] : [{key: segment, array: false}]);
@@ -483,7 +626,7 @@ function schemaFromCoverageRow(row) {
       const last = index === segments.length - 1;
       if (!node.properties) { node.properties = {}; node.required = node.required || []; node.additionalProperties = false; }
       if (last) {
-        const incoming = schemaFromCoverageField(spec);
+        const incoming = schemaFromCoverageField(spec, segment.key);
         const existing = node.properties[segment.key];
         if (existing?.type === "object" && incoming.type === "object") {
           existing.description = incoming.description;
@@ -497,7 +640,7 @@ function schemaFromCoverageRow(row) {
         break;
       }
       if (!node.properties[segment.key]) {
-        node.properties[segment.key] = last ? schemaFromCoverageField(spec) : (segment.array ? schemaFromCoverageField({type: "array", itemType: "object", description: "design-bound collection"}) : schemaFromCoverageField({type: "object", description: "design-bound object"}));
+        node.properties[segment.key] = last ? schemaFromCoverageField(spec, segment.key) : (segment.array ? schemaFromCoverageField({type: "array", itemType: "object", description: "design-bound collection"}, segment.key) : schemaFromCoverageField({type: "object", description: "design-bound object"}, segment.key));
       }
       const child = node.properties[segment.key];
       node = segment.array ? child.items : child;
@@ -535,77 +678,98 @@ for (const model of readModels.models) {
     : dataSchema;
 }
 const requestFieldMap = {
-  CatalogContextQuery: {dataNodeRef: stringField("selected data node")},
-  CatalogNavigationQuery: {dataNodeRef: stringField("selected data node"), viewKey: stringField("smart view")},
-  CatalogItemPageQuery: {dataNodeRef: stringField("selected data node"), keyword: stringField("domain-local keyword"), smartViewKey: stringField("smart view"), shapeKey: stringField("shape"), categoryRef: stringField("category"), includeSubCategories: {type: "boolean", description: "include descendants"}, status: stringField("lifecycle status"), governanceStatus: stringField("governance status"), source: stringField("catalog source"), cursor: stringField("cursor"), pageSize: integerField("page size"), queryGeneration: stringField("client query generation")},
-  CatalogItemDetailQuery: {dataNodeRef: stringField("selected data node"), itemCode: stringField("catalog item code")},
-  CatalogItemCreateRequest: {dataNodeRef: stringField("selected data node"), name: stringField("catalog item name"), code: stringField("immutable catalog code"), shapeKey: stringField("shape"), attributes: objectField("free descriptive map", true)},
-  CatalogItemSaveRequest: {dataNodeRef: stringField("selected data node"), itemCode: stringField("catalog item code"), expectedVersion: integerField("expected version"), sections: objectField("typed save sections")},
+  CatalogContextQuery: {dataNodeRef: uuidField("selected data node")},
+  CatalogNavigationQuery: {dataNodeRef: uuidField("selected data node"), viewKey: stringField("smart view")},
+  CatalogItemPageQuery: {dataNodeRef: uuidField("selected data node"), keyword: stringField("domain-local keyword"), smartViewKey: stringField("smart view"), shapeKey: stringField("shape"), categoryRef: uuidField("category"), includeSubCategories: {type: "boolean", description: "include descendants"}, status: stringField("lifecycle status"), source: stringField("catalog source"), cursor: stringField("cursor"), pageSize: {type: "integer", minimum: 1, maximum: 100, description: "catalog list page size; the batch transition limit uses this maximum"}, queryGeneration: stringField("client query generation")},
+  CatalogItemDetailQuery: {dataNodeRef: uuidField("selected data node"), itemCode: stringField("catalog item code")},
+  CatalogItemCreateRequest: {dataNodeRef: uuidField("selected data node"), name: stringField("catalog item name"), code: stringField("immutable catalog code"), shapeKey: stringField("shape"), attributes: objectField("free descriptive map", true)},
+  CatalogItemSaveRequest: {dataNodeRef: uuidField("selected data node"), itemCode: stringField("catalog item code"), expectedVersion: integerField("expected version"), sections: objectField("typed save sections")},
   CatalogItemTransitionRequest: {itemCode: stringField("catalog item code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
-  CatalogCategoryCreateRequest: {dataNodeRef: stringField("selected data node"), code: stringField("immutable category code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref"}},
+  CatalogItemBatchStatusTransitionRequest: {
+    dataNodeRef: uuidField("selected data node"),
+    targetStatus: {type: "string", enum: enumValues("catalogItemStatus"), description: "one lifecycle status applied to every item in this batch"},
+    items: {
+      type: "array", minItems: 1, maxItems: 100,
+      description: "ordered catalog item refs with the version observed by the caller",
+      items: typedEntry({itemRef: uuidField("catalog item opaque reference"), expectedVersion: integerField("version observed by the caller")}, ["itemRef", "expectedVersion"])
+    }
+  },
+  CatalogCategoryCreateRequest: {dataNodeRef: uuidField("selected data node"), code: stringField("immutable category code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref"}},
   CatalogCategoryUpdateRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), name: stringField("category name")},
   CatalogCategoryMoveRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), action: {type: "string", enum: ["REPARENT", "UP", "DOWN"], description: "category movement action"}, parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref; required only for REPARENT"}},
   CatalogCategoryDeleteRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version")},
-  CatalogDictionaryQuery: {dataNodeRef: stringField("selected data node"), dictionaryKind: stringField("dictionary kind"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  CatalogDictionaryQuery: {dataNodeRef: uuidField("selected data node"), dictionaryKind: stringField("dictionary kind"), cursor: stringField("cursor"), pageSize: integerField("page size")},
   CatalogDictionaryEntryCreateRequest: {dictionaryKind: stringField("dictionary kind"), code: stringField("immutable entry code"), name: stringField("entry name")},
   CatalogDictionaryEntryUpdateRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), name: stringField("entry name")},
   CatalogDictionaryEntryReorderRequest: {dictionaryKind: stringField("dictionary kind"), orderedCodes: arrayField("same-level ordered codes")},
   CatalogDictionaryEntryTransitionRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
-  ProductionTagQuery: {dataNodeRef: stringField("selected data node"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  ProductionTagCreateRequest: {dataNodeRef: stringField("selected data node"), code: stringField("immutable tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "closed production tag kind"}, name: stringField("tag name")},
+  ProductionTagQuery: {dataNodeRef: uuidField("selected data node"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  ProductionTagCreateRequest: {dataNodeRef: uuidField("selected data node"), code: stringField("immutable tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "closed production tag kind"}, name: stringField("tag name")},
   ProductionTagUpdateRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "immutable production tag kind"}, name: stringField("tag name")},
   ProductionTagTransitionRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
-  LocalCopyCandidateQuery: {dataNodeRef: stringField("selected data node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
-  LocalCopyPreflightRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: arrayField("copy sections")},
-  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: arrayField("copy sections fixed by preflight"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
+  LocalCopyCandidateQuery: {dataNodeRef: uuidField("selected data node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
+  LocalCopyPreflightRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: copySectionsField("copy sections")},
+  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: copySectionsField("copy sections fixed by preflight"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
   TemporaryPromotionPreflightRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version")},
   TemporaryPromotionExecuteRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version"), expectedVersion: integerField("temporary item version"), preflightDigest: stringField("promotion preflight digest")},
-  BrandCopyCandidateQuery: {dataNodeRef: stringField("selected store node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
-  BrandCopyPreflightRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: stringField("target store node")},
-  BrandCopyExecuteRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: stringField("target store node"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
-  InventoryTargetPageQuery: {dataNodeRef: stringField("selected store node"), keyword: stringField("domain-local keyword"), categoryRef: stringField("catalog category"), stockView: stringField("stock view"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  InventoryTargetQuery: {targetRef: stringField("inventory target reference")},
-  InventoryTargetPeriodQuery: {targetRef: stringField("inventory target reference"), period: stringField("change period")},
-  InventoryHistoryPageQuery: {targetRef: stringField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  InventoryReferencePageQuery: {targetRef: stringField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  InventoryLedgerPageQuery: {targetRef: stringField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  InventoryDiagnosticsQuery: {targetRef: stringField("inventory target reference")},
-  InventoryCountRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), countedQuantity: decimalField("counted quantity"), unit: stringField("input unit"), note: stringField("operator note"), zeroConfirmation: booleanField("confirm a zero count")},
-  InventoryIncreaseRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), quantity: decimalField("positive increase"), unit: stringField("input unit"), note: stringField("operator note")},
-  InventoryAdjustmentRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), direction: stringField("adjustment direction"), quantity: decimalField("adjustment quantity"), unit: stringField("input unit"), reasonCode: stringField("controlled reason"), note: stringField("operator note")},
-  InventoryTargetConfigurationRequest: {targetRef: stringField("inventory target reference"), expectedVersion: integerField("expected version"), configuration: objectField("typed configuration")},
-  CatalogAssetStageRequest: {dataNodeRef: stringField("selected data node"), fileName: stringField("uploaded file name"), content: binaryField("real asset bytes; multipart/form-data only"), mediaType: stringField("media type"), contentDigest: stringField("content digest")},
-  CatalogAssetReleaseRequest: {assetRef: stringField("staged asset reference"), expectedVersion: integerField("expected version")},
-  CatalogShapeManifestQuery: {dataNodeRef: stringField("selected data node"), revision: stringField("requested manifest revision")}
+  BrandCopyCandidateQuery: {dataNodeRef: uuidField("selected store node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
+  BrandCopyPreflightRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: uuidField("target store node")},
+  BrandCopyExecuteRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: uuidField("target store node"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
+  InventoryTargetPageQuery: {dataNodeRef: uuidField("selected store node"), keyword: stringField("domain-local keyword"), categoryRef: uuidField("catalog category"), stockView: stringField("stock view"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  InventoryTargetQuery: {targetRef: uuidField("inventory target reference")},
+  InventoryTargetPeriodQuery: {targetRef: uuidField("inventory target reference"), period: stringField("change period")},
+  InventoryHistoryPageQuery: {targetRef: uuidField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  InventoryReferencePageQuery: {targetRef: uuidField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  InventoryLedgerPageQuery: {targetRef: uuidField("inventory target reference"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  InventoryDiagnosticsQuery: {targetRef: uuidField("inventory target reference")},
+  InventoryCountRequest: {targetRef: uuidField("inventory target reference"), expectedVersion: integerField("expected version"), countedQuantity: decimalField("counted quantity"), unit: stringField("input unit"), note: stringField("operator note"), zeroConfirmation: booleanField("confirm a zero count")},
+  InventoryIncreaseRequest: {targetRef: uuidField("inventory target reference"), expectedVersion: integerField("expected version"), quantity: decimalField("positive increase"), unit: stringField("input unit"), note: stringField("operator note")},
+  InventoryAdjustmentRequest: {targetRef: uuidField("inventory target reference"), expectedVersion: integerField("expected version"), direction: stringField("adjustment direction"), quantity: decimalField("adjustment quantity"), unit: stringField("input unit"), reasonCode: stringField("controlled reason"), note: stringField("operator note")},
+  InventoryTargetConfigurationRequest: {targetRef: uuidField("inventory target reference"), expectedVersion: integerField("expected version"), configuration: objectField("typed configuration")},
+  CatalogAssetStageRequest: {dataNodeRef: uuidField("selected data node"), fileName: stringField("uploaded file name"), content: binaryField("real asset bytes; multipart/form-data only"), mediaType: stringField("media type"), contentDigest: stringField("content digest")},
+  CatalogAssetReleaseRequest: {assetRef: uuidField("staged asset reference"), expectedVersion: integerField("expected version")},
+  CatalogShapeManifestQuery: {dataNodeRef: uuidField("selected data node"), revision: stringField("requested manifest revision")}
 };
 const responseFieldMap = {
-  CatalogItemCommandReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({operation: stringField("operation"), resourceRef: stringField("resource reference"), status: stringField("result status"), version: integerField("new version")}, ["operation", "status"]), version: integerField("new version")},
-  CatalogItemSaveReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({item: objectField("saved item"), inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: stringField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])), productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])), version: integerField("new version")}, ["item"]), version: integerField("new version")},
+  CatalogItemCommandReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({operation: stringField("operation"), resourceRef: uuidField("resource reference"), status: stringField("result status"), version: integerField("new version")}, ["operation", "status"]), version: integerField("new version")},
+  CatalogItemSaveReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({item: objectField("saved item"), inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: uuidField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])), productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])), version: integerField("new version")}, ["item"]), version: integerField("new version")},
   CatalogCategoryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, code: stringField("category business code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "parent category opaque ref"}, version: integerField("version"), displayOrder: integerField("sibling display order"), deletionAvailability: typedEntry({canDelete: booleanField("whether the category subtree can be deleted"), subtreeSize: integerField("category subtree size"), blockingReferenceCount: integerField("blocking product reference count"), blockingReferenceLabels: arrayField("safe blocking product labels")}, ["canDelete", "subtreeSize", "blockingReferenceCount", "blockingReferenceLabels"])}, ["categoryRef", "code", "name", "parentCategoryRef", "version", "displayOrder", "deletionAvailability"]), version: integerField("version")},
   CatalogCategoryDeleteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "deleted category opaque ref"}, deletedSubtreeSize: integerField("deleted category subtree size"), deletedCategoryCodes: arrayField("deleted category business codes")}, ["categoryRef", "deletedSubtreeSize", "deletedCategoryCodes"]), version: integerField("version")},
   CatalogDictionaryEntryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({dictionaryKind: stringField("dictionary kind"), code: stringField("entry code"), name: stringField("entry name"), status: stringField("status"), version: integerField("version")}, ["dictionaryKind", "code", "name", "status"]), version: integerField("version")},
-  ProductionTagReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({code: stringField("tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "production tag kind"}, name: stringField("tag name"), ownerScope: objectField("tag owner scope"), status: stringField("status"), version: integerField("version")}, ["code", "tagKind", "name", "status"]), version: integerField("version")},
+  ProductionTagReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({tagRef: uuidField("production tag opaque reference"), code: stringField("tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "production tag kind"}, name: stringField("tag name"), ownerScope: objectField("tag owner scope"), status: stringField("status"), version: integerField("version")}, ["tagRef", "code", "tagKind", "name", "status"]), version: integerField("version")},
   LocalCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), updated: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersion: integerField("target version")}, ["preflightDigest", "referenceMappings"]), version: integerField("target version")},
-  BrandCatalogCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), reused: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersions: arrayField("target versions", typedEntry({targetRef: stringField("target ref"), version: integerField("version")}, ["targetRef", "version"]))}, ["preflightDigest", "referenceMappings"])},
-  InventoryWriteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({targetRef: stringField("target ref"), before: decimalField("before balance"), change: decimalField("signed change"), after: decimalField("after balance"), ledgerEntryRef: stringField("ledger entry"), version: integerField("version")}, ["targetRef", "before", "change", "after", "ledgerEntryRef"]), version: integerField("version")},
-  StagedCatalogAsset: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: stringField("asset ref"), bindGrant: stringField("one-time staged asset bind proof; transient client memory only, never a catalog field"), status: stringField("asset status"), mediaType: stringField("media type"), contentDigest: stringField("content digest")}, ["assetRef", "bindGrant", "status"]), version: integerField("version")},
-  CatalogAssetReleaseReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: stringField("asset ref"), disposition: stringField("release disposition"), releasedAt: epochMillisField("release time")}, ["assetRef", "disposition"]), version: integerField("version")}
+  BrandCatalogCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), reused: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersions: arrayField("target versions", typedEntry({targetRef: uuidField("target ref"), version: integerField("version")}, ["targetRef", "version"]))}, ["preflightDigest", "referenceMappings"])},
+  InventoryWriteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({targetRef: uuidField("target ref"), before: decimalField("before balance"), change: decimalField("signed change"), after: decimalField("after balance"), ledgerEntryRef: uuidField("ledger entry"), version: integerField("version")}, ["targetRef", "before", "change", "after", "ledgerEntryRef"]), version: integerField("version")},
+  StagedCatalogAsset: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: uuidField("asset ref"), bindGrant: stringField("one-time staged asset bind proof; transient client memory only, never a catalog field"), status: stringField("asset status"), mediaType: stringField("media type"), contentDigest: stringField("content digest")}, ["assetRef", "bindGrant", "status"]), version: integerField("version")},
+  CatalogAssetReleaseReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({assetRef: uuidField("asset ref"), disposition: stringField("release disposition"), releasedAt: epochMillisField("release time")}, ["assetRef", "disposition"]), version: integerField("version")},
+  CatalogItemBatchStatusTransitionReadback: {
+    revision: stringField("contract revision"),
+    requestId: stringField("request correlation"),
+    results: arrayField("ordered result for each requested item", typedEntry({
+      itemRef: uuidField("catalog item opaque reference"),
+      ok: booleanField("whether this item reached the requested status"),
+      failureCode: {type: ["string", "null"], enum: [...edgeContractWithDigest.typedProblemCodes, null], description: "typed per-item failure code; null for success"},
+      version: {type: ["integer", "null"], description: "owner version after success; null for failure"}
+    }, ["itemRef", "ok"]))
+  }
 };
+const responseRequiredFields = {CatalogItemBatchStatusTransitionReadback: ["revision", "requestId", "results"]};
 for (const entry of operationMetadata) {
-  const baseFields = requestFieldMap[entry.requestComponent] || {dataNodeRef: stringField("selected data node")};
+  const baseFields = requestFieldMap[entry.requestComponent] || {dataNodeRef: uuidField("selected data node")};
   const fields = entry.mutation && !baseFields.dataNodeRef
-    ? {...baseFields, dataNodeRef: stringField("selected data node")}
+    ? {...baseFields, dataNodeRef: uuidField("selected data node")}
     : baseFields;
   const requestCoverage = designCoverageByRequest.get(entry.requestComponent);
   const generatedRequestSchema = requestCoverage ? schemaFromCoverageRow(requestCoverage) : {type: "object", additionalProperties: false, required: Object.keys(fields).filter((field) => !["cursor", "keyword", "pageSize", "revision", "dataNodeRef"].includes(field)), properties: fields};
   if (entry.mutation) {
-    if (!generatedRequestSchema.properties.dataNodeRef) generatedRequestSchema.properties.dataNodeRef = stringField("selected data node");
+    if (!generatedRequestSchema.properties.dataNodeRef) generatedRequestSchema.properties.dataNodeRef = uuidField("selected data node");
     generatedRequestSchema.required = Array.from(new Set([...(generatedRequestSchema.required || []), "dataNodeRef"]));
   }
   componentSchemas[entry.requestComponent] = generatedRequestSchema;
   if (!componentSchemas[entry.responseComponent]) {
-    const required = ["revision", "requestId", "result"];
-    componentSchemas[entry.responseComponent] = {type: "object", additionalProperties: false, required, properties: responseFieldMap[entry.responseComponent] || {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({factType: stringField("result type"), resourceRef: stringField("resource reference"), status: stringField("result status")}, ["factType", "status"]), version: integerField("result version")}};
+    const responseProperties = responseFieldMap[entry.responseComponent] || {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({factType: stringField("result type"), resourceRef: uuidField("resource reference"), status: stringField("result status")}, ["factType", "status"]), version: integerField("result version")};
+    const required = responseRequiredFields[entry.responseComponent] || ["revision", "requestId", "result"];
+    componentSchemas[entry.responseComponent] = {type: "object", additionalProperties: false, required, properties: responseProperties};
   }
 }
 componentSchemas.CatalogShapeManifestView = schemaFromCoverageRow(designCoverageByModel.get("CatalogShapeManifestView"));
@@ -628,7 +792,7 @@ for (const entry of operationMetadata) {
       "4XX": {description: "Typed problem", content: {"application/problem+json": {schema: {$ref: "#/components/schemas/TypedProblem"}}}}
     }
   };
-  const pathParameters = Array.from(entry.path.matchAll(/\{([^}]+)\}/g)).map((match) => ({name: match[1], in: "path", required: true, schema: {type: "string"}}));
+  const pathParameters = Array.from(entry.path.matchAll(/\{([^}]+)\}/g)).map((match) => ({name: match[1], in: "path", required: true, schema: isUuidReferenceName(match[1]) ? {type: "string", format: "uuid"} : {type: "string"}}));
   const requestSchema = componentSchemas[entry.requestComponent];
   const queryParameters = entry.method === "GET" ? Object.entries(requestSchema.properties).filter(([name]) => !pathParameters.some((parameter) => parameter.name === name)).map(([name, schema]) => ({name, in: "query", required: requestSchema.required.includes(name), schema})) : [];
   const headerParameters = entry.method === "GET" ? [] : [{name: "Idempotency-Key", in: "header", required: true, schema: {type: "string"}}];
@@ -651,7 +815,7 @@ writeText("contracts/openapi/catalog-inventory.openapi.yaml", JSON.stringify(ope
 const componentShardGroups = {
   "components/catalog/catalog-common.schemas.yaml": ["CatalogShapeManifestView", "TypedProblem"],
   "components/catalog/catalog-workbench.schemas.yaml": ["CatalogWorkbenchContext", "CatalogNavigationView", "CatalogItemPage"],
-  "components/catalog/catalog-item.schemas.yaml": ["CatalogItemDetail", "CatalogItemCommandReadback", "CatalogItemCreateRequest", "CatalogItemSaveRequest", "CatalogItemSaveReadback"],
+  "components/catalog/catalog-item.schemas.yaml": ["CatalogItemDetail", "CatalogItemCommandReadback", "CatalogItemCreateRequest", "CatalogItemSaveRequest", "CatalogItemSaveReadback", "CatalogItemBatchStatusTransitionRequest", "CatalogItemBatchStatusTransitionReadback"],
   "components/catalog/catalog-dictionary.schemas.yaml": ["CatalogDictionaryView", "CatalogDictionaryQuery", "CatalogDictionaryEntryCreateRequest", "CatalogDictionaryEntryUpdateRequest", "CatalogDictionaryEntryReorderRequest", "CatalogDictionaryEntryReadback"],
   "components/catalog/catalog-copy.schemas.yaml": ["LocalCopyCandidatePage", "LocalCopyPreflight", "LocalCopyReadback", "BrandCopyCandidatePage", "BrandCatalogCopyPreflight", "BrandCatalogCopyReadback"],
   "components/inventory/inventory-common.schemas.yaml": ["InventoryTargetPage", "InventoryTargetCurrentView"],
@@ -659,7 +823,8 @@ const componentShardGroups = {
   "components/inventory/inventory-command.schemas.yaml": ["InventoryWriteReadback", "InventoryCountRequest", "InventoryIncreaseRequest", "InventoryAdjustmentRequest", "InventoryTargetConfigurationRequest"],
   "components/fulfillment-production/production-tag.schemas.yaml": ["ProductionTagPage", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
 };
-const schemaShardForOrdinal = (ordinal) => ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.yaml" :
+const schemaShardForOrdinal = (ordinal) => ordinal === 43 ? "components/catalog/catalog-item.schemas.yaml" :
+  ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.yaml" :
   ordinal >= 36 && ordinal <= 39 ? "components/inventory/inventory-command.schemas.yaml" :
   ordinal >= 21 && ordinal <= 28 ? "components/catalog/catalog-copy.schemas.yaml" :
   ordinal >= 17 && ordinal <= 20 ? "components/fulfillment-production/production-tag.schemas.yaml" :
@@ -681,7 +846,7 @@ for (const [shard, names] of Object.entries(componentShardGroups)) {
 }
 const pathShardGroups = {
   "paths/operations-admin/catalog-workbench.paths.yaml": [1, 2, 3, 4, 21, 26, 42],
-  "paths/operations-admin/catalog-item-management.paths.yaml": [5, 6, 7, 24, 25, 40, 41],
+  "paths/operations-admin/catalog-item-management.paths.yaml": [5, 6, 7, 24, 25, 40, 41, 43],
   "paths/operations-admin/catalog-dictionary-management.paths.yaml": [8, 9, 10, 11, 12, 13, 14, 15, 16],
   "paths/operations-admin/catalog-copy.paths.yaml": [22, 23, 27, 28],
   "paths/operations-admin/inventory-workbench.paths.yaml": [29, 30, 31, 32, 33, 34, 35],
@@ -882,7 +1047,7 @@ const testGraphFor = (fixtureId) => {
   if (fixtureId === "FIXTURE-ADVANCED-DIAGNOSTICS") graph.expected = {permission: false, diagnosticsHttpRequest: false, diagnosticsDom: false, caseParameterKey: "detailZone"};
   if (fixtureId === "FIXTURE-ASSET-PROCESSING") graph.objects = [{type: "StagedAsset", code: "ASSET-FAILED", ref: "ASSET-FAILED", status: "PROCESSING"}, {type: "StagedAsset", code: "ASSET-REFERENCED", ref: "ASSET-REFERENCED", status: "READY", references: 1}], graph.expected = {problemCodes: ["ASSET_PROCESSING_FAILED", "ASSET_REFERENCE_PROTECTED"]};
   if (fixtureId === "FIXTURE-AUTO-SYNC") graph.objects = [{type: "CatalogItem", code: "AUTO-001", source: "AUTO_SYNC", deniedFields: ["name", "code"]}], graph.expected = {ownership: "source-owned"};
-  if (fixtureId === "FIXTURE-TEMPORARY-ITEM") graph.objects = [{type: "CatalogItem", code: "TEMP-001", source: "EXTERNAL_ORDER_TEMPORARY", status: "GOVERNANCE_TODO", externalIdentity: {sourceOrderRef: "EXT-ORDER-001", sourceRecordRef: "EXT-RECORD-001", sourceItemRef: "EXT-SKU-88", snapshot: {name: "外部订单临时拿铁", specification: "中杯 / 热", price: 2800}}}], graph.expected = {requiresPromotionPreflight: true};
+  if (fixtureId === "FIXTURE-TEMPORARY-ITEM") graph.objects = [{type: "CatalogItem", code: "TEMP-001", source: "EXTERNAL_ORDER_TEMPORARY", status: "DRAFT", externalIdentity: {sourceOrderRef: "EXT-ORDER-001", sourceRecordRef: "EXT-RECORD-001", sourceItemRef: "EXT-SKU-88", snapshot: {name: "外部订单临时拿铁", specification: "中杯 / 热", price: 2800}}}], graph.expected = {requiresPromotionPreflight: true};
   if (unimplementedIngressFixtures.has(fixtureId)) {
     graph.executionApplicability = "NOT_APPLICABLE_WITH_REASON";
     graph.notApplicableReason = unimplementedIngressFixtures.get(fixtureId);
@@ -900,7 +1065,7 @@ const testGraphFor = (fixtureId) => {
   if (fixtureId === "FIXTURE-VOID-OBJECT-TYPES") { graph.objects = ["CatalogItem", "CatalogCategory", "CatalogDictionaryEntry", "ProductionTag", "CatalogItemSku", "CatalogAsset", "StockTarget", "ProductBom"].map((type) => ({type, code: "VOID-" + type})); graph.expected = {objectTypes: graph.objects.map((entry) => entry.type), caseParameterKey: "objectType"}; }
   if (fixtureId === "FIXTURE-COMPATIBILITY-MATRIX") { graph.objects = ["CatalogItem", "CatalogCategory", "CatalogTag", "SalesUnit", "SkuAttributeValue", "ProductionTag", "StockTarget", "ProductBom", "ProductSku"].map((type) => ({type, code: "COMPAT-" + type})); graph.expected = {matrixRows: 9, outcomes: ["CONFIRM_REUSE", "STRUCTURAL_BLOCK", "NOT_APPLICABLE_NO_STRUCTURAL_BITS"], caseParameterKey: "matrixRow"}; }
   if (fixtureId === "FIXTURE-WORKBENCH-QUERY") { graph.objects = [{type: "CatalogTree", code: "TREE-EAST"}, {type: "CatalogItem", code: "ITEM-RIVER"}]; graph.expected = {query: {dataNodeRef: "TREE-EAST", keyword: "咖啡", cursor: "CURSOR-1", generation: "GEN-1"}, caseParameterKey: "queryVariant"}; }
-  if (fixtureId === "FIXTURE-SMART-VIEWS") { graph.objects = ["GOVERNANCE_PENDING", "EXTERNAL_ORDER_TEMP", "INACTIVE", "ARCHIVED", "RECENTLY_UPDATED", "AUTO_SYNC"].map((viewKey) => ({type: "SmartView", code: viewKey})); graph.expected = {viewKeys: graph.objects.map((entry) => entry.code), needsAttentionExcludedFromStockState: true, caseParameterKey: "viewKey"}; }
+  if (fixtureId === "FIXTURE-SMART-VIEWS") { graph.objects = ["EXTERNAL_ORDER_TEMP", "INACTIVE", "ARCHIVED", "RECENTLY_UPDATED", "AUTO_SYNC"].map((viewKey) => ({type: "SmartView", code: viewKey})); graph.expected = {viewKeys: graph.objects.map((entry) => entry.code), needsAttentionExcludedFromStockState: true, caseParameterKey: "viewKey"}; }
   if (fixtureId === "FIXTURE-SURFACE-STATES") graph.expected = {surfaceKeys: ["loading", "error", "empty", "ready", "recovery"], caseParameterKey: "surfaceState"};
   if (fixtureId === "FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY") { graph.objects = [{type: "CatalogItem", code: "LIFECYCLE-001", status: "ENABLED", version: 1}]; graph.expected = {transitions: ["DRAFT->ENABLED", "ENABLED->DISABLED"], versionConflict: true, idempotencyReplay: true, caseParameterKey: "lifecycleCase"}; }
   if (fixtureId === "FIXTURE-REPLAY-ROLLBACK") { graph.objects = [{type: "CatalogItem", code: "ROLLBACK-001"}, {type: "StockTarget", code: "ROLLBACK-TARGET"}]; graph.expected = {replaySameResult: true, ownerFailureRollback: true, caseParameterKey: "failurePoint"}; }
@@ -1013,7 +1178,7 @@ const caseParameterFor = (scenarioId, caseIndex, fixtureRef) => {
   if (scenarioId === "CI-API-011") return {detailZone: ["current", "changeSummary", "businessHistory", "consumptionReferences", "ledger", "advancedDiagnostics"][caseIndex] || "current"};
   if (scenarioId === "CI-API-012") return {command: ["count", "increase", "adjust", "configuration"][caseIndex]};
   if (scenarioId === "CI-API-003") return {queryVariant: caseIndex + 1, fixtureRef};
-  if (scenarioId === "CI-API-004") return {viewKey: ["GOVERNANCE_PENDING", "EXTERNAL_ORDER_TEMP", "INACTIVE", "ARCHIVED", "RECENTLY_UPDATED", "AUTO_SYNC"][caseIndex] || "GOVERNANCE_PENDING", fixtureRef};
+  if (scenarioId === "CI-API-004") return {viewKey: ["EXTERNAL_ORDER_TEMP", "INACTIVE", "ARCHIVED", "RECENTLY_UPDATED", "AUTO_SYNC"][caseIndex] || "EXTERNAL_ORDER_TEMP", fixtureRef};
   if (scenarioId === "CI-API-005") return {surfaceState: ["loading", "error", "empty", "ready", "recovery"][caseIndex % 5], fixtureRef};
   if (scenarioId === "CI-API-008") return {lifecycleCase: ["status-transition", "version-conflict", "idempotency-replay"][caseIndex] || "status-transition", fixtureRef};
   if (scenarioId === "CI-API-022") return {failurePoint: caseIndex === 0 ? "replay" : "owner-failure", fixtureRef};
@@ -1224,16 +1389,35 @@ writeJson("contracts/policy/catalog-inventory-assertion-matrix.json", assertionM
 
 const javaPath = "contracts/catalog/CatalogInventoryShapeManifest.java";
 const tsPath = "contracts/catalog/catalogInventoryShapeManifest.ts";
+const inventoryReferenceDeclarationsPath = "apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryCatalogReferenceDeclarations.java";
 const javaEscape = (value) => value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\r?\n/g, "\\n");
 const manifestWireJson = JSON.stringify(shapeManifestWithDigest);
 const designFieldDigest = hash(JSON.stringify({rows: designCoverage.rows, requestRows: designCoverage.requestRows || [], closedFindingRows: designCoverage.closedFindingRows || [], typeConventions: designCoverage.typeConventions || []}));
 const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes, mutation: entry.mutation, authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes, coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands || []}))});
 const javaShapeEnum = (value) => value.replace(/[^A-Za-z0-9_]/g, "_");
-const javaShapeRules = shapes.map((shape) => "    new ShapeRule(ShapeKey." + shape.key + ", \"" + javaEscape(shape.itemKind) + "\", \"" + shape.measureMode + "\", \"" + shape.skuPolicy.skuMode + "\", \"" + shape.skuPolicy.priceGranularity + "\", List.of(" + shape.usageCapabilities.map((capability) => "Capability." + capability).join(", ") + "), " + (!shape.disabledReason) + ", " + Boolean(shape.disabledReason) + ", " + (shape.disabledReason ? "\"" + javaEscape(shape.disabledReason) + "\"" : "null") + ")").join(",\n");
+const javaShapeRules = shapes.map((shape) => "    new ShapeRule(ShapeKey." + shape.key + ", \"" + javaEscape(enumLabels.shapeKey[shape.key]) + "\", \"" + javaEscape(shape.itemKind) + "\", \"" + shape.measureMode + "\", \"" + shape.skuPolicy.skuMode + "\", \"" + shape.skuPolicy.priceGranularity + "\", List.of(" + shape.usageCapabilities.map((capability) => "Capability." + capability).join(", ") + "), " + (!shape.disabledReason) + ", " + Boolean(shape.disabledReason) + ", " + (shape.disabledReason ? "\"" + javaEscape(shape.disabledReason) + "\"" : "null") + ")").join(",\n");
 const javaModeRules = modeRules.map((rule) => "    new ModeRule(\"" + rule.nodeType + "\", " + (rule.condition === null ? "null" : "\"" + rule.condition + "\"") + ", List.of(" + rule.allowedModes.map((mode) => "\"" + mode + "\"").join(", ") + "))").join(",\n");
+const javaEnumLabels = enumLabelEntries.map((entry) => "    new EnumLabel(\"" + javaEscape(entry.kind) + "\", \"" + javaEscape(entry.value) + "\", \"" + javaEscape(entry.label) + "\")").join(",\n");
+const javaSmartViewRules = enumValues("smartViewKey").filter((value) => value !== "ALL").map((value) => "    new SmartViewRule(\"" + value + "\", \"" + javaEscape(enumLabels.smartViewKey[value]) + "\")").join(",\n");
 const javaMap = (values) => { const entries = Object.entries(values); return entries.length === 0 ? "Map.of()" : "Map.of(" + entries.map(([key, value]) => "\"" + key + "\", \"" + value + "\"").join(", ") + ")"; };
 const javaCommandList = (commands) => !commands?.length ? "List.of()" : "List.of(" + commands.map((command) => "\"" + command + "\"").join(", ") + ")";
 const javaEdgeOperations = operationMetadata.map((entry) => "    new Operation(\"" + entry.operationId + "\", \"" + entry.method + "\", \"" + javaEscape(entry.path) + "\", \"" + entry.requestComponent + "\", \"" + entry.responseComponent + "\", List.of(" + entry.problemCodes.map((code) => "\"" + code + "\"").join(", ") + "), " + entry.mutation + ", " + (entry.authorizationRequirementId ? "\"" + entry.authorizationRequirementId + "\"" : "null") + ", " + javaMap(entry.capabilityByDataNodeType) + ", List.of(" + entry.allowedDataNodeTypes.map((type) => "\"" + type + "\"").join(", ") + "), " + javaCommandList(entry.coordinatedInventoryDefinitionCommands) + ")").join(",\n");
+const inventoryReferenceDeclarations = referencePathMatrix.entries
+  .filter((entry) => /^R(?:0[1-9]|1[0-7])$/.test(entry.id) && entry.owner === "inventory" && /^inventory\.stock_(?:target|bom)\.[a-z_]+$/.test(entry.storage))
+  .map((entry) => {
+    const [, tableName, columnName] = entry.storage.match(/^inventory\.(stock_(?:target|bom))\.([a-z_]+)$/);
+    return {objectType: entry.objectType, tableName, columnName};
+  });
+const inventoryReferenceDeclarationKey = (entry) => entry.objectType + ":" + entry.tableName + "." + entry.columnName;
+if (inventoryReferenceDeclarations.length !== 5
+  || new Set(inventoryReferenceDeclarations.map(inventoryReferenceDeclarationKey)).size !== 5
+  || !["CATALOG_ITEM:stock_target.item_ref", "CATALOG_ITEM:stock_bom.item_ref", "PRODUCT_SKU:stock_target.product_sku_ref", "PRODUCT_SKU:stock_bom.product_sku_ref", "SKU_ATTRIBUTE_VALUE:stock_bom.option_value_ref"].every((key) => inventoryReferenceDeclarations.some((entry) => inventoryReferenceDeclarationKey(entry) === key))) {
+  throw new Error("P1_INVENTORY_REFERENCE_DECLARATIONS_INVALID");
+}
+const inventoryReferenceDeclarationsByType = Object.groupBy(inventoryReferenceDeclarations, (entry) => entry.objectType);
+const javaInventoryReferenceCases = Object.entries(inventoryReferenceDeclarationsByType)
+  .map(([objectType, entries]) => "      case \"" + objectType + "\" -> List.of(" + entries.map((entry) => "new Source(\"" + entry.tableName + "\", \"" + entry.columnName + "\")").join(", ") + ");")
+  .join("\n");
 writeText(javaPath,
   "package com.catering.v2s.contracts.generated.cataloginventory;\n\n" +
   "import java.util.List;\nimport java.util.Map;\n\n" +
@@ -1241,8 +1425,10 @@ writeText(javaPath,
   "public final class CatalogInventoryShapeManifest {\n" +
   "  public enum Capability { SELLABLE, STOCK_MANAGED, BOM_COMPONENT, PRODUCIBLE }\n" +
   "  public enum ShapeKey { " + shapes.map((shape) => javaShapeEnum(shape.key)).join(", ") + " }\n" +
-  "  public record ShapeRule(ShapeKey shapeKey, String itemKind, String measureMode, String skuMode, String priceGranularity, List<Capability> usageCapabilities, boolean createAllowed, boolean visibleButDisabled, String disabledReason) {}\n" +
+  "  public record ShapeRule(ShapeKey shapeKey, String label, String itemKind, String measureMode, String skuMode, String priceGranularity, List<Capability> usageCapabilities, boolean createAllowed, boolean visibleButDisabled, String disabledReason) {}\n" +
   "  public record ModeRule(String nodeType, String condition, List<String> allowedModes) {}\n" +
+  "  public record EnumLabel(String kind, String value, String label) {}\n" +
+  "  public record SmartViewRule(String viewKey, String label) {}\n" +
   "  public static final String REVISION = \"" + REVISION + "\";\n" +
   "  public static final String MANIFEST_DIGEST = \"" + shapeManifestWithDigest.manifestDigest + "\";\n" +
   "  public static final int SHAPE_COUNT = " + shapes.length + ";\n" +
@@ -1250,6 +1436,11 @@ writeText(javaPath,
   "  public static final String[] SHAPE_KEYS = {" + shapes.map((shape) => "\"" + shape.key + "\"").join(", ") + "};\n" +
   "  public static final List<ShapeRule> SHAPE_RULES = List.of(\n" + javaShapeRules + "\n  );\n" +
   "  public static final List<ModeRule> MODE_RULES = List.of(\n" + javaModeRules + "\n  );\n" +
+  "  public static final List<EnumLabel> ENUM_LABELS = List.of(\n" + javaEnumLabels + "\n  );\n" +
+  "  public static final List<SmartViewRule> SMART_VIEWS = List.of(\n" + javaSmartViewRules + "\n  );\n" +
+  "  public static List<String> enumValues(String kind) { return ENUM_LABELS.stream().filter(entry -> entry.kind().equals(kind)).map(EnumLabel::value).toList(); }\n" +
+  "  public static boolean accepts(String kind, String value) { return enumValues(kind).contains(value); }\n" +
+  "  public static String label(String kind, String value) { return ENUM_LABELS.stream().filter(entry -> entry.kind().equals(kind) && entry.value().equals(value)).findFirst().map(EnumLabel::label).orElseThrow(() -> new IllegalArgumentException(\"unknown catalog enum: \" + kind + \"/\" + value)); }\n" +
   "  public static final String MANIFEST_JSON = \"" + javaEscape(manifestWireJson) + "\";\n" +
   "  public static final String SURFACE_KEYS = \"shapeRules,fieldRules,tabRules,linkageRules,typeEffects,saveSections,detailSections,modeRules\";\n" +
   "  private CatalogInventoryShapeManifest() {}\n}\n"
@@ -1257,6 +1448,20 @@ writeText(javaPath,
 writeText(tsPath,
   "/** Generated from " + REVISION + "; do not edit. */\n" +
   "export const catalogInventoryShapeManifest = " + manifestWireJson + " as const;\n"
+);
+writeText(inventoryReferenceDeclarationsPath,
+  "package com.catering.v2s.inventory.application;\n\n" +
+  "import java.util.List;\n\n" +
+  "/** Generated from catalog-inventory-reference-path-matrix.json; do not edit. */\n" +
+  "final class InventoryCatalogReferenceDeclarations {\n" +
+  "  record Source(String tableName, String columnName) {}\n" +
+  "  static List<Source> sourcesFor(String objectType) {\n" +
+  "    return switch (objectType) {\n" + javaInventoryReferenceCases + "\n" +
+  "      default -> List.of();\n" +
+  "    };\n" +
+  "  }\n" +
+  "  private InventoryCatalogReferenceDeclarations() {}\n" +
+  "}\n"
 );
 writeText("contracts/catalog/CatalogInventoryEdgeWire.java",
   "package com.catering.v2s.contracts.generated.cataloginventory;\n\n" +
@@ -1324,6 +1529,7 @@ function emitJavaRecord(name, schema) {
     const type = schemaType(fieldSchema);
     if (type === "string") {
       // Multipart staging preserves a stream; JSON/base64 or an intermediate byte array are not valid M1 transport.
+      if (fieldSchema.format === "uuid") return "java.util.UUID";
       return fieldSchema.format === "binary" ? (name === "CatalogAssetStageRequest" && fieldName === "content" ? "java.io.InputStream" : "byte[]") : "String";
     }
     if (type === "integer") return "Long";
@@ -1421,7 +1627,7 @@ const implementationManifest = {
     apiScenarios: ["contracts/policy/catalog-inventory-api-scenarios.json"],
     l2Scenarios: ["contracts/policy/catalog-inventory-l2-scenarios.json"],
     assertionMatrix: ["contracts/policy/catalog-inventory-assertion-matrix.json"],
-    generated: [javaPath, tsPath, "contracts/catalog/CatalogInventoryEdgeWire.java", "contracts/catalog/catalogInventoryEdgeWire.ts", catalogRouteRegistryPath]
+    generated: [javaPath, tsPath, inventoryReferenceDeclarationsPath, "contracts/catalog/CatalogInventoryEdgeWire.java", "contracts/catalog/catalogInventoryEdgeWire.ts", catalogRouteRegistryPath]
   },
   forbiddenSurfaces: ["apps/backend/catering-business-server/modules/catalog", "apps/backend/catering-business-server/modules/inventory", "db/migration", "seed execution", "DEV/UAT/L2 execution", "runtime deployment", "Git"],
   authorizationBoundary: "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",

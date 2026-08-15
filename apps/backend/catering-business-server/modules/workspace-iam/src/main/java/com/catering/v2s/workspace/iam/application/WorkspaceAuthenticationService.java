@@ -11,6 +11,7 @@ import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
@@ -18,7 +19,6 @@ import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -515,7 +515,7 @@ public class WorkspaceAuthenticationService {
     private String rawToken() { byte[] bytes = new byte[32]; random.nextBytes(bytes); return HexFormat.of().formatHex(bytes); }
     private static CommercialGroupLookup legacyGroups(OrganizationNodeLookup nodes) { return new CommercialGroupLookup() { @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { throw new UnsupportedOperationException("legacy tests supply a GROUP node"); } @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.isEnterable(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.describePath(workspaceUuid, groupWorkspaceKey, commercialGroupRef); } }; }
     private static String normalizedMobile(String value) { String normalized = value == null ? "" : value.replace(" ", "").replace("-", ""); if (!normalized.matches("^\\+?[0-9]{8,20}$")) throw new InvalidCredentialsException(); return normalized.startsWith("+") ? normalized.substring(1) : normalized; }
-    private static String sha256(String input) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8))); } catch (Exception error) { throw new IllegalStateException(error); } }
+    private static String sha256(String input) { try { return Sha256Hex.digest(input); } catch (NullPointerException error) { throw new IllegalStateException(error); } }
     private static Set<String> permissionKeys(String value) {
         try { return Set.copyOf(JSON.readValue(value, new TypeReference<List<String>>() { })); }
         catch (Exception failure) { throw new SessionInvalidException(); }

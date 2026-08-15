@@ -29,6 +29,14 @@ function scanSource(source, relativeFile) {
     if (!/\bkey\s*[:=]/.test(lineText) && /\$\{[^}]*(?:name|Name)[^}]*\}/.test(match[0]) && /\$\{[^}]*(?:code|Code)[^}]*\}/.test(match[0])) handBuilt.push(match);
   }
   for (const match of source.matchAll(/<[^>]+>\s*\{[^}]*(?:name|Name)[^}]*\}\s*<\/[^>]+>\s*<[^>]+>\s*\{[^}]*(?:code|Code)[^}]*\}\s*<\/[^>]+>/gi)) handBuilt.push(match);
+  for (const pattern of [
+    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?(?:name|Name)[^}]*\}[^<{}]*\{[^}]*?(?:code|Code)[^}]*\}[^<{}]*<\/\1>/gs,
+    /<([A-Za-z][\w.]*)\b[^>]*>[^<{}]*\{[^}]*?(?:code|Code)[^}]*\}[^<{}]*\{[^}]*?(?:name|Name)[^}]*\}[^<{}]*<\/\1>/gs,
+  ]) for (const match of source.matchAll(pattern)) handBuilt.push(match);
+  for (const pattern of [
+    /\b[\w$.]*(?:name|Name)\w*\b\s*\+\s*['"`][^'"`]*['"`]\s*\+\s*\b[\w$.]*(?:code|Code)\w*\b/g,
+    /\b[\w$.]*(?:code|Code)\w*\b\s*\+\s*['"`][^'"`]*['"`]\s*\+\s*\b[\w$.]*(?:name|Name)\w*\b/g,
+  ]) for (const match of source.matchAll(pattern)) handBuilt.push(match);
   const line = (match) => source.slice(0, match.index).split('\n').length;
   for (const match of legacy) findings.push({kind: 'LEGACY_FORMATTER', file: relativeFile, line: line(match)});
   for (const match of handBuilt) findings.push({kind: 'HAND_BUILT_NAME_CODE', file: relativeFile, line: line(match)});
@@ -59,11 +67,15 @@ function selfTest() {
   const handBuilt = scanSource('const label = `${dataNodeName} (${dataNodeCode})`;', 'fixture.ts');
   const handBuiltPath = scanSource('const label = `${dataNodeName} / ${dataNodeCode}`;', 'fixture.ts');
   const handBuiltJsx = scanSource('<span>{node.name}</span><span>{node.code}</span>', 'fixture.ts');
+  const handBuiltSameElement = scanSource('<Typography.Text>{row.productName}（{row.productCode}）</Typography.Text>', 'fixture.ts');
+  const handBuiltConcat = scanSource("const label = row.name + '（' + row.code;", 'fixture.ts');
   const clean = scanSource('const label = <NameCodeText name={name} code={code}/>;', 'fixture.ts');
   if (!legacy.some((finding) => finding.kind === 'LEGACY_FORMATTER')) throw new Error('NAME_CODE_SELF_TEST_LEGACY_RED_NOT_DETECTED');
   if (!handBuilt.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_HAND_BUILT_RED_NOT_DETECTED');
   if (!handBuiltPath.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_PATH_RED_NOT_DETECTED');
   if (!handBuiltJsx.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_JSX_RED_NOT_DETECTED');
+  if (!handBuiltSameElement.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_SAME_ELEMENT_RED_NOT_DETECTED');
+  if (!handBuiltConcat.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_CONCAT_RED_NOT_DETECTED');
   if (clean.length) throw new Error('NAME_CODE_SELF_TEST_CLEAN_FIXTURE_FALSE_POSITIVE');
   process.stdout.write('NAME_CODE_DENSITY_SELF_TEST=PASS\nRED_LEGACY_FORMATTER=PASS\nRED_HAND_BUILT_NAME_CODE=PASS\n');
 }

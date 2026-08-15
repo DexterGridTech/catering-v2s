@@ -3,9 +3,7 @@ package com.catering.v2s.workspace.iam.application;
 import com.catering.v2s.audit.contract.*;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import java.sql.Array;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -51,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
   private AuditHistoryPage readPlatformProjection(AuditReadScope scope, String entityRef, long page, long pageSize, String entityType, String targetTable, RuntimeException absent) {
     if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported workspace IAM audit target");
     long offset = Math.multiplyExact(page - 1, pageSize);
-    PageProjection value = jdbc.query("""
+    AuditHistoryResultSetReader.TargetProjection value = jdbc.query("""
         WITH target AS (SELECT 1 FROM workspace_iam.%s WHERE id::text=? AND workspace_uuid=? AND group_workspace_key=?),
         events AS (
           SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text,
@@ -73,21 +71,10 @@ import org.springframework.transaction.annotation.Transactional;
           statement.setObject(4, scope.workspaceUuid()); statement.setString(5, scope.groupWorkspaceKey());
           statement.setString(6, entityType); statement.setString(7, entityRef);
           statement.setLong(8, pageSize); statement.setLong(9, offset);
-        }, WorkspaceIamAuditHistoryService::platformProjection);
+        }, AuditHistoryResultSetReader::readTarget);
     if (!value.targetExists()) throw absent;
     return new AuditHistoryPage(value.items(), page, pageSize, value.total());
   }
-
-  private static PageProjection platformProjection(ResultSet rows) throws SQLException {
-    boolean targetExists = false; long total = 0; List<AuditHistoryItem> items = new ArrayList<>();
-    while (rows.next()) {
-      targetExists = rows.getBoolean("target_exists"); total = rows.getLong("total");
-      UUID id = rows.getObject("event_id", UUID.class);
-      if (id != null) items.add(new AuditHistoryItem(id, rows.getLong("occurred_at_epoch_millis"), rows.getString("actor_display_snapshot"), rows.getString("action"), new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")), AuditChangeJson.read(rows.getString("changes_json"))));
-    }
-    return new PageProjection(targetExists, List.copyOf(items), total);
-  }
-  private record PageProjection(boolean targetExists, List<AuditHistoryItem> items, long total) { }
 
   /**
    * One owner-local operations projection.  Authorization consumes only the read-context facts
@@ -97,7 +84,7 @@ import org.springframework.transaction.annotation.Transactional;
   public AuditHistoryPage readOperationsAuditProjection(WorkspaceReadAuthorizationFacts facts, AuditTarget target, long page, long pageSize) {
     if (facts == null || target == null || !Set.of("WORKSPACE_ACCOUNT", "WORKSPACE_INVITATION").contains(target.entityType())
         || page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported operations workspace audit target");
-    Projection value = ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, () -> jdbc.query(
+    AuditHistoryResultSetReader.AuthorizedProjection value = ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, () -> jdbc.query(
         operationsSql(target.entityType()), statement -> {
           statement.setObject(1, uuid(target.entityRef()));
           statement.setObject(2, facts.workspaceUuid()); statement.setString(3, facts.groupWorkspaceKey());
@@ -113,7 +100,7 @@ import org.springframework.transaction.annotation.Transactional;
           statement.setObject(index++, facts.workspaceUuid()); statement.setString(index++, facts.groupWorkspaceKey());
           statement.setString(index++, target.entityType()); statement.setString(index++, target.entityRef());
           statement.setLong(index++, pageSize); statement.setLong(index, (page - 1) * pageSize);
-        }, WorkspaceIamAuditHistoryService::projection));
+        }, AuditHistoryResultSetReader::readAuthorized));
     if (!value.found()) throw absent(target.entityType());
     if (!value.authorized()) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
     return new AuditHistoryPage(value.items(), page, pageSize, value.total());
@@ -130,20 +117,9 @@ import org.springframework.transaction.annotation.Transactional;
     return "WITH subject AS (SELECT entity.id FROM (VALUES (1)) input(value) LEFT JOIN workspace_iam." + table + " entity ON entity.id=? AND entity.workspace_uuid=? AND entity.group_workspace_key=?), auth_scope AS (SELECT subject.id IS NOT NULL AS found, CASE WHEN subject.id IS NULL THEN FALSE WHEN " + authorization + " THEN TRUE ELSE FALSE END AS authorized FROM subject), audit_rows AS (SELECT event.id AS audit_id, event.occurred_at_epoch_millis, event.actor_display_snapshot, event.action, event.entity_type, event.entity_ref_text, event.changes_json::text AS changes_json, count(*) OVER() AS total FROM workspace_iam.audit_event event CROSS JOIN auth_scope WHERE auth_scope.found AND auth_scope.authorized AND event.workspace_uuid=? AND event.group_workspace_key=? AND event.entity_type=? AND event.entity_ref_text=?), page_rows AS (SELECT * FROM audit_rows ORDER BY occurred_at_epoch_millis DESC, audit_id DESC LIMIT ? OFFSET ?), total_rows AS (SELECT coalesce(max(total), 0) AS total FROM audit_rows) SELECT auth_scope.found, auth_scope.authorized, total_rows.total, page_rows.audit_id, page_rows.occurred_at_epoch_millis, page_rows.actor_display_snapshot, page_rows.action, page_rows.entity_type, page_rows.entity_ref_text, page_rows.changes_json FROM auth_scope CROSS JOIN total_rows LEFT JOIN page_rows ON TRUE";
   }
 
-  private static Projection projection(ResultSet rows) throws SQLException {
-    boolean found = false; boolean authorized = false; long total = 0; List<AuditHistoryItem> items = new ArrayList<>();
-    while (rows.next()) {
-      found = rows.getBoolean("found"); authorized = rows.getBoolean("authorized"); total = rows.getLong("total");
-      UUID id = rows.getObject("audit_id", UUID.class);
-      if (id != null) items.add(new AuditHistoryItem(id, rows.getLong("occurred_at_epoch_millis"), rows.getString("actor_display_snapshot"), rows.getString("action"), new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")), AuditChangeJson.read(rows.getString("changes_json"))));
-    }
-    return new Projection(found, authorized, List.copyOf(items), total);
-  }
-
   private static List<UUID> ids(WorkspaceReadAuthorizationFacts facts, String type) {
     return facts.visibleOrganizationFacts().candidates().stream().filter(value -> type.equals(value.dataNodeType())).map(value -> value.dataNodeId()).toList();
   }
   private static Array uuidArray(java.sql.PreparedStatement statement, List<UUID> values) throws SQLException { return statement.getConnection().createArrayOf("uuid", values.toArray(UUID[]::new)); }
   private static UUID uuid(String value) { try { return UUID.fromString(value); } catch (RuntimeException invalid) { throw new IllegalArgumentException("operations audit target must be a UUID", invalid); } }
-  private record Projection(boolean found, boolean authorized, List<AuditHistoryItem> items, long total) { }
 }

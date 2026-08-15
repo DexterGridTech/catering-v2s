@@ -6,6 +6,7 @@ import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import type {ContractOverviewItem, OrganizationHierarchyTreeNode, OrganizationOverviewItem, OrganizationOverviewStatus, StoreContractSortDirection, StoreContractSortKey, StoreContractStatus} from '../../../app/api/generated/platform-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {ContractOverviewDetailDrawer} from './ContractOverviewDetailDrawer';
 import {OrganizationOverviewDetailDrawer} from './OrganizationOverviewDetailDrawer';
 import {defaultOrganizationTabQueryState, filtersForOrganizationTab, organizationOverviewQuery, ownerFilterOptions, updateOrganizationTabQueryState, type OrganizationFilters, type OrganizationTab, type OrganizationTabQueryState} from './OrganizationOverviewFilters';
@@ -90,7 +91,10 @@ function PlatformReadForWorkspace({groupWorkspaceKey, kind}: {groupWorkspaceKey:
   const context = useMemo(() => contextScopedQueryArgs({}, {groupWorkspaceKey}), [groupWorkspaceKey]);
   const workspaceDetailRequest = useMemo(() => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context.groupWorkspaceKey]);
   const organizationRequest = useMemo(() => platformAdminRtkRequest.getPlatformOrganizationOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: organizationOverviewQuery(tab, organizationTabState.filters, organizationTabState.page, organizationTabState.pageSize, organizationTabState.sort, organizationTabState.direction)}), [context.groupWorkspaceKey, organizationTabState, tab]);
-  const contractRequest = useMemo(() => platformAdminRtkRequest.getPlatformContractOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: {...contractFilters, sort: contractSort, direction: contractDirection, page, pageSize}}), [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort, page, pageSize]);
+  const contractRequest = useMemo(() => {
+    const {storeId, tenantId, ...restFilters} = contractFilters;
+    return platformAdminRtkRequest.getPlatformContractOverviewPage({groupWorkspaceKey: context.groupWorkspaceKey}, {query: {...restFilters, ...(storeId ? {storeId: wireUuid(storeId)} : {}), ...(tenantId ? {tenantId: wireUuid(tenantId)} : {}), sort: contractSort, direction: contractDirection, page, pageSize}});
+  }, [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort, page, pageSize]);
   const treeRequest = useMemo(() => platformAdminRtkRequest.getPlatformOrganizationHierarchyTree({groupWorkspaceKey: context.groupWorkspaceKey}, {}), [context.groupWorkspaceKey]);
   const commercialGroupDefinitionRequest = useMemo(() => platformAdminRtkRequest.getExtensionDefinition({groupWorkspaceKey: context.groupWorkspaceKey, entityType: 'COMMERCIAL_GROUP'}, {}), [context.groupWorkspaceKey]);
   const organizationQuery = platformRtk.useGetPlatformOrganizationOverviewPageQuery(organizationRequest, {skip: kind !== 'organization' || tab.category === 'HIERARCHY'});

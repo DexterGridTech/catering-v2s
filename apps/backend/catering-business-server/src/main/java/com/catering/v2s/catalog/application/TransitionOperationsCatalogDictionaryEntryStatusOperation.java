@@ -18,7 +18,7 @@ public class TransitionOperationsCatalogDictionaryEntryStatusOperation {
     public TransitionOperationsCatalogDictionaryEntryStatusOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogDictionaryEntryReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         return CreateOperationsCatalogDictionaryEntryOperation.response(context.requestId(), catalog.transitionDictionaryEntry(context, new CatalogOwnerApi.DictionaryEntryTransitionCommand(invocation.dictionaryKind(), invocation.entryCode(), CreateOperationsCatalogCategoryOperation.requiredLong(request.expectedVersion(), "expectedVersion"), request.targetStatus()), invocation.idempotencyKey()));
     }

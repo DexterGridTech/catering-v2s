@@ -1,13 +1,20 @@
-import {Alert, Button, Card, Col, Descriptions, Divider, Drawer, Empty, Form, Input, InputNumber, List, Modal, Row, Select, Skeleton, Space, Switch, Tabs, Tag, Tree, Typography, Upload} from 'antd';
-import {adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps, NameCodeText, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {Alert, Button, Card, Col, Descriptions, Divider, Drawer, Empty, Form, Input, InputNumber, List, Modal, Row, Select, Skeleton, Space, Switch, Tabs, Tag, Tooltip, Tree, Typography, Upload} from 'antd';
+import {adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps, DescriptorFieldRenderer, NameCodeText, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import type {DescriptorTreeNode} from '@catering-v2s/admin-ui-foundation';
+import {useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
-import type {CatalogItemSaveRequest, JsonValue, TemporaryPromotionExecuteRequest, TemporaryPromotionPreflight, TemporaryPromotionPreflightRequest} from '../../../app/api/generated/catalog-inventory-edge';
+import type {CatalogItemSaveRequest, CatalogShapeManifestView, JsonValue, TemporaryPromotionExecuteRequest, TemporaryPromotionPreflight, TemporaryPromotionPreflightRequest} from '../../../app/api/generated/catalog-inventory-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import type {CatalogCompositeComponent, CatalogCompositeGroup, CatalogDetail, CatalogInventoryBomEntry, CatalogOrderOptionGroup, CatalogOrderOptionValue, CatalogSkuRow, CatalogSkuVariantDimension} from '../model/catalogModel';
-import {decodeDetail, decodeItems, decodeNavigation, displayValue} from '../model/catalogModel';
-import {CatalogDictionaryDrawer, type ProductionTagCandidate} from './CatalogDictionaryDrawer';
+import {buildSkuMatrix, catalogFormValidationIssue, catalogSkuIssueCodes, decodeDetail, decodeItems, decodeNavigation, displayValue, serializeSkuRowsForSave} from '../model/catalogModel';
+import {catalogEnumLabel, catalogEnumOptions, catalogFieldLabel} from '../model/catalogManifestLabels';
+import {catalogTabLabel} from '../model/catalogTabLabels';
+import {catalogJoinedField, type CatalogDescriptorManifest} from '../model/catalogDescriptorManifest';
+import {createCatalogOptionResolver, type CatalogCandidateRow, type CatalogFieldRuntimeContext} from '../model/catalogFieldRuntime';
+import {CatalogDescriptorPicker} from './CatalogDescriptorPicker';
+import {CatalogDictionaryDrawer, type CatalogDictionaryQuickManageCandidate, type ProductionTagCandidate} from './CatalogDictionaryDrawer';
 import {LocalCatalogCopyDrawer} from './LocalCatalogCopyDrawer';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 
@@ -18,32 +25,28 @@ type Props = {
   canWriteCatalog: boolean;
   surface: 'store' | 'brand';
   onOpenProductionTags?: () => void;
-  onVoidAndRebuild?: (source: {name: string; shapeKey: string}) => void;
+  onOpenDictionary?: (kind: 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE') => void;
+  dictionaryRevision?: number;
+  onVoidAndRebuild?: (source: {code: string; name: string; shapeKey: string}) => void;
   onClose: () => void;
   onChanged: () => void;
 };
 
-const tabLabels: Record<string, string> = {basic: '基础', 'sku-specifications-pricing': 'SKU规格与价格', identifiers: '条码与识别', ordering: '点单与定价', 'order-options': '点单选项', attributes: '属性', 'production-prompts': '生产提示', 'inventory-bom': '库存与BOM', governance: '治理与引用', 'composite-content': '套餐内容'};
 type MediaDraft = {id: string; assetRef?: string; bindGrant?: string; fileName: string; mediaType: string; status: 'READY' | 'UPLOADING' | 'FAILED'; file?: File; error?: string; version?: number; staged: boolean; skuIndex?: number; previous?: {assetRef?: string; version?: number; staged: boolean}};
 type ProfileLayer = 'item' | 'sku' | 'optionValue';
 type ProductionProfileDraft = CatalogDetail['item']['productionProfiles'];
-type OrderingDraft = CatalogDetail['item']['ordering'];
 type SkuDimensionDraft = CatalogSkuVariantDimension;
 type SkuRowDraft = CatalogSkuRow;
+type ProductionTagOption = {tagRef: string; code: string; name: string; owner: string; status?: string};
 type PromotionFormValues = Pick<TemporaryPromotionPreflightRequest, 'formalCode' | 'shapeKey' | 'name' | 'shortName' | 'materialRole'>;
+type CatalogManifest = Pick<CatalogShapeManifestView, 'enumLabels' | 'fields' | 'fieldRules' | 'tabRules'>;
 const MAX_MEDIA_COUNT = 6;
+// These values stay inside an incomplete editor draft. They are validated by
+// wireUuid only when a request is assembled for a generated endpoint.
+const draftUuid = (value = ''): ReturnType<typeof wireUuid> => value as ReturnType<typeof wireUuid>;
 const MAX_MEDIA_BYTES = 2 * 1024 * 1024;
 
 const profileLayerLabels: Record<ProfileLayer, string> = {item: '商品', sku: 'SKU', optionValue: '选项值'};
-const promotionShapeLabels: Record<TemporaryPromotionPreflightRequest['shapeKey'], string> = {
-  STANDARD_SALE_COUNTED: '普通销售商品（按件）',
-  SKU_VARIANT_SALE_COUNTED: 'SKU 管理商品（按件）',
-  STANDARD_SALE_WEIGHED: '普通销售商品（称重）',
-  MATERIAL: '原材料',
-  COMPOSITE: '套餐',
-  SERVICE: '服务费',
-  BENEFIT_SHELL: '权益壳（尚未开放）',
-};
 const profileFields: Array<{key: 'printName' | 'stationTags' | 'printTags' | 'estimatedPreparationSeconds' | 'preparationNotes' | 'allergens'; label: string; kind: 'text' | 'tags' | 'number'}> = [
   {key: 'printName', label: '打印名称', kind: 'text'},
   {key: 'stationTags', label: '处理标签', kind: 'tags'},
@@ -58,7 +61,6 @@ async function contentDigest(file: File) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function cloneOrdering(value: OrderingDraft): OrderingDraft { return {...value}; }
 function cloneProfiles(value: ProductionProfileDraft): ProductionProfileDraft { return {item: {...value.item}, sku: {...value.sku}, optionValue: {...value.optionValue}}; }
 function cloneSkuDimensions(value: SkuDimensionDraft[]): SkuDimensionDraft[] { return value.map((dimension) => ({...dimension, values: dimension.values.map((entry) => ({...entry}))})); }
 function cloneSkuRows(value: SkuRowDraft[]): SkuRowDraft[] { return value.map((sku) => ({...sku, attributeValueRefs: sku.attributeValueRefs.map((entry) => ({...entry})), mediaRefs: [...sku.mediaRefs]})); }
@@ -76,15 +78,70 @@ function profileNumber(profile: Record<string, JsonValue>, key: string) {
 }
 function splitComma(value: string) { return value.split(',').map((entry) => entry.trim()).filter(Boolean); }
 function profileDisplayValue(value: JsonValue) { return Array.isArray(value) ? value.map((entry) => displayValue(entry)).join('、') || '—' : displayValue(value); }
+function descriptorString(value: string | string[]) { return Array.isArray(value) ? value[0] ?? '' : value; }
+function descriptorRow(value: CatalogCandidateRow | CatalogCandidateRow[] | undefined) { return Array.isArray(value) ? value[0] : value; }
 
-export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCatalog, surface, onOpenProductionTags, onVoidAndRebuild, onClose, onChanged}: Props) {
+function catalogVoidBlockReason(availability: CatalogDetail['actionAvailability']['voidAvailability'] | undefined) {
+  if (availability?.canVoid) return undefined;
+  const facts = [
+    ...(availability?.blockingReferences ?? []).map((fact) => `引用 ${fact.referenceKind}（${fact.referenceRef}）`),
+    ...(availability?.dependentFacts ?? []).map((fact) => `依赖 ${fact.factKind}（${fact.factRef}）`),
+  ];
+  return facts.length ? `作废被以下事实阻断：${facts.join('、')}` : '存在 owner 阻断事实，暂不能作废。';
+}
+
+const catalogDeniedFieldLabels: Record<string, string> = {
+  name: '商品名称',
+  shortName: '短名',
+  attributes: '描述属性',
+  identifiers: '标识与条码',
+  categoryRefs: '分类',
+  tagRefs: '商品标签',
+  salesUnitRefs: '销售单位',
+  standardSalePrice: '商品标准价',
+  images: '图片资产',
+  productionTagRefs: '生产提示与生产标签',
+  skuVariantDimensions: 'SKU 规格维度',
+  skuVariantAttribute: 'SKU 规格属性',
+  skuVariantValues: 'SKU 规格值',
+  skuMatrix: 'SKU 矩阵',
+  skus: 'SKU 矩阵',
+  orderOptions: '点单选项',
+  productionProfiles: '生产提示',
+  bomTarget: '库存对象',
+  bomOptionValue: '库存 BOM 所属选项值',
+  inventoryBom: '库存与 BOM',
+  compositeComponentSku: '套餐组件 SKU',
+  compositeGroups: '套餐内容',
+};
+
+function deniedFieldLabel(manifest: CatalogManifest | undefined, fieldKey: string) {
+  const label = catalogDeniedFieldLabels[fieldKey] ?? catalogFieldLabel(manifest, fieldKey);
+  return label === fieldKey ? '上游维护字段' : label;
+}
+
+type DisabledReasonButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {reason?: string; children: ReactNode};
+
+function DisabledReasonButton({reason, disabled, children, ...props}: DisabledReasonButtonProps) {
+  const button = <Button {...props} disabled={disabled}>{children}</Button>;
+  if (!disabled || !reason) return button;
+  return <Tooltip title={reason}><span style={{display: 'inline-block'}}>{button}</span></Tooltip>;
+}
+
+export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCatalog, surface, onOpenProductionTags, onOpenDictionary, dictionaryRevision = 0, onVoidAndRebuild, onClose, onChanged}: Props) {
+  void surface;
+  void onOpenDictionary;
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [activeTab, setActiveTab] = useState('basic');
   const [problem, setProblem] = useState<string>();
   const [localCopyOpen, setLocalCopyOpen] = useState(false);
   const [productionTagQuickManageOpen, setProductionTagQuickManageOpen] = useState(false);
+  const [dictionaryQuickManage, setDictionaryQuickManage] = useState<{kind: 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE'; dimensionIndex?: number}>();
+  const [localDictionaryRevision, setLocalDictionaryRevision] = useState(0);
   const [selectedProductionTagRefs, setSelectedProductionTagRefs] = useState<string[]>([]);
-  const [selectedProductionTags, setSelectedProductionTags] = useState<Array<{code: string; name: string; owner: string}>>([]);
+  const [selectedProductionTags, setSelectedProductionTags] = useState<ProductionTagOption[]>([]);
+  const [selectedTagRefs, setSelectedTagRefs] = useState<string[]>([]);
+  const [selectedSalesUnitRefs, setSelectedSalesUnitRefs] = useState<string[]>([]);
   const initializedProductionItem = useRef<string | undefined>(undefined);
   const problemRef = useRef<HTMLDivElement | null>(null);
   const [mediaDraft, setMediaDraft] = useState<MediaDraft[]>([]);
@@ -94,7 +151,8 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   const [releaseCloseFailed, setReleaseCloseFailed] = useState(false);
   const [releasingBeforeClose, setReleasingBeforeClose] = useState(false);
   const [identifierDraft, setIdentifierDraft] = useState<CatalogDetail['item']['identifiers']>([]);
-  const [orderingDraft, setOrderingDraft] = useState<OrderingDraft>({priceGranularity: 'ITEM', standardSalePrice: null, listedSalePrice: null, missingPriceCount: 0});
+  const [categoryRefsDraft, setCategoryRefsDraft] = useState<string[]>([]);
+  const [standardSalePriceDraft, setStandardSalePriceDraft] = useState<number | null>(null);
   const [orderOptionsDraft, setOrderOptionsDraft] = useState<CatalogOrderOptionGroup[]>([]);
   const [productionProfilesDraft, setProductionProfilesDraft] = useState<ProductionProfileDraft>({item: {}, sku: {}, optionValue: {}});
   const [productionProfileLayer, setProductionProfileLayer] = useState<ProfileLayer>('item');
@@ -108,12 +166,15 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   const [form] = Form.useForm<{displayName: string; shortName?: string; attributesText: string}>();
   const [promotionForm] = Form.useForm<PromotionFormValues>();
   const headers = useMemo(() => brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined, [brandRef]);
-  const request = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItem({itemCode: itemCode ?? ''}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, itemCode, queryContext.scopeRef]);
+  const request = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItem({itemCode: itemCode ?? ''}, {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers}), [headers, itemCode, queryContext.scopeRef]);
   const detailQuery = operationsRtk.useGetOperationsCatalogItemQuery(request, {skip: !itemCode});
   const detail = useMemo(() => decodeDetail(detailQuery.data), [detailQuery.data]);
-  const productionTagsRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsProductionTags({}, {query: {dataNodeRef: queryContext.scopeRef ?? ''}, headers}), [headers, queryContext.scopeRef]);
+  const manifestRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogShapeManifest({}, {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers}), [headers, queryContext.scopeRef]);
+  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !itemCode});
+  const manifest = manifestQuery.currentData?.data;
+  const productionTagsRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsProductionTags({}, {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers}), [headers, queryContext.scopeRef]);
   const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {skip: !itemCode || !canWriteCatalog});
-  const availableProductionTags = (productionTagsQuery.data?.data.entries ?? []).map((entry) => ({code: entry.code, name: entry.name, owner: 'fulfillment-production'}));
+  const availableProductionTags: ProductionTagOption[] = (productionTagsQuery.data?.data.entries ?? []).map((entry) => ({tagRef: entry.tagRef, code: entry.code, name: entry.name, owner: 'fulfillment-production', status: entry.status}));
   const [save] = operationsRtk.useSaveOperationsCatalogItemMutation();
   const [stageAsset] = operationsRtk.useStageOperationsCatalogAssetMutation();
   const [releaseAsset] = operationsRtk.useReleaseOperationsCatalogStagedAssetMutation();
@@ -124,9 +185,10 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
     if (!asset.staged || !asset.assetRef || asset.version === undefined) return true;
     try {
       const dataNodeRef = requireOperationsScopeRef(queryContext);
-      await releaseAsset(catalogInventoryRtkRequest.releaseOperationsCatalogStagedAsset({assetRef: asset.assetRef}, {
+      const assetRef = wireUuid(asset.assetRef);
+      await releaseAsset(catalogInventoryRtkRequest.releaseOperationsCatalogStagedAsset({assetRef}, {
         headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()},
-        body: {dataNodeRef, assetRef: asset.assetRef, expectedVersion: asset.version},
+        body: {dataNodeRef, assetRef, expectedVersion: asset.version},
       })).unwrap();
       return true;
     } catch (error) {
@@ -161,7 +223,10 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
     if (!detail) return;
     form.setFieldsValue({displayName: detail.item.name, shortName: detail.item.shortName ?? '', attributesText: JSON.stringify(detail.item.attributes, null, 2)});
     setIdentifierDraft(detail.item.identifiers.map((entry) => ({...entry})));
-    setOrderingDraft(cloneOrdering(detail.item.ordering));
+    setCategoryRefsDraft([...detail.item.categoryRefs]);
+    setStandardSalePriceDraft(detail.item.standardSalePrice ?? null);
+    setSelectedTagRefs([...detail.item.tagRefs]);
+    setSelectedSalesUnitRefs([...detail.item.salesUnitRefs]);
     setOrderOptionsDraft(detail.item.orderOptions.map((group) => ({...group, values: group.values.map((entry) => ({...entry, productionEffects: [...entry.productionEffects]}))})));
     setProductionProfilesDraft(cloneProfiles(detail.item.productionProfiles));
     setProductionProfileLayer('item');
@@ -186,7 +251,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
     if (!(problem || detailQuery.error || mediaProblem)) return;
     window.requestAnimationFrame(() => problemRef.current?.focus());
   }, [detailQuery.error, mediaProblem, problem]);
-  useEffect(() => { if (!itemCode) { initializedProductionItem.current = undefined; initializedMediaItem.current = undefined; setMode('view'); setProblem(undefined); setMediaProblem(undefined); setReleaseCloseFailed(false); setReleasingBeforeClose(false); setMediaDraft([]); setSkuStagedMedia([]); setIdentifierDraft([]); setOrderOptionsDraft([]); setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}}); setInventoryBomDraft([]); setCompositeGroupsDraft([]); setSkuVariantDimensionsDraft([]); setSkusDraft([]); setLocalCopyOpen(false); setProductionTagQuickManageOpen(false); setPromotion(undefined); setPromotionOpen(false); setPromotionProblem(undefined); lifecycle.reset(); } }, [itemCode, lifecycle]);
+  useEffect(() => { if (!itemCode) { initializedProductionItem.current = undefined; initializedMediaItem.current = undefined; setMode('view'); setProblem(undefined); setMediaProblem(undefined); setReleaseCloseFailed(false); setReleasingBeforeClose(false); setMediaDraft([]); setSkuStagedMedia([]); setIdentifierDraft([]); setCategoryRefsDraft([]); setSelectedTagRefs([]); setSelectedSalesUnitRefs([]); setOrderOptionsDraft([]); setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}}); setInventoryBomDraft([]); setCompositeGroupsDraft([]); setSkuVariantDimensionsDraft([]); setSkusDraft([]); setLocalCopyOpen(false); setProductionTagQuickManageOpen(false); setDictionaryQuickManage(undefined); setLocalDictionaryRevision(0); setPromotion(undefined); setPromotionOpen(false); setPromotionProblem(undefined); lifecycle.reset(); } }, [itemCode, lifecycle]);
 
   const submit = async () => {
     if (!detail || !itemCode) return;
@@ -210,7 +275,15 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       setActiveTab('sku-specifications-pricing');
       return;
     }
-    const values = await form.validateFields();
+    let values: {displayName: string; shortName?: string; attributesText: string};
+    try {
+      values = await form.validateFields();
+    } catch (error) {
+      const issue = catalogFormValidationIssue(error);
+      setActiveTab(issue?.tabKey ?? 'basic');
+      setProblem(issue?.message ?? '请先修正商品基础信息后再保存。');
+      return;
+    }
     let attributes: Record<string, JsonValue>;
     try {
       const parsed: unknown = JSON.parse(values.attributesText || '{}');
@@ -236,7 +309,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       for (let index = 0; index < skusDraft.length; index += 1) {
         const sku = skusDraft[index];
         const code = sku.skuCode.trim();
-        if (!code || !sku.skuName.trim() || seenSkuCodes.has(code) || (orderingDraft.priceGranularity === 'SKU' && sku.status === 'ENABLED' && sku.standardSalePrice === null)) { invalidSku = index; break; }
+        if (!code || !sku.skuName.trim() || seenSkuCodes.has(code) || (detail.item.priceGranularity === 'SKU' && sku.status === 'ENABLED' && sku.standardSalePrice === null)) { invalidSku = index; break; }
         seenSkuCodes.add(code);
       }
       if (invalidDimension >= 0) { setActiveTab('sku-specifications-pricing'); setProblem(`SKU 规格第 ${invalidDimension + 1} 个维度缺少属性编码、名称或属性值信息。`); return; }
@@ -264,20 +337,22 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
         name: values.displayName,
         shapeKey: detail.item.shapeKey,
         attributes,
-        images: mediaDraft.filter((asset) => (asset.status === 'READY' || asset.status === 'FAILED') && asset.assetRef).map((asset) => asset.assetRef as string),
-        productionTagRefs: selectedProductionTagRefs,
-        categoryRefs: detail.item.categoryRefs,
+        images: mediaDraft.filter((asset) => (asset.status === 'READY' || asset.status === 'FAILED') && asset.assetRef).map((asset) => wireUuid(asset.assetRef)),
+        productionTagRefs: selectedProductionTagRefs.map((ref) => wireUuid(ref)),
+        tagRefs: selectedTagRefs.map((ref) => wireUuid(ref)),
+        salesUnitRefs: selectedSalesUnitRefs.map((ref) => wireUuid(ref)),
+        categoryRefs: categoryRefsDraft.map((ref) => wireUuid(ref)),
       };
       if (visibleTabs.has('identifiers')) catalogDraft.identifiers = identifierDraft;
-      if (visibleTabs.has('ordering') || visibleTabs.has('sku-specifications-pricing')) catalogDraft.ordering = orderingDraft;
+      if (visibleTabs.has('basic') && detail.item.priceGranularity === 'ITEM') catalogDraft.standardSalePrice = standardSalePriceDraft;
       if (visibleTabs.has('sku-specifications-pricing')) {
         catalogDraft.skuVariantDimensions = skuVariantDimensionsDraft;
-        catalogDraft.skus = skusDraft;
+        catalogDraft.skus = serializeSkuRowsForSave(skusDraft);
       }
       if (visibleTabs.has('order-options')) catalogDraft.orderOptions = orderOptionsDraft;
       if (visibleTabs.has('composite-content')) catalogDraft.compositeGroups = compositeGroupsDraft;
       if (visibleTabs.has('production-prompts')) catalogDraft.productionProfiles = productionProfilesDraft;
-      if (visibleTabs.has('inventory-bom')) catalogDraft.inventoryBom = inventoryBomDraft;
+      if (visibleTabs.has('inventory-bom')) catalogDraft.inventoryBom = inventoryBomDraft.map((entry) => ({...entry, skuCode: entry.skuCode ?? null}));
       const bindGrants = Object.fromEntries([...mediaDraft, ...skuStagedMedia]
         .filter((asset): asset is MediaDraft & {assetRef: string; bindGrant: string} => Boolean(asset.assetRef && asset.bindGrant))
         .map((asset) => [asset.assetRef, asset.bindGrant]));
@@ -289,14 +364,14 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
           inventoryConfiguration: {nodes: visibleTabs.has('inventory-bom') ? inventoryBomDraft.filter((node) => node.mode === 'INDEPENDENT_STOCK').map((node) => ({
             nodeType: node.nodeType,
             mode: node.mode,
-            ...(node.targetRef.trim() ? {targetRef: node.targetRef.trim()} : {}),
+            ...(node.targetRef.trim() ? {targetRef: wireUuid(node.targetRef.trim())} : {}),
             itemCode: node.itemCode ?? detail.item.code,
             skuCode: node.skuCode ?? null,
             ...(node.consumptionUnit?.trim() ? {consumptionUnit: node.consumptionUnit.trim()} : {}),
             ...(node.configuration ? {configuration: node.configuration} : {}),
           })) : []},
           expectedCatalogVersion: detail.item.version,
-          expectedInventoryVersions: visibleTabs.has('inventory-bom') ? inventoryBomDraft.filter((node) => node.mode === 'INDEPENDENT_STOCK' && node.targetRef.trim() && node.version !== undefined).map((node) => ({targetRef: node.targetRef, version: node.version as number})) : [],
+          expectedInventoryVersions: visibleTabs.has('inventory-bom') ? inventoryBomDraft.filter((node) => node.mode === 'INDEPENDENT_STOCK' && node.targetRef.trim() && node.version !== undefined).map((node) => ({targetRef: wireUuid(node.targetRef), version: node.version as number})) : [],
         },
       }})).unwrap();
       lifecycle.reset();
@@ -312,6 +387,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   };
   const changeStatus = async (targetStatus: 'ENABLED' | 'DISABLED' | 'ARCHIVED' | 'VOIDED') => {
     if (!detail || !itemCode) return;
+    if (detail.item.source === 'TEMPORARY') return;
     if (targetStatus === 'VOIDED' && !detail.actionAvailability.voidAvailability?.canVoid) return;
     setProblem(undefined);
     try {
@@ -319,14 +395,26 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       await transition(catalogInventoryRtkRequest.transitionOperationsCatalogItemStatus({itemCode}, {headers: {...headers, 'Idempotency-Key': globalThis.crypto.randomUUID()}, body: {dataNodeRef, itemCode, targetStatus, expectedVersion: detail.item.version}})).unwrap();
       await detailQuery.refetch();
       onChanged();
-      if (targetStatus === 'VOIDED') onVoidAndRebuild?.({name: detail.item.name, shapeKey: detail.item.shapeKey});
+      if (targetStatus === 'VOIDED') onVoidAndRebuild?.({code: detail.item.code, name: detail.item.name, shapeKey: detail.item.shapeKey});
     } catch (error) { setProblem(operationsProblemOf(error).detail); }
   };
+  const confirmStatusChange = (targetStatus: 'ENABLED' | 'DISABLED' | 'ARCHIVED') => {
+    if (!detail) return;
+    const labels: Record<typeof targetStatus, string> = {ENABLED: '启用', DISABLED: '停用', ARCHIVED: '归档'};
+    Modal.confirm({
+      title: `${labels[targetStatus]}商品？`,
+      content: `将把商品“${detail.item.name}”的生命周期状态改为“${labels[targetStatus]}”，不会清空商品事实。`,
+      okText: `确认${labels[targetStatus]}`,
+      cancelText: '取消',
+      onOk: () => changeStatus(targetStatus),
+    });
+  };
   const voidAndRebuild = () => {
+    if (detail?.item.source === 'TEMPORARY') return;
     if (!detail?.actionAvailability.voidAvailability?.canVoid) return;
     Modal.confirm({
       title: `作废并重建“${detail.item.name}”`,
-      content: '将先把旧商品置为作废并永久保留原编码，然后用新编码创建一条商品。旧编码不会释放。',
+      content: '将先把旧商品置为作废并释放原编码，然后用相同编码预填新商品创建表单；提交前仍会执行唯一性校验。',
       okText: '作废并继续重建',
       cancelText: '取消',
       onOk: () => changeStatus('VOIDED'),
@@ -397,10 +485,28 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
     }
   };
   const onProductionTagCreated = (candidate: ProductionTagCandidate) => {
-    setSelectedProductionTags((current) => current.some((tag) => tag.code === candidate.code) ? current : [...current, candidate]);
-    setSelectedProductionTagRefs((current) => current.includes(candidate.code) ? current : [...current, candidate.code]);
+    const option: ProductionTagOption = {...candidate};
+    setSelectedProductionTags((current) => current.some((tag) => tag.tagRef === option.tagRef) ? current : [...current, option]);
+    setSelectedProductionTagRefs((current) => current.includes(option.tagRef) ? current : [...current, option.tagRef]);
     lifecycle.setDirty(true);
     setProductionTagQuickManageOpen(false);
+  };
+  const openDictionaryQuickManage = (kind: 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE', dimensionIndex?: number) => setDictionaryQuickManage({kind, dimensionIndex});
+  const onDictionaryCreated = (candidate: CatalogDictionaryQuickManageCandidate) => {
+    const quickManage = dictionaryQuickManage;
+    if (!quickManage) return;
+    if (quickManage.kind === 'TAG') {
+      setSelectedTagRefs((current) => current.includes(candidate.entryRef) ? current : [...current, candidate.entryRef]);
+    } else if (quickManage.kind === 'SALES_UNIT') {
+      setSelectedSalesUnitRefs((current) => current.includes(candidate.entryRef) ? current : [...current, candidate.entryRef]);
+    } else if (quickManage.dimensionIndex !== undefined) {
+      setSkuVariantDimensionsDraft((current) => current.map((dimension, index) => index === quickManage.dimensionIndex
+        ? {...dimension, attributeRef: draftUuid(candidate.entryRef), attributeCode: candidate.code, attributeName: candidate.name, values: []}
+        : dimension));
+    }
+    setLocalDictionaryRevision((current) => current + 1);
+    lifecycle.setDirty(true);
+    setDictionaryQuickManage(undefined);
   };
   const stageMedia = async (file: File, existingId?: string) => {
     if (!existingId && mediaDraft.length >= MAX_MEDIA_COUNT) { setMediaProblem(`最多维护 ${MAX_MEDIA_COUNT} 张图片（1 张主图 + 5 张附图）。`); return; }
@@ -483,7 +589,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
       if (previousStaged && !await releaseStagedAsset(previousStaged)) {
         throw new Error('CATALOG_PREVIOUS_STAGED_ASSET_RELEASE_FAILED');
       }
-      setSkusDraft((current) => current.map((sku, index) => index !== skuIndex ? sku : {...sku, mediaRefs: replaceAssetRef ? sku.mediaRefs.map((assetRef) => assetRef === replaceAssetRef ? readback.assetRef as string : assetRef) : [...sku.mediaRefs, readback.assetRef as string]}));
+      setSkusDraft((current) => current.map((sku, index) => index !== skuIndex ? sku : {...sku, mediaRefs: replaceAssetRef ? sku.mediaRefs.map((assetRef) => assetRef === replaceAssetRef ? readback.assetRef : assetRef) : [...sku.mediaRefs, readback.assetRef]}));
       setSkuStagedMedia((current) => [...current.filter((asset) => asset.id !== id && asset.assetRef !== previous?.assetRef), readyMedia]);
       lifecycle.setDirty(true);
     } catch (error) {
@@ -501,34 +607,45 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   };
   const removeSkuStagedMedia = (id: string) => setSkuStagedMedia((current) => current.filter((asset) => asset.id !== id));
   const updateIdentifiers = (next: CatalogDetail['item']['identifiers']) => { setIdentifierDraft(next); lifecycle.setDirty(true); };
-  const updateOrdering = (next: OrderingDraft) => { setOrderingDraft(next); lifecycle.setDirty(true); };
+  const updateCategoryRefs = (next: string[]) => { setCategoryRefsDraft(next); lifecycle.setDirty(true); };
+  const updateStandardSalePrice = (next: number | null) => { setStandardSalePriceDraft(next); lifecycle.setDirty(true); };
   const updateOrderOptions = (next: CatalogOrderOptionGroup[]) => { setOrderOptionsDraft(next); lifecycle.setDirty(true); };
+  const onOrderOptionsChange = updateOrderOptions;
   const updateProductionProfiles = (next: ProductionProfileDraft) => { setProductionProfilesDraft(next); lifecycle.setDirty(true); };
   const updateInventoryBom = (next: CatalogInventoryBomEntry[]) => { setInventoryBomDraft(next); lifecycle.setDirty(true); };
   const updateCompositeGroups = (next: CatalogCompositeGroup[]) => { setCompositeGroupsDraft(next); lifecycle.setDirty(true); };
   const updateSkuVariantDimensions = (next: SkuDimensionDraft[]) => { setSkuVariantDimensionsDraft(next); lifecycle.setDirty(true); };
   const updateSkus = (next: SkuRowDraft[]) => { setSkusDraft(next); lifecycle.setDirty(true); };
-  const tabItems = detail ? detail.tabs.filter((tab) => tab.visible).map((tab) => ({key: tab.tabKey, label: tabLabels[tab.tabKey] ?? tab.tabKey, disabled: tab.disabled, children: <CatalogTabContent tabKey={tab.tabKey} detail={detail} editing={mode === 'edit'} canWriteCatalog={canWriteCatalog} form={form} mediaDraft={mediaDraft} onStageMedia={stageMedia} onRemoveMedia={removeMedia} onMoveMedia={moveMedia} onSetPrimaryMedia={setPrimaryMedia} skuStagedMedia={skuStagedMedia} onStageSkuMedia={stageSkuMedia} onRemoveSkuMedia={removeSkuMedia} onRemoveSkuStagedMedia={removeSkuStagedMedia} availableProductionTags={availableProductionTags} selectedProductionTagRefs={selectedProductionTagRefs} selectedProductionTags={selectedProductionTags} onProductionTagsChange={(next) => { setSelectedProductionTagRefs(next); lifecycle.setDirty(true); }} identifierDraft={identifierDraft} orderingDraft={orderingDraft} orderOptionsDraft={orderOptionsDraft} productionProfilesDraft={productionProfilesDraft} productionProfileLayer={productionProfileLayer} onProductionProfileLayerChange={setProductionProfileLayer} inventoryBomDraft={inventoryBomDraft} compositeGroupsDraft={compositeGroupsDraft} skuVariantDimensionsDraft={skuVariantDimensionsDraft} skusDraft={skusDraft} queryContext={queryContext} brandRef={brandRef} currentItemCode={itemCode} onIdentifiersChange={updateIdentifiers} onOrderingChange={updateOrdering} onOrderOptionsChange={updateOrderOptions} onProductionProfilesChange={updateProductionProfiles} onInventoryBomChange={updateInventoryBom} onCompositeGroupsChange={updateCompositeGroups} onSkuVariantDimensionsChange={updateSkuVariantDimensions} onSkusChange={updateSkus} onDirty={() => lifecycle.setDirty(true)} onOpenProductionTags={onOpenProductionTags} onOpenProductionQuickManage={() => setProductionTagQuickManageOpen(true)}/> })) : [];
+  const onStageSkuMedia = stageSkuMedia;
+  const effectiveDictionaryRevision = dictionaryRevision + localDictionaryRevision;
+  const tabItems = detail ? detail.tabs.filter((tab) => tab.visible).map((tab) => ({key: tab.tabKey, label: tab.disabled && tab.reason ? <Tooltip title={tab.reason}><span>{catalogTabLabel(tab.tabKey)}</span></Tooltip> : catalogTabLabel(tab.tabKey), disabled: tab.disabled, children: <CatalogTabContent tabKey={tab.tabKey} detail={detail} manifest={manifest} editing={mode === 'edit'} canWriteCatalog={canWriteCatalog} form={form} mediaDraft={mediaDraft} onStageMedia={stageMedia} onRemoveMedia={removeMedia} onMoveMedia={moveMedia} onSetPrimaryMedia={setPrimaryMedia} skuStagedMedia={skuStagedMedia} onStageSkuMedia={onStageSkuMedia} onRemoveSkuMedia={removeSkuMedia} onRemoveSkuStagedMedia={removeSkuStagedMedia} availableProductionTags={availableProductionTags} selectedProductionTagRefs={selectedProductionTagRefs} selectedProductionTags={selectedProductionTags} onProductionTagsChange={(next) => { setSelectedProductionTagRefs(next); lifecycle.setDirty(true); }} selectedTagRefs={selectedTagRefs} selectedSalesUnitRefs={selectedSalesUnitRefs} onTagRefsChange={(next) => { setSelectedTagRefs(next); lifecycle.setDirty(true); }} onSalesUnitRefsChange={(next) => { setSelectedSalesUnitRefs(next); lifecycle.setDirty(true); }} categoryRefsDraft={categoryRefsDraft} onCategoryRefsChange={updateCategoryRefs} identifierDraft={identifierDraft} standardSalePriceDraft={standardSalePriceDraft} orderOptionsDraft={orderOptionsDraft} productionProfilesDraft={productionProfilesDraft} productionProfileLayer={productionProfileLayer} onProductionProfileLayerChange={setProductionProfileLayer} inventoryBomDraft={inventoryBomDraft} compositeGroupsDraft={compositeGroupsDraft} skuVariantDimensionsDraft={skuVariantDimensionsDraft} skusDraft={skusDraft} queryContext={queryContext} brandRef={brandRef} currentItemCode={itemCode} dictionaryRevision={effectiveDictionaryRevision} onIdentifiersChange={updateIdentifiers} onStandardSalePriceChange={updateStandardSalePrice} onOrderOptionsChange={onOrderOptionsChange} onProductionProfilesChange={updateProductionProfiles} onInventoryBomChange={updateInventoryBom} onCompositeGroupsChange={updateCompositeGroups} onSkuVariantDimensionsChange={updateSkuVariantDimensions} onSkusChange={updateSkus} onDirty={() => lifecycle.setDirty(true)} onOpenProductionTags={onOpenProductionTags} onOpenDictionary={onOpenDictionary} onOpenDictionaryQuickManage={openDictionaryQuickManage} onOpenProductionQuickManage={() => setProductionTagQuickManageOpen(true)} onNavigateTab={(next) => setActiveTab(next)}/> })) : [];
   const action = detail?.actionAvailability;
   // AUTO_SYNC is not an all-field read-only mode: the owner supplies the exact
   // deniedFields set, so local supplements (tags, prompts, attributes, etc.)
   // remain editable. Temporary items are the only whole-record read-only mode.
   const sourceLocked = detail ? detail.item.source === 'TEMPORARY' : false;
-  return <Drawer title={detail ? <Space>{detail.item.images[0] && <CatalogAssetPreview assetRef={detail.item.images[0]} alt={`${detail.item.name}主图`} width={40} height={40} preview={false} testId="catalog-item-drawer-thumbnail"/>}<NameCodeText name={detail.item.name} code={detail.item.code}/><Tag>{detail.item.shapeKey}</Tag><Tag color={detail.item.status === 'ENABLED' ? 'green' : 'default'}>{detail.item.status}</Tag></Space> : '商品详情'} open={Boolean(itemCode)} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} destroyOnHidden={false} maskClosable={!lifecycle.dirty} {...adminWideDrawerSurfaceProps} {...testId('catalog-inventory-item-drawer')}
+  const disabledActionReason = (allowed: boolean, label: string, locked = false) => {
+    if (locked) return '外部订单临时商品不可直接编辑，请先完成治理转正预检。';
+    if (allowed) return undefined;
+    if (detail?.item.lifecycle.status === 'VOIDED') return '已作废商品不可继续执行该操作。';
+    if (detail?.item.lifecycle.status === 'ARCHIVED' && label !== '归档') return '已归档商品不可执行该操作。';
+    return `当前商品状态不允许${label}。`;
+  };
+  return <Drawer title={detail ? <Space>{detail.item.images[0] && <CatalogAssetPreview assetRef={detail.item.images[0]} alt={`${detail.item.name}主图`} width={40} height={40} preview={false} testId="catalog-item-drawer-thumbnail"/>}<NameCodeText name={detail.item.name} code={detail.item.code}/><Tag>{catalogEnumLabel(manifest, 'shapeKey', detail.item.shapeKey)}</Tag><Tag>{catalogEnumLabel(manifest, 'catalogSource', detail.item.source)}</Tag><Tag color={detail.item.lifecycle.status === 'ENABLED' ? 'green' : 'default'}>{catalogEnumLabel(manifest, 'catalogItemStatus', detail.item.lifecycle.status)}</Tag></Space> : '商品详情'} open={Boolean(itemCode)} onClose={lifecycle.requestClose} afterOpenChange={lifecycle.afterOpenChange} destroyOnHidden={false} maskClosable={!lifecycle.dirty} {...adminWideDrawerSurfaceProps} {...testId('catalog-inventory-item-drawer')}
     extra={detail && <Space>
-      {mode === 'view' && canWriteCatalog && action?.canEdit && !sourceLocked && <Button onClick={() => setMode('edit')} {...testId('catalog-item-edit')}>编辑</Button>}
-      {mode === 'view' && canWriteCatalog && action?.canEnable && <Button onClick={() => void changeStatus('ENABLED')}>启用</Button>}
-      {mode === 'view' && canWriteCatalog && action?.canDisable && <Button onClick={() => void changeStatus('DISABLED')}>停用</Button>}
-      {mode === 'view' && canWriteCatalog && action?.canArchive && <Button danger onClick={() => void changeStatus('ARCHIVED')}>归档</Button>}
-      {mode === 'view' && canWriteCatalog && detail.item.status !== 'VOIDED' && <Button danger disabled={!action?.voidAvailability?.canVoid} title={action?.voidAvailability?.canVoid ? undefined : '存在 owner 阻断事实，暂不能作废'} onClick={voidAndRebuild} {...testId('catalog-item-void-and-rebuild')}>作废并重建</Button>}
-      {surface === 'store' && mode === 'view' && canWriteCatalog && detail.item.status !== 'ARCHIVED' && <Button onClick={() => setLocalCopyOpen(true)} {...testId('catalog-item-copy-local-open')}>从已有商品复制配置</Button>}
+      {mode === 'view' && canWriteCatalog && <DisabledReasonButton disabled={!action?.canEdit || sourceLocked} reason={disabledActionReason(Boolean(action?.canEdit), '编辑', sourceLocked)} onClick={() => setMode('edit')} {...testId('catalog-item-edit')}>编辑</DisabledReasonButton>}
+      {mode === 'view' && canWriteCatalog && <DisabledReasonButton disabled={!action?.canEnable || sourceLocked} reason={disabledActionReason(Boolean(action?.canEnable), '启用', sourceLocked)} onClick={() => confirmStatusChange('ENABLED')}>启用</DisabledReasonButton>}
+      {mode === 'view' && canWriteCatalog && <DisabledReasonButton disabled={!action?.canDisable || sourceLocked} reason={disabledActionReason(Boolean(action?.canDisable), '停用', sourceLocked)} onClick={() => confirmStatusChange('DISABLED')}>停用</DisabledReasonButton>}
+      {mode === 'view' && canWriteCatalog && <DisabledReasonButton danger disabled={!action?.canArchive || sourceLocked} reason={disabledActionReason(Boolean(action?.canArchive), '归档', sourceLocked)} onClick={() => confirmStatusChange('ARCHIVED')}>归档</DisabledReasonButton>}
+      {mode === 'view' && canWriteCatalog && detail.item.lifecycle.status !== 'VOIDED' && <DisabledReasonButton danger disabled={!action?.voidAvailability?.canVoid || sourceLocked} reason={disabledActionReason(Boolean(action?.voidAvailability?.canVoid), '作废并重建', sourceLocked) ?? catalogVoidBlockReason(action?.voidAvailability) ?? '当前商品不可执行作废并重建。'} onClick={voidAndRebuild} {...testId('catalog-item-void-and-rebuild')}>作废并重建</DisabledReasonButton>}
+      {mode === 'view' && canWriteCatalog && !sourceLocked && detail.item.lifecycle.status !== 'ARCHIVED' && detail.item.lifecycle.status !== 'VOIDED' && <Button onClick={() => setLocalCopyOpen(true)} {...testId('catalog-item-copy-local-open')}>从已有商品复制配置</Button>}
       {mode === 'view' && canWriteCatalog && detail.item.source === 'TEMPORARY' && <Button loading={preflightPromotionState.isLoading} onClick={() => void openPromotion()} {...testId('catalog-item-temporary-promotion')}>治理转正</Button>}
       {mode === 'edit' && <Button onClick={lifecycle.requestClose}>取消</Button>}
       {mode === 'edit' && <Button type="primary" loading={lifecycle.submitting} onClick={() => void submit()} {...testId('catalog-item-save')}>保存</Button>}
     </Space>}>
     {detailQuery.isLoading && <Skeleton active {...testId('catalog-item-detail-loading')}/>} 
     {(problem || detailQuery.error || mediaProblem) && <div ref={problemRef} tabIndex={-1} style={{marginBottom: 16}} {...testId('catalog-item-problem')}><Alert type="error" showIcon title="商品操作未完成" description={problem ?? mediaProblem ?? '商品详情暂时无法获取，请重试。'} action={detailQuery.error ? <Button size="small" onClick={() => void detailQuery.refetch()} {...testId('catalog-item-problem-retry')}>重试</Button> : releaseCloseFailed ? <Button size="small" loading={releasingBeforeClose} onClick={() => void closeAfterStagedRelease()} {...testId('catalog-item-release-close-retry')}>重试关闭</Button> : undefined}/></div>}
-    {detail?.item.source === 'AUTO_SYNC' && <Alert type="info" showIcon title="自动同步商品" description={`带锁字段（${detail.deniedFields.join('、') || '来源声明字段'}）由上游维护；未被锁定的本地补充字段仍可编辑。`} {...testId('catalog-item-source-auto_sync')}/>} 
+    {detail?.item.source === 'AUTO_SYNC' && <Space direction="vertical" size={8} style={{display: 'flex'}}><Alert type="info" showIcon title="自动同步商品" description={`带锁字段（${detail.deniedFields.map((field) => deniedFieldLabel(manifest, field)).join('、') || '来源声明字段'}）由上游维护；未被锁定的本地补充字段仍可编辑。`} {...testId('catalog-item-source-auto_sync')}/><Descriptions size="small" bordered column={3} items={[{key: 'source-order', label: '来源订单', children: detail.governance.externalIdentity.sourceOrderRef || '—'}, {key: 'source-record', label: '来源记录', children: detail.governance.externalIdentity.sourceRecordRef || '—'}, {key: 'source-item', label: '来源商品', children: detail.governance.externalIdentity.sourceItemRef || '—'}]} {...testId('catalog-item-source-auto_sync-facts')}/></Space>}
     {detail?.item.source === 'TEMPORARY' && <>
       <Alert type="info" showIcon title="外部订单临时商品" description="该商品可被查看但不可创建销售项；完成资料补齐和转正预检后才可进入正式治理。" {...testId('catalog-item-source-temporary')}/>
       <Card size="small" title="来源与原始快照" style={{marginBottom: 16}} {...testId('catalog-item-temporary-source-facts')}>
@@ -542,9 +659,12 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
         ]}/>
       </Card>
     </>}
-    {detail && <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} {...testId('catalog-item-tabs')}/>} 
-    {surface === 'store' && <LocalCatalogCopyDrawer open={localCopyOpen} sourceItemCode={itemCode ?? ''} queryContext={queryContext} brandRef={brandRef} onClose={() => setLocalCopyOpen(false)} onCompleted={() => { setLocalCopyOpen(false); void detailQuery.refetch(); onChanged(); }}/>} 
+    {detail && <Space size={8} style={{marginBottom: 12}} {...testId('catalog-item-source-summary')}><Typography.Text type="secondary">来源</Typography.Text><Tag>{catalogEnumLabel(manifest, 'catalogSource', detail.item.source)}</Tag></Space>}
+    {detail && <Space size={8} style={{marginBottom: 12}} {...testId('catalog-item-fact-summary')}><Typography.Text type="secondary">事实摘要</Typography.Text><Button type="link" size="small" onClick={() => setActiveTab('basic')}>分类 {detail.item.categoryRefs.length}</Button><Button type="link" size="small" onClick={() => setActiveTab('attributes')}>描述属性 {Object.keys(detail.item.attributes).length}</Button><Typography.Text type="secondary">SKU {detail.item.skuSummary.nonArchivedCount} · 标签 {detail.item.tagRefs.length}</Typography.Text></Space>}
+    {detail && <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} {...testId('catalog-item-tabs')}/>}
+    <LocalCatalogCopyDrawer open={localCopyOpen} sourceItemCode={itemCode ?? ''} targetShapeKey={detail?.item.shapeKey} queryContext={queryContext} brandRef={brandRef} onClose={() => setLocalCopyOpen(false)} onCompleted={() => { setLocalCopyOpen(false); void detailQuery.refetch(); onChanged(); }}/>
     <CatalogDictionaryDrawer open={productionTagQuickManageOpen} initialKind="PRODUCTION_TAG" queryContext={queryContext} brandRef={brandRef} canWrite={canWriteCatalog} quickManage onCreated={onProductionTagCreated} onClose={() => setProductionTagQuickManageOpen(false)}/>
+    <CatalogDictionaryDrawer open={Boolean(dictionaryQuickManage)} initialKind={dictionaryQuickManage?.kind} queryContext={queryContext} brandRef={brandRef} canWrite={canWriteCatalog} quickManage onDictionaryCreated={onDictionaryCreated} onClose={() => setDictionaryQuickManage(undefined)}/>
     <Modal title="外部订单临时商品转正预检" open={promotionOpen} onCancel={() => { setPromotionOpen(false); setPromotion(undefined); setPromotionProblem(undefined); }} okText="确认转正" cancelText="返回" okButtonProps={{disabled: !promotion?.canPromote, loading: executePromotionState.isLoading}} onOk={() => void executePromotionAction()} {...testId('catalog-temporary-promotion-preflight')}>
       <Space direction="vertical" size={12} style={{display: 'flex'}}>
         {promotionProblem && <Alert type="error" showIcon title="预检未完成" description={promotionProblem} {...testId('catalog-temporary-promotion-problem')}/>} 
@@ -561,7 +681,7 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
             </Form.Item>
           </Space>
           <Form.Item label="商品形态" name="shapeKey" rules={[{required: true, message: '请选择商品形态'}]}>
-            <Select options={Object.entries(promotionShapeLabels).map(([value, label]) => ({value, label, disabled: value === 'BENEFIT_SHELL'}))} {...testId('catalog-temporary-promotion-shape')}/>
+            <Select loading={manifestQuery.isLoading} options={(manifest?.shapeKeys ?? []).map((value) => ({value, label: catalogEnumLabel(manifest, 'shapeKey', value), disabled: value === 'BENEFIT_SHELL'}))} {...testId('catalog-temporary-promotion-shape')}/>
           </Form.Item>
           <Form.Item noStyle shouldUpdate={(previous, current) => previous.shapeKey !== current.shapeKey}>
             {({getFieldValue}) => getFieldValue('shapeKey') === 'MATERIAL' ? <Form.Item label="物料角色" name="materialRole" rules={[{required: true, message: '原材料必须填写物料角色'}]}><Input placeholder="例如：RAW_MATERIAL" {...testId('catalog-temporary-promotion-material-role')}/></Form.Item> : null}
@@ -571,8 +691,8 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
           <Descriptions size="small" bordered items={[
             {key: 'item', label: '当前临时商品', children: <NameCodeText name={promotion.item.name} code={promotion.item.code}/>},
             {key: 'proposed', label: '拟转为', children: <NameCodeText name={promotion.proposed.name} code={promotion.proposed.code}/>},
-            {key: 'shape', label: '形态', children: promotionShapeLabels[promotion.proposed.shapeKey as TemporaryPromotionPreflightRequest['shapeKey']] ?? promotion.proposed.shapeKey},
-            {key: 'source', label: '来源', children: promotion.source},
+            {key: 'shape', label: '形态', children: catalogEnumLabel(manifest, 'shapeKey', promotion.proposed.shapeKey)},
+            {key: 'source', label: '来源', children: catalogEnumLabel(manifest, 'catalogSource', promotion.source)},
             {key: 'sourceVersion', label: '来源版本', children: promotion.sourceVersion},
             {key: 'code', label: '编码可用性', children: promotion.formalCodeAvailable ? '可用' : '已占用（含历史记录）'},
             {key: 'status', label: '预检结果', children: promotion.canPromote ? '可转正' : '被阻断'},
@@ -588,45 +708,106 @@ export function CatalogItemDrawer({itemCode, queryContext, brandRef, canWriteCat
   </Drawer>;
 }
 
-function CatalogTabContent({tabKey, detail, editing, canWriteCatalog, form, mediaDraft, onStageMedia, onRemoveMedia, onMoveMedia, onSetPrimaryMedia, skuStagedMedia, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, availableProductionTags, selectedProductionTagRefs, selectedProductionTags, onProductionTagsChange, identifierDraft, orderingDraft, orderOptionsDraft, productionProfilesDraft, productionProfileLayer, onProductionProfileLayerChange, inventoryBomDraft, compositeGroupsDraft, skuVariantDimensionsDraft, skusDraft, queryContext, brandRef, currentItemCode, onIdentifiersChange, onOrderingChange, onOrderOptionsChange, onProductionProfilesChange, onInventoryBomChange, onCompositeGroupsChange, onSkuVariantDimensionsChange, onSkusChange, onDirty, onOpenProductionTags, onOpenProductionQuickManage}: {tabKey: string; detail: NonNullable<ReturnType<typeof decodeDetail>>; editing: boolean; canWriteCatalog: boolean; form: ReturnType<typeof Form.useForm<{displayName: string; shortName?: string; attributesText: string}>>[0]; mediaDraft: MediaDraft[]; onStageMedia: (file: File, existingId?: string) => Promise<void>; onRemoveMedia: (id: string, index: number) => void | Promise<void>; onMoveMedia: (id: string, offset: -1 | 1) => void; onSetPrimaryMedia: (id: string) => void; skuStagedMedia: MediaDraft[]; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; availableProductionTags: Array<{code: string; name: string; owner: string}>; selectedProductionTagRefs: string[]; selectedProductionTags: Array<{code: string; name: string; owner: string}>; onProductionTagsChange: (next: string[]) => void; identifierDraft: CatalogDetail['item']['identifiers']; orderingDraft: OrderingDraft; orderOptionsDraft: CatalogOrderOptionGroup[]; productionProfilesDraft: ProductionProfileDraft; productionProfileLayer: ProfileLayer; onProductionProfileLayerChange: (next: ProfileLayer) => void; inventoryBomDraft: CatalogInventoryBomEntry[]; compositeGroupsDraft: CatalogCompositeGroup[]; skuVariantDimensionsDraft: SkuDimensionDraft[]; skusDraft: SkuRowDraft[]; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string; onIdentifiersChange: (next: CatalogDetail['item']['identifiers']) => void; onOrderingChange: (next: OrderingDraft) => void; onOrderOptionsChange: (next: CatalogOrderOptionGroup[]) => void; onProductionProfilesChange: (next: ProductionProfileDraft) => void; onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void; onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void; onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onDirty: () => void; onOpenProductionTags?: () => void; onOpenProductionQuickManage: () => void}) {
+function CatalogTabContent({tabKey, detail, manifest, editing, canWriteCatalog, form, mediaDraft, onStageMedia, onRemoveMedia, onMoveMedia, onSetPrimaryMedia, skuStagedMedia, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, availableProductionTags, selectedProductionTagRefs, selectedProductionTags, onProductionTagsChange, selectedTagRefs, selectedSalesUnitRefs, onTagRefsChange, onSalesUnitRefsChange, categoryRefsDraft, onCategoryRefsChange, identifierDraft, standardSalePriceDraft, orderOptionsDraft, productionProfilesDraft, productionProfileLayer, onProductionProfileLayerChange, inventoryBomDraft, compositeGroupsDraft, skuVariantDimensionsDraft, skusDraft, queryContext, brandRef, currentItemCode, dictionaryRevision, onIdentifiersChange, onStandardSalePriceChange, onOrderOptionsChange, onProductionProfilesChange, onInventoryBomChange, onCompositeGroupsChange, onSkuVariantDimensionsChange, onSkusChange, onDirty, onOpenProductionTags, onOpenDictionary, onOpenDictionaryQuickManage, onOpenProductionQuickManage, onNavigateTab}: {tabKey: string; detail: NonNullable<ReturnType<typeof decodeDetail>>; manifest?: CatalogManifest; editing: boolean; canWriteCatalog: boolean; form: ReturnType<typeof Form.useForm<{displayName: string; shortName?: string; attributesText: string}>>[0]; mediaDraft: MediaDraft[]; onStageMedia: (file: File, existingId?: string) => Promise<void>; onRemoveMedia: (id: string, index: number) => void | Promise<void>; onMoveMedia: (id: string, offset: -1 | 1) => void; onSetPrimaryMedia: (id: string) => void; skuStagedMedia: MediaDraft[]; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; availableProductionTags: ProductionTagOption[]; selectedProductionTagRefs: string[]; selectedProductionTags: ProductionTagOption[]; onProductionTagsChange: (next: string[]) => void; selectedTagRefs: string[]; selectedSalesUnitRefs: string[]; onTagRefsChange: (next: string[]) => void; onSalesUnitRefsChange: (next: string[]) => void; categoryRefsDraft: string[]; onCategoryRefsChange: (next: string[]) => void; identifierDraft: CatalogDetail['item']['identifiers']; standardSalePriceDraft: number | null; orderOptionsDraft: CatalogOrderOptionGroup[]; productionProfilesDraft: ProductionProfileDraft; productionProfileLayer: ProfileLayer; onProductionProfileLayerChange: (next: ProfileLayer) => void; inventoryBomDraft: CatalogInventoryBomEntry[]; compositeGroupsDraft: CatalogCompositeGroup[]; skuVariantDimensionsDraft: SkuDimensionDraft[]; skusDraft: SkuRowDraft[]; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string; dictionaryRevision: number; onIdentifiersChange: (next: CatalogDetail['item']['identifiers']) => void; onStandardSalePriceChange: (next: number | null) => void; onOrderOptionsChange: (next: CatalogOrderOptionGroup[]) => void; onProductionProfilesChange: (next: ProductionProfileDraft) => void; onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void; onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void; onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onDirty: () => void; onOpenProductionTags?: () => void; onOpenDictionary?: (kind: 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE') => void; onOpenDictionaryQuickManage: (kind: 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE', dimensionIndex?: number) => void; onOpenProductionQuickManage: () => void; onNavigateTab: (tabKey: string) => void}) {
+  void onOpenDictionary;
+  const denied = (fieldKey: string) => detail.deniedFields.includes(fieldKey);
+  const fieldLabel = (fieldKey: string) => <Space size={4}><span>{catalogFieldLabel(manifest, fieldKey)}</span>{denied(fieldKey) && <span aria-label="由来源锁定">🔒</span>}</Space>;
+  const locked = (fieldKey: string) => denied(fieldKey) && <Alert type="info" showIcon title={`${catalogFieldLabel(manifest, fieldKey)}由来源维护`} description="当前只读；如需修改请在来源系统处理。" style={{marginBottom: 12}}/>;
+  const referencePickerContext = useMemo<CatalogFieldRuntimeContext>(() => ({
+    scope: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), brandRef},
+    readField: () => undefined,
+    readSection: () => [],
+    sectionRevision: () => `${detail.item.version}:${dictionaryRevision}`,
+  }), [brandRef, detail.item.version, dictionaryRevision, queryContext.scopeRef]);
   if (tabKey === 'basic' && editing) return <Space direction="vertical" size={16} style={{display: 'flex'}}><Form form={form} layout="vertical" onValuesChange={onDirty}>
     <Alert type="info" showIcon title="商品编码与形态创建后不可修改" style={{marginBottom: 16}}/>
-    <Form.Item label="商品名称" name="displayName" rules={[{required: true, message: '请输入商品名称'}]}><Input disabled={detail.deniedFields.includes('name')} {...testId('catalog-item-edit-name')}/></Form.Item>
-    <Form.Item label="短名" name="shortName"><Input disabled={detail.deniedFields.includes('shortName')} placeholder="用于列表或小票的短展示名" {...testId('catalog-item-edit-short-name')}/></Form.Item>
-  </Form><CatalogAssetEditor mediaDraft={mediaDraft} onStageMedia={onStageMedia} onRemoveMedia={onRemoveMedia} onMoveMedia={onMoveMedia} onSetPrimaryMedia={onSetPrimaryMedia}/></Space>;
+    <Form.Item label={fieldLabel('name')} name="displayName" rules={[{required: true, message: '请输入商品名称'}]}><Input disabled={denied('name')} {...testId('catalog-item-edit-name')}/></Form.Item>
+    <Form.Item label={fieldLabel('shortName')} name="shortName"><Input disabled={denied('shortName')} placeholder="用于列表或小票的短展示名" {...testId('catalog-item-edit-short-name')}/></Form.Item>
+    <CatalogCategoryDescriptorField manifest={manifest} shapeKey={detail.item.shapeKey} value={categoryRefsDraft} denied={detail.deniedFields.includes('categoryRefs')} scopeRef={queryContext.scopeRef} brandRef={brandRef} version={detail.item.version} onChange={onCategoryRefsChange} onDirty={onDirty}/>
+    <CatalogDescriptorPicker manifest={manifest} shapeKey={detail.item.shapeKey} fieldKey="tagRefs" value={selectedTagRefs} context={referencePickerContext} disabled={denied('tagRefs')} actions={<Button size="small" disabled={denied('tagRefs')} onClick={() => onOpenDictionaryQuickManage('TAG')} {...testId('catalog-item-tag-manage')}>维护商品标签</Button>} testIdValue="catalog-item-tag-refs" onChange={(next) => onTagRefsChange(Array.isArray(next) ? next : next ? [next] : [])}/>
+    <CatalogDescriptorPicker manifest={manifest} shapeKey={detail.item.shapeKey} fieldKey="salesUnitRefs" value={selectedSalesUnitRefs} context={referencePickerContext} disabled={denied('salesUnitRefs')} actions={<Button size="small" disabled={denied('salesUnitRefs')} onClick={() => onOpenDictionaryQuickManage('SALES_UNIT')} {...testId('catalog-item-sales-unit-manage')}>维护销售单位</Button>} testIdValue="catalog-item-sales-unit-refs" onChange={(next) => onSalesUnitRefsChange(Array.isArray(next) ? next : next ? [next] : [])}/>
+    {detail.item.priceGranularity === 'ITEM' ? <Form.Item label={fieldLabel('standardSalePrice')}><InputNumber min={0} precision={0} value={standardSalePriceDraft} disabled={denied('standardSalePrice')} onChange={(value) => onStandardSalePriceChange(value ?? null)} style={{width: '100%'}} {...testId('catalog-item-edit-standard-price')}/></Form.Item> : <Typography.Text type="secondary">标准价按 SKU 矩阵维护。</Typography.Text>}
+  </Form>{denied('images') ? locked('images') : <CatalogAssetEditor mediaDraft={mediaDraft} onStageMedia={onStageMedia} onRemoveMedia={onRemoveMedia} onMoveMedia={onMoveMedia} onSetPrimaryMedia={onSetPrimaryMedia}/>}</Space>;
   if (tabKey === 'basic') return <Space direction="vertical" size={16} style={{display: 'flex'}}><Descriptions {...adminWideDetailDescriptionsProps} items={[
     {key: 'name', label: '商品名称', children: detail.item.name}, {key: 'shortName', label: '短名', children: detail.item.shortName || '—'}, {key: 'code', label: '商品编码', children: detail.item.code},
-    {key: 'shape', label: '商品形态', children: detail.item.shapeKey}, {key: 'status', label: '状态', children: detail.item.status},
-    {key: 'kind', label: '商品类型', children: detail.item.itemKind}, {key: 'measure', label: '计量模式', children: detail.item.measureMode},
-    {key: 'capabilities', label: '使用能力', children: detail.item.usageCapabilities.join('、') || '—'}, {key: 'version', label: '版本', children: detail.item.version},
-  ]}/><Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'images', label: '图片资产', children: <CatalogAssetGallery assetRefs={detail.item.images} itemName={detail.item.name}/>} ]}/></Space>;
-  if (tabKey === 'identifiers' && editing) return <IdentifierEditor values={identifierDraft} onChange={onIdentifiersChange} onDirty={onDirty}/>;
-  if (tabKey === 'identifiers') return detail.item.identifiers.length ? <Descriptions {...adminWideDetailDescriptionsProps} items={detail.item.identifiers.map((entry, index) => ({key: `${entry.kind}-${index}`, label: entry.kind, children: <Space><NameCodeText name={entry.value} code={entry.code}/><Tag>绑定范围：商品</Tag><Tag>状态：当前契约未提供</Tag></Space>}))}/> : <EmptySection text="未维护条码与识别码"/>;
-  if (tabKey === 'sku-specifications-pricing' && editing) return <SkuMatrixEditor dimensions={skuVariantDimensionsDraft} skus={skusDraft} skuStagedMedia={skuStagedMedia} onDimensionsChange={onSkuVariantDimensionsChange} onSkusChange={onSkusChange} onStageSkuMedia={onStageSkuMedia} onRemoveSkuMedia={onRemoveSkuMedia} onRemoveSkuStagedMedia={onRemoveSkuStagedMedia} onDirty={onDirty}/>;
-  if (tabKey === 'sku-specifications-pricing') return <SkuMatrixReadOnly dimensions={detail.item.skuVariantDimensions} skus={detail.item.skus} summary={detail.item.skuSummary} ordering={detail.item.ordering}/>;
-  if (tabKey === 'ordering' && editing) return <OrderingEditor value={orderingDraft} onChange={onOrderingChange} onDirty={onDirty} skuManaged={detail.item.ordering.priceGranularity === 'SKU'}/>;
-  if (tabKey === 'ordering') return <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'granularity', label: '价格粒度', children: detail.item.ordering.priceGranularity}, {key: 'standard', label: '标准销售价', children: money(detail.item.ordering.standardSalePrice)}, {key: 'listed', label: '挂牌价', children: money(detail.item.ordering.listedSalePrice)}, {key: 'missing', label: '缺价', children: detail.item.ordering.missingPriceCount ? `缺少 ${detail.item.ordering.missingPriceCount} 项` : '完整'}]}/>;
-  if (tabKey === 'attributes' && editing) return <Form form={form} layout="vertical" onValuesChange={onDirty}><Form.Item label="描述属性（自由 JSON 对象）" name="attributesText" rules={[{validator: (_, value) => { if (!value?.trim()) return Promise.resolve(); try { const parsed: unknown = JSON.parse(value); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Promise.resolve() : Promise.reject(new Error('属性必须是 JSON 对象')); } catch { return Promise.reject(new Error('属性必须是 JSON 对象')); } }}]}><Input.TextArea rows={12} placeholder={'例如：{\n  "origin": "直营"\n}'} {...testId('catalog-item-edit-attributes')}/></Form.Item></Form>;
+    {key: 'shape', label: '商品形态', children: catalogEnumLabel(manifest, 'shapeKey', detail.item.shapeKey)}, {key: 'status', label: '状态', children: catalogEnumLabel(manifest, 'catalogItemStatus', detail.item.lifecycle.status)},
+    {key: 'kind', label: '商品类型', children: catalogEnumLabel(manifest, 'itemKind', detail.item.itemKind)}, {key: 'measure', label: '计量模式', children: catalogEnumLabel(manifest, 'measureMode', detail.item.measureMode)},
+    {key: 'capabilities', label: '使用能力', children: detail.item.usageCapabilities.map((value) => catalogEnumLabel(manifest, 'usageCapability', value)).join('、') || '—'}, ...(detail.item.shapeKey === 'MATERIAL' ? [{key: 'materialRole', label: '物料角色', children: detail.item.materialRole || '—'}] : []), {key: 'priceGranularity', label: '价格粒度', children: catalogEnumLabel(manifest, 'priceGranularity', detail.item.priceGranularity)}, {key: 'standardPrice', label: '商品标准价', children: money(detail.item.standardSalePrice ?? null)}, {key: 'missingPrice', label: '缺价数', children: detail.item.missingPriceCount}, {key: 'version', label: '版本', children: detail.item.version}, {key: 'categories', label: '分类', children: <Button type="link" size="small" onClick={() => onNavigateTab('basic')}>{detail.item.categoryRefs.length} 个分类</Button>}, {key: 'attributes', label: '描述属性', children: <Button type="link" size="small" onClick={() => onNavigateTab('attributes')}>{Object.keys(detail.item.attributes).length} 个属性</Button>},
+  ]}/><CatalogDescriptorPicker manifest={manifest} shapeKey={detail.item.shapeKey} fieldKey="tagRefs" value={selectedTagRefs} context={referencePickerContext} readOnly testIdValue="catalog-item-tag-refs-readonly" onChange={() => undefined}/><CatalogDescriptorPicker manifest={manifest} shapeKey={detail.item.shapeKey} fieldKey="salesUnitRefs" value={selectedSalesUnitRefs} context={referencePickerContext} readOnly testIdValue="catalog-item-sales-unit-refs-readonly" onChange={() => undefined}/><Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'images', label: '图片资产', children: <CatalogAssetGallery assetRefs={detail.item.images} itemName={detail.item.name}/>} ]}/></Space>;
+  if (tabKey === 'identifiers' && editing) return denied('identifiers') ? <Space direction="vertical" style={{display: 'flex'}}>{locked('identifiers')}<Descriptions {...adminWideDetailDescriptionsProps} items={identifierDraft.map((entry, index) => ({key: `${entry.kind}-${index}`, label: entry.kind, children: <Space><NameCodeText name={entry.value} code={entry.code}/><Tag>绑定范围：商品</Tag></Space>}))}/></Space> : <IdentifierEditor values={identifierDraft} onChange={onIdentifiersChange} onDirty={onDirty}/>;
+  if (tabKey === 'identifiers') return detail.item.identifiers.length ? <Descriptions {...adminWideDetailDescriptionsProps} items={detail.item.identifiers.map((entry, index) => ({key: `${entry.kind}-${index}`, label: entry.kind, children: <Space><NameCodeText name={entry.value} code={entry.code}/><Tag>绑定范围：商品</Tag></Space>}))}/> : <EmptySection text="未维护条码与识别码"/>;
+  if (tabKey === 'sku-specifications-pricing' && editing) return denied('skus') || denied('skuVariantDimensions') ? <Space direction="vertical" style={{display: 'flex'}}>{denied('skuVariantDimensions') && locked('skuVariantDimensions')}{denied('skus') && locked('skus')}<SkuMatrixReadOnly manifest={manifest} dimensions={detail.item.skuVariantDimensions} skus={detail.item.skus} summary={detail.item.skuSummary} priceGranularity={detail.item.priceGranularity} standardSalePrice={detail.item.standardSalePrice} missingPriceCount={detail.item.missingPriceCount}/></Space> : <SkuMatrixEditor manifest={manifest} dimensions={skuVariantDimensionsDraft} skus={skusDraft} priceGranularity={detail.item.priceGranularity} skuStagedMedia={skuStagedMedia} scopeRef={queryContext.scopeRef} brandRef={brandRef} version={detail.item.version} dictionaryRevision={dictionaryRevision} onOpenDictionary={(kind) => onOpenDictionaryQuickManage(kind)} onDimensionsChange={onSkuVariantDimensionsChange} onSkusChange={onSkusChange} onStageSkuMedia={onStageSkuMedia} onRemoveSkuMedia={onRemoveSkuMedia} onRemoveSkuStagedMedia={onRemoveSkuStagedMedia} onDirty={onDirty}/>;
+  if (tabKey === 'sku-specifications-pricing') return <SkuMatrixReadOnly manifest={manifest} dimensions={detail.item.skuVariantDimensions} skus={detail.item.skus} summary={detail.item.skuSummary} priceGranularity={detail.item.priceGranularity} standardSalePrice={detail.item.standardSalePrice} missingPriceCount={detail.item.missingPriceCount}/>;
+  if (tabKey === 'attributes' && editing) return denied('attributes') ? <Space direction="vertical" style={{display: 'flex'}}>{locked('attributes')}<FactMap value={detail.item.attributes} empty="未维护描述属性"/></Space> : <Form form={form} layout="vertical" onValuesChange={onDirty}><Form.Item label={fieldLabel('attributes')} name="attributesText" rules={[{validator: (_, value) => { if (!value?.trim()) return Promise.resolve(); try { const parsed: unknown = JSON.parse(value); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Promise.resolve() : Promise.reject(new Error('属性必须是 JSON 对象')); } catch { return Promise.reject(new Error('属性必须是 JSON 对象')); } }}]}><AttributesKeyValueEditor onDirty={onDirty} {...testId('catalog-item-edit-attributes')}/></Form.Item></Form>;
   if (tabKey === 'attributes') return <FactMap value={detail.item.attributes} empty="未维护描述属性"/>;
-  if (tabKey === 'order-options' && editing) return <OrderOptionsEditor values={orderOptionsDraft} onChange={onOrderOptionsChange} onDirty={onDirty}/>;
+  if (tabKey === 'order-options' && editing) return denied('orderOptions') ? <Space direction="vertical" style={{display: 'flex'}}>{locked('orderOptions')}<OrderOptionsReadOnly values={detail.orderOptions}/></Space> : <OrderOptionsEditor values={orderOptionsDraft} onChange={onOrderOptionsChange} onDirty={onDirty}/>;
   if (tabKey === 'order-options') return <OrderOptionsReadOnly values={detail.orderOptions}/>;
   if (tabKey === 'production-prompts') {
-    const tagMap = new Map([...detail.productionTags, ...availableProductionTags, ...selectedProductionTags].map((tag) => [tag.code, tag]));
-    const selectedTags = selectedProductionTagRefs.map((code) => tagMap.get(code) ?? {code, name: code, owner: 'fulfillment-production'});
-    const options = Array.from(tagMap.values()).map((tag) => ({label: tag.name || tag.code, value: tag.code}));
+    const detailProductionTags: ProductionTagOption[] = detail.productionTags.map((tag) => ({...tag}));
+    const tagMap = new Map<string, ProductionTagOption>([...detailProductionTags, ...availableProductionTags, ...selectedProductionTags].map((tag) => [tag.tagRef, tag]));
+    const selectedTags = selectedProductionTagRefs.map((tagRef) => tagMap.get(tagRef) ?? {tagRef, code: '', name: tagRef, owner: 'fulfillment-production'});
+    const options = Array.from(tagMap.values()).map((tag) => ({label: tag.name || tag.code || tag.tagRef, value: tag.tagRef, disabled: tag.status !== undefined && tag.status !== 'ENABLED'}));
     return <Space direction="vertical" size={12} style={{display: 'flex'}}>
-      {editing && canWriteCatalog ? <Select mode="multiple" value={selectedProductionTagRefs} options={options} placeholder="选择商品处理标签" onChange={onProductionTagsChange} style={{width: '100%'}} {...testId('catalog-production-tag-field')}/> : <Space wrap>{selectedTags.length ? selectedTags.map((tag) => <Tag key={tag.code}>{tag.name || tag.code} · owner:{tag.owner}</Tag>) : <EmptySection text="未维护生产提示或商品处理标签"/>}</Space>}
-      {canWriteCatalog && editing && <Button onClick={onOpenProductionQuickManage} {...testId('catalog-production-tag-quick-manage')}>快速创建商品处理标签</Button>}
+      {editing && canWriteCatalog ? <Select mode="multiple" value={selectedProductionTagRefs} options={options} disabled={denied('productionTagRefs')} placeholder={catalogFieldLabel(manifest, 'productionTagRefs')} onChange={onProductionTagsChange} style={{width: '100%'}} {...testId('catalog-production-tag-field')}/> : <Space wrap>{selectedTags.length ? selectedTags.map((tag) => <Tag key={tag.tagRef}>{tag.name || tag.code || tag.tagRef} · owner:{tag.owner}</Tag>) : <EmptySection text="未维护生产提示或商品处理标签"/>}</Space>}
+      {canWriteCatalog && editing && <Button disabled={denied('productionTagRefs')} onClick={onOpenProductionQuickManage} {...testId('catalog-production-tag-quick-manage')}>快速创建商品处理标签</Button>}
       {!editing && onOpenProductionTags && <Button type="link" onClick={onOpenProductionTags} {...testId('catalog-production-tag-owner-open')}>打开生产履约标签维护</Button>}
-      {editing ? <ProductionProfileEditor layer={productionProfileLayer} profiles={productionProfilesDraft} onLayerChange={onProductionProfileLayerChange} onChange={onProductionProfilesChange} onDirty={onDirty}/> : <ProductionProfilesReadOnly profiles={detail.item.productionProfiles}/>} 
+      {editing && !denied('productionProfiles') ? <ProductionProfileEditor layer={productionProfileLayer} profiles={productionProfilesDraft} onLayerChange={onProductionProfileLayerChange} onChange={onProductionProfilesChange} onDirty={onDirty}/> : <>{denied('productionProfiles') && locked('productionProfiles')}<ProductionProfilesReadOnly profiles={detail.item.productionProfiles}/></>}
     </Space>;
   }
-  if (tabKey === 'inventory-bom' && editing) return <InventoryBomEditor values={inventoryBomDraft} onChange={onInventoryBomChange} onDirty={onDirty}/>;
-  if (tabKey === 'inventory-bom') return <InventoryBomReadOnly values={detail.inventoryBom}/>;
-  if (tabKey === 'composite-content' && editing) return <CompositeGroupsEditor values={compositeGroupsDraft} onChange={onCompositeGroupsChange} onDirty={onDirty} queryContext={queryContext} brandRef={brandRef} currentItemCode={currentItemCode}/>;
+  if (tabKey === 'inventory-bom' && editing) return denied('inventoryBom') ? <Space direction="vertical" style={{display: 'flex'}}>{locked('inventoryBom')}<InventoryBomReadOnly manifest={manifest} values={detail.inventoryBom}/></Space> : <InventoryBomEditor manifest={manifest} shapeKey={detail.item.shapeKey} values={inventoryBomDraft} orderOptions={orderOptionsDraft} scopeRef={queryContext.scopeRef} brandRef={brandRef} version={detail.item.version} onChange={onInventoryBomChange} onDirty={onDirty}/>;
+  if (tabKey === 'inventory-bom') return <InventoryBomReadOnly manifest={manifest} values={detail.inventoryBom}/>;
+  if (tabKey === 'composite-content' && editing) return denied('compositeGroups') ? <Space direction="vertical" style={{display: 'flex'}}>{locked('compositeGroups')}<CompositeGroupsReadOnly values={detail.compositeGroups}/></Space> : <CompositeGroupsEditor manifest={manifest} shapeKey={detail.item.shapeKey} values={compositeGroupsDraft} onChange={onCompositeGroupsChange} onDirty={onDirty} queryContext={queryContext} brandRef={brandRef} currentItemCode={currentItemCode} version={detail.item.version}/>;
   if (tabKey === 'composite-content') return <CompositeGroupsReadOnly values={detail.compositeGroups}/>;
-  if (tabKey === 'governance') return <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'status', label: '治理状态', children: detail.governance.status}, {key: 'references', label: '引用关系', children: detail.references.length ? detail.references.map((entry) => `${entry.referenceKind}:${entry.code}`).join('、') : '无引用'}]}/>;
-  return <EmptySection text={editing ? '当前页签已进入编辑上下文；当前契约未提供可安全提交的字段，未渲染伪编辑控件。' : `${tabLabels[tabKey] ?? tabKey}尚未维护`}/>;
+  if (tabKey === 'governance') return <Space direction="vertical" size={12} style={{display: 'flex'}}><Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'source-order', label: '来源订单', children: detail.governance.externalIdentity.sourceOrderRef || '—'}, {key: 'source-record', label: '来源记录', children: detail.governance.externalIdentity.sourceRecordRef || '—'}, {key: 'source-item', label: '来源商品', children: detail.governance.externalIdentity.sourceItemRef || '—'}, {key: 'references', label: `引用关系（${detail.references.length}）`, children: detail.references.length ? detail.references.map((entry) => `${entry.direction} · ${entry.referenceKind}:${entry.code}`).join('、') : '无引用'}, {key: 'denied-fields', label: '上游锁定字段', children: detail.deniedFields.length ? <Space wrap>{detail.deniedFields.map((field) => <Tag key={field} color="gold">{deniedFieldLabel(manifest, field)}</Tag>)}</Space> : '无锁定字段'}]}/>{!detail.actionAvailability.voidAvailability?.canVoid && <Alert type="warning" showIcon title="当前不可作废" description={catalogVoidBlockReason(detail.actionAvailability.voidAvailability)} {...testId('catalog-item-void-block-reasons')}/>}</Space>;
+  return <EmptySection text={editing ? '当前页签已进入编辑上下文；当前契约未提供可安全提交的字段，未渲染伪编辑控件。' : `${catalogTabLabel(tabKey)}尚未维护`}/>;
+}
+
+function CatalogCategoryDescriptorField({manifest, shapeKey, value, denied, scopeRef, brandRef, version, onChange, onDirty}: {manifest?: CatalogManifest; shapeKey: string; value: string[]; denied: boolean; scopeRef?: string; brandRef?: string; version: number; onChange: (next: string[]) => void; onDirty: () => void}) {
+  const field = useMemo(() => catalogJoinedField(manifest as CatalogDescriptorManifest | undefined, shapeKey, 'categoryRefs'), [manifest, shapeKey]);
+  const renderedField = field && denied ? {...field, readonly: true} : field;
+  const source = field?.optionSourceRef;
+  const resolver = useMemo(() => createCatalogOptionResolver(), []);
+  const context = useMemo<CatalogFieldRuntimeContext>(() => ({
+    scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
+    readField: () => undefined,
+    readSection: () => [],
+    sectionRevision: () => version,
+  }), [brandRef, scopeRef, version]);
+  const [treeData, setTreeData] = useState<DescriptorTreeNode[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  useEffect(() => {
+    let cancelled = false;
+    if (!field || !source) {
+      setTreeData([]);
+      setError('分类字段描述未加载，无法安全渲染分类选择器。');
+      return () => { cancelled = true; };
+    }
+    if (!scopeRef) {
+      setTreeData([]);
+      setError('缺少数据节点上下文，无法加载分类候选。');
+      return () => { cancelled = true; };
+    }
+    setLoading(true);
+    setError(undefined);
+    void resolver(source, context).then((result) => {
+      if (cancelled || result.stale) return;
+      setTreeData(result.treeData);
+    }).catch(() => {
+      if (!cancelled) {
+        setTreeData([]);
+        setError('分类候选加载失败，请重试。');
+      }
+    }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [context, field, resolver, scopeRef, source]);
+  if (!renderedField) return <Alert type="error" showIcon title="分类字段契约未登记" {...testId('catalog-item-category-field-error')}/>;
+  return <div {...testId('catalog-item-category-field')}>
+    <DescriptorFieldRenderer field={renderedField} value={value} treeData={treeData} optionLoading={loading} optionError={error} onChange={(next) => {
+      onChange(Array.isArray(next) ? next.map(String) : []);
+      onDirty();
+    }}/>
+  </div>;
 }
 
 function IdentifierEditor({values, onChange, onDirty}: {values: CatalogDetail['item']['identifiers']; onChange: (next: CatalogDetail['item']['identifiers']) => void; onDirty: () => void}) {
@@ -645,60 +826,73 @@ function IdentifierEditor({values, onChange, onDirty}: {values: CatalogDetail['i
   </Space>;
 }
 
-function OrderingEditor({value, onChange, onDirty, skuManaged}: {value: OrderingDraft; onChange: (next: OrderingDraft) => void; onDirty: () => void; skuManaged: boolean}) {
-  return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-ordering-editor')}>
-    <Alert type="info" showIcon title="价格按分保存；按 SKU 管理商品的价格粒度由 SKU 矩阵决定。"/>
-    <Space wrap>
-      <Typography.Text>价格粒度</Typography.Text>
-      <Select value={value.priceGranularity} disabled={skuManaged} options={[{label: '商品', value: 'ITEM'}, {label: 'SKU', value: 'SKU'}]} onChange={(priceGranularity: 'ITEM' | 'SKU') => { onChange({...value, priceGranularity}); onDirty(); }} {...testId('catalog-item-ordering-granularity')}/>
-      <Typography.Text>标准销售价（分）</Typography.Text>
-      <InputNumber value={value.standardSalePrice} min={0} precision={0} onChange={(standardSalePrice) => { onChange({...value, standardSalePrice: standardSalePrice ?? null}); onDirty(); }} {...testId('catalog-item-ordering-standard-price')}/>
-      <Typography.Text>挂牌价（分）</Typography.Text>
-      <InputNumber value={value.listedSalePrice} min={0} precision={0} onChange={(listedSalePrice) => { onChange({...value, listedSalePrice: listedSalePrice ?? null}); onDirty(); }} {...testId('catalog-item-ordering-listed-price')}/>
-    </Space>
-    <Typography.Text type="secondary">缺价数由 SKU/价格事实派生：{value.missingPriceCount}</Typography.Text>
-  </Space>;
+function skuCombinationKeyForFeedback(sku: SkuRowDraft) {
+  return sku.attributeValueRefs.map((value) => value.attributeRef + ':' + value.attributeValueRef).sort().join('|');
 }
 
-function SkuMatrixEditor({dimensions, skus, skuStagedMedia, onDimensionsChange, onSkusChange, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, onDirty}: {dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; skuStagedMedia: MediaDraft[]; onDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; onDirty: () => void}) {
-  const updateDimension = (index: number, patch: Partial<SkuDimensionDraft>) => onDimensionsChange(dimensions.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
-  const updateDimensionValue = (dimensionIndex: number, valueIndex: number, patch: Partial<SkuDimensionDraft['values'][number]>) => onDimensionsChange(dimensions.map((entry, entryIndex) => entryIndex === dimensionIndex ? {...entry, values: entry.values.map((value, index) => index === valueIndex ? {...value, ...patch} : value)} : entry));
+type SkuDraftIssueCode = ReturnType<typeof catalogSkuIssueCodes>[number];
+const skuIssueLabels: Record<SkuDraftIssueCode, string> = {MISSING_CODE: '缺少 SKU 编码', MISSING_NAME: '缺少 SKU 名称', MISSING_SKU_PRICE: '缺少 SKU 标准价', DUPLICATE_COMBINATION: '属性组合重复'};
+
+function SkuFieldFeedback({message, children}: {message?: string; children: ReactNode}) {
+  return <Space direction="vertical" size={2} style={{display: 'inline-flex', verticalAlign: 'top'}}><div>{children}</div>{message && <Typography.Text type="danger" style={{fontSize: 12}}>{message}</Typography.Text>}</Space>;
+}
+
+function SkuMatrixEditor({manifest, dimensions, skus, priceGranularity, skuStagedMedia, scopeRef, brandRef, version, dictionaryRevision, onOpenDictionary, onDimensionsChange, onSkusChange, onStageSkuMedia, onRemoveSkuMedia, onRemoveSkuStagedMedia, onDirty}: {manifest?: CatalogManifest; dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; priceGranularity: string; skuStagedMedia: MediaDraft[]; scopeRef?: string; brandRef?: string; version: number; dictionaryRevision: number; onOpenDictionary?: (kind: 'SKU_ATTRIBUTE') => void; onDimensionsChange: (next: SkuDimensionDraft[]) => void; onSkusChange: (next: SkuRowDraft[]) => void; onStageSkuMedia: (file: File, skuIndex: number, replaceAssetRef?: string, retryId?: string) => Promise<void>; onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>; onRemoveSkuStagedMedia: (id: string) => void; onDirty: () => void}) {
+  const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
+  const attributePickerContext = useMemo<CatalogFieldRuntimeContext>(() => ({
+    scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
+    readField: () => undefined,
+    readSection: () => [],
+    sectionRevision: () => `${version}:${dictionaryRevision}`,
+  }), [brandRef, dictionaryRevision, scopeRef, version]);
+  const combinationCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    skus.forEach((sku) => {
+      const key = skuCombinationKeyForFeedback(sku);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return counts;
+  }, [skus]);
+  const applyDimensions = (next: SkuDimensionDraft[]) => { onDimensionsChange(next); onSkusChange(buildSkuMatrix(next, skus)); onDirty(); };
+  const updateDimension = (index: number, patch: Partial<SkuDimensionDraft>) => applyDimensions(dimensions.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
+  const updateDimensionValue = (dimensionIndex: number, valueIndex: number, patch: Partial<SkuDimensionDraft['values'][number]>) => applyDimensions(dimensions.map((entry, entryIndex) => entryIndex === dimensionIndex ? {...entry, values: entry.values.map((value, index) => index === valueIndex ? {...value, ...patch} : value)} : entry));
   const updateSku = (index: number, patch: Partial<SkuRowDraft>) => onSkusChange(skus.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
-  const updateSkuValueRef = (skuIndex: number, valueIndex: number, patch: Partial<SkuRowDraft['attributeValueRefs'][number]>) => onSkusChange(skus.map((entry, entryIndex) => entryIndex === skuIndex ? {...entry, attributeValueRefs: entry.attributeValueRefs.map((value, index) => index === valueIndex ? {...value, ...patch} : value)} : entry));
+  const regenerateMatrix = () => { onSkusChange(buildSkuMatrix(dimensions, skus)); onDirty(); };
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-sku-matrix-editor')}>
     <Alert type="info" showIcon title="SKU 规格与价格属于商品 owner 的矩阵事实；编码创建后不可修改，属性值只能引用已存在的销售属性字典。"/>
-    <Card size="small" title="规格维度" extra={<Button size="small" onClick={() => { onDimensionsChange([...dimensions, {attributeRef: '', attributeCode: '', attributeName: '', values: []}]); onDirty(); }} {...testId('catalog-item-sku-dimension-add')}>新增规格维度</Button>}>
+    <Card size="small" title="规格维度" extra={<Space><Button size="small" disabled={dimensions.length === 0} onClick={regenerateMatrix} {...testId('catalog-item-sku-matrix-regenerate')}>按维度生成矩阵</Button><Button size="small" onClick={() => applyDimensions([...dimensions, {attributeRef: draftUuid(), attributeCode: '', attributeName: '', values: []}])} {...testId('catalog-item-sku-dimension-add')}>新增规格维度</Button></Space>}>
       {dimensions.length === 0 && <EmptySection text="未维护 SKU 规格维度"/>}
       <Space direction="vertical" size={10} style={{display: 'flex'}}>
-        {dimensions.map((dimension, dimensionIndex) => <Card key={`${dimension.attributeCode}-${dimensionIndex}`} size="small" title={`维度 ${dimensionIndex + 1}`} extra={<Button danger type="link" onClick={() => { onDimensionsChange(dimensions.filter((_, index) => index !== dimensionIndex)); onDirty(); }} {...testId(`catalog-item-sku-dimension-remove-${dimensionIndex}`)}>移除</Button>}>
-          <Space wrap>
-            <Input addonBefore="属性编码" value={dimension.attributeCode} disabled={Boolean(dimension.attributeRef)} onChange={(event) => { updateDimension(dimensionIndex, {attributeCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-code-${dimensionIndex}`)}/>
-            <Input addonBefore="属性名称" value={dimension.attributeName} onChange={(event) => { updateDimension(dimensionIndex, {attributeName: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-name-${dimensionIndex}`)}/>
-          </Space>
+        {dimensions.map((dimension, dimensionIndex) => <Card key={`${dimension.attributeRef}-${dimensionIndex}`} size="small" title={`维度 ${dimensionIndex + 1}`} extra={<Button danger type="link" onClick={() => applyDimensions(dimensions.filter((_, index) => index !== dimensionIndex))} {...testId(`catalog-item-sku-dimension-remove-${dimensionIndex}`)}>移除</Button>}>
+          <CatalogDescriptorPicker manifest={manifest} shapeKey="SKU_VARIANT_SALE_COUNTED" fieldKey="skuVariantAttribute" value={String(dimension.attributeRef ?? '')} context={attributePickerContext} actions={onOpenDictionary && <Button size="small" onClick={() => onOpenDictionary('SKU_ATTRIBUTE')} {...testId(`catalog-item-sku-dimension-attribute-manage-${dimensionIndex}`)}>维护 SKU 销售属性</Button>} testIdValue={`catalog-item-sku-dimension-attribute-${dimensionIndex}`} onChange={(next, rawRow) => {
+            const row = descriptorRow(rawRow);
+            updateDimension(dimensionIndex, {attributeRef: draftUuid(descriptorString(next)), attributeCode: typeof row?.code === 'string' ? row.code : '', attributeName: typeof row?.name === 'string' ? row.name : '', values: []});
+          }}/>
           <Divider style={{margin: '8px 0'}}/>
-          <Button size="small" onClick={() => { updateDimension(dimensionIndex, {values: [...dimension.values, {valueRef: '', valueCode: '', valueLabel: '', displayOrder: dimension.values.length, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-add-${dimensionIndex}`)}>新增属性值引用</Button>
+          <Button size="small" onClick={() => updateDimension(dimensionIndex, {values: [...dimension.values, {valueRef: draftUuid(), valueCode: '', valueLabel: '', displayOrder: dimension.values.length, status: 'ENABLED'}]})} {...testId(`catalog-item-sku-dimension-value-add-${dimensionIndex}`)}>新增属性值引用</Button>
           <Space direction="vertical" size={6} style={{display: 'flex', marginTop: 8}}>
             {dimension.values.map((value, valueIndex) => <Space key={`${value.valueCode}-${valueIndex}`} wrap>
-              <Input addonBefore="值编码" value={value.valueCode} disabled={Boolean(value.valueRef)} onChange={(event) => { updateDimensionValue(dimensionIndex, valueIndex, {valueCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-code-${dimensionIndex}-${valueIndex}`)}/>
-              <Input addonBefore="值名称" value={value.valueLabel} onChange={(event) => { updateDimensionValue(dimensionIndex, valueIndex, {valueLabel: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-label-${dimensionIndex}-${valueIndex}`)}/>
+              <Input addonBefore={fieldLabel('skuVariantValues')} value={value.valueCode} disabled={Boolean(value.valueRef)} onChange={(event) => { updateDimensionValue(dimensionIndex, valueIndex, {valueCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-code-${dimensionIndex}-${valueIndex}`)}/>
+              <Input addonBefore={fieldLabel('skuVariantValues')} value={value.valueLabel} onChange={(event) => { updateDimensionValue(dimensionIndex, valueIndex, {valueLabel: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-label-${dimensionIndex}-${valueIndex}`)}/>
               <InputNumber addonBefore="顺序" min={0} precision={0} value={value.displayOrder} onChange={(displayOrder) => { updateDimensionValue(dimensionIndex, valueIndex, {displayOrder: displayOrder ?? 0}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-order-${dimensionIndex}-${valueIndex}`)}/>
-              <Select value={value.status} options={[{value: 'ENABLED', label: '启用'}, {value: 'DISABLED', label: '停用'}, {value: 'ARCHIVED', label: '归档'}]} onChange={(status) => { updateDimensionValue(dimensionIndex, valueIndex, {status}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-status-${dimensionIndex}-${valueIndex}`)}/>
+            <Select value={value.status} options={catalogEnumOptions(manifest, 'skuStatus')} onChange={(status) => { updateDimensionValue(dimensionIndex, valueIndex, {status}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-status-${dimensionIndex}-${valueIndex}`)}/>
               <Button danger type="link" onClick={() => { updateDimension(dimensionIndex, {values: dimension.values.filter((_, index) => index !== valueIndex)}); onDirty(); }} {...testId(`catalog-item-sku-dimension-value-remove-${dimensionIndex}-${valueIndex}`)}>移除</Button>
             </Space>)}
           </Space>
         </Card>)}
       </Space>
     </Card>
-    <Card size="small" title="SKU 矩阵" extra={<Button size="small" onClick={() => { onSkusChange([...skus, {productSkuRef: '', skuCode: '', skuName: '', attributeValueRefs: [], skuBarcode: '', standardSalePrice: null, isDefault: false, status: 'ENABLED', version: 0, mediaRefs: []}]); onDirty(); }} {...testId('catalog-item-sku-row-add')}>新增 SKU</Button>}>
+    <Card size="small" title={fieldLabel('skuMatrix')}>
       {skus.length === 0 && <EmptySection text="未维护 SKU；按 SKU 定价时启用 SKU 必须有标准价"/>}
       <Space direction="vertical" size={10} style={{display: 'flex'}}>
-        {skus.map((sku, skuIndex) => <Card key={`${sku.skuCode}-${skuIndex}`} size="small" title={<Space><Typography.Text>SKU {skuIndex + 1}</Typography.Text><Typography.Text type="secondary">{sku.skuCode || '未编码'}</Typography.Text></Space>} extra={<Button danger type="link" onClick={() => { onSkusChange(skus.filter((_, index) => index !== skuIndex)); onDirty(); }} {...testId(`catalog-item-sku-row-remove-${skuIndex}`)}>移除</Button>}>
+        {skus.map((sku, skuIndex) => { const issueCodes = catalogSkuIssueCodes(sku, priceGranularity, (combinationCounts.get(skuCombinationKeyForFeedback(sku)) ?? 0) > 1); const issues = issueCodes.map((issue) => skuIssueLabels[issue]); const issue = (code: SkuDraftIssueCode) => issueCodes.includes(code) ? skuIssueLabels[code] : undefined; return <Card key={`${sku.skuCode}-${skuIndex}`} size="small" style={{borderColor: issues.length ? '#ff4d4f' : undefined}} title={<Space><Typography.Text>SKU {skuIndex + 1}</Typography.Text><Typography.Text type={issues.length ? 'danger' : 'secondary'}>{sku.skuCode || '未编码'}</Typography.Text>{issues.length > 0 && <Tag color="error">需处理 {issues.length} 项</Tag>}</Space>} extra={<Button danger type="link" onClick={() => { onSkusChange(skus.filter((_, index) => index !== skuIndex)); onDirty(); }} {...testId(`catalog-item-sku-row-remove-${skuIndex}`)}>移除</Button>}>
+          {issues.length > 0 && <Typography.Text type="danger" {...testId(`catalog-item-sku-issues-${skuIndex}`)}>{issues.join('；')}</Typography.Text>}
           <Space wrap>
-            <Input addonBefore="SKU编码" value={sku.skuCode} disabled={Boolean(sku.productSkuRef)} onChange={(event) => { updateSku(skuIndex, {skuCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-code-${skuIndex}`)}/>
-            <Input addonBefore="SKU名称" value={sku.skuName} onChange={(event) => { updateSku(skuIndex, {skuName: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-name-${skuIndex}`)}/>
+            <SkuFieldFeedback message={issue('MISSING_CODE')}><Input addonBefore="SKU编码" value={sku.skuCode} status={issue('MISSING_CODE') ? 'error' : undefined} disabled={Boolean(sku.productSkuRef)} onChange={(event) => { updateSku(skuIndex, {skuCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-code-${skuIndex}`)}/></SkuFieldFeedback>
+            <SkuFieldFeedback message={issue('MISSING_NAME')}><Input addonBefore="SKU名称" value={sku.skuName} status={issue('MISSING_NAME') ? 'error' : undefined} onChange={(event) => { updateSku(skuIndex, {skuName: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-name-${skuIndex}`)}/></SkuFieldFeedback>
             <Input addonBefore="条码" value={sku.skuBarcode} onChange={(event) => { updateSku(skuIndex, {skuBarcode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-barcode-${skuIndex}`)}/>
-            <InputNumber addonBefore="标准价（分）" min={0} precision={0} value={sku.standardSalePrice} onChange={(standardSalePrice) => { updateSku(skuIndex, {standardSalePrice: standardSalePrice ?? null}); onDirty(); }} {...testId(`catalog-item-sku-price-${skuIndex}`)}/>
-            <Select value={sku.status} options={[{value: 'ENABLED', label: '启用'}, {value: 'DISABLED', label: '停用'}, {value: 'ARCHIVED', label: '归档'}]} onChange={(status) => { updateSku(skuIndex, {status}); onDirty(); }} {...testId(`catalog-item-sku-status-${skuIndex}`)}/>
+            <SkuFieldFeedback message={issue('MISSING_SKU_PRICE')}><InputNumber addonBefore="标准价（分）" min={0} precision={0} status={issue('MISSING_SKU_PRICE') ? 'error' : undefined} value={sku.standardSalePrice} onChange={(standardSalePrice) => { updateSku(skuIndex, {standardSalePrice: standardSalePrice ?? null}); onDirty(); }} {...testId(`catalog-item-sku-price-${skuIndex}`)}/></SkuFieldFeedback>
+            <Select value={sku.status} options={catalogEnumOptions(manifest, 'skuStatus')} onChange={(status) => { updateSku(skuIndex, {status}); onDirty(); }} {...testId(`catalog-item-sku-status-${skuIndex}`)}/>
             <Space><Typography.Text>默认</Typography.Text><Switch checked={sku.isDefault} onChange={(isDefault) => { updateSku(skuIndex, {isDefault}); onDirty(); }} {...testId(`catalog-item-sku-default-${skuIndex}`)}/></Space>
           </Space>
           <Divider style={{margin: '8px 0'}}/>
@@ -709,27 +903,23 @@ function SkuMatrixEditor({dimensions, skus, skuStagedMedia, onDimensionsChange, 
             <Upload accept="image/*" showUploadList={false} beforeUpload={(file) => { void onStageSkuMedia(file as File, skuIndex); return Upload.LIST_IGNORE; }}><Button size="small" {...testId(`catalog-item-sku-media-upload-${skuIndex}`)}>上传 SKU 图片</Button></Upload>
           </Space>
           <Divider style={{margin: '8px 0'}}/>
-          <Space direction="vertical" size={6} style={{display: 'flex'}}>
-            <Typography.Text strong>属性值引用</Typography.Text>
-            {sku.attributeValueRefs.map((value, valueIndex) => <Space key={`${value.attributeCode}-${value.valueCode}-${valueIndex}`} wrap>
-              <Input addonBefore="属性编码" value={value.attributeCode} onChange={(event) => { updateSkuValueRef(skuIndex, valueIndex, {attributeCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-attribute-code-${skuIndex}-${valueIndex}`)}/>
-              <Input addonBefore="值编码" value={value.valueCode} onChange={(event) => { updateSkuValueRef(skuIndex, valueIndex, {valueCode: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-attribute-value-code-${skuIndex}-${valueIndex}`)}/>
-              <Input addonBefore="值名称" value={value.valueLabel} onChange={(event) => { updateSkuValueRef(skuIndex, valueIndex, {valueLabel: event.target.value}); onDirty(); }} {...testId(`catalog-item-sku-attribute-value-label-${skuIndex}-${valueIndex}`)}/>
-              <Button danger type="link" onClick={() => { updateSku(skuIndex, {attributeValueRefs: sku.attributeValueRefs.filter((_, index) => index !== valueIndex)}); onDirty(); }} {...testId(`catalog-item-sku-attribute-remove-${skuIndex}-${valueIndex}`)}>移除</Button>
-            </Space>)}
-            <Button size="small" onClick={() => { updateSku(skuIndex, {attributeValueRefs: [...sku.attributeValueRefs, {attributeRef: '', attributeCode: '', attributeName: '', attributeValueRef: '', valueCode: '', valueLabel: '', displayOrder: sku.attributeValueRefs.length, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-sku-attribute-add-${skuIndex}`)}>新增属性值引用</Button>
+          <Space direction="vertical" size={4} style={{display: 'flex'}} {...testId(`catalog-item-sku-attribute-combination-${skuIndex}`)}>
+            <Typography.Text strong>属性组合（由维度生成）</Typography.Text>
+            {sku.attributeValueRefs.length ? <Space size={4} wrap>{sku.attributeValueRefs.map((value, valueIndex) => <Space key={`${value.attributeValueRef}-${valueIndex}`} size={2}><NameCodeText name={value.attributeName || undefined} code={value.attributeCode || undefined}/><span>=</span><NameCodeText name={value.valueLabel || undefined} code={value.valueCode || undefined}/></Space>)}</Space> : <Typography.Text type="secondary">尚未形成有效属性组合</Typography.Text>}
+            {issue('DUPLICATE_COMBINATION') && <Typography.Text type="danger" style={{fontSize: 12}}>{issue('DUPLICATE_COMBINATION')}</Typography.Text>}
           </Space>
-        </Card>)}
+        </Card>; })}
       </Space>
     </Card>
   </Space>;
 }
 
-function SkuMatrixReadOnly({dimensions, skus, summary, ordering}: {dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; summary: CatalogDetail['item']['skuSummary']; ordering: OrderingDraft}) {
+function SkuMatrixReadOnly({manifest, dimensions, skus, summary, priceGranularity, standardSalePrice, missingPriceCount}: {manifest?: CatalogManifest; dimensions: SkuDimensionDraft[]; skus: SkuRowDraft[]; summary: CatalogDetail['item']['skuSummary']; priceGranularity: string; standardSalePrice?: number | null; missingPriceCount: number}) {
+  const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-sku-matrix-readonly')}>
-    <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'sku', label: 'SKU 数量', children: `${summary.enabledCount}/${summary.nonArchivedCount}/${summary.totalCount}（启用/未归档/总数）`}, {key: 'granularity', label: '价格粒度', children: ordering.priceGranularity}, {key: 'standard', label: '商品标准价', children: money(ordering.standardSalePrice)}, {key: 'listed', label: '挂牌价', children: money(ordering.listedSalePrice)}, {key: 'missing', label: '缺价数', children: ordering.missingPriceCount}]}/>
-    <Card size="small" title="规格维度">{dimensions.length ? dimensions.map((dimension) => <Typography.Text key={dimension.attributeCode} style={{display: 'block'}}>{dimension.attributeName || dimension.attributeCode}（{dimension.attributeCode}）：{dimension.values.map((value) => `${value.valueLabel || value.valueCode}${value.status === 'ARCHIVED' ? ' · 归档' : ''}`).join('、') || '—'}</Typography.Text>) : <EmptySection text="未维护规格维度"/>}</Card>
-    <Card size="small" title="SKU 明细">{skus.length ? <Space direction="vertical" size={8} style={{display: 'flex'}}>{skus.map((sku, skuIndex) => <Card key={sku.skuCode} size="small" title={<NameCodeText name={sku.skuName} code={sku.skuCode}/>}> <Descriptions size="small" column={2} items={[{key: 'refs', label: '属性值', children: sku.attributeValueRefs.map((value) => `${value.attributeName || value.attributeCode}=${value.valueLabel || value.valueCode}`).join('、') || '—'}, {key: 'barcode', label: '条码', children: sku.skuBarcode || '—'}, {key: 'price', label: '标准价', children: money(sku.standardSalePrice)}, {key: 'status', label: '状态', children: `${sku.status}${sku.isDefault ? ' · 默认' : ''}`}, {key: 'images', label: '图片', children: sku.mediaRefs.length ? <Space wrap>{sku.mediaRefs.map((assetRef, mediaIndex) => <CatalogAssetPreview key={assetRef} assetRef={assetRef} alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`} width={96} height={72} testId={`catalog-item-sku-media-readonly-${skuIndex}-${mediaIndex}`}/>)}</Space> : '未配置'}, {key: 'version', label: '版本', children: sku.version}]}/></Card>)}</Space> : <EmptySection text="未维护 SKU 明细"/>}</Card>
+    <Descriptions {...adminWideDetailDescriptionsProps} items={[{key: 'sku', label: 'SKU 数量', children: `${summary.enabledCount}/${summary.nonArchivedCount}/${summary.totalCount}（启用/未归档/总数）`}, {key: 'granularity', label: '价格粒度', children: catalogEnumLabel(manifest, 'priceGranularity', priceGranularity)}, {key: 'standard', label: '商品标准价', children: money(standardSalePrice ?? null)}, {key: 'missing', label: '缺价数', children: missingPriceCount}]}/>
+    <Card size="small" title={fieldLabel('skuVariantAttribute')}>{dimensions.length ? dimensions.map((dimension) => <Typography.Text key={dimension.attributeCode} style={{display: 'block'}}>{dimension.attributeName || dimension.attributeCode}（{dimension.attributeCode}）：{dimension.values.map((value) => `${value.valueLabel || value.valueCode}${value.status === 'ARCHIVED' ? ' · 归档' : ''}`).join('、') || '—'}</Typography.Text>) : <EmptySection text="未维护规格维度"/>}</Card>
+    <Card size="small" title={fieldLabel('skuMatrix')}>{skus.length ? <Space direction="vertical" size={8} style={{display: 'flex'}}>{skus.map((sku, skuIndex) => <Card key={sku.skuCode} size="small" title={<NameCodeText name={sku.skuName} code={sku.skuCode}/>}> <Descriptions size="small" column={2} items={[{key: 'refs', label: catalogFieldLabel(manifest, 'skuVariantValues'), children: sku.attributeValueRefs.map((value) => `${value.attributeName || value.attributeCode}=${value.valueLabel || value.valueCode}`).join('、') || '—'}, {key: 'barcode', label: '条码', children: sku.skuBarcode || '—'}, {key: 'price', label: '标准价', children: money(sku.standardSalePrice)}, {key: 'status', label: '状态', children: `${catalogEnumLabel(manifest, 'skuStatus', sku.status)}${sku.isDefault ? ' · 默认' : ''}`}, {key: 'images', label: '图片', children: sku.mediaRefs.length ? <Space wrap>{sku.mediaRefs.map((assetRef, mediaIndex) => <CatalogAssetPreview key={assetRef} assetRef={assetRef} alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`} width={96} height={72} testId={`catalog-item-sku-media-readonly-${skuIndex}-${mediaIndex}`}/>)}</Space> : '未配置'}, {key: 'version', label: '版本', children: sku.version}]}/></Card>)}</Space> : <EmptySection text="未维护 SKU 明细"/>}</Card>
   </Space>;
 }
 
@@ -764,7 +954,7 @@ function OrderOptionsEditor({values, onChange, onDirty}: {values: CatalogOrderOp
             <Space><Typography.Text>必选</Typography.Text><Switch checked={selectedGroup.required} onChange={(required) => { updateGroup(selectedGroupIndex, {required}); onDirty(); }} {...testId(`catalog-item-order-option-group-required-${selectedGroupIndex}`)}/></Space>
           </Space>
           <Divider style={{margin: '4px 0'}}/>
-          <Space style={{justifyContent: 'space-between', width: '100%'}}><Typography.Text strong>选项值</Typography.Text><Space><Button size="small" onClick={() => { updateGroup(selectedGroupIndex, {values: [...selectedGroup.values, {code: '', attributeValueRef: globalThis.crypto.randomUUID(), name: '', default: false, extraPrice: null, productionEffects: []}]}); onDirty(); }} {...testId(`catalog-item-order-option-value-add-${selectedGroupIndex}`)}>新增选项值</Button><Button size="small" danger onClick={() => { onChange(values.filter((_, index) => index !== selectedGroupIndex)); onDirty(); }} {...testId(`catalog-item-order-option-group-remove-${selectedGroupIndex}`)}>移除组</Button></Space></Space>
+          <Space style={{justifyContent: 'space-between', width: '100%'}}><Typography.Text strong>选项值</Typography.Text><Space><Button size="small" onClick={() => { updateGroup(selectedGroupIndex, {values: [...selectedGroup.values, {code: '', attributeValueRef: draftUuid(), name: '', default: false, extraPrice: null, productionEffects: []}]}); onDirty(); }} {...testId(`catalog-item-order-option-value-add-${selectedGroupIndex}`)}>新增选项值</Button><Button size="small" danger onClick={() => { onChange(values.filter((_, index) => index !== selectedGroupIndex)); onDirty(); }} {...testId(`catalog-item-order-option-group-remove-${selectedGroupIndex}`)}>移除组</Button></Space></Space>
           {selectedGroup.values.map((value, valueIndex) => <Card key={`${value.code}-${valueIndex}`} size="small" title={`选项值 ${valueIndex + 1}`}>
             <Space wrap>
               <Input addonBefore="值编码" value={value.code} onChange={(event) => { updateValue(selectedGroupIndex, valueIndex, {code: event.target.value}); onDirty(); }} {...testId(`catalog-item-order-option-value-code-${selectedGroupIndex}-${valueIndex}`)}/>
@@ -793,9 +983,9 @@ function OrderOptionsReadOnly({values}: {values: CatalogOrderOptionGroup[]}) {
   if (!values.length) return <EmptySection text="未维护点单选项组"/>;
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-order-options-readonly')}>
     {values.map((group) => {
-      const preview = group.values.map((value) => `${value.name || value.code}${value.default ? '（默认）' : ''}`).join('、') || '—';
+      const preview = group.values.length ? <Space size={4} wrap>{group.values.map((value, valueIndex) => <Space key={`${value.code}-${valueIndex}`} size={2}><NameCodeText name={value.name || undefined} code={value.code || undefined}/>{value.default && <Typography.Text type="secondary">（默认）</Typography.Text>}</Space>)}</Space> : '—';
       const valueRows = <Space direction="vertical" size={2}>{group.values.map((value, valueIndex) => <Typography.Text key={`${value.code}-${valueIndex}`}>{value.code || '—'} · {value.name || '—'} · {money(value.extraPrice)} · 制作影响：{value.productionEffects.join('、') || '—'}</Typography.Text>)}</Space>;
-      return <Card key={group.groupCode || group.groupName} size="small" title={<Space><Typography.Text strong>{group.groupName || '未命名组'}</Typography.Text><Typography.Text type="secondary">{group.groupCode || '—'}</Typography.Text></Space>}>
+      return <Card key={group.groupCode || group.groupName} size="small" title={<NameCodeText name={group.groupName || '未命名组'} code={group.groupCode || undefined}/>}>
         <Descriptions size="small" column={2} items={[{key: 'mode', label: '选择规则', children: `${group.selectionMode || '—'}${group.required ? ' · 必选' : ' · 可选'}`}, {key: 'preview', label: '点单预览', children: preview}]}/>
         {group.values.length > 0 && <Descriptions size="small" column={1} items={[{key: 'values', label: '选项值', children: valueRows}]}/>} 
       </Card>;
@@ -828,22 +1018,48 @@ function ProductionProfilesReadOnly({profiles}: {profiles: ProductionProfileDraf
   </Space>;
 }
 
-function InventoryBomEditor({values, onChange, onDirty}: {values: CatalogInventoryBomEntry[]; onChange: (next: CatalogInventoryBomEntry[]) => void; onDirty: () => void}) {
+function InventoryBomEditor({manifest, shapeKey, values, orderOptions, scopeRef, brandRef, version, onChange, onDirty}: {manifest?: CatalogManifest; shapeKey: string; values: CatalogInventoryBomEntry[]; orderOptions: CatalogOrderOptionGroup[]; scopeRef?: string; brandRef?: string; version: number; onChange: (next: CatalogInventoryBomEntry[]) => void; onDirty: () => void}) {
+  const pickerContext = useMemo<CatalogFieldRuntimeContext>(() => ({
+    scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
+    readField: () => undefined,
+    readSection: () => orderOptions,
+    sectionRevision: () => `${version}:${JSON.stringify(orderOptions)}`,
+  }), [brandRef, orderOptions, scopeRef, version]);
+  const hasOrderOptionValues = orderOptions.some((group) => group.values.length > 0);
   const update = (index: number, patch: Partial<CatalogInventoryBomEntry>) => onChange(values.map((entry, entryIndex) => entryIndex === index ? {...entry, ...patch} : entry));
+  const updateConfiguration = (index: number, patch: Partial<NonNullable<CatalogInventoryBomEntry['configuration']>>) => {
+    const current = values[index]?.configuration ?? {allowNegative: false, lowStockThreshold: null, countingUnit: '', conversionFactor: '1'};
+    update(index, {configuration: {...current, ...patch}});
+  };
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-editor')}>
     <Alert type="info" showIcon title="这里只维护库存节点/BOM 定义，不显示余额流水；库存对象只能从本商品页签建立，BOM 组件必须引用已有库存对象。"/>
-    <Button onClick={() => { onChange([...values, {nodeType: 'ITEM', mode: 'INDEPENDENT_STOCK', targetRef: '', quantity: '0', unit: '', itemCode: '', skuCode: null, consumptionUnit: '', configuration: {allowNegative: false, lowStockThreshold: null, countingUnit: '', conversionFactor: '1'}}]); onDirty(); }} {...testId('catalog-item-inventory-bom-add')}>新增独立库存对象</Button>
-    <Button onClick={() => { onChange([...values, {nodeType: 'ITEM_BOM', mode: 'BOM', targetRef: '', quantity: '1', unit: '', optionValueCode: null}]); onDirty(); }} {...testId('catalog-item-inventory-bom-add-line')}>新增 BOM 组件</Button>
+    <Button onClick={() => { onChange([...values, {nodeType: 'ITEM', mode: 'INDEPENDENT_STOCK', targetRef: draftUuid(), quantity: '0', unit: '', itemCode: '', skuCode: null, consumptionUnit: '', configuration: {allowNegative: false, lowStockThreshold: null, countingUnit: '', conversionFactor: '1'}}]); onDirty(); }} {...testId('catalog-item-inventory-bom-add')}>新增独立库存对象</Button>
+    <Button onClick={() => { onChange([...values, {nodeType: 'ITEM_BOM', mode: 'BOM', targetRef: draftUuid(), quantity: '1', unit: '', optionValueCode: null}]); onDirty(); }} {...testId('catalog-item-inventory-bom-add-line')}>新增 BOM 组件</Button>
     {values.length === 0 && <EmptySection text="未维护库存对象或 BOM"/>}
     {values.map((entry, index) => <Card key={`${entry.targetRef}-${index}`} size="small" title={`节点 ${index + 1}`} extra={<Button danger type="link" onClick={() => { onChange(values.filter((_, entryIndex) => entryIndex !== index)); onDirty(); }} {...testId(`catalog-item-inventory-bom-remove-${index}`)}>移除</Button>}>
       <Space wrap>
         <Typography.Text type="secondary">lineSign：{entry.lineSign ?? entry.nodeType}</Typography.Text>
-        <Select value={entry.mode} options={[{value: 'NONE', label: '无库存'}, {value: 'INDEPENDENT_STOCK', label: '独立库存'}, {value: 'BOM', label: 'BOM'}]} onChange={(mode) => { update(index, {mode}); onDirty(); }} {...testId(`catalog-item-inventory-bom-mode-${index}`)}/>
+        <Select value={entry.mode} options={catalogEnumOptions(manifest, 'inventoryMode')} onChange={(mode) => { update(index, {mode}); onDirty(); }} {...testId(`catalog-item-inventory-bom-mode-${index}`)}/>
         {entry.mode === 'BOM' && <>
-          <Input addonBefore="BOM 所属选项值（可选）" value={entry.optionValueCode ?? ''} onChange={(event) => { update(index, {optionValueCode: event.target.value || null, nodeType: event.target.value ? 'OPTION_VALUE_BOM' : 'ITEM_BOM'}); onDirty(); }} {...testId(`catalog-item-inventory-bom-option-value-${index}`)}/>
-          <Input addonBefore="已有库存对象" value={entry.targetRef} onChange={(event) => { update(index, {targetRef: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-target-${index}`)}/>
+          {catalogJoinedField(manifest as CatalogDescriptorManifest | undefined, shapeKey, 'bomOptionValue') && <CatalogDescriptorPicker manifest={manifest} shapeKey={shapeKey} fieldKey="bomOptionValue" value={String(entry.optionValueRef ?? '')} context={pickerContext} disabled={!hasOrderOptionValues} disabledMessage={!hasOrderOptionValues ? '当前商品没有可用的点单选项值。' : undefined} testIdValue={`catalog-item-inventory-bom-option-value-${index}`} onChange={(next, rawRow) => {
+            const row = descriptorRow(rawRow);
+            const selected = descriptorString(next);
+            update(index, {optionValueRef: selected ? draftUuid(selected) : null, optionValueCode: typeof row?.code === 'string' ? row.code : null, nodeType: selected ? 'OPTION_VALUE_BOM' : 'ITEM_BOM'});
+            onDirty();
+          }}/>}
+          <CatalogDescriptorPicker manifest={manifest} shapeKey={shapeKey} fieldKey="bomTarget" value={String(entry.targetRef ?? '')} context={pickerContext} testIdValue={`catalog-item-inventory-bom-target-${index}`} onChange={(next, rawRow) => {
+            const row = descriptorRow(rawRow);
+            update(index, {
+              targetRef: draftUuid(descriptorString(next)),
+              itemCode: typeof row?.productCode === 'string' ? row.productCode : '',
+              itemRef: typeof row?.itemRef === 'string' ? draftUuid(row.itemRef) : undefined,
+              productSkuRef: typeof row?.productSkuRef === 'string' ? draftUuid(row.productSkuRef) : null,
+              skuCode: typeof row?.skuCode === 'string' ? row.skuCode : null,
+            });
+            onDirty();
+          }}/>
         </>}
-        {entry.mode === 'INDEPENDENT_STOCK' && <Input addonBefore="消耗单位（新建时必填）" value={entry.consumptionUnit ?? ''} onChange={(event) => { update(index, {consumptionUnit: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-consumption-unit-${index}`)}/>} 
+        {entry.mode === 'INDEPENDENT_STOCK' && <><Input addonBefore="消耗单位（新建时必填）" value={entry.consumptionUnit ?? ''} onChange={(event) => { update(index, {consumptionUnit: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-consumption-unit-${index}`)}/><Input addonBefore="低库存阈值" value={entry.configuration?.lowStockThreshold ?? ''} onChange={(event) => { updateConfiguration(index, {lowStockThreshold: event.target.value || null}); onDirty(); }} {...testId(`catalog-item-inventory-bom-low-threshold-${index}`)}/><Space><Typography.Text>允许负库存</Typography.Text><Switch checked={entry.configuration?.allowNegative ?? false} onChange={(allowNegative) => { updateConfiguration(index, {allowNegative}); onDirty(); }} {...testId(`catalog-item-inventory-bom-allow-negative-${index}`)}/></Space><Input addonBefore="盘点单位" value={entry.configuration?.countingUnit ?? ''} onChange={(event) => { updateConfiguration(index, {countingUnit: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-counting-unit-${index}`)}/><Input addonBefore="盘点换算" value={entry.configuration?.conversionFactor ?? ''} onChange={(event) => { updateConfiguration(index, {conversionFactor: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-conversion-factor-${index}`)}/></>}
         <Input addonBefore="每份消耗" value={entry.quantity} onChange={(event) => { update(index, {quantity: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-quantity-${index}`)}/>
         <Input addonBefore="单位" value={entry.unit} onChange={(event) => { update(index, {unit: event.target.value}); onDirty(); }} {...testId(`catalog-item-inventory-bom-unit-${index}`)}/>
       </Space>
@@ -851,22 +1067,23 @@ function InventoryBomEditor({values, onChange, onDirty}: {values: CatalogInvento
   </Space>;
 }
 
-function InventoryBomReadOnly({values}: {values: CatalogInventoryBomEntry[]}) {
+function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; values: CatalogInventoryBomEntry[]}) {
+  const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
   return <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-readonly')}>
-    {!values.length ? <EmptySection text="未维护库存对象或 BOM"/> : values.map((entry, index) => <Card key={`${entry.targetRef}-${index}`} size="small" title={`lineSign：${entry.nodeType}`}>
-      <Descriptions size="small" column={2} items={[{key: 'mode', label: '允许模式', children: entry.mode}, {key: 'owner', label: 'BOM 所属选项值', children: entry.optionValueCode || '商品/SKU'}, {key: 'target', label: '库存对象', children: entry.targetRef || '—'}, {key: 'quantity', label: 'BOM 每份消耗', children: `${entry.quantity || '—'} ${entry.unit || ''}`}]}/>
+    {!values.length ? <EmptySection text="未维护库存对象或 BOM"/> : values.map((entry, index) => <Card key={`${entry.targetRef}-${index}`} size="small" title="库存 / BOM 节点">
+      <Descriptions size="small" column={2} items={[{key: 'mode', label: '允许模式', children: catalogEnumLabel(manifest, 'inventoryMode', entry.mode)}, {key: 'owner', label: fieldLabel('bomOptionValue'), children: entry.optionValueCode ? <Typography.Text code>{entry.optionValueCode}</Typography.Text> : entry.skuCode ? <Typography.Text code>{entry.skuCode}</Typography.Text> : entry.itemCode ? <Typography.Text code>{entry.itemCode}</Typography.Text> : '商品/SKU'}, {key: 'target', label: fieldLabel('bomTarget'), children: entry.itemCode ? <Typography.Text code>{entry.itemCode}</Typography.Text> : entry.skuCode ? <Typography.Text code>{entry.skuCode}</Typography.Text> : '契约未提供库存对象编码'}, {key: 'quantity', label: 'BOM 每份消耗', children: `${entry.quantity || '—'} ${entry.unit || ''}`}, ...(entry.mode === 'INDEPENDENT_STOCK' ? [{key: 'consumptionUnit', label: '消耗单位', children: entry.consumptionUnit || '—'}, {key: 'lowStockThreshold', label: '低库存阈值', children: entry.configuration?.lowStockThreshold || '—'}, {key: 'allowNegative', label: '允许负库存', children: entry.configuration?.allowNegative ? '是' : '否'}, {key: 'countingUnit', label: '盘点单位', children: entry.configuration?.countingUnit || '—'}, {key: 'conversionFactor', label: '盘点换算', children: entry.configuration?.conversionFactor || '—'}] : [])]}/>
     </Card>)}
   </Space>;
 }
 
-function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRef, onSelect, testIdValue}: {value: string; currentItemCode?: string; queryContext: OperationsPageProps['queryContext']; brandRef?: string; onSelect: (item: {itemCode: string; itemRef: string}) => void; testIdValue: string}) {
+function CompositeCandidatePicker({manifest, value, currentItemCode, queryContext, brandRef, onSelect, testIdValue}: {manifest?: CatalogManifest; value: string; currentItemCode?: string; queryContext: OperationsPageProps['queryContext']; brandRef?: string; onSelect: (item: {itemCode: string; itemRef: CatalogCompositeComponent['itemRef']}) => void; testIdValue: string}) {
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [categoryRef, setCategoryRef] = useState<string>();
   const [cursor, setCursor] = useState('');
   const headers = useMemo(() => brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined, [brandRef]);
-  const navigationRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogNavigation({}, {query: {dataNodeRef: queryContext.scopeRef ?? '', viewKey: 'ALL'}, headers}), [headers, queryContext.scopeRef]);
-  const itemRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItems({}, {query: {dataNodeRef: queryContext.scopeRef ?? '', ...(keyword.trim() ? {keyword: keyword.trim()} : {}), ...(categoryRef ? {categoryRef, includeSubCategories: true} : {}), ...(cursor ? {cursor} : {}), pageSize: 20}, headers}), [categoryRef, cursor, headers, keyword, queryContext.scopeRef]);
+  const navigationRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogNavigation({}, {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), viewKey: 'ALL'}, headers}), [headers, queryContext.scopeRef]);
+  const itemRequest = useMemo(() => catalogInventoryRtkRequest.getOperationsCatalogItems({}, {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), ...(keyword.trim() ? {keyword: keyword.trim()} : {}), ...(categoryRef ? {categoryRef: wireUuid(categoryRef), includeSubCategories: true} : {}), ...(cursor ? {cursor} : {}), pageSize: 20}, headers}), [categoryRef, cursor, headers, keyword, queryContext.scopeRef]);
   const navigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !open});
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
   const navigation = decodeNavigation(navigationQuery.data);
@@ -874,7 +1091,7 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
   const treeData = useMemo(() => buildCategoryTree(navigation.tree), [navigation.tree]);
   useEffect(() => { if (!open) { setKeyword(''); setCategoryRef(undefined); setCursor(''); } }, [open]);
   return <>
-    <Button onClick={() => setOpen(true)} {...testId(testIdValue)}>{value ? <NameCodeText name={value} code={value}/> : '选择组件商品'}</Button>
+    <Button onClick={() => setOpen(true)} {...testId(testIdValue)}>{value ? <Typography.Text code>{value}</Typography.Text> : '选择组件商品'}</Button>
     {value && <Typography.Text type="secondary">已选商品编码：{value}</Typography.Text>}
     <Drawer title="选择套餐组件商品" open={open} onClose={() => setOpen(false)} {...adminWideDrawerSurfaceProps} {...testId(`${testIdValue}-drawer`)}>
       <Alert type="info" showIcon title="只能选择当前商品库中可引用的商品；候选查询由 catalog owner 提供，不能手写商品名称或编码。" style={{marginBottom: 12}}/>
@@ -884,7 +1101,7 @@ function CompositeCandidatePicker({value, currentItemCode, queryContext, brandRe
           <Input.Search value={keyword} placeholder="在选定分类中搜索商品名称或编码" allowClear onChange={(event) => { setKeyword(event.target.value); setCursor(''); }} onSearch={() => setCursor('')} {...testId(`${testIdValue}-search`)}/>
           {itemsQuery.isError && <Alert type="error" showIcon title="候选查询失败" description="商品 owner 未返回可验证候选，请重试。" action={<Button size="small" onClick={() => void itemsQuery.refetch()}>重试</Button>} {...testId(`${testIdValue}-error`)}/>} 
           <List loading={itemsQuery.isLoading || itemsQuery.isFetching} dataSource={page.items.filter((item) => item.code !== currentItemCode)} locale={{emptyText: '暂无可引用商品'}} renderItem={(item) => <List.Item actions={[<Button key="select" type="link" onClick={() => { onSelect({itemCode: item.code, itemRef: item.itemRef}); setOpen(false); }} {...testId(`${testIdValue}-select-${item.code}`)}>选择</Button>]}>
-            <List.Item.Meta title={<NameCodeText name={item.name} code={item.code}/>} description={`${item.shapeKey} · ${item.status} · ${item.source}`}/>
+            <List.Item.Meta title={<NameCodeText name={item.name} code={item.code}/>} description={`${catalogEnumLabel(manifest, 'shapeKey', item.shapeKey)} · ${catalogEnumLabel(manifest, 'catalogItemStatus', item.status)} · ${catalogEnumLabel(manifest, 'catalogSource', item.source)}`}/>
           </List.Item>}
           />
           {page.cursor && <Button onClick={() => setCursor(page.cursor)} loading={itemsQuery.isFetching} {...testId(`${testIdValue}-next`)}>加载下一页</Button>}
@@ -905,7 +1122,17 @@ function buildCategoryTree(nodes: ReturnType<typeof decodeNavigation>['tree']): 
   return build('');
 }
 
-function CompositeGroupsEditor({values, onChange, onDirty, queryContext, brandRef, currentItemCode}: {values: CatalogCompositeGroup[]; onChange: (next: CatalogCompositeGroup[]) => void; onDirty: () => void; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string}) {
+function CompositeSkuDescriptorPicker({manifest, shapeKey, value, itemCode, queryContext, brandRef, version, testIdValue, onChange}: {manifest?: CatalogManifest; shapeKey: string; value: string; itemCode: string; queryContext: OperationsPageProps['queryContext']; brandRef?: string; version: number; testIdValue: string; onChange: (value: string, skuCode?: string) => void}) {
+  const context = useMemo<CatalogFieldRuntimeContext>(() => ({
+    scope: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), brandRef},
+    readField: () => itemCode,
+    readSection: () => [],
+    sectionRevision: () => `${version}:${itemCode}`,
+  }), [brandRef, itemCode, queryContext.scopeRef, version]);
+  return <CatalogDescriptorPicker manifest={manifest} shapeKey={shapeKey} fieldKey="compositeComponentSku" value={value} context={context} disabled={!itemCode} disabledMessage={!itemCode ? '请先选择组件商品，再选择其 SKU。' : undefined} testIdValue={testIdValue} onChange={(next, rawRow) => { const row = descriptorRow(rawRow); onChange(descriptorString(next), typeof row?.skuCode === 'string' ? row.skuCode : undefined); }}/>;
+}
+
+function CompositeGroupsEditor({manifest, shapeKey, values, onChange, onDirty, queryContext, brandRef, currentItemCode, version}: {manifest?: CatalogManifest; shapeKey: string; values: CatalogCompositeGroup[]; onChange: (next: CatalogCompositeGroup[]) => void; onDirty: () => void; queryContext: OperationsPageProps['queryContext']; brandRef?: string; currentItemCode?: string; version: number}) {
   const updateGroup = (index: number, patch: Partial<CatalogCompositeGroup>) => onChange(values.map((group, groupIndex) => groupIndex === index ? {...group, ...patch} : group));
   const updateComponent = (groupIndex: number, componentIndex: number, patch: Partial<CatalogCompositeComponent>) => onChange(values.map((group, index) => index === groupIndex ? {...group, components: group.components.map((component, entryIndex) => entryIndex === componentIndex ? {...component, ...patch} : component)} : group));
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-composite-groups-editor')}>
@@ -919,14 +1146,14 @@ function CompositeGroupsEditor({values, onChange, onDirty, queryContext, brandRe
           <Input addonBefore="组名" value={group.groupName} onChange={(event) => { updateGroup(groupIndex, {groupName: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-group-name-${groupIndex}`)}/>
           <Select value={group.selectionRule} options={[{value: 'FIXED', label: '固定包含'}, {value: 'SINGLE', label: '单选'}, {value: 'MULTIPLE', label: '多选'}]} onChange={(selectionRule) => { updateGroup(groupIndex, {selectionRule}); onDirty(); }} {...testId(`catalog-item-composite-group-rule-${groupIndex}`)}/>
         </Space>
-        <Button size="small" onClick={() => { updateGroup(groupIndex, {components: [...group.components, {itemCode: '', itemRef: '', productSkuRef: null, skuCode: null, quantity: '1', unit: '', default: false, extraPrice: null, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-composite-component-add-${groupIndex}`)}>添加组件</Button>
+        <Button size="small" onClick={() => { updateGroup(groupIndex, {components: [...group.components, {itemCode: '', itemRef: draftUuid(), productSkuRef: null, skuCode: null, quantity: '1', unit: '', default: false, extraPrice: null, status: 'ENABLED'}]}); onDirty(); }} {...testId(`catalog-item-composite-component-add-${groupIndex}`)}>添加组件</Button>
         {group.components.map((component, componentIndex) => <Space key={`${component.itemCode}-${componentIndex}`} wrap>
-          <CompositeCandidatePicker value={component.itemCode} currentItemCode={currentItemCode} queryContext={queryContext} brandRef={brandRef} testIdValue={`catalog-item-composite-component-item-${groupIndex}-${componentIndex}`} onSelect={(item) => { updateComponent(groupIndex, componentIndex, item); onDirty(); }}/>
-          <Input addonBefore="SKU" value={component.skuCode ?? ''} onChange={(event) => { updateComponent(groupIndex, componentIndex, {skuCode: event.target.value || null}); onDirty(); }} {...testId(`catalog-item-composite-component-sku-${groupIndex}-${componentIndex}`)}/>
+          <CompositeCandidatePicker manifest={manifest} value={component.itemCode} currentItemCode={currentItemCode} queryContext={queryContext} brandRef={brandRef} testIdValue={`catalog-item-composite-component-item-${groupIndex}-${componentIndex}`} onSelect={(item) => { updateComponent(groupIndex, componentIndex, {...item, productSkuRef: null, skuCode: null}); onDirty(); }}/>
+          <CompositeSkuDescriptorPicker manifest={manifest} shapeKey={shapeKey} value={String(component.productSkuRef ?? '')} itemCode={component.itemCode} queryContext={queryContext} brandRef={brandRef} version={version} testIdValue={`catalog-item-composite-component-sku-${groupIndex}-${componentIndex}`} onChange={(next, skuCode) => { updateComponent(groupIndex, componentIndex, {productSkuRef: next ? draftUuid(next) : null, skuCode: skuCode ?? null}); onDirty(); }}/>
           <Input addonBefore="数量" value={component.quantity} onChange={(event) => { updateComponent(groupIndex, componentIndex, {quantity: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-component-quantity-${groupIndex}-${componentIndex}`)}/>
           <Input addonBefore="单位" value={component.unit} onChange={(event) => { updateComponent(groupIndex, componentIndex, {unit: event.target.value}); onDirty(); }} {...testId(`catalog-item-composite-component-unit-${groupIndex}-${componentIndex}`)}/>
           <InputNumber addonBefore="加价（分）" value={component.extraPrice} min={0} precision={0} onChange={(extraPrice) => { updateComponent(groupIndex, componentIndex, {extraPrice: extraPrice ?? null}); onDirty(); }} {...testId(`catalog-item-composite-component-price-${groupIndex}-${componentIndex}`)}/>
-          <Select value={component.status} options={[{value: 'ENABLED', label: '启用'}, {value: 'DISABLED', label: '停用'}]} onChange={(status) => { updateComponent(groupIndex, componentIndex, {status}); onDirty(); }} {...testId(`catalog-item-composite-component-status-${groupIndex}-${componentIndex}`)}/>
+          <Select value={component.status} options={catalogEnumOptions(manifest, 'catalogItemStatus').filter((option) => option.value === 'ENABLED' || option.value === 'DISABLED')} onChange={(status) => { updateComponent(groupIndex, componentIndex, {status}); onDirty(); }} {...testId(`catalog-item-composite-component-status-${groupIndex}-${componentIndex}`)}/>
           <Space><Typography.Text>默认</Typography.Text><Switch checked={component.default} onChange={(defaultValue) => { updateComponent(groupIndex, componentIndex, {default: defaultValue}); onDirty(); }} {...testId(`catalog-item-composite-component-default-${groupIndex}-${componentIndex}`)}/></Space>
           <Button danger type="link" onClick={() => { updateGroup(groupIndex, {components: group.components.filter((_, index) => index !== componentIndex)}); onDirty(); }} {...testId(`catalog-item-composite-component-remove-${groupIndex}-${componentIndex}`)}>移除</Button>
         </Space>)}
@@ -938,7 +1165,7 @@ function CompositeGroupsEditor({values, onChange, onDirty, queryContext, brandRe
 function CompositeGroupsReadOnly({values}: {values: CatalogCompositeGroup[]}) {
   if (!values.length) return <EmptySection text="未维护套餐分组"/>;
   return <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-composite-groups-readonly')}>
-    {values.map((group) => <Card key={group.groupCode || group.groupName} size="small" title={<Space><Typography.Text strong>{group.groupName || '未命名分组'}</Typography.Text><Typography.Text type="secondary">{group.groupCode || '—'}</Typography.Text></Space>}>
+    {values.map((group) => <Card key={group.groupCode || group.groupName} size="small" title={<NameCodeText name={group.groupName || '未命名分组'} code={group.groupCode || undefined}/> }>
       <Descriptions size="small" column={1} items={[{key: 'rule', label: '选择规则', children: group.selectionRule || '—'}, {key: 'components', label: '组件', children: group.components.length ? <Space direction="vertical" size={2}>{group.components.map((component, index) => <Typography.Text key={`${component.itemCode}-${index}`}>{component.itemCode || '—'}{component.skuCode ? ` / ${component.skuCode}` : ''} · {component.quantity} {component.unit} · {component.default ? '默认' : '可选'} · {money(component.extraPrice)} · {component.status || '—'}</Typography.Text>)}</Space> : '未添加组件'}]}/>
     </Card>)}
   </Space>;
@@ -985,4 +1212,41 @@ function CatalogAssetGallery({assetRefs, itemName}: {assetRefs: string[]; itemNa
 
 function EmptySection({text}: {text: string}) { return <Typography.Text type="secondary">{displayValue(text as JsonValue)}</Typography.Text>; }
 function money(value: number | null) { return value === null ? '—' : `¥${(value / 100).toFixed(2)}`; }
+type AttributeDraftRow = {key: string; value: string};
+function parseAttributeDraftRows(value?: string): AttributeDraftRow[] {
+  if (!value?.trim()) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return [];
+    return Object.entries(parsed).map(([key, entry]) => ({key, value: typeof entry === 'string' ? entry : JSON.stringify(entry)}));
+  } catch {
+    return [];
+  }
+}
+function serializeAttributeDraftRows(rows: AttributeDraftRow[]) {
+  const result: Record<string, JsonValue> = {};
+  rows.forEach((row) => {
+    const key = row.key.trim();
+    if (!key) return;
+    try {
+      result[key] = row.value.trim() ? JSON.parse(row.value) as JsonValue : '';
+    } catch {
+      result[key] = row.value;
+    }
+  });
+  return JSON.stringify(result, null, 2);
+}
+function AttributesKeyValueEditor({value, onChange, onDirty}: {value?: string; onChange?: (next: string) => void; onDirty: () => void}) {
+  const [rows, setRows] = useState<AttributeDraftRow[]>(() => parseAttributeDraftRows(value));
+  useEffect(() => setRows(parseAttributeDraftRows(value)), [value]);
+  const commit = (next: AttributeDraftRow[]) => { setRows(next); onChange?.(serializeAttributeDraftRows(next)); onDirty(); };
+  return <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-item-attributes-key-value-editor')}>
+    {rows.map((row, index) => <Space key={index} align="start" style={{display: 'flex'}}>
+      <Input addonBefore="键" value={row.key} onChange={(event) => commit(rows.map((entry, rowIndex) => rowIndex === index ? {...entry, key: event.target.value} : entry))} />
+      <Input addonBefore="值" value={row.value} onChange={(event) => commit(rows.map((entry, rowIndex) => rowIndex === index ? {...entry, value: event.target.value} : entry))} />
+      <Button type="link" danger onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}>删除</Button>
+    </Space>)}
+    <Button type="dashed" onClick={() => commit([...rows, {key: '', value: ''}])}>新增属性</Button>
+  </Space>;
+}
 function FactMap({value, empty}: {value: Record<string, JsonValue>; empty: string}) { const entries = Object.entries(value); return entries.length ? <Descriptions {...adminWideDetailDescriptionsProps} items={entries.map(([key, entry]) => ({key, label: key, children: displayValue(entry)}))}/> : <EmptySection text={empty}/>; }

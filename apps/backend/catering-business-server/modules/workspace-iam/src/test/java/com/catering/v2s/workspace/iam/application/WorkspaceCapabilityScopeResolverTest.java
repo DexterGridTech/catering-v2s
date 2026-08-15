@@ -83,7 +83,7 @@ class WorkspaceCapabilityScopeResolverTest {
     void allowsOnlyTheHeadCompanyCreateCapabilityForAHeadCompanyAssignmentAgainstTheOwningGroup() {
         UUID groupId = UUID.randomUUID();
         WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("HEAD_COMPANY", assignmentNode);
-        OrganizationTaskPathLookup taskPaths = new OrganizationTaskPathLookup() {
+        OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
             @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 return new TaskPath(targetType, targetId, List.of(targetId), "Group target");
             }
@@ -105,7 +105,7 @@ class WorkspaceCapabilityScopeResolverTest {
         String requirement = "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS";
         String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, "HEAD_COMPANY").orElseThrow();
         WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("GROUP", assignmentNode);
-        OrganizationTaskPathLookup taskPaths = new OrganizationTaskPathLookup() {
+        OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
             @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 throw new AssertionError("normal enabled-only lookup must not authorize a status transition");
             }
@@ -131,7 +131,7 @@ class WorkspaceCapabilityScopeResolverTest {
             assertEquals(assignmentId, currentAssignmentId);
             return new WorkspaceAssignmentScopeLookup.AssignmentScope(assignmentType, assignmentNode);
         };
-        OrganizationTaskPathLookup taskPaths = new OrganizationTaskPathLookup() {
+        OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
             @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 return new TaskPath(targetType, targetId, List.of(assignmentNode, targetId), targetType + " target");
             }

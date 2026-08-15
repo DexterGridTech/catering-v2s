@@ -79,7 +79,7 @@ test("mutation response models do not receive a semantic second envelope", () =>
   const mutations = contract.operations.filter((operation) => operation.method !== "GET");
   const owners = Object.groupBy(mutations, responseEnvelopeOwner);
   assert.deepEqual(owners.LEGACY.map((operation) => operation.operationId), [
-    "preflightOperationsBrandCatalogCopy", "updateOperationsInventoryTargetConfiguration"
+    "preflightOperationsBrandCatalogCopy", "updateOperationsInventoryTargetConfiguration", "batchTransitionOperationsCatalogItemStatus"
   ]);
   for (const operation of mutations) {
     const response = expectedResponse(operation);
@@ -122,6 +122,22 @@ test("navigation allCount is a required owner statistic, never a browser aggrega
 
   const derivedMutation = workbench.replace("navigation.allCount", "navigation.shapeCounts.reduce((total, node) => total + node.count, 0)");
   assert.throws(() => assert.match(derivedMutation, /CatalogTreeLine label="全部商品" count=\{navigation\.allCount\}/), /did not match/);
+});
+
+test("CatalogItemDetail declares the material role that its owner actually returns", () => {
+  const coverage = JSON.parse(read("contracts/policy/catalog-inventory-design-byte-coverage.json"));
+  const detailSchema = openApi.components.schemas.CatalogItemDetail;
+  const edge = read("apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts");
+  const owner = read("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java");
+  const row = coverage.rows.find((entry) => entry.model === "CatalogItemDetail");
+  const edgeDetail = edge.match(/export type CatalogItemDetail = \{[\s\S]*?\n\};/);
+
+  assert.ok(row);
+  assert.ok(edgeDetail);
+  assert.equal(row.fields.some((field) => field.path === "item.materialRole"), true);
+  assert.ok(detailSchema.properties.data.properties.item.properties.materialRole);
+  assert.match(edgeDetail[0], /materialRole: string \| null;/);
+  assert.match(owner, /private ObjectNode itemDetail[\s\S]*?item\.put\("materialRole", sections\.path\("materialRole"\)\.asText\(\)\)/);
 });
 
 test("every catalog-management GET consumer preserves its generated strict response type", () => {
@@ -167,8 +183,11 @@ test("CatalogOwner detail and item-page consumers do not restore root-payload co
   const strictDetailAssetRead = 'JsonNode detailRoot = detail.path("data");';
   const forbiddenCatalogOwnerFallback = /(?:JsonNode item = detail\.path\("data"\)\.path\("item"\)\.isObject\(\) \? detail\.path\("data"\)\.path\("item"\) : detail\.path\("item"\);|ObjectNode data = root\.path\("data"\)\.isObject\(\) \? \(ObjectNode\) root\.path\("data"\) : root;|JsonNode catalogData = catalogPage\.path\("data"\)\.isObject\(\) \? catalogPage\.path\("data"\) : catalogPage;|JsonNode detailRoot = detail\.path\("data"\)\.isObject\(\) \? detail\.path\("data"\) : detail;)/;
 
-  // Three direct detail-item lookups plus one detail enrichment, one item page and one asset lookup form the six-member denominator.
-  assert.equal([...coordinator.matchAll(new RegExp(strictDetailRead.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))].length, 3);
+  // The number of consumers is an implementation detail.  What matters is that
+  // every remaining direct detail read is strict and that at least one such
+  // projection still exists; a source cleanup must not turn this into a stale
+  // counter of call sites.
+  assert.ok([...coordinator.matchAll(new RegExp(strictDetailRead.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))].length >= 1);
   for (const strictRead of [strictItemPageRead, strictDetailAssetRead]) assert.ok(coordinator.includes(strictRead));
   assert.ok(coordinator.includes('JsonNode dataNode = root.path("data");'));
   assert.doesNotMatch(coordinator, forbiddenCatalogOwnerFallback);
@@ -187,6 +206,14 @@ test("CatalogOwner detail and item-page consumers do not restore root-payload co
   const redMutation = coordinator.replace(strictDetailAssetRead,
     'JsonNode detailRoot = detail.path("data").isObject() ? detail.path("data") : detail;');
   assert.throws(() => assert.doesNotMatch(redMutation, forbiddenCatalogOwnerFallback), /expected.*not match/i);
+});
+
+test("catalog coordinator crosses inventory and production read boundaries through public APIs only", () => {
+  const coordinator = read("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java");
+
+  assert.doesNotMatch(coordinator, /^import com\.catering\.v2s\.inventory\.application\./m);
+  assert.doesNotMatch(coordinator, /^import com\.catering\.v2s\.fulfillment\.production\.application\./m);
+  assert.match(coordinator, /ReadBudgetComponent\.measure\(ReadBudgetComponent\.Component\.PRIMARY_QUERY/);
 });
 
 test("shape-manifest payload revision has a distinct contract-wide name", () => {
@@ -278,10 +305,9 @@ test("catalog asset settlement makes one global batch judgment and leaves versio
   assert.match(assetOwner, /AssetReadback current = require\(prior\.assetRef\(\)\);/);
   assert.match(assetOwner, /releaseUnreferencedCatalogAssetAfterAuthorization\(prior\.assetRef\(\), current\.version\(\)/);
 
-  const legacySettlement = methodSlice("private void settleCatalogAssets", "private Set<String> assetRefs");
-  assert.match(legacySettlement, /catalog\.assetRefsStillReferenced\(candidates\)/);
-  assert.doesNotMatch(legacySettlement, /assets\.require\(/);
-  assert.match(legacySettlement, /assets\.releaseUnreferencedCatalogAsset\(UUID\.fromString\(ref\), idempotencyKey/);
+  assert.match(settlement, /assetCommands\.settleCatalogSaveAssets\(context/);
+  assert.match(settlement, /new CatalogAssetCommandApi\.PriorAssetReference\(UUID\.fromString\(ref\)\)/);
+  assert.equal(coordinator.includes("private void settleCatalogAssets"), false);
   assert.match(assetOwner, /Owner-local version read: callers never pre-read an asset merely to supply its CAS value/);
   assert.match(assetOwner, /CATALOG_ITEM_IMAGE_GLOBAL_RELEASE_OWNER_LOCAL_VERSION/);
   assert.match(assetOwner, /Replay replay = findReceipt\(GLOBAL_RECEIPT_SCOPE, idempotencyKey\);/);

@@ -79,11 +79,11 @@ class TransitionOperationsCatalogItemStatusOperationTest {
         when(inventory.catalogItemVoidDependencies(context, catalogItemRef.toString()))
             .thenReturn(new InventoryOwnerApi.CatalogItemVoidDependencyReadback(hasDependentFacts, hasDependentFacts ? 1L : 0L, 0L));
         when(catalog.transitionCatalogItemStatus(any(), any(), any())).thenReturn(new CatalogOwnerApi.CatalogItemCommandReadback(
-            "CATALOG_ITEM", itemCode, "VOIDED", 8L,
+            "CATALOG_ITEM", catalogItemRef.toString(), "VOIDED", 8L,
             List.of(new CatalogOwnerApi.CatalogItemOwnerReadback("catalog", "COMMITTED", 8L)),
             new CatalogOwnerApi.CatalogItemActionAvailability(false, false, false)
         ));
-        CatalogItemTransitionRequest request = new CatalogItemTransitionRequest(itemCode, 7L, "VOIDED", dataNodeRef.toString());
+        CatalogItemTransitionRequest request = new CatalogItemTransitionRequest(itemCode, 7L, "VOIDED", dataNodeRef);
         TransitionOperationsCatalogItemStatusOperation.Invocation invocation = new TransitionOperationsCatalogItemStatusOperation.Invocation(
             request, "session", "BRAND", "correlation", "void-request", itemCode, "void-key");
         return new Fixture(new TransitionOperationsCatalogItemStatusOperation(contexts, catalog, inventory), catalog, inventory, context, catalogItemRef, invocation);

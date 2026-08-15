@@ -6,7 +6,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS, type OrganizationNode} from '../../../ap
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {ProjectPhaseFieldList} from './ProjectPhaseFieldList';
 import {issue, organizationProjectCreateLabel, projectPhasePayload, type HierarchyRow} from './organizationStructureShared';
-import {OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
+import {extensionValuesForGeneratedRequest, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {code: string; name: string; notes?: string; phaseDrafts?: Array<{name?: string}>; extensionValues?: OrganizationExtensionFormValues};
 
@@ -47,7 +47,7 @@ export function ProjectCreateDrawer({open, region, queryContext, onClose, onCrea
     try {
       const created = await operationsClient.createOperationsOrganizationProject(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, regionId: region.id},
-        {body: {code: values.code.trim(), name: values.name.trim(), notes: values.notes?.trim() || null, phases: projectPhasePayload(values.phaseDrafts), extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {code: values.code.trim(), name: values.name.trim(), notes: values.notes?.trim() || null, phases: projectPhasePayload(values.phaseDrafts), extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, values.extensionValues))}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onCreated(created);

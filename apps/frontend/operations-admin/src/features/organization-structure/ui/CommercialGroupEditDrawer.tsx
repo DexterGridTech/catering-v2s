@@ -5,7 +5,7 @@ import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type CommercialGroupRoot} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {issue, organizationGroupEditLabel, type HierarchyRow} from './organizationStructureShared';
-import {hydrateOrganizationExtensionValues, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
+import {extensionValuesForGeneratedRequest, hydrateOrganizationExtensionValues, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {code: string; name: string; extensionValues?: OrganizationExtensionFormValues};
 
@@ -35,7 +35,7 @@ export function CommercialGroupEditDrawer({group, queryContext, onClose, onUpdat
     try {
       const updated = await operationsClient.updateOperationsCommercialGroup(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {groupCode: values.code.trim(), groupName: values.name.trim(), extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues, group.extensionValues), expectedVersion: group.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {groupCode: values.code.trim(), groupName: values.name.trim(), extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, values.extensionValues, group.extensionValues)), expectedVersion: group.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated(updated);

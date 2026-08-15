@@ -66,11 +66,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "linkedProductCount": {
                     "type": "integer",
@@ -107,7 +109,8 @@
                             },
                             "referenceRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -129,7 +132,8 @@
                             },
                             "factRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -196,6 +200,7 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         },
         "code": {
@@ -257,6 +262,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }
@@ -282,12 +288,18 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "tagRef",
             "code",
             "tagKind",
             "name",
             "status"
           ],
           "properties": {
+            "tagRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "production tag opaque reference"
+            },
             "code": {
               "type": "string",
               "description": "tag code"
@@ -346,6 +358,7 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         },
         "cursor": {
@@ -382,6 +395,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }

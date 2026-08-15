@@ -131,7 +131,7 @@
 | 2-8 | **S-11c** `stock_ledger` 无 scope 列、无 FK | 资金级审计轨迹只靠裸 `target_ref` 挂着。与 0-1 同源,但那条是止血、这条是建模 |
 | 2-9 | **S-11d** `organization_node.parent_id` 无 FK、无索引、无环守卫 | 五处递归 CTE 全是 `UNION ALL` 无深度上限,一旦成环即语句超时 |
 | 2-10 | **S-20** 两条索引(`invitation` 三列、`workspace_session (account_id, status)`) | 触发点应引 `WorkspaceAccountService:35`,不是 `:38`。另两条已证伪不做 |
-| 2-11 | **S-12** 冗余与死索引 | 两条严格前缀索引 + 三条无查询会用的 |
+| 2-11 | **S-12** 冗余与死索引 | 两条严格前缀索引 + 三条无查询会用的。**⚠️ 不要用静态论证判定"没有查询会用到"**——我在 M-07 里就是这么判的,盲审推翻了其中两条。**用运行证据**:跑一遍 workload(backend-acceptance 的 8 条真实场景可当 workload),然后 `SELECT schemaname, relname, indexrelname, idx_scan FROM pg_stat_user_indexes WHERE idx_scan = 0;`。Postgres 自带,零成本。同理 `pg_stat_statements` 能直接给出最慢查询,比逐条读 SQL 猜靠谱 |
 | 2-12 | **S-13** 版本化 migration 用 `IF NOT EXISTS` | 最危险处靠 Postgres 自动生成的约束名做 `DROP IF EXISTS`,差一字符即静默跳过 |
 | 2-13 | **S-14 / S-15** 循环里发 SQL、OFFSET 分页 | **跨桶**:catalog 部分归第三,inventory/organization/workspace 部分留这里 |
 | 2-14 | **N-01** 补 `UNIQUE (workspace_uuid)` | 纯纵深防御,**无可达危害**。可做可不做,不占批次 |

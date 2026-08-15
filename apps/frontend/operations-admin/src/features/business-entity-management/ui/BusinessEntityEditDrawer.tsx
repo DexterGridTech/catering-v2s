@@ -7,7 +7,7 @@ import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-e
 import {ACTION_CAPABILITIES, adminCatalog, type AdminActionCapabilityKey} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
-import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
+import {extensionValuesForGeneratedRequest, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type BusinessEntityFormValues = {
   code: string;
@@ -117,7 +117,7 @@ export function BusinessEntityEditDrawer({entity, kind, queryContext, onClose, o
     setCommandProblem(undefined);
     try {
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const extensionValues = serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues, entity.extensionValues);
+      const extensionValues = extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues, entity.extensionValues));
       const entityReadback = kind === 'BRAND'
         ? await operationsClient.updateOperationsOrganizationBrand(
           {groupWorkspaceKey: queryContext.groupWorkspaceKey, brandId: entity.id},

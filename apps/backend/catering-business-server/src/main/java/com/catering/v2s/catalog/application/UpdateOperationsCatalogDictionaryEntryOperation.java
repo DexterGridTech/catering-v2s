@@ -18,7 +18,7 @@ public class UpdateOperationsCatalogDictionaryEntryOperation {
     public UpdateOperationsCatalogDictionaryEntryOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogDictionaryEntryReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         return CreateOperationsCatalogDictionaryEntryOperation.response(context.requestId(), catalog.updateDictionaryEntry(context, new CatalogOwnerApi.DictionaryEntryUpdateCommand(invocation.dictionaryKind(), invocation.entryCode(), CreateOperationsCatalogCategoryOperation.requiredLong(request.expectedVersion(), "expectedVersion"), request.name()), invocation.idempotencyKey()));
     }

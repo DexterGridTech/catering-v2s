@@ -35,7 +35,7 @@ public class ReleaseOperationsCatalogStagedAssetOperation {
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogAssetReleaseReadback execute(Invocation invocation) {
         var context = contexts.resolveCatalog(invocation.sessionCredential(),
-            CatalogInventoryWorkspaceCommandTokens.RELEASE_OPERATIONS_CATALOG_STAGED_ASSET, invocation.request().dataNodeRef(),
+            CatalogInventoryWorkspaceCommandTokens.RELEASE_OPERATIONS_CATALOG_STAGED_ASSET, invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(), invocation.requestId());
         UUID assetRef = requiredUuid(invocation.assetRef());
@@ -47,7 +47,7 @@ public class ReleaseOperationsCatalogStagedAssetOperation {
         CatalogAssetCommandApi.ReleaseReadback readback = assets.releaseStagedCatalogAsset(context,
             new CatalogAssetCommandApi.ReleaseCommand(assetRef, expectedVersion, invocation.idempotencyKey()));
         return new CatalogAssetReleaseReadback(REVISION, context.requestId(),
-            new CatalogAssetReleaseReadback.Result(readback.assetRef().toString(), "RELEASED", readback.releasedAt(), readback.version()),
+            new CatalogAssetReleaseReadback.Result(readback.assetRef(), "RELEASED", readback.releasedAt(), readback.version()),
             readback.version());
     }
 

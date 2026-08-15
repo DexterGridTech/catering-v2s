@@ -14,10 +14,12 @@ const staticCommands = Object.freeze([
   ["database-boundaries", "scripts/check/database-boundaries", [], ["R4_DATABASE_BOUNDARIES=PASS"]],
   ["backend-boundaries", "scripts/check/backend-boundaries", [], ["R4_BACKEND_BOUNDARIES=PASS"]],
   ["frontend-architecture", "scripts/check/frontend-architecture", [], ["R5_FRONTEND_ARCHITECTURE=PASS"]],
+  ["name-code-density", "node", ["scripts/check/name-code-density.mjs"], ["NAME_CODE_DENSITY=PASS"]],
   ["openapi-contracts", "scripts/check/openapi-contracts", [], ["R5_OPENAPI_CONTRACTS=PASS"]],
   ["ui-wireframe-traceability", "scripts/check/ui-wireframe-traceability", [], ["R4_UI_WIREFRAME_TRACEABILITY=PASS"]],
   ["business-terminology-traceability", "scripts/check/business-terminology-traceability", [], ["R4_BUSINESS_TERMINOLOGY_TRACEABILITY=PASS"]],
   ["code-layout", "scripts/check/code-layout", [], ["CODE_LAYOUT=PASS"]],
+  ["catalog-inventory-p1", "node", ["tools/catalog-inventory-p1/cli.mjs"], ["CATALOG_INVENTORY_P1_CHECK=PASS"]],
   [
     "backend-archunit",
     "gradle",

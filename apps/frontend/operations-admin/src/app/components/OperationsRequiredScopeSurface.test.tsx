@@ -4,10 +4,16 @@ import {adminCatalog} from '../catalog/generatedAdminCatalog';
 import {OperationsRequiredScopeSurface} from './OperationsRequiredScopeSurface';
 import {isOperationsScopeComplete} from './OperationsDataScopeContextBar';
 import type {WorkspaceScopeContext, WorkspaceScopeNode} from '../api/generated/operations-edge';
+import {wireUuid} from '../api/wireUuid';
 
-const node = (dataNodeRef: string): WorkspaceScopeNode => ({dataNodeRef, dataNodeName: dataNodeRef, dataNodeCode: dataNodeRef, dataNodeType: 'REGION', ancestorPath: []});
+const node = (dataNodeName: string, dataNodeRef: string): WorkspaceScopeNode => ({dataNodeRef: wireUuid(dataNodeRef), dataNodeName, dataNodeCode: dataNodeName, dataNodeType: 'REGION', ancestorPath: []});
 type ScopeContext = WorkspaceScopeContext;
-const completeContext: ScopeContext = {region: node('region'), project: node('project'), store: node('store'), headCompany: node('head-company')};
+const completeContext: ScopeContext = {
+  region: node('region', '00000000-0000-4000-8000-000000000011'),
+  project: node('project', '00000000-0000-4000-8000-000000000012'),
+  store: node('store', '00000000-0000-4000-8000-000000000013'),
+  headCompany: node('head-company', '00000000-0000-4000-8000-000000000014'),
+};
 
 describe('operations required scope surface', () => {
   it('recognizes each catalog-required hierarchy only when every required owner-confirmed selection is present', () => {

@@ -44,8 +44,8 @@ function runChecks() {
 
   const operationIds = operationDesign.operations.map((operation) => operation.operationId);
   const routeIds = routes.operations.map((operation) => operation.operationId);
-  check(operationIds.length === 42 && new Set(operationIds).size === 42, `OPERATION_DESIGN_COUNT:${operationIds.length}`);
-  check(routeIds.length === 42 && new Set(routeIds).size === 42, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
+  check(operationIds.length === 43 && new Set(operationIds).size === 43, `OPERATION_DESIGN_COUNT:${operationIds.length}`);
+  check(routeIds.length === 43 && new Set(routeIds).size === 43, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
   check(setEqual(operationIds, routeIds), "OPERATION_ROUTE_EXACT_SET_DRIFT");
   check(routes.operations.every((operation) => operation.consumerFaces?.length === 1 && operation.consumerFaces[0] === "operations-admin"), "ROUTE_FACE_DRIFT");
   const controller = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java");
@@ -62,21 +62,23 @@ function runChecks() {
   check(!controller.includes("switch (method") && !controller.includes("path.matches("), "MANUAL_URI_OPERATION_DISPATCH_REMAINS");
   check(!application.includes("System.currentTimeMillis()"), "APPLICATION_TIME_PROVIDER_BYPASS");
   check(!controller.includes("X-Inventory-Advanced-Diagnostics") && !controller.includes("READ_INVENTORY_ADVANCED_DIAGNOSTICS"), "DIAGNOSTICS_READ_CAPABILITY_REMAINS");
-  check(controller.includes("sessions.token(context)") && application.includes("executeWorkspaceCommand") && application.includes("CatalogInventoryWorkspaceCommandTokens"), "LIVE_MUTATION_CAPABILITY_RESOLVER_MISSING");
+  check(controller.includes("m1Bindings.bindCreateOperationsCatalogItem") && controller.includes("sessions.token(c)"), "LIVE_MUTATION_CAPABILITY_RESOLVER_MISSING");
   check(controller.includes("resolvedScope(allowedDataNodeTypes") && controller.includes("selected.equals(candidate.dataNodeRef())"), "EXPLICIT_SCOPE_SELECTOR_MISSING");
-  check(application.includes("requireOwnerScopeGrant") && application.includes("OperationsOwnerScopeGrant"), "OWNER_SCOPE_GRANT_COORDINATION_MISSING");
+  check(controller.includes("m1Bindings.bindTransitionOperationsCatalogItemStatus") && application.includes("WorkspaceExecutionContext<CatalogAuthorizationScope>"), "OWNER_SCOPE_GRANT_COORDINATION_MISSING");
   // A header may carry a requested brand, but it is not authoritative: the
   // organization owner must validate it before the request reaches an owner.
   check(controller.includes("catalogScopes.requireCatalogBrand") && controller.includes("requested"), "BRAND_OWNER_JUDGMENT_MISSING");
-  check(application.includes("preflightInventoryIfSelected") && application.includes("preflightBrandOwners") && application.includes("combinedDigest"), "COOWNER_COPY_PREFLIGHT_MISSING");
+  check(application.includes("preflightLocalInventory") && application.includes("preflightBrandOwners") && application.includes("combinedDigest"), "COOWNER_COPY_PREFLIGHT_MISSING");
   check(fs.existsSync(path.join(root, "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinatorCopySourceAuthorityTest.java")), "COPY_SOURCE_AUTHORITY_FOCUSED_TEST_MISSING");
   check(!application.includes("_resolvedCatalogCopySource") && !controller.includes("_resolvedCatalogCopySource"), "DEAD_COPY_SOURCE_MARKER_REMAINS");
-  check(application.includes("productionTagReferenced") && application.includes("REFERENCE_BLOCKS_VOID"), "PRODUCTION_REFERENCE_VOID_GUARD_MISSING");
+  const productionTransition = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/TransitionOperationsProductionTagStatusOperation.java");
+  check(productionTransition.includes("catalog.productionTagReferenced") && productionTransition.includes("REFERENCE_BLOCKS_VOID"), "PRODUCTION_REFERENCE_VOID_GUARD_MISSING");
   check(application.includes("enrichCatalogItems") && application.includes("enrichInventoryTarget"), "TASK_READ_ENRICHMENT_MISSING");
   check(controller.includes("Idempotency-Key is required"), "IDEMPOTENCY_HEADER_REQUIRED_GATE_MISSING");
   const catalogTypes = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerTypes.java");
-  check(catalogTypes.includes("CatalogInventoryShapeManifest.SHAPE_KEYS") && catalogTypes.includes("VOIDED"), "RUNTIME_VOCABULARY_NOT_BOUND_TO_GENERATED_MANIFEST");
   const catalogOwner = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java");
+  check(["CatalogInventoryShapeManifest.enumValues(\"shapeKey\")", "CatalogInventoryShapeManifest.enumValues(\"catalogItemStatus\")", "CatalogInventoryShapeManifest.enumValues(\"usageCapability\")"].every((binding) => catalogTypes.includes(binding))
+    && catalogOwner.includes("CatalogOwnerTypes.STATUSES") && catalogOwner.includes("\"VOIDED\""), "RUNTIME_VOCABULARY_NOT_BOUND_TO_GENERATED_MANIFEST");
   const inventoryOwner = readText("apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java");
   const productionOwner = readText("apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java");
   check(catalogOwner.includes("STALE_COPY_PREFLIGHT") && catalogOwner.includes("rewriteReferences") && catalogOwner.includes("CONSUMPTION_UNIT_INCOMPATIBLE"), "COPY_PREFLIGHT_GUARDS_MISSING");
@@ -92,7 +94,7 @@ function runChecks() {
   const productionApi = readText("apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/api/ProductionTagOwnerApi.java");
   check(inventoryApi.includes("idempotencyKey") && productionApi.includes("idempotencyKey"), "COORDINATED_COPY_IDEMPOTENCY_BOUNDARY_MISSING");
   check(readText("apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java").includes("IDEMPOTENCY_MISMATCH"), "PRODUCTION_IDEMPOTENCY_GUARD_MISSING");
-  check(controller.includes("MultipartFile") && controller.includes('consumes = MediaType.MULTIPART_FORM_DATA_VALUE') && controller.includes("m1Bindings.bindStageOperationsCatalogAsset") && application.includes("stageWorkspaceAsset") && !application.includes("Base64.getDecoder"), "ASSET_MULTIPART_EDGE_MISSING");
+  check(controller.includes("MultipartFile") && controller.includes('consumes = MediaType.MULTIPART_FORM_DATA_VALUE') && controller.includes("m1Bindings.bindStageOperationsCatalogAsset") && !controller.includes("Base64.getDecoder"), "ASSET_MULTIPART_EDGE_MISSING");
   const advice = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java");
   const appConfig = readText("apps/backend/catering-business-server/src/main/resources/application.yaml");
   const mediaPolicy = readJson("contracts/policy/catalog-inventory-media-assets.json");
@@ -155,7 +157,7 @@ function runChecks() {
     process.stderr.write(failures.map((failure) => `FAIL:${failure}`).join("\n") + "\n");
     process.exitCode = 1;
   } else {
-    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=42\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
+    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=43\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
   }
 }
 
@@ -179,13 +181,17 @@ function selfTest() {
   check(!hasTypedCatalogCopySourcePolicy(copySourceMutation), "SELF_TEST_TYPED_COPY_SOURCE_POLICY_MUTATION_NOT_RED");
   check(catalogOwner.includes("rewriteReferences"), "SELF_TEST_REFERENCE_REWRITE_GUARD_MISSING");
   const catalogTypes = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerTypes.java");
-  check(catalogTypes.includes("CatalogInventoryShapeManifest.SHAPE_KEYS"), "SELF_TEST_GENERATED_SHAPE_BINDING_MISSING");
+  check(catalogTypes.includes("CatalogInventoryShapeManifest.enumValues(\"shapeKey\")"), "SELF_TEST_GENERATED_SHAPE_BINDING_MISSING");
+  const runtimeVocabularyMutation = catalogTypes.replace("CatalogInventoryShapeManifest.enumValues(\"shapeKey\")", "CatalogInventoryShapeManifest.enumValues(\"shapeKey_REMOVED\")");
+  check(!runtimeVocabularyMutation.includes("CatalogInventoryShapeManifest.enumValues(\"shapeKey\")"), "SELF_TEST_RUNTIME_VOCABULARY_MUTATION_NOT_RED");
   const controller = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java");
   const application = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java");
   check(fs.existsSync(path.join(root, "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinatorCopySourceAuthorityTest.java")), "SELF_TEST_COPY_SOURCE_AUTHORITY_FOCUSED_TEST_MISSING");
   check(!application.includes("_resolvedCatalogCopySource") && !controller.includes("_resolvedCatalogCopySource"), "SELF_TEST_DEAD_COPY_SOURCE_MARKER_REMAINS");
   const coOwnerMutation = application.split("preflightBrandOwners(").join("preflightBrandOwners_REMOVED(");
   check(!coOwnerMutation.includes("preflightBrandOwners("), "SELF_TEST_COOWNER_PREFLIGHT_MUTATION_NOT_RED");
+  const localInventoryMutation = application.split("preflightLocalInventory(").join("preflightLocalInventory_REMOVED(");
+  check(!localInventoryMutation.includes("preflightLocalInventory("), "SELF_TEST_LOCAL_INVENTORY_PREFLIGHT_MUTATION_NOT_RED");
   const closureMutation = catalogOwner.replace("CatalogClosure graph = closureGraph(", "CatalogClosure graph = closureGraph_REMOVED(");
   check(!closureMutation.includes("CatalogClosure graph = closureGraph("), "SELF_TEST_TYPED_CLOSURE_MUTATION_NOT_RED");
   check(catalogOwner.includes("skuStructureFingerprint(json(source.sectionsJson()))"), "SELF_TEST_SKU_STRUCTURE_BASELINE_MISSING");

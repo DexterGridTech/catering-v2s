@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "generated-owner-operation-binding-index",
-  "operationCount": 196,
+  "operationCount": 197,
   "owners": [
     "asset",
     "catalog",
@@ -47,6 +47,6 @@
   "runtimeIntegration": {
     "status": "IMPLEMENTED_BP_U06",
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
-    "reason": "BP-U06 completed the 42-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
+    "reason": "BP-U06 completed the 43-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   }
 }

@@ -28,6 +28,8 @@ import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetStageRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveRequest;
@@ -61,7 +63,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.io.InputStream;
-import java.util.function.Function;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -157,13 +158,13 @@ public final class OperationsCatalogInventoryController {
     @GetMapping("/inventory-targets/{targetRef}/changes")
     public ResponseEntity<Object> inventoryTargetChanges(EdgeRequestContext context, @RequestParam Map<String, String> query, @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, STORE_SCOPE);
-        return readResponse(application.readInventoryTargetChangeSummary(required(read.request(), "targetRef"), read.request().path("period").asText(null)));
+        return readResponse(application.readInventoryTargetChangeSummary(read.dataNodeRef(), read.brandRef(), required(read.request(), "targetRef"), read.request().path("period").asText(null), read.dataNodeType()));
     }
 
     @GetMapping("/inventory-targets/{targetRef}/business-history")
     public ResponseEntity<Object> inventoryTargetBusinessHistory(EdgeRequestContext context, @RequestParam Map<String, String> query, @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, STORE_SCOPE);
-        return readResponse(application.readInventoryTargetBusinessHistory(required(read.request(), "targetRef"), read.request(), read.requestId()));
+        return readResponse(application.readInventoryTargetBusinessHistory(read.dataNodeRef(), read.brandRef(), required(read.request(), "targetRef"), read.request(), read.requestId(), read.dataNodeType()));
     }
 
     @GetMapping("/inventory-targets/{targetRef}/consumption-references")
@@ -175,7 +176,7 @@ public final class OperationsCatalogInventoryController {
     @GetMapping("/inventory-targets/{targetRef}/ledger")
     public ResponseEntity<Object> inventoryTargetLedger(EdgeRequestContext context, @RequestParam Map<String, String> query, @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, STORE_SCOPE);
-        return readResponse(application.readInventoryTargetLedger(required(read.request(), "targetRef"), read.request(), read.requestId()));
+        return readResponse(application.readInventoryTargetLedger(read.dataNodeRef(), read.brandRef(), required(read.request(), "targetRef"), read.request(), read.requestId(), read.dataNodeType()));
     }
 
     @GetMapping("/inventory-targets/{targetRef}/diagnostics")
@@ -192,6 +193,7 @@ public final class OperationsCatalogInventoryController {
 
     @PostMapping("/items") public ResponseEntity<CatalogItemCommandReadback> createCatalogItem(EdgeRequestContext c, @RequestBody CatalogItemCreateRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogItem(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), k)); }
     @PostMapping("/items/{itemCode}/status") public ResponseEntity<CatalogItemCommandReadback> transitionCatalogItemStatus(EdgeRequestContext c, @RequestBody CatalogItemTransitionRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k, @PathVariable String itemCode) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindTransitionOperationsCatalogItemStatus(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), itemCode, c.catalogTestFailurePoint(), k)); }
+    @PostMapping("/items/status") public ResponseEntity<CatalogItemBatchStatusTransitionReadback> batchTransitionCatalogItemStatus(EdgeRequestContext c, @RequestBody CatalogItemBatchStatusTransitionRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindBatchTransitionOperationsCatalogItemStatus(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), k)); }
     @PostMapping("/categories") public ResponseEntity<CatalogCategoryReadback> createCatalogCategory(EdgeRequestContext c, @RequestBody CatalogCategoryCreateRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogCategory(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), k)); }
     @PostMapping("/categories/{categoryRef}/move") public ResponseEntity<CatalogCategoryReadback> moveCatalogCategory(EdgeRequestContext c, @RequestBody CatalogCategoryMoveRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k, @PathVariable String categoryRef) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindMoveOperationsCatalogCategory(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), categoryRef, k)); }
     @PostMapping("/dictionaries/{dictionaryKind}/entries") public ResponseEntity<CatalogDictionaryEntryReadback> createCatalogDictionaryEntry(EdgeRequestContext c, @RequestBody CatalogDictionaryEntryCreateRequest r, @RequestHeader(value="Idempotency-Key",required=false) String k, @PathVariable String dictionaryKind) { requireIdempotencyKey(k); return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogDictionaryEntry(r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), dictionaryKind, k)); }
@@ -253,7 +255,7 @@ public final class OperationsCatalogInventoryController {
         requireIdempotencyKey(idempotencyKey);
         try (InputStream stream = content.getInputStream()) {
             return ResponseEntity.ok(m1Bindings.bindStageOperationsCatalogAsset(
-                new CatalogAssetStageRequest(dataNodeRef, fileName, stream, mediaType, contentDigest), content.getSize(),
+                new CatalogAssetStageRequest(UUID.fromString(dataNodeRef), fileName, stream, mediaType, contentDigest), content.getSize(),
                 sessions.token(context), context.requestedBrandRef(), context.correlationId(), context.requestId(), context.catalogTestFailurePoint(), idempotencyKey));
         } catch (java.io.IOException failure) {
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "asset content could not be read");
@@ -290,16 +292,6 @@ public final class OperationsCatalogInventoryController {
         requireIdempotencyKey(idempotencyKey);
         return ResponseEntity.ok(m1Bindings.bindReleaseOperationsCatalogStagedAsset(request, sessions.token(context),
             context.requestedBrandRef(), context.correlationId(), context.requestId(), assetRef, idempotencyKey));
-    }
-
-    private ResponseEntity<Object> command(EdgeRequestContext context, Map<String,Object> body, String idempotencyKey, Map<String,String> path, boolean needsAssetBindGrants, Function<CatalogInventoryCoordinator.CommandRequest, JsonNode> directOperation) {
-        if (idempotencyKey == null || idempotencyKey.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "Idempotency-Key is required");
-        ObjectNode request = body == null ? mapper.createObjectNode() : mapper.valueToTree(body);
-        path.forEach(request::put);
-        CatalogInventoryCoordinator.CommandRequest input = new CatalogInventoryCoordinator.CommandRequest(
-            sessions.token(context), request.path("dataNodeRef").asText(""), context.requestedBrandRef(), context.correlationId(), context.requestId(), request,
-            idempotencyKey, context.catalogTestFailurePoint(), Map.of());
-        return ResponseEntity.ok(jsonBody(directOperation.apply(input)));
     }
 
     private static void requireIdempotencyKey(String idempotencyKey) {
@@ -348,17 +340,7 @@ public final class OperationsCatalogInventoryController {
             );
             request.put("sourceDataNodeRef", source.toString());
         } catch (RuntimeException failure) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "当前门店没有可用的品牌商品复制来源");
-        }
-    }
-
-    private void resolveBrandCopySource(String operationId, ObjectNode request, com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session, ResolvedCatalogScope target, String brandRef) {
-        if (!"preflightOperationsBrandCatalogCopy".equals(operationId) && !"executeOperationsBrandCatalogCopy".equals(operationId)) return;
-        if (!"STORE".equals(target.dataNodeType())) throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "品牌复制仅支持门店目标");
-        try {
-            catalogScopes.resolveCatalogCopySource(session.workspaceUuid(), session.groupWorkspaceKey(), "STORE", UUID.fromString(target.dataNodeRef()), brandRef);
-        } catch (RuntimeException failure) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "复制来源不属于当前品牌与目标门店的组织授权范围");
+            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "当前门店没有可用的品牌商品复制来源", failure);
         }
     }
 
@@ -384,7 +366,7 @@ public final class OperationsCatalogInventoryController {
 
     private String resolvedBrand(EdgeRequestContext context, com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback session, ResolvedCatalogScope scope) {
         try { return catalogScopes.requireCatalogBrand(session.workspaceUuid(), session.groupWorkspaceKey(), scope.dataNodeType(), UUID.fromString(scope.dataNodeRef()), context.requestedBrandRef()); }
-        catch (RuntimeException failure) { throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "当前会话没有已授权品牌"); }
+        catch (RuntimeException failure) { throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "当前会话没有已授权品牌", failure); }
     }
 
     private record ResolvedCatalogScope(String dataNodeType, String dataNodeRef) { }

@@ -2,6 +2,7 @@ package com.catering.v2s.fulfillment.production.application;
 
 import com.catering.v2s.app.edge.generated.wire.ProductionTagReadback;
 import com.catering.v2s.app.edge.generated.wire.ProductionTagTransitionRequest;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -18,10 +19,12 @@ public class TransitionOperationsProductionTagStatusOperation {
 
     private final CommandExecutionContextResolver contexts;
     private final ProductionTagOwnerApi productionTags;
+    private final CatalogOwnerApi catalog;
 
-    public TransitionOperationsProductionTagStatusOperation(CommandExecutionContextResolver contexts, ProductionTagOwnerApi productionTags) {
+    public TransitionOperationsProductionTagStatusOperation(CommandExecutionContextResolver contexts, ProductionTagOwnerApi productionTags, CatalogOwnerApi catalog) {
         this.contexts = contexts;
         this.productionTags = productionTags;
+        this.catalog = catalog;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -29,15 +32,21 @@ public class TransitionOperationsProductionTagStatusOperation {
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
         );
         ProductionTagTransitionRequest request = invocation.request();
+        if ("VOIDED".equals(request.targetStatus())) {
+            var tagRef = productionTags.resolveProductionTagRef(context, invocation.tagCode());
+            if (catalog.productionTagReferenced(context.ownerScope().dataNodeId().toString(), context.ownerScope().brandRef(), tagRef.toString())) {
+                throw new ProductionTagOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, "生产标签仍被商品引用，不能作废");
+            }
+        }
         ProductionTagOwnerApi.ProductionTagCommandReadback readback = productionTags.transitionTagStatus(
             context, new ProductionTagOwnerApi.TransitionTagStatusCommand(invocation.tagCode(), requiredLong(request.expectedVersion(), "expectedVersion"), request.targetStatus()), invocation.idempotencyKey());
-        return new ProductionTagReadback(REVISION, context.requestId(), new ProductionTagReadback.Result(readback.code(), readback.tagKind(), readback.name(),
+        return new ProductionTagReadback(REVISION, context.requestId(), new ProductionTagReadback.Result(readback.tagRef(), readback.code(), readback.tagKind(), readback.name(),
             new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION), readback.status(), readback.version()), readback.version());
     }
 

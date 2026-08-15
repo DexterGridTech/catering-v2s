@@ -655,7 +655,8 @@
             "properties": {
               "entryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "source": {
                 "type": "string",

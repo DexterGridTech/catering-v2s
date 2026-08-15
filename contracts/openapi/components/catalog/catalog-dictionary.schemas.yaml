@@ -35,6 +35,11 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "entryRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
                   "code": {
                     "type": "string",
                     "description": "design-bound field"
@@ -53,11 +58,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "version": {
                     "type": "integer",
@@ -90,7 +97,8 @@
                             },
                             "referenceRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -112,7 +120,8 @@
                             },
                             "factRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -130,6 +139,7 @@
                   }
                 },
                 "required": [
+                  "entryRef",
                   "code",
                   "name",
                   "status",
@@ -174,6 +184,7 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         },
         "dictionaryKind": {
@@ -214,6 +225,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }
@@ -247,6 +259,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }
@@ -273,6 +286,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }
@@ -344,7 +358,8 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "code": {
           "type": "string",
@@ -474,7 +489,8 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "categoryRef": {
           "type": "string",
@@ -503,7 +519,8 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "categoryRef": {
           "type": "string",
@@ -544,7 +561,8 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "categoryRef": {
           "type": "string",
@@ -636,6 +654,7 @@
         },
         "dataNodeRef": {
           "type": "string",
+          "format": "uuid",
           "description": "selected data node"
         }
       }

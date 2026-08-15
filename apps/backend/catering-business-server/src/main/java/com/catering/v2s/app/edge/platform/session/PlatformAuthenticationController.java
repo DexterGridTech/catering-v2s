@@ -118,5 +118,5 @@ public final class PlatformAuthenticationController {
 
     private static void key(String value) { if (value == null || value.length() < 16 || value.length() > 128) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("invalid idempotency key"); }
     private static long requireVersion(Long value) { if (value == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("missing expected session version"); return value; }
-    private static PlatformSessionView toResponse(PlatformSessionReadback value) { return new PlatformSessionView(value.sessionId().toString(), value.displayName(), java.util.List.of("platform.admin.access", "platform.workspace.initialize"), true, value.sessionVersion()); }
+    private static PlatformSessionView toResponse(PlatformSessionReadback value) { return new PlatformSessionView(value.sessionId(), value.displayName(), java.util.List.of("platform.admin.access", "platform.workspace.initialize"), true, value.sessionVersion()); }
 }

@@ -104,11 +104,16 @@ class CopyPreflightWireShapeTest {
 
     private ObjectNode validData() {
         ObjectNode data = mapper.createObjectNode();
-        data.putObject("sourceScope").put("ownerType", "DATA_NODE").put("ownerRef", "store").put("brandRef", "brand");
-        data.putObject("targetScope").put("ownerType", "DATA_NODE").put("ownerRef", "store").put("brandRef", "brand");
+        data.putObject("sourceScope").put("ownerType", "DATA_NODE")
+            .put("ownerRef", "00000000-0000-4000-8000-000000000010")
+            .put("brandRef", "00000000-0000-4000-8000-000000000011");
+        data.putObject("targetScope").put("ownerType", "DATA_NODE")
+            .put("ownerRef", "00000000-0000-4000-8000-000000000010")
+            .put("brandRef", "00000000-0000-4000-8000-000000000011");
         data.putArray("selectedItems").addObject().put("objectType", "CATALOG_ITEM").put("code", "SOURCE").put("name", "Source");
         data.putArray("closureItems").addObject().put("objectType", "CATALOG_ITEM").put("code", "SOURCE").put("name", "Source").put("action", "REPLACE");
         data.putArray("objectVersions").addObject().put("objectType", "CATALOG_ITEM").put("code", "SOURCE").put("sourceVersion", 1).put("targetVersion", 1);
+        data.putArray("skipped");
         data.putArray("referenceMappings").addObject().put("objectType", "CATALOG_ITEM")
             .put("sourceRef", "00000000-0000-4000-8000-000000000001")
             .put("targetRef", "00000000-0000-4000-8000-000000000002")

@@ -7,6 +7,7 @@ public record TenantUpdateRequest(
     String legalName,
     String unifiedSocialCreditCode,
     String remark,
-    java.util.List<TenantUpdateRequestExtensionValuesItem> extensionValues,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long expectedExtensionRuleRevision,
     Long expectedVersion
 ) {}

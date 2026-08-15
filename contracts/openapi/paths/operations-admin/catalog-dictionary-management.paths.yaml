@@ -137,7 +137,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -213,7 +214,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -291,7 +293,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -371,6 +374,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },

@@ -7,6 +7,7 @@ import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.app.edge.catalog.ContractSortKey;
 import com.catering.v2s.app.edge.catalog.SortDirection;
 import com.catering.v2s.app.edge.extension.ExtensionDefinitionWireMapper;
+import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.wire.ExtensionDefinition;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.StoreContract;
@@ -39,6 +40,7 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -82,6 +84,6 @@ public final class OperationsContractController {
     private static long required(Long value) { if (value == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required"); return value; }
     private static List<ContractCommandService.ItemInput> items(List<StoreContractItem> values) { if (values == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required"); return values.stream().map(value -> new ContractCommandService.ItemInput(value.code(), value.name())).toList(); }
     private static List<OperationsStoreContractCommandApi.Item> typedItems(List<StoreContractItem> values) { if (values == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required"); return values.stream().map(value -> new OperationsStoreContractCommandApi.Item(value.code(), value.name())).toList(); }
-    private static ExtensionSubmission createSubmission(List<com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequestExtensionValuesItem> values) { return new ExtensionSubmission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission updateSubmission(List<com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequestExtensionValuesItem> values) { return new ExtensionSubmission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission createSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission updateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
 }

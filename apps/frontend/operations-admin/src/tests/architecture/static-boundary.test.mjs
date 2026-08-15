@@ -83,7 +83,7 @@ test("workspace invitation management resolves page capability from the generate
   assert.match(invitationPanel, /activeInvitationPageUrl\(value\)/);
   assert.match(invitationPanel, /title: '邀请链接'/);
   assert.match(invitationPanel, /ellipsis: \{showTitle: false\}/);
-  assert.match(invitationPanel, /EllipsisTooltip title=\{formatCodeNamePath\(value\.targetOrganizationPath\)\}/);
+  assert.match(invitationPanel, /EllipsisTooltip title=\{<NameCodePathText value=\{value\.targetOrganizationPath\}\/>\}/);
   assert.doesNotMatch(invitationPanel, /ACTION_CAPABILITIES/);
   for (const target of ["Group", "Region", "Project", "HeadCompany", "Store"]) {
     assert.match(invitationPanel, new RegExp(`getOperationsWorkspace${target}Invitations`));
@@ -105,7 +105,7 @@ test("every authored operations-admin text truncation keeps its complete human-r
   assert.match(app, /operations-header-title" ellipsis=\{\{tooltip: entry\.operationsTitle\}\}/);
   assert.match(roleSelector, /labelRender=\{\(\{label\}\) => <EllipsisTooltip title=\{label\}>/);
   assert.match(invitationPanel, /title: '邀请手机号'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{value\.maskedMobile\}/);
-  assert.match(invitationPanel, /title: '任职机构'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{formatCodeNamePath\(value\.targetOrganizationPath\)\}/);
+  assert.match(invitationPanel, /title: '任职机构'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{<NameCodePathText value=\{value\.targetOrganizationPath\}\/>\}/);
   assert.match(contract, /title: '合同编号'[\s\S]*ellipsis: \{showTitle: false\}[\s\S]*EllipsisTooltip title=\{value\}/);
 });
 

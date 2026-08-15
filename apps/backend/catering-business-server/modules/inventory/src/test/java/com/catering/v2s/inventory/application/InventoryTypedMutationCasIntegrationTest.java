@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -92,6 +93,41 @@ class InventoryTypedMutationCasIntegrationTest {
         assertReplayEquals(first, inTransaction(() -> service.adjustTarget(context(),
             new InventoryOwnerApi.AdjustTargetCommand(targetRef, 5L, "INCREASE", new BigDecimal("50"), null, "CORRECTION", "adjust"), "adjust-first")));
         assertEquals(1L, ledgerCount(targetRef));
+    }
+
+    @Test void scopedLedgerReadersReturnSameScopeFactsAndRejectAnotherStore() {
+        UUID targetRef = insertTarget();
+        UUID entryRef = UUID.randomUUID();
+        jdbc.update("INSERT INTO inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,reason_code,note,occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?)",
+            entryRef, targetRef, "INCREASE", new BigDecimal("5"), new BigDecimal("100"), new BigDecimal("105"), "TEST", "scope-read", 1_785_000_000_000L);
+
+        var request = MAPPER.createObjectNode().put("pageSize", 20);
+        var changes = service.readTargetChangeSummary(SCOPE.toString(), "BRAND", targetRef.toString(), "TODAY", "STORE");
+        var history = service.readTargetBusinessHistory(SCOPE.toString(), "BRAND", targetRef.toString(), request, "read-history", "STORE");
+        var ledger = service.readTargetLedger(SCOPE.toString(), "BRAND", targetRef.toString(), request, "read-ledger", "STORE");
+
+        assertEquals(1L, changes.path("entryCount").asLong());
+        assertEquals(1, history.path("entries").size());
+        assertEquals(1, ledger.path("entries").size());
+        assertEquals(entryRef.toString(), ledger.path("entries").get(0).path("entryRef").asText());
+
+        String otherStore = UUID.randomUUID().toString();
+        InventoryOwnerApi.Problem changesFailure = assertThrows(InventoryOwnerApi.Problem.class,
+            () -> service.readTargetChangeSummary(otherStore, "BRAND", targetRef.toString(), "TODAY", "STORE"));
+        InventoryOwnerApi.Problem historyFailure = assertThrows(InventoryOwnerApi.Problem.class,
+            () -> service.readTargetBusinessHistory(otherStore, "BRAND", targetRef.toString(), request, "read-history-other", "STORE"));
+        InventoryOwnerApi.Problem ledgerFailure = assertThrows(InventoryOwnerApi.Problem.class,
+            () -> service.readTargetLedger(otherStore, "BRAND", targetRef.toString(), request, "read-ledger-other", "STORE"));
+
+        assertEquals("NOT_FOUND", changesFailure.code());
+        assertEquals("NOT_FOUND", historyFailure.code());
+        assertEquals("NOT_FOUND", ledgerFailure.code());
+    }
+
+    @Test void ledgerCannotOutliveOrDetachFromItsScopedTarget() {
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
+            "INSERT INTO inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?)",
+            UUID.randomUUID(), UUID.randomUUID(), "ADJUST", BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, 1_785_000_000_000L));
     }
 
     private static void assertStaleCountRejectedAndReplayIsStable(UUID targetRef, InventoryOwnerApi.InventoryMutationReadback first) {

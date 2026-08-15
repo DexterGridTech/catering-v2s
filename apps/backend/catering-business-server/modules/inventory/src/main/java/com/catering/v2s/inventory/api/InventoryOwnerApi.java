@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /** Public inventory owner boundary. Inventory facts are stored and changed only in inventory schema. */
@@ -24,10 +25,10 @@ public interface InventoryOwnerApi {
     /** Typed task-read boundaries.  The legacy operation-id entrypoint remains deferred to BP-U06. */
     JsonNode readTargets(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType);
     JsonNode readTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType);
-    JsonNode readTargetChangeSummary(String targetRef, String period);
-    JsonNode readTargetBusinessHistory(String targetRef, ObjectNode request, String requestId);
+    JsonNode readTargetChangeSummary(String dataNodeRef, String brandRef, String targetRef, String period, String dataNodeType);
+    JsonNode readTargetBusinessHistory(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType);
     JsonNode readTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId);
-    JsonNode readTargetLedger(String targetRef, ObjectNode request, String requestId);
+    JsonNode readTargetLedger(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType);
     JsonNode readTargetDiagnostics(String targetRef, String requestId);
 
     /** Mutating owner boundary; the server-minted grant is rechecked before receipt replay. */
@@ -113,7 +114,9 @@ public interface InventoryOwnerApi {
     record LocalCopyExecuteCommand(String sourceItemCode, String targetItemCode, java.util.List<String> selectedSections,
                                    String inventoryPreflightDigest, String catalogReferencePlanJson) { }
     /** Named execution contribution; receipt JSON remains private to inventory. */
-    record LocalCopyExecutionReadback(String owner, String status, long version) { }
+    record LocalCopySkippedReadback(String section, String reasonCode) { }
+    record LocalCopyExecutionReadback(String owner, String status, long version,
+                                      java.util.List<LocalCopySkippedReadback> skipped) { }
     LocalCopyExecutionReadback executeLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyExecuteCommand command, String idempotencyKey);
     record BrandCopyPreflightCommand(java.util.List<String> selectedItemCodes, String targetDataNodeRef, String catalogReferencePlanJson) { }
     record BrandCopyExecuteCommand(java.util.List<String> selectedItemCodes, String targetDataNodeRef, String inventoryPreflightDigest, String catalogReferencePlanJson) { }
@@ -143,6 +146,27 @@ public interface InventoryOwnerApi {
     CatalogItemVoidDependencyReadback catalogItemVoidDependencies(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String itemRef);
 
     record CatalogItemVoidDependencyReadback(boolean hasDependentFacts, long stockTargetCount, long productBomCount) { }
+
+    /**
+     * Typed catalog-owner judgement for lifecycle guards on concrete catalog references.
+     * This is an owner-to-owner read boundary, not an HTTP operation.
+     */
+    CatalogReferenceDependenciesReadback catalogReferenceDependencies(
+        WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+        String objectType,
+        String reference
+    );
+
+    record CatalogReferenceDependenciesReadback(
+        String objectType,
+        UUID reference,
+        long totalCount,
+        List<CatalogReferenceDependencySource> sources
+    ) {
+        public boolean hasDependentFacts() { return totalCount > 0; }
+    }
+
+    record CatalogReferenceDependencySource(String tableName, String columnName, long count) { }
 
     /**
      * Bounded task-read for the catalog workbench.  It returns definition

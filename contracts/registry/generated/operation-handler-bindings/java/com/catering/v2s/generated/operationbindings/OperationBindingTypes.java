@@ -58,6 +58,8 @@ public final class OperationBindingTypes {
     public record CatalogDictionaryEntryUpdateRequest() {}
     public record CatalogDictionaryQuery() {}
     public record CatalogDictionaryView() {}
+    public record CatalogItemBatchStatusTransitionReadback() {}
+    public record CatalogItemBatchStatusTransitionRequest() {}
     public record CatalogItemCommandReadback() {}
     public record CatalogItemCreateRequest() {}
     public record CatalogItemDetail() {}

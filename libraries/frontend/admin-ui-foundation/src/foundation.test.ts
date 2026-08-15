@@ -13,8 +13,15 @@ import {adminListState} from './list/adminListState';
 import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
 import {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 import {EllipsisTooltip} from './presentation/EllipsisTooltip';
+import {wireUuid} from './http/wireUuid';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
+  it('accepts only actual UUID values at generated-wire boundaries', () => {
+    expect(wireUuid('00000000-0000-4000-8000-000000000001')).toBe('00000000-0000-4000-8000-000000000001');
+    expect(() => wireUuid('CATALOG-001')).toThrow('WIRE_UUID_REQUIRED');
+    expect(() => wireUuid('')).toThrow('WIRE_UUID_REQUIRED');
+  });
+
   it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
     expect(formatNameCode('极光商业集团', 'AURORA-GROUP')).toBe('极光商业集团(AURORA-GROUP)');
     expect(formatNameCode('极光商业集团', undefined)).toBe('极光商业集团');
@@ -103,7 +110,7 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   });
 
   it('freezes the wide two-column catalog/inventory detail surface', () => {
-    expect(adminWideDrawerSurfaceProps.width).toBe(1024);
+    expect(adminWideDrawerSurfaceProps.width).toBe('min(1024px, calc(100vw - 48px))');
     expect(adminWideDetailDescriptionsProps).toMatchObject({bordered: true, size: 'small', column: 2, styles: {label: {width: 164}}});
   });
 

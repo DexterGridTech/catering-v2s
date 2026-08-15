@@ -8,5 +8,5 @@ public record OrganizationNodeUpdateRequest(
     java.util.List<OrganizationNodeUpdateRequestPhasesItem> phases,
     String notes,
     Long expectedVersion,
-    java.util.List<OrganizationNodeUpdateRequestExtensionValuesItem> extensionValues
+    tools.jackson.databind.JsonNode extensionValues
 ) {}

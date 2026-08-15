@@ -14,12 +14,12 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.seed.DevFixedOtpIssuer;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog.UserManagementAction;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.ArrayList;
@@ -58,19 +58,6 @@ public class WorkspaceInvitationService {
     private final DevFixedOtpIssuer fixedOtpIssuer;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
     private final SecureRandom random = new SecureRandom();
-
-    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities) {
-        this(jdbc, time, roles, nodes, stores, entities, legacyGroups(nodes), new WorkspaceOtpRateLimitService(jdbc, time), new WorkspaceIamCommandReceiptService(jdbc, time), new WorkspaceCommandAuthorizationService(jdbc), null, null, null, false, (DevFixedOtpIssuer) null);
-    }
-
-    /** Compatibility constructor for owner-focused tests; production must inject the exposure policy. */
-    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates) {
-        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, false, (DevFixedOtpIssuer) null);
-    }
-
-    public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, boolean debugCodeExposure) {
-        this(jdbc, time, roles, nodes, stores, entities, groups, otpLimits, receipts, commandAuthorization, user, taskPaths, candidates, debugCodeExposure, (DevFixedOtpIssuer) null);
-    }
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceInvitationService(JdbcTemplate jdbc, TimeProvider time, WorkspaceRoleService roles, OrganizationNodeLookup nodes, StoreAssignmentLookup stores, OrganizationEntityLookup entities, CommercialGroupLookup groups, WorkspaceOtpRateLimitService otpLimits, WorkspaceIamCommandReceiptService receipts, WorkspaceCommandAuthorizationService commandAuthorization, WorkspaceUserService user, OrganizationTaskPathLookup taskPaths, OrganizationAssignmentCandidateLookup candidates, com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy, ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer) {
@@ -623,13 +610,6 @@ public class WorkspaceInvitationService {
         };
     }
 
-    private static CommercialGroupLookup legacyGroups(OrganizationNodeLookup nodes) {
-        return new CommercialGroupLookup() {
-            @Override public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) { throw new UnsupportedOperationException("legacy tests supply a GROUP node"); }
-            @Override public boolean isEnterableCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.isEnterable(workspaceUuid, groupWorkspaceKey, commercialGroupRef); }
-            @Override public String describeCommercialGroup(UUID workspaceUuid, String groupWorkspaceKey, UUID commercialGroupRef) { return nodes.describePath(workspaceUuid, groupWorkspaceKey, commercialGroupRef); }
-        };
-    }
     private void audit(UUID workspaceUuid, String key, UUID invitationId, String action, AuditActor actor, String beforeStatus, String afterStatus) { AuditChangePolicy policy = new AuditChangePolicy("WORKSPACE_INVITATION", action, INVITATION_FIELDS); List<AuditChange> changes = List.of(new AuditChange("status", beforeStatus, afterStatus), new AuditChange("lifecycleEvent", null, action)); jdbc.update("INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'WORKSPACE_INVITATION', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))", UUID.randomUUID(), workspaceUuid, key, invitationId.toString(), actor.actorType(), actor.actorId(), actor.displaySnapshot(), action, time.currentEpochMillis(), auditJson(policy.allow(changes))); }
     private Invitation invitation(UUID workspaceUuid, String key, UUID invitationId) { return jdbc.query("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, version FROM workspace_iam.invitation WHERE id=? AND workspace_uuid=? AND group_workspace_key=?", statement -> { statement.setObject(1, invitationId); statement.setObject(2, workspaceUuid); statement.setString(3, key); }, result -> { if (!result.next()) throw new InvitationNotFoundException(); return new Invitation(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getLong(6), result.getLong(7)); }); }
     private WorkspaceInvitationReadback readback(UUID workspaceUuid, String key, UUID invitationId) {
@@ -665,7 +645,7 @@ public class WorkspaceInvitationService {
 
     private Invitation read(String raw) { return jdbc.query("SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, version FROM workspace_iam.invitation WHERE token_hash=?", statement -> statement.setString(1, sha256(raw)), result -> { if (!result.next()) throw new InvitationNotFoundException(); return new Invitation(result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3), result.getString(4), result.getString(5), result.getLong(6), result.getLong(7)); }); }
     private String randomToken() { byte[] bytes = new byte[32]; random.nextBytes(bytes); return HexFormat.of().formatHex(bytes); }
-    private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }
+    private static String sha256(String value) { try { return Sha256Hex.digest(value); } catch (NullPointerException failure) { throw new IllegalStateException(failure); } }
     private static String canonical(String operation, Object... values) {
         StringBuilder result = new StringBuilder(operation);
         for (Object value : values) {

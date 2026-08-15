@@ -32,19 +32,20 @@ public class CountOperationsInventoryTargetOperation {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public InventoryWriteReadback execute(Invocation invocation) {
+        InventoryCountRequest request = invocation.request();
+        UUID targetRef = InventoryTargetRefConsistency.requireSame(invocation.targetRef(), request.targetRef());
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.COUNT_OPERATIONS_INVENTORY_TARGET,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
         );
-        InventoryCountRequest request = invocation.request();
         InventoryOwnerApi.InventoryMutationReadback readback = inventory.countTarget(
             context,
             new InventoryOwnerApi.CountTargetCommand(
-                requiredUuid(invocation.targetRef(), "targetRef"),
+                targetRef,
                 requiredLong(request.expectedVersion(), "expectedVersion"),
                 requiredDecimal(request.countedQuantity(), "countedQuantity"),
                 request.unit(),
@@ -57,11 +58,11 @@ public class CountOperationsInventoryTargetOperation {
             REVISION,
             context.requestId(),
             new InventoryWriteReadback.Result(
-                readback.targetRef().toString(),
+                readback.targetRef(),
                 decimal(readback.before()),
                 decimal(readback.change()),
                 decimal(readback.after()),
-                readback.ledgerEntryRef().toString(),
+                readback.ledgerEntryRef(),
                 readback.stockState(),
                 readback.version()
             ),
@@ -78,15 +79,6 @@ public class CountOperationsInventoryTargetOperation {
         String targetRef,
         String idempotencyKey
     ) { }
-
-    private static UUID requiredUuid(String value, String field) {
-        try {
-            if (value == null || value.isBlank()) throw new IllegalArgumentException();
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException invalid) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a UUID");
-        }
-    }
 
     private static long requiredLong(Long value, String field) {
         if (value == null) throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");

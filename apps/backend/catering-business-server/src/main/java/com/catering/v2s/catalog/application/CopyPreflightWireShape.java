@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Adapts owner/coordinator copy plans to the already generated HTTP wire
@@ -17,7 +18,7 @@ final class CopyPreflightWireShape {
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
     private static final List<String> DATA_FIELDS = List.of(
         "sourceScope", "targetScope", "selectedItems", "closureItems", "objectVersions",
-        "referenceMappings", "compatibilityResults", "preflightDigest", "selectedCount",
+        "referenceMappings", "compatibilityResults", "skipped", "preflightDigest", "selectedCount",
         "selectedLimit", "closureCount", "closureLimit", "blockingCount", "confirmationRequiredCount"
     );
     private static final List<String> LOCAL_READBACK_FIELDS = List.of(
@@ -83,9 +84,9 @@ final class CopyPreflightWireShape {
             catalog.preflightDigest(),
             catalog.created().stream().map(value -> new LocalCopyReadback.Data.CreatedItem(value.objectType(), value.code())).toList(),
             catalog.reused().stream().map(value -> new LocalCopyReadback.Data.ReusedItem(value.objectType(), value.code())).toList(),
-            catalog.skipped().stream().map(value -> new LocalCopyReadback.Data.SkippedItem(value.objectType(), value.code())).toList(),
-            catalog.referenceMappings().stream().map(value -> new LocalCopyReadback.Data.ReferenceMappingsItem(value.objectType(), value.sourceRef(), value.targetRef(), value.targetCode(), value.targetSkuCode(), value.targetOptionValueCode())).toList(),
-            catalog.targetVersions().stream().map(value -> new LocalCopyReadback.Data.TargetVersionsItem(value.targetRef(), value.version())).toList(),
+            catalog.skipped().stream().map(value -> new LocalCopyReadback.Data.SkippedItem(value.section(), value.reasonCode())).toList(),
+            catalog.referenceMappings().stream().map(value -> new LocalCopyReadback.Data.ReferenceMappingsItem(value.objectType(), uuid(value.sourceRef()), uuid(value.targetRef()), value.targetCode(), value.targetSkuCode(), value.targetOptionValueCode())).toList(),
+            catalog.targetVersions().stream().map(value -> new LocalCopyReadback.Data.TargetVersionsItem(uuid(value.targetRef()), value.version())).toList(),
             ownerReadbacks.stream().map(value -> new LocalCopyReadback.Data.OwnerReadbacksItem(value.owner(), value.status(), value.version())).toList()
         ));
     }
@@ -97,8 +98,8 @@ final class CopyPreflightWireShape {
             catalog.preflightDigest(),
             catalog.created().stream().map(value -> new BrandCatalogCopyReadback.Data.CreatedItem(value.objectType(), value.code())).toList(),
             catalog.reused().stream().map(value -> new BrandCatalogCopyReadback.Data.ReusedItem(value.objectType(), value.code())).toList(),
-            catalog.referenceMappings().stream().map(value -> new BrandCatalogCopyReadback.Data.ReferenceMappingsItem(value.objectType(), value.sourceRef(), value.targetRef(), value.targetCode(), value.targetSkuCode(), value.targetOptionValueCode())).toList(),
-            catalog.targetVersions().stream().map(value -> new BrandCatalogCopyReadback.Data.TargetVersionsItem(value.targetRef(), value.version())).toList(),
+            catalog.referenceMappings().stream().map(value -> new BrandCatalogCopyReadback.Data.ReferenceMappingsItem(value.objectType(), uuid(value.sourceRef()), uuid(value.targetRef()), value.targetCode(), value.targetSkuCode(), value.targetOptionValueCode())).toList(),
+            catalog.targetVersions().stream().map(value -> new BrandCatalogCopyReadback.Data.TargetVersionsItem(uuid(value.targetRef()), value.version())).toList(),
             ownerReadbacks.stream().map(value -> new BrandCatalogCopyReadback.Data.OwnerReadbacksItem(value.owner(), value.status(), value.version())).toList()
         ));
     }
@@ -119,6 +120,10 @@ final class CopyPreflightWireShape {
     private static CatalogOwnerApi.Problem missingTypedExecutionField(String label, String field) {
         return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500,
             label + " readback is invalid: required typed field is missing: " + field);
+    }
+
+    private static UUID uuid(String value) {
+        return value == null || value.isBlank() ? null : UUID.fromString(value);
     }
 
     /**

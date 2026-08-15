@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -292,10 +293,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
         if (jdbc.update("UPDATE organization.organization_node SET version=version+1, updated_at_epoch_millis=? WHERE id=? AND version=?", now, projectId, expectedVersion) != 1) {
             throw new OrganizationConflictException();
         }
-        jdbc.update("DELETE FROM organization.project_phase_name WHERE project_id=?", projectId);
-        for (int index = 0; index < phaseNames.size(); index++) {
-            jdbc.update("INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)", projectId, phaseNames.get(index).trim(), index);
-        }
+        replacePhases(projectId, phaseNames.stream().map(String::trim).toList());
         OrganizationNodeReadback updated = requireNode(workspaceUuid, groupWorkspaceKey, projectId, OrganizationNodeTypes.PROJECT);
         audit(workspaceUuid, groupWorkspaceKey, projectId, "PROJECT_PHASE_NAMES_REPLACED", now, AuditActor.system(), "[]");
         return updated;
@@ -578,7 +576,16 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     }
     private void replacePhases(UUID projectId, List<String> phases) {
         jdbc.update("DELETE FROM organization.project_phase_name WHERE project_id=?", projectId);
-        for (int index = 0; index < phases.size(); index++) jdbc.update("INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)", projectId, phases.get(index), index);
+        if (phases.isEmpty()) return;
+        jdbc.batchUpdate("INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)", new BatchPreparedStatementSetter() {
+            @Override public void setValues(java.sql.PreparedStatement statement, int index) throws java.sql.SQLException {
+                statement.setObject(1, projectId);
+                statement.setString(2, phases.get(index));
+                statement.setInt(3, index);
+            }
+
+            @Override public int getBatchSize() { return phases.size(); }
+        });
     }
     private static String canonical(String operation, Object... values) {
         StringBuilder result = new StringBuilder(operation);

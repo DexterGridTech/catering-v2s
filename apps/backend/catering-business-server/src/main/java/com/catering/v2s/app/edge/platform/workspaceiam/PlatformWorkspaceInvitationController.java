@@ -112,7 +112,7 @@ public final class PlatformWorkspaceInvitationController {
         var workspace = workspaces.requireEnabled(groupWorkspaceKey);
         validKey(idempotencyKey);
         if (body == null || body.targetOrganizationType() == null || body.targetOrganizationRef() == null || body.roleIds() == null || body.roleIds().isEmpty()) throw new InvalidEdgeRequestException("invitation target and role ids are required");
-        UUID targetId = uuid(body.targetOrganizationRef());
+        UUID targetId = body.targetOrganizationRef();
         List<WorkspaceInvitationService.AssignmentIntent> intents = body.roleIds().stream().map(PlatformWorkspaceInvitationController::uuid).map(roleId -> new WorkspaceInvitationService.AssignmentIntent(roleId, body.targetOrganizationType(), targetId)).toList();
         return ResponseEntity.status(HttpStatus.CREATED).body(PlatformWorkspaceInvitationWireMapper.wire(invitations.managementView(invitations.create(workspace.workspaceUuid(), groupWorkspaceKey, body.mobile(), intents, idempotencyKey, sessions.actor(session)))));
     }

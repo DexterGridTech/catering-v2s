@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAdminPageItemsItem(
-    String id,
+    java.util.UUID id,
     String userName,
     String loginName,
     Boolean builtIn,

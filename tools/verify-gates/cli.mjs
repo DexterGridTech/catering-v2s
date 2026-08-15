@@ -341,6 +341,23 @@ function generatedRouteOperations(base = root) {
   return operations;
 }
 
+function generatedCatalogInventoryRouteOperations(base = root) {
+  const registry = JSON.parse(read(`${appRoot}/src/main/resources/generated/catalog-inventory-edge-route-registry.json`, base));
+  if (registry.kind !== "catalog-inventory-edge-route-registry"
+    || !Array.isArray(registry.operations)
+    || registry.operations.length === 0
+    || typeof registry.generatedFrom !== "string"
+    || typeof registry.contractDigest !== "string") {
+    fail("R5_CATALOG_ROUTE_REGISTRY_INVALID");
+  }
+  return registry.operations.map((operation) => ({
+    operationId: operation.operationId,
+    method: operation.method,
+    path: operation.path.startsWith("/api/") ? operation.path : `/api${operation.path}`,
+    consumerFaces: [...(operation.consumerFaces || [])].sort(),
+  }));
+}
+
 function mappingPath(annotation) {
   const match = annotation.match(/\(\s*"([^"]*)"\s*\)/);
   return match ? match[1] : "";
@@ -490,7 +507,8 @@ function frontend(base = root) {
   const generatedSlices = [
     ["apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts", "PLATFORM_ADMIN_OPERATIONS", "platform-admin"],
     ["apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts", "OPERATIONS_ADMIN_OPERATIONS", "operations-admin"],
-    ["apps/frontend/operations-admin/src/app/api/generated/public-edge.ts", "PUBLIC_OPERATIONS", "public"]
+    ["apps/frontend/operations-admin/src/app/api/generated/public-edge.ts", "PUBLIC_OPERATIONS", "public"],
+    ["apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts", "CATALOG_INVENTORY_OPERATIONS", "operations-admin"]
   ];
   const generated = generatedSlices.flatMap(([file, symbol, face]) => {
     assertFile(file, "R5_FRONTEND_GENERATED_SLICE_MISSING", base);
@@ -508,7 +526,9 @@ function frontend(base = root) {
       fail("R5_FRONTEND_GENERATED_SLICE_INVALID", file);
     }
   });
-  const registryOperations = generatedRouteOperations(base).map(({ operationId, method, path: route, consumerFaces }) => ({ operationId, method, path: route, consumerFaces }));
+  const registryOperations = generatedRouteOperations(base)
+    .concat(generatedCatalogInventoryRouteOperations(base))
+    .map(({ operationId, method, path: route, consumerFaces }) => ({ operationId, method, path: route, consumerFaces }));
   assertOperationsEqual(registryOperations, generated, "R5_FRONTEND_GENERATED_FACE_DRIFT");
   assertNoOperationIdLiterals(handwrittenFrontendSources, generated.map(({operationId}) => operationId), base);
   assertPageRegistryReachability(base);

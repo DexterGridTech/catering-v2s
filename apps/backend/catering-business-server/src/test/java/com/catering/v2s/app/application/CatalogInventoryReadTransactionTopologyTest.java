@@ -18,6 +18,7 @@ import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.util.List;
 import javax.sql.DataSource;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -89,13 +91,13 @@ class CatalogInventoryReadTransactionTopologyTest {
             .thenAnswer(noTransaction("inventory.readTargets", envelope(dataWithArray("items"))));
         when(inventory.readTarget(anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenAnswer(noTransaction("inventory.readTarget", inventoryTargetEnvelope));
-        when(inventory.readTargetChangeSummary(anyString(), anyString()))
+        when(inventory.readTargetChangeSummary(anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenAnswer(noTransaction("inventory.readTargetChangeSummary", emptyEnvelope));
-        when(inventory.readTargetBusinessHistory(anyString(), any(ObjectNode.class), anyString()))
+        when(inventory.readTargetBusinessHistory(anyString(), anyString(), anyString(), any(ObjectNode.class), anyString(), anyString()))
             .thenAnswer(noTransaction("inventory.readTargetBusinessHistory", emptyEnvelope));
         when(inventory.readTargetConsumptionReferences(anyString(), anyString(), anyString(), any(ObjectNode.class), anyString()))
             .thenAnswer(noTransaction("inventory.readTargetConsumptionReferences", envelope(dataWithArray("entries"))));
-        when(inventory.readTargetLedger(anyString(), any(ObjectNode.class), anyString()))
+        when(inventory.readTargetLedger(anyString(), anyString(), anyString(), any(ObjectNode.class), anyString(), anyString()))
             .thenAnswer(noTransaction("inventory.readTargetLedger", emptyEnvelope));
         when(inventory.readTargetDiagnostics(anyString(), anyString()))
             .thenAnswer(noTransaction("inventory.readTargetDiagnostics", emptyEnvelope));
@@ -136,10 +138,10 @@ class CatalogInventoryReadTransactionTopologyTest {
         coordinator.readBrandCatalogCopyCandidates(DATA_NODE, BRAND, request, REQUEST_ID);
         coordinator.readInventoryTargets(DATA_NODE, BRAND, request, REQUEST_ID, STORE);
         coordinator.readInventoryTarget(DATA_NODE, BRAND, "TARGET-001", REQUEST_ID, STORE);
-        coordinator.readInventoryTargetChangeSummary("TARGET-001", "TODAY");
-        coordinator.readInventoryTargetBusinessHistory("TARGET-001", request, REQUEST_ID);
+        coordinator.readInventoryTargetChangeSummary(DATA_NODE, BRAND, "TARGET-001", "TODAY", STORE);
+        coordinator.readInventoryTargetBusinessHistory(DATA_NODE, BRAND, "TARGET-001", request, REQUEST_ID, STORE);
         coordinator.readInventoryTargetConsumptionReferences(DATA_NODE, BRAND, "TARGET-001", request, REQUEST_ID);
-        coordinator.readInventoryTargetLedger("TARGET-001", request, REQUEST_ID);
+        coordinator.readInventoryTargetLedger(DATA_NODE, BRAND, "TARGET-001", request, REQUEST_ID, STORE);
         coordinator.readInventoryTargetDiagnostics("TARGET-001", REQUEST_ID);
         coordinator.readCatalogShapeManifest(REQUEST_ID);
     }
@@ -158,22 +160,32 @@ class CatalogInventoryReadTransactionTopologyTest {
 
         assertNoTransaction(InventoryOwnerService.class, "readTargets", String.class, String.class, ObjectNode.class, String.class, String.class);
         assertNoTransaction(InventoryOwnerService.class, "readTarget", String.class, String.class, String.class, String.class, String.class);
-        assertNoTransaction(InventoryOwnerService.class, "readTargetChangeSummary", String.class, String.class);
-        assertNoTransaction(InventoryOwnerService.class, "readTargetBusinessHistory", String.class, ObjectNode.class, String.class);
+        assertNoTransaction(InventoryOwnerService.class, "readTargetChangeSummary", String.class, String.class, String.class, String.class, String.class);
+        assertNoTransaction(InventoryOwnerService.class, "readTargetBusinessHistory", String.class, String.class, String.class, ObjectNode.class, String.class, String.class);
         assertNoTransaction(InventoryOwnerService.class, "readTargetConsumptionReferences", String.class, String.class, String.class, ObjectNode.class, String.class);
-        assertNoTransaction(InventoryOwnerService.class, "readTargetLedger", String.class, ObjectNode.class, String.class);
+        assertNoTransaction(InventoryOwnerService.class, "readTargetLedger", String.class, String.class, String.class, ObjectNode.class, String.class, String.class);
         assertNoTransaction(InventoryOwnerService.class, "readTargetDiagnostics", String.class, String.class);
         assertNoTransaction(InventoryOwnerService.class, "readCatalogInventoryDefinition", String.class, String.class, String.class, String.class);
         assertNoTransaction(InventoryOwnerService.class, "readCatalogInventorySummary", String.class, String.class, ObjectNode.class, String.class, String.class);
         assertNoTransaction(ProductionTagOwnerService.class, "readTags", String.class, String.class, String.class);
         assertNoTransaction(BusinessEntityService.class, "resolveCatalogCopySource", UUID.class, String.class, String.class, UUID.class, String.class);
 
-        assertTrue(CatalogOwnerService.class.getMethod("read", String.class, String.class, String.class, ObjectNode.class, String.class)
-            .isAnnotationPresent(Transactional.class));
         assertTrue(InventoryOwnerService.class.getMethod("read", String.class, String.class, String.class, ObjectNode.class, String.class, String.class)
             .isAnnotationPresent(Transactional.class));
         assertTrue(ProductionTagOwnerService.class.getMethod("read", String.class, String.class, String.class, ObjectNode.class, String.class)
             .isAnnotationPresent(Transactional.class));
+    }
+
+    @Test
+    void everyCrossOwnerWriteCompositionStartsTheRequiredCoordinatorTransaction() throws Exception {
+        assertTransaction(CatalogInventoryCoordinator.class, "saveCatalogItem",
+            WorkspaceExecutionContext.class, CatalogOwnerApi.CatalogItemSaveCommand.class, List.class, String.class);
+        assertTransaction(CatalogInventoryCoordinator.class, "executeLocalCopy",
+            WorkspaceExecutionContext.class, CatalogOwnerApi.LocalCopyExecuteCommand.class, String.class, String.class);
+        assertTransaction(CatalogInventoryCoordinator.class, "executeBrandCopy",
+            WorkspaceExecutionContext.class, CatalogOwnerApi.BrandCopyExecuteCommand.class, String.class, String.class);
+        assertTransaction(CatalogInventoryCoordinator.class, "executeBrandCopy",
+            WorkspaceExecutionContext.class, CatalogOwnerApi.BrandCopyExecuteCommand.class, String.class, String.class, String.class);
     }
 
     private static org.mockito.stubbing.Answer<JsonNode> noTransaction(String probe, JsonNode response) {
@@ -186,6 +198,11 @@ class CatalogInventoryReadTransactionTopologyTest {
     private static void assertNoTransaction(Class<?> type, String methodName, Class<?>... parameterTypes) throws Exception {
         Method method = type.getMethod(methodName, parameterTypes);
         assertFalse(method.isAnnotationPresent(Transactional.class), type.getSimpleName() + "#" + methodName + " must remain outside transaction");
+    }
+
+    private static void assertTransaction(Class<?> type, String methodName, Class<?>... parameterTypes) throws Exception {
+        Method method = type.getMethod(methodName, parameterTypes);
+        assertTrue(method.isAnnotationPresent(Transactional.class), type.getSimpleName() + "#" + methodName + " must start a REQUIRED transaction");
     }
 
     private static JsonNode envelope(ObjectNode data) {

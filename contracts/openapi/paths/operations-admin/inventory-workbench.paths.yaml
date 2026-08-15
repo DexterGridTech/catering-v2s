@@ -60,7 +60,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -168,7 +169,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ]
@@ -220,7 +222,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -281,7 +284,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -353,7 +357,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -423,7 +428,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -493,7 +499,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ]

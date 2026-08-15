@@ -455,6 +455,8 @@ export type PlatformAdminOperationId = (typeof PLATFORM_ADMIN_OPERATIONS)[number
 
 export type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
+export type Uuid = string & { readonly __uuid: "Uuid" };
+
 export type AuditChange = {
   fieldKey: string;
   beforeValue: string;
@@ -462,7 +464,7 @@ export type AuditChange = {
 };
 
 export type AuditHistoryItem = {
-  id: string;
+  id: string & { readonly __uuid: "Uuid" };
   occurredAt: EpochMillis;
   actorDisplayName: string;
   actionSummary: string;
@@ -617,7 +619,7 @@ export type GroupWorkspaceCreateRequest = {
   groupWorkspaceKey: string;
   name: string;
   operationsTitle: string;
-  logoAssetRef: string;
+  logoAssetRef: string & { readonly __uuid: "Uuid" };
   logoBindGrant: string;
   notes?: string;
   idempotencyKey: string;
@@ -627,7 +629,7 @@ export type GroupWorkspaceCreateResult = {
   groupWorkspaceKey: string;
   name: string;
   operationsTitle: string;
-  logoAssetRef: string;
+  logoAssetRef: string & { readonly __uuid: "Uuid" };
   notes?: (string) | null;
   status: GroupWorkspaceStatus;
   statusChangedAt?: (number) | null;
@@ -640,7 +642,7 @@ export type GroupWorkspaceDetail = {
   groupWorkspaceKey: string;
   name: string;
   operationsTitle: string;
-  logoAssetRef?: (string) | null;
+  logoAssetRef?: (string & { readonly __uuid: "Uuid" }) | null;
   logoUrl?: (string) | null;
   notes?: (string) | null;
   status: GroupWorkspaceStatus;
@@ -670,7 +672,7 @@ export type GroupWorkspaceDisplayUpdateRequest = {
   operationsTitle: string;
   notes?: (string) | null;
   logoIntent: "KEEP" | "REPLACE" | "REMOVE";
-  logoAssetRef?: (string) | null;
+  logoAssetRef?: (string & { readonly __uuid: "Uuid" }) | null;
   logoBindGrant?: (string) | null;
   expectedVersion: number;
   idempotencyKey: string;
@@ -681,7 +683,7 @@ export type GroupWorkspacePage = {
   groupWorkspaceKey: string;
   name: string;
   operationsTitle?: (string) | null;
-  logoAssetRef?: (string) | null;
+  logoAssetRef?: (string & { readonly __uuid: "Uuid" }) | null;
   logoUrl?: (string) | null;
   commercialGroup?: {
   initialized: boolean;
@@ -722,7 +724,7 @@ export type OrganizationCandidatePage = {
 };
 
 export type OrganizationCandidatePageItemsItem = {
-  id: string;
+  id: string & { readonly __uuid: "Uuid" };
   code: string;
   name: string;
 };
@@ -733,7 +735,7 @@ export type OrganizationCandidatePageMetadata = {
   page: number;
   pageSize: number;
   total: number;
-  selectedId: (string) | null;
+  selectedId: (string & { readonly __uuid: "Uuid" }) | null;
 };
 
 export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
@@ -745,7 +747,7 @@ export type OrganizationHierarchyTree = {
 };
 
 export type OrganizationHierarchyTreeNode = {
-  id: string;
+  id: string & { readonly __uuid: "Uuid" };
   type: "REGION" | "PROJECT";
   code: string;
   name: string;
@@ -861,7 +863,7 @@ export type PlatformAdminCredentialResetRequest = {
 };
 
 export type PlatformAdminDetail = {
-  id: string;
+  id: string & { readonly __uuid: "Uuid" };
   userName: string;
   loginName: string;
   builtIn: boolean;
@@ -878,7 +880,7 @@ export type PlatformAdminDetail = {
 
 export type PlatformAdminPage = {
   items: Array<{
-  id: string;
+  id: string & { readonly __uuid: "Uuid" };
   userName: string;
   loginName: string;
   builtIn: boolean;
@@ -918,7 +920,7 @@ export type PlatformAssetStageMultipart = {
 };
 
 export type PlatformAssetStagingResult = {
-  assetRef: string;
+  assetRef: string & { readonly __uuid: "Uuid" };
   bindGrant: string;
   expiresAt: EpochMillis;
   contentType: "image/png" | "image/jpeg" | "image/webp";
@@ -982,7 +984,7 @@ export type PlatformPasswordRecoveryVerification = {
 };
 
 export type PlatformSessionView = {
-  sessionId: string;
+  sessionId: string & { readonly __uuid: "Uuid" };
   displayName: string;
   capabilities: Array<"platform.admin.access" | "platform.workspace.initialize">;
   platformAdminAccessible: boolean;
@@ -1016,8 +1018,8 @@ export type PlatformWorkspaceInvitationPage = {
   criteria: {
   mobile?: (string) | null;
   targetOrganizationType?: (ServiceNodeType) | null;
-  targetOrganizationRef?: (string) | null;
-  roleId?: (string) | null;
+  targetOrganizationRef?: (string & { readonly __uuid: "Uuid" }) | null;
+  roleId?: (string & { readonly __uuid: "Uuid" }) | null;
   status?: (WorkspaceInvitationStatus) | null;
   expiresFrom?: (EpochMillis) | null;
   expiresTo?: (EpochMillis) | null;
@@ -1105,7 +1107,7 @@ export type WorkspaceAssignmentRevokeRequest = {
 };
 
 export type WorkspaceAssignmentRevokeResult = {
-  assignmentId: string;
+  assignmentId: string & { readonly __uuid: "Uuid" };
   status: "REVOKED";
   version: number;
   revokedAt: number;
@@ -1131,7 +1133,7 @@ export type WorkspaceInvitationCancelRequest = {
 export type WorkspaceInvitationCandidatePage = {
   organizations: Array<{
   serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  organizationRef: string;
+  organizationRef: string & { readonly __uuid: "Uuid" };
   path: string;
 }>;
   roles: Array<WorkspaceRole>;
@@ -1141,14 +1143,14 @@ export type WorkspaceInvitationCandidatePage = {
   page: number;
   pageSize: number;
   total: number;
-  selectedOrganizationRef?: (string) | null;
+  selectedOrganizationRef?: (string & { readonly __uuid: "Uuid" }) | null;
 }) | null;
 };
 
 export type WorkspaceInvitationCreateRequest = {
   mobile: string;
   targetOrganizationType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  targetOrganizationRef: string;
+  targetOrganizationRef: string & { readonly __uuid: "Uuid" };
   roleIds: Array<string>;
 };
 
@@ -1417,10 +1419,10 @@ export type FaceOperationContracts = {
     groupWorkspaceKey: string;
   };
     query: {
-    storeId?: string;
+    storeId?: string & { readonly __uuid: "Uuid" };
     contractNo?: string;
     phaseName?: string;
-    tenantId?: string;
+    tenantId?: string & { readonly __uuid: "Uuid" };
     itemCode?: string;
     status?: StoreContractStatus;
     sort?: StoreContractSortKey;
@@ -1476,8 +1478,8 @@ export type FaceOperationContracts = {
     queryText?: string;
     page?: number;
     pageSize?: number;
-    selectedId?: string;
-    projectId?: string;
+    selectedId?: string & { readonly __uuid: "Uuid" };
+    projectId?: string & { readonly __uuid: "Uuid" };
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -1567,10 +1569,10 @@ export type FaceOperationContracts = {
     userName?: string;
     mobile?: string;
     loginName?: string;
-    roleId?: string;
+    roleId?: string & { readonly __uuid: "Uuid" };
     status?: WorkspaceAccountStatus;
     serviceNodeType?: ServiceNodeType;
-    organizationRef?: string;
+    organizationRef?: string & { readonly __uuid: "Uuid" };
     page?: number;
     pageSize?: number;
     sort?: WorkspacePlatformAccountSortKey;
@@ -1609,7 +1611,7 @@ export type FaceOperationContracts = {
     queryText?: string;
     page?: number;
     pageSize?: number;
-    selectedOrganizationRef?: string;
+    selectedOrganizationRef?: string & { readonly __uuid: "Uuid" };
   };
     queryRequired: true;
     headers: Record<string, never>;
@@ -1626,8 +1628,8 @@ export type FaceOperationContracts = {
     query: {
     mobile?: string;
     targetOrganizationType?: ServiceNodeType;
-    targetOrganizationRef?: string;
-    roleId?: string;
+    targetOrganizationRef?: string & { readonly __uuid: "Uuid" };
+    roleId?: string & { readonly __uuid: "Uuid" };
     status?: WorkspaceInvitationStatus;
     expiresFrom?: number;
     expiresTo?: number;
@@ -1758,7 +1760,7 @@ export type FaceOperationContracts = {
     requestRequired: false;
     requiresSession: true;
     path: {
-    assetRef: string;
+    assetRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;

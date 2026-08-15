@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceOperationsInvitationCreateRequest(
-    String scopeRef,
+    java.util.UUID scopeRef,
     String mobile,
     java.util.List<String> roleIds,
     String idempotencyKey

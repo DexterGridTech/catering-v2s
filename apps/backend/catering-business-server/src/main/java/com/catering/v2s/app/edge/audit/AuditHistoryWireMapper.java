@@ -9,6 +9,6 @@ import com.catering.v2s.app.edge.generated.wire.AuditTarget;
 public final class AuditHistoryWireMapper {
     private AuditHistoryWireMapper() { }
     public static AuditHistoryPage page(com.catering.v2s.audit.contract.AuditHistoryPage value) {
-        return new AuditHistoryPage(value.items().stream().map(item -> new AuditHistoryItem(item.id().toString(), item.occurredAtEpochMillis(), item.actorDisplayName(), item.action(), item.action(), new AuditTarget(item.target().entityType(), item.target().entityRef()), item.changes().stream().map(change -> new AuditChange(change.fieldKey(), change.beforeValue(), change.afterValue())).toList())).toList(), value.page(), value.pageSize(), value.total());
+        return new AuditHistoryPage(value.items().stream().map(item -> new AuditHistoryItem(item.id(), item.occurredAtEpochMillis(), item.actorDisplayName(), item.action(), item.action(), new AuditTarget(item.target().entityType(), item.target().entityRef()), item.changes().stream().map(change -> new AuditChange(change.fieldKey(), change.beforeValue(), change.afterValue())).toList())).toList(), value.page(), value.pageSize(), value.total());
     }
 }

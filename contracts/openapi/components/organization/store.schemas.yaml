@@ -344,7 +344,8 @@
               "nodeRef": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 64
+                "maxLength": 64,
+                "format": "uuid"
               },
               "nodeName": {
                 "type": "string",
@@ -532,17 +533,8 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "additionalProperties": true
           }
         }
       },
@@ -594,7 +586,8 @@
                   "nodeRef": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 64
+                    "maxLength": 64,
+                    "format": "uuid"
                   },
                   "nodeName": {
                     "type": "string",
@@ -679,6 +672,7 @@
         "required": [
           "name",
           "extensionValues",
+          "extensionRuleRevision",
           "expectedVersion"
         ],
         "properties": {
@@ -698,17 +692,13 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "expectedVersion": {
             "type": "integer",

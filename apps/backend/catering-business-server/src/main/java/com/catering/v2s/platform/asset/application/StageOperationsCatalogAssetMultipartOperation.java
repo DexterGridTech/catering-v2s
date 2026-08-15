@@ -8,8 +8,6 @@ import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /** One-operation M1 composition entry for catalog multipart asset staging. */
 @Component
@@ -25,10 +23,9 @@ public class StageOperationsCatalogAssetMultipartOperation {
         this.assets = assets;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public StagedCatalogAsset execute(Invocation invocation) {
         var context = contexts.resolveCatalog(invocation.sessionCredential(),
-            CatalogInventoryWorkspaceCommandTokens.STAGE_OPERATIONS_CATALOG_ASSET, invocation.request().dataNodeRef(),
+            CatalogInventoryWorkspaceCommandTokens.STAGE_OPERATIONS_CATALOG_ASSET, invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(), invocation.requestId());
         CatalogAssetStageRequest request = invocation.request();
@@ -40,7 +37,7 @@ public class StageOperationsCatalogAssetMultipartOperation {
             new CatalogAssetCommandApi.StageCommand(request.fileName(), request.mediaType(), request.contentDigest(),
                 invocation.contentLength(), request.content(), invocation.idempotencyKey()));
         return new StagedCatalogAsset(REVISION, context.requestId(),
-            new StagedCatalogAsset.Result(readback.assetRef().toString(), readback.bindGrant(), readback.status(),
+            new StagedCatalogAsset.Result(readback.assetRef(), readback.bindGrant(), readback.status(),
                 readback.mediaType(), readback.contentDigest(), null, readback.version()), readback.version());
     }
 

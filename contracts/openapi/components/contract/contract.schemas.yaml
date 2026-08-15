@@ -712,17 +712,15 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           },
           "items": {
             "type": "array",
@@ -783,7 +781,8 @@
               "projectRef": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 64
+                "maxLength": 64,
+                "format": "uuid"
               },
               "projectName": {
                 "type": "string",
@@ -875,17 +874,15 @@
             "maxLength": 2000
           },
           "extensionValues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["fieldKey", "valueJson", "mode"],
-              "properties": {
-                "fieldKey": {"type": "string", "minLength": 1, "maxLength": 120},
-                "valueJson": {"type": "string", "minLength": 0, "maxLength": 16000},
-                "mode": {"type": "string", "enum": ["SET", "CLEAR"]}
-              }
-            }
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "expectedExtensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "minimum": 0
           },
           "expectedVersion": {
             "type": "integer",

@@ -10,7 +10,7 @@ public record PublicInvitationView(
     java.util.List<String> roleNames,
     String maskedMobile,
     WorkspaceInvitationStatus status,
-    PublicInvitationResumeStep nextStep,
+    String nextStep,
     Long expiresAt,
     String workspaceName,
     String logoUrl

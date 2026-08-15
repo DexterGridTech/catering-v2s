@@ -461,9 +461,6 @@
       "HeadCompanyPage": {
         "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanyPage"
       },
-      "HeadCompanySummary": {
-        "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanySummary"
-      },
       "HeadCompanyUpdateRequest": {
         "$ref": "./components/organization/business-entity.schemas.yaml#/components/schemas/HeadCompanyUpdateRequest"
       },

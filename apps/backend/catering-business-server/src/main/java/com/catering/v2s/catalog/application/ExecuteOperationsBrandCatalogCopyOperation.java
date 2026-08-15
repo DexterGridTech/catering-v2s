@@ -31,10 +31,10 @@ public class ExecuteOperationsBrandCatalogCopyOperation {
         }
         var context = contexts.resolveCatalog(invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_BRAND_CATALOG_COPY,
-            request.dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
+            request.dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(), invocation.requestId());
         var readback = composition.executeBrandCopy(context, new CatalogOwnerApi.BrandCopyExecuteCommand(
-            request.selectedItemCodes(), request.targetDataNodeRef(), "", request.expectedSourceVersion(), request.expectedTargetVersion(), ""),
+            request.selectedItemCodes(), request.targetDataNodeRef().toString(), "", request.expectedSourceVersion(), request.expectedTargetVersion(), ""),
             request.preflightDigest(), invocation.idempotencyKey(), invocation.testFailurePoint());
         return CopyPreflightWireShape.brandReadback(context.requestId(), readback.catalog(), readback.ownerReadbacks());
     }

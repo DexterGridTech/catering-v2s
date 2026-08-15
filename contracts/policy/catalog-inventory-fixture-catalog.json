@@ -2298,7 +2298,7 @@
           "type": "CatalogItem",
           "code": "TEMP-001",
           "source": "EXTERNAL_ORDER_TEMPORARY",
-          "status": "GOVERNANCE_TODO",
+          "status": "DRAFT",
           "externalIdentity": {
             "sourceOrderRef": "EXT-ORDER-001",
             "sourceRecordRef": "EXT-RECORD-001",
@@ -2351,7 +2351,7 @@
             "type": "CatalogItem",
             "code": "TEMP-001",
             "source": "EXTERNAL_ORDER_TEMPORARY",
-            "status": "GOVERNANCE_TODO",
+            "status": "DRAFT",
             "externalIdentity": {
               "sourceOrderRef": "EXT-ORDER-001",
               "sourceRecordRef": "EXT-RECORD-001",
@@ -3440,10 +3440,6 @@
       "objects": [
         {
           "type": "SmartView",
-          "code": "GOVERNANCE_PENDING"
-        },
-        {
-          "type": "SmartView",
           "code": "EXTERNAL_ORDER_TEMP"
         },
         {
@@ -3477,7 +3473,6 @@
       ],
       "expected": {
         "viewKeys": [
-          "GOVERNANCE_PENDING",
           "EXTERNAL_ORDER_TEMP",
           "INACTIVE",
           "ARCHIVED",
@@ -3506,10 +3501,6 @@
           }
         ],
         "objects": [
-          {
-            "type": "SmartView",
-            "code": "GOVERNANCE_PENDING"
-          },
           {
             "type": "SmartView",
             "code": "EXTERNAL_ORDER_TEMP"
@@ -4164,5 +4155,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "f4c75f6ed8571a2a56161933c88ba459947cb59807df02d176c23e7bae9908ba"
+  "fixtureDigest": "03ff8b7ea1cd99c7236046c092c85f625eb5f84b34b423ca7d1b34a444e2ef4b"
 }

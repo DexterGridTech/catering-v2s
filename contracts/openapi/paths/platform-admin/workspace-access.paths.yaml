@@ -458,7 +458,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "maxLength": 240
+              "maxLength": 240,
+              "format": "uuid"
             }
           }
         ],
@@ -816,7 +817,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 64
+              "maxLength": 64,
+              "format": "uuid"
             }
           },
           {

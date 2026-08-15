@@ -6,7 +6,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type Organizat
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
-import {hydrateOrganizationExtensionValues, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
+import {extensionValuesForGeneratedRequest, hydrateOrganizationExtensionValues, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type Values = {name: string; headCompanyId?: string; notes?: string; extensionValues?: OrganizationExtensionFormValues};
 
@@ -60,7 +60,7 @@ export function StoreEditDrawer({store, queryContext, onClose, onUpdated}: {stor
     try {
       const updated = await operationsClient.updateOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeId: store.id},
-        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues, store.extensionValues), expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {name: value.name.trim(), headCompanyId: value.headCompanyId || null, notes: value.notes?.trim() || null, extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, value.extensionValues, store.extensionValues)), extensionRuleRevision: store.extensionRuleRevision, expectedVersion: store.revision}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onUpdated(updated);

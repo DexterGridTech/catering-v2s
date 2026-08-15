@@ -124,6 +124,10 @@ function emitCatalogItemTransition(row) {
   return `    public com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String testFailurePoint, String idempotencyKey) {\n        return transitionOperationsCatalogItemStatus.execute(new com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, itemCode, testFailurePoint, idempotencyKey));\n    }`;
 }
 
+function emitCatalogItemBatch(row) {
+  return `    public com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String idempotencyKey) {\n        return batchTransitionOperationsCatalogItemStatus.execute(new com.catering.v2s.catalog.application.BatchTransitionOperationsCatalogItemStatusOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, idempotencyKey));\n    }`;
+}
+
 function emitCatalogItemSave(row) {
   return `    public com.catering.v2s.app.edge.generated.wire.CatalogItemSaveReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.CatalogItemSaveRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String itemCode, String idempotencyKey, java.util.List<com.catering.v2s.platform.asset.api.CatalogAssetCommandApi.AssetBinding> assetBindings) {\n        return saveOperationsCatalogItem.execute(new com.catering.v2s.catalog.application.SaveOperationsCatalogItemOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, itemCode, idempotencyKey, assetBindings));\n    }`;
 }
@@ -152,35 +156,71 @@ function emitBrandCopyExecute(row) {
   return `    public com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyReadback ${row.edge.methodName}(com.catering.v2s.app.edge.generated.wire.BrandCopyExecuteRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String testFailurePoint, String idempotencyKey) {\n        return executeOperationsBrandCatalogCopy.execute(new com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation.Invocation(request, sessionCredential, requestedBrandRef, correlationId, requestId, testFailurePoint, idempotencyKey));\n    }`;
 }
 
-function emitWorkspaceInvitationCreate(row, adapterType, field) {
-  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationCreateRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, request, actor);\n    }`;
+const workspaceInvitationTargetTypes = Object.freeze({
+  cancelOperationsWorkspaceGroupInvitation: "GROUP",
+  cancelOperationsWorkspaceHeadCompanyInvitation: "HEAD_COMPANY",
+  cancelOperationsWorkspaceProjectInvitation: "PROJECT",
+  cancelOperationsWorkspaceRegionInvitation: "REGION",
+  cancelOperationsWorkspaceStoreInvitation: "STORE",
+  createOperationsWorkspaceGroupInvitation: "GROUP",
+  createOperationsWorkspaceHeadCompanyInvitation: "HEAD_COMPANY",
+  createOperationsWorkspaceProjectInvitation: "PROJECT",
+  createOperationsWorkspaceRegionInvitation: "REGION",
+  createOperationsWorkspaceStoreInvitation: "STORE",
+  reissueOperationsWorkspaceGroupInvitation: "GROUP",
+  reissueOperationsWorkspaceHeadCompanyInvitation: "HEAD_COMPANY",
+  reissueOperationsWorkspaceProjectInvitation: "PROJECT",
+  reissueOperationsWorkspaceRegionInvitation: "REGION",
+  reissueOperationsWorkspaceStoreInvitation: "STORE",
+});
+
+function workspaceInvitationTargetType(row) {
+  const targetType = workspaceInvitationTargetTypes[row.operationId];
+  if (!targetType) fail(`BP_M1_WORKSPACE_INVITATION_TARGET_MISSING:${row.operationId}`);
+  return targetType;
 }
-function emitWorkspaceInvitationCancel(row, adapterType, field) {
-  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, java.util.UUID invitationId, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, invitationId, request, actor);\n    }`;
+
+function emitWorkspaceInvitationCreate(row, field) {
+  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationCreateRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.${workspaceInvitationTargetType(row)}, request, actor);\n    }`;
 }
-function emitWorkspaceInvitationReissue(row, adapterType, field) {
-  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, java.util.UUID invitationId, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, invitationId, request, actor);\n    }`;
+function emitWorkspaceInvitationCancel(row, field) {
+  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, java.util.UUID invitationId, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.${workspaceInvitationTargetType(row)}, invitationId, request, actor);\n    }`;
+}
+function emitWorkspaceInvitationReissue(row, field) {
+  return `    public com.catering.v2s.workspace.iam.application.WorkspaceInvitationService.ManagementInvitationView ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, java.util.UUID invitationId, com.catering.v2s.app.edge.generated.wire.WorkspaceOperationsInvitationActionRequest request, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.${workspaceInvitationTargetType(row)}, invitationId, request, actor);\n    }`;
 }
 function emitWorkspaceUserAssignmentRevoke(row, adapterType, field) {
   return `    public com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi.OperationsAssignmentRevokeReadback ${row.edge.methodName}(com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts facts, java.util.UUID assignmentId, com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeRequest request, String idempotencyKey, com.catering.v2s.audit.contract.AuditActor actor) {\n        return ${field}.execute(facts, assignmentId, request, idempotencyKey, actor);\n    }`;
 }
 
+const workspaceInvitationFamilies = Object.freeze({
+  cancel: {type: "CancelOperationsWorkspaceInvitationOperation", field: "cancelOperationsWorkspaceInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceInvitationOperation", emitter: emitWorkspaceInvitationCancel},
+  create: {type: "CreateOperationsWorkspaceInvitationOperation", field: "createOperationsWorkspaceInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceInvitationOperation", emitter: emitWorkspaceInvitationCreate},
+  reissue: {type: "ReissueOperationsWorkspaceInvitationOperation", field: "reissueOperationsWorkspaceInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceInvitationOperation", emitter: emitWorkspaceInvitationReissue},
+});
+
+function workspaceInvitationDependency(operationId) {
+  const family = operationId.startsWith("cancelOperationsWorkspace")
+    ? workspaceInvitationFamilies.cancel
+    : operationId.startsWith("createOperationsWorkspace")
+      ? workspaceInvitationFamilies.create
+      : operationId.startsWith("reissueOperationsWorkspace")
+        ? workspaceInvitationFamilies.reissue
+        : fail(`BP_M1_WORKSPACE_INVITATION_FAMILY_MISSING:${operationId}`);
+  return {
+    type: family.type,
+    field: family.field,
+    importPath: family.importPath,
+    emitter: (row) => family.emitter(row, family.field),
+  };
+}
+
+const workspaceInvitationBindingDependencies = new Map(
+  Object.keys(workspaceInvitationTargetTypes).map((operationId) => [operationId, workspaceInvitationDependency(operationId)]),
+);
+
 const additionalBindingDependencies = new Map([
-  ["cancelOperationsWorkspaceGroupInvitation", {type: "CancelOperationsWorkspaceGroupInvitationOperation", field: "cancelOperationsWorkspaceGroupInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation", emitter: (row) => emitWorkspaceInvitationCancel(row, "CancelOperationsWorkspaceGroupInvitationOperation", "cancelOperationsWorkspaceGroupInvitation")}],
-  ["cancelOperationsWorkspaceRegionInvitation", {type: "CancelOperationsWorkspaceRegionInvitationOperation", field: "cancelOperationsWorkspaceRegionInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation", emitter: (row) => emitWorkspaceInvitationCancel(row, "CancelOperationsWorkspaceRegionInvitationOperation", "cancelOperationsWorkspaceRegionInvitation")}],
-  ["cancelOperationsWorkspaceProjectInvitation", {type: "CancelOperationsWorkspaceProjectInvitationOperation", field: "cancelOperationsWorkspaceProjectInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation", emitter: (row) => emitWorkspaceInvitationCancel(row, "CancelOperationsWorkspaceProjectInvitationOperation", "cancelOperationsWorkspaceProjectInvitation")}],
-  ["cancelOperationsWorkspaceHeadCompanyInvitation", {type: "CancelOperationsWorkspaceHeadCompanyInvitationOperation", field: "cancelOperationsWorkspaceHeadCompanyInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation", emitter: (row) => emitWorkspaceInvitationCancel(row, "CancelOperationsWorkspaceHeadCompanyInvitationOperation", "cancelOperationsWorkspaceHeadCompanyInvitation")}],
-  ["cancelOperationsWorkspaceStoreInvitation", {type: "CancelOperationsWorkspaceStoreInvitationOperation", field: "cancelOperationsWorkspaceStoreInvitation", importPath: "com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation", emitter: (row) => emitWorkspaceInvitationCancel(row, "CancelOperationsWorkspaceStoreInvitationOperation", "cancelOperationsWorkspaceStoreInvitation")}],
-  ["createOperationsWorkspaceGroupInvitation", {type: "CreateOperationsWorkspaceGroupInvitationOperation", field: "createOperationsWorkspaceGroupInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation", emitter: (row) => emitWorkspaceInvitationCreate(row, "CreateOperationsWorkspaceGroupInvitationOperation", "createOperationsWorkspaceGroupInvitation")}],
-  ["createOperationsWorkspaceRegionInvitation", {type: "CreateOperationsWorkspaceRegionInvitationOperation", field: "createOperationsWorkspaceRegionInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation", emitter: (row) => emitWorkspaceInvitationCreate(row, "CreateOperationsWorkspaceRegionInvitationOperation", "createOperationsWorkspaceRegionInvitation")}],
-  ["createOperationsWorkspaceProjectInvitation", {type: "CreateOperationsWorkspaceProjectInvitationOperation", field: "createOperationsWorkspaceProjectInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation", emitter: (row) => emitWorkspaceInvitationCreate(row, "CreateOperationsWorkspaceProjectInvitationOperation", "createOperationsWorkspaceProjectInvitation")}],
-  ["createOperationsWorkspaceHeadCompanyInvitation", {type: "CreateOperationsWorkspaceHeadCompanyInvitationOperation", field: "createOperationsWorkspaceHeadCompanyInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation", emitter: (row) => emitWorkspaceInvitationCreate(row, "CreateOperationsWorkspaceHeadCompanyInvitationOperation", "createOperationsWorkspaceHeadCompanyInvitation")}],
-  ["createOperationsWorkspaceStoreInvitation", {type: "CreateOperationsWorkspaceStoreInvitationOperation", field: "createOperationsWorkspaceStoreInvitation", importPath: "com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation", emitter: (row) => emitWorkspaceInvitationCreate(row, "CreateOperationsWorkspaceStoreInvitationOperation", "createOperationsWorkspaceStoreInvitation")}],
-  ["reissueOperationsWorkspaceGroupInvitation", {type: "ReissueOperationsWorkspaceGroupInvitationOperation", field: "reissueOperationsWorkspaceGroupInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation", emitter: (row) => emitWorkspaceInvitationReissue(row, "ReissueOperationsWorkspaceGroupInvitationOperation", "reissueOperationsWorkspaceGroupInvitation")}],
-  ["reissueOperationsWorkspaceRegionInvitation", {type: "ReissueOperationsWorkspaceRegionInvitationOperation", field: "reissueOperationsWorkspaceRegionInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation", emitter: (row) => emitWorkspaceInvitationReissue(row, "ReissueOperationsWorkspaceRegionInvitationOperation", "reissueOperationsWorkspaceRegionInvitation")}],
-  ["reissueOperationsWorkspaceProjectInvitation", {type: "ReissueOperationsWorkspaceProjectInvitationOperation", field: "reissueOperationsWorkspaceProjectInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation", emitter: (row) => emitWorkspaceInvitationReissue(row, "ReissueOperationsWorkspaceProjectInvitationOperation", "reissueOperationsWorkspaceProjectInvitation")}],
-  ["reissueOperationsWorkspaceHeadCompanyInvitation", {type: "ReissueOperationsWorkspaceHeadCompanyInvitationOperation", field: "reissueOperationsWorkspaceHeadCompanyInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation", emitter: (row) => emitWorkspaceInvitationReissue(row, "ReissueOperationsWorkspaceHeadCompanyInvitationOperation", "reissueOperationsWorkspaceHeadCompanyInvitation")}],
-  ["reissueOperationsWorkspaceStoreInvitation", {type: "ReissueOperationsWorkspaceStoreInvitationOperation", field: "reissueOperationsWorkspaceStoreInvitation", importPath: "com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation", emitter: (row) => emitWorkspaceInvitationReissue(row, "ReissueOperationsWorkspaceStoreInvitationOperation", "reissueOperationsWorkspaceStoreInvitation")}],
+  ...workspaceInvitationBindingDependencies,
   ["revokeOperationsWorkspaceGroupUserAssignment", {type: "RevokeOperationsWorkspaceGroupUserAssignmentOperation", field: "revokeOperationsWorkspaceGroupUserAssignment", importPath: "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation", emitter: (row) => emitWorkspaceUserAssignmentRevoke(row, "RevokeOperationsWorkspaceGroupUserAssignmentOperation", "revokeOperationsWorkspaceGroupUserAssignment")}],
   ["revokeOperationsWorkspaceRegionUserAssignment", {type: "RevokeOperationsWorkspaceRegionUserAssignmentOperation", field: "revokeOperationsWorkspaceRegionUserAssignment", importPath: "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation", emitter: (row) => emitWorkspaceUserAssignmentRevoke(row, "RevokeOperationsWorkspaceRegionUserAssignmentOperation", "revokeOperationsWorkspaceRegionUserAssignment")}],
   ["revokeOperationsWorkspaceProjectUserAssignment", {type: "RevokeOperationsWorkspaceProjectUserAssignmentOperation", field: "revokeOperationsWorkspaceProjectUserAssignment", importPath: "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation", emitter: (row) => emitWorkspaceUserAssignmentRevoke(row, "RevokeOperationsWorkspaceProjectUserAssignmentOperation", "revokeOperationsWorkspaceProjectUserAssignment")}],
@@ -188,7 +228,8 @@ const additionalBindingDependencies = new Map([
   ["revokeOperationsWorkspaceStoreUserAssignment", {type: "RevokeOperationsWorkspaceStoreUserAssignmentOperation", field: "revokeOperationsWorkspaceStoreUserAssignment", importPath: "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation", emitter: (row) => emitWorkspaceUserAssignmentRevoke(row, "RevokeOperationsWorkspaceStoreUserAssignmentOperation", "revokeOperationsWorkspaceStoreUserAssignment")}],
   ["createOperationsCatalogItem", {type: "CreateOperationsCatalogItemOperation", field: "createOperationsCatalogItem", importPath: "com.catering.v2s.catalog.application.CreateOperationsCatalogItemOperation", emitter: emitCatalogItemCreate}],
   ["saveOperationsCatalogItem", {type: "SaveOperationsCatalogItemOperation", field: "saveOperationsCatalogItem", importPath: "com.catering.v2s.catalog.application.SaveOperationsCatalogItemOperation", emitter: emitCatalogItemSave}],
-  ["transitionOperationsCatalogItemStatus", {type: "TransitionOperationsCatalogItemStatusOperation", field: "transitionOperationsCatalogItemStatus", importPath: "com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation", emitter: emitCatalogItemTransition}],
+ ["transitionOperationsCatalogItemStatus", {type: "TransitionOperationsCatalogItemStatusOperation", field: "transitionOperationsCatalogItemStatus", importPath: "com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation", emitter: emitCatalogItemTransition}],
+  ["batchTransitionOperationsCatalogItemStatus", {type: "BatchTransitionOperationsCatalogItemStatusOperation", field: "batchTransitionOperationsCatalogItemStatus", importPath: "com.catering.v2s.catalog.application.BatchTransitionOperationsCatalogItemStatusOperation", emitter: emitCatalogItemBatch}],
   ["preflightOperationsTemporaryCatalogItemPromotion", {type: "PreflightOperationsTemporaryCatalogItemPromotionOperation", field: "preflightOperationsTemporaryCatalogItemPromotion", importPath: "com.catering.v2s.catalog.application.PreflightOperationsTemporaryCatalogItemPromotionOperation", emitter: emitTemporaryPromotionPreflight}],
   ["executeOperationsTemporaryCatalogItemPromotion", {type: "ExecuteOperationsTemporaryCatalogItemPromotionOperation", field: "executeOperationsTemporaryCatalogItemPromotion", importPath: "com.catering.v2s.catalog.application.ExecuteOperationsTemporaryCatalogItemPromotionOperation", emitter: emitTemporaryPromotionExecute}],
   ["preflightOperationsLocalCatalogCopy", {type: "PreflightOperationsLocalCatalogCopyOperation", field: "preflightOperationsLocalCatalogCopy", importPath: "com.catering.v2s.catalog.application.PreflightOperationsLocalCatalogCopyOperation", emitter: emitLocalCopyPreflight}],
@@ -255,9 +296,7 @@ const baseBindingDependencies = Object.freeze([
 const focusedBindingFactories = Object.freeze([
   {name: "forHeadCompanyAuthorization", fields: ["addOperationsOrganizationHeadCompanyBrandAuthorization", "removeOperationsOrganizationHeadCompanyBrandAuthorization"]},
   {name: "forWorkspaceInvitation", fields: [
-    "cancelOperationsWorkspaceGroupInvitation", "cancelOperationsWorkspaceHeadCompanyInvitation", "cancelOperationsWorkspaceProjectInvitation", "cancelOperationsWorkspaceRegionInvitation", "cancelOperationsWorkspaceStoreInvitation",
-    "createOperationsWorkspaceGroupInvitation", "createOperationsWorkspaceHeadCompanyInvitation", "createOperationsWorkspaceProjectInvitation", "createOperationsWorkspaceRegionInvitation", "createOperationsWorkspaceStoreInvitation",
-    "reissueOperationsWorkspaceGroupInvitation", "reissueOperationsWorkspaceHeadCompanyInvitation", "reissueOperationsWorkspaceProjectInvitation", "reissueOperationsWorkspaceRegionInvitation", "reissueOperationsWorkspaceStoreInvitation",
+    "cancelOperationsWorkspaceInvitation", "createOperationsWorkspaceInvitation", "reissueOperationsWorkspaceInvitation",
   ]},
   {name: "forContract", fields: ["createOperationsContract", "updateOperationsContract", "invalidateOperationsContract"]},
   {name: "forBusinessEntity", fields: [
@@ -304,7 +343,14 @@ function selfTest(rows) {
 
 function emit(rows) {
   const className = "BackendPerformanceM1CommandExecutionBindings";
-  const additional = rows.map((row) => additionalBindingDependencies.get(row.operationId)).filter(Boolean);
+  const additional = [];
+  const seenAdditional = new Set();
+  for (const row of rows) {
+    const dependency = additionalBindingDependencies.get(row.operationId);
+    if (!dependency || seenAdditional.has(dependency.field)) continue;
+    seenAdditional.add(dependency.field);
+    additional.push(dependency);
+  }
   const allDependencies = [...baseBindingDependencies, ...additional];
   const methods = `${renderFocusedBindingFactories(className, allDependencies)}\n\n${rows.map((row) => emitters.get(row.operationId)(row)).join("\n\n")}`;
   const additionalImports = additional.length === 0 ? "" : `import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseReadback;\nimport com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogAssetStageRequest;\nimport com.catering.v2s.app.edge.generated.wire.StagedCatalogAsset;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryCreateRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteReadback;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryMoveRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryReadback;\nimport com.catering.v2s.app.edge.generated.wire.CatalogCategoryUpdateRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryCreateRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryReadback;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryReorderRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryTransitionRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryEntryUpdateRequest;\nimport com.catering.v2s.app.edge.generated.wire.CatalogDictionaryView;\nimport com.catering.v2s.contract.api.OperationsStoreContractCommandApi;\nimport com.catering.v2s.organization.api.CommercialGroupReadback;\nimport com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;\nimport com.catering.v2s.organization.api.OperationsCommercialGroupCommandApi;\nimport com.catering.v2s.organization.api.OperationsOrganizationHierarchyCommandApi;\nimport com.catering.v2s.organization.api.OperationsStoreCommandApi;\nimport com.catering.v2s.organization.api.OrganizationEntityReadback;\nimport com.catering.v2s.organization.api.OrganizationNodeReadback;\n${additional.map((dependency) => `import ${dependency.importPath};`).join("\n")}\n`;

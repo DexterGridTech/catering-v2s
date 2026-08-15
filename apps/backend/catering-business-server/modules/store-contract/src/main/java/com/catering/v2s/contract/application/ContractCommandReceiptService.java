@@ -3,10 +3,9 @@ package com.catering.v2s.contract.application;
 import com.catering.v2s.contract.api.StoreContractReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,7 +34,7 @@ public final class ContractCommandReceiptService {
     }
     private static StoreContractReadback read(String value) { try { return JSON.readValue(value, StoreContractReadback.class); } catch (Exception exception) { throw new ContractReceiptCorruptException(exception); } }
     private static String write(StoreContractReadback value) { try { return JSON.writeValueAsString(value); } catch (Exception exception) { throw new IllegalStateException(exception); } }
-    private static String hash(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception exception) { throw new IllegalStateException(exception); } }
+    private static String hash(String value) { try { return Sha256Hex.digest(value); } catch (NullPointerException exception) { throw new IllegalStateException(exception); } }
     private record Receipt(String hash, String json) { }
     public static final class ContractIdempotencyConflictException extends RuntimeException { }
     public static final class ContractReceiptCorruptException extends RuntimeException { public ContractReceiptCorruptException(Throwable cause) { super(cause); } }

@@ -28,19 +28,20 @@ public class IncreaseOperationsInventoryTargetOperation {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public InventoryWriteReadback execute(Invocation invocation) {
+        InventoryIncreaseRequest request = invocation.request();
+        UUID targetRef = InventoryTargetRefConsistency.requireSame(invocation.targetRef(), request.targetRef());
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.INCREASE_OPERATIONS_INVENTORY_TARGET,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
         );
-        InventoryIncreaseRequest request = invocation.request();
         InventoryOwnerApi.InventoryMutationReadback readback = inventory.increaseTarget(
             context,
             new InventoryOwnerApi.IncreaseTargetCommand(
-                requiredUuid(invocation.targetRef(), "targetRef"),
+                targetRef,
                 requiredLong(request.expectedVersion(), "expectedVersion"),
                 requiredDecimal(request.quantity(), "quantity"),
                 request.unit(),
@@ -56,17 +57,8 @@ public class IncreaseOperationsInventoryTargetOperation {
 
     private static InventoryWriteReadback response(String requestId, InventoryOwnerApi.InventoryMutationReadback value) {
         return new InventoryWriteReadback(REVISION, requestId, new InventoryWriteReadback.Result(
-            value.targetRef().toString(), decimal(value.before()), decimal(value.change()), decimal(value.after()),
-            value.ledgerEntryRef().toString(), value.stockState(), value.version()), value.version());
-    }
-
-    private static UUID requiredUuid(String value, String field) {
-        try {
-            if (value == null || value.isBlank()) throw new IllegalArgumentException();
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException invalid) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a UUID");
-        }
+            value.targetRef(), decimal(value.before()), decimal(value.change()), decimal(value.after()),
+            value.ledgerEntryRef(), value.stockState(), value.version()), value.version());
     }
 
     private static long requiredLong(Long value, String field) {

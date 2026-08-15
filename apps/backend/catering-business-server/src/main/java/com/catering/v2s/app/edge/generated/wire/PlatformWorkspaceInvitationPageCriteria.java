@@ -4,8 +4,8 @@ package com.catering.v2s.app.edge.generated.wire;
 public record PlatformWorkspaceInvitationPageCriteria(
     String mobile,
     ServiceNodeType targetOrganizationType,
-    String targetOrganizationRef,
-    String roleId,
+    java.util.UUID targetOrganizationRef,
+    java.util.UUID roleId,
     WorkspaceInvitationStatus status,
     Long expiresFrom,
     Long expiresTo,

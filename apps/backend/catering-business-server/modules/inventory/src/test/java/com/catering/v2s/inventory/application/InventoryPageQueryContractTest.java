@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class InventoryPageQueryContractTest {
@@ -19,7 +20,9 @@ class InventoryPageQueryContractTest {
             .put("stockView", "NEEDS_ATTENTION")
             .put("cursor", "10")
             .put("pageSize", 25);
-        query.putArray("catalogItemCodes").add("LATTE-001").add("TEA-001");
+        query.putArray("catalogItemRefs")
+            .add(UUID.randomUUID().toString())
+            .add(UUID.randomUUID().toString());
 
         assertDoesNotThrow(() -> InventoryOwnerService.validateTargetPageQuery(query));
     }
@@ -35,6 +38,21 @@ class InventoryPageQueryContractTest {
         InventoryOwnerApi.Problem stockProblem = assertThrows(InventoryOwnerApi.Problem.class,
             () -> InventoryOwnerService.validateTargetPageQuery(malformed));
         assertEquals("VALIDATION_ERROR", stockProblem.code());
+    }
+
+    @Test
+    void acceptsOnlyOpaqueCatalogItemRefsForCrossOwnerFiltering() {
+        var legacyCodeFilter = mapper.createObjectNode();
+        legacyCodeFilter.putArray("catalogItemCodes").add("LATTE-001");
+        InventoryOwnerApi.Problem legacyProblem = assertThrows(InventoryOwnerApi.Problem.class,
+            () -> InventoryOwnerService.validateTargetPageQuery(legacyCodeFilter));
+        assertEquals("VALIDATION_ERROR", legacyProblem.code());
+
+        var malformedRef = mapper.createObjectNode();
+        malformedRef.putArray("catalogItemRefs").add("LATTE-001");
+        InventoryOwnerApi.Problem malformedProblem = assertThrows(InventoryOwnerApi.Problem.class,
+            () -> InventoryOwnerService.validateTargetPageQuery(malformedRef));
+        assertEquals("VALIDATION_ERROR", malformedProblem.code());
     }
 
     @Test

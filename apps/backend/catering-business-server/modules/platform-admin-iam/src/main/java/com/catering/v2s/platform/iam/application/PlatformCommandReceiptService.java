@@ -2,10 +2,9 @@ package com.catering.v2s.platform.iam.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -38,7 +37,7 @@ public final class PlatformCommandReceiptService {
     private static String nullable(String json, String name) { String value = encoded(json, name); return "-".equals(value) ? null : new String(Base64.getDecoder().decode(value), StandardCharsets.UTF_8); }
     private static String optionalRead(String json, String name, String fallback) { Matcher match = Pattern.compile("\\\"" + Pattern.quote(name) + "\\\":\\\"([^\\\"]*)\\\"").matcher(json); return match.find() ? new String(Base64.getDecoder().decode(match.group(1)), StandardCharsets.UTF_8) : fallback; }
     private static String encoded(String json, String name) { Matcher match = Pattern.compile("\\\"" + Pattern.quote(name) + "\\\":\\\"([^\\\"]*)\\\"").matcher(json); if (!match.find()) throw new IllegalStateException("missing receipt field"); return match.group(1); }
-    private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }
+    private static String sha256(String value) { try { return Sha256Hex.digest(value); } catch (NullPointerException failure) { throw new IllegalStateException(failure); } }
     private record Receipt(String requestHash, String responseJson) { }
     public static final class PlatformIdempotencyConflictException extends RuntimeException { }
     public static final class PlatformReceiptCorruptException extends RuntimeException { public PlatformReceiptCorruptException(Throwable cause) { super(cause); } }

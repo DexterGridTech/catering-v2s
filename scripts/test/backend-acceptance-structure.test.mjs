@@ -12,6 +12,7 @@ const scenarioFiles = [
   'OrganizationAcceptanceScenarios.java',
   'CommercialContractAcceptanceScenarios.java',
   'AssetAcceptanceScenarios.java',
+  'CatalogAcceptanceScenarios.java',
 ];
 
 test('backend acceptance discovers all real scenarios through explicit domain groups', () => {
@@ -24,6 +25,6 @@ test('backend acceptance discovers all real scenarios through explicit domain gr
     return readFileSync(filePath, 'utf8');
   });
   const ids = scenarioSources.flatMap((source) => [...source.matchAll(/@AcceptanceScenario\(id = "([^"]+)"/g)].map((match) => match[1]));
-  assert.equal(ids.length, 18);
+  assert.equal(ids.length, 26);
   assert.equal(new Set(ids).size, ids.length);
 });

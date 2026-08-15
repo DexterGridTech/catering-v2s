@@ -20,12 +20,11 @@ import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -405,12 +404,7 @@ public class OrganizationCommandService implements InitializeCommercialGroupComm
     private static String fingerprint(String groupWorkspaceKey, String code, String name, Map<String, String> extensionValues) {
         try {
             String extensions = extensionValues == null ? "" : extensionValues.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> entry.getKey() + "=" + entry.getValue()).collect(java.util.stream.Collectors.joining("\u001f"));
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                .digest((groupWorkspaceKey + "\u0000initialize-commercial-group\u0000" + code + "\u0000" + name + (extensions.isEmpty() ? "" : "\u0000" + extensions))
-                    .getBytes(StandardCharsets.UTF_8));
-            StringBuilder result = new StringBuilder(64);
-            for (byte value : digest) result.append(String.format("%02x", value));
-            return result.toString();
+            return Sha256Hex.digest(groupWorkspaceKey + "\u0000initialize-commercial-group\u0000" + code + "\u0000" + name + (extensions.isEmpty() ? "" : "\u0000" + extensions));
         } catch (Exception exception) {
             throw new IllegalStateException("fingerprint unavailable", exception);
         }

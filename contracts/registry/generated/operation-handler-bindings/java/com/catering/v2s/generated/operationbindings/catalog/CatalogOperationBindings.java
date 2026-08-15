@@ -17,6 +17,7 @@ public final class CatalogOperationBindings {
     OperationBindingTypes.Wire.CatalogItemCommandReadback createOperationsCatalogItem(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemCreateRequest request);
     OperationBindingTypes.Wire.CatalogItemSaveReadback saveOperationsCatalogItem(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemSaveRequest request);
     OperationBindingTypes.Wire.CatalogItemCommandReadback transitionOperationsCatalogItemStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemTransitionRequest request);
+    OperationBindingTypes.Wire.CatalogItemBatchStatusTransitionReadback batchTransitionOperationsCatalogItemStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemBatchStatusTransitionRequest request);
     OperationBindingTypes.Wire.CatalogCategoryReadback createOperationsCatalogCategory(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogCategoryCreateRequest request);
     OperationBindingTypes.Wire.CatalogCategoryReadback updateOperationsCatalogCategory(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogCategoryUpdateRequest request);
     OperationBindingTypes.Wire.CatalogCategoryReadback moveOperationsCatalogCategory(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogCategoryMoveRequest request);
@@ -50,6 +51,7 @@ public final class CatalogOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_CATALOG_ITEM_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsCatalogItem", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor SAVE_OPERATIONS_CATALOG_ITEM_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("saveOperationsCatalogItem", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionOperationsCatalogItemStatus", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("batchTransitionOperationsCatalogItemStatus", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_CATALOG_CATEGORY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsCatalogCategory", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_CATEGORY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogCategory", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor MOVE_OPERATIONS_CATALOG_CATEGORY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("moveOperationsCatalogCategory", "catalog", "catalog-inventory");
@@ -111,6 +113,10 @@ public final class CatalogOperationBindings {
 
   public OperationBindingTypes.Wire.CatalogItemCommandReadback transitionOperationsCatalogItemStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemTransitionRequest request) {
     return adapters.transitionOperationsCatalogItemStatus(TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogItemBatchStatusTransitionReadback batchTransitionOperationsCatalogItemStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogItemBatchStatusTransitionRequest request) {
+    return adapters.batchTransitionOperationsCatalogItemStatus(BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS_DESCRIPTOR, context, request);
   }
 
   public OperationBindingTypes.Wire.CatalogCategoryReadback createOperationsCatalogCategory(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogCategoryCreateRequest request) {

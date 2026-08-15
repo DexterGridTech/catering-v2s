@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "bc3ead6a5a477abb793138767a410a2c9aa6aef3203752038ac4c1740295812a",
-      "contentSha256": "8770dac5dc4a2ba9609e8e2d63da9749a4e20333b531c4f3891fd68ff09c3df2"
+      "contractDigest": "a175cce1ab73d4ba9d22d47e5e2d6338206dd1d1d5f5cd0307573d395b342342",
+      "contentSha256": "087b3c64259a57c641aa7ff58818161b9876a2ac919168b7bef5f99db2c532fa"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -28,16 +28,16 @@
   "runtimeIntegration": {
     "status": "IMPLEMENTED_BP_U06",
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
-    "reason": "BP-U06 completed the 42-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
+    "reason": "BP-U06 completed the 43-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 196,
+  "operationCount": 197,
   "readCount": 83,
-  "commandCount": 113,
+  "commandCount": 114,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 29,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
     "READ_CONTEXT": 83,
-    "WORKSPACE_EXECUTION_CONTEXT": 68,
+    "WORKSPACE_EXECUTION_CONTEXT": 69,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
   "operations": [
@@ -150,6 +150,22 @@
       "copyRole": "NONE",
       "path": "/operations/catalog-inventory/items/{itemCode}/status",
       "normalizedPath": "/operations/catalog-inventory/items/{itemCode}/status",
+      "face": "operations-admin",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "batchTransitionOperationsCatalogItemStatus",
+      "owner": "catalog",
+      "routeRegistry": "catalog-inventory",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.catalog.application.BatchTransitionOperationsCatalogItemStatusOperation",
+      "wireRequest": "CatalogItemBatchStatusTransitionRequest",
+      "wireResponse": "CatalogItemBatchStatusTransitionReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "path": "/operations/catalog-inventory/items/status",
+      "normalizedPath": "/operations/catalog-inventory/items/status",
       "face": "operations-admin",
       "commandBoundary": "OWNER_COMMAND"
     },
@@ -3180,7 +3196,7 @@
   ],
   "commandBoundaryCounts": {
     "NOT_APPLICABLE": 83,
-    "OWNER_COMMAND": 88,
+    "OWNER_COMMAND": 89,
     "PROTOCOL": 25
   }
 }

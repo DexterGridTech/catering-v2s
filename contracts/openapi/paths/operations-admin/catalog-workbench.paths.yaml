@@ -62,6 +62,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           }
@@ -116,6 +117,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -181,7 +183,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -202,11 +205,11 @@
               "description": "design-bound field",
               "enum": [
                 "ALL",
-                "ENABLED",
-                "DISABLED",
-                "AUTO_SYNC",
-                "TEMPORARY",
-                "NEEDS_ATTENTION"
+                "EXTERNAL_ORDER_TEMP",
+                "INACTIVE",
+                "ARCHIVED",
+                "RECENTLY_UPDATED",
+                "AUTO_SYNC"
               ]
             }
           },
@@ -249,15 +252,6 @@
           },
           {
             "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "design-bound field"
-            }
-          },
-          {
-            "name": "governanceStatus",
             "in": "query",
             "required": false,
             "schema": {
@@ -369,6 +363,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           }
@@ -424,6 +419,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -497,6 +493,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected store node"
             }
           },
@@ -569,6 +566,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },

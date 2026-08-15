@@ -5,7 +5,7 @@ public record GroupWorkspaceDetail(
     String groupWorkspaceKey,
     String name,
     String operationsTitle,
-    String logoAssetRef,
+    java.util.UUID logoAssetRef,
     String logoUrl,
     String notes,
     GroupWorkspaceStatus status,

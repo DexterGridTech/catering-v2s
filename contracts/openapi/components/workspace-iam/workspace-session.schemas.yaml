@@ -127,7 +127,8 @@
           "roleAssignmentRef": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           },
           "requiredContextVersion": {
             "type": "integer",
@@ -149,7 +150,8 @@
           "dataNodeRef": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 240
+            "maxLength": 240,
+            "format": "uuid"
           },
           "dataNodeType": {
             "type": "string",
@@ -192,7 +194,8 @@
           "dataNodeRef": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 240
+            "maxLength": 240,
+            "format": "uuid"
           },
           "dataNodeName": {
             "type": "string",
@@ -217,22 +220,26 @@
           "regionRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           },
           "projectRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           },
           "storeRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           },
           "headCompanyRef": {
             "type": "string",
             "nullable": true,
-            "maxLength": 64
+            "maxLength": 64,
+            "format": "uuid"
           }
         }
       },
@@ -342,7 +349,8 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 64,
-                  "description": "Stable current operations-role assignment reference; never infer it from roleId."
+                  "description": "Stable current operations-role assignment reference; never infer it from roleId.",
+                  "format": "uuid"
                 },
                 "roleId": {
                   "type": "string",
@@ -357,7 +365,8 @@
                 "roleNodeRef": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 240
+                  "maxLength": 240,
+                  "format": "uuid"
                 },
                 "roleNodeType": {
                   "type": "string",
@@ -487,10 +496,7 @@
                 "BC-IAM-STORE-INVITE",
                 "BC-CONTRACT-CREATE",
                 "BC-CONTRACT-EDIT",
-                "BC-CONTRACT-INVALIDATE",
-                "EDIT_HEAD_COMPANY_CATALOG",
-                "EDIT_STORE_CATALOG",
-                "EDIT_STORE_INVENTORY"
+                "BC-CONTRACT-INVALIDATE"
               ]
             }
           },
@@ -525,7 +531,8 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 64,
-                        "description": "Stable current operations-role assignment reference; never infer it from roleId."
+                        "description": "Stable current operations-role assignment reference; never infer it from roleId.",
+                        "format": "uuid"
                       },
                       "roleId": {
                         "type": "string",
@@ -540,7 +547,8 @@
                       "roleNodeRef": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 240
+                        "maxLength": 240,
+                        "format": "uuid"
                       },
                       "roleNodeType": {
                         "type": "string",

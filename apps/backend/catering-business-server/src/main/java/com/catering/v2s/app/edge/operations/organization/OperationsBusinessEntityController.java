@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.organization;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 
 import com.catering.v2s.app.edge.catalog.OrganizationEntityType;
+import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.wire.Brand;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.BrandCreateRequest;
@@ -46,6 +47,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolv
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import java.util.List;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -196,12 +198,12 @@ public final class OperationsBusinessEntityController {
     private static String statusRequirement(OrganizationEntityType type) { return switch (type) { case BRAND -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_BRAND_STATUS"; case TENANT -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_TENANT_STATUS"; case HEAD_COMPANY -> "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS"; default -> throw new InvalidEdgeRequestException("unsupported entity type"); }; }
 
     private static long required(Long value) { if (value == null) throw new InvalidEdgeRequestException("expected version is required"); return value; }
-    private static ExtensionSubmission brandCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.BrandCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission brandUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.BrandUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission tenantCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.TenantCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission tenantUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.TenantUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission headCompanyCreateSubmission(List<com.catering.v2s.app.edge.generated.wire.HeadCompanyCreateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission headCompanyUpdateSubmission(List<com.catering.v2s.app.edge.generated.wire.HeadCompanyUpdateRequestExtensionValuesItem> values) { return submission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission brandCreateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission brandUpdateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission tenantCreateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission tenantUpdateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission headCompanyCreateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission headCompanyUpdateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
     private static ExtensionSubmission submission(List<ExtensionSubmission.ExtensionFieldValue> values) { return new ExtensionSubmission(values); }
     private static BusinessEntitySortKey sortKey(String value) { try { return BusinessEntitySortKey.valueOf(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid sort"); } }
     private static BusinessEntitySortDirection sortDirection(String value) { try { return BusinessEntitySortDirection.valueOf(value); } catch (RuntimeException exception) { throw new InvalidEdgeRequestException("invalid direction"); } }

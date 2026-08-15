@@ -3,6 +3,7 @@ import {EllipsisTooltip, testId, useAsyncGenerationGuard, useOverlayLock, useSub
 import {useState} from 'react';
 import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 
 type Variant = 'initial' | 'header';
 
@@ -33,7 +34,7 @@ export function RoleContextSelector({entry, variant, disabled = false, onSelecte
     try {
       const next = await operationsClient.selectOperationsWorkspaceSessionContext(
         {groupWorkspaceKey: entry.groupWorkspaceKey},
-        {body: {roleAssignmentRef, requiredContextVersion: entry.contextVersion}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {roleAssignmentRef: wireUuid(roleAssignmentRef), requiredContextVersion: entry.contextVersion}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       if (generation.isCurrent(request)) onSelected(next);
     } catch {

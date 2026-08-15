@@ -4,6 +4,7 @@ import {contextScopedQueryArgs, EllipsisTooltip, NameCodeText, testId, useDetail
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {StoreContract, StoreContractSortDirection, StoreContractSortKey} from '../../../app/api/generated/operations-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -42,9 +43,14 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   useOverlayLock(detail.isOpen || createOpen || Boolean(editing) || Boolean(invalidating));
   const projectId = queryContext.scopeRef;
 
-  const query = useMemo(() => contextScopedQueryArgs({
-    ...filters, sort, direction, page, pageSize,
-  }, queryContext), [direction, filters, page, pageSize, queryContext, sort]);
+  const query = useMemo(() => {
+    const {tenantId, ...restFilters} = filters;
+    return contextScopedQueryArgs({
+      ...restFilters,
+      ...(tenantId ? {tenantId: wireUuid(tenantId)} : {}),
+      sort, direction, page, pageSize,
+    }, queryContext);
+  }, [direction, filters, page, pageSize, queryContext, sort]);
   const listRequest = useMemo(() => operationsAdminRtkRequest.getOperationsContracts(
     {groupWorkspaceKey: queryContext.groupWorkspaceKey},
     {query},

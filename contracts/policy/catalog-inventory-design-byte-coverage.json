@@ -5,7 +5,7 @@
   "source": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
     "designHeading": "### 3.4 读模型一次定全",
-    "designSha256": "c9b0503b10272b3ca9b3f4c4f22916c444a2c5342e928fe72f1f0947eb03105c"
+    "designSha256": "e6a29687b8150da95bc2dea27ebecd49da42320ad9a8a960c0c3f3fce318c815"
   },
   "requiredModelCount": 25,
   "rows": [
@@ -268,15 +268,19 @@
           "itemFormat": "uuid"
         },
         {
+          "path": "items[].tagRefs",
+          "type": "array",
+          "itemType": "string",
+          "itemFormat": "uuid",
+          "required": false,
+          "description": "Opaque references of catalog tags attached to the item."
+        },
+        {
           "path": "items[].shapeKey",
           "type": "string"
         },
         {
           "path": "items[].status",
-          "type": "string"
-        },
-        {
-          "path": "items[].governanceStatus",
           "type": "string"
         },
         {
@@ -309,12 +313,22 @@
           "format": "cents"
         },
         {
-          "path": "items[].listedSalePrice",
+          "path": "items[].standardSalePriceMin",
           "type": [
             "integer",
             "null"
           ],
-          "format": "cents"
+          "format": "cents",
+          "description": "Minimum standard sale price in cents among the item's non-archived SKUs."
+        },
+        {
+          "path": "items[].standardSalePriceMax",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents",
+          "description": "Maximum standard sale price in cents among the item's non-archived SKUs."
         },
         {
           "path": "items[].standardPriceDelta",
@@ -463,6 +477,14 @@
           "type": "string"
         },
         {
+          "path": "item.skus[].displayOrder",
+          "type": "integer"
+        },
+        {
+          "path": "item.skus[].variantCombinationDigest",
+          "type": "string"
+        },
+        {
           "path": "item.skus[].attributeValueRefs",
           "type": "array",
           "itemType": "object"
@@ -579,6 +601,13 @@
           ]
         },
         {
+          "path": "item.materialRole",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
           "path": "item.shapeKey",
           "type": "string"
         },
@@ -639,11 +668,15 @@
           "itemType": "string"
         },
         {
-          "path": "item.ordering",
-          "type": "object"
+          "path": "item.standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents"
         },
         {
-          "path": "item.ordering.priceGranularity",
+          "path": "item.priceGranularity",
           "type": "string",
           "enum": [
             "ITEM",
@@ -651,32 +684,8 @@
           ]
         },
         {
-          "path": "item.ordering.standardSalePrice",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "cents"
-        },
-        {
-          "path": "item.ordering.listedSalePrice",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "cents"
-        },
-        {
-          "path": "item.ordering.missingPriceCount",
+          "path": "item.missingPriceCount",
           "type": "integer"
-        },
-        {
-          "path": "item.ordering.priceGranularity",
-          "type": "string",
-          "enum": [
-            "ITEM",
-            "SKU"
-          ]
         },
         {
           "path": "item.attributes",
@@ -833,6 +842,39 @@
         {
           "path": "item.inventoryBom[].unit",
           "type": "string"
+        },
+        {
+          "path": "item.inventoryBom[].consumptionUnit",
+          "type": "string",
+          "description": "Inventory owner's unit used to consume this BOM target."
+        },
+        {
+          "path": "item.inventoryBom[].configuration",
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Inventory owner's current configuration for this BOM target."
+        },
+        {
+          "path": "item.inventoryBom[].configuration.allowNegative",
+          "type": "boolean",
+          "description": "Whether the inventory balance for this target may become negative."
+        },
+        {
+          "path": "item.inventoryBom[].configuration.lowStockThreshold",
+          "type": ["string", "null"],
+          "format": "decimal",
+          "description": "Configured low-stock threshold for this inventory target."
+        },
+        {
+          "path": "item.inventoryBom[].configuration.countingUnit",
+          "type": "string",
+          "description": "Inventory unit in which this target's balance is counted."
+        },
+        {
+          "path": "item.inventoryBom[].configuration.conversionFactor",
+          "type": "string",
+          "format": "decimal",
+          "description": "Conversion factor from the consumption unit to the counting unit."
         },
         {
           "path": "item.productionProfiles",
@@ -1012,6 +1054,39 @@
           "type": "string"
         },
         {
+          "path": "inventoryBom[].consumptionUnit",
+          "type": "string",
+          "description": "Inventory owner's unit used to consume this BOM target."
+        },
+        {
+          "path": "inventoryBom[].configuration",
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Inventory owner's current configuration for this BOM target."
+        },
+        {
+          "path": "inventoryBom[].configuration.allowNegative",
+          "type": "boolean",
+          "description": "Whether the inventory balance for this target may become negative."
+        },
+        {
+          "path": "inventoryBom[].configuration.lowStockThreshold",
+          "type": ["string", "null"],
+          "format": "decimal",
+          "description": "Configured low-stock threshold for this inventory target."
+        },
+        {
+          "path": "inventoryBom[].configuration.countingUnit",
+          "type": "string",
+          "description": "Inventory unit in which this target's balance is counted."
+        },
+        {
+          "path": "inventoryBom[].configuration.conversionFactor",
+          "type": "string",
+          "format": "decimal",
+          "description": "Conversion factor from the consumption unit to the counting unit."
+        },
+        {
           "path": "orderOptions",
           "type": "array",
           "itemType": "object"
@@ -1157,10 +1232,6 @@
           "type": "object"
         },
         {
-          "path": "governance.status",
-          "type": "string"
-        },
-        {
           "path": "governance.deniedFields",
           "type": "array",
           "itemType": "string"
@@ -1298,6 +1369,10 @@
           "type": "string"
         },
         {
+          "path": "queryIdentity.brandRef",
+          "type": "string"
+        },
+        {
           "path": "queryIdentity.generation",
           "type": "string"
         },
@@ -1405,6 +1480,11 @@
           "path": "data.entries",
           "type": "array",
           "itemType": "object"
+        },
+        {
+          "path": "data.entries[].entryRef",
+          "type": "string",
+          "format": "uuid"
         },
         {
           "path": "data.entries[].code",
@@ -1814,6 +1894,19 @@
           "type": "integer"
         },
         {
+          "path": "data.skipped",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.skipped[].section",
+          "type": "string"
+        },
+        {
+          "path": "data.skipped[].reasonCode",
+          "type": "string"
+        },
+        {
           "path": "data.referenceMappings",
           "type": "array",
           "itemType": "object"
@@ -1949,11 +2042,11 @@
           "itemType": "object"
         },
         {
-          "path": "data.skipped[].objectType",
+          "path": "data.skipped[].section",
           "type": "string"
         },
         {
-          "path": "data.skipped[].code",
+          "path": "data.skipped[].reasonCode",
           "type": "string"
         },
         {
@@ -3610,6 +3703,9 @@
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
+        "controlKinds",
+        "fields",
+        "enumLabels",
         "modeRules",
         "shapeRules",
         "fieldRules",
@@ -3639,6 +3735,182 @@
           "itemType": "string"
         },
         {
+          "path": "controlKinds",
+          "type": "array",
+          "itemType": "string",
+          "itemEnum": [
+            "text",
+            "textarea",
+            "select",
+            "multiSelect",
+            "treeSelect",
+            "number",
+            "money",
+            "upload",
+            "editableTable",
+            "detailTable",
+            "readonlySummary",
+            "readonlyPreview",
+            "skuVariantMatrix",
+            "inventoryBomWorkbench",
+            "orderOptionsWorkbench",
+            "compositeContentWorkbench"
+          ]
+        },
+        {
+          "path": "fields",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "fields[].fieldKey",
+          "type": "string"
+        },
+        {
+          "path": "fields[].dataPath",
+          "type": "string"
+        },
+        {
+          "path": "fields[].label",
+          "type": "string"
+        },
+        {
+          "path": "fields[].controlKind",
+          "type": "string",
+          "enum": [
+            "text",
+            "textarea",
+            "select",
+            "multiSelect",
+            "treeSelect",
+            "number",
+            "money",
+            "upload",
+            "editableTable",
+            "detailTable",
+            "readonlySummary",
+            "readonlyPreview",
+            "skuVariantMatrix",
+            "inventoryBomWorkbench",
+            "orderOptionsWorkbench",
+            "compositeContentWorkbench"
+          ]
+        },
+        {
+          "path": "fields[].tabKey",
+          "type": "string"
+        },
+        {
+          "path": "fields[].admittedShapes",
+          "type": "array",
+          "itemType": "string",
+          "itemEnum": [
+            "STANDARD_SALE_COUNTED",
+            "SKU_VARIANT_SALE_COUNTED",
+            "STANDARD_SALE_WEIGHED",
+            "MATERIAL",
+            "COMPOSITE",
+            "SERVICE",
+            "BENEFIT_SHELL"
+          ]
+        },
+        {
+          "path": "fields[].helpText",
+          "type": "string"
+        },
+        {
+          "path": "fields[].description",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].frontendBehavior",
+          "type": "object",
+          "additionalProperties": true,
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef",
+          "type": "object",
+          "additionalProperties": false,
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.kind",
+          "type": "string",
+          "enum": ["enum", "endpoint", "local"]
+        },
+        {
+          "path": "fields[].optionSourceRef.enumKind",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.operationId",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.path",
+          "type": "object",
+          "additionalProperties": true,
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.query",
+          "type": "object",
+          "additionalProperties": true,
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.headers",
+          "type": "object",
+          "additionalProperties": true,
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.itemsPath",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.valueField",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.labelField",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.labelParts",
+          "type": "array",
+          "itemType": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.parentField",
+          "type": "string",
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.disabledWhen",
+          "type": ["string", "null"],
+          "required": false
+        },
+        {
+          "path": "fields[].optionSourceRef.contextBindings",
+          "type": "object",
+          "additionalProperties": true,
+          "required": false
+        },
+        {
+          "path": "enumLabels",
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
           "path": "modeRules",
           "type": "array",
           "itemType": "object"
@@ -3666,6 +3938,10 @@
         },
         {
           "path": "shapeRules[].shapeKey",
+          "type": "string"
+        },
+        {
+          "path": "shapeRules[].label",
           "type": "string"
         },
         {
@@ -3740,14 +4016,7 @@
         {
           "path": "smartViewKey",
           "type": "string",
-          "enum": [
-            "ALL",
-            "ENABLED",
-            "DISABLED",
-            "AUTO_SYNC",
-            "TEMPORARY",
-            "NEEDS_ATTENTION"
-          ],
+          "enumSource": "smartViewKey",
           "required": false
         },
         {
@@ -3773,11 +4042,6 @@
         },
         {
           "path": "status",
-          "type": "string",
-          "required": false
-        },
-        {
-          "path": "governanceStatus",
           "type": "string",
           "required": false
         },
@@ -4101,10 +4365,11 @@
           "itemType": "object",
           "required": false
         },
-        {
-          "path": "sections.catalogDraft.skus[].productSkuRef",
-          "type": "string",
-          "format": "uuid"
+    {
+      "path": "sections.catalogDraft.skus[].productSkuRef",
+      "type": "string",
+      "format": "uuid",
+      "required": false
         },
         {
           "path": "sections.catalogDraft.skus[].skuCode",
@@ -4113,6 +4378,10 @@
         {
           "path": "sections.catalogDraft.skus[].skuName",
           "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.skus[].displayOrder",
+          "type": "integer"
         },
         {
           "path": "sections.catalogDraft.skus[].attributeValueRefs",
@@ -4174,10 +4443,6 @@
           "type": "string"
         },
         {
-          "path": "sections.catalogDraft.skus[].version",
-          "type": "integer"
-        },
-        {
           "path": "sections.catalogDraft.skus[].mediaRefs",
           "type": "array",
           "itemType": "string"
@@ -4209,37 +4474,13 @@
           "type": "string"
         },
         {
-          "path": "sections.catalogDraft.ordering",
-          "type": "object",
+          "path": "sections.catalogDraft.standardSalePrice",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "cents",
           "required": false
-        },
-        {
-          "path": "sections.catalogDraft.ordering.priceGranularity",
-          "type": "string",
-          "enum": [
-            "ITEM",
-            "SKU"
-          ]
-        },
-        {
-          "path": "sections.catalogDraft.ordering.standardSalePrice",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "cents"
-        },
-        {
-          "path": "sections.catalogDraft.ordering.listedSalePrice",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "cents"
-        },
-        {
-          "path": "sections.catalogDraft.ordering.missingPriceCount",
-          "type": "integer"
         },
         {
           "path": "sections.catalogDraft.orderOptions",
@@ -4540,13 +4781,12 @@
           "format": "uuid",
           "required": false
         },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ],
-          "required": false
+    {
+      "path": "sections.catalogDraft.inventoryBom[].skuCode",
+      "type": [
+        "string",
+        "null"
+      ]
         },
         {
           "path": "sections.catalogDraft.inventoryBom[].optionValueCode",
@@ -4572,13 +4812,12 @@
           "format": "uuid",
           "required": false
         },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ],
-          "required": false
+    {
+      "path": "sections.inventoryConfiguration.nodes[].skuCode",
+      "type": [
+        "string",
+        "null"
+      ]
         },
         {
           "path": "sections.inventoryConfiguration.nodes[].productSkuRef",
@@ -4757,7 +4996,6 @@
     {
       "fieldNames": [
         "standardSalePrice",
-        "listedSalePrice",
         "standardPriceDelta",
         "standardExtraPrice"
       ],

@@ -8,7 +8,8 @@
     "preflightOperationsTemporaryCatalogItemPromotion",
     "executeOperationsTemporaryCatalogItemPromotion",
     "stageOperationsCatalogAsset",
-    "releaseOperationsCatalogStagedAsset"
+    "releaseOperationsCatalogStagedAsset",
+    "batchTransitionOperationsCatalogItemStatus"
   ],
   "paths": {
     "/operations/catalog-inventory/items": {
@@ -540,7 +541,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -558,6 +560,78 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CatalogAssetReleaseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/catalog-inventory/items/status": {
+      "post": {
+        "operationId": "batchTransitionOperationsCatalogItemStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemBatchStatusTransitionReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogItemBatchStatusTransitionRequest"
               }
             }
           }

@@ -41,7 +41,7 @@ final class ContractWireMapper {
             null
         );
     }
-    static StoreContractPageMetadata metadata(ContractTaskReadService.ContractPageMetadata value) { return new StoreContractPageMetadata(value.groupWorkspaceKey(), value.projectRef().toString(), value.projectName(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.valueOf(value.sort()), StoreContractSortDirection.valueOf(value.direction())); }
+    static StoreContractPageMetadata metadata(ContractTaskReadService.ContractPageMetadata value) { return new StoreContractPageMetadata(value.groupWorkspaceKey(), value.projectRef(), value.projectName(), (long) value.page(), (long) value.pageSize(), value.total(), StoreContractSortKey.valueOf(value.sort()), StoreContractSortDirection.valueOf(value.direction())); }
     private static StoreContractProject project(ContractTaskReadService.Reference value) { return new StoreContractProject(value.id().toString(), value.code(), value.name()); }
     private static StoreContractStore store(ContractTaskReadService.Reference value) { return new StoreContractStore(value.id().toString(), value.code(), value.name()); }
     private static StoreContractTenant tenant(ContractTaskReadService.Reference value) { return new StoreContractTenant(value.id().toString(), value.code(), value.name()); }

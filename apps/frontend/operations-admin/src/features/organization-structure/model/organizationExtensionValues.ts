@@ -1,8 +1,8 @@
 import dayjs, {type Dayjs} from 'dayjs';
-import type {ExtensionDefinition, JsonValue, OrganizationStoreUpdateRequest} from '../../../app/api/generated/operations-edge';
+import type {ExtensionDefinition, JsonValue} from '../../../app/api/generated/operations-edge';
 
 export type OrganizationExtensionFormValues = Record<string, JsonValue | Dayjs | undefined>;
-export type ExtensionSubmissionField = OrganizationStoreUpdateRequest['extensionValues'][number];
+export type ExtensionSubmissionField = {fieldKey: string; valueJson: string; mode: 'SET' | 'CLEAR'};
 
 export function enabledOrganizationExtensionFields(definition?: ExtensionDefinition) {
   return (definition?.definitions ?? [])
@@ -26,6 +26,17 @@ export function serializeOrganizationExtensionValues(definition: ExtensionDefini
     if (nextJson === undefined) return currentJson === undefined ? [] : [{fieldKey: field.key, valueJson: '', mode: 'CLEAR' as const}];
     return nextJson === currentJson ? [] : [{fieldKey: field.key, valueJson: nextJson, mode: 'SET' as const}];
   });
+}
+
+/**
+ * The current generated frontend types declare this field as a JSON object, while
+ * the existing edge wire and owner command still consume the immutable
+ * fieldKey/valueJson/mode list above. Keep that runtime payload and isolate the
+ * generated-contract shape drift at one typed boundary until regeneration is
+ * reconciled with the edge source.
+ */
+export function extensionValuesForGeneratedRequest(values: ExtensionSubmissionField[]): Record<string, JsonValue> {
+  return values as unknown as Record<string, JsonValue>;
 }
 
 function extensionValue(value: JsonValue | undefined, suffix?: string) {

@@ -78,6 +78,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           }
@@ -132,6 +133,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -197,7 +199,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -218,11 +221,11 @@
               "description": "design-bound field",
               "enum": [
                 "ALL",
-                "ENABLED",
-                "DISABLED",
-                "AUTO_SYNC",
-                "TEMPORARY",
-                "NEEDS_ATTENTION"
+                "EXTERNAL_ORDER_TEMP",
+                "INACTIVE",
+                "ARCHIVED",
+                "RECENTLY_UPDATED",
+                "AUTO_SYNC"
               ]
             }
           },
@@ -265,15 +268,6 @@
           },
           {
             "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "design-bound field"
-            }
-          },
-          {
-            "name": "governanceStatus",
             "in": "query",
             "required": false,
             "schema": {
@@ -455,6 +449,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           }
@@ -758,7 +753,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -834,7 +830,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -912,7 +909,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -992,6 +990,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -1392,6 +1391,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -1693,6 +1693,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -2060,6 +2061,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected store node"
             }
           },
@@ -2275,7 +2277,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             }
           },
           {
@@ -2383,7 +2386,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ]
@@ -2435,7 +2439,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2496,7 +2501,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2568,7 +2574,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2638,7 +2645,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2708,7 +2716,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ]
@@ -2765,7 +2774,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2840,7 +2850,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2915,7 +2926,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2990,7 +3002,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3140,7 +3153,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3212,6 +3226,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "description": "selected data node"
             }
           },
@@ -3225,6 +3240,78 @@
             }
           }
         ]
+      }
+    },
+    "/operations/catalog-inventory/items/status": {
+      "post": {
+        "operationId": "batchTransitionOperationsCatalogItemStatus",
+        "tags": [
+          "Catalog"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [
+          "inventory"
+        ],
+        "x-capability-keys": [
+          "EDIT_HEAD_COMPANY_CATALOG",
+          "EDIT_STORE_CATALOG"
+        ],
+        "x-capability-by-data-node-type": {
+          "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+          "STORE": "EDIT_STORE_CATALOG"
+        },
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-required-capability": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+        "x-mutation": true,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemBatchStatusTransitionReadback"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogItemBatchStatusTransitionRequest"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -3258,11 +3345,13 @@
               },
               "ownerRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "brandRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "scopeName": {
                 "type": "string",
@@ -3277,7 +3366,8 @@
                   "string",
                   "null"
                 ],
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "copySourceAvailable": {
                 "type": "boolean",
@@ -3567,7 +3657,8 @@
                         "string",
                         "null"
                       ],
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "itemRef": {
                       "type": "string",
@@ -3605,15 +3696,19 @@
                         "format": "uuid"
                       }
                     },
+                    "tagRefs": {
+                      "type": "array",
+                      "description": "Opaque references of catalog tags attached to the item.",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
                     "shapeKey": {
                       "type": "string",
                       "description": "design-bound field"
                     },
                     "status": {
-                      "type": "string",
-                      "description": "design-bound field"
-                    },
-                    "governanceStatus": {
                       "type": "string",
                       "description": "design-bound field"
                     },
@@ -3648,12 +3743,20 @@
                       "description": "design-bound field",
                       "format": "cents"
                     },
-                    "listedSalePrice": {
+                    "standardSalePriceMin": {
                       "type": [
                         "integer",
                         "null"
                       ],
-                      "description": "design-bound field",
+                      "description": "Minimum standard sale price in cents among the item's non-archived SKUs.",
+                      "format": "cents"
+                    },
+                    "standardSalePriceMax": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "Maximum standard sale price in cents among the item's non-archived SKUs.",
                       "format": "cents"
                     },
                     "standardPriceDelta": {
@@ -3719,14 +3822,14 @@
                     "productionTagRefs",
                     "shapeKey",
                     "status",
-                    "governanceStatus",
                     "source",
                     "skuEnabledCount",
                     "skuNonArchivedCount",
                     "skuTotalCount",
                     "skuDimensionSummary",
                     "standardSalePrice",
-                    "listedSalePrice",
+                    "standardSalePriceMin",
+                    "standardSalePriceMax",
                     "standardPriceDelta",
                     "standardExtraPrice",
                     "priceGranularity",
@@ -3828,7 +3931,8 @@
                             "properties": {
                               "valueRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               },
                               "valueCode": {
                                 "type": "string",
@@ -3882,6 +3986,14 @@
                           "description": "design-bound field"
                         },
                         "skuName": {
+                          "type": "string",
+                          "description": "design-bound field"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "design-bound field"
+                        },
+                        "variantCombinationDigest": {
                           "type": "string",
                           "description": "design-bound field"
                         },
@@ -3967,7 +4079,8 @@
                           "type": "array",
                           "description": "design-bound field",
                           "items": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                           }
                         }
                       },
@@ -3975,6 +4088,8 @@
                         "productSkuRef",
                         "skuCode",
                         "skuName",
+                        "displayOrder",
+                        "variantCombinationDigest",
                         "attributeValueRefs",
                         "skuBarcode",
                         "standardSalePrice",
@@ -4031,6 +4146,13 @@
                     "description": "design-bound field"
                   },
                   "shortName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "materialRole": {
                     "type": [
                       "string",
                       "null"
@@ -4122,46 +4244,25 @@
                       "dimensions"
                     ]
                   },
-                  "ordering": {
-                    "type": "object",
+                  "standardSalePrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "design-bound field",
-                    "additionalProperties": false,
-                    "properties": {
-                      "priceGranularity": {
-                        "type": "string",
-                        "description": "design-bound field",
-                        "enum": [
-                          "ITEM",
-                          "SKU"
-                        ]
-                      },
-                      "standardSalePrice": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "cents"
-                      },
-                      "listedSalePrice": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "cents"
-                      },
-                      "missingPriceCount": {
-                        "type": "integer",
-                        "description": "design-bound field"
-                      }
-                    },
-                    "required": [
-                      "priceGranularity",
-                      "standardSalePrice",
-                      "listedSalePrice",
-                      "missingPriceCount"
+                    "format": "cents"
+                  },
+                  "priceGranularity": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "ITEM",
+                      "SKU"
                     ]
+                  },
+                  "missingPriceCount": {
+                    "type": "integer",
+                    "description": "design-bound field"
                   },
                   "attributes": {
                     "type": "object",
@@ -4380,6 +4481,44 @@
                           "type": "string",
                           "description": "design-bound field"
                         },
+                        "consumptionUnit": {
+                          "type": "string",
+                          "description": "Inventory owner's unit used to consume this BOM target."
+                        },
+                        "configuration": {
+                          "type": "object",
+                          "description": "Inventory owner's current configuration for this BOM target.",
+                          "additionalProperties": false,
+                          "properties": {
+                            "allowNegative": {
+                              "type": "boolean",
+                              "description": "Whether the inventory balance for this target may become negative."
+                            },
+                            "lowStockThreshold": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "Configured low-stock threshold for this inventory target.",
+                              "format": "decimal"
+                            },
+                            "countingUnit": {
+                              "type": "string",
+                              "description": "Inventory unit in which this target's balance is counted."
+                            },
+                            "conversionFactor": {
+                              "type": "string",
+                              "description": "Conversion factor from the consumption unit to the counting unit.",
+                              "format": "decimal"
+                            }
+                          },
+                          "required": [
+                            "allowNegative",
+                            "lowStockThreshold",
+                            "countingUnit",
+                            "conversionFactor"
+                          ]
+                        },
                         "version": {
                           "type": "integer",
                           "description": "design-bound field"
@@ -4430,6 +4569,8 @@
                         "targetRef",
                         "quantity",
                         "unit",
+                        "consumptionUnit",
+                        "configuration",
                         "version",
                         "itemCode",
                         "itemRef",
@@ -4572,6 +4713,7 @@
                   "code",
                   "name",
                   "shortName",
+                  "materialRole",
                   "shapeKey",
                   "itemKind",
                   "measureMode",
@@ -4579,7 +4721,9 @@
                   "images",
                   "identifiers",
                   "skuSummary",
-                  "ordering",
+                  "standardSalePrice",
+                  "priceGranularity",
+                  "missingPriceCount",
                   "attributes",
                   "orderOptions",
                   "compositeGroups",
@@ -4683,6 +4827,44 @@
                       "type": "string",
                       "description": "design-bound field"
                     },
+                    "consumptionUnit": {
+                      "type": "string",
+                      "description": "Inventory owner's unit used to consume this BOM target."
+                    },
+                    "configuration": {
+                      "type": "object",
+                      "description": "Inventory owner's current configuration for this BOM target.",
+                      "additionalProperties": false,
+                      "properties": {
+                        "allowNegative": {
+                          "type": "boolean",
+                          "description": "Whether the inventory balance for this target may become negative."
+                        },
+                        "lowStockThreshold": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "Configured low-stock threshold for this inventory target.",
+                          "format": "decimal"
+                        },
+                        "countingUnit": {
+                          "type": "string",
+                          "description": "Inventory unit in which this target's balance is counted."
+                        },
+                        "conversionFactor": {
+                          "type": "string",
+                          "description": "Conversion factor from the consumption unit to the counting unit.",
+                          "format": "decimal"
+                        }
+                      },
+                      "required": [
+                        "allowNegative",
+                        "lowStockThreshold",
+                        "countingUnit",
+                        "conversionFactor"
+                      ]
+                    },
                     "version": {
                       "type": "integer",
                       "description": "design-bound field"
@@ -4733,6 +4915,8 @@
                     "targetRef",
                     "quantity",
                     "unit",
+                    "consumptionUnit",
+                    "configuration",
                     "version",
                     "itemCode",
                     "itemRef",
@@ -4956,10 +5140,6 @@
                 "description": "design-bound field",
                 "additionalProperties": false,
                 "properties": {
-                  "status": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
                   "deniedFields": {
                     "type": "array",
                     "description": "design-bound field",
@@ -5019,7 +5199,6 @@
                   }
                 },
                 "required": [
-                  "status",
                   "deniedFields",
                   "externalIdentity"
                 ]
@@ -5067,7 +5246,8 @@
                             },
                             "referenceRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -5089,7 +5269,8 @@
                             },
                             "factRef": {
                               "type": "string",
-                              "description": "design-bound field"
+                              "description": "design-bound field",
+                              "format": "uuid"
                             }
                           },
                           "required": [
@@ -5152,7 +5333,13 @@
                 "properties": {
                   "dataNodeRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "generation": {
                     "type": "string",
@@ -5161,6 +5348,7 @@
                 },
                 "required": [
                   "dataNodeRef",
+                  "brandRef",
                   "generation"
                 ]
               }
@@ -5201,6 +5389,11 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
+                    "entryRef": {
+                      "type": "string",
+                      "description": "design-bound field",
+                      "format": "uuid"
+                    },
                     "code": {
                       "type": "string",
                       "description": "design-bound field"
@@ -5219,11 +5412,13 @@
                     },
                     "ownerRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "brandRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "version": {
                       "type": "integer",
@@ -5256,7 +5451,8 @@
                               },
                               "referenceRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               }
                             },
                             "required": [
@@ -5278,7 +5474,8 @@
                               },
                               "factRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               }
                             },
                             "required": [
@@ -5296,6 +5493,7 @@
                     }
                   },
                   "required": [
+                    "entryRef",
                     "code",
                     "name",
                     "status",
@@ -5395,11 +5593,13 @@
                     },
                     "ownerRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "brandRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "linkedProductCount": {
                       "type": "integer",
@@ -5436,7 +5636,8 @@
                               },
                               "referenceRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               }
                             },
                             "required": [
@@ -5458,7 +5659,8 @@
                               },
                               "factRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               }
                             },
                             "required": [
@@ -5546,11 +5748,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -5570,11 +5774,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -5682,11 +5888,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -5706,11 +5914,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -5807,6 +6017,28 @@
                     "code",
                     "sourceVersion",
                     "targetVersion"
+                  ]
+                }
+              },
+              "skipped": {
+                "type": "array",
+                "description": "design-bound field",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "section": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "reasonCode": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    }
+                  },
+                  "required": [
+                    "section",
+                    "reasonCode"
                   ]
                 }
               },
@@ -5920,6 +6152,7 @@
               "selectedItems",
               "closureItems",
               "objectVersions",
+              "skipped",
               "referenceMappings",
               "compatibilityResults",
               "preflightDigest",
@@ -6010,18 +6243,18 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "objectType": {
+                    "section": {
                       "type": "string",
                       "description": "design-bound field"
                     },
-                    "code": {
+                    "reasonCode": {
                       "type": "string",
                       "description": "design-bound field"
                     }
                   },
                   "required": [
-                    "objectType",
-                    "code"
+                    "section",
+                    "reasonCode"
                   ]
                 }
               },
@@ -6082,7 +6315,8 @@
                   "properties": {
                     "targetRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "version": {
                       "type": "integer",
@@ -6325,7 +6559,8 @@
               },
               "resourceRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "status": {
                 "type": "string",
@@ -6435,11 +6670,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -6459,11 +6696,13 @@
                   },
                   "ownerRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   },
                   "brandRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "design-bound field",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -6569,11 +6808,13 @@
               },
               "ownerRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "brandRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               }
             },
             "required": [
@@ -6593,11 +6834,13 @@
               },
               "ownerRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "brandRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               }
             },
             "required": [
@@ -6929,7 +7172,8 @@
                   "properties": {
                     "targetRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "version": {
                       "type": "integer",
@@ -7634,7 +7878,8 @@
               "properties": {
                 "entryRef": {
                   "type": "string",
-                  "description": "design-bound field"
+                  "description": "design-bound field",
+                  "format": "uuid"
                 },
                 "source": {
                   "type": "string",
@@ -7754,7 +7999,8 @@
               "properties": {
                 "entryRef": {
                   "type": "string",
-                  "description": "design-bound field"
+                  "description": "design-bound field",
+                  "format": "uuid"
                 },
                 "action": {
                   "type": "string",
@@ -7850,11 +8096,13 @@
                     },
                     "ownerRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     },
                     "brandRef": {
                       "type": "string",
-                      "description": "design-bound field"
+                      "description": "design-bound field",
+                      "format": "uuid"
                     }
                   },
                   "required": [
@@ -7921,7 +8169,8 @@
               "properties": {
                 "entryRef": {
                   "type": "string",
-                  "description": "design-bound field"
+                  "description": "design-bound field",
+                  "format": "uuid"
                 },
                 "source": {
                   "type": "string",
@@ -8103,7 +8352,8 @@
             "properties": {
               "targetRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "before": {
                 "type": "string",
@@ -8122,7 +8372,8 @@
               },
               "ledgerEntryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "stockState": {
                 "type": "string",
@@ -8174,7 +8425,8 @@
             "properties": {
               "assetRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "bindGrant": {
                 "type": "string",
@@ -8246,7 +8498,8 @@
             "properties": {
               "assetRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "disposition": {
                 "type": "string",
@@ -8283,6 +8536,9 @@
           "manifestDigest",
           "shapeKeys",
           "capabilityValues",
+          "controlKinds",
+          "fields",
+          "enumLabels",
           "modeRules",
           "shapeRules",
           "fieldRules",
@@ -8314,6 +8570,211 @@
             "items": {
               "type": "string"
             }
+          },
+          "controlKinds": {
+            "type": "array",
+            "description": "design-bound field",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "textarea",
+                "select",
+                "multiSelect",
+                "treeSelect",
+                "number",
+                "money",
+                "upload",
+                "editableTable",
+                "detailTable",
+                "readonlySummary",
+                "readonlyPreview",
+                "skuVariantMatrix",
+                "inventoryBomWorkbench",
+                "orderOptionsWorkbench",
+                "compositeContentWorkbench"
+              ]
+            }
+          },
+          "fields": {
+            "type": "array",
+            "description": "design-bound field",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fieldKey": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "dataPath": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "controlKind": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "enum": [
+                    "text",
+                    "textarea",
+                    "select",
+                    "multiSelect",
+                    "treeSelect",
+                    "number",
+                    "money",
+                    "upload",
+                    "editableTable",
+                    "detailTable",
+                    "readonlySummary",
+                    "readonlyPreview",
+                    "skuVariantMatrix",
+                    "inventoryBomWorkbench",
+                    "orderOptionsWorkbench",
+                    "compositeContentWorkbench"
+                  ]
+                },
+                "tabKey": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "admittedShapes": {
+                  "type": "array",
+                  "description": "design-bound field",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "STANDARD_SALE_COUNTED",
+                      "SKU_VARIANT_SALE_COUNTED",
+                      "STANDARD_SALE_WEIGHED",
+                      "MATERIAL",
+                      "COMPOSITE",
+                      "SERVICE",
+                      "BENEFIT_SHELL"
+                    ]
+                  }
+                },
+                "helpText": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "frontendBehavior": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": true,
+                  "properties": {},
+                  "required": []
+                },
+                "optionSourceRef": {
+                  "type": "object",
+                  "description": "design-bound field",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "description": "design-bound field",
+                      "enum": [
+                        "enum",
+                        "endpoint",
+                        "local"
+                      ]
+                    },
+                    "enumKind": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "operationId": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "path": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    },
+                    "query": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    },
+                    "headers": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    },
+                    "itemsPath": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "valueField": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "labelField": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "labelParts": {
+                      "type": "array",
+                      "description": "design-bound field",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "parentField": {
+                      "type": "string",
+                      "description": "design-bound field"
+                    },
+                    "disabledWhen": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "design-bound field"
+                    },
+                    "contextBindings": {
+                      "type": "object",
+                      "description": "design-bound field",
+                      "additionalProperties": true,
+                      "properties": {},
+                      "required": []
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              },
+              "required": [
+                "fieldKey",
+                "dataPath",
+                "label",
+                "controlKind",
+                "tabKey",
+                "admittedShapes",
+                "helpText"
+              ]
+            }
+          },
+          "enumLabels": {
+            "type": "object",
+            "description": "design-bound field",
+            "additionalProperties": true,
+            "properties": {},
+            "required": []
           },
           "modeRules": {
             "type": "array",
@@ -8359,6 +8820,10 @@
                   "type": "string",
                   "description": "design-bound field"
                 },
+                "label": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
                 "itemKind": {
                   "type": "string",
                   "description": "design-bound field"
@@ -8385,6 +8850,7 @@
               },
               "required": [
                 "shapeKey",
+                "label",
                 "itemKind",
                 "measureMode",
                 "skuMode",
@@ -8444,6 +8910,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -8457,6 +8924,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "viewKey": {
@@ -8472,7 +8940,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "keyword": {
             "type": "string",
@@ -8483,11 +8952,11 @@
             "description": "design-bound field",
             "enum": [
               "ALL",
-              "ENABLED",
-              "DISABLED",
-              "AUTO_SYNC",
-              "TEMPORARY",
-              "NEEDS_ATTENTION"
+              "EXTERNAL_ORDER_TEMP",
+              "INACTIVE",
+              "ARCHIVED",
+              "RECENTLY_UPDATED",
+              "AUTO_SYNC"
             ]
           },
           "shapeKey": {
@@ -8508,10 +8977,6 @@
             "description": "design-bound field"
           },
           "status": {
-            "type": "string",
-            "description": "design-bound field"
-          },
-          "governanceStatus": {
             "type": "string",
             "description": "design-bound field"
           },
@@ -8548,6 +9013,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "itemCode": {
@@ -8569,6 +9035,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "name": {
@@ -8648,7 +9115,8 @@
                             "properties": {
                               "valueRef": {
                                 "type": "string",
-                                "description": "design-bound field"
+                                "description": "design-bound field",
+                                "format": "uuid"
                               },
                               "valueCode": {
                                 "type": "string",
@@ -8703,6 +9171,10 @@
                         },
                         "skuName": {
                           "type": "string",
+                          "description": "design-bound field"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
                           "description": "design-bound field"
                         },
                         "attributeValueRefs": {
@@ -8779,28 +9251,24 @@
                           "type": "string",
                           "description": "design-bound field"
                         },
-                        "version": {
-                          "type": "integer",
-                          "description": "design-bound field"
-                        },
                         "mediaRefs": {
                           "type": "array",
                           "description": "design-bound field",
                           "items": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                           }
                         }
                       },
                       "required": [
-                        "productSkuRef",
                         "skuCode",
                         "skuName",
+                        "displayOrder",
                         "attributeValueRefs",
                         "skuBarcode",
                         "standardSalePrice",
                         "isDefault",
                         "status",
-                        "version",
                         "mediaRefs"
                       ]
                     }
@@ -8839,46 +9307,13 @@
                       ]
                     }
                   },
-                  "ordering": {
-                    "type": "object",
+                  "standardSalePrice": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "description": "design-bound field",
-                    "additionalProperties": false,
-                    "properties": {
-                      "priceGranularity": {
-                        "type": "string",
-                        "description": "design-bound field",
-                        "enum": [
-                          "ITEM",
-                          "SKU"
-                        ]
-                      },
-                      "standardSalePrice": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "cents"
-                      },
-                      "listedSalePrice": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "cents"
-                      },
-                      "missingPriceCount": {
-                        "type": "integer",
-                        "description": "design-bound field"
-                      }
-                    },
-                    "required": [
-                      "priceGranularity",
-                      "standardSalePrice",
-                      "listedSalePrice",
-                      "missingPriceCount"
-                    ]
+                    "format": "cents"
                   },
                   "orderOptions": {
                     "type": "array",
@@ -9171,7 +9606,8 @@
                         "nodeType",
                         "mode",
                         "quantity",
-                        "unit"
+                        "unit",
+                        "skuCode"
                       ]
                     }
                   },
@@ -9324,7 +9760,8 @@
                       },
                       "required": [
                         "nodeType",
-                        "mode"
+                        "mode",
+                        "skuCode"
                       ]
                     }
                   }
@@ -9370,7 +9807,8 @@
           },
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "itemCode": {
             "type": "string",
@@ -9430,6 +9868,7 @@
                   "properties": {
                     "targetRef": {
                       "type": "string",
+                      "format": "uuid",
                       "description": "target ref"
                     },
                     "mode": {
@@ -9497,6 +9936,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -9513,7 +9953,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "code": {
             "type": "string",
@@ -9643,7 +10084,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "categoryRef": {
             "type": "string",
@@ -9672,7 +10114,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "categoryRef": {
             "type": "string",
@@ -9713,7 +10156,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "categoryRef": {
             "type": "string",
@@ -9785,6 +10229,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "dictionaryKind": {
@@ -9825,6 +10270,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -9913,6 +10359,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -9939,6 +10386,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -9972,6 +10420,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -9983,6 +10432,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "cursor": {
@@ -10007,6 +10457,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "code": {
@@ -10052,12 +10503,18 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
+              "tagRef",
               "code",
               "tagKind",
               "name",
               "status"
             ],
             "properties": {
+              "tagRef": {
+                "type": "string",
+                "format": "uuid",
+                "description": "production tag opaque reference"
+              },
               "code": {
                 "type": "string",
                 "description": "tag code"
@@ -10146,6 +10603,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10174,6 +10632,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10185,6 +10644,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "keyword": {
@@ -10218,12 +10678,25 @@
           "selectedSections": {
             "type": "array",
             "description": "copy sections",
+            "minItems": 1,
+            "uniqueItems": true,
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "BASIC_INFO",
+                "SKU_STRUCTURE",
+                "SKU_BOM",
+                "ORDER_OPTIONS",
+                "OPTION_VALUE_BOM",
+                "ITEM_BOM",
+                "PACKAGE_STRUCTURE",
+                "PRODUCTION_PROMPTS"
+              ]
             }
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10252,8 +10725,20 @@
           "selectedSections": {
             "type": "array",
             "description": "copy sections fixed by preflight",
+            "minItems": 1,
+            "uniqueItems": true,
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "BASIC_INFO",
+                "SKU_STRUCTURE",
+                "SKU_BOM",
+                "ORDER_OPTIONS",
+                "OPTION_VALUE_BOM",
+                "ITEM_BOM",
+                "PACKAGE_STRUCTURE",
+                "PRODUCTION_PROMPTS"
+              ]
             }
           },
           "preflightDigest": {
@@ -10270,6 +10755,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10288,7 +10774,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "itemCode": {
             "type": "string",
@@ -10358,7 +10845,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "itemCode": {
             "type": "string",
@@ -10427,6 +10915,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected store node"
           },
           "keyword": {
@@ -10457,10 +10946,12 @@
           },
           "targetDataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "target store node"
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10486,6 +10977,7 @@
           },
           "targetDataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "target store node"
           },
           "preflightDigest": {
@@ -10502,6 +10994,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10513,7 +11006,8 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "keyword": {
             "type": "string",
@@ -10555,6 +11049,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           }
         }
@@ -10569,6 +11064,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           },
           "period": {
@@ -10586,6 +11082,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           },
           "cursor": {
@@ -10607,6 +11104,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           },
           "cursor": {
@@ -10628,6 +11126,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           },
           "cursor": {
@@ -10649,6 +11148,7 @@
         "properties": {
           "targetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "inventory target reference"
           }
         }
@@ -10667,11 +11167,13 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "targetRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "expectedVersion": {
             "type": "integer",
@@ -10709,11 +11211,13 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "targetRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "expectedVersion": {
             "type": "integer",
@@ -10749,11 +11253,13 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "targetRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "expectedVersion": {
             "type": "integer",
@@ -10806,11 +11312,13 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "targetRef": {
             "type": "string",
-            "description": "design-bound field"
+            "description": "design-bound field",
+            "format": "uuid"
           },
           "expectedVersion": {
             "type": "integer",
@@ -10865,6 +11373,7 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "fileName": {
@@ -10897,6 +11406,7 @@
         "properties": {
           "assetRef": {
             "type": "string",
+            "format": "uuid",
             "description": "staged asset reference"
           },
           "expectedVersion": {
@@ -10905,6 +11415,7 @@
           },
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           }
         }
@@ -10916,11 +11427,148 @@
         "properties": {
           "dataNodeRef": {
             "type": "string",
+            "format": "uuid",
             "description": "selected data node"
           },
           "revision": {
             "type": "string",
             "description": "requested manifest revision"
+          }
+        }
+      },
+      "CatalogItemBatchStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "items",
+          "dataNodeRef"
+        ],
+        "properties": {
+          "dataNodeRef": {
+            "type": "string",
+            "format": "uuid",
+            "description": "selected data node"
+          },
+          "targetStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "ENABLED",
+              "DISABLED",
+              "ARCHIVED",
+              "VOIDED"
+            ],
+            "description": "one lifecycle status applied to every item in this batch"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "ordered catalog item refs with the version observed by the caller",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "itemRef",
+                "expectedVersion"
+              ],
+              "properties": {
+                "itemRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "catalog item opaque reference"
+                },
+                "expectedVersion": {
+                  "type": "integer",
+                  "description": "version observed by the caller"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CatalogItemBatchStatusTransitionReadback": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "requestId",
+          "results"
+        ],
+        "properties": {
+          "revision": {
+            "type": "string",
+            "description": "contract revision"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "request correlation"
+          },
+          "results": {
+            "type": "array",
+            "description": "ordered result for each requested item",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "itemRef",
+                "ok"
+              ],
+              "properties": {
+                "itemRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "catalog item opaque reference"
+                },
+                "ok": {
+                  "type": "boolean",
+                  "description": "whether this item reached the requested status"
+                },
+                "failureCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "ASSET_NOT_READY",
+                    "ASSET_PROCESSING_FAILED",
+                    "ASSET_REFERENCE_PROTECTED",
+                    "CATEGORY_DEPTH_EXCEEDED",
+                    "CONSUMPTION_UNIT_INCOMPATIBLE",
+                    "COPY_CLOSURE_TOO_LARGE",
+                    "COPY_SELECTED_ITEMS_TOO_LARGE",
+                    "DEPENDENT_FACTS_BLOCK_VOID",
+                    "DUPLICATE_CODE",
+                    "HIERARCHY_CYCLE",
+                    "IDEMPOTENCY_MISMATCH",
+                    "MOVE_BOUNDARY",
+                    "NEGATIVE_STOCK_NOT_ALLOWED",
+                    "NOT_FOUND",
+                    "OWNER_REFERENCE_LEAK",
+                    "REFERENCE_BLOCKS_DELETE",
+                    "REFERENCE_BLOCKS_VOID",
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    "RESULT_UNKNOWN",
+                    "SCOPE_FORBIDDEN",
+                    "STALE_COPY_PREFLIGHT",
+                    "STRUCTURE_INCOMPATIBLE",
+                    "VALIDATION_ERROR",
+                    "VERSION_CONFLICT",
+                    "VOIDED_RECORD_IMMUTABLE",
+                    null
+                  ],
+                  "description": "typed per-item failure code; null for success"
+                },
+                "version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "owner version after success; null for failure"
+                }
+              }
+            }
           }
         }
       },

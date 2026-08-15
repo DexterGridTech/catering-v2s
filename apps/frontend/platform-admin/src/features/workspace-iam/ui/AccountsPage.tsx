@@ -6,6 +6,7 @@ import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformClient, platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import type {ServiceNodeType, SortDirection, WorkspaceAccount, WorkspaceAccountStatus, WorkspaceInvitationCandidatePage, WorkspacePlatformAccountSortKey} from '../../../app/api/generated/platform-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {WorkspaceAccountActionModal} from './WorkspaceAccountActionModal';
 import {WorkspaceAccountDetailDrawer, type WorkspaceAccountAction} from './WorkspaceAccountDetailDrawer';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
@@ -43,7 +44,10 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   const detailGeneration = useAsyncGenerationGuard();
   useOverlayLock(detail.isOpen || action !== undefined || Boolean(auditTarget));
   const listRequest = useMemo(
-    () => platformAdminRtkRequest.getWorkspaceAccounts({groupWorkspaceKey}, {query: {...filters, page, pageSize, sort, direction}}),
+    () => {
+      const {roleId, organizationRef, ...restFilters} = filters;
+      return platformAdminRtkRequest.getWorkspaceAccounts({groupWorkspaceKey}, {query: {...restFilters, ...(roleId ? {roleId: wireUuid(roleId)} : {}), ...(organizationRef ? {organizationRef: wireUuid(organizationRef)} : {}), page, pageSize, sort, direction}});
+    },
     [direction, filters, groupWorkspaceKey, page, pageSize, sort],
   );
   const {data: result, error, isLoading, refetch} = platformRtk.useGetWorkspaceAccountsQuery(listRequest);

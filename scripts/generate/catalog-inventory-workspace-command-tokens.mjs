@@ -69,7 +69,7 @@ function validateTokenRow(row, operation, copySourcePolicies) {
 function tokens(bindings = json(bindingPath).operations, contract = json(contractPath).operations, copySourcePolicies = copySourcePolicyByOperation) {
   const contractById = new Map(contract.map((operation) => [operation.operationId, operation]));
   const rows = bindings.filter((row) => row.routeRegistry === "catalog-inventory" && row.mode === "COMMAND" && row.contextKind === "WORKSPACE_EXECUTION_CONTEXT");
-  if (rows.length !== 26) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
+  if (rows.length !== 27) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
   const ids = new Set();
   const tokenRows = rows.map((row) => {
     if (ids.has(row.operationId)) fail(`BP_U03_RUNTIME_TOKEN_DUPLICATE:${row.operationId}`);
@@ -169,14 +169,14 @@ function check() {
   validateOpaqueContextTypes();
   verifyContextForgeryDoesNotCompile();
   console.log("BP_U03_RUNTIME_TOKEN_CHECK=PASS");
-  console.log("TOKENS=26");
+  console.log("TOKENS=27");
   console.log("CONTEXT_FORGERY_NEGATIVE=PASS");
 }
 function selfTest() {
   const rows = tokens();
   const copy = structuredClone(rows); copy.pop();
-  if (copy.length !== 25) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
-  try { if (copy.length !== 26) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET"); } catch (error) { if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error; }
+  if (copy.length !== 26) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
+  try { if (copy.length !== 27) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET"); } catch (error) { if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error; }
   const alteredBindings = structuredClone(json(bindingPath).operations);
   const copyTarget = alteredBindings.find((row) => row.operationId === "executeOperationsBrandCatalogCopy");
   copyTarget.copyRole = "NONE";

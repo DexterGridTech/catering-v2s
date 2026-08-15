@@ -2,10 +2,8 @@ package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -71,13 +69,8 @@ public final class WorkspaceIamCommandReceiptService {
     }
 
     private static String sha256(String value) {
-        try {
-            return HexFormat.of().formatHex(
-                MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))
-            );
-        } catch (Exception exception) {
-            throw new IllegalStateException("SHA-256 unavailable", exception);
-        }
+        try { return Sha256Hex.digest(value); }
+        catch (NullPointerException exception) { throw new IllegalStateException("SHA-256 unavailable", exception); }
     }
 
     private record Receipt(String requestHash, String responseJson) { }

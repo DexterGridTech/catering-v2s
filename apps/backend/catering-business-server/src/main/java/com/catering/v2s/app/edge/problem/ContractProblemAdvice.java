@@ -40,6 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,11 +64,39 @@ public final class ContractProblemAdvice {
         int status = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.status()
             : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.status()
             : ((ProductionTagOwnerApi.Problem) exception).status();
-        log.warn("catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
-            code, status, exception.getClass().getSimpleName(),
-            exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName());
-        String detail = "MOVE_BOUNDARY".equals(code) ? "分类已位于当前层级边界" : "商品、生产标签或库存操作不满足 owner 约束";
+        log.atWarn()
+            .addKeyValue("event", "CATALOG_OWNER_PROBLEM")
+            .addKeyValue("code", code)
+            .addKeyValue("status", status)
+            .addKeyValue("exceptionType", exception.getClass().getSimpleName())
+            .addKeyValue("causeType", exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName())
+            // A typed owner problem commonly has no nested cause.  Logging only its
+            // cause therefore removes the very stack that identifies the rejected
+            // owner boundary; the response remains the same generic, safe problem.
+            .setCause(exception)
+            .log("catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
+                code, status, exception.getClass().getSimpleName(),
+                exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName());
+        String detail = catalogInventoryDetail(code, exception);
         return problem(HttpStatus.valueOf(status), code, detail, request);
+    }
+
+    /**
+     * Reference blockers are the one typed owner family whose client contract requires the
+     * affected user to know which live relation must be removed.  The finite owner denominator
+     * is kept under REFERENCE_BLOCKS_VOID/DELETE; all other owner messages stay edge-generic.
+     */
+    private static String catalogInventoryDetail(String code, RuntimeException exception) {
+        return switch (code) {
+            case "MOVE_BOUNDARY" -> "分类已位于当前层级边界";
+            case "REFERENCE_BLOCKS_VOID", "REFERENCE_BLOCKS_DELETE" -> {
+                String detail = exception.getMessage();
+                yield detail == null || detail.isBlank()
+                    ? "当前事实仍被业务引用，不能执行该操作"
+                    : detail;
+            }
+            default -> "商品、生产标签或库存操作不满足 owner 约束";
+        };
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)
@@ -210,6 +239,12 @@ public final class ContractProblemAdvice {
             : exception instanceof WorkspaceRoleService.RoleValidationException ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
             : "PLATFORM_COMMON_VALIDATION_FAILED";
         return problem(storageFailure != null ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY, code, storageFailure != null ? "静态资源存储暂时不可用" : "请求不满足 owner 约束", request);
+    }
+
+    /** UUID-typed transport fields fail during Jackson binding and therefore use the contract's 400 shape. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<Problem> malformedRequest(HttpMessageNotReadableException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "PLATFORM_COMMON_VALIDATION_FAILED", "请求体或参数格式不正确", request);
     }
 
     private void logAssetStorageFailure(PlatformAssetService.AssetStorageUnavailableException failure, HttpServletRequest request) {

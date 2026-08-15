@@ -28,4 +28,12 @@ class CatalogSkuStructureFingerprintTest {
         assertEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(reordered));
         assertNotEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(changed));
     }
+
+    @Test
+    void prefersCanonicalSkuCodeWhenLegacyCodeIsAlsoPresent() throws Exception {
+        var canonical = mapper.readTree("{\"skus\":[{\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
+        var conflictingAliases = mapper.readTree("{\"skus\":[{\"code\":\"legacy-code\",\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
+
+        assertEquals(CatalogOwnerService.skuStructureFingerprint(canonical), CatalogOwnerService.skuStructureFingerprint(conflictingAliases));
+    }
 }

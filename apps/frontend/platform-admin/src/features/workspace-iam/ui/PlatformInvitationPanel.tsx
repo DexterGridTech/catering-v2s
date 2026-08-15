@@ -5,6 +5,7 @@ import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformClient, platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
 import type {PlatformWorkspaceInvitation, PlatformWorkspaceInvitationPage, ServiceNodeType, SortDirection, WorkspaceInvitationCandidatePage, WorkspaceInvitationSortKey, WorkspaceInvitationStatus} from '../../../app/api/generated/platform-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
 
 type InvitationFilters = {mobile?: string; targetOrganizationType?: ServiceNodeType; targetOrganizationRef?: string; roleId?: string; status?: WorkspaceInvitationStatus};
@@ -43,7 +44,10 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   const detail = useDetailDrawer<PlatformWorkspaceInvitation>();
   const detailGeneration = useAsyncGenerationGuard();
   useOverlayLock(createOpen || detail.isOpen || Boolean(auditTarget));
-  const request = useMemo(() => platformAdminRtkRequest.getWorkspaceInvitations({groupWorkspaceKey}, {query: {...filters, page, pageSize, sort, direction}}), [direction, filters, groupWorkspaceKey, page, pageSize, sort]);
+  const request = useMemo(() => {
+    const {targetOrganizationRef, roleId, ...restFilters} = filters;
+    return platformAdminRtkRequest.getWorkspaceInvitations({groupWorkspaceKey}, {query: {...restFilters, ...(targetOrganizationRef ? {targetOrganizationRef: wireUuid(targetOrganizationRef)} : {}), ...(roleId ? {roleId: wireUuid(roleId)} : {}), page, pageSize, sort, direction}});
+  }, [direction, filters, groupWorkspaceKey, page, pageSize, sort]);
   const invitations = platformRtk.useGetWorkspaceInvitationsQuery(request);
   const result = invitations.data as PlatformWorkspaceInvitationPage | undefined;
   const problem = invitations.error ? platformProblemOf(invitations.error) : undefined;
@@ -156,7 +160,7 @@ function PlatformInvitationCreateDrawer({open, groupWorkspaceKey, onClose, onCha
   const targetType = Form.useWatch('targetType', form);
   const selectedOrganizationRef = Form.useWatch('targetOrganizationRef', form);
   const organizationRequest = useMemo(() => targetType ? platformAdminRtkRequest.getWorkspaceInvitationCandidates({groupWorkspaceKey}, {query: {targetOrganizationType: targetType, subjectType: 'ORGANIZATION', candidateUsage: 'INVITATION_TARGET', queryText: organizationQuery || undefined, page: 1, pageSize: 50}}) : undefined, [groupWorkspaceKey, organizationQuery, targetType]);
-  const roleRequest = useMemo(() => targetType && selectedOrganizationRef ? platformAdminRtkRequest.getWorkspaceInvitationCandidates({groupWorkspaceKey}, {query: {targetOrganizationType: targetType, subjectType: 'ROLE', candidateUsage: 'INVITATION_TARGET', queryText: roleQuery || undefined, page: 1, pageSize: 50, selectedOrganizationRef}}) : undefined, [groupWorkspaceKey, roleQuery, selectedOrganizationRef, targetType]);
+  const roleRequest = useMemo(() => targetType && selectedOrganizationRef ? platformAdminRtkRequest.getWorkspaceInvitationCandidates({groupWorkspaceKey}, {query: {targetOrganizationType: targetType, subjectType: 'ROLE', candidateUsage: 'INVITATION_TARGET', queryText: roleQuery || undefined, page: 1, pageSize: 50, selectedOrganizationRef: wireUuid(selectedOrganizationRef)}}) : undefined, [groupWorkspaceKey, roleQuery, selectedOrganizationRef, targetType]);
   const organizationQueryResult = platformRtk.useGetWorkspaceInvitationCandidatesQuery(organizationRequest!, {skip: !open || !organizationRequest});
   const roleQueryResult = platformRtk.useGetWorkspaceInvitationCandidatesQuery(roleRequest!, {skip: !open || !roleRequest});
   useEffect(() => { if (!open) { form.resetFields(); lifecycle.reset(); setOrganizationQuery(''); setRoleQuery(''); setProblem(undefined); } }, [form, lifecycle, open]);
@@ -164,7 +168,7 @@ function PlatformInvitationCreateDrawer({open, groupWorkspaceKey, onClose, onCha
     if (!value.targetType || !value.targetOrganizationRef || !value.roleIds?.length || lifecycle.submitting) return;
     lifecycle.setSubmitting(true); setProblem(undefined);
     try {
-      await platformClient.createWorkspaceInvitation({groupWorkspaceKey}, {body: {mobile: value.mobile.trim(), targetOrganizationType: value.targetType, targetOrganizationRef: value.targetOrganizationRef, roleIds: value.roleIds}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      await platformClient.createWorkspaceInvitation({groupWorkspaceKey}, {body: {mobile: value.mobile.trim(), targetOrganizationType: value.targetType, targetOrganizationRef: wireUuid(value.targetOrganizationRef), roleIds: value.roleIds.map((roleId) => wireUuid(roleId))}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.setDirty(false); onChanged(); onClose();
     } catch (error) { setProblem(platformProblemOf(error).detail); } finally { lifecycle.setSubmitting(false); }
   };

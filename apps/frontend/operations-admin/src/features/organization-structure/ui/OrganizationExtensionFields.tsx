@@ -6,7 +6,7 @@ import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-e
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {enabledOrganizationExtensionFields} from '../model/organizationExtensionValues';
 
-export {hydrateOrganizationExtensionValues, organizationExtensionDetailItems, serializeOrganizationExtensionValues} from '../model/organizationExtensionValues';
+export {extensionValuesForGeneratedRequest, hydrateOrganizationExtensionValues, organizationExtensionDetailItems, serializeOrganizationExtensionValues} from '../model/organizationExtensionValues';
 export type {ExtensionSubmissionField, OrganizationExtensionFormValues} from '../model/organizationExtensionValues';
 
 function enabledFields(definition?: ExtensionDefinition) {

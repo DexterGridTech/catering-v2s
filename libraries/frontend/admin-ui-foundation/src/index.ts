@@ -19,8 +19,12 @@ export {createBeaconLogSink, createObservedBaseQuery, createSafeLogger} from './
 export {platformHttpProtocol} from './http/platformHttpProtocol';
 export type {PlatformHttpProtocolKey} from './http/platformHttpProtocol';
 export {serializeJsonOrMultipartBody} from './http/wireRequestBody';
+export {wireUuid} from './http/wireUuid';
+export type {WireUuid} from './http/wireUuid';
 export {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
 export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
 export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 export type {InvitationPageLinkSource} from './presentation/activeInvitationPageUrl';
+export {assertDescriptorSlotBindingSet, assertNever, DescriptorFieldRenderer, DESCRIPTOR_CONTROL_KINDS, joinFieldDescriptors} from './presentation/descriptorRenderer';
+export type {DescriptorControlKind, DescriptorFieldRendererProps, DescriptorFieldSlot, DescriptorFieldSlotProps, DescriptorManifest, DescriptorOption, DescriptorOptionSource, DescriptorTableColumn, DescriptorTreeNode, DomainControlKind, FieldDescriptor, FieldMode, FieldRule, JoinedFieldDescriptor, PrimitiveControlKind, ReadonlyControlKind, ShapeTabRule, TableControlKind} from './presentation/descriptorRenderer';

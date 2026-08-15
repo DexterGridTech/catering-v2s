@@ -113,5 +113,14 @@ class OperationsCatalogInventoryControllerRouteTest {
         assertTrue(Arrays.asList(execute.getAnnotation(PostMapping.class).value()).contains("/items/{itemCode}/temporary-promotion/execute"));
     }
 
+    @Test
+    void batchCatalogItemStatusCommandUsesTheRegisteredCollectionRoute() throws Exception {
+        Method batch = OperationsCatalogInventoryController.class.getMethod("batchTransitionCatalogItemStatus",
+            com.catering.v2s.app.edge.session.EdgeRequestContext.class,
+            com.catering.v2s.app.edge.generated.wire.CatalogItemBatchStatusTransitionRequest.class, String.class);
+
+        assertTrue(Arrays.asList(batch.getAnnotation(PostMapping.class).value()).contains("/items/status"));
+    }
+
     private record ReadRoute(String operationId, String controllerMethod, String path, String coordinatorMethod) { }
 }

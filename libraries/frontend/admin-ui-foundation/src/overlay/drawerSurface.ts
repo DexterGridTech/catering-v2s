@@ -15,7 +15,7 @@ export const adminDrawerSurfaceProps = {
 /** Approved wide surface for catalog/inventory detail and edit workflows. */
 export const adminWideDrawerSurfaceProps = {
   ...adminDrawerSurfaceProps,
-  width: 1024,
+  width: 'min(1024px, calc(100vw - 48px))',
 } satisfies Pick<DrawerProps, 'width' | 'resizable' | 'styles'>;
 
 /** Shared compact single-column fact table for persistent admin detail Drawers. */

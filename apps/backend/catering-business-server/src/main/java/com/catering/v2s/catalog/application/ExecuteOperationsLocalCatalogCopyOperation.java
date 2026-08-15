@@ -17,7 +17,7 @@ public class ExecuteOperationsLocalCatalogCopyOperation {
     public ExecuteOperationsLocalCatalogCopyOperation(CommandExecutionContextResolver contexts, CatalogInventoryCoordinator composition) { this.contexts = contexts; this.composition = composition; }
     @Transactional(propagation = Propagation.REQUIRED)
     public LocalCopyReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         if (request.expectedSourceVersion() == null || request.expectedTargetVersion() == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "expected copy versions are required");
         if (request.selectedSections() == null || request.selectedSections().isEmpty()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "selected copy sections are required");

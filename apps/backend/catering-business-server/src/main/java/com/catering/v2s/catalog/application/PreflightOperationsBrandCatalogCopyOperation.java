@@ -32,10 +32,10 @@ public class PreflightOperationsBrandCatalogCopyOperation {
         var request = invocation.request();
         var context = contexts.resolveCatalog(invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY,
-            request.dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
+            request.dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(), invocation.requestId());
         var readback = composition.preflightBrandCopy(context,
-            new CatalogOwnerApi.BrandCopyPreflightCommand(request.selectedItemCodes(), request.targetDataNodeRef()));
+            new CatalogOwnerApi.BrandCopyPreflightCommand(request.selectedItemCodes(), request.targetDataNodeRef().toString()));
         try {
             var envelope = CopyPreflightWireShape.contractEnvelope(mapper, readback.canonicalJson(), context.requestId());
             return mapper.treeToValue(envelope.path("data"), BrandCatalogCopyPreflight.class);

@@ -6,7 +6,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type StoreCont
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
-import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
+import {extensionValuesForGeneratedRequest, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type ContractItemValues = {code: string; name: string};
 type Values = {storeId?: string; phaseName?: string; contractNo: string; effectiveFrom: string; effectiveTo?: string; note?: string; items: ContractItemValues[]; extensionValues?: OrganizationExtensionFormValues};
@@ -36,7 +36,7 @@ export function ContractCreateDrawer({open, queryContext, onClose, onCreated}: {
     if (!projectId || !value.storeId || lifecycle.submitting) return;
     lifecycle.setSubmitting(true); setProblem(undefined);
     try {
-      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
+      const contract = await operationsClient.createOperationsContract({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {body: {storeId: value.storeId, phaseName: value.phaseName?.trim() ?? '', contractNo: value.contractNo.trim(), effectiveFrom: value.effectiveFrom, effectiveTo: value.effectiveTo || null, note: value.note?.trim() || null, items: value.items.map((item) => ({code: item.code.trim(), name: item.name.trim()})), extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, value.extensionValues))}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}});
       lifecycle.setDirty(false); onCreated(contract); lifecycle.closeAfterSuccess();
     } catch { setProblem('合同创建未完成，请检查后重试。'); } finally { lifecycle.setSubmitting(false); }
   };

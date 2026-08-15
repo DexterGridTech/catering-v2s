@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
   @Transactional(readOnly = true) public AuditHistoryPage readExtensionDefinition(AuditReadScope scope, String entityType, long page, long pageSize) {
     if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported extension audit target");
     long offset = Math.multiplyExact(page - 1, pageSize);
-    PageProjection value = jdbc.query("""
+    AuditHistoryResultSetReader.TargetProjection value = jdbc.query("""
         WITH target AS (SELECT 1 FROM extension.extension_definition WHERE group_workspace_key=? AND entity_type=?),
         events AS (
           SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text,
@@ -42,19 +42,9 @@ import org.springframework.transaction.annotation.Transactional;
           statement.setString(1, scope.groupWorkspaceKey()); statement.setString(2, entityType);
           statement.setObject(3, scope.workspaceUuid()); statement.setString(4, scope.groupWorkspaceKey());
           statement.setString(5, entityType); statement.setLong(6, pageSize); statement.setLong(7, offset);
-        }, ExtensionAuditHistoryService::projection);
+        }, AuditHistoryResultSetReader::readTarget);
     if (!value.targetExists()) throw new ExtensionDefinitionService.DefinitionNotFoundException();
     return new AuditHistoryPage(value.items(), page, pageSize, value.total());
   }
 
-  private static PageProjection projection(java.sql.ResultSet rows) throws java.sql.SQLException {
-    boolean targetExists = false; long total = 0; List<AuditHistoryItem> items = new java.util.ArrayList<>();
-    while (rows.next()) {
-      targetExists = rows.getBoolean("target_exists"); total = rows.getLong("total");
-      UUID id = rows.getObject("event_id", UUID.class);
-      if (id != null) items.add(new AuditHistoryItem(id, rows.getLong("occurred_at_epoch_millis"), rows.getString("actor_display_snapshot"), rows.getString("action"), new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")), AuditChangeJson.read(rows.getString("changes_json"))));
-    }
-    return new PageProjection(targetExists, List.copyOf(items), total);
-  }
-  private record PageProjection(boolean targetExists, List<AuditHistoryItem> items, long total) { }
 }

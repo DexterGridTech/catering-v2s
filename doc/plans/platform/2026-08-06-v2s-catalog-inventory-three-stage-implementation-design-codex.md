@@ -149,7 +149,7 @@ generated outputs不得手改：root OpenAPI、route/capability registry、Java 
 generated client/RTK client，以及由形态 manifest 生成的 Java/TS typed manifest。platform-admin slice
 保持无本期 operation。
 
-### 3.3 operation exact-set（42）
+### 3.3 operation exact-set（43）
 
 所有写操作使用 `Idempotency-Key`，命令只接收 trusted context 派生后的业务输入与 expected version；
 不接收客户端 owner/project/`itemKind`/`measureMode`/`usageCapabilities`/`skuMode`。
@@ -167,12 +167,13 @@ generated client/RTK client，以及由形态 manifest 生成的 Java/TS typed m
 | 36—39 | `countOperationsInventoryTarget`, `increaseOperationsInventoryTarget`, `adjustOperationsInventoryTarget`, `updateOperationsInventoryTargetConfiguration` |
 | 40—41 | `stageOperationsCatalogAsset`, `releaseOperationsCatalogStagedAsset`；仍由 asset owner 持有资产事实 |
 | 42 | `getOperationsCatalogShapeManifest`，返回与静态 manifest 同 revision/digest 的会话可见读版本 |
+| 43 | `batchTransitionOperationsCatalogItemStatus`，集合级批量状态迁移；每项携带 `itemRef` 与 `expectedVersion`，按当前 scope 逐条独立事务返回结果 |
 
 `saveOperationsCatalogItem` 是一个 HTTP command，但内部 input 分为 `catalogDraft`、
 `inventoryConfiguration`、`expectedCatalogVersion`、`expectedInventoryVersions[]`。高级诊断必须是
 独立 operation，缺权限时前端不调用；不能在普通详情中返回后再过滤。
 
-#### 3.3.1 42 行 operation assertion matrix
+#### 3.3.1 43 行 operation assertion matrix
 
 P1 实际规范源不是本表的 prose，而是新增
 `contracts/policy/catalog-inventory-assertion-matrix.json`。每行稳定键为 `operationId`，字段固定为
@@ -181,7 +182,7 @@ P1 实际规范源不是本表的 prose，而是新增
 本表、IU×stage 视图、operation count 与 package-exit denominator 都由该 JSON 生成并 exact-match，
 禁止并行维护多份字符串。
 
-本轮的 42 行 implementation-facing 基线由
+本轮的 43 行 implementation-facing 基线由
 `doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json`
 逐行给出，P1 只能把它无损迁移进 assertion matrix，不能重新解释。每个 operation 必须同时声明：
 
@@ -209,6 +210,7 @@ P1 实际规范源不是本表的 prose，而是新增
 | 5 | `createOperationsCatalogItem` | catalog / asset | EW | `CatalogItemCreateRequest` → `CatalogItemCommandReadback` | E-W | API-002,008 |
 | 6 | `saveOperationsCatalogItem` | APP_COORDINATOR / catalog, inventory, asset | EW | `CatalogItemSaveRequest` → `CatalogItemSaveReadback` | E-W | API-008,014 |
 | 7 | `transitionOperationsCatalogItemStatus` | catalog / inventory reference judgment | EW | `CatalogItemTransitionRequest` → `CatalogItemCommandReadback` | E-W | API-008,006 |
+| 43 | `batchTransitionOperationsCatalogItemStatus` | catalog / inventory reference judgment | EW | `CatalogItemBatchStatusTransitionRequest` → `CatalogItemBatchStatusTransitionReadback` | E-W | API-008 |
 | 8 | `createOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryCreateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 9 | `updateOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryUpdateRequest` → `CatalogCategoryReadback` | E-W | API-006 |
 | 10 | `moveOperationsCatalogCategory` | catalog / none | EW | `CatalogCategoryMoveRequest` → `CatalogCategoryReadback` | E-W | API-006 |
@@ -308,7 +310,7 @@ CatalogItem、Category、CatalogTag、SalesUnit、SKU 销售属性、SKU 属性�
 ProductionTagDefinition；StockTarget 没有自身编码，明确 `NOT_APPLICABLE`。进入 `VOIDED` 后对象只读、
 审计可见，编码在原 owner scope 内永久保留，并从新选择、复制候选和写集合排除，禁止恢复或改码。
 
-不增加第 43 个 HTTP operation：item/category/dictionary/production-tag 复用各自 transition operation；
+C-17 的 item/category/dictionary/production-tag 仍复用各自 transition operation；本设计另有已批准的第 43 个 HTTP operation `batchTransitionOperationsCatalogItemStatus`，不改变 C-17 的单条复用语义；
 `saveOperationsCatalogItem` 的 typed request 允许 `skuTransitions[]`，只接受
 `{skuRef,targetStatus:VOIDED,expectedVersion}`，仍不接受 code。每个 transition readback 必须包含
 `canVoid/blockingReferences/dependentFacts` 的 owner judgment；执行前 owner 在同一事务中重算：
@@ -572,8 +574,8 @@ P3 才生成独立 locator binding catalog 并 exact-match 43 cases。
 P1 只有同时满足以下条件才完成：
 
 - policy 例外设计已先落具名 entry，随后 contract/fixture 实施才开始；
-- 42 operations、components、shards、root OpenAPI、route registry、Java wire、TS client exact-set；
-- 42 行 backend operation design contract 的逻辑步骤、problem mapping、owner call chain 与正常 DB 分解
++ 43 operations、components、shards、root OpenAPI、route registry、Java wire、TS client exact-set；
++ 43 行 backend operation design contract 的逻辑步骤、problem mapping、owner call chain 与正常 DB 分解
   机械 exact-set；缺失、顺序漂移、owner 漂移、problem 漂移或分解求和漂移均有真实 red；
 - Java/TS shape manifest revision/digest/count/语义字节一致；七形态、四 capability、0 PRODUCIBLE 派生、
   四 modeRules、shape admission、HAS_SKU 判据全有真实 red；
@@ -653,9 +655,9 @@ owner 与权限全部在本阶段逻辑闭环。P3 不再承担这些逻辑的�
 
 - P1 contract/fixture SHA 与 revision 原样消费，无本阶段新增字段/场景；发现缺口必须退回重开 P1。
 - 模块 owner、COMMAND/TASK_READ/SCHEMA_FK registry 与实际依赖 exact-set；无跨 schema DML。
-- migration、owner repository/service/api、协调器、edge mapper/controller 全部对齐 42 operations。
++ migration、owner repository/service/api、协调器、edge mapper/controller 全部对齐 43 operations。
 - transaction rollback、idempotency replay/mismatch/result-unknown、version conflict 有真实 red。
-- 42 个 operation 的正常 fixture 实测 `databaseOperationCount` 与逐 operation 设计值精确相等；任何漂移有具名 disposition，不能当性能预算放宽。
++ 43 个 operation 的正常 fixture 实测 `databaseOperationCount` 与逐 operation 设计值精确相等；任何漂移有具名 disposition，不能当性能预算放宽。
 - 26 definitions / 100 cases 全绿；每个 expected error 是 typed problem，不以 500/日志文本代替。
 - 复制全部逻辑在 API stage 关闭；目标图 head-company ref 泄漏、漏映射、截断闭包 mutation 均红。
 - 代表 seed 图经 owner command 创建和 readback count 验证；不执行 DEV seed。
@@ -751,7 +753,7 @@ package exit set equality。单项 gate、mapping 或某一层 PASS 不等于阶
 
 ## 9. 设计完成判据
 
-本文可进入 Claude review 的条件是：四项 P1 产物均有明确 source/consumer/exit；42 operations 与全部
+本文可进入 Claude review 的条件是：四项 P1 产物均有明确 source/consumer/exit；43 operations 与全部
 读模型可定位；seed/test 数据严格分层；26/100、18/43 分母可复算；89 IA-ID、18 differences、8 IU
 与三阶段均有明确归属；复制在 P2 逻辑闭环、P3 只验交互；三项 Dexter 裁决已完整吸收且无残留分支；三个阶段的
 business/cleanup 结论没有互相借用。

@@ -7,11 +7,8 @@ import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryGrantCredential;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import jakarta.servlet.http.HttpServletRequest;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -59,11 +56,6 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
     }
 
     private static String rateLimitSourceFingerprint(String sourceAddress) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest((sourceAddress == null ? "unavailable" : sourceAddress).getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException error) {
-            throw new IllegalStateException("SHA-256 unavailable", error);
-        }
+        return Sha256Hex.digest(sourceAddress == null ? "unavailable" : sourceAddress);
     }
 }

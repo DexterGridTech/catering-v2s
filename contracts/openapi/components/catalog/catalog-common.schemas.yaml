@@ -10,6 +10,9 @@
         "manifestDigest",
         "shapeKeys",
         "capabilityValues",
+        "controlKinds",
+        "fields",
+        "enumLabels",
         "modeRules",
         "shapeRules",
         "fieldRules",
@@ -41,6 +44,211 @@
           "items": {
             "type": "string"
           }
+        },
+        "controlKinds": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "textarea",
+              "select",
+              "multiSelect",
+              "treeSelect",
+              "number",
+              "money",
+              "upload",
+              "editableTable",
+              "detailTable",
+              "readonlySummary",
+              "readonlyPreview",
+              "skuVariantMatrix",
+              "inventoryBomWorkbench",
+              "orderOptionsWorkbench",
+              "compositeContentWorkbench"
+            ]
+          }
+        },
+        "fields": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fieldKey": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "dataPath": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "label": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "controlKind": {
+                "type": "string",
+                "description": "design-bound field",
+                "enum": [
+                  "text",
+                  "textarea",
+                  "select",
+                  "multiSelect",
+                  "treeSelect",
+                  "number",
+                  "money",
+                  "upload",
+                  "editableTable",
+                  "detailTable",
+                  "readonlySummary",
+                  "readonlyPreview",
+                  "skuVariantMatrix",
+                  "inventoryBomWorkbench",
+                  "orderOptionsWorkbench",
+                  "compositeContentWorkbench"
+                ]
+              },
+              "tabKey": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "admittedShapes": {
+                "type": "array",
+                "description": "design-bound field",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "STANDARD_SALE_COUNTED",
+                    "SKU_VARIANT_SALE_COUNTED",
+                    "STANDARD_SALE_WEIGHED",
+                    "MATERIAL",
+                    "COMPOSITE",
+                    "SERVICE",
+                    "BENEFIT_SHELL"
+                  ]
+                }
+              },
+              "helpText": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "description": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "frontendBehavior": {
+                "type": "object",
+                "description": "design-bound field",
+                "additionalProperties": true,
+                "properties": {},
+                "required": []
+              },
+              "optionSourceRef": {
+                "type": "object",
+                "description": "design-bound field",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "enum",
+                      "endpoint",
+                      "local"
+                    ]
+                  },
+                  "enumKind": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "path": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": true,
+                    "properties": {},
+                    "required": []
+                  },
+                  "query": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": true,
+                    "properties": {},
+                    "required": []
+                  },
+                  "headers": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": true,
+                    "properties": {},
+                    "required": []
+                  },
+                  "itemsPath": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "valueField": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "labelField": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "labelParts": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "parentField": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "disabledWhen": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "contextBindings": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": true,
+                    "properties": {},
+                    "required": []
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            },
+            "required": [
+              "fieldKey",
+              "dataPath",
+              "label",
+              "controlKind",
+              "tabKey",
+              "admittedShapes",
+              "helpText"
+            ]
+          }
+        },
+        "enumLabels": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": true,
+          "properties": {},
+          "required": []
         },
         "modeRules": {
           "type": "array",
@@ -86,6 +294,10 @@
                 "type": "string",
                 "description": "design-bound field"
               },
+              "label": {
+                "type": "string",
+                "description": "design-bound field"
+              },
               "itemKind": {
                 "type": "string",
                 "description": "design-bound field"
@@ -112,6 +324,7 @@
             },
             "required": [
               "shapeKey",
+              "label",
               "itemKind",
               "measureMode",
               "skuMode",

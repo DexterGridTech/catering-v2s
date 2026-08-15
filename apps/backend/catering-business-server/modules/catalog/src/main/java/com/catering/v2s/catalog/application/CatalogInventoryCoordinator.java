@@ -4,31 +4,21 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.application.CatalogOwnerService;
 import com.catering.v2s.catalog.application.CatalogTaskReadService;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.inventory.application.InventoryOwnerService;
-import com.catering.v2s.inventory.application.InventoryTaskReadService;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
-import com.catering.v2s.fulfillment.production.application.ProductionTagTaskReadService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
-import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
-import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
-import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
-import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetReadback;
-import com.catering.v2s.platform.asset.application.PlatformAssetService.StageReadback;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,21 +30,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CatalogInventoryCoordinator {
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
+    /**
+     * The inventory picker uses a catalog-side prefilter when keyword/category is
+     * present.  That prefilter is deliberately bounded because its complete result
+     * becomes an IN-list for the inventory owner.  A partial list would silently
+     * hide matching inventory targets, so the bound is fail-closed rather than a
+     * pagination detail.
+     */
+    private static final int INVENTORY_CATALOG_PREFILTER_LIMIT = 5000;
+    private static final String COPY_SOURCE_UNAVAILABLE = "COPY_SOURCE_UNAVAILABLE";
     private static final Set<String> CATALOG_READS = Set.of(
         "getOperationsCatalogWorkbenchContext", "getOperationsCatalogNavigation", "getOperationsCatalogItems", "getOperationsCatalogItem",
         "getOperationsCatalogDictionary", "getOperationsLocalCatalogCopyCandidates", "getOperationsBrandCatalogCopyCandidates", "getOperationsCatalogShapeManifest"
     );
-    private static final Set<String> CATALOG_WRITES = Set.of(
-        "createOperationsCatalogItem", "saveOperationsCatalogItem", "transitionOperationsCatalogItemStatus", "createOperationsCatalogCategory", "updateOperationsCatalogCategory",
-        "moveOperationsCatalogCategory", "deleteOperationsCatalogCategory", "createOperationsCatalogDictionaryEntry", "updateOperationsCatalogDictionaryEntry",
-        "reorderOperationsCatalogDictionaryEntry", "transitionOperationsCatalogDictionaryEntryStatus", "preflightOperationsTemporaryCatalogItemPromotion", "executeOperationsTemporaryCatalogItemPromotion"
-    );
     private static final Set<String> INVENTORY_READS = Set.of("getOperationsInventoryTargets", "getOperationsInventoryTarget", "getOperationsInventoryTargetChangeSummary", "getOperationsInventoryTargetBusinessHistory", "getOperationsInventoryTargetConsumptionReferences", "getOperationsInventoryTargetLedger", "getOperationsInventoryTargetDiagnostics");
-    private static final Set<String> INVENTORY_WRITES = Set.of("countOperationsInventoryTarget", "increaseOperationsInventoryTarget", "adjustOperationsInventoryTarget", "updateOperationsInventoryTargetConfiguration");
-    private static final Set<String> PRODUCTION_WRITES = Set.of("createOperationsProductionTag", "updateOperationsProductionTag", "transitionOperationsProductionTagStatus");
-    private static final Set<String> CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = Set.of(
-        "ensureCatalogInventoryTarget", "saveCatalogProductBom"
-    );
 
     private final CatalogOwnerApi catalog;
     private final InventoryOwnerApi inventory;
@@ -66,13 +55,6 @@ public class CatalogInventoryCoordinator {
     private final CatalogScopeLookup catalogScopes;
     private final CommandExecutionContextResolver commandContexts;
     private final CatalogTaskReadService catalogReads;
-    private final InventoryTaskReadService inventoryReads;
-    private final ProductionTagTaskReadService productionReads;
-
-    /** Edge supplies decoded request data; route selection stays in named methods. */
-    public record CommandRequest(String sessionCredential, String dataNodeRef, String requestedBrandRef,
-                                 String correlationId, String requestId, ObjectNode body, String idempotencyKey,
-                                 String testFailurePoint, Map<String, String> assetBindGrants) { }
 
     public CatalogInventoryCoordinator(CatalogOwnerApi catalog, InventoryOwnerApi inventory, ProductionTagOwnerApi production, PlatformAssetService assets, ObjectMapper mapper, TimeProvider time, CatalogScopeLookup catalogScopes) {
         this(catalog, inventory, production, assets, mapper, time, catalogScopes, null);
@@ -82,8 +64,6 @@ public class CatalogInventoryCoordinator {
     public CatalogInventoryCoordinator(CatalogOwnerApi catalog, InventoryOwnerApi inventory, ProductionTagOwnerApi production, PlatformAssetService assets, ObjectMapper mapper, TimeProvider time, CatalogScopeLookup catalogScopes, CommandExecutionContextResolver commandContexts) {
         this.catalog = catalog; this.inventory = inventory; this.production = production; this.assets = assets; this.assetCommands = assets; this.mapper = mapper; this.time = time; this.catalogScopes = catalogScopes; this.commandContexts = commandContexts;
         this.catalogReads = new CatalogTaskReadService(catalog);
-        this.inventoryReads = new InventoryTaskReadService(inventory);
-        this.productionReads = new ProductionTagTaskReadService(production);
     }
 
     public JsonNode readCatalogWorkbenchContext(String dataNodeRef, String brandRef, String requestId, String dataNodeType, String headCompanyRef,
@@ -132,68 +112,57 @@ public class CatalogInventoryCoordinator {
             // Cross-owner prefilter remains deliberately unclassified until its
             // query shape is proven as one source-bound task read.
             prefetchedCatalog = catalog.readItems(dataNodeRef, brandRef, catalogQuery, requestId);
+            long prefetchedTotal = prefetchedCatalog.path("data").path("total").asLong(0);
+            if (prefetchedTotal > INVENTORY_CATALOG_PREFILTER_LIMIT) {
+                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422,
+                    "inventory catalog prefilter exceeds " + INVENTORY_CATALOG_PREFILTER_LIMIT + " items; narrow the keyword or category filter");
+            }
             inventoryRequest = request.deepCopy();
-            ArrayNode allowedCodes = inventoryRequest.putArray("catalogItemCodes");
-            prefetchedCatalog.path("data").path("items").forEach(item -> { if (item.hasNonNull("code")) allowedCodes.add(item.path("code").asText()); });
+            ArrayNode allowedRefs = inventoryRequest.putArray("catalogItemRefs");
+            prefetchedCatalog.path("data").path("items").forEach(item -> { if (item.hasNonNull("itemRef")) allowedRefs.add(item.path("itemRef").asText()); });
             inventoryRequest.remove("categoryRef");
         }
-        JsonNode result = inventoryReads.targets(dataNodeRef, brandRef, inventoryRequest, requestId, dataNodeType);
+        ObjectNode resolvedInventoryRequest = inventoryRequest;
+        JsonNode result = primaryRead(() -> inventory.readTargets(dataNodeRef, brandRef, resolvedInventoryRequest, requestId, dataNodeType));
         enrichInventoryTargets(result, dataNodeRef, brandRef, requestId, prefetchedCatalog);
         return result;
     }
 
     public JsonNode readInventoryTarget(String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType) {
-        JsonNode result = inventoryReads.target(dataNodeRef, brandRef, targetRef, requestId, dataNodeType);
+        JsonNode result = primaryRead(() -> inventory.readTarget(dataNodeRef, brandRef, targetRef, requestId, dataNodeType));
         enrichInventoryTarget(result, dataNodeRef, brandRef, requestId);
         return result;
     }
 
-    public JsonNode readInventoryTargetChangeSummary(String targetRef, String period) { return inventoryReads.changeSummary(targetRef, period); }
+    public JsonNode readInventoryTargetChangeSummary(String dataNodeRef, String brandRef, String targetRef, String period, String dataNodeType) {
+        return primaryRead(() -> inventory.readTargetChangeSummary(dataNodeRef, brandRef, targetRef, period, dataNodeType));
+    }
 
-    public JsonNode readInventoryTargetBusinessHistory(String targetRef, ObjectNode request, String requestId) {
-        return inventoryReads.businessHistory(targetRef, request, requestId);
+    public JsonNode readInventoryTargetBusinessHistory(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType) {
+        return primaryRead(() -> inventory.readTargetBusinessHistory(dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType));
     }
 
     public JsonNode readInventoryTargetConsumptionReferences(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId) {
-        JsonNode result = inventoryReads.consumptionReferences(dataNodeRef, brandRef, targetRef, request, requestId);
+        JsonNode result = primaryRead(() -> inventory.readTargetConsumptionReferences(dataNodeRef, brandRef, targetRef, request, requestId));
         enrichInventoryConsumptionReferences(result, dataNodeRef, brandRef, requestId);
         return result;
     }
 
-    public JsonNode readInventoryTargetLedger(String targetRef, ObjectNode request, String requestId) { return inventoryReads.ledger(targetRef, request, requestId); }
+    public JsonNode readInventoryTargetLedger(String dataNodeRef, String brandRef, String targetRef, ObjectNode request, String requestId, String dataNodeType) {
+        return primaryRead(() -> inventory.readTargetLedger(dataNodeRef, brandRef, targetRef, request, requestId, dataNodeType));
+    }
 
-    public JsonNode readInventoryTargetDiagnostics(String targetRef, String requestId) { return inventoryReads.diagnostics(targetRef, requestId); }
+    public JsonNode readInventoryTargetDiagnostics(String targetRef, String requestId) { return primaryRead(() -> inventory.readTargetDiagnostics(targetRef, requestId)); }
 
     public JsonNode readProductionTags(String dataNodeRef, String brandRef, String requestId) {
-        return productionReads.tags(dataNodeRef, brandRef, requestId);
+        return primaryRead(() -> production.readTags(dataNodeRef, brandRef, requestId));
     }
-
-    /**
-     * The command transaction boundary: fresh workspace facts, scope, brand and
-     * opaque grant are resolved before any owner receipt or business read.
-     * The legacy string dispatcher remains only for BP-U06's deferred cutover.
-     */
-    private JsonNode executeWorkspaceCommand(String sessionCredential, WorkspaceCommandOperationToken token,
-                                             String requestedDataNodeRef, String requestedBrandRef,
-                                             String correlationId, String requestId, ObjectNode request,
-                                             String idempotencyKey, String testFailurePoint,
-                                             Map<String, String> catalogAssetBindGrants,
-                                             List<String> coordinatedInventoryDefinitionCommands) {
-        WorkspaceExecutionContext<CatalogAuthorizationScope> context = requireCommandContexts().resolveCatalog(
-            sessionCredential, token, requestedDataNodeRef,
-            CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(requestedBrandRef), correlationId, requestId
-        );
-        return dispatchWorkspaceCommand(context, request, idempotencyKey, testFailurePoint,
-            catalogAssetBindGrants, coordinatedInventoryDefinitionCommands);
-    }
-
-    @Transactional public JsonNode createCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_ITEM); }
-    @Transactional public JsonNode saveCatalogItem(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.SAVE_OPERATIONS_CATALOG_ITEM); }
 
     /**
      * One save composition: catalog remains authoritative for the item and global asset-reference
      * judgment; inventory and asset owners receive only their typed, immutable command inputs.
      */
+    @Transactional
     public CatalogOwnerApi.CatalogItemSaveReadback saveCatalogItem(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                                                     CatalogOwnerApi.CatalogItemSaveCommand command,
                                                                     List<CatalogAssetCommandApi.AssetBinding> submittedBindings,
@@ -207,125 +176,6 @@ public class CatalogInventoryCoordinator {
         settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
         return readback;
     }
-    @Transactional public JsonNode transitionCatalogItemStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS); }
-    @Transactional public JsonNode createCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_CATEGORY); }
-    @Transactional public JsonNode updateCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_CATEGORY); }
-    @Transactional public JsonNode moveCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.MOVE_OPERATIONS_CATALOG_CATEGORY); }
-    @Transactional public JsonNode deleteCatalogCategory(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.DELETE_OPERATIONS_CATALOG_CATEGORY); }
-    @Transactional public JsonNode createCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    @Transactional public JsonNode updateCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    @Transactional public JsonNode reorderCatalogDictionaryEntry(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY); }
-    @Transactional public JsonNode transitionCatalogDictionaryEntryStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS); }
-    @Transactional public JsonNode createProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG); }
-    @Transactional public JsonNode updateProductionTag(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_PRODUCTION_TAG); }
-    @Transactional public JsonNode transitionProductionTagStatus(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS); }
-    @Transactional public JsonNode preflightLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY); }
-    @Transactional public JsonNode executeLocalCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY); }
-    @Transactional public JsonNode preflightTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
-    @Transactional public JsonNode executeTemporaryCatalogPromotion(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION); }
-    @Transactional public JsonNode preflightBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY); }
-    @Transactional public JsonNode executeBrandCatalogCopy(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_BRAND_CATALOG_COPY); }
-    @Transactional public JsonNode countInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.COUNT_OPERATIONS_INVENTORY_TARGET); }
-    @Transactional public JsonNode increaseInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.INCREASE_OPERATIONS_INVENTORY_TARGET); }
-    @Transactional public JsonNode adjustInventoryTarget(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.ADJUST_OPERATIONS_INVENTORY_TARGET); }
-    @Transactional public JsonNode updateInventoryTargetConfiguration(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION); }
-    @Transactional public JsonNode releaseCatalogAsset(CommandRequest request) { return execute(request, CatalogInventoryWorkspaceCommandTokens.RELEASE_OPERATIONS_CATALOG_STAGED_ASSET); }
-
-    private JsonNode execute(CommandRequest request, WorkspaceCommandOperationToken token) {
-        return executeWorkspaceCommand(request.sessionCredential(), token, request.dataNodeRef(), request.requestedBrandRef(),
-            request.correlationId(), request.requestId(), request.body(), request.idempotencyKey(), request.testFailurePoint(),
-            request.assetBindGrants(), token.operationId().equals("saveOperationsCatalogItem") ? CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS.stream().sorted().toList() : List.of());
-    }
-
-    @Transactional
-    public JsonNode stageWorkspaceAsset(String sessionCredential, WorkspaceCommandOperationToken token,
-                                        String requestedDataNodeRef, String requestedBrandRef,
-                                        String correlationId, String requestId, String fileName, String mediaType,
-                                        String contentDigest, byte[] bytes, String idempotencyKey, String testFailurePoint) {
-        WorkspaceExecutionContext<CatalogAuthorizationScope> context = requireCommandContexts().resolveCatalog(
-            sessionCredential, token, requestedDataNodeRef,
-            CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(requestedBrandRef), correlationId, requestId
-        );
-        if (fileName == null || fileName.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "fileName is required");
-        if (mediaType == null || mediaType.isBlank() || bytes == null || bytes.length == 0) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "multipart content is required");
-        if (!stagedDigestMatches(contentDigest, bytes)) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "contentDigest does not match content");
-        failForManagedTestPoint(testFailurePoint, "asset-processing", "ASSET_PROCESSING_FAILED", 422, "资产处理失败");
-        try {
-            StageReadback staged = assets.stageCatalogContent(context, mediaType, bytes.length, new ByteArrayInputStream(bytes), idempotencyKey);
-            AssetReadback asset = assets.require(staged.assetRef());
-            ObjectNode result = mapper.createObjectNode().put("assetRef", staged.assetRef().toString()).put("bindGrant", staged.bindGrant())
-                .put("status", asset.status()).put("mediaType", staged.contentType()).put("contentDigest", staged.sha256()).putNull("readyAt").put("version", asset.version());
-            ObjectNode readback = mapper.createObjectNode().put("revision", REVISION).put("requestId", context.requestId());
-            readback.set("result", result); readback.put("version", asset.version());
-            return readback;
-        } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-        }
-    }
-
-    private JsonNode dispatchWorkspaceCommand(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request,
-                                               String idempotencyKey, String testFailurePoint,
-                                               Map<String, String> catalogAssetBindGrants,
-                                               List<String> coordinatedInventoryDefinitionCommands) {
-        CatalogAuthorizationScope scope = context.ownerScope();
-            String operationId = context.operationToken().operationId();
-            String dataNodeRef = scope.dataNodeId().toString();
-            String brandRef = scope.brandRef();
-            if ("saveOperationsCatalogItem".equals(operationId)) requireCatalogSaveInventoryDefinitionCommands(coordinatedInventoryDefinitionCommands);
-            if (CATALOG_WRITES.contains(operationId)) {
-                if ("transitionOperationsCatalogItemStatus".equals(operationId) && "VOIDED".equals(request.path("targetStatus").asText())) {
-                    String itemRef = catalogItemRef(dataNodeRef, brandRef, request.path("itemCode").asText(), context.requestId());
-                    JsonNode dependencies = inventory.catalogItemVoidDependencies(dataNodeRef, brandRef, itemRef, context.requestId());
-                    if (dependencies.path("hasDependentFacts").asBoolean(false)) throw new CatalogOwnerApi.Problem("DEPENDENT_FACTS_BLOCK_VOID", 422, "库存对象或 BOM 仍存在，不能作废商品");
-                }
-                Set<String> previousAssetRefs = "saveOperationsCatalogItem".equals(operationId)
-                    ? catalogItemAssetRefs(dataNodeRef, brandRef, request.path("itemCode").asText(), context.requestId()) : Set.of();
-                JsonNode result = catalog.write(context, request, idempotencyKey);
-                if ("saveOperationsCatalogItem".equals(operationId)) {
-                    coordinateSaveInventory(context, request, idempotencyKey);
-                    settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, assetBindings(catalogAssetBindGrants));
-                }
-                return result;
-            }
-            if (operationId.equals("preflightOperationsLocalCatalogCopy") || operationId.equals("executeOperationsLocalCatalogCopy")) {
-                return dispatchWorkspaceLocalCopy(context, request, idempotencyKey);
-            }
-            if (operationId.equals("preflightOperationsBrandCatalogCopy") || operationId.equals("executeOperationsBrandCatalogCopy")) {
-                return dispatchWorkspaceBrandCopy(context, request, idempotencyKey, testFailurePoint);
-            }
-            if (INVENTORY_WRITES.contains(operationId)) return inventory.write(context, request, idempotencyKey);
-            if (operationId.equals("transitionOperationsProductionTagStatus") && "VOIDED".equals(request.path("targetStatus").asText())) {
-                String tagRef = productionTagRef(dataNodeRef, brandRef, request.path("tagCode").asText(), context.requestId());
-                if (tagRef != null && catalog.productionTagReferenced(dataNodeRef, brandRef, tagRef)) throw new ProductionTagOwnerApi.Problem("REFERENCE_BLOCKS_VOID", 422, "生产标签仍被商品引用，不能作废");
-            }
-            if (PRODUCTION_WRITES.contains(operationId)) return production.write(context, request, idempotencyKey);
-            if (operationId.equals("releaseOperationsCatalogStagedAsset")) return releaseWorkspaceAsset(context, request, idempotencyKey);
-        throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "operation is not a catalog-inventory workspace command");
-    }
-
-    private JsonNode dispatchWorkspaceLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
-        boolean execute = "executeOperationsLocalCatalogCopy".equals(context.operationToken().operationId());
-        ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalogCopyPreflight(context, catalogRequest);
-        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
-        OwnerPreflight owners = preflightInventoryIfSelected(context, request, catalogPlan);
-        String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
-        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), "");
-        JsonNode merged = mergeCopyPreflight(catalogPreflight, owners, combined, !execute);
-        if (!execute) return merged;
-        if (!request.path("preflightDigest").asText("").equals(combined)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
-        if (preflightData(catalogPreflight) instanceof ObjectNode mergedData) enforceMergedClosureLimit(mergedData);
-        CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement()));
-        catalogRequest.put("preflightDigest", catalogDigest); applyCopyReferencePlan(catalogRequest, executionPlan);
-        JsonNode result = catalog.copy(context, catalogRequest, idempotencyKey);
-        if (owners.inventoryDigest() != null && !owners.inventoryDigest().isBlank()) {
-            ObjectNode inventoryRequest = request.deepCopy(); inventoryRequest.put("inventoryPreflightDigest", owners.inventoryDigest());
-            applyCopyReferencePlan(inventoryRequest, executionPlan);
-            result = appendOwnerReadback(result, inventory.copy(context, inventoryRequest, idempotencyKey), "inventory");
-        }
-        return result;
-    }
-
     /** Typed local-copy composition with catalog and inventory owner-native commands. */
     public record LocalCopyPreflightReadback(String canonicalJson) { }
 
@@ -341,6 +191,7 @@ public class CatalogInventoryCoordinator {
     public record LocalCopyExecutionReadback(CatalogOwnerApi.CopyExecutionReadback catalog,
                                              List<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks) { }
 
+    @Transactional
     public LocalCopyExecutionReadback executeLocalCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                               CatalogOwnerApi.LocalCopyExecuteCommand command,
                                               String submittedDigest, String idempotencyKey) {
@@ -354,12 +205,15 @@ public class CatalogInventoryCoordinator {
             command.sourceItemCode(), command.targetItemCode(), command.selectedSections(), preflightData(catalogPreflight).path("preflightDigest").asText(),
             command.expectedSourceVersion(), command.expectedTargetVersion(), canonicalReferencePlan(plan)), idempotencyKey);
         java.util.ArrayList<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks = new java.util.ArrayList<>(catalogReadback.ownerReadbacks());
+        List<CatalogOwnerApi.CopySkippedReadback> skipped = new java.util.ArrayList<>(catalogReadback.skipped());
         if (owners.inventoryDigest() != null && !owners.inventoryDigest().isBlank()) {
             InventoryOwnerApi.LocalCopyExecutionReadback inventoryReadback = inventory.executeLocalCopy(context,
                 new InventoryOwnerApi.LocalCopyExecuteCommand(command.sourceItemCode(), command.targetItemCode(), command.selectedSections(), owners.inventoryDigest(), canonicalReferencePlan(plan)), idempotencyKey);
             ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
+            inventoryReadback.skipped().forEach(entry -> skipped.add(new CatalogOwnerApi.CopySkippedReadback(entry.section(), entry.reasonCode())));
         }
-        return new LocalCopyExecutionReadback(catalogReadback, List.copyOf(ownerReadbacks));
+        CatalogOwnerApi.CopyExecutionReadback mergedCatalogReadback = new CatalogOwnerApi.CopyExecutionReadback(catalogReadback.preflightDigest(), catalogReadback.created(), catalogReadback.reused(), List.copyOf(skipped), catalogReadback.referenceMappings(), catalogReadback.targetVersions(), List.copyOf(ownerReadbacks));
+        return new LocalCopyExecutionReadback(mergedCatalogReadback, List.copyOf(ownerReadbacks));
     }
 
     private OwnerPreflight preflightLocalInventory(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
@@ -383,12 +237,14 @@ public class CatalogInventoryCoordinator {
     public record BrandCopyExecutionReadback(CatalogOwnerApi.CopyExecutionReadback catalog,
                                              List<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks) { }
 
+    @Transactional
     public BrandCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                                      CatalogOwnerApi.BrandCopyExecuteCommand command,
                                                      String submittedDigest, String idempotencyKey) {
         return executeBrandCopy(context, command, submittedDigest, idempotencyKey, null);
     }
 
+    @Transactional
     public BrandCopyExecutionReadback executeBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context,
                                                      CatalogOwnerApi.BrandCopyExecuteCommand command,
                                                      String submittedDigest, String idempotencyKey, String testFailurePoint) {
@@ -443,52 +299,6 @@ public class CatalogInventoryCoordinator {
     private String canonicalLocalCopyJson(JsonNode value) { try { return mapper.writeValueAsString(value); } catch (Exception failure) { throw new IllegalStateException("copy composition could not encode readback", failure); } }
     private String canonicalReferencePlan(CopyReferencePlan plan) { ObjectNode value = mapper.createObjectNode(); value.set("closureItemRefs", plan.closureItemRefs().deepCopy()); value.set("productionTagRefs", plan.productionTagRefs().deepCopy()); value.set("referenceMappings", plan.referenceMappings().deepCopy()); return canonicalLocalCopyJson(value); }
 
-    private JsonNode dispatchWorkspaceBrandCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey, String testFailurePoint) {
-        boolean execute = "executeOperationsBrandCatalogCopy".equals(context.operationToken().operationId());
-        ObjectNode catalogRequest = request.deepCopy();
-        JsonNode catalogPreflight = catalogCopyPreflight(context, catalogRequest);
-        CopyReferencePlan catalogPlan = copyReferencePlan(catalogPreflight);
-        OwnerPreflight owners = preflightBrandOwners(context, request, catalogPlan);
-        String catalogDigest = preflightData(catalogPreflight).path("preflightDigest").asText();
-        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), owners.productionDigest());
-        JsonNode merged = mergeCopyPreflight(catalogPreflight, owners, combined, !execute);
-        if (!execute) return merged;
-        if (!request.path("preflightDigest").asText("").equals(combined)) throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
-        if (preflightData(catalogPreflight) instanceof ObjectNode mergedData) enforceMergedClosureLimit(mergedData);
-        CopyReferencePlan executionPlan = catalogPlan.merge(ownerReferencePlan(owners.inventoryJudgement())).merge(ownerReferencePlan(owners.productionJudgement()));
-        catalogRequest.put("preflightDigest", catalogDigest); applyCopyReferencePlan(catalogRequest, executionPlan);
-        JsonNode result = catalog.copy(context, catalogRequest, idempotencyKey);
-        failForManagedTestPoint(testFailurePoint, "owner-failure", "RESULT_UNKNOWN", 500, "受控 owner failure fixture");
-        ObjectNode inventoryRequest = request.deepCopy(); inventoryRequest.put("inventoryPreflightDigest", owners.inventoryDigest()); applyCopyReferencePlan(inventoryRequest, executionPlan);
-        result = appendOwnerReadback(result, inventory.copy(context, inventoryRequest, idempotencyKey), "inventory");
-        ObjectNode productionRequest = request.deepCopy(); productionRequest.put("productionPreflightDigest", owners.productionDigest()); applyCopyReferencePlan(productionRequest, executionPlan);
-        return appendOwnerReadback(result, production.copy(context, productionRequest, idempotencyKey), "fulfillment-production");
-    }
-
-    private OwnerPreflight preflightBrandOwners(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, CopyReferencePlan catalogPlan) {
-        ObjectNode ownerRequest = request.deepCopy(); applyCopyReferencePlan(ownerRequest, catalogPlan);
-        JsonNode inventoryJudgement = inventory.preflightCopy(context, ownerRequest);
-        JsonNode productionJudgement = production.preflightCopy(context, ownerRequest);
-        return new OwnerPreflight(inventoryJudgement.path("digest").asText(), productionJudgement.path("digest").asText(), inventoryJudgement, productionJudgement);
-    }
-
-    /**
-     * The coordinator may combine owner digests, but catalog preflight itself
-     * must stay catalog-only.  This remains true when the live command token is
-     * the execute variant, so it cannot be routed through {@link CatalogOwnerApi#copy}.
-     */
-    JsonNode catalogCopyPreflight(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request) {
-        return catalog.preflightCopy(context, request);
-    }
-
-    private OwnerPreflight preflightInventoryIfSelected(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, CopyReferencePlan catalogPlan) {
-        if (!containsInventorySection(request.path("selectedSections"))) return new OwnerPreflight("", "", null, null);
-        ObjectNode ownerRequest = request.deepCopy(); applyCopyReferencePlan(ownerRequest, catalogPlan);
-        ownerRequest.put("targetItemCode", request.path("targetItemCode").asText());
-        JsonNode judgement = inventory.preflightCopy(context, ownerRequest);
-        return new OwnerPreflight(judgement.path("digest").asText(), "", judgement, null);
-    }
-
     private void coordinateSaveInventory(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         CatalogAuthorizationScope scope = context.ownerScope();
         JsonNode sections = request.path("sections"); JsonNode configuration = sections.path("inventoryConfiguration");
@@ -503,6 +313,9 @@ public class CatalogInventoryCoordinator {
             if ("NONE".equals(mode) || "BOM".equals(mode)) continue;
             String targetRef = node.path("targetRef").asText(""); String itemCode = node.path("itemCode").asText(request.path("itemCode").asText(""));
             String skuCode = node.hasNonNull("skuCode") ? node.path("skuCode").asText() : null;
+            if (node.hasNonNull("productSkuRef") && (skuCode == null || skuCode.isBlank())) {
+                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "inventoryConfiguration.productSkuRef requires skuCode");
+            }
             String itemRef = opaqueProjectionRef(node, "itemRef", projection.itemRef(), "inventoryConfiguration.itemRef");
             String productSkuRef = skuCode == null ? null : opaqueProjectionRef(node, "productSkuRef", projection.productSkuRef(skuCode), "inventoryConfiguration.productSkuRef");
             ObjectNode ensure = mapper.createObjectNode().put("itemRef", itemRef).put("itemCode", itemCode).put("mode", mode);
@@ -534,19 +347,6 @@ public class CatalogInventoryCoordinator {
             });
             grouped.forEach((key, entries) -> { ObjectNode command = commands.get(key).deepCopy(); command.set("rows", entries); command.put("expectedVersion", versionsByKey.getOrDefault(key, 0L)); inventory.saveCatalogItemProductBom(context, new InventoryOwnerApi.CatalogItemSaveBomCommand(canonicalLocalJson(command)), idempotencyKey + ":bom:" + key); });
         }
-    }
-
-    private JsonNode releaseWorkspaceAsset(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
-        UUID ref; try { ref = UUID.fromString(required(request, "assetRef", "")); } catch (IllegalArgumentException ex) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "assetRef is invalid"); }
-        assets.lockCatalogReferences(Set.of(ref));
-        if (catalog.assetReferencedAnywhere(ref.toString())) throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产仍被商品引用，不能释放");
-        try {
-            AssetReadback readback = assets.releaseCatalogStaged(ref, request.path("expectedVersion").asLong(1), idempotencyKey, context);
-            ObjectNode result = mapper.createObjectNode().put("assetRef", readback.assetRef().toString()).put("disposition", "RELEASED").put("releasedAt", time.currentEpochMillis()).put("version", readback.version());
-            ObjectNode response = mapper.createObjectNode().put("revision", REVISION).put("requestId", context.requestId()); response.set("result", result); response.put("version", readback.version()); return response;
-        } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) { throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权"); }
-        catch (PlatformAssetService.AssetIdempotencyConflictException failure) { throw new CatalogOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他资产释放请求"); }
-        catch (PlatformAssetService.AssetClaimRejectedException failure) { throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "待释放资产不存在或版本已变化"); }
     }
 
     private void settleWorkspaceCatalogAssets(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request,
@@ -674,28 +474,11 @@ public class CatalogInventoryCoordinator {
             || "/sections/catalogDraft/productionProfiles/optionValue".equals(path);
     }
 
-    private static List<CatalogAssetCommandApi.AssetBinding> assetBindings(Map<String, String> grants) {
-        return grants.entrySet().stream().map(entry -> new CatalogAssetCommandApi.AssetBinding(UUID.fromString(entry.getKey()), entry.getValue())).toList();
-    }
-
     private static CatalogAssetCommandApi.AssetBinding optionalAssetBinding(String assetRef, List<CatalogAssetCommandApi.AssetBinding> submittedBindings) {
         UUID ref;
         try { ref = UUID.fromString(assetRef); } catch (IllegalArgumentException failure) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef"); }
         return submittedBindings.stream().filter(binding -> binding != null && ref.equals(binding.assetRef())).findFirst()
             .orElse(new CatalogAssetCommandApi.AssetBinding(ref, null));
-    }
-
-    private CommandExecutionContextResolver requireCommandContexts() {
-        if (commandContexts == null) throw new IllegalStateException("CommandExecutionContextResolver is required for workspace commands");
-        return commandContexts;
-    }
-
-    private String productionTagRef(String dataNodeRef, String brandRef, String tagCode, String requestId) {
-        if (tagCode == null || tagCode.isBlank()) return null;
-        JsonNode entries = production.read("getOperationsProductionTags", dataNodeRef, brandRef, mapper.createObjectNode(), requestId)
-            .path("data").path("entries");
-        if (entries.isArray()) for (JsonNode entry : entries) if (tagCode.equals(entry.path("code").asText())) return entry.path("tagRef").asText(null);
-        return null;
     }
 
     private void enrichWorkbenchContext(JsonNode result, String dataNodeRef, String brandRef, String dataNodeType, String headCompanyRef, UUID workspaceUuid, String groupWorkspaceKey) {
@@ -708,17 +491,11 @@ public class CatalogInventoryCoordinator {
             catch (RuntimeException ignored) { sourceAvailable = false; }
         }
         data.put("copySourceAvailable", sourceAvailable);
-        data.with("actionAvailability").put("canCopy", sourceAvailable);
-    }
-
-    /** Brand copy source is an organization fact, never request authority. */
-    String resolveBrandCopySource(ObjectNode request, UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, String targetDataNodeRef, String brandRef) {
-        try {
-            UUID source = catalogScopes.resolveCatalogCopySource(workspaceUuid, groupWorkspaceKey, dataNodeType, UUID.fromString(targetDataNodeRef), brandRef);
-            return source.toString();
-        } catch (RuntimeException failure) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "复制来源不属于当前品牌与目标门店的组织授权范围");
-        }
+        ObjectNode actions = data.with("actionAvailability");
+        actions.put("canCopy", sourceAvailable);
+        ArrayNode reasons = actions.withArray("reasons");
+        reasons.removeAll();
+        if (!sourceAvailable) reasons.add(COPY_SOURCE_UNAVAILABLE);
     }
 
     private boolean containsInventorySection(JsonNode sections) { if (!sections.isArray()) return false; for (JsonNode section : sections) if (List.of("ITEM_BOM", "SKU_BOM", "OPTION_VALUE_BOM").contains(section.asText())) return true; return false; }
@@ -849,6 +626,7 @@ public class CatalogInventoryCoordinator {
         JsonNode ownerData = preflightData(owner);
         appendArray(target, "closureItems", ownerData, "closureItems", false);
         appendArray(target, "mappingPreview", ownerData, "mappingPreview", false);
+        appendArray(target, "skipped", ownerData, "skipped", false);
         appendArray(target, "objectVersions", ownerData, "versions", true);
         int blocking = 0;
         if (ownerData.path("compatibilityResults").isArray()) {
@@ -893,6 +671,9 @@ public class CatalogInventoryCoordinator {
                 copy.put("toCode", node.path("toCode").asText(copy.path("fromCode").asText()));
                 copy.put("referenceKind", node.path("referenceKind").asText("STOCK_TARGET"));
                 copy.put("status", node.path("status").asText("REWRITE"));
+            } else if ("skipped".equals(targetName)) {
+                copy.put("section", node.path("section").asText());
+                copy.put("reasonCode", node.path("reasonCode").asText());
             } else {
                 continue;
             }
@@ -906,8 +687,7 @@ public class CatalogInventoryCoordinator {
         if (items != null && items.isArray()) items.forEach(item -> keys.add(item.path("objectType").asText("") + "|" + item.path("sourceRef").asText(item.path("ref").asText(item.path("code").asText("")))));
         return keys.size();
     }
-    private JsonNode appendOwnerReadback(JsonNode result, JsonNode owner, String ownerName) { if (result instanceof ObjectNode envelope && envelope.path("data").isObject()) envelope.with("data").withArray("ownerReadbacks").add(owner); return result; }
-    private String digest(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception ex) { throw new IllegalStateException(ex); } }
+    private String digest(String value) { try { return Sha256Hex.digest(value); } catch (Exception ex) { throw new IllegalStateException(ex); } }
     private record OwnerPreflight(String inventoryDigest, String productionDigest, JsonNode inventoryJudgement, JsonNode productionJudgement) { }
 
     record CopyReferencePlan(ArrayNode closureItemRefs, ArrayNode productionTagRefs, ArrayNode referenceMappings) {
@@ -965,14 +745,6 @@ public class CatalogInventoryCoordinator {
         data.path("productionTags").forEach(tag -> { if (tag instanceof ObjectNode row) row.put("name", tagNames.getOrDefault(tag.path("code").asText(), tag.path("name").asText())); });
     }
 
-    /** Catalog owns code lookup; the inventory task API receives only its opaque item ref. */
-    private String catalogItemRef(String dataNodeRef, String brandRef, String itemCode, String requestId) {
-        if (itemCode == null || itemCode.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemCode is required for catalog lookup");
-        JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, mapper.createObjectNode().put("itemCode", itemCode), requestId);
-        JsonNode item = detail.path("data").path("item");
-        return requiredOpaqueTaskRef(item, "itemRef", "catalog item task read");
-    }
-
     private String requiredOpaqueTaskRef(JsonNode source, String key, String subject) {
         String value = source == null ? "" : source.path(key).asText("");
         try { return UUID.fromString(value).toString(); }
@@ -983,40 +755,40 @@ public class CatalogInventoryCoordinator {
         if (!(result instanceof ObjectNode envelope) || !envelope.path("data").isObject()) return;
         JsonNode catalogPage = prefetchedCatalog;
         if (catalogPage == null) {
-            ArrayNode codes = mapper.createArrayNode(); envelope.path("data").path("items").forEach(item -> { if (item.hasNonNull("productCode")) codes.add(item.path("productCode").asText()); });
-            if (codes.isEmpty()) return;
-            ObjectNode lookup = mapper.createObjectNode(); lookup.set("itemCodes", codes); lookup.put("pageSize", Math.min(codes.size(), 100)); catalogPage = catalog.readItems(dataNodeRef, brandRef, lookup, requestId);
+            ArrayNode refs = mapper.createArrayNode(); envelope.path("data").path("items").forEach(item -> { if (item.hasNonNull("itemRef")) refs.add(item.path("itemRef").asText()); });
+            if (refs.isEmpty()) return;
+            ObjectNode lookup = mapper.createObjectNode(); lookup.set("itemRefs", refs); lookup.put("pageSize", Math.min(refs.size(), 100)); catalogPage = catalog.readItems(dataNodeRef, brandRef, lookup, requestId);
         }
         java.util.Map<String, JsonNode> items = new java.util.HashMap<>();
-        catalogPage.path("data").path("items").forEach(item -> items.put(item.path("code").asText(), item));
-        ArrayNode itemCodes = mapper.createArrayNode(); items.keySet().forEach(itemCodes::add);
-        JsonNode skuNames = catalog.skuNamesByItemCodes(dataNodeRef, brandRef, itemCodes);
+        catalogPage.path("data").path("items").forEach(item -> items.put(item.path("itemRef").asText(), item));
         envelope.path("data").path("items").forEach(item -> {
             if (!(item instanceof ObjectNode row)) return;
-            JsonNode catalogItem = items.get(row.path("productCode").asText());
+            JsonNode catalogItem = items.get(row.path("itemRef").asText());
             if (catalogItem == null) return;
             row.put("productName", catalogItem.path("name").asText(row.path("productName").asText()));
             row.put("categoryName", catalogItem.path("categoryRefs").isArray() && catalogItem.path("categoryRefs").size() > 0 ? catalogItem.path("categoryRefs").get(0).asText() : null);
             if (catalogItem.hasNonNull("materialRole")) row.put("materialRole", catalogItem.path("materialRole").asText()); else row.putNull("materialRole");
-            String skuCode = row.path("skuCode").asText("");
-            if (!skuCode.isBlank()) row.put("skuName", skuNames.path(row.path("productCode").asText()).path(skuCode).asText(skuCode));
+            String skuRef = row.path("productSkuRef").asText("");
+            if (!skuRef.isBlank() && catalogItem.path("skus").isArray()) catalogItem.path("skus").forEach(sku -> {
+                if (skuRef.equals(sku.path("productSkuRef").asText())) row.put("skuName", sku.path("skuName").asText(row.path("skuName").asText()));
+            });
         });
     }
 
     private void enrichInventoryTarget(JsonNode result, String dataNodeRef, String brandRef, String requestId) {
         if (!(result instanceof ObjectNode current) || !current.path("target").isObject()) return;
-        String code = current.path("target").path("productCode").asText("");
-        if (code.isBlank()) return;
-        JsonNode detail = catalog.readItem(dataNodeRef, brandRef, code, requestId);
-        JsonNode item = detail.path("data").path("item");
+        ObjectNode target = (ObjectNode) current.path("target");
+        String itemRef = target.path("itemRef").asText("");
+        if (itemRef.isBlank()) return;
+        ObjectNode lookup = mapper.createObjectNode(); lookup.putArray("itemRefs").add(itemRef);
+        JsonNode item = catalog.readItems(dataNodeRef, brandRef, lookup, requestId).path("data").path("items").path(0);
         if (item.isObject()) {
-            ObjectNode target = (ObjectNode) current.path("target");
             target.put("productName", item.path("name").asText(target.path("productName").asText()));
             target.put("productShape", item.path("shapeKey").asText(target.path("productShape").asText()));
-            String skuCode = target.path("skuCode").asText("");
-            if (!skuCode.isBlank() && item.path("skus").isArray()) {
+            String skuRef = target.path("productSkuRef").asText("");
+            if (!skuRef.isBlank() && item.path("skus").isArray()) {
                 item.path("skus").forEach(sku -> {
-                    if (skuCode.equals(sku.path("skuCode").asText())) target.put("skuName", sku.path("skuName").asText(skuCode));
+                    if (skuRef.equals(sku.path("productSkuRef").asText())) target.put("skuName", sku.path("skuName").asText(target.path("skuName").asText()));
                 });
             }
         }
@@ -1033,33 +805,33 @@ public class CatalogInventoryCoordinator {
         // it is not a CatalogOwner detail/page envelope consumer.
         JsonNode dataNode = root.path("data").isObject() ? root.path("data") : root;
         if (!(dataNode instanceof ObjectNode data) || !data.path("entries").isArray()) return;
-        ArrayNode itemCodes = mapper.createArrayNode();
-        java.util.LinkedHashSet<String> uniqueCodes = new java.util.LinkedHashSet<>();
+        ArrayNode itemRefs = mapper.createArrayNode();
+        java.util.LinkedHashSet<String> uniqueRefs = new java.util.LinkedHashSet<>();
         data.path("entries").forEach(entry -> {
-            String sourceCode = entry.path("sourceCode").asText("");
-            if (!sourceCode.isBlank() && uniqueCodes.add(sourceCode)) itemCodes.add(sourceCode);
+            String sourceItemRef = entry.path("sourceItemRef").asText("");
+            if (!sourceItemRef.isBlank() && uniqueRefs.add(sourceItemRef)) itemRefs.add(sourceItemRef);
         });
         java.util.Map<String, String> names = new java.util.HashMap<>();
         java.util.Map<String, String> statuses = new java.util.HashMap<>();
-        if (!itemCodes.isEmpty()) {
+        if (!itemRefs.isEmpty()) {
             ObjectNode lookup = mapper.createObjectNode();
-            lookup.set("itemCodes", itemCodes);
-            lookup.put("itemCodesOnly", true);
+            lookup.set("itemRefs", itemRefs);
             JsonNode catalogPage = catalog.readItems(dataNodeRef, brandRef, lookup, requestId);
             JsonNode catalogData = catalogPage.path("data");
             catalogData.path("items").forEach(item -> {
-                String code = item.path("code").asText("");
-                if (!code.isBlank()) {
-                    names.put(code, item.path("name").asText(code));
-                    statuses.put(code, item.path("status").asText("ACTIVE"));
+                String itemRef = item.path("itemRef").asText("");
+                if (!itemRef.isBlank()) {
+                    names.put(itemRef, item.path("name").asText(item.path("code").asText()));
+                    statuses.put(itemRef, item.path("status").asText("ACTIVE"));
                 }
             });
         }
         data.path("entries").forEach(entry -> {
             if (!(entry instanceof ObjectNode row)) return;
+            String sourceItemRef = row.path("sourceItemRef").asText("");
             String sourceCode = row.path("sourceCode").asText("");
-            row.put("sourceName", names.getOrDefault(sourceCode, sourceCode));
-            row.put("status", statuses.getOrDefault(sourceCode, row.path("status").asText("ACTIVE")));
+            row.put("sourceName", names.getOrDefault(sourceItemRef, sourceCode));
+            row.put("status", statuses.getOrDefault(sourceItemRef, row.path("status").asText("ACTIVE")));
             row.putObject("ownerScope")
                 .put("ownerType", "DATA_NODE")
                 .put("ownerRef", dataNodeRef)
@@ -1069,102 +841,29 @@ public class CatalogInventoryCoordinator {
 
     private void enrichCatalogItems(JsonNode result, String dataNodeRef, String brandRef, String requestId, String dataNodeType) {
         if (!(result instanceof ObjectNode envelope) || !envelope.path("data").isObject()) return;
-        ArrayNode codes = mapper.createArrayNode(); envelope.path("data").path("items").forEach(item -> { if (item.hasNonNull("code")) codes.add(item.path("code").asText()); });
-        if (codes.isEmpty()) return;
+        ArrayNode itemRefs = mapper.createArrayNode(); envelope.path("data").path("items").forEach(item -> { if (item.hasNonNull("itemRef")) itemRefs.add(item.path("itemRef").asText()); });
+        if (itemRefs.isEmpty()) return;
         if (!Set.of("STORE", "HEAD_COMPANY").contains(dataNodeType)) return;
-        ObjectNode lookup = mapper.createObjectNode().set("itemCodes", codes);
+        ObjectNode lookup = mapper.createObjectNode().set("itemRefs", itemRefs);
         JsonNode inventoryPage = inventory.readCatalogInventorySummary(dataNodeRef, brandRef, lookup, requestId, dataNodeType);
         JsonNode inventoryItems = inventoryPage.path("data").path("items");
         java.util.Map<String, Integer> targetCounts = new java.util.HashMap<>();
         java.util.Map<String, Integer> bomCounts = new java.util.HashMap<>();
         if (inventoryItems.isArray()) {
             inventoryItems.forEach(item -> {
-                String code = item.path("productCode").asText();
-                targetCounts.put(code, item.path("targetCount").asInt(0));
-                bomCounts.put(code, item.path("bomCount").asInt(0));
+                String itemRef = item.path("itemRef").asText();
+                targetCounts.put(itemRef, item.path("targetCount").asInt(0));
+                bomCounts.put(itemRef, item.path("bomCount").asInt(0));
             });
         }
         JsonNode items = envelope.path("data").path("items");
         if (items.isArray()) {
             items.forEach(item -> {
                 if (item instanceof ObjectNode row) {
-                    String code = row.path("code").asText();
-                    row.put("stockTargetCount", targetCounts.getOrDefault(code, 0));
-                    row.put("bomCount", bomCounts.getOrDefault(code, 0));
+                    String itemRef = row.path("itemRef").asText();
+                    row.put("stockTargetCount", targetCounts.getOrDefault(itemRef, 0));
+                    row.put("bomCount", bomCounts.getOrDefault(itemRef, 0));
                 }
-            });
-        }
-    }
-
-    private void coordinateSaveInventory(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey, String dataNodeType,
-                                         UUID workspaceUuid, String groupWorkspaceKey, OperationsOwnerScopeGrant ownerScopeGrant) {
-        JsonNode sections = request.path("sections");
-        JsonNode configuration = sections.path("inventoryConfiguration");
-        JsonNode expectedVersions = sections.path("expectedInventoryVersions");
-        JsonNode draft = sections.path("catalogDraft");
-        if (!configuration.path("nodes").isArray() && !draft.path("inventoryBom").isArray()) return;
-        CatalogInventoryProjection projection = catalogInventoryProjection(dataNodeRef, brandRef, request.path("itemCode").asText(), requestId);
-        java.util.Map<String, Long> versions = new java.util.HashMap<>();
-        if (expectedVersions.isArray()) expectedVersions.forEach(expected -> versions.put(expected.path("targetRef").asText(), expected.path("version").asLong()));
-        if (configuration.path("nodes").isArray()) for (JsonNode sourceNode : configuration.path("nodes")) {
-            if (!sourceNode.isObject()) continue;
-            ObjectNode node = (ObjectNode) sourceNode;
-            String mode = node.path("mode").asText("NONE");
-            if ("NONE".equals(mode)) continue;
-            if ("BOM".equals(mode)) continue;
-            String targetRef = node.path("targetRef").asText("");
-            String itemCode = node.path("itemCode").asText(request.path("itemCode").asText(""));
-            String skuCode = node.hasNonNull("skuCode") ? node.path("skuCode").asText() : null;
-            String itemRef = opaqueProjectionRef(node, "itemRef", projection.itemRef(), "inventoryConfiguration.itemRef");
-            String productSkuRef = skuCode == null ? null : opaqueProjectionRef(node, "productSkuRef", projection.productSkuRef(skuCode), "inventoryConfiguration.productSkuRef");
-            ObjectNode ensure = mapper.createObjectNode().put("itemRef", itemRef).put("itemCode", itemCode).put("mode", mode);
-            if (productSkuRef == null) ensure.putNull("productSkuRef"); else ensure.put("productSkuRef", productSkuRef);
-            if (skuCode == null) ensure.putNull("skuCode"); else ensure.put("skuCode", skuCode);
-            if (!targetRef.isBlank()) ensure.put("targetRef", targetRef);
-            String unit = node.path("consumptionUnit").asText(node.path("unit").asText(node.path("configuration").path("countingUnit").asText("")));
-            if (!unit.isBlank()) ensure.put("consumptionUnit", unit);
-            if (node.path("configuration").isObject()) ensure.set("configuration", node.path("configuration"));
-            if (!targetRef.isBlank() && node.path("configuration").isObject() && node.path("configuration").size() > 0) {
-                Long expected = versions.get(targetRef);
-                if (expected == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "inventory target version is required");
-                ensure.put("expectedVersion", expected);
-            }
-            JsonNode ensured = inventory.ensureCatalogInventoryTarget(dataNodeRef, brandRef, ensure, requestId,
-                idempotencyKey + ":ensure:" + itemRef + ":" + (productSkuRef == null ? "ITEM" : productSkuRef),
-                workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
-            targetRef = requiredInventoryTargetRef(ensured);
-            node.put("targetRef", targetRef);
-        }
-        if (draft.path("inventoryBom").isArray()) {
-            java.util.Map<String, ArrayNode> grouped = new java.util.LinkedHashMap<>();
-            java.util.Map<String, ObjectNode> groupCommands = new java.util.LinkedHashMap<>();
-            java.util.Map<String, Long> bomVersions = new java.util.HashMap<>();
-            draft.path("inventoryBom").forEach(entry -> {
-                if (!"BOM".equals(entry.path("mode").asText("NONE"))) return;
-                String skuCode = entry.hasNonNull("skuCode") ? entry.path("skuCode").asText() : "";
-                String optionValueCode = entry.hasNonNull("optionValueCode") ? entry.path("optionValueCode").asText() : "";
-                if (!skuCode.isBlank() && !optionValueCode.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM owner 不能同时指定 SKU 与选项值");
-                String itemRef = opaqueProjectionRef(entry, "itemRef", projection.itemRef(), "inventoryBom.itemRef");
-                String productSkuRef = skuCode.isBlank() ? null : opaqueProjectionRef(entry, "productSkuRef", projection.productSkuRef(skuCode), "inventoryBom.productSkuRef");
-                String optionValueRef = optionValueCode.isBlank() ? null : opaqueProjectionRef(entry, "optionValueRef", projection.optionValueRef(optionValueCode), "inventoryBom.optionValueRef");
-                String key = itemRef + "|" + (productSkuRef == null ? "" : productSkuRef) + "|" + (optionValueRef == null ? "" : optionValueRef);
-                grouped.computeIfAbsent(key, ignored -> mapper.createArrayNode()).add(entry);
-                groupCommands.computeIfAbsent(key, ignored -> {
-                    ObjectNode command = mapper.createObjectNode().put("itemRef", itemRef).put("itemCode", entry.path("itemCode").asText(request.path("itemCode").asText("")));
-                    if (productSkuRef == null) command.putNull("productSkuRef"); else command.put("productSkuRef", productSkuRef);
-                    if (optionValueRef == null) command.putNull("optionValueRef"); else command.put("optionValueRef", optionValueRef);
-                    if (skuCode.isBlank()) command.putNull("skuCode"); else command.put("skuCode", skuCode);
-                    if (optionValueCode.isBlank()) command.putNull("optionValueCode"); else command.put("optionValueCode", optionValueCode);
-                    return command;
-                });
-                if (entry.has("version")) bomVersions.putIfAbsent(key, entry.path("version").asLong());
-            });
-            grouped.forEach((key, entries) -> {
-                ObjectNode command = groupCommands.get(key).deepCopy();
-                command.set("rows", entries);
-                command.put("expectedVersion", bomVersions.getOrDefault(key, 0L));
-                inventory.saveCatalogProductBom(dataNodeRef, brandRef, command, requestId, idempotencyKey + ":bom:" + key,
-                    workspaceUuid, groupWorkspaceKey, dataNodeType, ownerScopeGrant);
             });
         }
     }
@@ -1174,7 +873,7 @@ public class CatalogInventoryCoordinator {
      * commands and their idempotency grouping use only the owner-returned refs.
      */
     private CatalogInventoryProjection catalogInventoryProjection(String dataNodeRef, String brandRef, String itemCode, String requestId) {
-        JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, mapper.createObjectNode().put("itemCode", itemCode), requestId);
+        JsonNode detail = catalog.readItem(dataNodeRef, brandRef, itemCode, requestId);
         JsonNode item = detail.path("data").path("item");
         String itemRef = requiredOpaqueTaskRef(item, "itemRef", "catalog item task read");
         java.util.Map<String, String> skuRefs = new java.util.LinkedHashMap<>();
@@ -1209,57 +908,11 @@ public class CatalogInventoryCoordinator {
         String optionValueRef(String optionValueCode) { return optionValueRefs.get(optionValueCode); }
     }
 
-    private static void requireCatalogSaveInventoryDefinitionCommands(List<String> commands) {
-        Set<String> declared = commands == null ? Set.of() : Set.copyOf(commands);
-        if (!CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS.equals(declared)) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "商品保存没有获准的库存定义命令集");
-        }
-    }
-
     private Set<String> catalogItemAssetRefs(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         if (itemCode == null || itemCode.isBlank()) return Set.of();
-        ObjectNode query = mapper.createObjectNode().put("itemCode", itemCode);
-        JsonNode detail = catalog.read("getOperationsCatalogItem", dataNodeRef, brandRef, query, requestId);
+        JsonNode detail = catalog.readItem(dataNodeRef, brandRef, itemCode, requestId);
         JsonNode detailRoot = detail.path("data");
         return catalogAssetRefs(detailRoot.path("item"));
-    }
-
-    /**
-     * A catalog save is the business reference decision for an image.  Activate every
-     * submitted staged ref after the catalog write, then release removed refs only when
-     * the catalog owner confirms no other non-voided item still points at them.
-     */
-    private void settleCatalogAssets(String dataNodeRef, String brandRef, ObjectNode request, Set<String> previousAssetRefs, String requestId, String idempotencyKey,
-                                     UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType,
-                                     Map<String, String> catalogAssetBindGrants, OperationsOwnerScopeGrant ownerScopeGrant) {
-        Set<String> nextAssetRefs = catalogAssetRefs(request.path("sections").path("catalogDraft"));
-        for (String ref : nextAssetRefs) {
-            try {
-                assets.claimCatalogStaged(UUID.fromString(ref), workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType,
-                    catalogAssetBindGrants.get(ref), ownerScopeGrant);
-            } catch (IllegalArgumentException failure) {
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");
-            } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-                throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-            } catch (PlatformAssetService.AssetClaimRejectedException failure) {
-                throw new CatalogOwnerApi.Problem("ASSET_NOT_READY", 409, "图片资产尚未准备好或已失效");
-            }
-        }
-        Set<String> candidates = new java.util.LinkedHashSet<>(previousAssetRefs); candidates.removeAll(nextAssetRefs);
-        Set<String> stillReferenced = catalog.assetRefsStillReferenced(candidates);
-        for (String ref : candidates) {
-            if (stillReferenced.contains(ref)) continue;
-            try {
-                assets.releaseUnreferencedCatalogAsset(UUID.fromString(ref), idempotencyKey + ":asset-release:" + ref,
-                    workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
-            } catch (IllegalArgumentException failure) {
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "images contains an invalid assetRef");
-            } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-                throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-            } catch (PlatformAssetService.AssetClaimRejectedException failure) {
-                throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产释放失败，资产版本已变化或仍被引用");
-            }
-        }
     }
 
     private Set<String> assetRefs(JsonNode values) {
@@ -1279,65 +932,8 @@ public class CatalogInventoryCoordinator {
         return refs;
     }
 
-    @Transactional
-    public JsonNode stageAsset(UUID workspaceUuid, String groupWorkspaceKey, String fileName, String mediaType, String contentDigest, byte[] bytes, String requestId, String idempotencyKey, String testFailurePoint, OperationsOwnerScopeGrant ownerScopeGrant) {
-        requireOwnerScopeGrant("stageOperationsCatalogAsset", ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ownerScopeGrant == null ? null : ownerScopeGrant.targetType(), ownerScopeGrant == null || ownerScopeGrant.targetId() == null ? null : ownerScopeGrant.targetId().toString());
-        if (fileName == null || fileName.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "fileName is required");
-        if (mediaType == null || mediaType.isBlank() || bytes == null || bytes.length == 0) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "multipart content is required");
-        if (!stagedDigestMatches(contentDigest, bytes)) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "contentDigest does not match content");
-        // The fixture catalog includes an asset-processing failure case, but
-        // the real asset processor is intentionally not faulted by ordinary
-        // malformed input (those are validation failures).  Keep the fault
-        // seam explicit, disabled by default, and only available to the
-        // managed API runner so this case exercises the declared typed
-        // problem without making production behavior client-controlled.
-        failForManagedTestPoint(testFailurePoint, "asset-processing", "ASSET_PROCESSING_FAILED", 422, "资产处理失败");
-        StageReadback staged;
-        try {
-            staged = assets.stageCatalogContent(workspaceUuid, groupWorkspaceKey, ownerScopeGrant.targetId().toString(), ownerScopeGrant.targetType(),
-                mediaType, bytes.length, new ByteArrayInputStream(bytes), idempotencyKey, ownerScopeGrant);
-        } catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权");
-        }
-        AssetReadback asset = assets.require(staged.assetRef());
-        ObjectNode result = mapper.createObjectNode().put("assetRef", staged.assetRef().toString()).put("bindGrant", staged.bindGrant()).put("status", asset.status()).put("mediaType", staged.contentType()).put("contentDigest", staged.sha256()).putNull("readyAt").put("version", asset.version());
-        ObjectNode readback = mapper.createObjectNode().put("revision", REVISION).put("requestId", requestId); readback.set("result", result); readback.put("version", asset.version()); return readback;
-    }
-
-    private JsonNode releaseAsset(String dataNodeRef, String brandRef, ObjectNode request, String requestId, String idempotencyKey,
-                                  UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, OperationsOwnerScopeGrant ownerScopeGrant) {
-        UUID ref; try { ref = UUID.fromString(required(request, "assetRef", "")); } catch (IllegalArgumentException ex) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "assetRef is invalid"); }
-        assets.lockCatalogReferences(Set.of(ref));
-        if (catalog.assetReferencedAnywhere(ref.toString())) throw new CatalogOwnerApi.Problem("ASSET_REFERENCE_PROTECTED", 409, "图片资产仍被商品引用，不能释放");
-        long expected = request.path("expectedVersion").asLong(1); AssetReadback readback;
-        try {
-            readback = assets.releaseCatalogStaged(ref, expected, idempotencyKey, workspaceUuid, groupWorkspaceKey,
-                dataNodeRef, dataNodeType, ownerScopeGrant);
-        }
-        catch (PlatformAssetService.AssetOwnerScopeForbiddenException failure) { throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "图片资产命令缺少匹配的数据节点写授权"); }
-        catch (PlatformAssetService.AssetIdempotencyConflictException failure) { throw new CatalogOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他资产释放请求"); }
-        catch (PlatformAssetService.AssetClaimRejectedException failure) { throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "待释放资产不存在或版本已变化"); }
-        ObjectNode result = mapper.createObjectNode().put("assetRef", readback.assetRef().toString()).put("disposition", "RELEASED").put("releasedAt", time.currentEpochMillis()).put("version", readback.version());
-        ObjectNode response = mapper.createObjectNode().put("revision", REVISION).put("requestId", requestId); response.set("result", result); response.put("version", readback.version()); return response;
-    }
-
-    private boolean stagedDigestMatches(String expected, byte[] bytes) {
-        if (expected == null || expected.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "contentDigest is required");
-        try { return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes)).equals(expected); }
-        catch (Exception ex) { throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "contentDigest is invalid"); }
-    }
-
-    private static void requireOwnerScopeGrant(String operationId, OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, String dataNodeRef) {
-        boolean mutation = CATALOG_WRITES.contains(operationId) || INVENTORY_WRITES.contains(operationId) || PRODUCTION_WRITES.contains(operationId)
-            || operationId.startsWith("preflightOperations") || operationId.startsWith("executeOperations")
-            || "releaseOperationsCatalogStagedAsset".equals(operationId) || "stageOperationsCatalogAsset".equals(operationId);
-        if (!mutation) return;
-        try {
-            if (grant != null && grant.matches(workspaceUuid, groupWorkspaceKey, dataNodeType, UUID.fromString(dataNodeRef))) return;
-        } catch (RuntimeException ignored) {
-            // Fall through to a typed denial without leaking the malformed selector.
-        }
-        throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "当前命令缺少匹配的数据节点写授权");
+    private static JsonNode primaryRead(java.util.function.Supplier<JsonNode> read) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, read);
     }
 
     private static String required(ObjectNode request, String key, String fallback) { JsonNode value = request == null ? null : request.get(key); if (value == null || value.isNull() || value.asText().isBlank()) { if (fallback != null && !fallback.isBlank()) return fallback; throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required"); } return value.asText(); }

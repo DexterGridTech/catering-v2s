@@ -19,10 +19,10 @@ public class DeleteOperationsCatalogCategoryOperation {
     public DeleteOperationsCatalogCategoryOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) { this.contexts = contexts; this.catalog = catalog; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogCategoryDeleteReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.DELETE_OPERATIONS_CATALOG_CATEGORY, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.DELETE_OPERATIONS_CATALOG_CATEGORY, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         var value = catalog.deleteCategory(context, new CatalogOwnerApi.CategoryDeleteCommand(CreateOperationsCatalogCategoryOperation.requiredUuid(invocation.categoryRef(), "categoryRef"), CreateOperationsCatalogCategoryOperation.requiredLong(request.expectedVersion(), "expectedVersion")), invocation.idempotencyKey());
-        return new CatalogCategoryDeleteReadback(REVISION, context.requestId(), new CatalogCategoryDeleteReadback.Result(value.categoryRef().toString(), value.deletedSubtreeSize(), value.deletedCategoryCodes()), null);
+        return new CatalogCategoryDeleteReadback(REVISION, context.requestId(), new CatalogCategoryDeleteReadback.Result(value.categoryRef(), value.deletedSubtreeSize(), value.deletedCategoryCodes()), null);
     }
     public record Invocation(CatalogCategoryDeleteRequest request, String sessionCredential, String requestedBrandRef, String correlationId, String requestId, String categoryRef, String idempotencyKey) { }
 }

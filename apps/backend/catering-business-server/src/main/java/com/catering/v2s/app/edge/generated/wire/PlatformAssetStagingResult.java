@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAssetStagingResult(
-    String assetRef,
+    java.util.UUID assetRef,
     String bindGrant,
     Long expiresAt,
     String contentType,

@@ -3,11 +3,15 @@ package com.catering.v2s.catalog.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,23 +22,87 @@ import org.junit.jupiter.api.Test;
 
 class CatalogInventoryCoordinatorCopySourceAuthorityTest {
     @Test
-    void forgedRequestSourceCannotOverrideOrganizationResolution() {
-        UUID workspace = UUID.randomUUID();
-        UUID target = UUID.randomUUID();
-        UUID forged = UUID.randomUUID();
-        UUID approved = UUID.randomUUID();
+    void workbenchContextExplainsUnavailableCopySourceAndClearsReasonWhenAvailable() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        CatalogScopeLookup scopes = mock(CatalogScopeLookup.class);
+        UUID dataNodeRef = UUID.randomUUID();
+        UUID workspaceUuid = UUID.randomUUID();
+        UUID sourceDataNodeRef = UUID.randomUUID();
+        ObjectNode base = mapper.createObjectNode();
+        base.putObject("data").putObject("actionAvailability")
+            .put("canCreate", true).put("canEdit", true).put("canCopy", true).putArray("reasons");
+        when(catalog.readWorkbenchContext(dataNodeRef.toString(), "brand", "request"))
+            .thenReturn(base.deepCopy(), base.deepCopy());
+        when(scopes.resolveCatalogCopySource(workspaceUuid, "group", "STORE", dataNodeRef, "brand"))
+            .thenThrow(new IllegalArgumentException("source not authorized"))
+            .thenReturn(sourceDataNodeRef);
         CatalogInventoryCoordinator service = new CatalogInventoryCoordinator(
-            null, null, null, null, new ObjectMapper(), null,
-            new FixedCatalogScopeLookup(approved)
-        );
-        ObjectNode request = new ObjectMapper().createObjectNode().put("sourceDataNodeRef", forged.toString());
-
-        String source = service.resolveBrandCopySource(
-            request, workspace, "GROUP-1", ServiceNodeTypes.STORE, target.toString(), "BRAND-1"
+            catalog, null, null, null, mapper, null, scopes
         );
 
-        assertEquals(approved.toString(), source);
-        assertFalse(request.has("_resolvedCatalogCopySource"));
+        var unavailable = service.readCatalogWorkbenchContext(dataNodeRef.toString(), "brand", "request",
+            "STORE", "head-company", workspaceUuid, "group").path("data");
+        assertFalse(unavailable.path("copySourceAvailable").asBoolean());
+        assertFalse(unavailable.path("actionAvailability").path("canCopy").asBoolean());
+        assertEquals(1, unavailable.path("actionAvailability").path("reasons").size());
+        assertEquals("COPY_SOURCE_UNAVAILABLE", unavailable.path("actionAvailability").path("reasons").get(0).asText());
+        assertTrue(unavailable.path("actionAvailability").path("canCreate").asBoolean());
+        assertTrue(unavailable.path("actionAvailability").path("canEdit").asBoolean());
+
+        var available = service.readCatalogWorkbenchContext(dataNodeRef.toString(), "brand", "request",
+            "STORE", "head-company", workspaceUuid, "group").path("data");
+        assertTrue(available.path("copySourceAvailable").asBoolean());
+        assertTrue(available.path("actionAvailability").path("canCopy").asBoolean());
+        assertTrue(available.path("actionAvailability").path("reasons").isEmpty());
+    }
+
+    @Test
+    void inventoryPrefilterRejectsMoreThanFiveThousandCatalogItemsBeforeCallingInventory() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogInventoryCoordinator service = new CatalogInventoryCoordinator(
+            catalog, inventory, null, null, mapper, null, null
+        );
+        ObjectNode catalogPage = mapper.createObjectNode();
+        catalogPage.putObject("data").put("total", 5001).putArray("items");
+        when(catalog.readItems(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(ObjectNode.class), org.mockito.ArgumentMatchers.anyString())).thenReturn(catalogPage);
+
+        ObjectNode request = mapper.createObjectNode().put("keyword", "latte");
+        CatalogOwnerApi.Problem failure = assertThrows(CatalogOwnerApi.Problem.class,
+            () -> service.readInventoryTargets("scope", "brand", request, "request", "STORE"));
+
+        assertEquals("VALIDATION_ERROR", failure.code());
+        assertEquals(422, failure.status());
+        assertEquals(true, failure.getMessage().contains("5000"));
+        verifyNoInteractions(inventory);
+    }
+
+    @Test
+    void inventoryPrefilterAllowsExactlyFiveThousandCatalogItems() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogInventoryCoordinator service = new CatalogInventoryCoordinator(
+            catalog, inventory, null, null, mapper, null, null
+        );
+        ObjectNode catalogPage = mapper.createObjectNode();
+        catalogPage.putObject("data").put("total", 5000).putArray("items");
+        ObjectNode inventoryPage = mapper.createObjectNode();
+        inventoryPage.putObject("data").putArray("items");
+        when(catalog.readItems(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(ObjectNode.class), org.mockito.ArgumentMatchers.anyString())).thenReturn(catalogPage);
+        when(inventory.readTargets(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(ObjectNode.class), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(inventoryPage);
+
+        assertEquals(inventoryPage, service.readInventoryTargets("scope", "brand",
+            mapper.createObjectNode().put("keyword", "latte"), "request", "STORE"));
+
+        verify(inventory).readTargets(org.mockito.ArgumentMatchers.eq("scope"), org.mockito.ArgumentMatchers.eq("brand"),
+            org.mockito.ArgumentMatchers.any(ObjectNode.class), org.mockito.ArgumentMatchers.eq("request"), org.mockito.ArgumentMatchers.eq("STORE"));
     }
 
     @Test
@@ -116,26 +184,4 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         }
     }
 
-    private static final class FixedCatalogScopeLookup implements CatalogScopeLookup {
-        private final UUID approved;
-
-        private FixedCatalogScopeLookup(UUID approved) {
-            this.approved = approved;
-        }
-
-        @Override
-        public CatalogBrandJudgment resolveCatalogBrand(UUID workspaceUuid, String groupWorkspaceKey, String dataNodeType, UUID dataNodeId, CatalogBrandSelection selection) {
-            return new CatalogBrandJudgment(selection.value(), "TEST_ORGANIZATION_JUDGMENT", "test-revision");
-        }
-
-        @Override
-        public void requireCatalogCopySource(UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, UUID targetDataNodeId, UUID sourceDataNodeId, String brandRef) {
-            if (!approved.equals(sourceDataNodeId)) throw new AssertionError("unexpected source");
-        }
-
-        @Override
-        public UUID resolveCatalogCopySource(UUID workspaceUuid, String groupWorkspaceKey, String targetDataNodeType, UUID targetDataNodeId, String brandRef) {
-            return approved;
-        }
-    }
 }

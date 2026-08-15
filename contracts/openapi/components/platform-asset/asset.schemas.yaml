@@ -16,7 +16,8 @@
           "assetRef": {
             "type": "string",
             "minLength": 32,
-            "maxLength": 128
+            "maxLength": 128,
+            "format": "uuid"
           },
           "bindGrant": {
             "type": "string",

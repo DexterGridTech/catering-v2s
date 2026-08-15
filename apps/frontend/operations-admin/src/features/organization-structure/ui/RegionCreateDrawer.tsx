@@ -5,7 +5,7 @@ import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type OrganizationNode} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {issue, organizationRegionCreateLabel, type HierarchyRow} from './organizationStructureShared';
-import {OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
+import {extensionValuesForGeneratedRequest, OrganizationExtensionFields, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {code: string; name: string; notes?: string; extensionValues?: OrganizationExtensionFormValues};
 
@@ -37,7 +37,7 @@ export function RegionCreateDrawer({open, commercialGroup, queryContext, onClose
     try {
       const created = await operationsClient.createOperationsOrganizationRegion(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {code: values.code.trim(), name: values.name.trim(), notes: values.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, values.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {code: values.code.trim(), name: values.name.trim(), notes: values.notes?.trim() || null, extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, values.extensionValues))}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onCreated(created);

@@ -8,19 +8,21 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.HexFormat;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,7 +70,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String key = requireIdempotencyKey(idempotencyKey);
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
-        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef);
+        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
             recheckCreateTagBeforeReceipt(dataNodeRef, scope.brandRef(), command);
         }
@@ -88,7 +90,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String key = requireIdempotencyKey(idempotencyKey);
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
-        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef);
+        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateUpdateTagBeforeReceipt(command);
         try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
             recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
@@ -109,7 +111,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String key = requireIdempotencyKey(idempotencyKey);
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
-        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef);
+        JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateTransitionTagBeforeReceipt(command);
         try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
             recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
@@ -122,6 +124,14 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
             saveTypedReceipt(dataNodeRef, key, "transitionOperationsProductionTagStatus", receiptRequest, result);
             return result;
         }
+    }
+
+    @Override @Transactional(readOnly = true)
+    public UUID resolveProductionTagRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, String tagCode) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "fulfillment-production", null);
+        TagRow current = find(scope.dataNodeId().toString(), scope.brandRef(), requiredText(tagCode, "tagCode"));
+        if (current == null) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在");
+        return current.ref();
     }
 
     private void recheckCreateTagBeforeReceipt(String scope, String brand, CreateTagCommand command) {
@@ -155,9 +165,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     /** JSON is used only for canonical receipt persistence, not as the typed owner boundary. */
-    private JsonNode typedReceiptRequest(Object command, String dataNodeRef) {
+    private JsonNode typedReceiptRequest(Object command, String dataNodeRef, String brandRef) {
         ObjectNode request = mapper.valueToTree(command);
         request.put("dataNodeRef", dataNodeRef);
+        request.put("receiptBrandRef", brandRef);
         return request;
     }
 
@@ -180,12 +191,13 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String code = requiredText(command.code(), "code");
         String tagKind = requireTagKind(command.tagKind());
         String name = requiredText(command.name(), "name");
+        UUID tagRef = UUID.randomUUID();
         try {
-            jdbc.update("INSERT INTO fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?)", UUID.randomUUID(), scope, brand, code, tagKind, name, time.currentEpochMillis(), time.currentEpochMillis());
+            jdbc.update("INSERT INTO fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?)", tagRef, scope, brand, code, tagKind, name, time.currentEpochMillis(), time.currentEpochMillis());
         } catch (DuplicateKeyException failure) {
             throw new ProductionTagOwnerApi.Problem("DUPLICATE_CODE", 409, "生产标签编码已存在");
         }
-        return new ProductionTagCommandReadback(code, tagKind, name, "ENABLED", 1L);
+        return new ProductionTagCommandReadback(tagRef, code, tagKind, name, "ENABLED", 1L);
     }
 
     private ProductionTagCommandReadback updateTypedTag(String scope, String brand, UpdateTagCommand command) {
@@ -198,7 +210,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         if (jdbc.update("UPDATE fulfillment_production.production_tag_definition SET name=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND code=? AND version=? AND status <> 'VOIDED'", name, time.currentEpochMillis(), scope, brand, code, command.expectedVersion()) != 1) {
             throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
         }
-        return new ProductionTagCommandReadback(code, tagKind, name, current.status(), command.expectedVersion() + 1);
+        return new ProductionTagCommandReadback(current.ref(), code, tagKind, name, current.status(), command.expectedVersion() + 1);
     }
 
     private ProductionTagCommandReadback transitionTypedTag(String scope, String brand, TransitionTagStatusCommand command) {
@@ -210,7 +222,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         if (jdbc.update("UPDATE fulfillment_production.production_tag_definition SET status=?,version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? AND code=? AND version=? AND status <> 'VOIDED'", targetStatus, time.currentEpochMillis(), scope, brand, code, command.expectedVersion()) != 1) {
             throw new ProductionTagOwnerApi.Problem("VERSION_CONFLICT", 409, "生产标签版本已变化");
         }
-        return new ProductionTagCommandReadback(code, current.tagKind(), current.name(), targetStatus, command.expectedVersion() + 1);
+        return new ProductionTagCommandReadback(current.ref(), code, current.tagKind(), current.name(), targetStatus, command.expectedVersion() + 1);
     }
 
     private static String requiredText(String value, String field) {
@@ -229,11 +241,12 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
             recheckWriteFactsBeforeReceipt(operationId, dataNodeRef, brandRef, request);
         }
-        JsonNode replay = replay(dataNodeRef, key, operationId, request); if (replay != null) return replay;
+        JsonNode receiptRequest = receiptRequest(request, brandRef);
+        JsonNode replay = replay(dataNodeRef, key, operationId, receiptRequest); if (replay != null) return replay;
         try (var command = OwnerOperationDiagnostics.beginCommand();
              var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
             JsonNode result = switch (operationId) { case "createOperationsProductionTag" -> create(dataNodeRef, brandRef, requestId, request); case "updateOperationsProductionTag" -> update(dataNodeRef, brandRef, requestId, request); case "transitionOperationsProductionTagStatus" -> transition(dataNodeRef, brandRef, requestId, request); default -> throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "production tag write operation is not registered"); };
-            saveReceipt(dataNodeRef, key, operationId, request, result); return result;
+            saveReceipt(dataNodeRef, key, operationId, receiptRequest, result); return result;
         }
     }
 
@@ -334,7 +347,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         if (!blocker.isBlank()) throw new ProductionTagOwnerApi.Problem(blocker, 422, "生产标签复制存在不兼容事实");
         String receiptKey = idempotencyKey == null ? "" : idempotencyKey.trim();
         if (!receiptKey.isBlank()) {
-            JsonNode replay = replay(targetDataNodeRef, receiptKey, "coordinatedCopy", request);
+            JsonNode replay = replay(targetDataNodeRef, receiptKey, "coordinatedCopy", receiptRequest(request, brandRef));
             if (replay != null) return replayCopyIfCurrent(replay, currentFingerprint);
         }
         try (var command = OwnerOperationDiagnostics.beginCommand();
@@ -342,21 +355,37 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         if (request.hasNonNull("productionPreflightDigest")) {
             if (!request.path("productionPreflightDigest").asText().equals(currentFingerprint)) throw new ProductionTagOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "生产标签复制预检已失效，请重新预检");
         }
-        JsonNode codes = request.path("productionTagRefs"); if (!codes.isArray()) { ObjectNode result = mapper.createObjectNode().put("owner", "fulfillment-production").put("status", "COMMITTED").put("version", 0); result.put("receiptObjectFingerprint", currentFingerprint); if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", request, result); return result; }
-        int copied = 0; ArrayNode referenceMap = mapper.createArrayNode();
-        for (JsonNode refNode : codes) {
-            TagRow source = findByRef(sourceDataNodeRef, brandRef, refNode.asText()); if (source == null) throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED",422,"生产标签引用不存在");
-            TagRow existing = find(targetDataNodeRef, brandRef, source.code());
-            UUID targetRef = plannedTargetRef(request, source.ref(), existing == null ? null : existing.ref());
-            copied += jdbc.update("INSERT INTO fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,status,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING", targetRef, targetDataNodeRef, brandRef, source.code(), source.tagKind(), source.name(), source.status(), 1L, time.currentEpochMillis(), time.currentEpochMillis());
-            TagRow target = find(targetDataNodeRef, brandRef, source.code());
-            if (target == null || !target.ref().equals(targetRef)) throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED",422,"生产标签 targetRef 与目标事实不一致");
-            referenceMap.add(referenceMapping(source, target));
+        JsonNode codes = request.path("productionTagRefs"); if (!codes.isArray()) { ObjectNode result = mapper.createObjectNode().put("owner", "fulfillment-production").put("status", "COMMITTED").put("version", 0); result.put("receiptObjectFingerprint", currentFingerprint); if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", receiptRequest(request, brandRef), result); return result; }
+        List<UUID> sourceRefs = new ArrayList<>();
+        for (JsonNode refNode : codes) try { sourceRefs.add(UUID.fromString(refNode.asText())); }
+        catch (IllegalArgumentException failure) { throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "生产标签引用必须为UUID"); }
+        List<TagRow> sources = tagsByRefs(sourceDataNodeRef, brandRef, sourceRefs, "tag_ref");
+        if (sources.size() != sourceRefs.stream().distinct().count()) throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "生产标签引用不存在");
+        List<String> sourceCodes = sources.stream().map(TagRow::code).toList();
+        Map<String, TagRow> existingByCode = new LinkedHashMap<>();
+        for (TagRow row : tagsByStrings(targetDataNodeRef, brandRef, sourceCodes)) existingByCode.put(row.code(), row);
+        List<PlannedTag> planned = new ArrayList<>();
+        for (TagRow source : sources) planned.add(new PlannedTag(source, plannedTargetRef(request, source.ref(), existingByCode.containsKey(source.code()) ? existingByCode.get(source.code()).ref() : null)));
+        int[] inserted = jdbc.batchUpdate("INSERT INTO fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,tag_kind,name,status,version,created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING", new BatchPreparedStatementSetter() {
+            @Override public void setValues(java.sql.PreparedStatement statement, int index) throws java.sql.SQLException {
+                PlannedTag row = planned.get(index); TagRow source = row.source();
+                statement.setObject(1, row.targetRef()); statement.setString(2, targetDataNodeRef); statement.setString(3, brandRef); statement.setString(4, source.code()); statement.setString(5, source.tagKind()); statement.setString(6, source.name()); statement.setString(7, source.status()); statement.setLong(8, 1L); statement.setLong(9, time.currentEpochMillis()); statement.setLong(10, time.currentEpochMillis());
+            }
+            @Override public int getBatchSize() { return planned.size(); }
+        });
+        int copied = java.util.Arrays.stream(inserted).map(value -> value > 0 ? value : 0).sum();
+        Map<String, TagRow> targetByCode = new LinkedHashMap<>();
+        for (TagRow row : tagsByStrings(targetDataNodeRef, brandRef, sourceCodes)) targetByCode.put(row.code(), row);
+        ArrayNode referenceMap = mapper.createArrayNode();
+        for (PlannedTag row : planned) {
+            TagRow target = targetByCode.get(row.source().code());
+            if (target == null || !target.ref().equals(row.targetRef())) throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED",422,"生产标签 targetRef 与目标事实不一致");
+            referenceMap.add(referenceMapping(row.source(), target));
         }
-        verifyTargetNoOwnerReference(sourceDataNodeRef, targetDataNodeRef, brandRef, codes);
-        ObjectNode result = mapper.createObjectNode().put("owner", "fulfillment-production").put("status", "COMMITTED").put("version", copied); result.set("referenceMap", referenceMap);
+        verifyTargetNoOwnerReference(sourceDataNodeRef, targetDataNodeRef, brandRef, sources, targetByCode);
+        ObjectNode result = mapper.createObjectNode().put("owner", "fulfillment-production").put("status", copied == 0 ? "CONFLICT" : "COMMITTED").put("version", copied); result.set("referenceMap", referenceMap);
         result.put("receiptObjectFingerprint", preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization).path("digest").asText());
-        if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", request, result);
+        if (!receiptKey.isBlank()) saveReceipt(targetDataNodeRef, receiptKey, "coordinatedCopy", receiptRequest(request, brandRef), result);
         return result;
         }
     }
@@ -436,6 +465,18 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
 
     private TagRow find(String scope, String brand, String code) { return jdbc.query("SELECT tag_ref,code,tag_kind,name,status,version FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND code=?", r -> { if (!r.next()) return null; return new TagRow(r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getString(5), r.getLong(6)); }, scope, brand, code); }
     private TagRow findByRef(String scope, String brand, String ref) { try { return jdbc.query("SELECT tag_ref,code,tag_kind,name,status,version FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND tag_ref=?", r -> { if (!r.next()) return null; return new TagRow(r.getObject(1, UUID.class), r.getString(2), r.getString(3), r.getString(4), r.getString(5), r.getLong(6)); }, scope, brand, UUID.fromString(ref)); } catch (IllegalArgumentException failure) { throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED",422,"生产标签引用必须为UUID"); } }
+    private List<TagRow> tagsByRefs(String scope, String brand, List<UUID> values, String column) {
+        if (values.isEmpty()) return List.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(values.size(), "?"));
+        List<Object> args = new ArrayList<>(); args.add(scope); args.add(brand); args.addAll(values);
+        return jdbc.query("SELECT tag_ref,code,tag_kind,name,status,version FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND " + column + " IN (" + placeholders + ")", (row, number) -> new TagRow(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4), row.getString(5), row.getLong(6)), args.toArray());
+    }
+    private List<TagRow> tagsByStrings(String scope, String brand, List<String> values) {
+        if (values.isEmpty()) return List.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(values.size(), "?"));
+        List<Object> args = new ArrayList<>(); args.add(scope); args.add(brand); args.addAll(values);
+        return jdbc.query("SELECT tag_ref,code,tag_kind,name,status,version FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND code IN (" + placeholders + ")", (row, number) -> new TagRow(row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4), row.getString(5), row.getLong(6)), args.toArray());
+    }
     private UUID plannedTargetRef(ObjectNode request, UUID sourceRef, UUID existingTargetRef) {
         JsonNode mappings = request.path("referenceMappings");
         UUID planned = null;
@@ -456,16 +497,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         return mapper.createObjectNode().put("objectType", "PRODUCTION_TAG").put("sourceRef", source.ref().toString()).put("targetRef", target.ref().toString()).put("targetCode", target.code()).putNull("targetSkuCode").putNull("targetOptionValueCode");
     }
     /** ProductionTagDefinition has no JSON/outbound owner refs; verify every copied row is target-scoped. */
-    private void verifyTargetNoOwnerReference(String sourceScope, String targetScope, String brand, JsonNode refs) {
+    private void verifyTargetNoOwnerReference(String sourceScope, String targetScope, String brand, List<TagRow> sources, Map<String, TagRow> targets) {
         if (sourceScope.equals(targetScope)) return;
-        for (JsonNode ref : refs) {
-            TagRow source = findByRef(sourceScope, brand, ref.asText());
-            if (source == null) throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "生产标签引用不存在");
-            jdbc.query("SELECT data_node_ref,brand_ref FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND code=?", result -> {
-            if (result.next() && (!targetScope.equals(result.getString(1)) || !brand.equals(result.getString(2)))) throw new ProductionTagOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "生产标签复制结果未保持目标 owner scope");
-            return null;
-            }, targetScope, brand, source.code());
-        }
+        for (TagRow source : sources) if (!targets.containsKey(source.code())) throw new ProductionTagOwnerApi.Problem("OWNER_REFERENCE_LEAK", 422, "生产标签复制结果未保持目标 owner scope");
     }
     private ObjectNode tagResult(String code, String tagKind, String name, String status, long version) { ObjectNode result = mapper.createObjectNode().put("code", code).put("tagKind", tagKind).put("name", name); result.putObject("ownerScope").put("factType", "PRODUCTION_TAG").put("revision", REVISION); result.put("status", status).put("version", version); return result; }
     private void voidAvailability(ObjectNode row) { ObjectNode value = row.putObject("voidAvailability"); value.put("canVoid", !"VOIDED".equals(row.path("status").asText())); value.putArray("blockingReferences"); value.putArray("dependentFacts"); }
@@ -473,9 +507,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     private ObjectNode command(String requestId, JsonNode result, long version) { ObjectNode node = mapper.createObjectNode().put("revision", REVISION).put("requestId", requestId); node.set("result", result); node.put("version", version); return node; }
     private String name(String scope, String brand, String code) { return jdbc.query("SELECT name FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND code=?", s -> { s.setString(1, scope); s.setString(2, brand); s.setString(3, code); }, r -> { if (!r.next()) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在"); return r.getString(1); }); }
     private String status(String scope, String brand, String code) { return jdbc.query("SELECT status FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? AND code=?", s -> { s.setString(1, scope); s.setString(2, brand); s.setString(3, code); }, r -> { if (!r.next()) throw new ProductionTagOwnerApi.Problem("NOT_FOUND", 404, "生产标签不存在"); return r.getString(1); }); }
+    private JsonNode receiptRequest(JsonNode request, String brandRef) { ObjectNode scoped = request.deepCopy(); scoped.put("receiptBrandRef", brandRef); return scoped; }
     private JsonNode replay(String scope, String key, String operation, JsonNode request) { var rows = jdbc.query("SELECT operation_id,request_hash,response::text FROM fulfillment_production.command_receipt WHERE data_node_ref=? AND idempotency_key=? FOR UPDATE", (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))), scope, key); if (rows.isEmpty()) return null; Receipt row = rows.get(0); if (!row.operation().equals(operation) || !row.hash().equals(hash(request))) throw new ProductionTagOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求"); return row.response(); }
     private void saveReceipt(String scope, String key, String operation, JsonNode request, JsonNode response) { jdbc.update("INSERT INTO fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)", UUID.randomUUID(), scope, key, operation, hash(request), canonical(response), time.currentEpochMillis()); }
-    private String hash(JsonNode value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canonical(value).getBytes(StandardCharsets.UTF_8))); } catch (Exception ex) { throw new IllegalStateException(ex); } }
+    private String hash(JsonNode value) { try { return Sha256Hex.digest(canonical(value)); } catch (Exception ex) { throw new IllegalStateException(ex); } }
     private String canonical(JsonNode value) { try { return mapper.writeValueAsString(value); } catch (Exception ex) { throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "JSON payload is invalid"); } }
     private JsonNode json(String value) { try { return mapper.readTree(value); } catch (Exception ex) { return mapper.createObjectNode(); } }
     private static String required(ObjectNode req, String key) { String value = req == null || req.get(key) == null ? null : req.get(key).asText(); if (value == null || value.isBlank()) throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required"); return value; }
@@ -536,5 +571,6 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         };
     }
     private record Receipt(String operation, String hash, JsonNode response) { }
+    private record PlannedTag(TagRow source, UUID targetRef) { }
     private record TagRow(UUID ref, String code, String tagKind, String name, String status, long version) { }
 }

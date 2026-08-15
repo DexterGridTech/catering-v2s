@@ -5,7 +5,7 @@
   "sourceBindings": {
     "operationDesignContract": {
       "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
-      "sha256": "a9974ace285f2c4736769f231257395e5b8014056cf98fc09175b26dfc7ce850"
+      "sha256": "7cc84714552aee3a09caf8029aa076bb04014b8dca5dfd28c368ee0c2693a82f"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "5c6edebff250549a7c90cf12024992ddd6b426b4cf801d515c68abf192f8ff10"
+      "sha256": "7f8b202b8cdc9c668c92ba604bda1d4764c153d411a4951cce72142d578dd65c"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
@@ -26,7 +26,7 @@
       "path": "contracts/policy/catalog-inventory-l2-scenarios.json"
     }
   },
-  "count": 42,
+  "count": 43,
   "iaIdCount": 89,
   "operations": [
     {
@@ -7500,6 +7500,201 @@
             "CI-API-001",
             "CI-API-002",
             "CI-API-014"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "batchTransitionOperationsCatalogItemStatus",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogItemBatchStatusTransitionRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/items/status"
+      },
+      "response": {
+        "component": "CatalogItemBatchStatusTransitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "DEPENDENT_FACTS_BLOCK_VOID"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed batch input, one target status, unique item refs, page-size limit, trusted context and owner scope before hashing."
+        },
+        {
+          "order": 2,
+          "stepId": "REPLAY_OR_EXECUTE_ITEMS",
+          "action": "Replay one canonical batch receipt or execute each item through an independent catalog owner transaction with its expected version; keep item failures in ordered results."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_BATCH_READBACK",
+          "action": "Persist one batch receipt only after all item decisions and return the ordered typed result without re-executing a replay."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own per-item decisions and final batch readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared reference judgment only when a VOIDED transition requires it"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Typed request, closed target-status enum, empty/duplicate/over-limit items or required field is invalid."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Trusted context lacks page/capability or an item ref is outside the current data-node and brand scope."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "An item ref does not exist in the current scope after concealment."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "An item expectedVersion differs from the current owner version or the guarded update affects no row."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "The Idempotency-Key exists with a different canonical scope/status/sorted-item request hash."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "An item command raises an unknown owner failure or the batch receipt cannot establish a determinate result."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "An item already in terminal VOIDED is requested to move to another status."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "A VOIDED transition is requested while inbound catalog or inventory references remain."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "DEPENDENT_FACTS_BLOCK_VOID",
+          "conditions": [
+            "A VOIDED transition is requested while owner dependent facts remain."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": 5,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context DB work.",
+          "The smallest normal fixture is one in-scope item transitioning to ARCHIVED; VOIDED-only inventory judgment is not counted.",
+          "The batch uses one receipt read and one receipt write; item execution writes only status and version."
+        ],
+        "verificationScenarioIds": [
+          "CI-API-008"
+        ],
+        "breakdown": [
+          {
+            "owner": "request-context",
+            "readCount": 1,
+            "writeCount": 0
+          },
+          {
+            "owner": "catalog",
+            "readCount": 2,
+            "writeCount": 2
+          },
+          {
+            "owner": "inventory",
+            "readCount": 0,
+            "writeCount": 0
+          }
+        ]
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-43",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "batchTransitionOperationsCatalogItemStatus：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-008"
           ]
         }
       ]

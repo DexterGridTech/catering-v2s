@@ -18,7 +18,7 @@ public class PreflightOperationsLocalCatalogCopyOperation {
     public PreflightOperationsLocalCatalogCopyOperation(CommandExecutionContextResolver contexts, CatalogInventoryCoordinator composition, ObjectMapper mapper) { this.contexts = contexts; this.composition = composition; this.mapper = mapper; }
     @Transactional(propagation = Propagation.REQUIRED)
     public LocalCopyPreflight execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var value = composition.preflightLocalCopy(context, new CatalogOwnerApi.LocalCopyPreflightCommand(invocation.request().sourceItemCode(), invocation.request().targetItemCode(), invocation.request().selectedSections()));
         try {
             return mapper.treeToValue(CopyPreflightWireShape.contractEnvelope(mapper, value.canonicalJson(), context.requestId()), LocalCopyPreflight.class);

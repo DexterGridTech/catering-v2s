@@ -3,10 +3,8 @@ package com.catering.v2s.extension.application;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.dao.DuplicateKeyException;
@@ -50,7 +48,7 @@ public class ExtensionCommandReceiptService {
             return existing;
         }
     }
-    private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new ExtensionReceiptCorruptException(failure); } }
+    private static String sha256(String value) { try { return Sha256Hex.digest(value); } catch (Exception failure) { throw new ExtensionReceiptCorruptException(failure); } }
     private record Receipt(String requestHash, String responseJson, String state) { }
     public static final class ExtensionIdempotencyConflictException extends RuntimeException { }
     public static final class ExtensionReceiptCorruptException extends RuntimeException { public ExtensionReceiptCorruptException(Throwable cause) { super(cause); } }

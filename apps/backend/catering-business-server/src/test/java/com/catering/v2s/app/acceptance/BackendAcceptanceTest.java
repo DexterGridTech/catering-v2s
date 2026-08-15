@@ -105,6 +105,21 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_CONTRACT = new RouteIdentity("getOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}");
     static final RouteIdentity OPERATIONS_ASSET_STAGE = new RouteIdentity("stageOperationsCatalogAsset", "/api/operations/catalog-inventory/assets/stage");
     static final RouteIdentity OPERATIONS_ASSET_RELEASE = new RouteIdentity("releaseOperationsCatalogStagedAsset", "/api/operations/catalog-inventory/assets/{assetRef}/release");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_CREATE = new RouteIdentity("createOperationsCatalogItem", "/api/operations/catalog-inventory/items");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_SAVE = new RouteIdentity("saveOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_STATUS = new RouteIdentity("transitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/{itemCode}/status");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_READ = new RouteIdentity("getOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_SHAPE_MANIFEST = new RouteIdentity("getOperationsCatalogShapeManifest", "/api/operations/catalog-inventory/shape-manifest");
+    static final RouteIdentity OPERATIONS_CATALOG_BATCH_STATUS = new RouteIdentity("batchTransitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/status");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_READ = new RouteIdentity("getOperationsCatalogDictionary", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_CREATE = new RouteIdentity("createOperationsCatalogDictionaryEntry", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_UPDATE = new RouteIdentity("updateOperationsCatalogDictionaryEntry", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_STATUS = new RouteIdentity("transitionOperationsCatalogDictionaryEntryStatus", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status");
+    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_CREATE = new RouteIdentity("createOperationsCatalogCategory", "/api/operations/catalog-inventory/categories");
+    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_DELETE = new RouteIdentity("deleteOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}");
+    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_PREFLIGHT = new RouteIdentity("preflightOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/preflight");
+    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_EXECUTE = new RouteIdentity("executeOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/execute");
+    static final RouteIdentity OPERATIONS_INVENTORY_TARGET_READ = new RouteIdentity("getOperationsInventoryTarget", "/api/operations/catalog-inventory/inventory-targets/{targetRef}");
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -208,6 +223,26 @@ class BackendAcceptanceTest {
         return new Fixture(workspaceUuid, key, commercialGroup.id(), region.id(), project.id(), brand.id(), tenant.id(), store.id(), headCompany == null ? null : headCompany.id(), invitation.id(), invitation.rawInvitationToken(), mobile, loginName);
     }
 
+    /** Creates an independently authorized store/brand context in an existing isolated workspace. */
+    Fixture siblingStoreFixture(Fixture existing, Set<String> capabilities) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        long now = Instant.now().toEpochMilli();
+        OrganizationEntityReadback brand = entities.createEntity("BRAND", existing.workspaceUuid(), existing.groupWorkspaceKey(),
+                "acceptance-brand-" + suffix, "Acceptance Brand " + suffix, null, null, Map.of());
+        OrganizationEntityReadback tenant = entities.createEntity("TENANT", existing.workspaceUuid(), existing.groupWorkspaceKey(),
+                "acceptance-tenant-" + suffix, "Acceptance Tenant " + suffix, "Acceptance Tenant " + suffix + " Ltd", "91310000" + suffix, Map.of());
+        OrganizationEntityReadback store = entities.createStore(existing.workspaceUuid(), existing.groupWorkspaceKey(), existing.projectId(), tenant.id(), brand.id(), null,
+                "acceptance-store-" + suffix, "Acceptance Store " + suffix, "Acceptance Store Notes", Map.of());
+        UUID roleId = roles.create(existing.workspaceUuid(), existing.groupWorkspaceKey(), "Acceptance Store Operator " + suffix,
+                "STORE", null, Set.of(), capabilities).id();
+        String mobile = "139" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        String loginName = "operator-" + suffix;
+        var invitation = invitations.create(existing.workspaceUuid(), existing.groupWorkspaceKey(), mobile,
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "STORE", store.id())), now + 3_600_000L);
+        return new Fixture(existing.workspaceUuid(), existing.groupWorkspaceKey(), existing.groupId(), existing.regionId(), existing.projectId(),
+                brand.id(), tenant.id(), store.id(), null, invitation.id(), invitation.rawInvitationToken(), mobile, loginName);
+    }
+
     void completeInvitation(ScenarioContext context, Fixture fixture) throws Exception {
         context.post(ACCEPT_PUBLIC_INVITATION, publicInvitationPath(fixture), null, Map.of(), Set.of(200));
         Response sent = context.post(SEND_PUBLIC_INVITATION_OTP, publicInvitationPath(fixture) + "/otp/send", null, Map.of("mobile", fixture.mobile()), Set.of(200));
@@ -296,8 +331,16 @@ class BackendAcceptanceTest {
             return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, expected);
         }
 
+        Response patch(RouteIdentity route, String path, String cookie, Map<String, Object> body, Map<String, String> headers, Set<Integer> expected) throws Exception {
+            return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, headers, expected);
+        }
+
         Response delete(RouteIdentity route, String path, String cookie, Set<Integer> expected) throws Exception {
             return send(route, "DELETE", path, cookie, (String) null, null, expected);
+        }
+
+        Response delete(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected) throws Exception {
+            return send(route, "DELETE", path, cookie, mapper.writeValueAsString(body), null, expected);
         }
 
         Response multipartAsset(RouteIdentity route, Fixture fixture, String cookie, String dataNodeRef, String digest, Set<Integer> expected) throws Exception {
@@ -311,10 +354,19 @@ class BackendAcceptanceTest {
 
         private Response send(RouteIdentity route, String method, String path, String cookie, String json, String boundary, Set<Integer> expected) throws Exception {
             byte[] body = json == null ? new byte[0] : json.getBytes(StandardCharsets.UTF_8);
-            return send(route, method, path, cookie, body, boundary, expected);
+            return send(route, method, path, cookie, body, boundary, Map.of(), expected);
         }
 
         private Response send(RouteIdentity route, String method, String path, String cookie, byte[] body, String boundary, Set<Integer> expected) throws Exception {
+            return send(route, method, path, cookie, body, boundary, Map.of(), expected);
+        }
+
+        private Response send(RouteIdentity route, String method, String path, String cookie, String json, String boundary, Map<String, String> headers, Set<Integer> expected) throws Exception {
+            byte[] body = json == null ? new byte[0] : json.getBytes(StandardCharsets.UTF_8);
+            return send(route, method, path, cookie, body, boundary, headers, expected);
+        }
+
+        private Response send(RouteIdentity route, String method, String path, String cookie, byte[] body, String boundary, Map<String, String> headers, Set<Integer> expected) throws Exception {
             HttpRequest.BodyPublisher publisher = body.length == 0 ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(body);
             HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                     .header("Accept", "application/json")
@@ -329,6 +381,7 @@ class BackendAcceptanceTest {
             if (boundary != null) builder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
             else if (body.length > 0) builder.header("Content-Type", "application/json");
             if (!"GET".equals(method)) builder.header("Idempotency-Key", "ba-" + UUID.randomUUID());
+            if (headers != null) headers.forEach(builder::header);
             HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             JsonNode bodyJson;
             try {
@@ -339,7 +392,8 @@ class BackendAcceptanceTest {
             Response result = new Response(response.statusCode(), response.body() == null ? "" : response.body(), bodyJson, response);
             if (!expected.contains(result.status())) {
                 contractPass = false;
-                throw new AssertionError("CONTRACT: unexpected HTTP status=" + result.status() + " problem=" + result.problemCode());
+                throw new AssertionError("CONTRACT: unexpected HTTP status=" + result.status() + " problem=" + result.problemCode()
+                        + " detail=" + result.json().path("detail").asText(result.json().path("message").asText("")));
             }
             return result;
         }

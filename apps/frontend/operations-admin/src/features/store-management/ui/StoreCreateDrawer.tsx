@@ -6,7 +6,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS, type ExtensionDefinition, type Organizat
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
-import {serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
+import {extensionValuesForGeneratedRequest, serializeOrganizationExtensionValues, type OrganizationExtensionFormValues} from '../../organization-structure/model/organizationExtensionValues';
 
 type Values = {
   brandId?: string;
@@ -96,7 +96,7 @@ export function StoreCreateDrawer({open, queryContext, onClose, onCreated}: {ope
     try {
       const store = await operationsClient.createOperationsOrganizationStore(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {body: {brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: serializeOrganizationExtensionValues(definition.data, value.extensionValues)}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
+        {body: {brandId: value.brandId, tenantId: value.tenantId, headCompanyId: value.headCompanyId || null, code: value.code.trim(), name: value.name.trim(), notes: value.notes?.trim() || null, extensionValues: extensionValuesForGeneratedRequest(serializeOrganizationExtensionValues(definition.data, value.extensionValues))}, headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()}},
       );
       lifecycle.setDirty(false);
       onCreated(store);

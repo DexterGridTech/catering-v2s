@@ -3,6 +3,7 @@ import {adminDrawerSurfaceProps, NameCodePathText, testId, useDrawerFormLifecycl
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {WorkspaceInvitation, WorkspaceInvitationCandidatePage} from '../../../app/api/generated/operations-edge';
+import {wireUuid} from '../../../app/api/wireUuid';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useWorkspaceInvitationCandidates} from '../application/useWorkspaceInvitationCandidates';
 
@@ -95,8 +96,8 @@ export function WorkspaceInvitationCreateDrawer({open, targetType, queryContext,
     const idempotencyKey = lifecycle.getIdempotencyKey();
     const options = {body: {
       mobile: values.mobile.trim(),
-      scopeRef: values.targetOrganizationRef,
-      roleIds: values.roleIds,
+      scopeRef: wireUuid(values.targetOrganizationRef),
+      roleIds: values.roleIds.map((roleId) => wireUuid(roleId)),
       expectedContextVersion: queryContext.expectedContextVersion,
       idempotencyKey,
     }, headers: {'Idempotency-Key': idempotencyKey}};

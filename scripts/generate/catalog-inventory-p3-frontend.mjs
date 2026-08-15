@@ -28,7 +28,7 @@ const pascal = (value) => value.replace(/(^|[-_])([a-z])/g, (_, _prefix, letter)
 function pathType(operation) {
   const names = pathNames(operation.path);
   if (names.length === 0) return "Record<string, never>";
-  return `{ ${names.map((name) => `${tsPropertyName(name)}: string;`).join(" ")} }`;
+  return `{ ${names.map((name) => `${tsPropertyName(name)}: ${name.endsWith("Ref") ? "Uuid" : "string"};`).join(" ")} }`;
 }
 
 function queryType(operation) {
@@ -93,10 +93,22 @@ function responseType(operation) {
 
 function tsType(schema) {
   if (!schema || typeof schema !== "object") return "JsonValue";
-  if (schema.format === "binary") return "Blob";
   const ref = schemaRefName(schema);
-  if (ref) return pascal(ref);
-  if (Array.isArray(schema.type)) return schema.type.map((type) => tsType({...schema, type})).join(" | ");
+  if (ref) {
+    const type = pascal(ref);
+    return schema.nullable === true ? `${type} | null` : type;
+  }
+  if (Array.isArray(schema.type)) {
+    const variants = schema.type.map((type) => {
+      // Only the string branch may retain format: uuid/binary. The null branch
+      // must remain null so nullable UUIDs do not collapse to Uuid | Uuid.
+      const variantSchema = type === "null" ? {type} : {...schema, type};
+      return tsType(variantSchema);
+    });
+    return [...new Set(variants)].join(" | ");
+  }
+  if (schema.type === "string" && schema.format === "uuid") return schema.nullable === true ? "Uuid | null" : "Uuid";
+  if (schema.type === "string" && schema.format === "binary") return "Blob";
   if (Array.isArray(schema.oneOf)) return schema.oneOf.map(tsType).join(" | ");
   if (Array.isArray(schema.anyOf)) return schema.anyOf.map(tsType).join(" | ");
   if (Array.isArray(schema.allOf)) return schema.allOf.map(tsType).join(" & ");
@@ -108,25 +120,33 @@ function tsType(schema) {
     const entries = Object.entries(properties).map(([name, value]) => `${tsPropertyName(name)}${required.has(name) ? "" : "?"}: ${tsType(value)};`);
     if (schema.additionalProperties === true) entries.push("[key: string]: JsonValue | undefined;");
     else if (schema.additionalProperties && typeof schema.additionalProperties === "object") entries.push(`[key: string]: ${tsType(schema.additionalProperties)};`);
-    return `{ ${entries.join(" ")} }`;
+    const type = `{ ${entries.join(" ")} }`;
+    return schema.nullable === true ? `${type} | null` : type;
   }
-  if (schema.type === "integer" || schema.type === "number") return "number";
-  if (schema.type === "boolean") return "boolean";
+  if (schema.type === "integer" || schema.type === "number") return schema.nullable === true ? "number | null" : "number";
+  if (schema.type === "boolean") return schema.nullable === true ? "boolean | null" : "boolean";
   if (schema.type === "null") return "null";
-  if (schema.type === "string") return "string";
-  return "JsonValue";
+  if (schema.type === "string") return schema.nullable === true ? "string | null" : "string";
+  return schema.nullable === true ? "JsonValue | null" : "JsonValue";
 }
 
 function generatedSchemaTypes() {
-  return Object.entries(schemas).map(([name, schema]) => `export type ${pascal(name)} = ${tsType(schema)};`).join("\n");
+  return ["export type Uuid = string & { readonly __uuid: \"Uuid\" };", ...Object.entries(schemas).map(([name, schema]) => `export type ${pascal(name)} = ${tsType(schema)};`)].join("\n");
 }
 
 function generatedEdge() {
-  const descriptors = operations.map((operation) => `  {operationId: ${JSON.stringify(operation.operationId)}, method: ${JSON.stringify(operation.method)}, path: ${JSON.stringify(operation.path)}, owner: ${JSON.stringify(operation.initiatingOwner)}, requiresSession: true}`).join(",\n");
+  const descriptors = operations.map((operation) => `  ${JSON.stringify({
+    operationId: operation.operationId,
+    method: operation.method,
+    path: operation.path,
+    owner: operation.initiatingOwner,
+    requiresSession: true,
+  })}`).join(",\n");
+  const operationIds = operations.map((operation) => `  ${JSON.stringify(operation.operationId)}: ${JSON.stringify(operation.operationId)}`).join(",\n");
   const contracts = operations.map((operation) => `  ${JSON.stringify(operation.operationId)}: {request: ${pascal(operation.requestType)}; response: ${responseType(operation)}; requestRequired: ${operation.method !== "GET"}; requiresSession: true; path: ${pathType(operation)}; query: ${queryType(operation)}; queryRequired: false; headers: ${headerType(operation)}; headersRequired: ${operation.method !== "GET"};}`).join("\n");
   const methods = operations.map((operation) => `    ${operation.operationId}: (pathParameters: FaceOperationContracts[${JSON.stringify(operation.operationId)}]["path"], options${operation.method === "GET" ? "?" : ""}: CatalogInventoryOperationOptions<${JSON.stringify(operation.operationId)}>) => execute({operationId: ${JSON.stringify(operation.operationId)}, method: ${JSON.stringify(operation.method)}, path: ${JSON.stringify(operation.path)}, pathParameters, requiresSession: true, ...options}),`).join("\n");
   const typedProblemCodes = schemas.TypedProblem?.properties?.code?.enum ?? [];
-  return `// Generated from contracts/catalog/catalog-inventory-edge-contract.json and catalog-inventory.openapi.yaml; do not edit.\n\nexport const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;\nexport const CATALOG_INVENTORY_OPERATIONS = [\n${descriptors}\n] as const;\nexport type CatalogInventoryOperationId = (typeof CATALOG_INVENTORY_OPERATIONS)[number]["operationId"];\nexport type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };\nexport type CatalogInventoryEnvelope<T = JsonValue> = {revision?: string; requestId?: string; data?: T; result?: T; version?: number; [key: string]: JsonValue | T | undefined};\n${generatedSchemaTypes()}\nexport type FaceOperationContracts = {\n${contracts}\n};\ntype RequestPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["requestRequired"] extends true ? {body: FaceOperationContracts[I]["request"]} : {body?: never};\ntype QueryPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["queryRequired"] extends true ? {query: FaceOperationContracts[I]["query"]} : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["headersRequired"] extends true ? {headers: FaceOperationContracts[I]["headers"]} : {headers?: never};\nexport type CatalogInventoryOperationOptions<I extends CatalogInventoryOperationId> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends CatalogInventoryOperationId> = CatalogInventoryOperationOptions<I> & {operationId: I; method: string; path: string; pathParameters: FaceOperationContracts[I]["path"]; requiresSession: true};\nexport type FaceExecutor = <I extends CatalogInventoryOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\nexport function createCatalogInventoryClient(execute: FaceExecutor) {\n  return {\n${methods}\n  };\n}\n`;
+  return `// Generated from contracts/catalog/catalog-inventory-edge-contract.json and catalog-inventory.openapi.yaml; do not edit.\n\nexport const CATALOG_INVENTORY_REVISION = ${JSON.stringify(catalog.revision)} as const;\nexport const CATALOG_INVENTORY_OPERATIONS = [\n${descriptors}\n] as const;\nexport const CATALOG_INVENTORY_OPERATION_IDS = {\n${operationIds}\n} as const;\nexport type CatalogInventoryOperationId = (typeof CATALOG_INVENTORY_OPERATIONS)[number]["operationId"];\nexport type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };\nexport type CatalogInventoryEnvelope<T = JsonValue> = {revision?: string; requestId?: string; data?: T; result?: T; version?: number; [key: string]: JsonValue | T | undefined};\n${generatedSchemaTypes()}\nexport type FaceOperationContracts = {\n${contracts}\n};\ntype RequestPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["requestRequired"] extends true ? {body: FaceOperationContracts[I]["request"]} : {body?: never};\ntype QueryPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["queryRequired"] extends true ? {query: FaceOperationContracts[I]["query"]} : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends CatalogInventoryOperationId> = FaceOperationContracts[I]["headersRequired"] extends true ? {headers: FaceOperationContracts[I]["headers"]} : {headers?: never};\nexport type CatalogInventoryOperationOptions<I extends CatalogInventoryOperationId> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends CatalogInventoryOperationId> = CatalogInventoryOperationOptions<I> & {operationId: I; method: string; path: string; pathParameters: FaceOperationContracts[I]["path"]; requiresSession: true};\nexport type FaceExecutor = <I extends CatalogInventoryOperationId>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\nexport function createCatalogInventoryClient(execute: FaceExecutor) {\n  return {\n${methods}\n  };\n}\n`;
 }
 
 function generatedRtk() {

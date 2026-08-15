@@ -296,6 +296,15 @@ const runScript = ({remoteRoot, remoteWorkspace, remoteResults, distribution, in
     `  "$gradle/bin/gradle" --no-daemon --rerun-tasks "$task" ${selectorArguments}`,
     ') 2>&1 | tee "$log_file"',
     'gradle_status=${PIPESTATUS[0]}',
+    // The remote workspace is deliberately reclaimed below.  Preserve the
+    // machine-readable JUnit failure detail before that happens: Gradle's
+    // console summary often retains only an exception type and line number.
+    'find "$workspace" -type f -path "*/build/test-results/test/*.xml" -print0 | while IFS= read -r -d "" file; do',
+    '  relative="${file#"$workspace"/}"',
+    '  target="$results/test-results/$relative"',
+    '  mkdir -p "$(dirname "$target")"',
+    '  cp "$file" "$target"',
+    'done',
     'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"',
     'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"',
     'container_cleanup=FAIL; cmp -s "$root/before-container-ids" "$root/after-container-ids" && container_cleanup=PASS',

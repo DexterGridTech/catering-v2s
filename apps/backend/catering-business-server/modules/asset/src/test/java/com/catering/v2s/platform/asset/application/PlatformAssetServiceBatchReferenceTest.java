@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import static org.mockito.Mockito.mock;
 
 /** Proves that one page-sized distinct logo set uses one owner metadata query without Docker. */
 class PlatformAssetServiceBatchReferenceTest {
@@ -38,7 +40,9 @@ class PlatformAssetServiceBatchReferenceTest {
                 }
             }
         };
-        PlatformAssetService assets = new PlatformAssetService(jdbc, () -> 1L, new MemoryObjects());
+        // This is a read-only query-shape test with a JdbcTemplate stub. Supply an explicit
+        // transaction manager rather than relying on a nonexistent DataSource in the stub.
+        PlatformAssetService assets = new PlatformAssetService(jdbc, () -> 1L, new MemoryObjects(), mock(PlatformTransactionManager.class));
 
         var references = assets.requireActivePublicReferences(List.of(first, second, first));
 

@@ -116,7 +116,7 @@ class CommandExecutionContextResolverTest {
 
     private static WorkspaceCapabilityScopeResolver capabilities() {
         WorkspaceAssignmentScopeLookup assignments = (workspace, group, assignment) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("STORE", STORE);
-        OrganizationTaskPathLookup paths = new OrganizationTaskPathLookup() {
+        OrganizationTaskPathLookup paths = new WorkspaceTestTaskPathLookup() {
             @Override public TaskPath requireTaskPath(UUID workspace, String group, String targetType, UUID targetId) {
                 return new TaskPath(targetType, targetId, List.of(STORE), "test store");
             }

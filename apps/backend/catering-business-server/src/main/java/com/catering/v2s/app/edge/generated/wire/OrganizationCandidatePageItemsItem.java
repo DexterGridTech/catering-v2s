@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationCandidatePageItemsItem(
-    String id,
+    java.util.UUID id,
     String code,
     String name
 ) {}

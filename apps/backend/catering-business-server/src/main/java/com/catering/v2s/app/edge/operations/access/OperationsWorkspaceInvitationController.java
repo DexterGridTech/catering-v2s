@@ -17,21 +17,9 @@ import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceStoreInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceStoreInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceGroupInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceRegionInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceProjectInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceHeadCompanyInvitationOperation;
-import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceStoreInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CancelOperationsWorkspaceInvitationOperation;
+import com.catering.v2s.workspace.iam.application.CreateOperationsWorkspaceInvitationOperation;
+import com.catering.v2s.workspace.iam.application.ReissueOperationsWorkspaceInvitationOperation;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import java.util.List;
 import java.util.UUID;
@@ -50,75 +38,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/user-management")
 public final class OperationsWorkspaceInvitationController {
     private final OperationsSessionResolver sessions; private final WorkspaceInvitationService invitations; private final WorkspaceUserService user; private final WorkspaceTaskReadService reads;
-    private final CreateOperationsWorkspaceGroupInvitationOperation groupInvitationCreate;
-    private final CreateOperationsWorkspaceRegionInvitationOperation regionInvitationCreate;
-    private final CreateOperationsWorkspaceProjectInvitationOperation projectInvitationCreate;
-    private final CreateOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCreate;
-    private final CreateOperationsWorkspaceStoreInvitationOperation storeInvitationCreate;
-    private final CancelOperationsWorkspaceGroupInvitationOperation groupInvitationCancel;
-    private final CancelOperationsWorkspaceRegionInvitationOperation regionInvitationCancel;
-    private final CancelOperationsWorkspaceProjectInvitationOperation projectInvitationCancel;
-    private final CancelOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCancel;
-    private final CancelOperationsWorkspaceStoreInvitationOperation storeInvitationCancel;
-    private final ReissueOperationsWorkspaceGroupInvitationOperation groupInvitationReissue;
-    private final ReissueOperationsWorkspaceRegionInvitationOperation regionInvitationReissue;
-    private final ReissueOperationsWorkspaceProjectInvitationOperation projectInvitationReissue;
-    private final ReissueOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationReissue;
-    private final ReissueOperationsWorkspaceStoreInvitationOperation storeInvitationReissue;
+    private final CreateOperationsWorkspaceInvitationOperation invitationCreate;
+    private final CancelOperationsWorkspaceInvitationOperation invitationCancel;
+    private final ReissueOperationsWorkspaceInvitationOperation invitationReissue;
     private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
     public OperationsWorkspaceInvitationController(OperationsSessionResolver sessions, WorkspaceInvitationService invitations, WorkspaceUserService user, WorkspaceTaskReadService reads,
-                                                   CreateOperationsWorkspaceGroupInvitationOperation groupInvitationCreate,
-                                                   CreateOperationsWorkspaceRegionInvitationOperation regionInvitationCreate,
-                                                   CreateOperationsWorkspaceProjectInvitationOperation projectInvitationCreate,
-                                                   CreateOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCreate,
-                                                   CreateOperationsWorkspaceStoreInvitationOperation storeInvitationCreate,
-                                                   CancelOperationsWorkspaceGroupInvitationOperation groupInvitationCancel,
-                                                   CancelOperationsWorkspaceRegionInvitationOperation regionInvitationCancel,
-                                                   CancelOperationsWorkspaceProjectInvitationOperation projectInvitationCancel,
-                                                   CancelOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCancel,
-                                                   CancelOperationsWorkspaceStoreInvitationOperation storeInvitationCancel,
-                                                   ReissueOperationsWorkspaceGroupInvitationOperation groupInvitationReissue,
-                                                   ReissueOperationsWorkspaceRegionInvitationOperation regionInvitationReissue,
-                                                   ReissueOperationsWorkspaceProjectInvitationOperation projectInvitationReissue,
-                                                   ReissueOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationReissue,
-                                                   ReissueOperationsWorkspaceStoreInvitationOperation storeInvitationReissue) {
-        this(sessions, invitations, user, reads, groupInvitationCreate, regionInvitationCreate, projectInvitationCreate, headCompanyInvitationCreate, storeInvitationCreate,
-            groupInvitationCancel, regionInvitationCancel, projectInvitationCancel, headCompanyInvitationCancel, storeInvitationCancel,
-            groupInvitationReissue, regionInvitationReissue, projectInvitationReissue, headCompanyInvitationReissue, storeInvitationReissue,
-            BackendPerformanceM1CommandExecutionBindings.forWorkspaceInvitation(
-                groupInvitationCancel, headCompanyInvitationCancel, projectInvitationCancel, regionInvitationCancel, storeInvitationCancel,
-                groupInvitationCreate, headCompanyInvitationCreate, projectInvitationCreate, regionInvitationCreate, storeInvitationCreate,
-                groupInvitationReissue, headCompanyInvitationReissue, projectInvitationReissue, regionInvitationReissue, storeInvitationReissue));
+                                                   CancelOperationsWorkspaceInvitationOperation invitationCancel,
+                                                   CreateOperationsWorkspaceInvitationOperation invitationCreate,
+                                                   ReissueOperationsWorkspaceInvitationOperation invitationReissue) {
+        this(sessions, invitations, user, reads, invitationCancel, invitationCreate, invitationReissue,
+            BackendPerformanceM1CommandExecutionBindings.forWorkspaceInvitation(invitationCancel, invitationCreate, invitationReissue));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public OperationsWorkspaceInvitationController(OperationsSessionResolver sessions, WorkspaceInvitationService invitations, WorkspaceUserService user, WorkspaceTaskReadService reads,
-                                                   CreateOperationsWorkspaceGroupInvitationOperation groupInvitationCreate,
-                                                   CreateOperationsWorkspaceRegionInvitationOperation regionInvitationCreate,
-                                                   CreateOperationsWorkspaceProjectInvitationOperation projectInvitationCreate,
-                                                   CreateOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCreate,
-                                                   CreateOperationsWorkspaceStoreInvitationOperation storeInvitationCreate,
-                                                   CancelOperationsWorkspaceGroupInvitationOperation groupInvitationCancel,
-                                                   CancelOperationsWorkspaceRegionInvitationOperation regionInvitationCancel,
-                                                   CancelOperationsWorkspaceProjectInvitationOperation projectInvitationCancel,
-                                                   CancelOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationCancel,
-                                                   CancelOperationsWorkspaceStoreInvitationOperation storeInvitationCancel,
-                                                   ReissueOperationsWorkspaceGroupInvitationOperation groupInvitationReissue,
-                                                   ReissueOperationsWorkspaceRegionInvitationOperation regionInvitationReissue,
-                                                   ReissueOperationsWorkspaceProjectInvitationOperation projectInvitationReissue,
-                                                   ReissueOperationsWorkspaceHeadCompanyInvitationOperation headCompanyInvitationReissue,
-                                                   ReissueOperationsWorkspaceStoreInvitationOperation storeInvitationReissue,
+                                                   CancelOperationsWorkspaceInvitationOperation invitationCancel,
+                                                   CreateOperationsWorkspaceInvitationOperation invitationCreate,
+                                                   ReissueOperationsWorkspaceInvitationOperation invitationReissue,
                                                    BackendPerformanceM1CommandExecutionBindings m1Bindings) {
         this.sessions = sessions; this.invitations = invitations; this.user = user; this.reads = reads;
-        this.groupInvitationCreate = groupInvitationCreate; this.regionInvitationCreate = regionInvitationCreate;
-        this.projectInvitationCreate = projectInvitationCreate; this.headCompanyInvitationCreate = headCompanyInvitationCreate;
-        this.storeInvitationCreate = storeInvitationCreate;
-        this.groupInvitationCancel = groupInvitationCancel; this.regionInvitationCancel = regionInvitationCancel;
-        this.projectInvitationCancel = projectInvitationCancel; this.headCompanyInvitationCancel = headCompanyInvitationCancel;
-        this.storeInvitationCancel = storeInvitationCancel;
-        this.groupInvitationReissue = groupInvitationReissue; this.regionInvitationReissue = regionInvitationReissue;
-        this.projectInvitationReissue = projectInvitationReissue; this.headCompanyInvitationReissue = headCompanyInvitationReissue;
-        this.storeInvitationReissue = storeInvitationReissue; this.m1Bindings = m1Bindings;
+        this.invitationCancel = invitationCancel; this.invitationCreate = invitationCreate; this.invitationReissue = invitationReissue; this.m1Bindings = m1Bindings;
     }
     @GetMapping("/group/invitations") WorkspaceInvitationPage groupList(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) String scopeRef, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID organizationRef, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceInvitationStatus status, @RequestParam(required = false) Long expiresFrom, @RequestParam(required = false) Long expiresTo, @RequestParam(required = false) WorkspaceInvitationSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return list(request, groupWorkspaceKey, ServiceNodeTypes.GROUP, scopeRef, mobile, organizationRef, roleId, status, expiresFrom, expiresTo, sort, direction, page, pageSize, expectedContextVersion); }
     @GetMapping("/region/invitations") WorkspaceInvitationPage regionList(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) String scopeRef, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID organizationRef, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceInvitationStatus status, @RequestParam(required = false) Long expiresFrom, @RequestParam(required = false) Long expiresTo, @RequestParam(required = false) WorkspaceInvitationSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return list(request, groupWorkspaceKey, ServiceNodeTypes.REGION, scopeRef, mobile, organizationRef, roleId, status, expiresFrom, expiresTo, sort, direction, page, pageSize, expectedContextVersion); }

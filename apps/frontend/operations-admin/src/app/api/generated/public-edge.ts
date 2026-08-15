@@ -123,6 +123,8 @@ export type PublicOperationId = (typeof PUBLIC_OPERATIONS)[number]["operationId"
 
 
 
+export type Uuid = string & { readonly __uuid: "Uuid" };
+
 export type EpochMillis = number;
 
 export type NoBody = Record<string, never>;
@@ -179,7 +181,7 @@ export type PublicAssetReference = {
 };
 
 export type PublicInvitationAcceptIntent = {
-  nextStep: "VERIFY_MOBILE" | "FINALIZE";
+  nextStep: "VERIFY_MOBILE";
 };
 
 export type PublicInvitationCompletion = {
@@ -229,8 +231,6 @@ export type PublicInvitationReadiness = {
   nextStep: "COMPLETE_CREDENTIALS" | "FINALIZE";
 };
 
-export type PublicInvitationResumeStep = "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
-
 export type PublicInvitationView = {
   invitationId: string;
   groupWorkspaceKey: string;
@@ -240,7 +240,7 @@ export type PublicInvitationView = {
   roleNames: Array<string>;
   maskedMobile: string;
   status: WorkspaceInvitationStatus;
-  nextStep: PublicInvitationResumeStep;
+  nextStep: "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
   expiresAt: EpochMillis;
   workspaceName: string;
   logoUrl?: (string) | null;
@@ -302,7 +302,7 @@ export type FaceOperationContracts = {
     requestRequired: false;
     requiresSession: false;
     path: {
-    assetRef: string;
+    assetRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;

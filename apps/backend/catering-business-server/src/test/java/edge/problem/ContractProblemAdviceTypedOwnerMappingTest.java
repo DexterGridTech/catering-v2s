@@ -29,6 +29,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 class ContractProblemAdviceTypedOwnerMappingTest {
     private final ContractProblemAdvice advice = new ContractProblemAdvice();
@@ -57,6 +58,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(advice.assetInvariantViolation(new PlatformAssetService.AssetInvariantViolationException("owner.metadata-conflict"), request), HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION");
         assertProblem(advice.catalogScopeForbidden(new CommandExecutionContextResolver.CatalogScopeForbiddenException(new IllegalStateException("scope")), request), HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN");
         assertProblem(advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request), HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
+        assertProblem(advice.malformedRequest(new HttpMessageNotReadableException("invalid UUID", null), request), HttpStatus.BAD_REQUEST, "PLATFORM_COMMON_VALIDATION_FAILED");
     }
 
     @Test
@@ -78,6 +80,20 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertProblem(response, HttpStatus.UNPROCESSABLE_ENTITY, "MOVE_BOUNDARY");
         assertEquals("分类已位于当前层级边界", response.getBody().detail());
         assertFalse(response.getBody().detail().contains("internal owner detail"));
+    }
+
+    @Test
+    void referenceBlockersKeepTheirCuratedRelationExplanationWhileOtherOwnerDetailsStayGeneric() {
+        var referenceBlocked = advice.catalogInventory(new CatalogOwnerApi.Problem(
+            "REFERENCE_BLOCKS_VOID", 422, "product SKU is still referenced by inventory facts: inventory.stock_target.product_sku_ref x1"), request);
+        var genericValidation = advice.catalogInventory(new CatalogOwnerApi.Problem(
+            "VALIDATION_ERROR", 422, "internal validation detail"), request);
+
+        assertProblem(referenceBlocked, HttpStatus.UNPROCESSABLE_ENTITY, "REFERENCE_BLOCKS_VOID");
+        assertEquals("product SKU is still referenced by inventory facts: inventory.stock_target.product_sku_ref x1", referenceBlocked.getBody().detail());
+        assertProblem(genericValidation, HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR");
+        assertEquals("商品、生产标签或库存操作不满足 owner 约束", genericValidation.getBody().detail());
+        assertFalse(genericValidation.getBody().detail().contains("internal validation detail"));
     }
 
     @Test
@@ -131,6 +147,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
         assertTrue(declared.contains(MaxUploadSizeExceededException.class));
+        assertTrue(declared.contains(HttpMessageNotReadableException.class));
     }
 
     private static void assertProblem(ResponseEntity<ContractProblemAdvice.Problem> response, HttpStatus status, String code) {

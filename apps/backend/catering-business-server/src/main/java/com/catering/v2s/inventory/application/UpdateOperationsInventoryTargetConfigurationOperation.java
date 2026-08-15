@@ -28,20 +28,21 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public InventoryTargetCurrentView execute(Invocation invocation) {
+        InventoryTargetConfigurationRequest request = invocation.request();
+        UUID targetRef = InventoryTargetRefConsistency.requireSame(invocation.targetRef(), request.targetRef());
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
         );
-        InventoryTargetConfigurationRequest request = invocation.request();
         InventoryTargetConfigurationRequest.Configuration configuration = request.configuration();
         InventoryOwnerApi.InventoryTargetCurrentReadback readback = inventory.updateTargetConfiguration(
             context,
             new InventoryOwnerApi.UpdateTargetConfigurationCommand(
-                requiredUuid(invocation.targetRef(), "targetRef"),
+                targetRef,
                 requiredLong(request.expectedVersion(), "expectedVersion"),
                 new InventoryOwnerApi.InventoryConfiguration(
                     requiredBoolean(configuration == null ? null : configuration.allowNegative(), "configuration.allowNegative"),
@@ -63,8 +64,8 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
         InventoryOwnerApi.InventoryConfiguration configuration = value.configuration();
         InventoryOwnerApi.InventoryChangeSummaryReadback summary = value.changeSummary();
         return new InventoryTargetCurrentView(
-            new InventoryTargetCurrentView.Target(target.targetRef().toString(), target.targetType(), target.productCode(),
-                string(target.itemRef()), string(target.productSkuRef()), target.productName(), target.productShape(), target.skuCode(),
+            new InventoryTargetCurrentView.Target(target.targetRef(), target.targetType(), target.productCode(),
+                target.itemRef(), target.productSkuRef(), target.productName(), target.productShape(), target.skuCode(),
                 target.skuName(), target.consumptionUnit(), target.countingUnit(), target.conversionSummary(), target.authorityType()),
             decimal(value.balance()),
             new InventoryTargetCurrentView.Configuration(configuration.allowNegative(), decimal(configuration.lowStockThreshold()),
@@ -101,17 +102,8 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
 
     private static List<InventoryTargetCurrentView.LedgerItem> ledger(List<InventoryOwnerApi.InventoryLedgerEntryReadback> values) {
         return values.stream().map(value -> new InventoryTargetCurrentView.LedgerItem(
-            value.entryRef().toString(), value.source(), value.reasonCode(), decimal(value.beforeQuantity()),
+            value.entryRef(), value.source(), value.reasonCode(), decimal(value.beforeQuantity()),
             decimal(value.changeQuantity()), decimal(value.afterQuantity()), value.occurredAt())).toList();
-    }
-
-    private static UUID requiredUuid(String value, String field) {
-        try {
-            if (value == null || value.isBlank()) throw new IllegalArgumentException();
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException invalid) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a UUID");
-        }
     }
 
     private static long requiredLong(Long value, String field) {

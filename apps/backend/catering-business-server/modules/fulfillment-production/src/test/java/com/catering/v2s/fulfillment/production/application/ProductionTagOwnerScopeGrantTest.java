@@ -21,6 +21,8 @@ import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolv
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -86,6 +88,33 @@ class ProductionTagOwnerScopeGrantTest {
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
+    }
+
+    @Test
+    void productionReceiptRequestBindsTheBrandBeforeReplayLookup() {
+        ProductionTagOwnerService service = new ProductionTagOwnerService(mock(JdbcTemplate.class), mapper, () -> 1L);
+        ObjectNode request = mapper.createObjectNode().put("code", "TAG-RECEIPT").put("tagKind", "PRODUCTION").put("name", "receipt tag");
+
+        ObjectNode brandA = receiptRequest(service, request, "BRAND-A");
+        ObjectNode brandB = receiptRequest(service, request, "BRAND-B");
+
+        assertEquals("BRAND-A", brandA.path("receiptBrandRef").asText());
+        assertEquals("BRAND-B", brandB.path("receiptBrandRef").asText());
+        assertEquals("TAG-RECEIPT", brandA.path("code").asText());
+        assertEquals("TAG-RECEIPT", brandB.path("code").asText());
+    }
+
+    private static ObjectNode receiptRequest(ProductionTagOwnerService service, ObjectNode request, String brand) {
+        try {
+            var method = ProductionTagOwnerService.class.getDeclaredMethod("receiptRequest", com.fasterxml.jackson.databind.JsonNode.class, String.class);
+            method.setAccessible(true);
+            return (ObjectNode) method.invoke(service, request, brand);
+        } catch (InvocationTargetException failure) {
+            if (failure.getCause() instanceof RuntimeException runtime) throw runtime;
+            throw new AssertionError(failure.getCause());
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError(failure);
+        }
     }
 
     private static WorkspaceExecutionContext<CatalogAuthorizationScope> typedContext(UUID targetId) {

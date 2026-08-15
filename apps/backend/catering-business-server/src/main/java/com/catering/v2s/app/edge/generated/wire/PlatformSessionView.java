@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformSessionView(
-    String sessionId,
+    java.util.UUID sessionId,
     String displayName,
     java.util.List<String> capabilities,
     Boolean platformAdminAccessible,

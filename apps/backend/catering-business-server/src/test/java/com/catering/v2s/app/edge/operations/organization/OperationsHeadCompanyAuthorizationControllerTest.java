@@ -35,7 +35,7 @@ class OperationsHeadCompanyAuthorizationControllerTest {
         UUID brandId = UUID.randomUUID();
         stubGrant(fixture, "REQ_ADD_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", headCompanyId);
 
-        var response = fixture.controller().add(fixture.request(), WORKSPACE_KEY, headCompanyId, IDEMPOTENCY_KEY, new HeadCompanyBrandAuthorizationAddRequest(brandId.toString()));
+        var response = fixture.controller().add(fixture.request(), WORKSPACE_KEY, headCompanyId, IDEMPOTENCY_KEY, new HeadCompanyBrandAuthorizationAddRequest(brandId));
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals(null, response.getBody());
@@ -63,10 +63,10 @@ class OperationsHeadCompanyAuthorizationControllerTest {
     }
 
     @Test
-    void malformedBrandIdIsRejectedBeforeItCanReachAnOwnerCommand() {
+    void missingBrandIdIsRejectedBeforeItCanReachAnOwnerCommand() {
         Fixture fixture = fixture();
 
-        assertThrows(InvalidEdgeRequestException.class, () -> fixture.controller().add(fixture.request(), WORKSPACE_KEY, UUID.randomUUID(), IDEMPOTENCY_KEY, new HeadCompanyBrandAuthorizationAddRequest("not-a-uuid")));
+        assertThrows(InvalidEdgeRequestException.class, () -> fixture.controller().add(fixture.request(), WORKSPACE_KEY, UUID.randomUUID(), IDEMPOTENCY_KEY, new HeadCompanyBrandAuthorizationAddRequest(null)));
 
         verifyNoInteractions(fixture.entities());
     }

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceSelectContextRequest(
-    String roleAssignmentRef,
+    java.util.UUID roleAssignmentRef,
     Long requiredContextVersion
 ) {}

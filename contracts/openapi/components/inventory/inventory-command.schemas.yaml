@@ -27,7 +27,8 @@
           "properties": {
             "targetRef": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "before": {
               "type": "string",
@@ -46,7 +47,8 @@
             },
             "ledgerEntryRef": {
               "type": "string",
-              "description": "design-bound field"
+              "description": "design-bound field",
+              "format": "uuid"
             },
             "stockState": {
               "type": "string",
@@ -87,11 +89,13 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "targetRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "expectedVersion": {
           "type": "integer",
@@ -129,11 +133,13 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "targetRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "expectedVersion": {
           "type": "integer",
@@ -169,11 +175,13 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "targetRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "expectedVersion": {
           "type": "integer",
@@ -226,11 +234,13 @@
       "properties": {
         "dataNodeRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "targetRef": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "design-bound field",
+          "format": "uuid"
         },
         "expectedVersion": {
           "type": "integer",
@@ -655,7 +665,8 @@
             "properties": {
               "entryRef": {
                 "type": "string",
-                "description": "design-bound field"
+                "description": "design-bound field",
+                "format": "uuid"
               },
               "source": {
                 "type": "string",

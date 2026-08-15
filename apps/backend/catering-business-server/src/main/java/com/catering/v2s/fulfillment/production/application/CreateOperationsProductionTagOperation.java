@@ -29,7 +29,7 @@ public class CreateOperationsProductionTagOperation {
         var context = contexts.resolveCatalog(
             invocation.sessionCredential(),
             CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG,
-            invocation.request().dataNodeRef(),
+            invocation.request().dataNodeRef().toString(),
             CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()),
             invocation.correlationId(),
             invocation.requestId()
@@ -44,7 +44,7 @@ public class CreateOperationsProductionTagOperation {
                              String correlationId, String requestId, String idempotencyKey) { }
 
     private static ProductionTagReadback response(String requestId, ProductionTagOwnerApi.ProductionTagCommandReadback value) {
-        return new ProductionTagReadback(REVISION, requestId, new ProductionTagReadback.Result(value.code(), value.tagKind(), value.name(),
+        return new ProductionTagReadback(REVISION, requestId, new ProductionTagReadback.Result(value.tagRef(), value.code(), value.tagKind(), value.name(),
             new ProductionTagReadback.Result.OwnerScope("PRODUCTION_TAG", REVISION), value.status(), value.version()), value.version());
     }
 }

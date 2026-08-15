@@ -2,8 +2,8 @@ package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.organization.api.WorkspaceStatusLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -170,7 +170,7 @@ public class WorkspacePasswordRecoveryService {
     private static String normalizedLoginName(String value) { return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT); }
     private static String normalizedMobile(String value) { String normalized = value == null ? "" : value.replace(" ", "").replace("-", ""); if (!normalized.matches("^\\+?[0-9]{8,20}$")) return ""; return normalized.startsWith("+") ? normalized.substring(1) : normalized; }
     private String secret() { byte[] bytes = new byte[32]; random.nextBytes(bytes); return HexFormat.of().formatHex(bytes); }
-    private static String sha256(String value) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest((value == null ? "" : value).getBytes(StandardCharsets.UTF_8))); } catch (Exception failure) { throw new IllegalStateException(failure); } }
+    private static String sha256(String value) { return Sha256Hex.digest(value == null ? "" : value); }
 
     public record StartResult(String rawFlow, long expiresAt) { }
     public record OtpDelivery(long expiresAt, String debugVerificationCode) { }

@@ -19,7 +19,7 @@ public class TransitionOperationsCatalogItemStatusOperation {
     public TransitionOperationsCatalogItemStatusOperation(CommandExecutionContextResolver contexts, CatalogOwnerApi catalog, InventoryOwnerApi inventory) { this.contexts = contexts; this.catalog = catalog; this.inventory = inventory; }
     @Transactional(propagation = Propagation.REQUIRED)
     public CatalogItemCommandReadback execute(Invocation invocation) {
-        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS, invocation.request().dataNodeRef(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
+        var context = contexts.resolveCatalog(invocation.sessionCredential(), CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS, invocation.request().dataNodeRef().toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(invocation.requestedBrandRef()), invocation.correlationId(), invocation.requestId());
         var request = invocation.request();
         var itemRef = "VOIDED".equals(request.targetStatus()) ? catalog.resolveCatalogItemRef(context, invocation.itemCode()) : null;
         if ("VOIDED".equals(request.targetStatus())) {

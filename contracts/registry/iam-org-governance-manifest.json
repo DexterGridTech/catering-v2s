@@ -381,6 +381,31 @@
   "noClientDerivedAuthorization": true
 },
 {
+  "requirementId": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+  "operationIdentity": {
+    "operationId": "batchTransitionOperationsCatalogItemStatus",
+    "method": "POST",
+    "path": "/operations/catalog-inventory/items/status",
+    "consumerFace": "operations-admin",
+    "ownerModule": "catalog"
+  },
+  "authorizationMode": "AUTHENTICATED_WORKSPACE",
+  "capabilityMapping": {
+    "kind": "SERVER_RESOLVED_RESOURCE_TYPE",
+    "resourceTypeCapabilities": {
+      "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+      "STORE": "EDIT_STORE_CATALOG"
+    },
+    "unsupportedResourceTypeDecision": "DENY"
+  },
+  "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+  "ownerModule": "catalog",
+  "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+  "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+  "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
+  "noClientDerivedAuthorization": true
+},
+{
   "requirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_CATEGORY",
   "operationIdentity": {
     "operationId": "createOperationsCatalogCategory",

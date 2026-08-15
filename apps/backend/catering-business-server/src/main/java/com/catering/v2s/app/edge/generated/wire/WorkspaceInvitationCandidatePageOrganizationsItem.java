@@ -3,6 +3,6 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCandidatePageOrganizationsItem(
     String serviceNodeType,
-    String organizationRef,
+    java.util.UUID organizationRef,
     String path
 ) {}

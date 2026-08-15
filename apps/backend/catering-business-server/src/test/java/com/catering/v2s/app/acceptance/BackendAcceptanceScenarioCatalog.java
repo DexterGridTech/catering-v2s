@@ -13,7 +13,8 @@ final class BackendAcceptanceScenarioCatalog {
                 new IamAcceptanceScenarios(host),
                 new OrganizationAcceptanceScenarios(host),
                 new CommercialContractAcceptanceScenarios(host),
-                new AssetAcceptanceScenarios(host));
+                new AssetAcceptanceScenarios(host),
+                new CatalogAcceptanceScenarios(host));
         return groups.stream()
                 .flatMap(target -> Arrays.stream(target.getClass().getDeclaredMethods())
                         .filter(method -> method.isAnnotationPresent(AcceptanceScenario.class))
@@ -22,4 +23,3 @@ final class BackendAcceptanceScenarioCatalog {
                 .toList();
     }
 }
-

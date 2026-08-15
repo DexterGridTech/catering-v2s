@@ -2,6 +2,7 @@ import {Button, Image, Skeleton, Typography} from 'antd';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {publicRtkRequest} from '../../../app/api/generated/public-edge.rtk';
+import {wireUuid} from '../../../app/api/wireUuid';
 
 type Props = {
   assetRef: string;
@@ -14,7 +15,7 @@ type Props = {
 
 /** Resolves the opaque asset reference through the generated public asset operation. */
 export function CatalogAssetPreview({assetRef, alt, width, height, preview = true, testId}: Props) {
-  const request = useMemo(() => publicRtkRequest.getPublicAssetContent({assetRef}, {}), [assetRef]);
+  const request = useMemo(() => publicRtkRequest.getPublicAssetContent({assetRef: wireUuid(assetRef)}, {}), [assetRef]);
   const assetQuery = operationsRtk.useGetPublicAssetContentQuery(request);
   const publicUrl = assetQuery.data?.publicUrl;
   const [imageFailed, setImageFailed] = useState(false);

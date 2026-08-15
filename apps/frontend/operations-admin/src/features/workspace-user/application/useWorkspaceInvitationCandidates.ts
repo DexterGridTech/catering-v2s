@@ -2,6 +2,7 @@ import {contextScopedQueryArgs} from '@catering-v2s/admin-ui-foundation';
 import {useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
+import {wireUuid} from '../../../app/api/wireUuid';
 import type {OperationsPageProps} from '../../../app/routing/model';
 
 type TargetType = 'GROUP' | 'REGION' | 'PROJECT' | 'HEAD_COMPANY' | 'STORE';
@@ -30,7 +31,7 @@ export function useWorkspaceInvitationCandidates({targetType, queryContext, subj
     queryText: queryText?.trim() || undefined,
     page,
     pageSize,
-    selectedOrganizationRef: selectedOrganizationRef || undefined,
+    selectedOrganizationRef: selectedOrganizationRef ? wireUuid(selectedOrganizationRef) : undefined,
   }, {
     groupWorkspaceKey: queryContext.groupWorkspaceKey,
     expectedContextVersion: queryContext.expectedContextVersion,

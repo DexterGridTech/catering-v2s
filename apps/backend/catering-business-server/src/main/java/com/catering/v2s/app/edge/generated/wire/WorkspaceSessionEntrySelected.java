@@ -2,10 +2,10 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceSessionEntrySelected(
-    String roleAssignmentRef,
+    java.util.UUID roleAssignmentRef,
     String roleId,
     String roleName,
-    String roleNodeRef,
+    java.util.UUID roleNodeRef,
     String roleNodeType,
     String roleNodeName,
     String homePageDesignKey,

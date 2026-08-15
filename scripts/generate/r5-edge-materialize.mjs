@@ -58,6 +58,24 @@ function pointer(pathValue) {
   return pathValue.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 function clone(value) { return structuredClone(value); }
+const uuidReferenceExceptions = new Set(["sourceOrderRef", "sourceRecordRef", "sourceItemRef"]);
+const isUuidReferenceName = (name) => typeof name === "string" && name.endsWith("Ref") && !uuidReferenceExceptions.has(name);
+function applyUuidReferenceFormat(schema, name) {
+  const next = clone(schema);
+  const scalarString = next?.type === "string"
+    || (Array.isArray(next?.type) && next.type.includes("string") && next.type.every((type) => type === "string" || type === "null"));
+  if (isUuidReferenceName(name) && scalarString && !next.format) next.format = "uuid";
+  if (name === "mediaRefs" && next?.type === "array" && next.items?.type === "string" && !next.items.format) next.items.format = "uuid";
+  return next;
+}
+function annotateUuidReferences(value, propertyName = undefined) {
+  if (Array.isArray(value)) return value.map((item) => annotateUuidReferences(item));
+  if (!value || typeof value !== "object") return value;
+  const annotated = applyUuidReferenceFormat(value, propertyName);
+  return Object.fromEntries(Object.entries(annotated).map(([key, item]) => [key, key === "properties" && item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.entries(item).map(([name, schema]) => [name, annotateUuidReferences(schema, name)]))
+    : annotateUuidReferences(item)]));
+}
 function replaceNames(value, renames) {
   if (Array.isArray(value)) return value.map((item) => replaceNames(item, renames));
   if (value && typeof value === "object") {
@@ -166,9 +184,9 @@ function authorizationRequirements(manifest) {
 }
 function operationDocument(operation, catalog, requirements, pathFile) {
   const parameters = [
-    ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: { type: "string", minLength: 1, maxLength: 128 } })),
-    ...(operation.queryParameters || []).map((parameter) => ({ ...clone(parameter), schema: convertSymbolRefs(parameter.schema) })),
-    ...(operation.headerParameters || []).map((parameter) => ({ ...clone(parameter), schema: convertSymbolRefs(parameter.schema) })),
+    ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: applyUuidReferenceFormat({ type: "string", minLength: 1, maxLength: 128 }, name) })),
+    ...(operation.queryParameters || []).map((parameter) => ({ ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
+    ...(operation.headerParameters || []).map((parameter) => ({ ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
   ];
   if (operation.idempotency.header === "REQUIRED_16_128") parameters.push({ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string", minLength: 16, maxLength: 128 } });
   if (operation.idempotency.header !== "REQUIRED_16_128" && operation.idempotency.header !== "FORBIDDEN") fail("R5_EDGE_IDEMPOTENCY_POLICY_INVALID", operation.operationId);
@@ -273,7 +291,7 @@ function materializeComponents(catalog, placement) {
   const generated = ["Problem", "EpochMillis", "ServiceNodeType", "ProjectPhaseNames", "WorkspaceRoleAuthorizationReplaceRequest"];
   for (const name of generated) if (!components.has(name)) fail("R5_EDGE_GENERATED_COMPONENT_MISSING", name);
   for (const [name, schema] of components) {
-    const inlined = inlineMissingReferences(schema, components, sourceSchemas, catalog.componentOverrides.globalRenames, forbiddenPropertiesForComponent);
+    const inlined = annotateUuidReferences(inlineMissingReferences(schema, components, sourceSchemas, catalog.componentOverrides.globalRenames, forbiddenPropertiesForComponent));
     const override = catalog.componentOverrides[name];
     if (override?.enumAdditions) {
       for (const [propertyName, values] of Object.entries(override.enumAdditions)) addEnumValues(inlined, propertyName, values);

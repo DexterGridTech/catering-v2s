@@ -1,6 +1,7 @@
--- R10/R13/R14: inventory keeps product codes only as read labels.  Target and
--- BOM identity is the catalog-owned opaque UUID tuple; no cross-schema FK is
--- introduced because the owners still coordinate through REQUIRED commands.
+-- Inventory keeps product codes only as read labels. Target and BOM identity,
+-- candidate-set filtering, and count joins use the catalog-owned opaque UUID
+-- tuple; no cross-schema FK is introduced because owners coordinate through
+-- REQUIRED commands.
 ALTER TABLE inventory.stock_target
     ADD COLUMN IF NOT EXISTS item_ref UUID,
     ADD COLUMN IF NOT EXISTS product_sku_ref UUID;

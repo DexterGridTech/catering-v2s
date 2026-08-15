@@ -31,7 +31,8 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 128
+              "maxLength": 128,
+              "format": "uuid"
             }
           }
         ],

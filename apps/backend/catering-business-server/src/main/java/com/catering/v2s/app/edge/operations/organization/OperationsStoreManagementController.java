@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.organization;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationStore;
+import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStorePage;
@@ -35,6 +36,7 @@ import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,6 +90,6 @@ public final class OperationsStoreManagementController {
     private static UUID uuid(String value) { if (value == null) throw new InvalidEdgeRequestException("identifier is required"); try { return UUID.fromString(value); } catch (IllegalArgumentException exception) { throw new InvalidEdgeRequestException("identifier is invalid"); } }
     private static UUID nullableUuid(String value) { return value == null ? null : uuid(value); }
     private static long required(Long value) { if (value == null) throw new InvalidEdgeRequestException("expected version is required"); return value; }
-    private static ExtensionSubmission createSubmission(List<com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequestExtensionValuesItem> values) { return new ExtensionSubmission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
-    private static ExtensionSubmission updateSubmission(List<com.catering.v2s.app.edge.generated.wire.OrganizationStoreUpdateRequestExtensionValuesItem> values) { return new ExtensionSubmission(values == null ? List.of() : values.stream().map(value -> new ExtensionSubmission.ExtensionFieldValue(value.fieldKey(), value.valueJson(), ExtensionSubmission.Mode.valueOf(value.mode()))).toList()); }
+    private static ExtensionSubmission createSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    private static ExtensionSubmission updateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
 }

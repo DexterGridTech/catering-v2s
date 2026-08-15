@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record StoreContractPageMetadata(
     String groupWorkspaceKey,
-    String projectRef,
+    java.util.UUID projectRef,
     String projectName,
     Long page,
     Long pageSize,
