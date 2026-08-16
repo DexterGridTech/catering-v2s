@@ -4,10 +4,10 @@ import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryGrantCredential;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,11 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
     }
 
     @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer container, NativeWebRequest request, WebDataBinderFactory binderFactory) {
+    public Object resolveArgument(
+            MethodParameter parameter,
+            ModelAndViewContainer container,
+            NativeWebRequest request,
+            WebDataBinderFactory binderFactory) {
         HttpServletRequest servlet = request.getNativeRequest(HttpServletRequest.class);
         if (servlet == null) throw new IllegalStateException("servlet request is unavailable");
         RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servlet);

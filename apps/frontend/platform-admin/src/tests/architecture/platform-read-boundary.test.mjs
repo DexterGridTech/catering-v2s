@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const source = fs.readFileSync(new URL('../../features/organization-contract-overview/ui/PlatformReadPage.tsx', import.meta.url), 'utf8');
+const source = fs.readFileSync(
+  new URL('../../features/organization-contract-overview/ui/PlatformReadPage.tsx', import.meta.url),
+  'utf8',
+);
 
 test('platform organization and contract overview use generated RTK reads and owner detail readback', () => {
   assert.match(source, /platformRtk\.useGetPlatformOrganizationOverviewPageQuery/);

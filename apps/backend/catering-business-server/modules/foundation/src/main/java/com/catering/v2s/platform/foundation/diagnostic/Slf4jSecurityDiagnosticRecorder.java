@@ -54,7 +54,9 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
         LOG.atWarn()
                 .addKeyValue("event", "DIAGNOSTIC_WRITE_FAILED")
                 .addKeyValue("operationId", failedEvent.context().operationId())
-                .log("security-diagnostic event=DIAGNOSTIC_WRITE_FAILED operationId={}", failedEvent.context().operationId());
+                .log(
+                        "security-diagnostic event=DIAGNOSTIC_WRITE_FAILED operationId={}",
+                        failedEvent.context().operationId());
     }
 
     @Override
@@ -62,7 +64,9 @@ public final class Slf4jSecurityDiagnosticRecorder implements SecurityDiagnostic
         LOG.atWarn()
                 .addKeyValue("event", "DIAGNOSTIC_COMPLETION_WRITE_FAILED")
                 .addKeyValue("operationId", failedEvent.fields().operationId())
-                .log("security-diagnostic event=DIAGNOSTIC_COMPLETION_WRITE_FAILED operationId={}", failedEvent.fields().operationId());
+                .log(
+                        "security-diagnostic event=DIAGNOSTIC_COMPLETION_WRITE_FAILED operationId={}",
+                        failedEvent.fields().operationId());
     }
 
     static String render(SecurityDiagnosticEvent.Fields fields) {

@@ -4,6 +4,6 @@
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "limits": { "selectedItemCount": 20, "closureItemCount": 500 },
   "limitResponseShape": { "actual": "integer", "limit": "integer" },
-  "dictionaryKinds": ["TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"],
+  "dictionaryKinds": ["TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"],
   "sourceOfTruth": "contracts/policy/catalog-inventory-copy-policy.json"
 }

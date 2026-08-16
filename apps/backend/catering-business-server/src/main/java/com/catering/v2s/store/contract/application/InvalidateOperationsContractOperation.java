@@ -12,15 +12,17 @@ public class InvalidateOperationsContractOperation {
     private final OperationsStoreContractCommandApi contracts;
     private final OperationsStoreContractCommandApi.TaskReadbackApi taskReads;
 
-    public InvalidateOperationsContractOperation(OperationsStoreContractCommandApi contracts,
-                                                 OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
+    public InvalidateOperationsContractOperation(
+            OperationsStoreContractCommandApi contracts, OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
         this.contracts = contracts;
         this.taskReads = taskReads;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(OperationsStoreContractCommandApi.InvalidateCommand command) {
+    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(
+            OperationsStoreContractCommandApi.InvalidateCommand command) {
         contracts.invalidate(command);
-        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId()));
+        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId()));
     }
 }

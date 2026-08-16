@@ -1,8 +1,8 @@
 package com.catering.v2s.organization.application;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -48,7 +48,8 @@ class OrganizationTaskPathServiceTest {
         assertFalse(allowed("PROJECT", project, regionTarget));
         assertFalse(allowed("HEAD_COMPANY", headCompany, storeTarget));
         assertFalse(allowed("STORE", store, headCompanyTarget));
-        assertFalse(allowed("STORE", store, new TaskPath("STORE", store, List.of(group, region, project), "forged ancestor")));
+        assertFalse(allowed(
+                "STORE", store, new TaskPath("STORE", store, List.of(group, region, project), "forged ancestor")));
     }
 
     @Test
@@ -56,18 +57,21 @@ class OrganizationTaskPathServiceTest {
     void persistedMixedTargetDisplayUsesOneOwnerLogicalStatement() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         CommercialGroupLookup groups = mock(CommercialGroupLookup.class);
-        when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class))).thenReturn(java.util.Map.of());
+        when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class)))
+                .thenReturn(java.util.Map.of());
         OrganizationTaskPathService service = new OrganizationTaskPathService(jdbc, groups);
 
-        assertThrows(OrganizationTaskPathService.TaskPathNotFoundException.class, () ->
-            service.describePersistedTaskPaths(workspace, "scope-test", List.of(
-                new OrganizationTaskPathLookup.TaskPathRef("GROUP", group),
-                new OrganizationTaskPathLookup.TaskPathRef("REGION", region),
-                new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project),
-                new OrganizationTaskPathLookup.TaskPathRef("HEAD_COMPANY", headCompany),
-                new OrganizationTaskPathLookup.TaskPathRef("STORE", store)
-            ))
-        );
+        assertThrows(
+                OrganizationTaskPathService.TaskPathNotFoundException.class,
+                () -> service.describePersistedTaskPaths(
+                        workspace,
+                        "scope-test",
+                        List.of(
+                                new OrganizationTaskPathLookup.TaskPathRef("GROUP", group),
+                                new OrganizationTaskPathLookup.TaskPathRef("REGION", region),
+                                new OrganizationTaskPathLookup.TaskPathRef("PROJECT", project),
+                                new OrganizationTaskPathLookup.TaskPathRef("HEAD_COMPANY", headCompany),
+                                new OrganizationTaskPathLookup.TaskPathRef("STORE", store))));
 
         verify(jdbc).query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
         verifyNoInteractions(groups);

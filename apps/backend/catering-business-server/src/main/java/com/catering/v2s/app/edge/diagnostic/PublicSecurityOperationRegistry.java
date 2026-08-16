@@ -15,25 +15,101 @@ public final class PublicSecurityOperationRegistry {
             entry("platformPasswordLogin", "platform-iam", RequestMethod.POST, "/api/platform/auth/password-login"),
             entry("sendPlatformLoginOtp", "platform-iam", RequestMethod.POST, "/api/platform/auth/login-otp/send"),
             entry("verifyPlatformLoginOtp", "platform-iam", RequestMethod.POST, "/api/platform/auth/login-otp/verify"),
-            entry("startPlatformPasswordRecovery", "platform-iam", RequestMethod.POST, "/api/platform/auth/password-recovery/start"),
-            entry("sendPlatformPasswordRecoveryOtp", "platform-iam", RequestMethod.POST, "/api/platform/auth/password-recovery/otp/send"),
-            entry("verifyPlatformPasswordRecoveryOtp", "platform-iam", RequestMethod.POST, "/api/platform/auth/password-recovery/otp/verify"),
-            entry("completePlatformPasswordRecovery", "platform-iam", RequestMethod.POST, "/api/platform/auth/password-recovery/complete"),
-            entry("operationsWorkspacePasswordLogin", "workspace-iam", RequestMethod.POST, "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login"),
-            entry("sendOperationsWorkspaceOtp", "workspace-iam", RequestMethod.POST, "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send"),
-            entry("verifyOperationsWorkspaceOtp", "workspace-iam", RequestMethod.POST, "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify"),
-            entry("getOperationsWorkspaceLoginEntry", "workspace-iam", RequestMethod.GET, "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry"),
-            entry("startOperationsPasswordRecovery", "workspace-iam", RequestMethod.POST, "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start"),
-            entry("sendOperationsPasswordRecoveryOtp", "workspace-iam", RequestMethod.POST, "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send"),
-            entry("verifyOperationsPasswordRecoveryOtp", "workspace-iam", RequestMethod.POST, "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify"),
-            entry("completeOperationsPasswordRecovery", "workspace-iam", RequestMethod.POST, "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete"),
-            entry("getPublicInvitationView", "workspace-iam", RequestMethod.GET, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}"),
-            entry("acceptPublicInvitation", "workspace-iam", RequestMethod.POST, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}"),
-            entry("sendPublicInvitationOtp", "workspace-iam", RequestMethod.POST, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send"),
-            entry("verifyPublicInvitationOtp", "workspace-iam", RequestMethod.POST, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify"),
-            entry("savePublicInvitationCredentials", "workspace-iam", RequestMethod.POST, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials"),
-            entry("completePublicInvitation", "workspace-iam", RequestMethod.POST, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete"),
-            entry("getPublicInvitationCompletion", "workspace-iam", RequestMethod.GET, "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion"));
+            entry(
+                    "startPlatformPasswordRecovery",
+                    "platform-iam",
+                    RequestMethod.POST,
+                    "/api/platform/auth/password-recovery/start"),
+            entry(
+                    "sendPlatformPasswordRecoveryOtp",
+                    "platform-iam",
+                    RequestMethod.POST,
+                    "/api/platform/auth/password-recovery/otp/send"),
+            entry(
+                    "verifyPlatformPasswordRecoveryOtp",
+                    "platform-iam",
+                    RequestMethod.POST,
+                    "/api/platform/auth/password-recovery/otp/verify"),
+            entry(
+                    "completePlatformPasswordRecovery",
+                    "platform-iam",
+                    RequestMethod.POST,
+                    "/api/platform/auth/password-recovery/complete"),
+            entry(
+                    "operationsWorkspacePasswordLogin",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login"),
+            entry(
+                    "sendOperationsWorkspaceOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send"),
+            entry(
+                    "verifyOperationsWorkspaceOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify"),
+            entry(
+                    "getOperationsWorkspaceLoginEntry",
+                    "workspace-iam",
+                    RequestMethod.GET,
+                    "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry"),
+            entry(
+                    "startOperationsPasswordRecovery",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start"),
+            entry(
+                    "sendOperationsPasswordRecoveryOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send"),
+            entry(
+                    "verifyOperationsPasswordRecoveryOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify"),
+            entry(
+                    "completeOperationsPasswordRecovery",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete"),
+            entry(
+                    "getPublicInvitationView",
+                    "workspace-iam",
+                    RequestMethod.GET,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}"),
+            entry(
+                    "acceptPublicInvitation",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}"),
+            entry(
+                    "sendPublicInvitationOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send"),
+            entry(
+                    "verifyPublicInvitationOtp",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify"),
+            entry(
+                    "savePublicInvitationCredentials",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials"),
+            entry(
+                    "completePublicInvitation",
+                    "workspace-iam",
+                    RequestMethod.POST,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete"),
+            entry(
+                    "getPublicInvitationCompletion",
+                    "workspace-iam",
+                    RequestMethod.GET,
+                    "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion"));
 
     public Definition resolve(PublicSecurityOperation operation) {
         Definition definition = DEFINITIONS.get(operation.id());
@@ -81,9 +157,10 @@ public final class PublicSecurityOperationRegistry {
         }
     }
 
-    private static Map.Entry<String, Definition> entry(String operationId, String owner, RequestMethod method, String routeTemplate) {
+    private static Map.Entry<String, Definition> entry(
+            String operationId, String owner, RequestMethod method, String routeTemplate) {
         return Map.entry(operationId, new Definition(operationId, owner, method, routeTemplate));
     }
 
-    public record Definition(String operationId, String owner, RequestMethod method, String routeTemplate) { }
+    public record Definition(String operationId, String owner, RequestMethod method, String routeTemplate) {}
 }

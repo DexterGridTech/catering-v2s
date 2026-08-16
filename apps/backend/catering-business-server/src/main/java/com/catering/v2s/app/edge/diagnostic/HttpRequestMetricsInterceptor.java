@@ -1,14 +1,13 @@
 package com.catering.v2s.app.edge.diagnostic;
 
+import com.catering.v2s.platform.foundation.diagnostic.RequestDiagnosticContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
-import com.catering.v2s.platform.foundation.diagnostic.RequestDiagnosticContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,14 +41,41 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     private final boolean eventActive;
 
     public HttpRequestMetricsInterceptor(ObjectMapper mapper) {
-        this(mapper, env("V2S_RUNTIME_ENVIRONMENT"), env("V2S_DEV_PROFILE"), runIdFor(env("V2S_DEV_PROFILE")), secretFor(env("V2S_DEV_PROFILE")), env("V2S_DEV_NAMESPACE"), eventsFor(env("V2S_DEV_PROFILE")), env("V2S_DB_OPERATIONS_EVENTS"), env("V2S_DB_OPERATIONS_HMAC_KEY"), env("V2S_DB_STATEMENT_DICTIONARY"));
+        this(
+                mapper,
+                env("V2S_RUNTIME_ENVIRONMENT"),
+                env("V2S_DEV_PROFILE"),
+                runIdFor(env("V2S_DEV_PROFILE")),
+                secretFor(env("V2S_DEV_PROFILE")),
+                env("V2S_DEV_NAMESPACE"),
+                eventsFor(env("V2S_DEV_PROFILE")),
+                env("V2S_DB_OPERATIONS_EVENTS"),
+                env("V2S_DB_OPERATIONS_HMAC_KEY"),
+                env("V2S_DB_STATEMENT_DICTIONARY"));
     }
 
-    HttpRequestMetricsInterceptor(ObjectMapper mapper, String environment, String profile, String configuredRunId, String secretValue, String namespace, String eventFile) {
+    HttpRequestMetricsInterceptor(
+            ObjectMapper mapper,
+            String environment,
+            String profile,
+            String configuredRunId,
+            String secretValue,
+            String namespace,
+            String eventFile) {
         this(mapper, environment, profile, configuredRunId, secretValue, namespace, eventFile, null, null, null);
     }
 
-    HttpRequestMetricsInterceptor(ObjectMapper mapper, String environment, String profile, String configuredRunId, String secretValue, String namespace, String eventFile, String databaseOperationFile, String databaseOperationHmacValue, String dictionaryFile) {
+    HttpRequestMetricsInterceptor(
+            ObjectMapper mapper,
+            String environment,
+            String profile,
+            String configuredRunId,
+            String secretValue,
+            String namespace,
+            String eventFile,
+            String databaseOperationFile,
+            String databaseOperationHmacValue,
+            String dictionaryFile) {
         this.mapper = mapper;
         this.definitions = loadDefinitions(mapper);
         this.mode = Mode.forProfile(profile);
@@ -61,11 +87,10 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         this.databaseOperationHmacKey = decodeHmacKey(databaseOperationHmacValue);
         this.databaseCaptureActive = this.databaseOperationsPath != null && this.databaseOperationHmacKey != null;
         this.databaseCaptureHmacMissing = this.databaseOperationsPath != null && this.databaseOperationHmacKey == null;
-        this.scopeActive = mode != null
-                && "non-production".equals(environment)
-                && namespaceMatches(mode, namespace);
+        this.scopeActive = mode != null && "non-production".equals(environment) && namespaceMatches(mode, namespace);
         this.eventActive = scopeActive
-                && runId != null && runId.matches("[A-Za-z0-9._:-]{8,128}")
+                && runId != null
+                && runId.matches("[A-Za-z0-9._:-]{8,128}")
                 && secret.length >= 24
                 && eventsPath != null;
     }
@@ -87,22 +112,40 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                 || !actual.operationId().equals(assertedOperation)
                 || !actual.path().equals(assertedRoute);
         boolean eventAuthorized = credentialAuthorized;
-        Definition resolved = actual == null ? new Definition("route.unresolved", method, safePattern(pattern), "unresolved", "unknown") : actual;
-        RequestDiagnosticContext context = new RequestDiagnosticContext(correlationId, requestId, resolved.operationId(), resolved.path(), resolved.owner());
+        Definition resolved = actual == null
+                ? new Definition("route.unresolved", method, safePattern(pattern), "unresolved", "unknown")
+                : actual;
+        RequestDiagnosticContext context = new RequestDiagnosticContext(
+                correlationId, requestId, resolved.operationId(), resolved.path(), resolved.owner());
         DatabaseOperationTracker.Scope scope = DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(
-                databaseCaptureActive ? databaseOperationHmacKey : null,
-                databaseCaptureActive,
-                databaseCaptureActive && statementDictionaryPath != null).withCorrelationId(correlationId));
+                        databaseCaptureActive ? databaseOperationHmacKey : null,
+                        databaseCaptureActive,
+                        databaseCaptureActive && statementDictionaryPath != null)
+                .withCorrelationId(correlationId));
         ReadBudgetComponent.Scope readBudget = ReadBudgetComponent.open();
-        RequestDiagnosticLifecycle.Lifecycle lifecycle = RequestDiagnosticLifecycle.open(context, resolved.consumerFace());
-        request.setAttribute(STATE, new State(scope, readBudget, System.nanoTime(), context, method, pattern, resolved, lifecycle, eventAuthorized, metadataMismatch));
+        RequestDiagnosticLifecycle.Lifecycle lifecycle =
+                RequestDiagnosticLifecycle.open(context, resolved.consumerFace());
+        request.setAttribute(
+                STATE,
+                new State(
+                        scope,
+                        readBudget,
+                        System.nanoTime(),
+                        context,
+                        method,
+                        pattern,
+                        resolved,
+                        lifecycle,
+                        eventAuthorized,
+                        metadataMismatch));
         response.setHeader("X-Correlation-Id", correlationId);
         response.setHeader("X-Request-Id", requestId);
         return true;
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
         Object value = request.getAttribute(STATE);
         if (!(value instanceof State state)) return;
         try {
@@ -145,10 +188,21 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             event.put("readBudgetLogicalStatementComponents", readBudgetLogicalStatementCounts(readBudget));
             event.put("readBudgetLogicalStatementCount", readBudget.logicalStatementCount());
             event.put("readBudgetLogicalStatementUnclassified", readBudget.unclassifiedLogicalStatementCount());
-            event.put("databaseOperationCapture", databaseCaptureActive ? "ENABLED" : databaseCaptureHmacMissing ? "DISABLED_HMAC_KEY_MISSING" : "NOT_CONFIGURED");
+            event.put(
+                    "databaseOperationCapture",
+                    databaseCaptureActive
+                            ? "ENABLED"
+                            : databaseCaptureHmacMissing ? "DISABLED_HMAC_KEY_MISSING" : "NOT_CONFIGURED");
             event.put("phaseCheckpoints", snapshot.phaseCheckpoints());
             event.put("suspects", snapshot.suspects());
-            event.put("outcome", exception == null && response.getStatus() < 400 && !state.metadataMismatch() && !databaseCaptureHmacMissing ? "SUCCEEDED" : "FAILED");
+            event.put(
+                    "outcome",
+                    exception == null
+                                    && response.getStatus() < 400
+                                    && !state.metadataMismatch()
+                                    && !databaseCaptureHmacMissing
+                            ? "SUCCEEDED"
+                            : "FAILED");
             if (state.metadataMismatch()) event.put("observationError", mode.mismatchError());
             if (databaseCaptureHmacMissing) event.put("observationError", "DB_OPERATION_HMAC_KEY_MISSING");
             if (exception != null) event.put("observationError", "REQUEST_EXCEPTION");
@@ -163,7 +217,9 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         }
     }
 
-    private boolean validSecret(String candidate) { return candidate != null && MessageDigest.isEqual(secret, candidate.getBytes(StandardCharsets.UTF_8)); }
+    private boolean validSecret(String candidate) {
+        return candidate != null && MessageDigest.isEqual(secret, candidate.getBytes(StandardCharsets.UTF_8));
+    }
 
     static RequestDiagnosticContext context(HttpServletRequest request) {
         Object value = request.getAttribute(STATE);
@@ -196,7 +252,11 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                     value.put("measurementSchemaVersion", DatabaseOperationTracker.MEASUREMENT_SCHEMA_VERSION);
                     value.put("measurementBasis", DatabaseOperationTracker.MEASUREMENT_BASIS);
                     value.put("consumerFace", state.actual().consumerFace());
-                    value.put("phase", operation.phase() == null ? "EDGE_IN" : operation.phase().name());
+                    value.put(
+                            "phase",
+                            operation.phase() == null
+                                    ? "EDGE_IN"
+                                    : operation.phase().name());
                     value.put("section", operation.section().name());
                     value.put("seq", operation.seq());
                     value.put("kind", operation.kind());
@@ -209,7 +269,12 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                     if (operation.paramsHash() != null) value.put("paramsHash", operation.paramsHash());
                     lines.append(mapper.writeValueAsString(value)).append('\n');
                 }
-                Files.writeString(databaseOperationsPath, lines.toString(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                Files.writeString(
+                        databaseOperationsPath,
+                        lines.toString(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
             }
         } catch (IOException ignored) {
             // Observability remains non-invasive; missing rows are detected by the managed report.
@@ -225,17 +290,24 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                 restrictToOwner(statementDictionaryPath);
                 Map<String, String> dictionary = new LinkedHashMap<>();
                 if (Files.exists(statementDictionaryPath) && Files.size(statementDictionaryPath) > 0) {
-                    JsonNode existing = mapper.readTree(Files.readString(statementDictionaryPath, StandardCharsets.UTF_8));
+                    JsonNode existing =
+                            mapper.readTree(Files.readString(statementDictionaryPath, StandardCharsets.UTF_8));
                     if (existing != null && existing.isObject()) {
                         existing.fields().forEachRemaining(entry -> {
-                            if (entry.getKey().matches("[A-Za-z0-9_-]{8,64}") && entry.getValue().isTextual()) {
+                            if (entry.getKey().matches("[A-Za-z0-9_-]{8,64}")
+                                    && entry.getValue().isTextual()) {
                                 dictionary.put(entry.getKey(), entry.getValue().asText());
                             }
                         });
                     }
                 }
                 additions.forEach(dictionary::putIfAbsent);
-                Files.writeString(statementDictionaryPath, mapper.writeValueAsString(dictionary) + "\n", StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                Files.writeString(
+                        statementDictionaryPath,
+                        mapper.writeValueAsString(dictionary) + "\n",
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
             }
         } catch (IOException ignored) {
             // Dictionary output is local-only diagnostic enrichment; it must not alter request work.
@@ -273,7 +345,12 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                 createParent(eventsPath);
                 if (!Files.exists(eventsPath)) Files.createFile(eventsPath);
                 restrictToOwner(eventsPath);
-                Files.writeString(eventsPath, mapper.writeValueAsString(event) + "\n", StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                Files.writeString(
+                        eventsPath,
+                        mapper.writeValueAsString(event) + "\n",
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
             }
             return true;
         } catch (IOException ignored) {
@@ -291,17 +368,40 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         Map<String, Definition> result = new HashMap<>();
         for (var entry : EdgeRouteFaceRegistry.loadExtended(mapper).entrySet()) {
             EdgeRouteFaceRegistry.Definition value = entry.getValue();
-            result.put(entry.getKey(), new Definition(value.operationId(), value.method(), value.path(), value.owner(), value.consumerFace()));
+            result.put(
+                    entry.getKey(),
+                    new Definition(
+                            value.operationId(), value.method(), value.path(), value.owner(), value.consumerFace()));
         }
         return Map.copyOf(result);
     }
 
-    private static String runIdFor(String profile) { Mode mode = Mode.forProfile(profile); return mode == null ? null : env(mode.variablePrefix() + "_RUN_ID"); }
-    private static String secretFor(String profile) { Mode mode = Mode.forProfile(profile); return mode == null ? null : env(mode.variablePrefix() + "_SECRET"); }
-    private static String eventsFor(String profile) { Mode mode = Mode.forProfile(profile); return mode == null ? null : env(mode.variablePrefix() + "_EVENTS"); }
-    private static String env(String name) { return System.getenv(name); }
-    private static String safe(String candidate, String fallback) { return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : fallback; }
-    private static String safePattern(String candidate) { return candidate != null && candidate.matches("/[A-Za-z0-9._~{}:/-]{1,256}") ? candidate : "/unresolved"; }
+    private static String runIdFor(String profile) {
+        Mode mode = Mode.forProfile(profile);
+        return mode == null ? null : env(mode.variablePrefix() + "_RUN_ID");
+    }
+
+    private static String secretFor(String profile) {
+        Mode mode = Mode.forProfile(profile);
+        return mode == null ? null : env(mode.variablePrefix() + "_SECRET");
+    }
+
+    private static String eventsFor(String profile) {
+        Mode mode = Mode.forProfile(profile);
+        return mode == null ? null : env(mode.variablePrefix() + "_EVENTS");
+    }
+
+    private static String env(String name) {
+        return System.getenv(name);
+    }
+
+    private static String safe(String candidate, String fallback) {
+        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : fallback;
+    }
+
+    private static String safePattern(String candidate) {
+        return candidate != null && candidate.matches("/[A-Za-z0-9._~{}:/-]{1,256}") ? candidate : "/unresolved";
+    }
 
     private static boolean namespaceMatches(Mode mode, String namespace) {
         if (namespace == null) return false;
@@ -321,13 +421,22 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
 
     private static void restrictToOwner(Path path) throws IOException {
         try {
-            Files.setPosixFilePermissions(path, java.util.Set.of(java.nio.file.attribute.PosixFilePermission.OWNER_READ, java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
-        } catch (UnsupportedOperationException ignored) { }
+            Files.setPosixFilePermissions(
+                    path,
+                    java.util.Set.of(
+                            java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+                            java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+        } catch (UnsupportedOperationException ignored) {
+        }
     }
 
     private enum Mode {
         SEED("r5-full", "V2S_SEED_REPORT", "X-Seed", "SEED_OPERATION_METADATA_MISMATCH"),
-        BACKEND_ACCEPTANCE("backend-acceptance", "V2S_BACKEND_ACCEPTANCE", "X-Backend-Acceptance", "BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH");
+        BACKEND_ACCEPTANCE(
+                "backend-acceptance",
+                "V2S_BACKEND_ACCEPTANCE",
+                "X-Backend-Acceptance",
+                "BACKEND_ACCEPTANCE_OPERATION_METADATA_MISMATCH");
 
         private final String profile;
         private final String variablePrefix;
@@ -340,15 +449,48 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             this.headerPrefix = headerPrefix;
             this.mismatchError = mismatchError;
         }
-        static Mode forProfile(String profile) { for (Mode mode : values()) if (mode.profile.equals(profile)) return mode; return null; }
-        String variablePrefix() { return variablePrefix; }
-        String mismatchError() { return mismatchError; }
-        String runIdHeader() { return headerPrefix + "-Run-Id"; }
-        String secretHeader() { return this == SEED ? "X-Seed-Report-Secret" : headerPrefix + "-Secret"; }
-        String operationHeader() { return headerPrefix + "-Operation-Id"; }
-        String routeHeader() { return headerPrefix + "-Route-Template"; }
+
+        static Mode forProfile(String profile) {
+            for (Mode mode : values()) if (mode.profile.equals(profile)) return mode;
+            return null;
+        }
+
+        String variablePrefix() {
+            return variablePrefix;
+        }
+
+        String mismatchError() {
+            return mismatchError;
+        }
+
+        String runIdHeader() {
+            return headerPrefix + "-Run-Id";
+        }
+
+        String secretHeader() {
+            return this == SEED ? "X-Seed-Report-Secret" : headerPrefix + "-Secret";
+        }
+
+        String operationHeader() {
+            return headerPrefix + "-Operation-Id";
+        }
+
+        String routeHeader() {
+            return headerPrefix + "-Route-Template";
+        }
     }
 
-    private record Definition(String operationId, String method, String path, String owner, String consumerFace) { }
-    private record State(DatabaseOperationTracker.Scope scope, ReadBudgetComponent.Scope readBudget, long startedAtNanos, RequestDiagnosticContext context, String method, String pattern, Definition actual, RequestDiagnosticLifecycle.Lifecycle lifecycle, boolean eventAuthorized, boolean metadataMismatch) { }
+    private record Definition(String operationId, String method, String path, String owner, String consumerFace) {}
+
+    private record State(
+            DatabaseOperationTracker.Scope scope,
+            ReadBudgetComponent.Scope readBudget,
+            long startedAtNanos,
+            RequestDiagnosticContext context,
+            String method,
+            String pattern,
+            Definition actual,
+            RequestDiagnosticLifecycle.Lifecycle lifecycle,
+            boolean eventAuthorized,
+            boolean metadataMismatch) {}
 }

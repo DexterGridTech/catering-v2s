@@ -5,11 +5,11 @@ export type ContextScopedQueryContext = {
   scopeRef?: string;
 };
 
-type ContextScopedQueryResult<T extends Record<string, unknown>, C extends ContextScopedQueryContext> = T
-  & Pick<C, 'groupWorkspaceKey'>
-  & (C extends {expectedContextVersion: number} ? Pick<C, 'expectedContextVersion'> : {})
-  & (C extends {identityKey: string} ? Pick<C, 'identityKey'> : {})
-  & (C extends {scopeRef: string} ? Pick<C, 'scopeRef'> : {});
+type ContextScopedQueryResult<T extends Record<string, unknown>, C extends ContextScopedQueryContext> = T &
+  Pick<C, 'groupWorkspaceKey'> &
+  (C extends {expectedContextVersion: number} ? Pick<C, 'expectedContextVersion'> : {}) &
+  (C extends {identityKey: string} ? Pick<C, 'identityKey'> : {}) &
+  (C extends {scopeRef: string} ? Pick<C, 'scopeRef'> : {});
 
 /**
  * Adds only the already-approved context fields to a generated query arg.

@@ -1,10 +1,11 @@
-import {type CommercialGroupRoot, type JsonValue, type OrganizationHierarchySnapshot, type OrganizationNode} from '../../../app/api/generated/operations-edge';
-import {ApiFailure} from '../../../app/api/OperationsTransport';
 import {
-  ACTION_CAPABILITIES,
-  adminCatalog,
-  operationsPageDesignKeys,
-} from '../../../app/catalog/generatedAdminCatalog';
+  type CommercialGroupRoot,
+  type JsonValue,
+  type OrganizationHierarchySnapshot,
+  type OrganizationNode,
+} from '../../../app/api/generated/operations-edge';
+import {ApiFailure} from '../../../app/api/OperationsTransport';
+import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
 
 export type HierarchyRow = {
   id: string;
@@ -28,13 +29,11 @@ export type OrganizationMutationForm = {
   phaseDrafts?: ProjectPhaseDraft[];
 };
 
-const page = adminCatalog.operationsPages.find(
-  (item) => item.pageDesignKey === operationsPageDesignKeys.PgOrgStructure,
-);
+const page = adminCatalog.operationsPages.find(item => item.pageDesignKey === operationsPageDesignKeys.PgOrgStructure);
 if (!page) throw new Error('ADMIN_CATALOG_ORGANIZATION_STRUCTURE_PAGE_MISSING');
 
 function actionLabelFor(actionKey: string, missing: string) {
-  const action = adminCatalog.actions.find((item) => item.actionKey === actionKey);
+  const action = adminCatalog.actions.find(item => item.actionKey === actionKey);
   if (!action?.actionLabel) throw new Error(missing);
   return action.actionLabel;
 }
@@ -62,17 +61,12 @@ export const organizationGroupEditLabel = actionLabelFor(
 );
 
 export function issue(error: unknown) {
-  return error instanceof ApiFailure
-    ? error.problem.detail
-    : '无法完成组织结构操作';
+  return error instanceof ApiFailure ? error.problem.detail : '无法完成组织结构操作';
 }
 
 export function rowsOf(snapshot?: OrganizationHierarchySnapshot): HierarchyRow[] {
   if (!snapshot) return [];
-  return [
-    rowFromCommercialGroup(snapshot.commercialGroup),
-    ...snapshot.items.map((node) => rowFromNode(node)),
-  ];
+  return [rowFromCommercialGroup(snapshot.commercialGroup), ...snapshot.items.map(node => rowFromNode(node))];
 }
 
 export function rowFromCommercialGroup(group: CommercialGroupRoot): HierarchyRow {
@@ -98,7 +92,7 @@ export function rowFromNode(node: OrganizationNode): HierarchyRow {
     notes: node.notes,
     extensionValues: node.extensionValues,
     status: node.status,
-    phases: node.phases.map((phase) => phase.name),
+    phases: node.phases.map(phase => phase.name),
     revision: node.revision,
   };
 }
@@ -116,12 +110,12 @@ export function organizationStatusLabel(status?: HierarchyRow['status']) {
 }
 
 export function projectPhaseDrafts(phases: string[]): ProjectPhaseDraft[] {
-  return phases.map((name) => ({name}));
+  return phases.map(name => ({name}));
 }
 
 export function projectPhasePayload(drafts?: ProjectPhaseDraft[]) {
   return (drafts ?? [])
-    .map((draft) => draft.name?.trim() ?? '')
+    .map(draft => draft.name?.trim() ?? '')
     .filter(Boolean)
-    .map((name) => ({name}));
+    .map(name => ({name}));
 }

@@ -118,58 +118,58 @@ foundation。表中每个 v2 production 类均已 disposition；未列类名仍�
 
 ```text
 contracts/openapi/
-├── edge.openapi.yaml
+├── edge.openapi.json
 ├── paths/
 │   ├── platform-admin/
-│   │   ├── authentication.paths.yaml
-│   │   ├── workspace-management.paths.yaml
-│   │   ├── platform-admin-governance.paths.yaml
-│   │   ├── organization-overview.paths.yaml
-│   │   ├── contract-overview.paths.yaml
-│   │   ├── role-management.paths.yaml
-│   │   ├── workspace-account-management.paths.yaml
-│   │   └── extension-field-management.paths.yaml
+│   │   ├── authentication.paths.json
+│   │   ├── workspace-management.paths.json
+│   │   ├── platform-admin-governance.paths.json
+│   │   ├── organization-overview.paths.json
+│   │   ├── contract-overview.paths.json
+│   │   ├── role-management.paths.json
+│   │   ├── workspace-account-management.paths.json
+│   │   └── extension-field-management.paths.json
 │   ├── operations-admin/
-│   │   ├── authentication.paths.yaml
-│   │   ├── organization-hierarchy.paths.yaml
-│   │   ├── business-entity-management.paths.yaml
-│   │   ├── store-management.paths.yaml
-│   │   ├── contract-management.paths.yaml
-│   │   ├── user-management.paths.yaml
-│   │   └── store-profile.paths.yaml
+│   │   ├── authentication.paths.json
+│   │   ├── organization-hierarchy.paths.json
+│   │   ├── business-entity-management.paths.json
+│   │   ├── store-management.paths.json
+│   │   ├── contract-management.paths.json
+│   │   ├── user-management.paths.json
+│   │   └── store-profile.paths.json
 │   └── public/
-│       ├── asset-content.paths.yaml
-│       └── invitation.paths.yaml
+│       ├── asset-content.paths.json
+│       └── invitation.paths.json
 └── components/
     ├── common/
-    │   ├── pagination.schemas.yaml
-    │   ├── problem.schemas.yaml
-    │   └── security.schemas.yaml
+    │   ├── pagination.schemas.json
+    │   ├── problem.schemas.json
+    │   └── security.schemas.json
     ├── platform/
-    │   ├── authentication.schemas.yaml
-    │   ├── workspace.schemas.yaml
-    │   ├── asset.schemas.yaml
-    │   └── administration.schemas.yaml
+    │   ├── authentication.schemas.json
+    │   ├── workspace.schemas.json
+    │   ├── asset.schemas.json
+    │   └── administration.schemas.json
     ├── organization/
-    │   ├── hierarchy.schemas.yaml
-    │   ├── business-entity.schemas.yaml
-    │   ├── store.schemas.yaml
-    │   └── extension.schemas.yaml
+    │   ├── hierarchy.schemas.json
+    │   ├── business-entity.schemas.json
+    │   ├── store.schemas.json
+    │   └── extension.schemas.json
     ├── workspace-iam/
-    │   ├── role.schemas.yaml
-    │   ├── account.schemas.yaml
-    │   ├── invitation.schemas.yaml
-    │   └── session.schemas.yaml
+    │   ├── role.schemas.json
+    │   ├── account.schemas.json
+    │   ├── invitation.schemas.json
+    │   └── session.schemas.json
     └── contract/
-        ├── contract-command.schemas.yaml
-        └── contract-read.schemas.yaml
+        ├── contract-command.schemas.json
+        └── contract-read.schemas.json
 ```
 
-`edge.openapi.yaml` 只放 OpenAPI metadata、全局 security/tag 与每条 route 到
-`paths/<face>/<capability>.paths.yaml` 中 Path Item 的 `$ref`，不得内联 operation/schema。
+`edge.openapi.json` 只放 OpenAPI metadata、全局 security/tag 与每条 route 到
+`paths/<face>/<capability>.paths.json` 中 Path Item 的 `$ref`，不得内联 operation/schema。
 每个 path 文件只拥有一个 face+capability；每个 component 文件只拥有一个 owner+schema family。
 手写 YAML 单文件非空行上限为 500；达到上限时必须在同一目录继续按 `read/command` 或明确
-子能力拆分，禁止把内容重新汇总进 `edge.openapi.yaml`。codegen 可生成临时 bundled spec，
+子能力拆分，禁止把内容重新汇总进 `edge.openapi.json`。codegen 可生成临时 bundled spec，
 但 bundle 只用于校验/生成且不进入 source truth。禁止再建 internal OpenAPI。
 
 逐 operation 的规范性输入不是本节摘要，而是

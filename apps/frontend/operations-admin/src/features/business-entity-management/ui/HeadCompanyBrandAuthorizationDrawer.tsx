@@ -1,5 +1,13 @@
 import {Alert, Button, Drawer, Select, Space, Tag} from 'antd';
-import {adminDrawerSurfaceProps, NameCodeText, testId, useAsyncGenerationGuard, useDrawerFormLifecycle, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminDrawerSurfaceProps,
+  createContentIdempotencyKey,
+  NameCodeText,
+  testId,
+  useAsyncGenerationGuard,
+  useDrawerFormLifecycle,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type HeadCompany} from '../../../app/api/generated/operations-edge';
 import {ACTION_CAPABILITIES, adminCatalog} from '../../../app/catalog/generatedAdminCatalog';
@@ -11,7 +19,7 @@ import {
 
 const adapter = new HeadCompanyBrandAuthorizationActionAdapter();
 const authorizationAction = adminCatalog.actions.find(
-  (action) => action.actionKey === ACTION_CAPABILITIES.ORG_HEAD_COMPANY_BRAND,
+  action => action.actionKey === ACTION_CAPABILITIES.ORG_HEAD_COMPANY_BRAND,
 );
 const authorizationActionLabel = authorizationAction?.actionLabel;
 if (!authorizationActionLabel) throw new Error('ADMIN_CATALOG_HEAD_COMPANY_BRAND_ACTION_MISSING');
@@ -30,16 +38,19 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
   const [commandProblem, setCommandProblem] = useState<string>();
   const lifecycle = useDrawerFormLifecycle({
     open: Boolean(headCompany),
-    onOpenChange: (next) => { if (!next) onClose(); },
+    onOpenChange: next => {
+      if (!next) onClose();
+    },
     dirtyMessage: '',
-    idempotencyKey: true,
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.addOperationsOrganizationHeadCompanyBrandAuthorization,
   });
   useOverlayLock(Boolean(headCompany));
-  const submission = useSubmissionLifecycle();
   const candidatesGeneration = useAsyncGenerationGuard();
   const searchContext = useMemo(
-    () => ({groupWorkspaceKey: queryContext.groupWorkspaceKey, expectedContextVersion: queryContext.expectedContextVersion}),
+    () => ({
+      groupWorkspaceKey: queryContext.groupWorkspaceKey,
+      expectedContextVersion: queryContext.expectedContextVersion,
+    }),
     [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey],
   );
 
@@ -52,34 +63,48 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
     setSelectedBrandId(undefined);
     setCommandProblem(undefined);
     lifecycle.reset();
-    void adapter.searchEnabledBrands(searchContext, undefined).then((page) => {
-      if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code}/>})));
-      setCandidateProblem(undefined);
-    }).catch(() => {
-      if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
-    });
+    void adapter
+      .searchEnabledBrands(searchContext, undefined)
+      .then(page => {
+        if (!candidatesGeneration.isCurrent(request)) return;
+        setCandidateOptions(
+          page.items.map(brand => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code} />})),
+        );
+        setCandidateProblem(undefined);
+      })
+      .catch(() => {
+        if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
+      });
   }, [candidatesGeneration, headCompany, lifecycle, searchContext]);
 
   const searchCandidates = (value: string) => {
     const request = candidatesGeneration.begin();
     setCandidateProblem(undefined);
-    void adapter.searchEnabledBrands(searchContext, value).then((page) => {
-      if (!candidatesGeneration.isCurrent(request)) return;
-      setCandidateOptions(page.items.map((brand) => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code}/>})));
-    }).catch(() => {
-      if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
-    });
+    void adapter
+      .searchEnabledBrands(searchContext, value)
+      .then(page => {
+        if (!candidatesGeneration.isCurrent(request)) return;
+        setCandidateOptions(
+          page.items.map(brand => ({value: brand.id, label: <NameCodeText name={brand.name} code={brand.code} />})),
+        );
+      })
+      .catch(() => {
+        if (candidatesGeneration.isCurrent(request)) setCandidateProblem('候选品牌加载失败。');
+      });
   };
 
   const act = async (brandId: string, action: 'add' | 'remove') => {
     if (!headCompany || lifecycle.submitting) return;
-    submission.markBusinessIntentChanged();
     lifecycle.setSubmitting(true);
     setCommandProblem(undefined);
     try {
       const context = {...searchContext, headCompanyId: headCompany.id};
-      const intent = {brandId, idempotencyKey: submission.getIdempotencyKey()};
+      const operationId =
+        action === 'add'
+          ? OPERATIONS_ADMIN_OPERATION_IDS.addOperationsOrganizationHeadCompanyBrandAuthorization
+          : OPERATIONS_ADMIN_OPERATION_IDS.removeOperationsOrganizationHeadCompanyBrandAuthorization;
+      const idempotencyKey = await createContentIdempotencyKey(operationId, {brandId});
+      const intent = {brandId, idempotencyKey};
       const result = action === 'add' ? await adapter.add(context, intent) : await adapter.remove(context, intent);
       if (result.kind === 'readback') {
         setSelectedBrandId(undefined);
@@ -87,64 +112,88 @@ export function HeadCompanyBrandAuthorizationDrawer({headCompany, queryContext, 
       } else {
         setCommandProblem(messageFor(result));
       }
-    } finally { lifecycle.setSubmitting(false); }
+    } finally {
+      lifecycle.setSubmitting(false);
+    }
   };
 
-  const authorizedBrandIds = new Set(headCompany?.authorizedBrands.map((brand) => brand.id));
-  const candidateChoices = candidateOptions.filter((candidate) => !authorizedBrandIds.has(candidate.value));
-  return <Drawer
-    title={`${authorizationActionLabel}：${headCompany?.name ?? ''}`}
-    open={Boolean(headCompany)}
-    size={600}
-    destroyOnHidden
-    maskClosable={!lifecycle.submitting}
-    closable={!lifecycle.submitting}
-    keyboard={!lifecycle.submitting}
-    onClose={lifecycle.requestClose}
-    afterOpenChange={lifecycle.afterOpenChange}
-    {...adminDrawerSurfaceProps}
-    footer={<Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>关闭</Button>}
-  >
-    {commandProblem && <Alert type="error" showIcon title={authorizationActionLabel} description={commandProblem} style={{marginBottom: 16}}/>}
-    <Space.Compact block style={{marginBottom: 16}}>
-      <Select
-        aria-label="候选品牌"
-        showSearch
-        filterOption={false}
-        onSearch={searchCandidates}
-        value={selectedBrandId}
-        placeholder="搜索并选择可授权品牌"
-        loading={lifecycle.submitting}
-        options={candidateChoices}
-        onChange={setSelectedBrandId}
-        notFoundContent={candidateProblem ?? undefined}
-        {...testId('operations-head-company-brand-candidate')}
-      />
-      <Button
-        type="primary"
-        disabled={!selectedBrandId || lifecycle.submitting}
-        loading={lifecycle.submitting}
-        onClick={() => { if (selectedBrandId) void act(selectedBrandId, 'add'); }}
-        {...testId('operations-head-company-brand-add')}
-      >
-        添加
-      </Button>
-    </Space.Compact>
-    {headCompany?.authorizedBrands.length ? <Space orientation="vertical" style={{width: '100%'}}>
-      {headCompany.authorizedBrands.map((brand) => <Space key={brand.id} style={{justifyContent: 'space-between', width: '100%'}}>
-        <Tag>{<NameCodeText name={brand.name} code={brand.code}/>}</Tag>
-        <Button
-          danger
-          disabled={lifecycle.submitting}
-          loading={lifecycle.submitting}
-          onClick={() => void act(brand.id, 'remove')}
-          {...testId(`operations-head-company-brand-remove-${brand.id}`)}
-        >
-          移除
+  const authorizedBrandIds = new Set(headCompany?.authorizedBrands.map(brand => brand.id));
+  const candidateChoices = candidateOptions.filter(candidate => !authorizedBrandIds.has(candidate.value));
+  return (
+    <Drawer
+      title={`${authorizationActionLabel}：${headCompany?.name ?? ''}`}
+      open={Boolean(headCompany)}
+      size={600}
+      destroyOnHidden
+      maskClosable={!lifecycle.submitting}
+      closable={!lifecycle.submitting}
+      keyboard={!lifecycle.submitting}
+      onClose={lifecycle.requestClose}
+      afterOpenChange={lifecycle.afterOpenChange}
+      {...adminDrawerSurfaceProps}
+      footer={
+        <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
+          关闭
         </Button>
-      </Space>)}
-    </Space> : <Alert type="info" showIcon title="当前没有已授权品牌。"/>}
-  </Drawer>;
+      }
+    >
+      {commandProblem && (
+        <Alert
+          type="error"
+          showIcon
+          title={authorizationActionLabel}
+          description={commandProblem}
+          style={{marginBottom: 16}}
+        />
+      )}
+      <Space.Compact block style={{marginBottom: 16}}>
+        <Select
+          aria-label="候选品牌"
+          showSearch
+          filterOption={false}
+          onSearch={searchCandidates}
+          value={selectedBrandId}
+          placeholder="搜索并选择可授权品牌"
+          loading={lifecycle.submitting}
+          options={candidateChoices}
+          onChange={setSelectedBrandId}
+          notFoundContent={candidateProblem ?? undefined}
+          {...testId('operations-head-company-brand-candidate')}
+        />
+        <Button
+          type="primary"
+          disabled={!selectedBrandId || lifecycle.submitting}
+          loading={lifecycle.submitting}
+          onClick={() => {
+            if (selectedBrandId) void act(selectedBrandId, 'add');
+          }}
+          {...testId('operations-head-company-brand-add')}
+        >
+          添加
+        </Button>
+      </Space.Compact>
+      {headCompany?.authorizedBrands.length ? (
+        <Space orientation="vertical" style={{width: '100%'}}>
+          {headCompany.authorizedBrands.map(brand => (
+            <Space key={brand.id} style={{justifyContent: 'space-between', width: '100%'}}>
+              <Tag>{<NameCodeText name={brand.name} code={brand.code} />}</Tag>
+              <Button
+                danger
+                disabled={lifecycle.submitting}
+                loading={lifecycle.submitting}
+                onClick={() => void act(brand.id, 'remove')}
+                {...testId(`operations-head-company-brand-remove-${brand.id}`)}
+              >
+                移除
+              </Button>
+            </Space>
+          ))}
+        </Space>
+      ) : (
+        <Alert type="info" showIcon title="当前没有已授权品牌。" />
+      )}
+    </Drawer>
+  );
 }
 
 function messageFor(result: Extract<HeadCompanyBrandAuthorizationResult, {kind: 'failure'}>) {

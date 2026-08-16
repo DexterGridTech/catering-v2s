@@ -11,18 +11,36 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 class WorkspacePlatformAccountPageRequestTest {
-    @Test void ownerUsesTheSameSameAssignmentPredicateForCountAndBoundedAccountRead() {
+    @Test
+    void ownerUsesTheSameSameAssignmentPredicateForCountAndBoundedAccountRead() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceUserService(jdbc, null, null, null);
         var organizationRef = UUID.randomUUID();
 
         UUID roleId = UUID.randomUUID();
-        var page = service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", "Dexter", "138", "dexter", roleId, "ENABLED", "STORE", organizationRef, "LAST_LOGIN_AT", "DESC", 2, 50));
+        var page = service.page(WorkspaceUserService.AccountPageQuery.forPlatform(
+                UUID.randomUUID(),
+                "workspace-a",
+                "Dexter",
+                "138",
+                "dexter",
+                roleId,
+                "ENABLED",
+                "STORE",
+                organizationRef,
+                "LAST_LOGIN_AT",
+                "DESC",
+                2,
+                50));
 
         assertEquals(73, page.total());
         assertEquals(2, page.page());
         assertEquals(50, page.pageSize());
-        assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM workspace_iam.workspace_account"), jdbc.listSql.indexOf(" ORDER BY")));
+        assertEquals(
+                jdbc.countSql.replace("SELECT COUNT(*)", ""),
+                jdbc.listSql.substring(
+                        jdbc.listSql.indexOf(" FROM workspace_iam.workspace_account"),
+                        jdbc.listSql.indexOf(" ORDER BY")));
         assertEquals(21, jdbc.countArgs.length);
         assertEquals(23, jdbc.listArgs.length);
         assertEquals(50, jdbc.listArgs[21]);
@@ -36,28 +54,98 @@ class WorkspacePlatformAccountPageRequestTest {
         assertTrue(jdbc.listSql.contains("ORDER BY COALESCE(login.last_login_at, -1) DESC, a.id ASC"));
     }
 
-    @Test void rejectsInvalidPlatformAccountPageBeforeQuerying() {
+    @Test
+    void rejectsInvalidPlatformAccountPageBeforeQuerying() {
         var service = new WorkspaceUserService(new RecordingJdbcTemplate(), null, null, null);
-        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, "PENDING", null, null, null, null, 1, 20)));
-        assertThrows(WorkspaceAccountService.AccountNotFoundException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 0, 20)));
-        assertThrows(WorkspaceUserService.PageValidationException.class, () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 1, 101)));
+        assertThrows(
+                WorkspaceAccountService.AccountNotFoundException.class,
+                () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(
+                        UUID.randomUUID(),
+                        "workspace-a",
+                        null,
+                        null,
+                        null,
+                        null,
+                        "PENDING",
+                        null,
+                        null,
+                        null,
+                        null,
+                        1,
+                        20)));
+        assertThrows(
+                WorkspaceAccountService.AccountNotFoundException.class,
+                () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(
+                        UUID.randomUUID(),
+                        "workspace-a",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        0,
+                        20)));
+        assertThrows(
+                WorkspaceUserService.PageValidationException.class,
+                () -> service.page(WorkspaceUserService.AccountPageQuery.forPlatform(
+                        UUID.randomUUID(),
+                        "workspace-a",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        1,
+                        101)));
     }
 
-    @Test void ownerTypesEveryOptionalPlatformFilterBeforeItsNullGuard() {
+    @Test
+    void ownerTypesEveryOptionalPlatformFilterBeforeItsNullGuard() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceUserService(jdbc, null, null, null);
 
-        service.page(WorkspaceUserService.AccountPageQuery.forPlatform(UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 1, 20));
+        service.page(WorkspaceUserService.AccountPageQuery.forPlatform(
+                UUID.randomUUID(), "workspace-a", null, null, null, null, null, null, null, null, null, 1, 20));
 
         assertEquals(6, occurrences(jdbc.countSql, "CAST(? AS text) IS NULL"));
         assertEquals(4, occurrences(jdbc.countSql, "CAST(? AS uuid) IS NULL"));
-        assertEquals(jdbc.countSql.replace("SELECT COUNT(*)", ""), jdbc.listSql.substring(jdbc.listSql.indexOf(" FROM workspace_iam.workspace_account"), jdbc.listSql.indexOf(" ORDER BY")));
+        assertEquals(
+                jdbc.countSql.replace("SELECT COUNT(*)", ""),
+                jdbc.listSql.substring(
+                        jdbc.listSql.indexOf(" FROM workspace_iam.workspace_account"),
+                        jdbc.listSql.indexOf(" ORDER BY")));
     }
 
-    private static int occurrences(String value, String token) { return value.split(java.util.regex.Pattern.quote(token), -1).length - 1; }
+    private static int occurrences(String value, String token) {
+        return value.split(java.util.regex.Pattern.quote(token), -1).length - 1;
+    }
+
     private static final class RecordingJdbcTemplate extends JdbcTemplate {
-        private String countSql; private Object[] countArgs; private String listSql; private Object[] listArgs;
-        @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) { countSql = sql; countArgs = args; return requiredType.cast(73L); }
-        @Override public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) { listSql = sql; listArgs = args; return List.of(); }
+        private String countSql;
+        private Object[] countArgs;
+        private String listSql;
+        private Object[] listArgs;
+
+        @Override
+        public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
+            countSql = sql;
+            countArgs = args;
+            return requiredType.cast(73L);
+        }
+
+        @Override
+        public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
+            listSql = sql;
+            listArgs = args;
+            return List.of();
+        }
     }
 }

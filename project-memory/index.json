@@ -617,7 +617,11 @@
         "CONTRACT_ROUTE_CLOSURE",
         "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
         "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
-        "EXECUTION_EVIDENCE_TAXONOMY"
+        "EXECUTION_EVIDENCE_TAXONOMY",
+        "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
+        "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
+        "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
+        "BACKEND_FORMATTING_GATE_SCOPE"
       ],
       "assertionSources": [
         {
@@ -674,14 +678,37 @@
           "assertionKey": "EXECUTION_EVIDENCE_TAXONOMY",
           "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
           "anchor": "## 5.1 受管执行分类与敏感数据流"
+        },
+        {
+          "assertionKey": "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### 1-H · 分层命名与 split package"
+        },
+        {
+          "assertionKey": "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
+          "path": "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
+          "anchor": "## Contract and test matrix"
+        },
+        {
+          "assertionKey": "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
+          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
+          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
+        },
+        {
+          "assertionKey": "BACKEND_FORMATTING_GATE_SCOPE",
+          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
+          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
         }
       ],
       "sourceRefs": [
         "PLATFORM-BLUEPRINT.md",
         "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md",
+        "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
         "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/platform/backend-coding-standard.md",
+        "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"
       ]
     },
     {
@@ -1695,6 +1722,114 @@
       "sourceRefs": [
         "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
         "scripts/test/test-health-entry-runner.mjs"
+      ]
+    },
+    {
+      "id": "operations.backend-coding-standard",
+      "path": "project-memory/operations/backend-coding-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "design"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BACKEND_STANDARD_SINGLE_SOURCE",
+        "BACKEND_STANDARD_POINTERS_ONLY",
+        "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BACKEND_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "# 后台编码规范 · 唯一权威"
+        },
+        {
+          "assertionKey": "BACKEND_STANDARD_POINTERS_ONLY",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "## 5 · 维护约定"
+        },
+        {
+          "assertionKey": "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "## 5 · 维护约定"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/backend-coding-standard.md"
+      ]
+    },
+    {
+      "id": "operations.frontend-coding-standard",
+      "path": "project-memory/operations/frontend-coding-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "design"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "FRONTEND_STANDARD_SINGLE_SOURCE",
+        "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
+        "FRONTEND_GATE_PROHIBITION_ONLY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "FRONTEND_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "# 前端编码规范 · 唯一权威"
+        },
+        {
+          "assertionKey": "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "## 7 · 维护约定"
+        },
+        {
+          "assertionKey": "FRONTEND_GATE_PROHIBITION_ONLY",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "### 1-0 · 门只写禁止句"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/frontend-coding-standard.md"
       ]
     }
   ]

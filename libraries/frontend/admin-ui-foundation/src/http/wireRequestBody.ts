@@ -17,7 +17,5 @@ export function serializeJsonOrMultipartBody(value: unknown, headers: Headers): 
 }
 
 function isMultipartBody(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object'
-    && value !== null
-    && Object.values(value).some((field) => field instanceof Blob);
+  return typeof value === 'object' && value !== null && Object.values(value).some(field => field instanceof Blob);
 }

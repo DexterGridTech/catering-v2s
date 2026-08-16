@@ -1,15 +1,11 @@
 package com.catering.v2s.app.edge.operations.contract;
 
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
-import com.catering.v2s.extension.api.ExtensionHostTypes;
-import com.catering.v2s.extension.api.ExtensionSubmission;
-
 import com.catering.v2s.app.edge.catalog.ContractSortKey;
 import com.catering.v2s.app.edge.catalog.SortDirection;
 import com.catering.v2s.app.edge.extension.ExtensionDefinitionWireMapper;
 import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
-import com.catering.v2s.app.edge.generated.wire.ExtensionDefinition;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
+import com.catering.v2s.app.edge.generated.wire.ExtensionDefinition;
 import com.catering.v2s.app.edge.generated.wire.StoreContract;
 import com.catering.v2s.app.edge.generated.wire.StoreContractCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.StoreContractCandidatePageMetadata;
@@ -18,72 +14,402 @@ import com.catering.v2s.app.edge.generated.wire.StoreContractCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreContractInvalidateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreContractItem;
 import com.catering.v2s.app.edge.generated.wire.StoreContractPage;
-import com.catering.v2s.app.edge.generated.wire.StoreContractStoreCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreContractSelectedTenant;
+import com.catering.v2s.app.edge.generated.wire.StoreContractStoreCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreContractUpdateRequest;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
 import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.contract.application.ContractTaskReadService;
-import com.catering.v2s.contract.api.OperationsStoreContractCommandApi;
-import com.catering.v2s.store.contract.application.CreateOperationsContractOperation;
-import com.catering.v2s.store.contract.application.InvalidateOperationsContractOperation;
-import com.catering.v2s.store.contract.application.UpdateOperationsContractOperation;
+import com.catering.v2s.extension.api.ExtensionHostTypes;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.store.contract.application.CreateOperationsContractOperation;
+import com.catering.v2s.store.contract.application.InvalidateOperationsContractOperation;
+import com.catering.v2s.store.contract.application.UpdateOperationsContractOperation;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
-import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
-import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
-import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import tools.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/contracts")
 public final class OperationsContractController {
-    private final OperationsSessionResolver sessions; private final ContractCommandService contracts; private final ContractTaskReadService reads; private final ExtensionDefinitionService definitions; private final WorkspaceUserService user; private final BusinessEntityService entities; private final WorkspaceCapabilityScopeResolver capabilityScopes; private final CreateOperationsContractOperation createOperation; private final UpdateOperationsContractOperation updateOperation; private final InvalidateOperationsContractOperation invalidateOperation; private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
-    public OperationsContractController(OperationsSessionResolver sessions, ContractCommandService contracts, ContractTaskReadService reads, ExtensionDefinitionService definitions, WorkspaceUserService user, BusinessEntityService entities, WorkspaceCapabilityScopeResolver capabilityScopes) { this(sessions, contracts, reads, definitions, user, entities, capabilityScopes, new CreateOperationsContractOperation(contracts, reads), new UpdateOperationsContractOperation(contracts, reads), new InvalidateOperationsContractOperation(contracts, reads), BackendPerformanceM1CommandExecutionBindings.forContract(new CreateOperationsContractOperation(contracts, reads), new UpdateOperationsContractOperation(contracts, reads), new InvalidateOperationsContractOperation(contracts, reads))); }
+    private final OperationsSessionResolver sessions;
+    private final ContractCommandService contracts;
+    private final ContractTaskReadService reads;
+    private final ExtensionDefinitionService definitions;
+    private final WorkspaceUserService user;
+    private final BusinessEntityService entities;
+    private final WorkspaceCapabilityScopeResolver capabilityScopes;
+    private final CreateOperationsContractOperation createOperation;
+    private final UpdateOperationsContractOperation updateOperation;
+    private final InvalidateOperationsContractOperation invalidateOperation;
+    private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
+
+    public OperationsContractController(
+            OperationsSessionResolver sessions,
+            ContractCommandService contracts,
+            ContractTaskReadService reads,
+            ExtensionDefinitionService definitions,
+            WorkspaceUserService user,
+            BusinessEntityService entities,
+            WorkspaceCapabilityScopeResolver capabilityScopes) {
+        this(
+                sessions,
+                contracts,
+                reads,
+                definitions,
+                user,
+                entities,
+                capabilityScopes,
+                new CreateOperationsContractOperation(contracts, reads),
+                new UpdateOperationsContractOperation(contracts, reads),
+                new InvalidateOperationsContractOperation(contracts, reads),
+                BackendPerformanceM1CommandExecutionBindings.forContract(
+                        new CreateOperationsContractOperation(contracts, reads),
+                        new UpdateOperationsContractOperation(contracts, reads),
+                        new InvalidateOperationsContractOperation(contracts, reads)));
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
-    public OperationsContractController(OperationsSessionResolver sessions, ContractCommandService contracts, ContractTaskReadService reads, ExtensionDefinitionService definitions, WorkspaceUserService user, BusinessEntityService entities, WorkspaceCapabilityScopeResolver capabilityScopes, CreateOperationsContractOperation createOperation, UpdateOperationsContractOperation updateOperation, InvalidateOperationsContractOperation invalidateOperation, BackendPerformanceM1CommandExecutionBindings m1Bindings) { this.sessions = sessions; this.contracts = contracts; this.reads = reads; this.definitions = definitions; this.user = user; this.entities = entities; this.capabilityScopes = capabilityScopes; this.createOperation = createOperation; this.updateOperation = updateOperation; this.invalidateOperation = invalidateOperation; this.m1Bindings = m1Bindings; }
-    @GetMapping StoreContractPage list(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam(required = false) UUID storeId, @org.springframework.web.bind.annotation.RequestParam(required = false) String contractNo, @org.springframework.web.bind.annotation.RequestParam(required = false) String phaseName, @org.springframework.web.bind.annotation.RequestParam(required = false) UUID tenantId, @org.springframework.web.bind.annotation.RequestParam(required = false) String itemCode, @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate dateFrom, @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate dateTo, @org.springframework.web.bind.annotation.RequestParam(required = false) String status, @org.springframework.web.bind.annotation.RequestParam(defaultValue = ContractSortKey.DEFAULT_WIRE) String sort, @org.springframework.web.bind.annotation.RequestParam(defaultValue = SortDirection.DEFAULT_WIRE) String direction, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int pageSize) { WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion); UUID scopedProjectId = scopedProject(session); var result = reads.operationsTaskPage(session.workspaceUuid(), groupWorkspaceKey, new ContractTaskReadService.ContractListQuery(scopedProjectId, storeId, tenantId, contractNo, phaseName, itemCode, dateFrom, dateTo, status, sort, direction, page, pageSize)); return new StoreContractPage(ContractWireMapper.metadata(result.metadata()), result.items().stream().map(ContractWireMapper::wire).toList()); }
-    @GetMapping("/{contractId}") StoreContract detail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID contractId, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion); return ContractWireMapper.wire(requireScopedTaskView(session, groupWorkspaceKey, contractId)); }
-    @PostMapping ResponseEntity<StoreContract> create(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody StoreContractCreateRequest body) { WorkspaceSessionReadback session = session(request, groupWorkspaceKey); UUID scopedProjectId = scopedProject(session); UUID storeId = uuid(body.storeId()); var context = entities.requireStoreContractContext(session.workspaceUuid(), groupWorkspaceKey, storeId); if (!context.projectId().equals(scopedProjectId)) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("store is outside selected project"); var grant = requireCapability(session, "REQ_CREATE_OPERATIONS_CONTRACT", scopedProjectId); var actor = sessions.actor(session); return ResponseEntity.status(HttpStatus.CREATED).body(ContractWireMapper.wire(m1Bindings.bindCreateOperationsContract(new OperationsStoreContractCommandApi.CreateCommand(session.workspaceUuid(), groupWorkspaceKey, body.contractNo(), storeId, scopedProjectId, date(body.effectiveFrom()), nullableDate(body.effectiveTo()), body.phaseName(), body.note(), typedItems(body.items()), createSubmission(body.extensionValues()), idempotencyKey, actor, grant)))); }
-    @PatchMapping("/{contractId}") StoreContract update(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID contractId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody StoreContractUpdateRequest body) { WorkspaceSessionReadback session = session(request, groupWorkspaceKey); var view = requireScopedView(session, groupWorkspaceKey, contractId); var actor = sessions.actor(session); return ContractWireMapper.wire(m1Bindings.bindUpdateOperationsContract(new OperationsStoreContractCommandApi.UpdateCommand(session.workspaceUuid(), groupWorkspaceKey, contractId, date(body.effectiveFrom()), nullableDate(body.effectiveTo()), body.phaseName(), body.note(), typedItems(body.items()), required(body.expectedVersion()), updateSubmission(body.extensionValues()), idempotencyKey, actor, requireCapability(session, "REQ_UPDATE_OPERATIONS_CONTRACT", view.project().id())))); }
-    @PostMapping("/{contractId}/invalidate") StoreContract invalidate(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID contractId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody StoreContractInvalidateRequest body) { WorkspaceSessionReadback session = session(request, groupWorkspaceKey); var view = requireScopedView(session, groupWorkspaceKey, contractId); var actor = sessions.actor(session); return ContractWireMapper.wire(m1Bindings.bindInvalidateOperationsContract(new OperationsStoreContractCommandApi.InvalidateCommand(session.workspaceUuid(), groupWorkspaceKey, contractId, required(body.expectedVersion()), idempotencyKey, actor, requireCapability(session, "REQ_INVALIDATE_OPERATIONS_CONTRACT", view.project().id())))); }
-    @GetMapping("/extension-definition") ExtensionDefinition extensionDefinition(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion) { WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion); return ExtensionDefinitionWireMapper.wire(definitions.operationsManagementDefinition(session.workspaceUuid(), groupWorkspaceKey, ExtensionHostTypes.CONTRACT)); }
+    public OperationsContractController(
+            OperationsSessionResolver sessions,
+            ContractCommandService contracts,
+            ContractTaskReadService reads,
+            ExtensionDefinitionService definitions,
+            WorkspaceUserService user,
+            BusinessEntityService entities,
+            WorkspaceCapabilityScopeResolver capabilityScopes,
+            CreateOperationsContractOperation createOperation,
+            UpdateOperationsContractOperation updateOperation,
+            InvalidateOperationsContractOperation invalidateOperation,
+            BackendPerformanceM1CommandExecutionBindings m1Bindings) {
+        this.sessions = sessions;
+        this.contracts = contracts;
+        this.reads = reads;
+        this.definitions = definitions;
+        this.user = user;
+        this.entities = entities;
+        this.capabilityScopes = capabilityScopes;
+        this.createOperation = createOperation;
+        this.updateOperation = updateOperation;
+        this.invalidateOperation = invalidateOperation;
+        this.m1Bindings = m1Bindings;
+    }
+
+    @GetMapping
+    StoreContractPage list(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID storeId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String contractNo,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String phaseName,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID tenantId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String itemCode,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate dateFrom,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate dateTo,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = ContractSortKey.DEFAULT_WIRE)
+                    String sort,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = SortDirection.DEFAULT_WIRE)
+                    String direction,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int pageSize) {
+        WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion);
+        UUID scopedProjectId = scopedProject(session);
+        var result = reads.operationsTaskPage(
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                new ContractTaskReadService.ContractListQuery(
+                        scopedProjectId,
+                        storeId,
+                        tenantId,
+                        contractNo,
+                        phaseName,
+                        itemCode,
+                        dateFrom,
+                        dateTo,
+                        status,
+                        sort,
+                        direction,
+                        page,
+                        pageSize));
+        return new StoreContractPage(
+                ContractWireMapper.metadata(result.metadata()),
+                result.items().stream().map(ContractWireMapper::wire).toList());
+    }
+
+    @GetMapping("/{contractId}")
+    StoreContract detail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID contractId,
+            @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion) {
+        WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion);
+        return ContractWireMapper.wire(requireScopedTaskView(session, groupWorkspaceKey, contractId));
+    }
+
+    @PostMapping
+    ResponseEntity<StoreContract> create(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody StoreContractCreateRequest body) {
+        WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
+        UUID scopedProjectId = scopedProject(session);
+        UUID storeId = uuid(body.storeId());
+        var context = entities.requireStoreContractContext(session.workspaceUuid(), groupWorkspaceKey, storeId);
+        if (!context.projectId().equals(scopedProjectId))
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException(
+                    "store is outside selected project");
+        var grant = requireCapability(session, "REQ_CREATE_OPERATIONS_CONTRACT", scopedProjectId);
+        var actor = sessions.actor(session);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ContractWireMapper.wire(
+                        m1Bindings.bindCreateOperationsContract(new OperationsStoreContractCommandApi.CreateCommand(
+                                session.workspaceUuid(),
+                                groupWorkspaceKey,
+                                body.contractNo(),
+                                storeId,
+                                scopedProjectId,
+                                date(body.effectiveFrom()),
+                                nullableDate(body.effectiveTo()),
+                                body.phaseName(),
+                                body.note(),
+                                typedItems(body.items()),
+                                createSubmission(body.extensionValues()),
+                                idempotencyKey,
+                                actor,
+                                grant))));
+    }
+
+    @PatchMapping("/{contractId}")
+    StoreContract update(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID contractId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody StoreContractUpdateRequest body) {
+        WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
+        var view = requireScopedView(session, groupWorkspaceKey, contractId);
+        var actor = sessions.actor(session);
+        return ContractWireMapper.wire(
+                m1Bindings.bindUpdateOperationsContract(new OperationsStoreContractCommandApi.UpdateCommand(
+                        session.workspaceUuid(),
+                        groupWorkspaceKey,
+                        contractId,
+                        date(body.effectiveFrom()),
+                        nullableDate(body.effectiveTo()),
+                        body.phaseName(),
+                        body.note(),
+                        typedItems(body.items()),
+                        required(body.expectedVersion()),
+                        updateSubmission(body.extensionValues()),
+                        idempotencyKey,
+                        actor,
+                        requireCapability(
+                                session,
+                                "REQ_UPDATE_OPERATIONS_CONTRACT",
+                                view.project().id()))));
+    }
+
+    @PostMapping("/{contractId}/invalidate")
+    StoreContract invalidate(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID contractId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody StoreContractInvalidateRequest body) {
+        WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
+        var view = requireScopedView(session, groupWorkspaceKey, contractId);
+        var actor = sessions.actor(session);
+        return ContractWireMapper.wire(
+                m1Bindings.bindInvalidateOperationsContract(new OperationsStoreContractCommandApi.InvalidateCommand(
+                        session.workspaceUuid(),
+                        groupWorkspaceKey,
+                        contractId,
+                        required(body.expectedVersion()),
+                        idempotencyKey,
+                        actor,
+                        requireCapability(
+                                session,
+                                "REQ_INVALIDATE_OPERATIONS_CONTRACT",
+                                view.project().id()))));
+    }
+
+    @GetMapping("/extension-definition")
+    ExtensionDefinition extensionDefinition(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion) {
+        WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion);
+        return ExtensionDefinitionWireMapper.wire(definitions.operationsManagementDefinition(
+                session.workspaceUuid(), groupWorkspaceKey, ExtensionHostTypes.CONTRACT));
+    }
     /**
-     * Contract form candidates are relationship lookups, not a PROJECT primary read.
-     * The contract owner validates the project/store/tenant relationship; role-node
-     * range applies only when reading the contract list or detail itself.
+     * Contract form candidates are relationship lookups, not a PROJECT primary read. The contract owner validates the
+     * project/store/tenant relationship; role-node range applies only when reading the contract list or detail itself.
      */
-    @GetMapping("/candidates") StoreContractCandidatePage candidates(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion, @org.springframework.web.bind.annotation.RequestParam(required = false) String storeSearch, @org.springframework.web.bind.annotation.RequestParam(required = false) UUID selectedStoreId, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "50") int pageSize) { WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion); UUID scopedProjectId = scopedProject(session); var values = reads.operationsTaskCandidates(session.workspaceUuid(), groupWorkspaceKey, scopedProjectId, selectedStoreId, storeSearch, page, pageSize); var selectedTenant = values.selectedTenant(); return new StoreContractCandidatePage(values.groupWorkspaceKey(), new StoreContractCandidatePageProject(values.project().id().toString(), values.project().code(), values.project().name()), new StoreContractCandidatePageMetadata(values.metadata().storeSearch(), (long) values.metadata().page(), (long) values.metadata().pageSize(), values.metadata().total()), values.stores().stream().map(store -> new StoreContractStoreCandidate(store.id().toString(), store.code(), store.name(), store.storeStatus())).toList(), values.phases(), selectedTenant == null ? null : new tools.jackson.databind.ObjectMapper().valueToTree(new StoreContractSelectedTenant(selectedTenant.id().toString(), selectedTenant.code(), selectedTenant.name()))); }
-    private WorkspaceSessionReadback session(EdgeRequestContext request, String key) { return sessions.requireWorkspaceCommand(request, key); }
-    private WorkspaceSessionReadback checkedSession(EdgeRequestContext request, String key, long expectedContextVersion) { return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion); }
-    private UUID scopedProject(WorkspaceSessionReadback session) { return user.resolveSelectedProjectScope(session, null).targetId(); }
-    private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(WorkspaceSessionReadback session, String requirementId, UUID projectId) { var resolution = capabilityScopes.resolve(session, requirementId, new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId)); if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException(); return resolution.ownerScopeGrant(requirementId); }
-    private ContractTaskReadService.StoreContractView requireScopedTaskView(WorkspaceSessionReadback session, String key, UUID contractId) { ContractTaskReadService.StoreContractView view = reads.operationsTaskView(session.workspaceUuid(), key, contractId); user.resolveSelectedProjectScope(session, view.project().id()); return view; }
-    private ContractTaskReadService.StoreContractView requireScopedView(WorkspaceSessionReadback session, String key, UUID contractId) { ContractTaskReadService.StoreContractView view = reads.view(session.workspaceUuid(), key, contractId); user.resolveSelectedProjectScope(session, view.project().id()); return view; }
-    private StoreContractSelectedTenant selectedStoreTenant(WorkspaceSessionReadback session, String key, UUID projectId, UUID storeId) { var context = entities.requireStoreContractContext(session.workspaceUuid(), key, storeId); if (!projectId.equals(context.projectId())) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("selected store is outside project"); OrganizationEntityReadback tenant = entities.requireEntity("TENANT", session.workspaceUuid(), key, context.tenantId()); return new StoreContractSelectedTenant(tenant.id().toString(), tenant.code(), tenant.name()); }
-    private static UUID uuid(String value) { try { return UUID.fromString(value); } catch (RuntimeException exception) { throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("identifier is invalid"); } }
-    private static LocalDate date(String value) { try { return LocalDate.parse(value); } catch (RuntimeException exception) { throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("date is invalid"); } }
-    private static LocalDate nullableDate(String value) { return value == null ? null : date(value); }
-    private static long required(Long value) { if (value == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required"); return value; }
-    private static List<ContractCommandService.ItemInput> items(List<StoreContractItem> values) { if (values == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required"); return values.stream().map(value -> new ContractCommandService.ItemInput(value.code(), value.name())).toList(); }
-    private static List<OperationsStoreContractCommandApi.Item> typedItems(List<StoreContractItem> values) { if (values == null) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required"); return values.stream().map(value -> new OperationsStoreContractCommandApi.Item(value.code(), value.name())).toList(); }
-    private static ExtensionSubmission createSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
-    private static ExtensionSubmission updateSubmission(JsonNode values) { return ExtensionSubmissionWireMapper.toSubmission(values); }
+    @GetMapping("/candidates")
+    StoreContractCandidatePage candidates(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String storeSearch,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID selectedStoreId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "50") int pageSize) {
+        WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion);
+        UUID scopedProjectId = scopedProject(session);
+        var values = reads.operationsTaskCandidates(
+                session.workspaceUuid(),
+                groupWorkspaceKey,
+                scopedProjectId,
+                selectedStoreId,
+                storeSearch,
+                page,
+                pageSize);
+        var selectedTenant = values.selectedTenant();
+        return new StoreContractCandidatePage(
+                values.groupWorkspaceKey(),
+                new StoreContractCandidatePageProject(
+                        values.project().id().toString(),
+                        values.project().code(),
+                        values.project().name()),
+                new StoreContractCandidatePageMetadata(
+                        values.metadata().storeSearch(),
+                        (long) values.metadata().page(),
+                        (long) values.metadata().pageSize(),
+                        values.metadata().total()),
+                values.stores().stream()
+                        .map(store -> new StoreContractStoreCandidate(
+                                store.id().toString(), store.code(), store.name(), store.storeStatus()))
+                        .toList(),
+                values.phases(),
+                selectedTenant == null
+                        ? null
+                        : new tools.jackson.databind.ObjectMapper()
+                                .valueToTree(new StoreContractSelectedTenant(
+                                        selectedTenant.id().toString(), selectedTenant.code(), selectedTenant.name())));
+    }
+
+    private WorkspaceSessionReadback session(EdgeRequestContext request, String key) {
+        return sessions.requireWorkspaceCommand(request, key);
+    }
+
+    private WorkspaceSessionReadback checkedSession(
+            EdgeRequestContext request, String key, long expectedContextVersion) {
+        return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion);
+    }
+
+    private UUID scopedProject(WorkspaceSessionReadback session) {
+        return user.resolveSelectedProjectScope(session, null).targetId();
+    }
+
+    private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(
+            WorkspaceSessionReadback session, String requirementId, UUID projectId) {
+        var resolution = capabilityScopes.resolve(
+                session,
+                requirementId,
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId));
+        if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW)
+            throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
+        return resolution.ownerScopeGrant(requirementId);
+    }
+
+    private ContractTaskReadService.StoreContractView requireScopedTaskView(
+            WorkspaceSessionReadback session, String key, UUID contractId) {
+        ContractTaskReadService.StoreContractView view =
+                reads.operationsTaskView(session.workspaceUuid(), key, contractId);
+        user.resolveSelectedProjectScope(session, view.project().id());
+        return view;
+    }
+
+    private ContractTaskReadService.StoreContractView requireScopedView(
+            WorkspaceSessionReadback session, String key, UUID contractId) {
+        ContractTaskReadService.StoreContractView view = reads.view(session.workspaceUuid(), key, contractId);
+        user.resolveSelectedProjectScope(session, view.project().id());
+        return view;
+    }
+
+    private StoreContractSelectedTenant selectedStoreTenant(
+            WorkspaceSessionReadback session, String key, UUID projectId, UUID storeId) {
+        var context = entities.requireStoreContractContext(session.workspaceUuid(), key, storeId);
+        if (!projectId.equals(context.projectId()))
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException(
+                    "selected store is outside project");
+        OrganizationEntityReadback tenant =
+                entities.requireEntity("TENANT", session.workspaceUuid(), key, context.tenantId());
+        return new StoreContractSelectedTenant(tenant.id().toString(), tenant.code(), tenant.name());
+    }
+
+    private static UUID uuid(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (RuntimeException exception) {
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("identifier is invalid", exception);
+        }
+    }
+
+    private static LocalDate date(String value) {
+        try {
+            return LocalDate.parse(value);
+        } catch (RuntimeException exception) {
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("date is invalid", exception);
+        }
+    }
+
+    private static LocalDate nullableDate(String value) {
+        return value == null ? null : date(value);
+    }
+
+    private static long required(Long value) {
+        if (value == null)
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("expected version is required");
+        return value;
+    }
+
+    private static List<ContractCommandService.ItemInput> items(List<StoreContractItem> values) {
+        if (values == null)
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required");
+        return values.stream()
+                .map(value -> new ContractCommandService.ItemInput(value.code(), value.name()))
+                .toList();
+    }
+
+    private static List<OperationsStoreContractCommandApi.Item> typedItems(List<StoreContractItem> values) {
+        if (values == null)
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("items are required");
+        return values.stream()
+                .map(value -> new OperationsStoreContractCommandApi.Item(value.code(), value.name()))
+                .toList();
+    }
+
+    private static ExtensionSubmission createSubmission(JsonNode values) {
+        return ExtensionSubmissionWireMapper.toSubmission(values);
+    }
+
+    private static ExtensionSubmission updateSubmission(JsonNode values) {
+        return ExtensionSubmissionWireMapper.toSubmission(values);
+    }
 }

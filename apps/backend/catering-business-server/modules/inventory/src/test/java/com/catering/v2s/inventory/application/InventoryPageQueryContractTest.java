@@ -16,27 +16,26 @@ class InventoryPageQueryContractTest {
     @Test
     void acceptsAResolvedCategoryAndStockView() {
         var query = mapper.createObjectNode()
-            .put("categoryRef", "DRINK")
-            .put("stockView", "NEEDS_ATTENTION")
-            .put("cursor", "10")
-            .put("pageSize", 25);
+                .put("categoryRef", "DRINK")
+                .put("includeSubCategories", true)
+                .put("stockView", "NEEDS_ATTENTION")
+                .put("cursor", "10")
+                .put("pageSize", 25);
         query.putArray("catalogItemRefs")
-            .add(UUID.randomUUID().toString())
-            .add(UUID.randomUUID().toString());
+                .add(UUID.randomUUID().toString())
+                .add(UUID.randomUUID().toString());
 
         assertDoesNotThrow(() -> InventoryOwnerService.validateTargetPageQuery(query));
     }
 
     @Test
-    void rejectsUnresolvedCategoryAndUnknownStockView() {
+    void acceptsCatalogCategoryFilterAndRejectsUnknownStockView() {
         var unresolved = mapper.createObjectNode().put("categoryRef", "DRINK");
-        InventoryOwnerApi.Problem categoryProblem = assertThrows(InventoryOwnerApi.Problem.class,
-            () -> InventoryOwnerService.validateTargetPageQuery(unresolved));
-        assertEquals("VALIDATION_ERROR", categoryProblem.code());
+        assertDoesNotThrow(() -> InventoryOwnerService.validateTargetPageQuery(unresolved));
 
         var malformed = mapper.createObjectNode().put("stockView", "NOT_A_VIEW");
-        InventoryOwnerApi.Problem stockProblem = assertThrows(InventoryOwnerApi.Problem.class,
-            () -> InventoryOwnerService.validateTargetPageQuery(malformed));
+        InventoryOwnerApi.Problem stockProblem = assertThrows(
+                InventoryOwnerApi.Problem.class, () -> InventoryOwnerService.validateTargetPageQuery(malformed));
         assertEquals("VALIDATION_ERROR", stockProblem.code());
     }
 
@@ -44,14 +43,14 @@ class InventoryPageQueryContractTest {
     void acceptsOnlyOpaqueCatalogItemRefsForCrossOwnerFiltering() {
         var legacyCodeFilter = mapper.createObjectNode();
         legacyCodeFilter.putArray("catalogItemCodes").add("LATTE-001");
-        InventoryOwnerApi.Problem legacyProblem = assertThrows(InventoryOwnerApi.Problem.class,
-            () -> InventoryOwnerService.validateTargetPageQuery(legacyCodeFilter));
+        InventoryOwnerApi.Problem legacyProblem = assertThrows(
+                InventoryOwnerApi.Problem.class, () -> InventoryOwnerService.validateTargetPageQuery(legacyCodeFilter));
         assertEquals("VALIDATION_ERROR", legacyProblem.code());
 
         var malformedRef = mapper.createObjectNode();
         malformedRef.putArray("catalogItemRefs").add("LATTE-001");
-        InventoryOwnerApi.Problem malformedProblem = assertThrows(InventoryOwnerApi.Problem.class,
-            () -> InventoryOwnerService.validateTargetPageQuery(malformedRef));
+        InventoryOwnerApi.Problem malformedProblem = assertThrows(
+                InventoryOwnerApi.Problem.class, () -> InventoryOwnerService.validateTargetPageQuery(malformedRef));
         assertEquals("VALIDATION_ERROR", malformedProblem.code());
     }
 
@@ -63,5 +62,11 @@ class InventoryPageQueryContractTest {
         assertEquals("LOW", InventoryOwnerService.state(new BigDecimal("3"), config));
         config.put("unknown", true);
         assertEquals("UNKNOWN", InventoryOwnerService.state(new BigDecimal("3"), config));
+    }
+
+    @Test
+    void derivesInventoryTargetTypeFromTheOwnedSkuReference() {
+        assertEquals("CATALOG_ITEM", InventoryOwnerService.inventoryTargetType(null));
+        assertEquals("SKU", InventoryOwnerService.inventoryTargetType(UUID.randomUUID()));
     }
 }

@@ -19,7 +19,7 @@ export function createRefreshSignal(): RefreshSignal {
       version += 1;
       for (const listener of listeners) listener();
     },
-    subscribe: (listener) => {
+    subscribe: listener => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },

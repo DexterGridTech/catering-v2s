@@ -6,7 +6,9 @@ function requiredEnvironment(name: string): string {
   return value;
 }
 
-test('invitee completes the anonymous invitation journey before returning to the branded operations login', async ({page}) => {
+test('invitee completes the anonymous invitation journey before returning to the branded operations login', async ({
+  page,
+}) => {
   await page.goto(requiredEnvironment('R5_L2_PUBLIC_INVITATION_ROUTE'));
   await expect(page.getByTestId('operations-shell-menu')).toHaveCount(0);
   await expect(page.getByTestId('public-invitation-accept')).toBeVisible();
@@ -19,7 +21,9 @@ test('invitee completes the anonymous invitation journey before returning to the
 
   await expect(page.getByTestId('public-invitation-user-name')).toBeVisible();
   await page.getByTestId('public-invitation-user-name').fill(requiredEnvironment('R5_L2_PUBLIC_INVITATION_USER_NAME'));
-  await page.getByTestId('public-invitation-login-name').fill(requiredEnvironment('R5_L2_PUBLIC_INVITATION_LOGIN_NAME'));
+  await page
+    .getByTestId('public-invitation-login-name')
+    .fill(requiredEnvironment('R5_L2_PUBLIC_INVITATION_LOGIN_NAME'));
   await page.getByTestId('public-invitation-password').fill(requiredEnvironment('R5_L2_PUBLIC_INVITATION_PASSWORD'));
   await page.getByTestId('public-invitation-save').click();
   await expect(page.getByTestId('public-invitation-complete')).toBeVisible();

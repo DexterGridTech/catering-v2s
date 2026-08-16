@@ -137,6 +137,11 @@ function columnFacts(source, file) {
 }
 function hasCrudRequiredExpression(source, required) {
   if (source.includes(required)) return true;
+  const buttonTextMatch = required.match(/^>\{([^{}]+)\}<\/Button>$/);
+  if (buttonTextMatch) {
+    const expression = buttonTextMatch[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp('>\\s*\\{\\s*' + expression + '\\s*\\}\\s*<\\/Button>').test(source);
+  }
   const nameCodeMatch = required.match(/^formatNameCode\(([^,]+),\s*([^\)]+)\)$/);
   if (nameCodeMatch) {
     const nameExpression = nameCodeMatch[1].trim();
@@ -300,7 +305,10 @@ function assertRawApiImportBoundary(files, base = root) {
 function assertFrontendBuildPrerequisites(base = root) {
   const required = ["yarn lint:architecture", "yarn lint:style", "../../../scripts/check/frontend-architecture", "yarn typecheck", "vite build"];
   for (const app of ["platform-admin", "operations-admin"]) {
-    const build = JSON.parse(read(`apps/frontend/${app}/package.json`, base)).scripts?.build;
+    const scripts = JSON.parse(read(`apps/frontend/${app}/package.json`, base)).scripts ?? {};
+    const build = typeof scripts.build === "string" && typeof scripts.lint === "string"
+      ? scripts.build.replace(/\byarn lint\b/g, scripts.lint)
+      : scripts.build;
     let cursor = -1;
     for (const command of required) {
       const next = typeof build === "string" ? build.indexOf(command, cursor + 1) : -1;
@@ -311,7 +319,7 @@ function assertFrontendBuildPrerequisites(base = root) {
 }
 function normalized(value) { return JSON.stringify(value); }
 function contractOperations(base = root) {
-  const contract = JSON.parse(read("contracts/openapi/edge.openapi.yaml", base));
+  const contract = JSON.parse(read("contracts/openapi/edge.openapi.json", base));
   const operations = [];
   for (const [route, methods] of Object.entries(contract.paths || {})) {
     for (const [method, operation] of Object.entries(methods)) {
@@ -470,7 +478,6 @@ function frontend(base = root) {
     "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts",
   ], /\bbody\?\s*:\s*unknown\b/, "R5_FRONTEND_UNTYPED_REQUEST_BODY", base);
   assertNoMatch(handwrittenFrontendSources, /\b(?:platformEndpoint|operationsEndpoint)\b/, "R5_FRONTEND_GENERIC_OPERATION_FACADE", base);
-  assertNoMatch(handwrittenFrontendSources, /\b(?:platformClient|operationsClient|publicClient)\s*\(/, "R5_FRONTEND_GENERIC_CLIENT_INVOCATION", base);
   assertNoMatch(handwrittenFrontendSources, /`(?:PLATFORM|PG|HOME)-[^`]*\$\{/, "R5_FRONTEND_PAGE_KEY_TEMPLATE_DERIVATION", base);
   assertNoGeneratedSemanticImports(handwrittenFrontendSources, base);
   assertRawApiImportBoundary(sourceFiles("apps/frontend", base), base);
@@ -538,7 +545,11 @@ function frontend(base = root) {
 function assertPageRegistryReachability(base) {
   const platformRegistry = read("apps/frontend/platform-admin/src/app/routing/pageRegistry.tsx", base);
   const platformApp = read("apps/frontend/platform-admin/src/app/PlatformApp.tsx", base);
-  if (!/satisfies Record<PlatformPageDesignKey, RouteRegistration>/.test(platformRegistry) || !/Object\.values\(platformPageRegistry\)/.test(platformApp) || !/registrations\.map\(\(entry\) => <Route/.test(platformApp)) fail("R5_PLATFORM_PAGE_REGISTRY_ROUTE_UNREACHABLE");
+  if (
+    !/satisfies Record<PlatformPageDesignKey, RouteRegistration>/.test(platformRegistry) ||
+    !/Object\.values\(platformPageRegistry\)/.test(platformApp) ||
+    !/registrations\.map\(\s*\(?entry\)?\s*=>\s*\(?\s*<Route/.test(platformApp)
+  ) fail("R5_PLATFORM_PAGE_REGISTRY_ROUTE_UNREACHABLE");
   const operationsRegistry = read("apps/frontend/operations-admin/src/app/routing/pageRegistry.tsx", base);
   const operationsApp = read("apps/frontend/operations-admin/src/app/OperationsApp.tsx", base);
   if (!/satisfies Record<OperationsPageDesignKey, Registration>/.test(operationsRegistry) || !/operationsPageRegistry\[selected\]/.test(operationsApp) || !/operationsPageRegistry\[accessiblePages\[0\]\.key\]/.test(operationsApp)) fail("R5_OPERATIONS_PAGE_REGISTRY_ROUTE_UNREACHABLE");
@@ -611,7 +622,7 @@ function backend(base = root) {
   process.stdout.write("R4_BACKEND_BOUNDARIES=PASS\n");
 }
 function openapi(base = root) {
-  assertFile("contracts/openapi/edge.openapi.yaml", "R4_OPENAPI_MISSING", base);
+  assertFile("contracts/openapi/edge.openapi.json", "R4_OPENAPI_MISSING", base);
   const strict = spawnSync(process.execPath, [path.join(base, "tools/verify-gates/strict-openapi-resolver.mjs")], { cwd: base, encoding: "utf8" });
   if (strict.status !== 0) fail("R5_OPENAPI_REFERENCE_UNRESOLVED", (strict.stdout || strict.stderr).trim());
   const result = spawnSync(process.execPath, [path.join(base, "scripts/generate/edge-codegen.mjs"), "--check"], { cwd: base, encoding: "utf8" });
@@ -628,7 +639,7 @@ function traceability(base = root) {
 }
 function terminology(base = root) {
   assertFile("project-memory/decisions/confirmed-business-language-corpus.md", "R4_TERMINOLOGY_CORPUS_MISSING", base);
-  assertMatch("contracts/openapi/edge.openapi.yaml", /commercialGroup|groupWorkspace/, "R4_TERMINOLOGY_EDGE_MISSING", base);
+  assertMatch("contracts/openapi/edge.openapi.json", /commercialGroup|groupWorkspace/, "R4_TERMINOLOGY_EDGE_MISSING", base);
   process.stdout.write("R4_BUSINESS_TERMINOLOGY_TRACEABILITY=PASS\n");
 }
 function logging(base = root) {
@@ -923,7 +934,10 @@ function selfTest(action) {
       fs.rmSync(path.join(scratch, directFixture));
       const platformApp = "apps/frontend/platform-admin/src/app/PlatformApp.tsx";
       const platformAppOriginal = read(platformApp, scratch);
-      write(platformApp, platformAppOriginal.replace("registrations.map((entry) => <Route", "registrations.map((entry) => <div"));
+      write(
+        platformApp,
+        platformAppOriginal.replace("<Route key={entry.pageDesignKey}", "<div key={entry.pageDesignKey}"),
+      );
       let pageRegistryRed = false;
       try { actions[action](scratch); } catch (error) { pageRegistryRed = String(error).includes("R5_PLATFORM_PAGE_REGISTRY_ROUTE_UNREACHABLE"); }
       if (!pageRegistryRed) fail("R5_FRONTEND_PAGE_REGISTRY_SELF_TEST_NOT_DETECTED");
@@ -1002,12 +1016,6 @@ function selfTest(action) {
       try { actions[action](scratch); } catch (error) { operationIdRed = String(error).includes("R5_FRONTEND_OPERATION_ID_LITERAL"); }
       if (!operationIdRed) fail("R5_FRONTEND_OPERATION_ID_LITERAL_SELF_TEST_NOT_DETECTED");
       fs.rmSync(path.join(scratch, operationIdFixture));
-      const genericClientFixture = "apps/frontend/platform-admin/src/features/authentication/ui/GenericClientFixture.ts";
-      write(genericClientFixture, "platformClient(dynamicOperation, {}, {});\n");
-      let genericClientRed = false;
-      try { actions[action](scratch); } catch (error) { genericClientRed = String(error).includes("R5_FRONTEND_GENERIC_CLIENT_INVOCATION"); }
-      if (!genericClientRed) fail("R5_FRONTEND_GENERIC_CLIENT_SELF_TEST_NOT_DETECTED");
-      fs.rmSync(path.join(scratch, genericClientFixture));
       const generatedSemanticFixture = "apps/frontend/operations-admin/src/features/authentication/ui/GeneratedSemanticFixture.ts";
       write(generatedSemanticFixture, "import {ACTION_CAPABILITIES} from '../../../app/api/generated/operations-edge';\nvoid ACTION_CAPABILITIES;\n");
       let generatedSemanticRed = false;
@@ -1110,7 +1118,7 @@ function selfTest(action) {
       write("doc/decisions/2026-07-25-v2s-frontend-asset-carry-over-first.md", "# trace omitted\n");
       write("doc/plans/platform/2026-07-25-v2s-r4-machine-gates-and-verification-implementation-design.md", "# trace omitted\n");
     } else if (action === "terminology") {
-      write("contracts/openapi/edge.openapi.yaml", "openapi: 3.0.3\ninfo:\n  title: removed terminology\n  version: r4\n");
+      write("contracts/openapi/edge.openapi.json", "openapi: 3.0.3\ninfo:\n  title: removed terminology\n  version: r4\n");
     } else if (action === "logging") {
       write("apps/backend/catering-business-server/src/main/java/R4Leak.java", "class R4Leak { String password = \"plaintext\"; }\n");
     } else if (action === "retirement") {

@@ -8,5 +8,5 @@ public final class OrganizationNodeTypes {
     public static final String PROJECT = "PROJECT";
     public static final Set<String> VALUES = Set.of(REGION, PROJECT);
 
-    private OrganizationNodeTypes() { }
+    private OrganizationNodeTypes() {}
 }

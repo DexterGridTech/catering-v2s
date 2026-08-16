@@ -1,0 +1,1335 @@
+{
+  "kind": "catalog-inventory-openapi-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "schemas": {
+    "InventoryChangeSummaryView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "period",
+        "increase",
+        "decrease",
+        "netChange",
+        "entryCount"
+      ],
+      "properties": {
+        "period": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "increase": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "decrease": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "netChange": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "entryCount": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "InventoryBusinessHistoryPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entryRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "action": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "quantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "beforeQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "afterQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "occurredAt": {
+                "type": "integer",
+                "description": "design-bound field",
+                "format": "epoch-millis"
+              },
+              "source": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "entryRef",
+              "action",
+              "quantity",
+              "beforeQuantity",
+              "afterQuantity",
+              "occurredAt",
+              "source",
+              "reasonCode"
+            ]
+          }
+        },
+        "cursor": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "total": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "InventoryConsumptionReferencePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sourceCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "sourceKind": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "sourceName": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "ownerScope": {
+                "type": "object",
+                "description": "design-bound field",
+                "additionalProperties": false,
+                "properties": {
+                  "ownerType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "ownerRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "ownerType",
+                  "ownerRef",
+                  "brandRef"
+                ]
+              },
+              "quantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "unit": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "timing": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "status": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "sourceCode",
+              "sourceKind",
+              "sourceName",
+              "ownerScope",
+              "quantity",
+              "unit",
+              "timing",
+              "status"
+            ]
+          }
+        },
+        "cursor": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "total": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "InventoryLedgerPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "cursor",
+        "total"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entryRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "source": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "beforeQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "changeQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "afterQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "occurredAt": {
+                "type": "integer",
+                "description": "design-bound field",
+                "format": "epoch-millis"
+              }
+            },
+            "required": [
+              "entryRef",
+              "source",
+              "reasonCode",
+              "beforeQuantity",
+              "changeQuantity",
+              "afterQuantity",
+              "occurredAt"
+            ]
+          }
+        },
+        "cursor": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "total": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "InventoryDiagnosticsView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permission",
+        "queries",
+        "timings",
+        "warnings"
+      ],
+      "properties": {
+        "permission": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "granted": {
+              "type": "boolean",
+              "description": "design-bound field"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "granted",
+            "reason"
+          ]
+        },
+        "queries": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "queryName": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "databaseOperationCount": {
+                "type": "integer",
+                "description": "design-bound field"
+              },
+              "durationMillis": {
+                "type": "integer",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "queryName",
+              "databaseOperationCount",
+              "durationMillis"
+            ]
+          }
+        },
+        "timings": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "queryName": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "durationMillis": {
+                "type": "integer",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "queryName",
+              "durationMillis"
+            ]
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "message": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        }
+      }
+    },
+    "InventoryTargetPageQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "keyword": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "categoryRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "stockView": {
+          "type": "string",
+          "description": "design-bound field",
+          "enum": [
+            "ALL",
+            "NEEDS_ATTENTION",
+            "LOW",
+            "OUT",
+            "NEGATIVE",
+            "UNKNOWN"
+          ]
+        },
+        "cursor": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "InventoryTargetPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "productCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "productName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "skuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "skuName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "categoryName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "materialRole": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "consumptionUnit": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "countingUnit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "conversionSummary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "balance": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "stockState": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "stale": {
+                    "type": "boolean",
+                    "description": "design-bound field"
+                  },
+                  "unknown": {
+                    "type": "boolean",
+                    "description": "design-bound field"
+                  },
+                  "threshold": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "gap": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "changeToday": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "change7d": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "change30d": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "decimal"
+                  },
+                  "lastChangeSource": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "lastChangeAt": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "epoch-millis"
+                  },
+                  "authorityType": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "INTERNAL"
+                    ]
+                  }
+                },
+                "required": [
+                  "targetRef",
+                  "targetType",
+                  "productCode",
+                  "itemRef",
+                  "productSkuRef",
+                  "productName",
+                  "skuCode",
+                  "skuName",
+                  "categoryName",
+                  "materialRole",
+                  "consumptionUnit",
+                  "countingUnit",
+                  "conversionSummary",
+                  "balance",
+                  "stockState",
+                  "stale",
+                  "unknown",
+                  "threshold",
+                  "gap",
+                  "changeToday",
+                  "change7d",
+                  "change30d",
+                  "lastChangeSource",
+                  "lastChangeAt",
+                  "authorityType"
+                ]
+              }
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "counts": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ALL": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "NEEDS_ATTENTION": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "LOW": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "OUT": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "NEGATIVE": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                },
+                "UNKNOWN": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "ALL",
+                "NEEDS_ATTENTION",
+                "LOW",
+                "OUT",
+                "NEGATIVE",
+                "UNKNOWN"
+              ]
+            }
+          },
+          "required": [
+            "items",
+            "cursor",
+            "total",
+            "generation",
+            "counts"
+          ]
+        }
+      }
+    },
+    "InventoryTargetQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        }
+      }
+    },
+    "InventoryTargetCurrentView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "balance",
+        "configuration",
+        "version",
+        "stockState",
+        "stale",
+        "unknown",
+        "threshold",
+        "gap",
+        "changeSummary",
+        "recentChanges",
+        "references",
+        "ledger",
+        "diagnosticsAvailability"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "target": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "targetRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "targetType": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "productCode": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "itemRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "productSkuRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "productName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            },
+            "productShape": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "skuCode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            },
+            "skuName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            },
+            "consumptionUnit": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "countingUnit": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            },
+            "conversionSummary": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            },
+            "authorityType": {
+              "type": "string",
+              "description": "design-bound field",
+              "enum": [
+                "INTERNAL"
+              ]
+            }
+          },
+          "required": [
+            "targetRef",
+            "targetType",
+            "productCode",
+            "itemRef",
+            "productSkuRef",
+            "productName",
+            "productShape",
+            "skuCode",
+            "skuName",
+            "consumptionUnit",
+            "countingUnit",
+            "conversionSummary",
+            "authorityType"
+          ]
+        },
+        "balance": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "configuration": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "allowNegative": {
+              "type": "boolean",
+              "description": "design-bound field"
+            },
+            "lowStockThreshold": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field",
+              "format": "decimal"
+            },
+            "countingUnit": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "conversionFactor": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "decimal"
+            }
+          },
+          "required": [
+            "allowNegative",
+            "lowStockThreshold",
+            "countingUnit",
+            "conversionFactor"
+          ]
+        },
+        "stockState": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "stale": {
+          "type": "boolean",
+          "description": "design-bound field"
+        },
+        "unknown": {
+          "type": "boolean",
+          "description": "design-bound field"
+        },
+        "threshold": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "gap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field",
+          "format": "decimal"
+        },
+        "changeSummary": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "today": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "increase": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "decrease": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "netChange": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "entryCount": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "increase",
+                "decrease",
+                "netChange",
+                "entryCount"
+              ]
+            },
+            "sevenDays": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "increase": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "decrease": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "netChange": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "entryCount": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "increase",
+                "decrease",
+                "netChange",
+                "entryCount"
+              ]
+            },
+            "thirtyDays": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "increase": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "decrease": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "netChange": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "decimal"
+                },
+                "entryCount": {
+                  "type": "integer",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "increase",
+                "decrease",
+                "netChange",
+                "entryCount"
+              ]
+            }
+          },
+          "required": [
+            "today",
+            "sevenDays",
+            "thirtyDays"
+          ]
+        },
+        "recentChanges": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "occurredAt": {
+                "type": "integer",
+                "description": "design-bound field",
+                "format": "epoch-millis"
+              },
+              "changeType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "quantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "source": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "occurredAt",
+              "changeType",
+              "quantity",
+              "source"
+            ]
+          }
+        },
+        "references": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sourceCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "sourceKind": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "quantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "unit": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "timing": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "status": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "sourceCode",
+              "sourceKind",
+              "quantity",
+              "unit",
+              "timing",
+              "status"
+            ]
+          }
+        },
+        "ledger": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entryRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "source": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "beforeQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "changeQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "afterQuantity": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "decimal"
+              },
+              "occurredAt": {
+                "type": "integer",
+                "description": "design-bound field",
+                "format": "epoch-millis"
+              }
+            },
+            "required": [
+              "entryRef",
+              "source",
+              "reasonCode",
+              "beforeQuantity",
+              "changeQuantity",
+              "afterQuantity",
+              "occurredAt"
+            ]
+          }
+        },
+        "diagnosticsAvailability": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "canRead": {
+              "type": "boolean",
+              "description": "design-bound field"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "canRead",
+            "reason"
+          ]
+        }
+      }
+    },
+    "InventoryTargetPeriodQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef",
+        "period"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        },
+        "period": {
+          "type": "string",
+          "description": "change period"
+        }
+      }
+    },
+    "InventoryHistoryPageQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
+    "InventoryReferencePageQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
+    "InventoryLedgerPageQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
+    "InventoryDiagnosticsQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRef"
+      ],
+      "properties": {
+        "targetRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "inventory target reference"
+        }
+      }
+    },
+    "InventoryWriteReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "result": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "targetRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "before": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "decimal"
+            },
+            "change": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "decimal"
+            },
+            "after": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "decimal"
+            },
+            "ledgerEntryRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "stockState": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "version": {
+              "type": "integer",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "targetRef",
+            "before",
+            "change",
+            "after",
+            "ledgerEntryRef",
+            "stockState",
+            "version"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    }
+  }
+}

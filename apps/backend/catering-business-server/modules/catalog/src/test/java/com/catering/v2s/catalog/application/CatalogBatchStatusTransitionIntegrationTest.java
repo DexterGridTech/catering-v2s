@@ -35,26 +35,38 @@ class CatalogBatchStatusTransitionIntegrationTest {
     private static final UUID WORKSPACE = UUID.randomUUID();
     private static final UUID SCOPE = UUID.randomUUID();
     private static final String BRAND = "BATCH-BRAND";
-    @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+
+    @Container
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+
     private static JdbcTemplate jdbc;
     private static CatalogOwnerService catalog;
 
     @BeforeAll
     static void setup() {
         Flyway.configure()
-            .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-            .locations("filesystem:../../src/main/resources/db/migration")
-            .schemas("public")
-            .defaultSchema("public")
-            .cleanDisabled(false)
-            .load()
-            .migrate();
-        DataSource dataSource = new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("filesystem:../../src/main/resources/db/migration")
+                .schemas("public")
+                .defaultSchema("public")
+                .cleanDisabled(false)
+                .load()
+                .migrate();
+        DataSource dataSource =
+                new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
         jdbc = new JdbcTemplate(dataSource);
-        InventoryOwnerService inventory = new InventoryOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
-        ProductionTagOwnerService production = new ProductionTagOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
-        catalog = new CatalogOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L,
-            mock(CatalogAssetReferenceLock.class), production, inventory, new DataSourceTransactionManager(dataSource));
+        InventoryOwnerService inventory =
+                new InventoryOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
+        ProductionTagOwnerService production =
+                new ProductionTagOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
+        catalog = new CatalogOwnerService(
+                jdbc,
+                JSON,
+                (TimeProvider) () -> 1_785_000_000_000L,
+                mock(CatalogAssetReferenceLock.class),
+                production,
+                inventory,
+                new DataSourceTransactionManager(dataSource));
     }
 
     @Test
@@ -63,21 +75,35 @@ class CatalogBatchStatusTransitionIntegrationTest {
         JsonNode second = create(BRAND, "BATCH-PARTIAL-SECOND");
         UUID firstRef = UUID.fromString(first.path("resourceRef").asText());
         UUID secondRef = UUID.fromString(second.path("resourceRef").asText());
-        jdbc.update("UPDATE catalog.catalog_item SET sections='{" + "\"marker\":\"keep\"" + "}'::jsonb WHERE item_ref=?", firstRef);
+        jdbc.update(
+                "UPDATE catalog.catalog_item SET sections='{\"marker\":\"keep\"}'::jsonb WHERE item_ref=?", firstRef);
         jdbc.update("UPDATE catalog.catalog_item SET name=name, version=version+1 WHERE item_ref=?", secondRef);
 
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(BRAND, "ARCHIVED",
-            List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L),
-                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L)), "batch-partial-key");
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
+                BRAND,
+                "ARCHIVED",
+                List.of(
+                        new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L),
+                        new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L)),
+                "batch-partial-key");
 
-        assertEquals(List.of(firstRef, secondRef), readback.results().stream().map(CatalogOwnerApi.CatalogItemBatchStatusTransitionResult::itemRef).toList());
+        assertEquals(
+                List.of(firstRef, secondRef),
+                readback.results().stream()
+                        .map(CatalogOwnerApi.CatalogItemBatchStatusTransitionResult::itemRef)
+                        .toList());
         assertTrue(readback.results().get(0).ok());
         assertEquals(2L, readback.results().get(0).version());
         assertFalse(readback.results().get(1).ok());
         assertEquals("VERSION_CONFLICT", readback.results().get(1).failureCode());
         assertEquals("ARCHIVED", status(firstRef));
         assertEquals("DRAFT", status(secondRef));
-        assertEquals("keep", jdbc.queryForObject("SELECT sections->>'marker' FROM catalog.catalog_item WHERE item_ref=?", String.class, firstRef));
+        assertEquals(
+                "keep",
+                jdbc.queryForObject(
+                        "SELECT sections->>'marker' FROM catalog.catalog_item WHERE item_ref=?",
+                        String.class,
+                        firstRef));
     }
 
     @Test
@@ -87,13 +113,41 @@ class CatalogBatchStatusTransitionIntegrationTest {
         UUID targetRef = UUID.fromString(target.path("resourceRef").asText());
         UUID ownerRef = UUID.fromString(owner.path("resourceRef").asText());
         UUID groupRef = UUID.randomUUID();
-        jdbc.update("INSERT INTO catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)",
-            groupRef, ownerRef, "GROUP", "组合", "OPTIONAL", 0, 1, 0);
-        jdbc.update("INSERT INTO catalog.catalog_composite_component(composite_component_ref,composite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order) VALUES(?,?,?,?,?,?,?,?,?,?)",
-            UUID.randomUUID(), groupRef, targetRef, null, 1, "EA", false, null, "ENABLED", 0);
+        jdbc.update(
+                "INSERT INTO "
+                        + "catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection"
+                        + "_rul"
+                        + "e,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)",
+                groupRef,
+                ownerRef,
+                "GROUP",
+                "组合",
+                "OPTIONAL",
+                0,
+                1,
+                0);
+        jdbc.update(
+                "INSERT INTO "
+                        + "catalog.catalog_composite_component(composite_component_ref,composite_group_ref,component_it"
+                        + "em_r"
+                        + "ef,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order) "
+                        + "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                UUID.randomUUID(),
+                groupRef,
+                targetRef,
+                null,
+                1,
+                "EA",
+                false,
+                null,
+                "ENABLED",
+                0);
 
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(BRAND, "ARCHIVED",
-            List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(targetRef, 1L)), "batch-archive-reference-key");
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
+                BRAND,
+                "ARCHIVED",
+                List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(targetRef, 1L)),
+                "batch-archive-reference-key");
 
         assertTrue(readback.results().get(0).ok());
         assertEquals("ARCHIVED", status(targetRef));
@@ -104,8 +158,11 @@ class CatalogBatchStatusTransitionIntegrationTest {
         JsonNode foreign = create("OTHER-BRAND", "BATCH-FOREIGN");
         UUID foreignRef = UUID.fromString(foreign.path("resourceRef").asText());
 
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(BRAND, "ARCHIVED",
-            List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(foreignRef, 1L)), "batch-scope-key");
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
+                BRAND,
+                "ARCHIVED",
+                List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(foreignRef, 1L)),
+                "batch-scope-key");
 
         assertFalse(readback.results().get(0).ok());
         assertEquals("SCOPE_FORBIDDEN", readback.results().get(0).failureCode());
@@ -114,22 +171,28 @@ class CatalogBatchStatusTransitionIntegrationTest {
 
     @Test
     void batchValidationRejectsEmptyDuplicateAndOverLimitBeforeHashing() {
-        CatalogOwnerApi.Problem empty = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> batch(BRAND, "ARCHIVED", List.of(), "batch-empty-key"));
+        CatalogOwnerApi.Problem empty = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> batch(BRAND, "ARCHIVED", List.of(), "batch-empty-key"));
         assertEquals("VALIDATION_ERROR", empty.code());
         assertEquals(400, empty.status());
 
         UUID duplicate = UUID.randomUUID();
-        CatalogOwnerApi.Problem repeated = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> batch(BRAND, "ARCHIVED", List.of(
-                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L),
-                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L)), "batch-duplicate-key"));
+        CatalogOwnerApi.Problem repeated = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> batch(
+                        BRAND,
+                        "ARCHIVED",
+                        List.of(
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L),
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(duplicate, 1L)),
+                        "batch-duplicate-key"));
         assertEquals("VALIDATION_ERROR", repeated.code());
 
         List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> tooMany = new ArrayList<>();
-        for (int index = 0; index < 101; index++) tooMany.add(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(UUID.randomUUID(), 1L));
-        CatalogOwnerApi.Problem oversized = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> batch(BRAND, "ARCHIVED", tooMany, "batch-limit-key"));
+        for (int index = 0; index < 101; index++)
+            tooMany.add(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(UUID.randomUUID(), 1L));
+        CatalogOwnerApi.Problem oversized =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> batch(BRAND, "ARCHIVED", tooMany, "batch-limit-key"));
         assertEquals("VALIDATION_ERROR", oversized.code());
     }
 
@@ -137,12 +200,14 @@ class CatalogBatchStatusTransitionIntegrationTest {
     void replayReturnsOriginalPartialResultWithoutReexecuting() {
         JsonNode item = create(BRAND, "BATCH-REPLAY");
         UUID itemRef = UUID.fromString(item.path("resourceRef").asText());
-        List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> items = List.of(
-            new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L));
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback first = batch(BRAND, "ARCHIVED", items, "batch-replay-key");
+        List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> items =
+                List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L));
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback first =
+                batch(BRAND, "ARCHIVED", items, "batch-replay-key");
         jdbc.update("UPDATE catalog.catalog_item SET status='DISABLED', version=version+1 WHERE item_ref=?", itemRef);
 
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback replay = batch(BRAND, "ARCHIVED", items, "batch-replay-key");
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback replay =
+                batch(BRAND, "ARCHIVED", items, "batch-replay-key");
 
         assertEquals(first.results(), replay.results());
         assertEquals("DISABLED", status(itemRef));
@@ -153,8 +218,11 @@ class CatalogBatchStatusTransitionIntegrationTest {
     void sameTargetIsSuccessfulNoOpWithoutVersionIncrement() {
         JsonNode item = create(BRAND, "BATCH-NOOP");
         UUID itemRef = UUID.fromString(item.path("resourceRef").asText());
-        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(BRAND, "DRAFT",
-            List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L)), "batch-noop-key");
+        CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback readback = batch(
+                BRAND,
+                "DRAFT",
+                List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L)),
+                "batch-noop-key");
 
         assertTrue(readback.results().get(0).ok());
         assertEquals(1L, readback.results().get(0).version());
@@ -162,20 +230,29 @@ class CatalogBatchStatusTransitionIntegrationTest {
     }
 
     private static CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback batch(
-        String brand,
-        String targetStatus,
-        List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> items,
-        String idempotencyKey) {
+            String brand,
+            String targetStatus,
+            List<CatalogOwnerApi.CatalogItemBatchStatusTransitionItem> items,
+            String idempotencyKey) {
         return catalog.transitionCatalogItemStatuses(
-            context("batchTransitionOperationsCatalogItemStatus", SCOPE, brand, "batch-request-" + UUID.randomUUID()),
-            new CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand(targetStatus, items), idempotencyKey);
+                context(
+                        "batchTransitionOperationsCatalogItemStatus",
+                        SCOPE,
+                        brand,
+                        "batch-request-" + UUID.randomUUID()),
+                new CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand(targetStatus, items),
+                idempotencyKey);
     }
 
     private static JsonNode create(String brand, String code) {
         return catalog.write(
-            context("createOperationsCatalogItem", SCOPE, brand, "create-request-" + UUID.randomUUID()),
-            JSON.createObjectNode().put("code", code).put("name", code).put("shapeKey", "STANDARD_SALE_COUNTED"),
-            "create-key-" + UUID.randomUUID()).path("result");
+                        context("createOperationsCatalogItem", SCOPE, brand, "create-request-" + UUID.randomUUID()),
+                        JSON.createObjectNode()
+                                .put("code", code)
+                                .put("name", code)
+                                .put("shapeKey", "STANDARD_SALE_COUNTED"),
+                        "create-key-" + UUID.randomUUID())
+                .path("result");
     }
 
     private static String status(UUID itemRef) {
@@ -183,16 +260,20 @@ class CatalogBatchStatusTransitionIntegrationTest {
     }
 
     private static long version(UUID itemRef) {
-        Long value = jdbc.queryForObject("SELECT version FROM catalog.catalog_item WHERE item_ref=?", Long.class, itemRef);
+        Long value =
+                jdbc.queryForObject("SELECT version FROM catalog.catalog_item WHERE item_ref=?", Long.class, itemRef);
         assertNotNull(value);
         return value;
     }
 
-    private static com.catering.v2s.platform.command.WorkspaceExecutionContext<com.catering.v2s.platform.command.CatalogAuthorizationScope> context(
-        String operation, UUID scope, String brand, String requestId) {
+    private static com.catering.v2s.platform.command.WorkspaceExecutionContext<
+                    com.catering.v2s.platform.command.CatalogAuthorizationScope>
+            context(String operation, UUID scope, String brand, String requestId) {
         var token = CatalogInventoryWorkspaceCommandTokens.all().stream()
-            .filter(candidate -> candidate.operationId().equals(operation)).findFirst()
-            .orElseThrow(() -> new AssertionError("missing token: " + operation));
-        return CatalogCommandContextFixture.context(WORKSPACE, "catalog-batch-status-test", scope, brand, token, null, requestId);
+                .filter(candidate -> candidate.operationId().equals(operation))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing token: " + operation));
+        return CatalogCommandContextFixture.context(
+                WORKSPACE, "catalog-batch-status-test", scope, brand, token, null, requestId);
     }
 }

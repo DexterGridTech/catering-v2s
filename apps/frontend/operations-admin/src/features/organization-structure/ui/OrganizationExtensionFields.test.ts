@@ -1,7 +1,11 @@
 import dayjs from 'dayjs';
 import {describe, expect, it} from 'vitest';
 import type {ExtensionDefinition} from '../../../app/api/generated/operations-edge';
-import {hydrateOrganizationExtensionValues, organizationExtensionDetailItems, serializeOrganizationExtensionValues} from './OrganizationExtensionFields';
+import {
+  hydrateOrganizationExtensionValues,
+  organizationExtensionDetailItems,
+  serializeOrganizationExtensionValues,
+} from './OrganizationExtensionFields';
 
 const definition: ExtensionDefinition = {
   groupWorkspaceKey: 'workspace-a',
@@ -28,7 +32,13 @@ describe('organization extension fields', () => {
   });
 
   it('makes omit, SET and CLEAR distinct without null-shaped intent inference', () => {
-    expect(serializeOrganizationExtensionValues(definition, {startsOn: undefined, enabled: false}, {startsOn: '2026-08-03', enabled: false, area: 12})).toEqual([
+    expect(
+      serializeOrganizationExtensionValues(
+        definition,
+        {startsOn: undefined, enabled: false},
+        {startsOn: '2026-08-03', enabled: false, area: 12},
+      ),
+    ).toEqual([
       {fieldKey: 'startsOn', valueJson: '', mode: 'CLEAR'},
       {fieldKey: 'area', valueJson: '', mode: 'CLEAR'},
     ]);

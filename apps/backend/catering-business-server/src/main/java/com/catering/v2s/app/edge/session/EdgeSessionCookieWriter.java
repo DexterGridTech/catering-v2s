@@ -11,13 +11,15 @@ public final class EdgeSessionCookieWriter {
 
     /** Owner-bounded public flows may use a shorter server-enforced cookie lifetime. */
     public String issue(String cookieName, String token, long maxAgeSeconds) {
-        if (maxAgeSeconds <= 0 || maxAgeSeconds > 8 * 60 * 60) throw new IllegalArgumentException("cookie lifetime is invalid");
+        if (maxAgeSeconds <= 0 || maxAgeSeconds > 8 * 60 * 60)
+            throw new IllegalArgumentException("cookie lifetime is invalid");
         return cookieName + "=" + token + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=" + maxAgeSeconds;
     }
 
     /** Dedicated public-flow cookie API: recovery secrets never use the general session-cookie policy. */
     public String issueSecureFlow(String cookieName, String token, long maxAgeSeconds) {
-        if (maxAgeSeconds <= 0 || maxAgeSeconds > 30 * 60) throw new IllegalArgumentException("flow cookie lifetime is invalid");
+        if (maxAgeSeconds <= 0 || maxAgeSeconds > 30 * 60)
+            throw new IllegalArgumentException("flow cookie lifetime is invalid");
         return cookieName + "=" + token + "; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=" + maxAgeSeconds;
     }
 

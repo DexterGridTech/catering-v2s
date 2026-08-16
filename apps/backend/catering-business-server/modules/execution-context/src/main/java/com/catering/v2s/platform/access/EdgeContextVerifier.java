@@ -25,7 +25,8 @@ public final class EdgeContextVerifier {
         }
         String payload = decode(parts[1]);
         String expectedSignature = sign(parts[1], secret);
-        if (!MessageDigest.isEqual(parts[2].getBytes(StandardCharsets.UTF_8), expectedSignature.getBytes(StandardCharsets.UTF_8))) {
+        if (!MessageDigest.isEqual(
+                parts[2].getBytes(StandardCharsets.UTF_8), expectedSignature.getBytes(StandardCharsets.UTF_8))) {
             throw new InvalidEdgeContextException("edge context signature is invalid");
         }
         String[] fields = payload.split("\\|", -1);
@@ -36,7 +37,7 @@ public final class EdgeContextVerifier {
         try {
             expiresAt = Instant.ofEpochSecond(Long.parseLong(fields[2]));
         } catch (RuntimeException exception) {
-            throw new InvalidEdgeContextException("edge context expiry is invalid");
+            throw new InvalidEdgeContextException("edge context expiry is invalid", exception);
         }
         if (!FACE.equals(fields[1]) || !expiresAt.isAfter(Instant.now())) {
             throw new InvalidEdgeContextException("edge context is expired or face does not match");
@@ -48,7 +49,7 @@ public final class EdgeContextVerifier {
         try {
             return new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
         } catch (IllegalArgumentException exception) {
-            throw new InvalidEdgeContextException("edge context encoding is invalid");
+            throw new InvalidEdgeContextException("edge context encoding is invalid", exception);
         }
     }
 
@@ -56,21 +57,29 @@ public final class EdgeContextVerifier {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(encodedPayload.getBytes(StandardCharsets.UTF_8)));
+            return Base64.getUrlEncoder()
+                    .withoutPadding()
+                    .encodeToString(mac.doFinal(encodedPayload.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
             throw new IllegalStateException("edge context verifier unavailable", exception);
         }
     }
 
-    public static String encodeForControlledProvider(String subject, Instant expiresAt, String correlationId, String secret) {
+    public static String encodeForControlledProvider(
+            String subject, Instant expiresAt, String correlationId, String secret) {
         String payload = String.join("|", subject, FACE, Long.toString(expiresAt.getEpochSecond()), correlationId);
-        String encoded = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes(StandardCharsets.UTF_8));
+        String encoded =
+                Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes(StandardCharsets.UTF_8));
         return VERSION + "." + encoded + "." + sign(encoded, secret);
     }
 
     public static final class InvalidEdgeContextException extends RuntimeException {
         public InvalidEdgeContextException(String message) {
             super(message);
+        }
+
+        public InvalidEdgeContextException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /** Pure JDBC row projection shared by owner-local audit history readers. */
 public final class AuditHistoryResultSetReader {
-    private AuditHistoryResultSetReader() { }
+    private AuditHistoryResultSetReader() {}
 
     public static TargetProjection readTarget(ResultSet rows) throws SQLException {
         boolean targetExists = false;
@@ -50,19 +50,18 @@ public final class AuditHistoryResultSetReader {
         UUID id = rows.getObject(idColumn, UUID.class);
         if (id != null) {
             items.add(new AuditHistoryItem(
-                id,
-                rows.getLong("occurred_at_epoch_millis"),
-                rows.getString("actor_display_snapshot"),
-                rows.getString("action"),
-                new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")),
-                AuditChangeJson.read(rows.getString("changes_json"))
-            ));
+                    id,
+                    rows.getLong("occurred_at_epoch_millis"),
+                    rows.getString("actor_display_snapshot"),
+                    rows.getString("action"),
+                    new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")),
+                    AuditChangeJson.read(rows.getString("changes_json"))));
         }
     }
 
-    public record TargetProjection(boolean targetExists, List<AuditHistoryItem> items, long total) { }
+    public record TargetProjection(boolean targetExists, List<AuditHistoryItem> items, long total) {}
 
-    public record ItemsProjection(List<AuditHistoryItem> items, long total) { }
+    public record ItemsProjection(List<AuditHistoryItem> items, long total) {}
 
-    public record AuthorizedProjection(boolean found, boolean authorized, List<AuditHistoryItem> items, long total) { }
+    public record AuthorizedProjection(boolean found, boolean authorized, List<AuditHistoryItem> items, long total) {}
 }

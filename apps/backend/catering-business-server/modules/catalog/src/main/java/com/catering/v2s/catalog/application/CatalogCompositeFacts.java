@@ -33,93 +33,280 @@ final class CatalogCompositeFacts {
         Map<UUID, ArrayNode> result = new LinkedHashMap<>();
         Map<UUID, ObjectNode> groups = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
-        jdbc.query("SELECT group_row.item_ref,group_row.composite_group_ref,group_row.group_code,group_row.group_name,group_row.selection_rule,group_row.min_selections,group_row.max_selections,group_row.display_order,component.composite_component_ref,component.component_item_ref,component.product_sku_ref,component.quantity,component.unit,component.is_default,component.extra_price,component.status,component.display_order,item.code,sku.sku_code FROM catalog.catalog_composite_group group_row LEFT JOIN catalog.catalog_composite_component component ON component.composite_group_ref=group_row.composite_group_ref LEFT JOIN catalog.catalog_item item ON item.item_ref=component.component_item_ref LEFT JOIN catalog.catalog_sku sku ON sku.item_ref=component.component_item_ref AND sku.product_sku_ref=component.product_sku_ref WHERE group_row.item_ref IN (" + placeholders + ") ORDER BY group_row.item_ref,group_row.display_order,group_row.group_code,component.display_order,component.composite_component_ref", statement -> {
-            for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
-        }, rows -> {
-            while (rows.next()) {
-                UUID itemRef = rows.getObject(1, UUID.class);
-                UUID groupRef = rows.getObject(2, UUID.class);
-                ObjectNode group = groups.get(groupRef);
-                if (group == null) {
-                    group = result.get(itemRef).addObject();
-                    group.put("groupCode", rows.getString(3));
-                    group.put("groupName", rows.getString(4));
-                    group.put("selectionRule", rows.getString(5));
-                    group.put("minSelections", rows.getInt(6));
-                    group.put("maxSelections", rows.getInt(7));
-                    group.put("displayOrder", rows.getInt(8));
-                    group.putArray("components");
-                    groups.put(groupRef, group);
-                }
-                UUID componentRef = rows.getObject(9, UUID.class);
-                if (componentRef == null) continue;
-                ObjectNode component = group.withArray("components").addObject();
-                component.put("itemRef", rows.getObject(10, UUID.class).toString());
-                if (rows.getObject(11) == null) component.putNull("productSkuRef"); else component.put("productSkuRef", rows.getObject(11, UUID.class).toString());
-                component.put("itemCode", rows.getString(18));
-                if (rows.getString(19) == null) component.putNull("skuCode"); else component.put("skuCode", rows.getString(19));
-                component.put("quantity", rows.getBigDecimal(12).stripTrailingZeros().toPlainString());
-                component.put("unit", rows.getString(13));
-                component.put("default", rows.getBoolean(14));
-                if (rows.getObject(15) == null) component.putNull("extraPrice"); else component.put("extraPrice", rows.getLong(15));
-                component.put("status", rows.getString(16));
-                component.put("displayOrder", rows.getInt(17));
-            }
-            return null;
-        });
+        jdbc.query(
+                "SELECT "
+                        + "group_row.item_ref,group_row.composite_group_ref,group_row.group_code,group_row.group_name,g"
+                        + "roup"
+                        + "_row.selection_rule,group_row.min_selections,group_row.max_selections,group_row.display_orde"
+                        + "r,co"
+                        + "mponent.composite_component_ref,component.component_item_ref,component.product_sku_ref,compo"
+                        + "nent"
+                        + ".quantity,component.unit,component.is_default,component.extra_price,component.status,compone"
+                        + "nt.d"
+                        + "isplay_order,item.code,sku.sku_code FROM catalog.catalog_composite_group group_row LEFT "
+                        + "JOIN "
+                        + "catalog.catalog_composite_component component ON "
+                        + "component.composite_group_ref=group_row.composite_group_ref LEFT JOIN catalog.catalog_item "
+                        + "item "
+                        + "ON item.item_ref=component.component_item_ref LEFT JOIN catalog.catalog_sku sku ON "
+                        + "sku.item_ref=component.component_item_ref AND sku.product_sku_ref=component.product_sku_ref "
+                        + "WHERE group_row.item_ref IN ("
+                        + placeholders
+                        + ") ORDER BY "
+                        + "group_row.item_ref,group_row.display_order,group_row.group_code,component.display_order,"
+                        + "component.composite_component_ref",
+                statement -> {
+                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
+                },
+                rows -> {
+                    while (rows.next()) {
+                        UUID itemRef = rows.getObject(1, UUID.class);
+                        UUID groupRef = rows.getObject(2, UUID.class);
+                        ObjectNode group = groups.get(groupRef);
+                        if (group == null) {
+                            group = result.get(itemRef).addObject();
+                            group.put("groupCode", rows.getString(3));
+                            group.put("groupName", rows.getString(4));
+                            group.put("selectionRule", rows.getString(5));
+                            group.put("minSelections", rows.getInt(6));
+                            group.put("maxSelections", rows.getInt(7));
+                            group.put("displayOrder", rows.getInt(8));
+                            group.putArray("components");
+                            groups.put(groupRef, group);
+                        }
+                        UUID componentRef = rows.getObject(9, UUID.class);
+                        if (componentRef == null) continue;
+                        ObjectNode component = group.withArray("components").addObject();
+                        component.put("itemRef", rows.getObject(10, UUID.class).toString());
+                        if (rows.getObject(11) == null) component.putNull("productSkuRef");
+                        else
+                            component.put(
+                                    "productSkuRef",
+                                    rows.getObject(11, UUID.class).toString());
+                        component.put("itemCode", rows.getString(18));
+                        if (rows.getString(19) == null) component.putNull("skuCode");
+                        else component.put("skuCode", rows.getString(19));
+                        component.put(
+                                "quantity",
+                                rows.getBigDecimal(12).stripTrailingZeros().toPlainString());
+                        component.put("unit", rows.getString(13));
+                        component.put("default", rows.getBoolean(14));
+                        if (rows.getObject(15) == null) component.putNull("extraPrice");
+                        else component.put("extraPrice", rows.getLong(15));
+                        component.put("status", rows.getString(16));
+                        component.put("displayOrder", rows.getInt(17));
+                    }
+                    return null;
+                });
         return Map.copyOf(result);
     }
 
     void replace(UUID itemRef, ArrayNode submittedGroups) {
         List<Group> groups = normalize(submittedGroups);
         Map<String, ExistingGroup> existing = existingGroups(itemRef);
-        boolean groupOrderChanges = groups.stream().anyMatch(group -> existing.containsKey(group.code()) && existing.get(group.code()).displayOrder() != group.displayOrder());
-        if (groupOrderChanges) jdbc.update("UPDATE catalog.catalog_composite_group SET display_order=display_order+1000000 WHERE item_ref=?", itemRef);
+        boolean groupOrderChanges = groups.stream()
+                .anyMatch(group -> existing.containsKey(group.code())
+                        && existing.get(group.code()).displayOrder() != group.displayOrder());
+        if (groupOrderChanges)
+            jdbc.update(
+                    "UPDATE catalog.catalog_composite_group SET display_order=display_order+1000000 WHERE item_ref=?",
+                    itemRef);
         LinkedHashSet<String> retainedCodes = new LinkedHashSet<>();
         for (Group group : groups) {
             retainedCodes.add(group.code());
             ExistingGroup current = existing.get(group.code());
             UUID groupRef = current == null ? UUID.randomUUID() : current.ref();
             if (current == null) {
-                jdbc.update("INSERT INTO catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)", groupRef, itemRef, group.code(), group.name(), group.selectionRule(), group.minSelections(), group.maxSelections(), group.displayOrder());
+                jdbc.update(
+                        "INSERT INTO "
+                                + "catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,s"
+                                + "elec"
+                                + "tion_rule,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)",
+                        groupRef,
+                        itemRef,
+                        group.code(),
+                        group.name(),
+                        group.selectionRule(),
+                        group.minSelections(),
+                        group.maxSelections(),
+                        group.displayOrder());
             } else if (groupOrderChanges || !current.matches(group)) {
-                jdbc.update("UPDATE catalog.catalog_composite_group SET group_name=?,selection_rule=?,min_selections=?,max_selections=?,display_order=? WHERE composite_group_ref=?", group.name(), group.selectionRule(), group.minSelections(), group.maxSelections(), group.displayOrder(), groupRef);
+                jdbc.update(
+                        "UPDATE catalog.catalog_composite_group SET "
+                                + "group_name=?,selection_rule=?,min_selections=?,max_selections=?,display_order=? "
+                                + "WHERE "
+                                + "composite_group_ref=?",
+                        group.name(),
+                        group.selectionRule(),
+                        group.minSelections(),
+                        group.maxSelections(),
+                        group.displayOrder(),
+                        groupRef);
             }
             replaceComponents(groupRef, group.components());
         }
-        existing.entrySet().stream().filter(entry -> !retainedCodes.contains(entry.getKey())).map(entry -> entry.getValue().ref()).forEach(groupRef -> {
-            jdbc.update("DELETE FROM catalog.catalog_composite_component WHERE composite_group_ref=?", groupRef);
-            jdbc.update("DELETE FROM catalog.catalog_composite_group WHERE composite_group_ref=?", groupRef);
-        });
+        existing.entrySet().stream()
+                .filter(entry -> !retainedCodes.contains(entry.getKey()))
+                .map(entry -> entry.getValue().ref())
+                .forEach(groupRef -> {
+                    jdbc.update(
+                            "DELETE FROM catalog.catalog_composite_component WHERE composite_group_ref=?", groupRef);
+                    jdbc.update("DELETE FROM catalog.catalog_composite_group WHERE composite_group_ref=?", groupRef);
+                });
+    }
+
+    /** Inserts composite facts for freshly-created copy targets in two owner-local batches. */
+    void insertForCopy(Map<UUID, ArrayNode> groupsByItem) {
+        List<CopyGroup> groups = new ArrayList<>();
+        if (groupsByItem != null)
+            for (Map.Entry<UUID, ArrayNode> entry : groupsByItem.entrySet()) {
+                for (Group group : normalize(entry.getValue()))
+                    groups.add(new CopyGroup(UUID.randomUUID(), entry.getKey(), group));
+            }
+        if (groups.isEmpty()) return;
+        List<Object[]> groupRows = new ArrayList<>();
+        List<Object[]> componentRows = new ArrayList<>();
+        for (CopyGroup copyGroup : groups) {
+            Group group = copyGroup.group();
+            groupRows.add(new Object[] {
+                copyGroup.ref(),
+                copyGroup.itemRef(),
+                group.code(),
+                group.name(),
+                group.selectionRule(),
+                group.minSelections(),
+                group.maxSelections(),
+                group.displayOrder()
+            });
+            for (Component component : group.components())
+                componentRows.add(new Object[] {
+                    UUID.randomUUID(),
+                    copyGroup.ref(),
+                    component.itemRef(),
+                    component.productSkuRef(),
+                    component.quantity(),
+                    component.unit(),
+                    component.isDefault(),
+                    component.extraPrice(),
+                    component.status(),
+                    component.displayOrder()
+                });
+        }
+        jdbc.batchUpdate(
+                "INSERT INTO "
+                        + "catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,selection"
+                        + "_rul"
+                        + "e,min_selections,max_selections,display_order) VALUES(?,?,?,?,?,?,?,?)",
+                groupRows);
+        if (!componentRows.isEmpty())
+            jdbc.batchUpdate(
+                    "INSERT INTO "
+                            + "catalog.catalog_composite_component(composite_component_ref,composite_group_ref,componen"
+                            + "t_it"
+                            + "em_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order) "
+                            + "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    componentRows);
     }
 
     private Map<String, ExistingGroup> existingGroups(UUID itemRef) {
-        return jdbc.query("SELECT composite_group_ref,group_code,group_name,selection_rule,min_selections,max_selections,display_order FROM catalog.catalog_composite_group WHERE item_ref=?", rows -> {
-            Map<String, ExistingGroup> groups = new LinkedHashMap<>();
-            while (rows.next()) groups.put(rows.getString(2), new ExistingGroup(rows.getObject(1, UUID.class), rows.getString(3), rows.getString(4), rows.getInt(5), rows.getInt(6), rows.getInt(7)));
-            return groups;
-        }, itemRef);
+        return jdbc.query(
+                "SELECT "
+                        + "composite_group_ref,group_code,group_name,selection_rule,min_selections,max_selections,displ"
+                        + "ay_o"
+                        + "rder FROM catalog.catalog_composite_group WHERE item_ref=?",
+                rows -> {
+                    Map<String, ExistingGroup> groups = new LinkedHashMap<>();
+                    while (rows.next())
+                        groups.put(
+                                rows.getString(2),
+                                new ExistingGroup(
+                                        rows.getObject(1, UUID.class),
+                                        rows.getString(3),
+                                        rows.getString(4),
+                                        rows.getInt(5),
+                                        rows.getInt(6),
+                                        rows.getInt(7)));
+                    return groups;
+                },
+                itemRef);
     }
 
     private void replaceComponents(UUID groupRef, List<Component> components) {
-        Map<Integer, ExistingComponent> existing = jdbc.query("SELECT composite_component_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order FROM catalog.catalog_composite_component WHERE composite_group_ref=?", rows -> {
-            Map<Integer, ExistingComponent> values = new LinkedHashMap<>();
-            while (rows.next()) values.put(rows.getInt(9), new ExistingComponent(rows.getObject(1, UUID.class), rows.getObject(2, UUID.class), rows.getObject(3, UUID.class), rows.getBigDecimal(4), rows.getString(5), rows.getBoolean(6), rows.getObject(7, Long.class), rows.getString(8), rows.getInt(9)));
-            return values;
-        }, groupRef);
-        boolean orderChanges = components.stream().anyMatch(component -> existing.containsKey(component.displayOrder()) && !existing.get(component.displayOrder()).sameIdentity(component));
-        if (orderChanges) jdbc.update("UPDATE catalog.catalog_composite_component SET display_order=display_order+1000000 WHERE composite_group_ref=?", groupRef);
+        Map<Integer, ExistingComponent> existing = jdbc.query(
+                "SELECT "
+                        + "composite_component_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_pr"
+                        + "ice,"
+                        + "status,display_order FROM catalog.catalog_composite_component WHERE composite_group_ref=?",
+                rows -> {
+                    Map<Integer, ExistingComponent> values = new LinkedHashMap<>();
+                    while (rows.next())
+                        values.put(
+                                rows.getInt(9),
+                                new ExistingComponent(
+                                        rows.getObject(1, UUID.class),
+                                        rows.getObject(2, UUID.class),
+                                        rows.getObject(3, UUID.class),
+                                        rows.getBigDecimal(4),
+                                        rows.getString(5),
+                                        rows.getBoolean(6),
+                                        rows.getObject(7, Long.class),
+                                        rows.getString(8),
+                                        rows.getInt(9)));
+                    return values;
+                },
+                groupRef);
+        boolean orderChanges = components.stream()
+                .anyMatch(component -> existing.containsKey(component.displayOrder())
+                        && !existing.get(component.displayOrder()).sameIdentity(component));
+        if (orderChanges)
+            jdbc.update(
+                    "UPDATE catalog.catalog_composite_component SET display_order=display_order+1000000 WHERE "
+                            + "composite_group_ref=?",
+                    groupRef);
         LinkedHashSet<Integer> retainedOrders = new LinkedHashSet<>();
         for (Component component : components) {
             retainedOrders.add(component.displayOrder());
             ExistingComponent current = existing.get(component.displayOrder());
             if (current == null) {
-                jdbc.update("INSERT INTO catalog.catalog_composite_component(composite_component_ref,composite_group_ref,component_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order) VALUES(?,?,?,?,?,?,?,?,?,?)", UUID.randomUUID(), groupRef, component.itemRef(), component.productSkuRef(), component.quantity(), component.unit(), component.isDefault(), component.extraPrice(), component.status(), component.displayOrder());
+                jdbc.update(
+                        "INSERT INTO "
+                                + "catalog.catalog_composite_component(composite_component_ref,composite_group_ref,comp"
+                                + "onen"
+                                + "t_item_ref,product_sku_ref,quantity,unit,is_default,extra_price,status,display_order"
+                                + ") "
+                                + "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                        UUID.randomUUID(),
+                        groupRef,
+                        component.itemRef(),
+                        component.productSkuRef(),
+                        component.quantity(),
+                        component.unit(),
+                        component.isDefault(),
+                        component.extraPrice(),
+                        component.status(),
+                        component.displayOrder());
             } else if (orderChanges || !current.matches(component)) {
-                jdbc.update("UPDATE catalog.catalog_composite_component SET component_item_ref=?,product_sku_ref=?,quantity=?,unit=?,is_default=?,extra_price=?,status=?,display_order=? WHERE composite_component_ref=?", component.itemRef(), component.productSkuRef(), component.quantity(), component.unit(), component.isDefault(), component.extraPrice(), component.status(), component.displayOrder(), current.ref());
+                jdbc.update(
+                        "UPDATE catalog.catalog_composite_component SET "
+                                + "component_item_ref=?,product_sku_ref=?,quantity=?,unit=?,is_default=?,extra_price=?,"
+                                + "stat"
+                                + "us=?,display_order=? WHERE composite_component_ref=?",
+                        component.itemRef(),
+                        component.productSkuRef(),
+                        component.quantity(),
+                        component.unit(),
+                        component.isDefault(),
+                        component.extraPrice(),
+                        component.status(),
+                        component.displayOrder(),
+                        current.ref());
             }
         }
-        existing.entrySet().stream().filter(entry -> !retainedOrders.contains(entry.getKey())).map(entry -> entry.getValue().ref()).forEach(ref -> jdbc.update("DELETE FROM catalog.catalog_composite_component WHERE composite_component_ref=?", ref));
+        existing.entrySet().stream()
+                .filter(entry -> !retainedOrders.contains(entry.getKey()))
+                .map(entry -> entry.getValue().ref())
+                .forEach(ref -> jdbc.update(
+                        "DELETE FROM catalog.catalog_composite_component WHERE composite_component_ref=?", ref));
     }
 
     private static List<Group> normalize(ArrayNode submittedGroups) {
@@ -136,27 +323,44 @@ final class CatalogCompositeFacts {
             int min = value.path("minSelections").asInt(0);
             int max = value.has("maxSelections") ? value.path("maxSelections").asInt(min) : min;
             if (min < 0 || max < min) throw problem("composite group selection range is invalid");
-            int displayOrder = value.has("displayOrder") ? value.path("displayOrder").asInt() : groupOrder;
+            int displayOrder =
+                    value.has("displayOrder") ? value.path("displayOrder").asInt() : groupOrder;
             if (displayOrder < 0) throw problem("composite group displayOrder must not be negative");
             JsonNode values = value.path("components").isArray() ? value.path("components") : value.path("items");
             List<Component> components = new ArrayList<>();
             int componentOrder = 0;
             LinkedHashSet<Integer> componentOrders = new LinkedHashSet<>();
-            if (values.isArray()) for (JsonNode component : values) {
-                UUID itemRef = uuid(component, "itemRef");
-                UUID skuRef = optionalUuid(component, "productSkuRef");
-                BigDecimal quantity;
-                try { quantity = new BigDecimal(text(component, "quantity", null, "1")); }
-                catch (NumberFormatException failure) { throw problem("component quantity is invalid"); }
-                if (quantity.signum() <= 0) throw problem("component quantity must be positive");
-                String unit = text(component, "unit", null, "");
-                int order = component.has("displayOrder") ? component.path("displayOrder").asInt() : componentOrder;
-                if (order < 0) throw problem("component displayOrder must not be negative");
-                if (!componentOrders.add(order)) throw problem("components cannot contain duplicate displayOrder");
-                Long extraPrice = component.path("extraPrice").isIntegralNumber() ? component.path("extraPrice").asLong() : null;
-                components.add(new Component(itemRef, skuRef, quantity, unit, component.path("default").asBoolean(false), extraPrice, text(component, "status", null, "ENABLED"), order));
-                componentOrder++;
-            }
+            if (values.isArray())
+                for (JsonNode component : values) {
+                    UUID itemRef = uuid(component, "itemRef");
+                    UUID skuRef = optionalUuid(component, "productSkuRef");
+                    BigDecimal quantity;
+                    try {
+                        quantity = new BigDecimal(text(component, "quantity", null, "1"));
+                    } catch (NumberFormatException failure) {
+                        throw problem("component quantity is invalid", failure);
+                    }
+                    if (quantity.signum() <= 0) throw problem("component quantity must be positive");
+                    String unit = text(component, "unit", null, "");
+                    int order = component.has("displayOrder")
+                            ? component.path("displayOrder").asInt()
+                            : componentOrder;
+                    if (order < 0) throw problem("component displayOrder must not be negative");
+                    if (!componentOrders.add(order)) throw problem("components cannot contain duplicate displayOrder");
+                    Long extraPrice = component.path("extraPrice").isIntegralNumber()
+                            ? component.path("extraPrice").asLong()
+                            : null;
+                    components.add(new Component(
+                            itemRef,
+                            skuRef,
+                            quantity,
+                            unit,
+                            component.path("default").asBoolean(false),
+                            extraPrice,
+                            text(component, "status", null, "ENABLED"),
+                            order));
+                    componentOrder++;
+                }
             result.add(new Group(code, name, selectionRule, min, max, displayOrder, List.copyOf(components)));
             groupOrder++;
         }
@@ -168,32 +372,91 @@ final class CatalogCompositeFacts {
         if (value == null) throw problem(field + " is required");
         return value;
     }
+
     private static UUID optionalUuid(JsonNode node, String field) {
         if (!node.hasNonNull(field)) return null;
-        try { return UUID.fromString(node.path(field).asText()); }
-        catch (IllegalArgumentException failure) { throw problem(field + " must be UUID"); }
+        try {
+            return UUID.fromString(node.path(field).asText());
+        } catch (IllegalArgumentException failure) {
+            throw problem(field + " must be UUID", failure);
+        }
     }
+
     private static String required(JsonNode node, String primary, String legacy) {
         String value = text(node, primary, legacy, "");
         if (value.isBlank()) throw problem(primary + " is required");
         return value;
     }
+
     private static String text(JsonNode node, String primary, String legacy, String fallback) {
         String value = node.path(primary).asText("");
         if (value.isBlank() && legacy != null) value = node.path(legacy).asText("");
         return value.isBlank() ? fallback : value;
     }
+
     private static CatalogOwnerApi.Problem problem(String message) {
         return new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, message);
     }
 
-    private record ExistingGroup(UUID ref, String name, String selectionRule, int minSelections, int maxSelections, int displayOrder) {
-        boolean matches(Group group) { return name.equals(group.name()) && selectionRule.equals(group.selectionRule()) && minSelections == group.minSelections() && maxSelections == group.maxSelections() && displayOrder == group.displayOrder(); }
+    private static CatalogOwnerApi.Problem problem(String message, Throwable cause) {
+        return new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, message, cause);
     }
-    private record ExistingComponent(UUID ref, UUID itemRef, UUID productSkuRef, BigDecimal quantity, String unit, boolean isDefault, Long extraPrice, String status, int displayOrder) {
-        boolean sameIdentity(Component component) { return displayOrder == component.displayOrder(); }
-        boolean matches(Component component) { return itemRef.equals(component.itemRef()) && java.util.Objects.equals(productSkuRef, component.productSkuRef()) && quantity.compareTo(component.quantity()) == 0 && unit.equals(component.unit()) && isDefault == component.isDefault() && java.util.Objects.equals(extraPrice, component.extraPrice()) && status.equals(component.status()) && displayOrder == component.displayOrder(); }
+
+    private record ExistingGroup(
+            UUID ref, String name, String selectionRule, int minSelections, int maxSelections, int displayOrder) {
+        boolean matches(Group group) {
+            return name.equals(group.name())
+                    && selectionRule.equals(group.selectionRule())
+                    && minSelections == group.minSelections()
+                    && maxSelections == group.maxSelections()
+                    && displayOrder == group.displayOrder();
+        }
     }
-    private record Group(String code, String name, String selectionRule, int minSelections, int maxSelections, int displayOrder, List<Component> components) { }
-    private record Component(UUID itemRef, UUID productSkuRef, BigDecimal quantity, String unit, boolean isDefault, Long extraPrice, String status, int displayOrder) { }
+
+    private record ExistingComponent(
+            UUID ref,
+            UUID itemRef,
+            UUID productSkuRef,
+            BigDecimal quantity,
+            String unit,
+            boolean isDefault,
+            Long extraPrice,
+            String status,
+            int displayOrder) {
+        boolean sameIdentity(Component component) {
+            return displayOrder == component.displayOrder();
+        }
+
+        boolean matches(Component component) {
+            return itemRef.equals(component.itemRef())
+                    && java.util.Objects.equals(productSkuRef, component.productSkuRef())
+                    && quantity.compareTo(component.quantity()) == 0
+                    && unit.equals(component.unit())
+                    && isDefault == component.isDefault()
+                    && java.util.Objects.equals(extraPrice, component.extraPrice())
+                    && status.equals(component.status())
+                    && displayOrder == component.displayOrder();
+        }
+    }
+
+    private record Group(
+            String code,
+            String name,
+            String selectionRule,
+            int minSelections,
+            int maxSelections,
+            int displayOrder,
+            List<Component> components) {}
+
+    private record Component(
+            UUID itemRef,
+            UUID productSkuRef,
+            BigDecimal quantity,
+            String unit,
+            boolean isDefault,
+            Long extraPrice,
+            String status,
+            int displayOrder) {}
+
+    private record CopyGroup(UUID ref, UUID itemRef, Group group) {}
 }

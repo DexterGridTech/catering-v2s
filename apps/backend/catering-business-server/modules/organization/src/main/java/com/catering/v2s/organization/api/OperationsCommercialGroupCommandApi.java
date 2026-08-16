@@ -11,18 +11,18 @@ public interface OperationsCommercialGroupCommandApi {
     CommercialGroupReadback update(UpdateCommand command);
 
     record UpdateCommand(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        String idempotencyKey,
-        String commercialGroupCode,
-        String commercialGroupName,
-        long expectedVersion,
-        ExtensionSubmission extensionSubmission,
-        AuditActor actor,
-        OperationsOwnerScopeGrant ownerScopeGrant
-    ) {
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String idempotencyKey,
+            String commercialGroupCode,
+            String commercialGroupName,
+            long expectedVersion,
+            ExtensionSubmission extensionSubmission,
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
         public UpdateCommand {
-            extensionSubmission = extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
+            extensionSubmission =
+                    extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
         }

@@ -4,6 +4,5 @@ package com.catering.v2s.platform.iam;
 public final class PlatformIamBoundary {
     public static final String NAME = "platform-iam";
 
-    private PlatformIamBoundary() {
-    }
+    private PlatformIamBoundary() {}
 }

@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import {readCatalogInventoryOpenApi} from "../lib/catalog-inventory-openapi.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const read = (relative) => readFileSync(path.join(root, relative), "utf8");
 const contract = JSON.parse(readFileSync(path.join(root, "contracts/catalog/catalog-inventory-edge-contract.json"), "utf8"));
 const readModels = JSON.parse(readFileSync(path.join(root, "contracts/catalog/catalog-inventory-read-models.json"), "utf8"));
-const openApi = JSON.parse(readFileSync(path.join(root, "contracts/openapi/catalog-inventory.openapi.yaml"), "utf8"));
+const openApi = readCatalogInventoryOpenApi(root);
 const readModelRequired = new Map(readModels.models.map((model) => [model.name, model.required]));
 const queryOperations = contract.operations.filter((operation) => operation.method === "GET");
 const transportEnvelopeRequired = (required) => required.includes("revision")
@@ -219,7 +220,7 @@ test("catalog coordinator crosses inventory and production read boundaries throu
 test("shape-manifest payload revision has a distinct contract-wide name", () => {
   const coverage = JSON.parse(read("contracts/policy/catalog-inventory-design-byte-coverage.json"));
   const readModels = JSON.parse(read("contracts/catalog/catalog-inventory-read-models.json"));
-  const openApi = JSON.parse(read("contracts/openapi/catalog-inventory.openapi.yaml"));
+  const openApi = JSON.parse(read("contracts/openapi/catalog-inventory.openapi.json"));
   const row = coverage.rows.find((entry) => entry.model === "CatalogShapeManifestView");
   const readModel = readModels.models.find((entry) => entry.name === "CatalogShapeManifestView");
   const schema = openApi.components.schemas.CatalogShapeManifestView;
@@ -242,8 +243,8 @@ test("owner typed Problems retain causes at every allowed parse or serialization
   const api = read("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java");
   const owner = read("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java");
   const coordinator = read("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java");
-  const saveOperation = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/SaveOperationsCatalogItemOperation.java");
-  const wire = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CopyPreflightWireShape.java");
+  const saveOperation = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/operations/SaveOperationsCatalogItemOperation.java");
+  const wire = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/operations/CopyPreflightWireShape.java");
   assert.match(api, /Problem\(String code, int status, String message, Throwable cause\)/);
   assert.match(api, /super\(message, cause\)/);
   for (const boundary of [
@@ -272,7 +273,7 @@ test("copy adapters preserve safe missing-field diagnostics while keeping transa
     ["ExecuteOperationsBrandCatalogCopyOperation.java", "brand copy execution"]
   ];
   for (const [file, label] of adapters) {
-    const source = read(`apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/${file}`);
+    const source = read(`apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/operations/${file}`);
     if (label.endsWith("execution")) {
       assert.match(source, /@Transactional\(propagation = Propagation\.REQUIRED\)/);
       assert.match(source, /CopyPreflightWireShape\.(localReadback|brandReadback)\(context\.requestId\(\), readback\.catalog\(\), readback\.ownerReadbacks\(\)\)/);
@@ -282,7 +283,7 @@ test("copy adapters preserve safe missing-field diagnostics while keeping transa
     }
     assert.doesNotMatch(source, new RegExp(`new CatalogOwnerApi\\.Problem\\("RESULT_UNKNOWN", 500, "${label} readback is invalid"\\)`));
   }
-  const wireShape = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/CopyPreflightWireShape.java");
+  const wireShape = read("apps/backend/catering-business-server/src/main/java/com/catering/v2s/catalog/application/operations/CopyPreflightWireShape.java");
   assert.match(wireShape, /missingTypedExecutionField\(label, "referenceMappings"\)/);
   assert.match(wireShape, /required typed field is missing: " \+ field/);
 });
@@ -303,9 +304,9 @@ test("catalog asset settlement makes one global batch judgment and leaves versio
   assert.doesNotMatch(settlement, /assets\.require\(/);
   assert.doesNotMatch(assetApi, /PriorAssetReference\(UUID assetRef, long expectedVersion\)/);
   assert.match(assetOwner, /AssetReadback current = require\(prior\.assetRef\(\)\);/);
-  assert.match(assetOwner, /releaseUnreferencedCatalogAssetAfterAuthorization\(prior\.assetRef\(\), current\.version\(\)/);
+  assert.match(assetOwner, /releaseUnreferencedCatalogAssetAfterAuthorization\(\s*prior\.assetRef\(\),\s*current\.version\(\)/);
 
-  assert.match(settlement, /assetCommands\.settleCatalogSaveAssets\(context/);
+  assert.match(settlement, /assetCommands\.settleCatalogSaveAssets\(\s*context/);
   assert.match(settlement, /new CatalogAssetCommandApi\.PriorAssetReference\(UUID\.fromString\(ref\)\)/);
   assert.equal(coordinator.includes("private void settleCatalogAssets"), false);
   assert.match(assetOwner, /Owner-local version read: callers never pre-read an asset merely to supply its CAS value/);

@@ -12,8 +12,10 @@ class OrganizationVisibilityServiceTest {
     @Test
     void visibleFactsCopyTheCandidateCollectionForOneInvocation() {
         UUID regionId = UUID.randomUUID();
-        var candidates = new ArrayList<>(List.of(new OrganizationVisibilityLookup.VisibleDataNodeCandidate("REGION", regionId, "Region", "R-1", List.of("Region"), regionId, null, null, null)));
-        var facts = new OrganizationVisibilityLookup.VisibleOrganizationFacts(candidates, new OrganizationVisibilityLookup.ScopeContext(candidates.getFirst(), null, null, null));
+        var candidates = new ArrayList<>(List.of(new OrganizationVisibilityLookup.VisibleDataNodeCandidate(
+                "REGION", regionId, "Region", "R-1", List.of("Region"), regionId, null, null, null)));
+        var facts = new OrganizationVisibilityLookup.VisibleOrganizationFacts(
+                candidates, new OrganizationVisibilityLookup.ScopeContext(candidates.getFirst(), null, null, null));
 
         candidates.clear();
 

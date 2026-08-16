@@ -7,5 +7,5 @@ public final class AuditEntityTypes {
     public static final String REGION = "REGION";
     public static final String PROJECT = "PROJECT";
 
-    private AuditEntityTypes() { }
+    private AuditEntityTypes() {}
 }

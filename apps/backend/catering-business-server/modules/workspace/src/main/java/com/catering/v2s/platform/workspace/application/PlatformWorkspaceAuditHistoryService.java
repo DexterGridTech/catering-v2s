@@ -1,8 +1,8 @@
 package com.catering.v2s.platform.workspace.application;
 
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditHistoryItem;
 import com.catering.v2s.audit.contract.AuditHistoryPage;
-import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.organization.api.CommercialGroupInitializationAuditLookup;
@@ -19,57 +19,38 @@ public class PlatformWorkspaceAuditHistoryService {
     private final JdbcTemplate jdbc;
     private final CommercialGroupInitializationAuditLookup commercialGroupAudit;
 
-    public PlatformWorkspaceAuditHistoryService(JdbcTemplate jdbc, CommercialGroupInitializationAuditLookup commercialGroupAudit) { this.jdbc = jdbc; this.commercialGroupAudit = commercialGroupAudit; }
-
-    @Transactional(readOnly = true)
-    public AuditHistoryPage readGroupWorkspace(AuditReadScope scope, AuditTarget target, long page, long pageSize) {
-        if (!"GROUP_WORKSPACE".equals(target.entityType()) || page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported audit target");
-        // GROUP_WORKSPACE audit targets expose the stable business key, not the
-        // internal bigint id.  Checking id::text here made every valid
-        // workspace target look missing and caused the UI to close the history
-        // modal on a false 404.
-        Long legacyId = jdbc.query("SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND workspace_uuid=?", statement -> { statement.setString(1, target.entityRef()); statement.setObject(2, scope.workspaceUuid()); }, result -> {
-            if (!result.next()) throw new WorkspaceAdministrationService.WorkspaceNotFoundException();
-            return result.getLong("id");
-        });
-        String auditRef = String.valueOf(legacyId);
-        long ownTotal = jdbc.queryForObject(
-            "SELECT count(*) FROM platform_workspace.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type='GROUP_WORKSPACE' AND entity_ref_text=?",
-            Long.class, scope.workspaceUuid(), scope.groupWorkspaceKey(), auditRef);
-        long fetchSize = Math.addExact(Math.multiplyExact(page - 1, pageSize), pageSize);
-        List<AuditHistoryItem> ownItems = jdbc.query(
-            "SELECT id, occurred_at_epoch_millis, actor_display_snapshot, action, entity_type, entity_ref_text, changes_json::text FROM platform_workspace.audit_event WHERE workspace_uuid=? AND group_workspace_key=? AND entity_type='GROUP_WORKSPACE' AND entity_ref_text=? ORDER BY occurred_at_epoch_millis DESC, id DESC LIMIT ? OFFSET ?",
-            (result, row) -> new AuditHistoryItem(result.getObject("id", UUID.class), result.getLong("occurred_at_epoch_millis"), result.getString("actor_display_snapshot"), result.getString("action"), new AuditTarget(result.getString("entity_type"), result.getString("entity_ref_text")), AuditChangeJson.read(result.getString("changes_json"))),
-            scope.workspaceUuid(), scope.groupWorkspaceKey(), auditRef, fetchSize, 0);
-        AuditHistoryPage organization = commercialGroupAudit.readInitializationForGroupWorkspace(scope, auditRef, 1, 1);
-        long offset = (page - 1) * pageSize;
-        List<AuditHistoryItem> items = java.util.stream.Stream.concat(ownItems.stream(), organization.items().stream())
-            .sorted(Comparator.comparingLong(AuditHistoryItem::occurredAtEpochMillis).reversed().thenComparing(AuditHistoryItem::id, Comparator.reverseOrder()))
-            .skip(offset)
-            .limit(pageSize)
-            .toList();
-        return new AuditHistoryPage(items, page, pageSize, ownTotal + organization.total());
+    public PlatformWorkspaceAuditHistoryService(
+            JdbcTemplate jdbc, CommercialGroupInitializationAuditLookup commercialGroupAudit) {
+        this.jdbc = jdbc;
+        this.commercialGroupAudit = commercialGroupAudit;
     }
 
-    /** Typed platform-audit projection; the AuditTarget overload remains for legacy callers. */
+    /** Typed platform-audit projection keyed by the stable group-workspace business key. */
     @Transactional(readOnly = true)
-    public AuditHistoryPage readGroupWorkspace(AuditReadScope scope, String groupWorkspaceKey, long page, long pageSize) {
+    public AuditHistoryPage readGroupWorkspace(
+            AuditReadScope scope, String groupWorkspaceKey, long page, long pageSize) {
         if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("unsupported audit target");
         long offset = Math.multiplyExact(page - 1, pageSize);
         long fetchSize = Math.addExact(offset, pageSize);
         GroupWorkspaceProjection own = readGroupWorkspaceProjection(scope, groupWorkspaceKey, fetchSize);
         if (!own.targetExists()) throw new WorkspaceAdministrationService.WorkspaceNotFoundException();
-        AuditHistoryPage organization = commercialGroupAudit.readInitializationForGroupWorkspace(scope, own.auditRef(), 1, 1);
-        List<AuditHistoryItem> items = java.util.stream.Stream.concat(own.items().stream(), organization.items().stream())
-            .sorted(Comparator.comparingLong(AuditHistoryItem::occurredAtEpochMillis).reversed().thenComparing(AuditHistoryItem::id, Comparator.reverseOrder()))
-            .skip(offset)
-            .limit(pageSize)
-            .toList();
+        AuditHistoryPage organization =
+                commercialGroupAudit.readInitializationForGroupWorkspace(scope, own.auditRef(), 1, 1);
+        List<AuditHistoryItem> items = java.util.stream.Stream.concat(
+                        own.items().stream(), organization.items().stream())
+                .sorted(Comparator.comparingLong(AuditHistoryItem::occurredAtEpochMillis)
+                        .reversed()
+                        .thenComparing(AuditHistoryItem::id, Comparator.reverseOrder()))
+                .skip(offset)
+                .limit(pageSize)
+                .toList();
         return new AuditHistoryPage(items, page, pageSize, own.total() + organization.total());
     }
 
-    private GroupWorkspaceProjection readGroupWorkspaceProjection(AuditReadScope scope, String groupWorkspaceKey, long fetchSize) {
-        return jdbc.query("""
+    private GroupWorkspaceProjection readGroupWorkspaceProjection(
+            AuditReadScope scope, String groupWorkspaceKey, long fetchSize) {
+        return jdbc.query(
+                """
             WITH target AS (
               SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND workspace_uuid=?
             ), events AS (
@@ -87,22 +68,40 @@ public class PlatformWorkspaceAuditHistoryService {
                      entity_ref_text, changes_json FROM events
               ORDER BY occurred_at_epoch_millis DESC, id DESC LIMIT ?
             ) page ON TRUE
-            """, statement -> {
-                statement.setString(1, groupWorkspaceKey); statement.setObject(2, scope.workspaceUuid());
-                statement.setObject(3, scope.workspaceUuid()); statement.setString(4, scope.groupWorkspaceKey());
-                statement.setLong(5, fetchSize);
-            }, PlatformWorkspaceAuditHistoryService::groupWorkspaceProjection);
+            """,
+                statement -> {
+                    statement.setString(1, groupWorkspaceKey);
+                    statement.setObject(2, scope.workspaceUuid());
+                    statement.setObject(3, scope.workspaceUuid());
+                    statement.setString(4, scope.groupWorkspaceKey());
+                    statement.setLong(5, fetchSize);
+                },
+                PlatformWorkspaceAuditHistoryService::groupWorkspaceProjection);
     }
 
-    private static GroupWorkspaceProjection groupWorkspaceProjection(java.sql.ResultSet rows) throws java.sql.SQLException {
-        boolean targetExists = false; String auditRef = null; long total = 0; List<AuditHistoryItem> items = new java.util.ArrayList<>();
+    private static GroupWorkspaceProjection groupWorkspaceProjection(java.sql.ResultSet rows)
+            throws java.sql.SQLException {
+        boolean targetExists = false;
+        String auditRef = null;
+        long total = 0;
+        List<AuditHistoryItem> items = new java.util.ArrayList<>();
         while (rows.next()) {
-            targetExists = rows.getBoolean("target_exists"); auditRef = rows.getString("audit_ref"); total = rows.getLong("total");
+            targetExists = rows.getBoolean("target_exists");
+            auditRef = rows.getString("audit_ref");
+            total = rows.getLong("total");
             UUID id = rows.getObject("event_id", UUID.class);
-            if (id != null) items.add(new AuditHistoryItem(id, rows.getLong("occurred_at_epoch_millis"), rows.getString("actor_display_snapshot"), rows.getString("action"), new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")), AuditChangeJson.read(rows.getString("changes_json"))));
+            if (id != null)
+                items.add(new AuditHistoryItem(
+                        id,
+                        rows.getLong("occurred_at_epoch_millis"),
+                        rows.getString("actor_display_snapshot"),
+                        rows.getString("action"),
+                        new AuditTarget(rows.getString("entity_type"), rows.getString("entity_ref_text")),
+                        AuditChangeJson.read(rows.getString("changes_json"))));
         }
         return new GroupWorkspaceProjection(targetExists, auditRef, List.copyOf(items), total);
     }
 
-    private record GroupWorkspaceProjection(boolean targetExists, String auditRef, List<AuditHistoryItem> items, long total) { }
+    private record GroupWorkspaceProjection(
+            boolean targetExists, String auditRef, List<AuditHistoryItem> items, long total) {}
 }

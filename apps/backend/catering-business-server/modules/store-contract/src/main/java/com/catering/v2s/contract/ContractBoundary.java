@@ -4,6 +4,5 @@ package com.catering.v2s.contract;
 public final class ContractBoundary {
     public static final String NAME = "contract";
 
-    private ContractBoundary() {
-    }
+    private ContractBoundary() {}
 }

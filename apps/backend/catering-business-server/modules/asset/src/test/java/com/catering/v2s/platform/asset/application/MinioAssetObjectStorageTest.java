@@ -1,10 +1,10 @@
 package com.catering.v2s.platform.asset.application;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -16,19 +16,19 @@ import io.minio.SetBucketPolicyArgs;
 import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.messages.ErrorResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.mockito.InOrder;
 import org.junit.jupiter.api.Test;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.time.Duration;
-import java.nio.charset.StandardCharsets;
-import java.io.OutputStream;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import org.mockito.InOrder;
 
 class MinioAssetObjectStorageTest {
     @Test
@@ -36,10 +36,16 @@ class MinioAssetObjectStorageTest {
         try (BlackholeEndpoint endpoint = BlackholeEndpoint.open()) {
             assertTimeout(Duration.ofMillis(5 * 250 + 1000), () -> {
                 MinioAssetObjectStorage storage = new MinioAssetObjectStorage(
-                    endpoint.url(), "access-key", "secret-key", "test-assets", "https://assets.test", "tenant/", Duration.ofMillis(250)
-                );
-                assertThrows(AssetObjectStorageUnavailableException.class,
-                    () -> storage.exists("tenant/static/" + "a".repeat(64) + ".png"));
+                        endpoint.url(),
+                        "access-key",
+                        "secret-key",
+                        "test-assets",
+                        "https://assets.test",
+                        "tenant/",
+                        Duration.ofMillis(250));
+                assertThrows(
+                        AssetObjectStorageUnavailableException.class,
+                        () -> storage.exists("tenant/static/a".repeat(64) + ".png"));
             });
         }
     }
@@ -49,10 +55,16 @@ class MinioAssetObjectStorageTest {
         try (SlowDripEndpoint endpoint = SlowDripEndpoint.open()) {
             assertTimeout(Duration.ofMillis(5 * 250 + 1000), () -> {
                 MinioAssetObjectStorage storage = new MinioAssetObjectStorage(
-                    endpoint.url(), "access-key", "secret-key", "test-assets", "https://assets.test", "tenant/", Duration.ofMillis(250)
-                );
-                assertThrows(AssetObjectStorageUnavailableException.class,
-                    () -> storage.exists("tenant/static/" + "b".repeat(64) + ".png"));
+                        endpoint.url(),
+                        "access-key",
+                        "secret-key",
+                        "test-assets",
+                        "https://assets.test",
+                        "tenant/",
+                        Duration.ofMillis(250));
+                assertThrows(
+                        AssetObjectStorageUnavailableException.class,
+                        () -> storage.exists("tenant/static/b".repeat(64) + ".png"));
             });
         }
     }
@@ -60,8 +72,7 @@ class MinioAssetObjectStorageTest {
     @Test
     void productionClientUsesCallTimeoutInAdditionToSocketTimeouts() throws Exception {
         MinioAssetObjectStorage storage = new MinioAssetObjectStorage(
-            "http://127.0.0.1:1", "access-key", "secret-key", "test-assets", "https://assets.test", "tenant/"
-        );
+                "http://127.0.0.1:1", "access-key", "secret-key", "test-assets", "https://assets.test", "tenant/");
         java.lang.reflect.Field clientField = MinioAssetObjectStorage.class.getDeclaredField("client");
         clientField.setAccessible(true);
         Object client = clientField.get(storage);
@@ -99,20 +110,38 @@ class MinioAssetObjectStorageTest {
 
     @Test
     void existsPropagatesEveryNonObjectNotFoundFailureAsUnavailable() {
-        assertFalse(MinioAssetObjectStorage.existsWith(() -> { throw error(404, "NoSuchKey"); }));
-        var noBucket = assertThrows(AssetObjectStorageUnavailableException.class, () -> MinioAssetObjectStorage.existsWith(() -> { throw error(404, "NoSuchBucket"); }));
+        assertFalse(MinioAssetObjectStorage.existsWith(() -> {
+            throw error(404, "NoSuchKey");
+        }));
+        var noBucket = assertThrows(
+                AssetObjectStorageUnavailableException.class,
+                () -> MinioAssetObjectStorage.existsWith(() -> {
+                    throw error(404, "NoSuchBucket");
+                }));
         assertEquals("object.stat", noBucket.operation());
         assertEquals(404, noBucket.httpStatus());
         assertEquals("NoSuchBucket", noBucket.serviceErrorCode());
-        var denied = assertThrows(AssetObjectStorageUnavailableException.class, () -> MinioAssetObjectStorage.existsWith(() -> { throw error(401, "AccessDenied"); }));
+        var denied = assertThrows(
+                AssetObjectStorageUnavailableException.class,
+                () -> MinioAssetObjectStorage.existsWith(() -> {
+                    throw error(401, "AccessDenied");
+                }));
         assertEquals("object.stat", denied.operation());
         assertEquals(401, denied.httpStatus());
         assertEquals("AccessDenied", denied.serviceErrorCode());
-        var internal = assertThrows(AssetObjectStorageUnavailableException.class, () -> MinioAssetObjectStorage.existsWith(() -> { throw error(500, "InternalError"); }));
+        var internal = assertThrows(
+                AssetObjectStorageUnavailableException.class,
+                () -> MinioAssetObjectStorage.existsWith(() -> {
+                    throw error(500, "InternalError");
+                }));
         assertEquals("object.stat", internal.operation());
         assertEquals(500, internal.httpStatus());
         assertEquals("InternalError", internal.serviceErrorCode());
-        var network = assertThrows(AssetObjectStorageUnavailableException.class, () -> MinioAssetObjectStorage.existsWith(() -> { throw new java.io.IOException("network"); }));
+        var network = assertThrows(
+                AssetObjectStorageUnavailableException.class,
+                () -> MinioAssetObjectStorage.existsWith(() -> {
+                    throw new java.io.IOException("network");
+                }));
         assertEquals("object.stat", network.operation());
         assertEquals(null, network.httpStatus());
         assertEquals(null, network.serviceErrorCode());
@@ -121,11 +150,13 @@ class MinioAssetObjectStorageTest {
     @Test
     void existsPreparesBucketBeforeFirstObjectStat() throws Exception {
         MinioClient client = mock(MinioClient.class);
-        org.mockito.Mockito.when(client.bucketExists(any(BucketExistsArgs.class))).thenReturn(false);
+        org.mockito.Mockito.when(client.bucketExists(any(BucketExistsArgs.class)))
+                .thenReturn(false);
         org.mockito.Mockito.when(client.statObject(any(StatObjectArgs.class))).thenThrow(error(404, "NoSuchKey"));
-        MinioAssetObjectStorage storage = new MinioAssetObjectStorage(client, "test-assets", "https://assets.test", "tenant/" );
+        MinioAssetObjectStorage storage =
+                new MinioAssetObjectStorage(client, "test-assets", "https://assets.test", "tenant/");
 
-        assertFalse(storage.exists("tenant/static/" + "a".repeat(64) + ".png"));
+        assertFalse(storage.exists("tenant/static/a".repeat(64) + ".png"));
 
         InOrder order = inOrder(client);
         order.verify(client).bucketExists(any(BucketExistsArgs.class));
@@ -136,9 +167,17 @@ class MinioAssetObjectStorageTest {
 
     private static ErrorResponseException error(int status, String code) {
         Response response = new Response.Builder()
-                .request(new Request.Builder().url("https://assets.test/bucket/object").build())
-                .protocol(Protocol.HTTP_1_1).code(status).message("response").build();
-        return new ErrorResponseException(new ErrorResponse(code, "message", "bucket", "object", "resource", "request", "host"), response, "trace");
+                .request(new Request.Builder()
+                        .url("https://assets.test/bucket/object")
+                        .build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(status)
+                .message("response")
+                .build();
+        return new ErrorResponseException(
+                new ErrorResponse(code, "message", "bucket", "object", "resource", "request", "host"),
+                response,
+                "trace");
     }
 
     private static final class BlackholeEndpoint implements AutoCloseable {
@@ -162,9 +201,12 @@ class MinioAssetObjectStorageTest {
             return new BlackholeEndpoint(new ServerSocket(0));
         }
 
-        String url() { return "http://127.0.0.1:" + server.getLocalPort(); }
+        String url() {
+            return "http://127.0.0.1:" + server.getLocalPort();
+        }
 
-        @Override public void close() throws IOException {
+        @Override
+        public void close() throws IOException {
             Socket socket = accepted;
             if (socket != null) socket.close();
             server.close();
@@ -183,7 +225,8 @@ class MinioAssetObjectStorageTest {
                 try {
                     accepted = server.accept();
                     OutputStream output = accepted.getOutputStream();
-                    byte[] prefix = "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+                    byte[] prefix =
+                            "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
                     for (byte value : prefix) {
                         output.write(value);
                         output.flush();
@@ -199,9 +242,12 @@ class MinioAssetObjectStorageTest {
             return new SlowDripEndpoint(new ServerSocket(0));
         }
 
-        String url() { return "http://127.0.0.1:" + server.getLocalPort(); }
+        String url() {
+            return "http://127.0.0.1:" + server.getLocalPort();
+        }
 
-        @Override public void close() throws IOException {
+        @Override
+        public void close() throws IOException {
             Socket socket = accepted;
             if (socket != null) socket.close();
             server.close();

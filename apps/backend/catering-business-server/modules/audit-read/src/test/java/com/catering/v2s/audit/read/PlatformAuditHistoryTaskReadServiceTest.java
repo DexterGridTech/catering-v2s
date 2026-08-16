@@ -33,14 +33,22 @@ class PlatformAuditHistoryTaskReadServiceTest {
         Fixture fixture = fixture();
         String adminId = UUID.randomUUID().toString();
         when(fixture.platformIamAudit.readPlatformAdmin(adminId, 1, 20)).thenReturn(empty());
-        fixture.reads.read(fixture.session, new PlatformAuditHistoryQuery.PlatformAdmin(new AuditTarget("PLATFORM_ADMIN", adminId), 1, 20));
+        fixture.reads.read(
+                fixture.session,
+                new PlatformAuditHistoryQuery.PlatformAdmin(new AuditTarget("PLATFORM_ADMIN", adminId), 1, 20));
         verify(fixture.platformIamAudit).readPlatformAdmin(adminId, 1, 20);
-        verifyNoInteractions(fixture.workspaces, fixture.groupWorkspaceAudit, fixture.workspaceIamAudit, fixture.extensionAudit, fixture.contractAudit);
+        verifyNoInteractions(
+                fixture.workspaces,
+                fixture.groupWorkspaceAudit,
+                fixture.workspaceIamAudit,
+                fixture.extensionAudit,
+                fixture.contractAudit);
     }
 
     @ParameterizedTest
     @MethodSource("workspaceHostedQueries")
-    void everyWorkspaceHostedVariantRequiresEnabledWorkspaceAndUsesExactlyItsNamedProjection(PlatformAuditHistoryQuery query) {
+    void everyWorkspaceHostedVariantRequiresEnabledWorkspaceAndUsesExactlyItsNamedProjection(
+            PlatformAuditHistoryQuery query) {
         Fixture fixture = fixture();
         AuditReadScope scope = fixture.scope();
         when(fixture.workspaces.requireEnabled(WORKSPACE_KEY)).thenReturn(fixture.workspace);
@@ -53,43 +61,87 @@ class PlatformAuditHistoryTaskReadServiceTest {
     @Test
     void disabledWorkspaceStopsBeforeWorkspaceHostedProjection() {
         Fixture fixture = fixture();
-        when(fixture.workspaces.requireEnabled(WORKSPACE_KEY)).thenThrow(new WorkspaceAdministrationService.WorkspaceDisabledException());
-        assertThrows(WorkspaceAdministrationService.WorkspaceDisabledException.class, () -> fixture.reads.read(fixture.session, new PlatformAuditHistoryQuery.WorkspaceInvitation(new AuditTarget("WORKSPACE_INVITATION", UUID.randomUUID().toString()), WORKSPACE_KEY, 1, 20)));
+        when(fixture.workspaces.requireEnabled(WORKSPACE_KEY))
+                .thenThrow(new WorkspaceAdministrationService.WorkspaceDisabledException());
+        assertThrows(
+                WorkspaceAdministrationService.WorkspaceDisabledException.class,
+                () -> fixture.reads.read(
+                        fixture.session,
+                        new PlatformAuditHistoryQuery.WorkspaceInvitation(
+                                new AuditTarget(
+                                        "WORKSPACE_INVITATION",
+                                        UUID.randomUUID().toString()),
+                                WORKSPACE_KEY,
+                                1,
+                                20)));
         verifyNoInteractions(fixture.workspaceIamAudit);
     }
 
     private static Stream<PlatformAuditHistoryQuery> workspaceHostedQueries() {
         String id = UUID.randomUUID().toString();
-        return Stream.of(new PlatformAuditHistoryQuery.GroupWorkspace(new AuditTarget("GROUP_WORKSPACE", WORKSPACE_KEY), 1, 20), new PlatformAuditHistoryQuery.WorkspaceRole(new AuditTarget("WORKSPACE_ROLE", id), WORKSPACE_KEY, 1, 20), new PlatformAuditHistoryQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), WORKSPACE_KEY, 1, 20), new PlatformAuditHistoryQuery.WorkspaceInvitation(new AuditTarget("WORKSPACE_INVITATION", id), WORKSPACE_KEY, 1, 20), new PlatformAuditHistoryQuery.ExtensionDefinition(new AuditTarget("EXTENSION_DEFINITION", "STORE"), WORKSPACE_KEY, 1, 20), new PlatformAuditHistoryQuery.StoreContract(new AuditTarget("STORE_CONTRACT", id), WORKSPACE_KEY, 1, 20));
+        return Stream.of(
+                new PlatformAuditHistoryQuery.GroupWorkspace(new AuditTarget("GROUP_WORKSPACE", WORKSPACE_KEY), 1, 20),
+                new PlatformAuditHistoryQuery.WorkspaceRole(
+                        new AuditTarget("WORKSPACE_ROLE", id), WORKSPACE_KEY, 1, 20),
+                new PlatformAuditHistoryQuery.WorkspaceAccount(
+                        new AuditTarget("WORKSPACE_ACCOUNT", id), WORKSPACE_KEY, 1, 20),
+                new PlatformAuditHistoryQuery.WorkspaceInvitation(
+                        new AuditTarget("WORKSPACE_INVITATION", id), WORKSPACE_KEY, 1, 20),
+                new PlatformAuditHistoryQuery.ExtensionDefinition(
+                        new AuditTarget("EXTENSION_DEFINITION", "STORE"), WORKSPACE_KEY, 1, 20),
+                new PlatformAuditHistoryQuery.StoreContract(
+                        new AuditTarget("STORE_CONTRACT", id), WORKSPACE_KEY, 1, 20));
     }
 
-    private static void stubWorkspaceHostedProjection(Fixture fixture, PlatformAuditHistoryQuery query, AuditReadScope scope) {
+    private static void stubWorkspaceHostedProjection(
+            Fixture fixture, PlatformAuditHistoryQuery query, AuditReadScope scope) {
         String id = query.target().entityRef();
         switch (query) {
-            case PlatformAuditHistoryQuery.GroupWorkspace ignored -> when(fixture.groupWorkspaceAudit.readGroupWorkspace(scope, id, 1, 20)).thenReturn(empty());
-            case PlatformAuditHistoryQuery.WorkspaceRole ignored -> when(fixture.workspaceIamAudit.readPlatformAuditProjection(scope, query.target(), 1, 20)).thenReturn(empty());
-            case PlatformAuditHistoryQuery.WorkspaceAccount ignored -> when(fixture.workspaceIamAudit.readPlatformAuditProjection(scope, query.target(), 1, 20)).thenReturn(empty());
-            case PlatformAuditHistoryQuery.WorkspaceInvitation ignored -> when(fixture.workspaceIamAudit.readPlatformAuditProjection(scope, query.target(), 1, 20)).thenReturn(empty());
-            case PlatformAuditHistoryQuery.ExtensionDefinition ignored -> when(fixture.extensionAudit.readExtensionDefinition(scope, id, 1, 20)).thenReturn(empty());
-            case PlatformAuditHistoryQuery.StoreContract ignored -> when(fixture.contractAudit.readStoreContract(scope, id, 1, 20)).thenReturn(empty());
+            case PlatformAuditHistoryQuery.GroupWorkspace ignored -> when(fixture.groupWorkspaceAudit
+                            .readGroupWorkspace(scope, id, 1, 20))
+                    .thenReturn(empty());
+            case PlatformAuditHistoryQuery.WorkspaceRole ignored -> when(fixture.workspaceIamAudit
+                            .readPlatformAuditProjection(scope, query.target(), 1, 20))
+                    .thenReturn(empty());
+            case PlatformAuditHistoryQuery.WorkspaceAccount ignored -> when(fixture.workspaceIamAudit
+                            .readPlatformAuditProjection(scope, query.target(), 1, 20))
+                    .thenReturn(empty());
+            case PlatformAuditHistoryQuery.WorkspaceInvitation ignored -> when(fixture.workspaceIamAudit
+                            .readPlatformAuditProjection(scope, query.target(), 1, 20))
+                    .thenReturn(empty());
+            case PlatformAuditHistoryQuery.ExtensionDefinition ignored -> when(fixture.extensionAudit
+                            .readExtensionDefinition(scope, id, 1, 20))
+                    .thenReturn(empty());
+            case PlatformAuditHistoryQuery.StoreContract ignored -> when(fixture.contractAudit.readStoreContract(
+                            scope, id, 1, 20))
+                    .thenReturn(empty());
             case PlatformAuditHistoryQuery.PlatformAdmin ignored -> throw new AssertionError("not workspace hosted");
         }
     }
 
-    private static void verifyWorkspaceHostedProjection(Fixture fixture, PlatformAuditHistoryQuery query, AuditReadScope scope) {
+    private static void verifyWorkspaceHostedProjection(
+            Fixture fixture, PlatformAuditHistoryQuery query, AuditReadScope scope) {
         String id = query.target().entityRef();
         switch (query) {
-            case PlatformAuditHistoryQuery.GroupWorkspace ignored -> verify(fixture.groupWorkspaceAudit).readGroupWorkspace(scope, id, 1, 20);
-            case PlatformAuditHistoryQuery.WorkspaceRole ignored -> verify(fixture.workspaceIamAudit).readPlatformAuditProjection(scope, query.target(), 1, 20);
-            case PlatformAuditHistoryQuery.WorkspaceAccount ignored -> verify(fixture.workspaceIamAudit).readPlatformAuditProjection(scope, query.target(), 1, 20);
-            case PlatformAuditHistoryQuery.WorkspaceInvitation ignored -> verify(fixture.workspaceIamAudit).readPlatformAuditProjection(scope, query.target(), 1, 20);
-            case PlatformAuditHistoryQuery.ExtensionDefinition ignored -> verify(fixture.extensionAudit).readExtensionDefinition(scope, id, 1, 20);
-            case PlatformAuditHistoryQuery.StoreContract ignored -> verify(fixture.contractAudit).readStoreContract(scope, id, 1, 20);
+            case PlatformAuditHistoryQuery.GroupWorkspace ignored -> verify(fixture.groupWorkspaceAudit)
+                    .readGroupWorkspace(scope, id, 1, 20);
+            case PlatformAuditHistoryQuery.WorkspaceRole ignored -> verify(fixture.workspaceIamAudit)
+                    .readPlatformAuditProjection(scope, query.target(), 1, 20);
+            case PlatformAuditHistoryQuery.WorkspaceAccount ignored -> verify(fixture.workspaceIamAudit)
+                    .readPlatformAuditProjection(scope, query.target(), 1, 20);
+            case PlatformAuditHistoryQuery.WorkspaceInvitation ignored -> verify(fixture.workspaceIamAudit)
+                    .readPlatformAuditProjection(scope, query.target(), 1, 20);
+            case PlatformAuditHistoryQuery.ExtensionDefinition ignored -> verify(fixture.extensionAudit)
+                    .readExtensionDefinition(scope, id, 1, 20);
+            case PlatformAuditHistoryQuery.StoreContract ignored -> verify(fixture.contractAudit)
+                    .readStoreContract(scope, id, 1, 20);
             case PlatformAuditHistoryQuery.PlatformAdmin ignored -> throw new AssertionError("not workspace hosted");
         }
     }
 
-    private static AuditHistoryPage empty() { return new AuditHistoryPage(List.of(), 1, 20, 0); }
+    private static AuditHistoryPage empty() {
+        return new AuditHistoryPage(List.of(), 1, 20, 0);
+    }
 
     private static Fixture fixture() {
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
@@ -98,12 +150,51 @@ class PlatformAuditHistoryTaskReadServiceTest {
         WorkspaceIamAuditHistoryService workspaceIamAudit = mock(WorkspaceIamAuditHistoryService.class);
         ExtensionAuditHistoryService extensionAudit = mock(ExtensionAuditHistoryService.class);
         ContractAuditHistoryService contractAudit = mock(ContractAuditHistoryService.class);
-        WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(UUID.randomUUID(), WORKSPACE_KEY, "Test workspace", "Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, true);
-        PlatformSessionReadback session = new PlatformSessionReadback(UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform tester", Long.MAX_VALUE);
-        return new Fixture(new PlatformAuditHistoryTaskReadService(groupWorkspaceAudit, workspaces, platformIamAudit, workspaceIamAudit, extensionAudit, contractAudit), session, workspaces, groupWorkspaceAudit, platformIamAudit, workspaceIamAudit, extensionAudit, contractAudit, workspace);
+        WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
+                UUID.randomUUID(),
+                WORKSPACE_KEY,
+                "Test workspace",
+                "Operations",
+                null,
+                null,
+                "ENABLED",
+                1L,
+                1L,
+                1L,
+                1L,
+                true);
+        PlatformSessionReadback session = new PlatformSessionReadback(
+                UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform tester", Long.MAX_VALUE);
+        return new Fixture(
+                new PlatformAuditHistoryTaskReadService(
+                        groupWorkspaceAudit,
+                        workspaces,
+                        platformIamAudit,
+                        workspaceIamAudit,
+                        extensionAudit,
+                        contractAudit),
+                session,
+                workspaces,
+                groupWorkspaceAudit,
+                platformIamAudit,
+                workspaceIamAudit,
+                extensionAudit,
+                contractAudit,
+                workspace);
     }
 
-    private record Fixture(PlatformAuditHistoryTaskReadService reads, PlatformSessionReadback session, WorkspaceAdministrationService workspaces, PlatformWorkspaceAuditHistoryService groupWorkspaceAudit, PlatformIamAuditHistoryService platformIamAudit, WorkspaceIamAuditHistoryService workspaceIamAudit, ExtensionAuditHistoryService extensionAudit, ContractAuditHistoryService contractAudit, WorkspaceAdministrationReadback workspace) {
-        AuditReadScope scope() { return new AuditReadScope(workspace.workspaceUuid(), workspace.groupWorkspaceKey()); }
+    private record Fixture(
+            PlatformAuditHistoryTaskReadService reads,
+            PlatformSessionReadback session,
+            WorkspaceAdministrationService workspaces,
+            PlatformWorkspaceAuditHistoryService groupWorkspaceAudit,
+            PlatformIamAuditHistoryService platformIamAudit,
+            WorkspaceIamAuditHistoryService workspaceIamAudit,
+            ExtensionAuditHistoryService extensionAudit,
+            ContractAuditHistoryService contractAudit,
+            WorkspaceAdministrationReadback workspace) {
+        AuditReadScope scope() {
+            return new AuditReadScope(workspace.workspaceUuid(), workspace.groupWorkspaceKey());
+        }
     }
 }

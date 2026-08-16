@@ -10,7 +10,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ExtensionSubmissionWireMapper {
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    private ExtensionSubmissionWireMapper() { }
+    private ExtensionSubmissionWireMapper() {}
 
     public static ExtensionSubmission toSubmission(JsonNode values) {
         if (values == null || values.isNull()) return new ExtensionSubmission(List.of());
@@ -26,7 +26,8 @@ public final class ExtensionSubmissionWireMapper {
                 if (entry.getValue() == null || entry.getValue().isNull()) {
                     fields.add(ExtensionSubmission.ExtensionFieldValue.clear(entry.getKey()));
                 } else {
-                    fields.add(new ExtensionSubmission.ExtensionFieldValue(entry.getKey(), JSON.writeValueAsString(entry.getValue()), ExtensionSubmission.Mode.SET));
+                    fields.add(new ExtensionSubmission.ExtensionFieldValue(
+                            entry.getKey(), JSON.writeValueAsString(entry.getValue()), ExtensionSubmission.Mode.SET));
                 }
             } catch (Exception failure) {
                 throw new IllegalArgumentException("extension value is not JSON serializable", failure);
@@ -42,7 +43,8 @@ public final class ExtensionSubmissionWireMapper {
             String key = text(value, "fieldKey");
             String mode = text(value, "mode");
             String valueJson = value.path("valueJson").asText("");
-            fields.add(new ExtensionSubmission.ExtensionFieldValue(key, valueJson, ExtensionSubmission.Mode.valueOf(mode)));
+            fields.add(new ExtensionSubmission.ExtensionFieldValue(
+                    key, valueJson, ExtensionSubmission.Mode.valueOf(mode)));
         });
         return new ExtensionSubmission(fields);
     }

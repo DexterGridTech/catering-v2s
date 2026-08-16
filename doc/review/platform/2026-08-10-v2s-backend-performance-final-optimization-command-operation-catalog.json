@@ -123,7 +123,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#add",
-      "adapter": "com.catering.v2s.organization.application.AddOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.AddOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -153,7 +153,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#adjustInventoryTarget",
-      "adapter": "com.catering.v2s.inventory.application.AdjustOperationsInventoryTargetOperation",
+      "adapter": "com.catering.v2s.inventory.application.operations.AdjustOperationsInventoryTargetOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -540,7 +540,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#countInventoryTarget",
-      "adapter": "com.catering.v2s.inventory.application.CountOperationsInventoryTargetOperation",
+      "adapter": "com.catering.v2s.inventory.application.operations.CountOperationsInventoryTargetOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -571,7 +571,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogCategory",
-      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogCategoryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.CreateOperationsCatalogCategoryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -603,7 +603,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogDictionaryEntry",
-      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogDictionaryEntryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.CreateOperationsCatalogDictionaryEntryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -634,7 +634,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createCatalogItem",
-      "adapter": "com.catering.v2s.catalog.application.CreateOperationsCatalogItemOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.CreateOperationsCatalogItemOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -696,7 +696,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createBrand",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationBrandOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationBrandOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -726,7 +726,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createHeadCompany",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationHeadCompanyOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationHeadCompanyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -756,7 +756,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createProject",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationProjectOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationProjectOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -787,7 +787,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#createRegion",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationRegionOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationRegionOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -817,7 +817,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#create",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationStoreOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationStoreOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -848,7 +848,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#createTenant",
-      "adapter": "com.catering.v2s.organization.application.CreateOperationsOrganizationTenantOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.CreateOperationsOrganizationTenantOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -878,7 +878,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#createProductionTag",
-      "adapter": "com.catering.v2s.fulfillment.production.application.CreateOperationsProductionTagOperation",
+      "adapter": "com.catering.v2s.fulfillment.production.application.operations.CreateOperationsProductionTagOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1196,7 +1196,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#deleteCatalogCategory",
-      "adapter": "com.catering.v2s.catalog.application.DeleteOperationsCatalogCategoryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.DeleteOperationsCatalogCategoryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1228,7 +1228,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeBrandCatalogCopy",
-      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsBrandCatalogCopyOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.ExecuteOperationsBrandCatalogCopyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1259,7 +1259,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeLocalCatalogCopy",
-      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsLocalCatalogCopyOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.ExecuteOperationsLocalCatalogCopyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1290,7 +1290,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#executeTemporaryCatalogPromotion",
-      "adapter": "com.catering.v2s.catalog.application.ExecuteOperationsTemporaryCatalogItemPromotionOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.ExecuteOperationsTemporaryCatalogItemPromotionOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1321,7 +1321,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#increaseInventoryTarget",
-      "adapter": "com.catering.v2s.inventory.application.IncreaseOperationsInventoryTargetOperation",
+      "adapter": "com.catering.v2s.inventory.application.operations.IncreaseOperationsInventoryTargetOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1416,7 +1416,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#moveCatalogCategory",
-      "adapter": "com.catering.v2s.catalog.application.MoveOperationsCatalogCategoryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.MoveOperationsCatalogCategoryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1584,7 +1584,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightBrandCatalogCopy",
-      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsBrandCatalogCopyOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.PreflightOperationsBrandCatalogCopyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1615,7 +1615,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightLocalCatalogCopy",
-      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsLocalCatalogCopyOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.PreflightOperationsLocalCatalogCopyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1646,7 +1646,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#preflightTemporaryCatalogPromotion",
-      "adapter": "com.catering.v2s.catalog.application.PreflightOperationsTemporaryCatalogItemPromotionOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.PreflightOperationsTemporaryCatalogItemPromotionOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1863,7 +1863,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#releaseCatalogAsset",
-      "adapter": "com.catering.v2s.platform.asset.application.ReleaseOperationsCatalogStagedAssetOperation",
+      "adapter": "com.catering.v2s.platform.asset.application.operations.ReleaseOperationsCatalogStagedAssetOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1927,7 +1927,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsHeadCompanyAuthorizationController.java#remove",
-      "adapter": "com.catering.v2s.organization.application.RemoveOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.RemoveOperationsOrganizationHeadCompanyBrandAuthorizationOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -1957,7 +1957,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#reorderCatalogDictionaryEntry",
-      "adapter": "com.catering.v2s.catalog.application.ReorderOperationsCatalogDictionaryEntryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.ReorderOperationsCatalogDictionaryEntryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2092,7 +2092,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#groupRevoke",
-      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation",
+      "adapter": "com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceGroupUserAssignmentOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2122,7 +2122,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#headCompanyRevoke",
-      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation",
+      "adapter": "com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2152,7 +2152,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#projectRevoke",
-      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation",
+      "adapter": "com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceProjectUserAssignmentOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2182,7 +2182,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#regionRevoke",
-      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation",
+      "adapter": "com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceRegionUserAssignmentOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2212,7 +2212,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/context/OperationsWorkspaceUserController.java#storeRevoke",
-      "adapter": "com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation",
+      "adapter": "com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceStoreUserAssignmentOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2276,7 +2276,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#saveCatalogItem",
-      "adapter": "com.catering.v2s.catalog.application.SaveOperationsCatalogItemOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.SaveOperationsCatalogItemOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2583,7 +2583,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#stageAsset",
-      "adapter": "com.catering.v2s.platform.asset.application.StageOperationsCatalogAssetMultipartOperation",
+      "adapter": "com.catering.v2s.platform.asset.application.operations.StageOperationsCatalogAssetMultipartOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2715,7 +2715,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogDictionaryEntryStatus",
-      "adapter": "com.catering.v2s.catalog.application.TransitionOperationsCatalogDictionaryEntryStatusOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogDictionaryEntryStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2746,7 +2746,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionCatalogItemStatus",
-      "adapter": "com.catering.v2s.catalog.application.TransitionOperationsCatalogItemStatusOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsCatalogItemStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2777,7 +2777,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#brandStatus",
-      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationBrandStatusOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationBrandStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2807,7 +2807,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#headCompanyStatus",
-      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationHeadCompanyStatusOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationHeadCompanyStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2837,7 +2837,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#transition",
-      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationNodeStatusOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationNodeStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2868,7 +2868,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#transitionStatus",
-      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationStoreStatusOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationStoreStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2899,7 +2899,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#tenantStatus",
-      "adapter": "com.catering.v2s.organization.application.TransitionOperationsOrganizationTenantStatusOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationTenantStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -2929,7 +2929,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#transitionProductionTagStatus",
-      "adapter": "com.catering.v2s.fulfillment.production.application.TransitionOperationsProductionTagStatusOperation",
+      "adapter": "com.catering.v2s.fulfillment.production.application.operations.TransitionOperationsProductionTagStatusOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3095,7 +3095,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogCategory",
-      "adapter": "com.catering.v2s.catalog.application.UpdateOperationsCatalogCategoryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.UpdateOperationsCatalogCategoryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3127,7 +3127,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateCatalogDictionaryEntry",
-      "adapter": "com.catering.v2s.catalog.application.UpdateOperationsCatalogDictionaryEntryOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.UpdateOperationsCatalogDictionaryEntryOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3158,7 +3158,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#updateCommercialGroup",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsCommercialGroupOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsCommercialGroupOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3220,7 +3220,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateInventoryTargetConfiguration",
-      "adapter": "com.catering.v2s.inventory.application.UpdateOperationsInventoryTargetConfigurationOperation",
+      "adapter": "com.catering.v2s.inventory.application.operations.UpdateOperationsInventoryTargetConfigurationOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3251,7 +3251,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateBrand",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationBrandOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationBrandOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3281,7 +3281,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateHeadCompany",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationHeadCompanyOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationHeadCompanyOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3311,7 +3311,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsOrganizationHierarchyController.java#update",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationNodeOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationNodeOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3342,7 +3342,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreManagementController.java#update",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationStoreOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationStoreOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3373,7 +3373,7 @@
         "edge-face"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsBusinessEntityController.java#updateTenant",
-      "adapter": "com.catering.v2s.organization.application.UpdateOperationsOrganizationTenantOperation",
+      "adapter": "com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationTenantOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",
@@ -3403,7 +3403,7 @@
         "catalog-inventory"
       ],
       "edge": "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java#updateProductionTag",
-      "adapter": "com.catering.v2s.fulfillment.production.application.UpdateOperationsProductionTagOperation",
+      "adapter": "com.catering.v2s.fulfillment.production.application.operations.UpdateOperationsProductionTagOperation",
       "cur": {
         "tx": "M1_HANDLER_EXECUTE_REQUIRED",
         "chain": "M1_NAMED_OWNER_API",

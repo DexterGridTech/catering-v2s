@@ -1,49 +1,58 @@
 package com.catering.v2s.app.edge.problem;
 
-import com.catering.v2s.contract.application.ContractCommandService;
-import com.catering.v2s.contract.application.ContractCommandReceiptService;
-import com.catering.v2s.extension.application.ExtensionDefinitionService;
-import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
-import com.catering.v2s.organization.application.BusinessEntityService;
-import com.catering.v2s.organization.application.BusinessEntityCommandReceiptService;
-import com.catering.v2s.organization.application.OrganizationHierarchyService;
-import com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService;
-import com.catering.v2s.organization.application.OrganizationCommandService;
-import com.catering.v2s.organization.application.OrganizationTaskPathService;
-import com.catering.v2s.platform.asset.application.PlatformAssetService;
-import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.inventory.api.InventoryOwnerApi;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
-import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
-import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
-import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
-import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
-import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
-import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
-import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
-import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
-import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
-import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
-import com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptService;
-import com.catering.v2s.workspace.iam.application.WorkspacePasswordResetService;
-import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService;
-import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
-import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
-import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import static com.catering.v2s.organization.application.BusinessEntityCommandReceiptService.*;
+import static com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService.*;
+import static com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService.*;
+import static com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptService.*;
+
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.contract.application.ContractCommandReceiptService;
+import com.catering.v2s.contract.application.ContractCommandService;
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.organization.application.BusinessEntityCommandReceiptService;
+import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OrganizationCommandService;
+import com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService;
+import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.organization.application.OrganizationTaskPathService;
+import com.catering.v2s.platform.asset.application.PlatformAssetService;
+import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetIdempotencyConflictException;
+import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
+import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
+import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService.PlatformIdempotencyConflictException;
+import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
+import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
+import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
+import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
+import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService.SessionConflictException;
+import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
+import com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptService;
+import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
+import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService;
+import com.catering.v2s.workspace.iam.application.WorkspacePasswordResetService;
+import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
+import com.catering.v2s.workspace.iam.application.WorkspaceRoleService.RoleCapabilityCatalogDriftException;
+import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Contract-level fallback for R5 owner adapters. Controller-local R3 compatibility handlers retain precedence. */
 @Order
@@ -53,38 +62,60 @@ public final class ContractProblemAdvice {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<Problem> multipartTooLarge(MaxUploadSizeExceededException exception, HttpServletRequest request) {
-        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "上传文件超过商品图片大小限制", request);
+        return problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "VALIDATION_ERROR",
+                "上传文件超过商品图片大小限制",
+                /* format-wrap */
+                request);
     }
 
-    @ExceptionHandler({CatalogOwnerApi.Problem.class, InventoryOwnerApi.Problem.class, ProductionTagOwnerApi.Problem.class})
+    @ExceptionHandler({
+        CatalogOwnerApi.Problem.class,
+        InventoryOwnerApi.Problem.class,
+        ProductionTagOwnerApi.Problem.class
+    })
     ResponseEntity<Problem> catalogInventory(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.code()
-            : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.code()
-            : ((ProductionTagOwnerApi.Problem) exception).code();
-        int status = exception instanceof CatalogOwnerApi.Problem catalog ? catalog.status()
-            : exception instanceof InventoryOwnerApi.Problem inventory ? inventory.status()
-            : ((ProductionTagOwnerApi.Problem) exception).status();
+        String code = exception instanceof CatalogOwnerApi.Problem catalog
+                ? catalog.code()
+                : exception instanceof InventoryOwnerApi.Problem inventory
+                        ? inventory.code()
+                        : ((ProductionTagOwnerApi.Problem) exception).code();
+        int status = exception instanceof CatalogOwnerApi.Problem catalog
+                ? catalog.status()
+                : exception instanceof InventoryOwnerApi.Problem inventory
+                        ? inventory.status()
+                        : ((ProductionTagOwnerApi.Problem) exception).status();
         log.atWarn()
-            .addKeyValue("event", "CATALOG_OWNER_PROBLEM")
-            .addKeyValue("code", code)
-            .addKeyValue("status", status)
-            .addKeyValue("exceptionType", exception.getClass().getSimpleName())
-            .addKeyValue("causeType", exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName())
-            // A typed owner problem commonly has no nested cause.  Logging only its
-            // cause therefore removes the very stack that identifies the rejected
-            // owner boundary; the response remains the same generic, safe problem.
-            .setCause(exception)
-            .log("catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
-                code, status, exception.getClass().getSimpleName(),
-                exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName());
+                .addKeyValue("event", "CATALOG_OWNER_PROBLEM")
+                .addKeyValue("code", code)
+                .addKeyValue("status", status)
+                .addKeyValue("exceptionType", exception.getClass().getSimpleName())
+                .addKeyValue(
+                        "causeType",
+                        exception.getCause() == null
+                                ? "none"
+                                : exception.getCause().getClass().getSimpleName())
+                // A typed owner problem commonly has no nested cause.  Logging only its
+                // cause therefore removes the very stack that identifies the rejected
+                // owner boundary; the response remains the same generic, safe problem.
+                .setCause(exception)
+                .log(
+                        "catalog-inventory owner problem code={} status={} exceptionType={} causeType={}",
+                        code,
+                        status,
+                        exception.getClass().getSimpleName(),
+                        exception.getCause() == null
+                                ? "none"
+                                : exception.getCause().getClass().getSimpleName());
         String detail = catalogInventoryDetail(code, exception);
         return problem(HttpStatus.valueOf(status), code, detail, request);
     }
 
     /**
-     * Reference blockers are the one typed owner family whose client contract requires the
-     * affected user to know which live relation must be removed.  The finite owner denominator
-     * is kept under REFERENCE_BLOCKS_VOID/DELETE; all other owner messages stay edge-generic.
+     * Reference blockers are the one typed owner family whose client contract requires the affected user to know which
+     * live relation must be removed. The finite owner denominator is kept under REFERENCE_BLOCKS_VOID/DELETE; all other
+     * owner messages stay edge-generic.
      */
     private static String catalogInventoryDetail(String code, RuntimeException exception) {
         return switch (code) {
@@ -92,39 +123,63 @@ public final class ContractProblemAdvice {
             case "REFERENCE_BLOCKS_VOID", "REFERENCE_BLOCKS_DELETE" -> {
                 String detail = exception.getMessage();
                 yield detail == null || detail.isBlank()
-                    ? "当前事实仍被业务引用，不能执行该操作"
-                    : detail;
+                        ? "当前事实仍被业务引用，不能执行该"
+                                /* format-wrap */
+                                + "操作"
+                        : detail;
             }
             default -> "商品、生产标签或库存操作不满足 owner 约束";
         };
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)
-    ResponseEntity<Problem> catalogAssetOwnerScopeForbidden(PlatformAssetService.AssetOwnerScopeForbiddenException exception, HttpServletRequest request) {
-        return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "商品图片资产操作不满足 owner 约束", request);
+    ResponseEntity<Problem> catalogAssetOwnerScopeForbidden(
+            PlatformAssetService.AssetOwnerScopeForbiddenException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.FORBIDDEN,
+                "SCOPE_FORBIDDEN",
+                "商品图片资产操作不满足 owner 约束",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler(PlatformAssetService.AssetInvariantViolationException.class)
-    ResponseEntity<Problem> assetInvariantViolation(PlatformAssetService.AssetInvariantViolationException exception, HttpServletRequest request) {
+    ResponseEntity<Problem> assetInvariantViolation(
+            PlatformAssetService.AssetInvariantViolationException exception, HttpServletRequest request) {
         RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
         String errorCode = assetOwnerFailureCode(completion);
         log.atError()
-            .addKeyValue("event", "PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION")
-            .addKeyValue("phase", "OWNER")
-            .addKeyValue("outcome", "FAILED")
-            .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
-            .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
-            .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
-            .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
-            .addKeyValue("ownerOperation", exception.ownerOperation())
-            .addKeyValue("errorCode", errorCode)
-            .log("platform-asset-owner-invariant event=PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION phase=OWNER outcome=FAILED ownerOperation={} errorCode={}", exception.ownerOperation(), errorCode);
-        return problem(HttpStatus.INTERNAL_SERVER_ERROR, errorCode, "静态资源 owner 状态不满足既定约束", request);
+                .addKeyValue("event", "PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION")
+                .addKeyValue("phase", "OWNER")
+                .addKeyValue("outcome", "FAILED")
+                .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+                .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+                .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+                .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
+                .addKeyValue("ownerOperation", exception.ownerOperation())
+                .addKeyValue("errorCode", errorCode)
+                .log(
+                        "platform-asset-owner-invariant event=PLATFORM_ASSET_OWNER_INVARIANT_VIOLATION phase=OWNER "
+                                + "outcome=FAILED ownerOperation={} errorCode={}",
+                        exception.ownerOperation(),
+                        errorCode);
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                errorCode,
+                "静态资源 owner 状态不满足既定约束",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler(CommandExecutionContextResolver.CatalogScopeForbiddenException.class)
-    ResponseEntity<Problem> catalogScopeForbidden(CommandExecutionContextResolver.CatalogScopeForbiddenException exception, HttpServletRequest request) {
-        return problem(HttpStatus.FORBIDDEN, "SCOPE_FORBIDDEN", "已认证会话不具备该商品、库存或生产标签操作范围", request);
+    ResponseEntity<Problem> catalogScopeForbidden(
+            CommandExecutionContextResolver.CatalogScopeForbiddenException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.FORBIDDEN,
+                "SCOPE_FORBIDDEN",
+                "已认证会话不具备该商品、库存或生产标签操作范围",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler({
@@ -142,16 +197,23 @@ public final class ContractProblemAdvice {
         PlatformAuthenticationService.PlatformAdminNotFoundException.class
     })
     ResponseEntity<Problem> notFound(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof WorkspaceInvitationService.InvitationNotFoundException ? "WORKSPACE_IAM_INVITATION_NOT_FOUND"
-            : exception instanceof PlatformAssetService.AssetNotFoundException ? "PLATFORM_ASSET_NOT_FOUND"
-            : "PLATFORM_COMMON_RESOURCE_NOT_FOUND";
+        String code = exception instanceof WorkspaceInvitationService.InvitationNotFoundException
+                ? "WORKSPACE_IAM_INVITATION_NOT_FOUND"
+                : exception instanceof PlatformAssetService.AssetNotFoundException
+                        ? "PLATFORM_ASSET_NOT_FOUND"
+                        : "PLATFORM_COMMON_RESOURCE_NOT_FOUND";
         return problem(HttpStatus.NOT_FOUND, code, "请求的 owner 资源不存在", request);
     }
 
     /** Must stay more specific than the organization conflict fallback: no store reference detail crosses the edge. */
     @ExceptionHandler(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException.class)
-    ResponseEntity<Problem> headCompanyBrandAuthorizationInUse(BusinessEntityService.HeadCompanyBrandAuthorizationInUseException exception, HttpServletRequest request) {
-        return problem(HttpStatus.CONFLICT, "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "该经营品牌仍被门店使用，暂不能移除", request);
+    ResponseEntity<Problem> headCompanyBrandAuthorizationInUse(
+            BusinessEntityService.HeadCompanyBrandAuthorizationInUseException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.CONFLICT,
+                "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
+                "该经营品牌仍被门店使用，暂不能移除",
+                request);
     }
 
     @ExceptionHandler({
@@ -165,34 +227,52 @@ public final class ContractProblemAdvice {
         BusinessEntityService.OrganizationConflictException.class,
         OrganizationHierarchyService.OrganizationConflictException.class,
         WorkspaceAccountService.AccountConflictException.class,
-        WorkspaceAuthenticationService.SessionConflictException.class,
+        SessionConflictException.class,
         WorkspaceRoleService.RoleConflictException.class,
-        WorkspaceRoleService.RoleCapabilityCatalogDriftException.class,
+        RoleCapabilityCatalogDriftException.class,
         WorkspaceAdministrationService.WorkspaceConflictException.class,
         WorkspaceAdministrationService.WorkspaceVersionConflictException.class,
         PlatformAuthenticationService.PlatformAdminVersionConflictException.class,
-        WorkspaceCommandReceiptService.WorkspaceIdempotencyConflictException.class,
-        WorkspaceIamCommandReceiptService.WorkspaceIamIdempotencyConflictException.class,
-        PlatformCommandReceiptService.PlatformIdempotencyConflictException.class,
-        PlatformAssetService.AssetIdempotencyConflictException.class,
-        OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException.class,
-        BusinessEntityCommandReceiptService.BusinessEntityIdempotencyConflictException.class
+        WorkspaceIdempotencyConflictException.class,
+        WorkspaceIamIdempotencyConflictException.class,
+        PlatformIdempotencyConflictException.class,
+        AssetIdempotencyConflictException.class,
+        OrganizationIdempotencyConflictException.class,
+        BusinessEntityIdempotencyConflictException.class
     })
     ResponseEntity<Problem> conflict(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof ContractCommandReceiptService.ContractIdempotencyConflictException || exception instanceof ExtensionCommandReceiptService.ExtensionIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof BusinessEntityService.OrganizationNameConflictException ? "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT"
-            : exception instanceof BusinessEntityService.OrganizationDuplicateException || exception instanceof BusinessEntityService.OrganizationCodeConflictException ? "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT"
-            : exception instanceof ContractCommandService.ContractConflictException ? "CONTRACT_VERSION_CONFLICT"
-            : exception instanceof ExtensionDefinitionService.DefinitionVersionConflictException ? "EXTENSION_DEFINITION_VERSION_CONFLICT"
-            : exception instanceof WorkspaceAuthenticationService.SessionConflictException ? "PLATFORM_COMMON_CONTEXT_STALE"
-            : exception instanceof WorkspaceRoleService.RoleCapabilityCatalogDriftException ? "WORKSPACE_IAM_ROLE_CAPABILITY_CATALOG_DRIFT"
-            : exception instanceof WorkspaceCommandReceiptService.WorkspaceIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof WorkspaceIamCommandReceiptService.WorkspaceIamIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof PlatformCommandReceiptService.PlatformIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof PlatformAssetService.AssetIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : exception instanceof BusinessEntityCommandReceiptService.BusinessEntityIdempotencyConflictException ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-            : "PLATFORM_COMMON_VERSION_CONFLICT";
+        // spotless:off
+        String code =
+                exception instanceof ContractCommandReceiptService.ContractIdempotencyConflictException
+                        || exception instanceof ExtensionCommandReceiptService.ExtensionIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof BusinessEntityService.OrganizationNameConflictException
+                ? "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT"
+                : exception instanceof BusinessEntityService.OrganizationDuplicateException
+                        || exception instanceof BusinessEntityService.OrganizationCodeConflictException
+                ? "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT"
+                : exception instanceof ContractCommandService.ContractConflictException
+                ? "CONTRACT_VERSION_CONFLICT"
+                : exception instanceof ExtensionDefinitionService.DefinitionVersionConflictException
+                ? "EXTENSION_DEFINITION_VERSION_CONFLICT"
+                : exception instanceof SessionConflictException
+                ? "PLATFORM_COMMON_CONTEXT_STALE"
+                : exception instanceof RoleCapabilityCatalogDriftException
+                ? "WORKSPACE_IAM_ROLE_CAPABILITY_CATALOG_DRIFT"
+                : exception instanceof WorkspaceIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof WorkspaceIamIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof PlatformIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof AssetIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof OrganizationIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : exception instanceof BusinessEntityIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : "PLATFORM_COMMON_VERSION_CONFLICT";
+        // spotless:on
         return problem(HttpStatus.CONFLICT, code, "owner readback 已变化，请重新读取后再操作", request);
     }
 
@@ -203,12 +283,22 @@ public final class ContractProblemAdvice {
 
     @ExceptionHandler(WorkspaceInvitationService.InvitationStateException.class)
     ResponseEntity<Problem> invitationTerminal(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_INVITATION_TERMINAL", "邀请流程状态不可用或已结束", request);
+        return problem(
+                HttpStatus.CONFLICT,
+                "WORKSPACE_IAM_INVITATION_TERMINAL",
+                "邀请流程状态不可用或已结束",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler(WorkspacePasswordResetService.ResetStateException.class)
-    ResponseEntity<Problem> workspaceCredentialResetUnavailable(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_CREDENTIAL_RESET_UNAVAILABLE", "账号状态已变化，请重新读取后再重置登录凭据", request);
+    ResponseEntity<Problem> workspaceCredentialResetUnavailable(
+            RuntimeException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.CONFLICT,
+                "WOR" + "KSPACE_IAM_CREDENTIAL_RESET_UN" + "AVAILABLE",
+                "账号状态已变化，请重新读取后再重置登录凭据",
+                request);
     }
 
     @ExceptionHandler({
@@ -229,70 +319,96 @@ public final class ContractProblemAdvice {
         PlatformAuthenticationService.AdministratorDeactivationForbiddenException.class
     })
     ResponseEntity<Problem> invalid(RuntimeException exception, HttpServletRequest request) {
-        PlatformAssetService.AssetStorageUnavailableException storageFailure = exception instanceof PlatformAssetService.AssetStorageUnavailableException failure ? failure : null;
+        PlatformAssetService.AssetStorageUnavailableException storageFailure =
+                exception instanceof PlatformAssetService.AssetStorageUnavailableException failure ? failure : null;
         if (storageFailure != null) logAssetStorageFailure(storageFailure, request);
-        String code = storageFailure != null ? assetStorageFailureCode(RequestCompletionDiagnosticState.find(request))
-            : exception instanceof ExtensionDefinitionService.DefinitionInvalidException ? "EXTENSION_DEFINITION_INVALID"
-            : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
-            : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
-            : exception instanceof WorkspaceUserService.PageValidationException ? "PLATFORM_COMMON_VALIDATION_FAILED"
-            : exception instanceof WorkspaceRoleService.RoleValidationException ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
-            : "PLATFORM_COMMON_VALIDATION_FAILED";
-        return problem(storageFailure != null ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY, code, storageFailure != null ? "静态资源存储暂时不可用" : "请求不满足 owner 约束", request);
+        String code = storageFailure != null
+                ? assetStorageFailureCode(RequestCompletionDiagnosticState.find(request))
+                : exception instanceof ExtensionDefinitionService.DefinitionInvalidException
+                        ? "EXTENSION_DEFINITION_INVALID"
+                        : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException
+                                ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
+                                : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException
+                                        ? "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH"
+                                        : exception instanceof WorkspaceUserService.PageValidationException
+                                                ? "PLATFORM_COMMON_VALIDATION_FAILED"
+                                                : exception instanceof WorkspaceRoleService.RoleValidationException
+                                                        ? "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE"
+                                                        : "PLATFORM_COMMON_VALIDATION_FAILED";
+        return problem(
+                storageFailure != null ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.UNPROCESSABLE_ENTITY,
+                code,
+                storageFailure != null ? "静态资源存储暂时不可用" : "请求不满足 owner 约束",
+                request);
     }
 
     /** UUID-typed transport fields fail during Jackson binding and therefore use the contract's 400 shape. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<Problem> malformedRequest(HttpMessageNotReadableException exception, HttpServletRequest request) {
-        return problem(HttpStatus.BAD_REQUEST, "PLATFORM_COMMON_VALIDATION_FAILED", "请求体或参数格式不正确", request);
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "PLATFORM_COMMON_VALIDATION_FAILED",
+                "请求体或参数格式不正确",
+                /* format-wrap */
+                request);
     }
 
-    private void logAssetStorageFailure(PlatformAssetService.AssetStorageUnavailableException failure, HttpServletRequest request) {
+    private void logAssetStorageFailure(
+            PlatformAssetService.AssetStorageUnavailableException failure, HttpServletRequest request) {
         RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
         Throwable root = rootCause(failure);
         String errorCode = assetStorageFailureCode(completion);
         log.atWarn()
-            .addKeyValue("event", "PLATFORM_ASSET_STORAGE_FAILURE")
-            .addKeyValue("phase", "OWNER")
-            .addKeyValue("outcome", "FAILED")
-            .addKeyValue("dependency", dependencyFor(failure.storageOperation()))
-            .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
-            .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
-            .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
-            .addKeyValue("routeTemplate", completion == null ? "unavailable" : completion.routeTemplate())
-            .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
-            .addKeyValue("storageOperation", failure.storageOperation())
-            .addKeyValue("failureType", safeType(failure))
-            .addKeyValue("rootCauseType", safeType(root))
-            .addKeyValue("retryAttempt", 0)
-            .addKeyValue("status", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
-            .addKeyValue("httpStatus", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
-            .addKeyValue("serviceErrorCode", failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
-            .addKeyValue("errorCode", errorCode)
-            .log(renderAssetStorageFailure(failure, completion, root));
+                .addKeyValue("event", "PLATFORM_ASSET_STORAGE_FAILURE")
+                .addKeyValue("phase", "OWNER")
+                .addKeyValue("outcome", "FAILED")
+                .addKeyValue("dependency", dependencyFor(failure.storageOperation()))
+                .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+                .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+                .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+                .addKeyValue("routeTemplate", completion == null ? "unavailable" : completion.routeTemplate())
+                .addKeyValue("owner", completion == null ? "platform-asset" : completion.owner())
+                .addKeyValue("storageOperation", failure.storageOperation())
+                .addKeyValue("failureType", safeType(failure))
+                .addKeyValue("rootCauseType", safeType(root))
+                .addKeyValue("retryAttempt", 0)
+                .addKeyValue("status", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+                .addKeyValue(
+                        "httpStatus", failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+                .addKeyValue(
+                        "serviceErrorCode",
+                        failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
+                .addKeyValue("errorCode", errorCode)
+                .log(renderAssetStorageFailure(failure, completion, root));
     }
 
-    static String renderAssetStorageFailure(PlatformAssetService.AssetStorageUnavailableException failure, RequestCompletionDiagnosticState completion, Throwable root) {
+    static String renderAssetStorageFailure(
+            PlatformAssetService.AssetStorageUnavailableException failure,
+            RequestCompletionDiagnosticState completion,
+            Throwable root) {
         return "platform-asset-diagnostic event=PLATFORM_ASSET_STORAGE_FAILURE"
-            + " phase=OWNER outcome=FAILED"
-            + " dependency=" + dependencyFor(failure.storageOperation())
-            + " correlationId=" + (completion == null ? "unavailable" : completion.correlationId())
-            + " requestId=" + (completion == null ? "unavailable" : completion.requestId())
-            + " operationId=" + (completion == null ? "unavailable" : completion.operationId())
-            + " routeTemplate=" + (completion == null ? "unavailable" : completion.routeTemplate())
-            + " owner=" + (completion == null ? "platform-asset" : completion.owner())
-            + " storageOperation=" + failure.storageOperation()
-            + " failureType=" + safeType(failure)
-            + " rootCauseType=" + safeType(root)
-            + " retryAttempt=0"
-            + " status=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
-            + " httpStatus=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
-            + " serviceErrorCode=" + (failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
-            + " errorCode=" + assetStorageFailureCode(completion);
+                + " phase=OWNER outcome=FAILED"
+                + " dependency=" + dependencyFor(failure.storageOperation())
+                + " correlationId=" + (completion == null ? "unavailable" : completion.correlationId())
+                + " requestId=" + (completion == null ? "unavailable" : completion.requestId())
+                + " operationId=" + (completion == null ? "unavailable" : completion.operationId())
+                + " routeTemplate=" + (completion == null ? "unavailable" : completion.routeTemplate())
+                + " owner=" + (completion == null ? "platform-asset" : completion.owner())
+                + " storageOperation=" + failure.storageOperation()
+                + " failureType=" + safeType(failure)
+                + " rootCauseType=" + safeType(root)
+                + " retryAttempt=0"
+                + " status=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+                + " httpStatus=" + (failure.storageHttpStatus() == null ? "unassigned" : failure.storageHttpStatus())
+                + " serviceErrorCode="
+                + (failure.storageErrorCode() == null ? "unassigned" : failure.storageErrorCode())
+                + " errorCode=" + assetStorageFailureCode(completion);
     }
 
     private static String assetOwnerFailureCode(RequestCompletionDiagnosticState completion) {
-        return isCatalogAssetStage(completion) ? "ASSET_PROCESSING_FAILED" : "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION";
+        return isCatalogAssetStage(completion)
+                ? "ASSET_PROCESSING_FAILED"
+                : "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION";
     }
 
     private static String assetStorageFailureCode(RequestCompletionDiagnosticState completion) {
@@ -322,14 +438,16 @@ public final class ContractProblemAdvice {
     }
 
     @ExceptionHandler(OrganizationCommandService.OrganizationCommandException.class)
-    ResponseEntity<Problem> organizationCommand(OrganizationCommandService.OrganizationCommandException exception, HttpServletRequest request) {
-        String code = switch (exception.problem()) {
-            case COMMERCIAL_GROUP_NOT_INITIALIZED -> "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED";
-            case COMMERCIAL_GROUP_REQUIRED -> "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED";
-            case COMMERCIAL_GROUP_ALREADY_INITIALIZED -> "COMMERCIAL_GROUP_ALREADY_INITIALIZED";
-            case IDEMPOTENCY_CONFLICT -> "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT";
-            case VALIDATION_FAILED -> "PLATFORM_COMMON_VALIDATION_FAILED";
-        };
+    ResponseEntity<Problem> organizationCommand(
+            OrganizationCommandService.OrganizationCommandException exception, HttpServletRequest request) {
+        String code =
+                switch (exception.problem()) {
+                    case COMMERCIAL_GROUP_NOT_INITIALIZED -> "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED";
+                    case COMMERCIAL_GROUP_REQUIRED -> "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED";
+                    case COMMERCIAL_GROUP_ALREADY_INITIALIZED -> "COMMERCIAL_GROUP_ALREADY_INITIALIZED";
+                    case IDEMPOTENCY_CONFLICT -> "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT";
+                    case VALIDATION_FAILED -> "PLATFORM_COMMON_VALIDATION_FAILED";
+                };
         return problem(HttpStatus.UNPROCESSABLE_ENTITY, code, "组织根前提不满足", request);
     }
 
@@ -338,26 +456,62 @@ public final class ContractProblemAdvice {
         WorkspaceAuthenticationService.InvalidCredentialsException.class
     })
     ResponseEntity<Problem> invalidCredentials(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.UNAUTHORIZED, exception instanceof PlatformAuthenticationService.InvalidCredentialsException ? "PLATFORM_IAM_INVALID_CREDENTIALS" : "WORKSPACE_IAM_INVALID_CREDENTIALS", "登录名或密码不正确", request);
+        return problem(
+                HttpStatus.UNAUTHORIZED,
+                exception instanceof PlatformAuthenticationService.InvalidCredentialsException
+                        ? "PLATFORM_IAM_INVALID_CREDENTIALS"
+                        : "WORKSPACE_IAM_INVALID_CREDENTIALS",
+                "登录名或密码不正确",
+                request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.SessionExpiredException.class, WorkspaceAuthenticationService.SessionInvalidException.class})
+    @ExceptionHandler({
+        PlatformAuthenticationService.SessionExpiredException.class,
+        WorkspaceAuthenticationService.SessionInvalidException.class
+    })
     ResponseEntity<Problem> unauthenticated(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.UNAUTHORIZED, exception instanceof PlatformAuthenticationService.SessionExpiredException ? "PLATFORM_IAM_SESSION_EXPIRED" : "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "会话不可用或已过期", request);
+        return problem(
+                HttpStatus.UNAUTHORIZED,
+                exception instanceof PlatformAuthenticationService.SessionExpiredException
+                        ? "PLATFORM_IAM_SESSION_EXPIRED"
+                        : "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+                "会话不可用或已过期",
+                request);
     }
 
     @ExceptionHandler(WorkspaceAuthenticationService.PasswordChangeRequiredException.class)
-    ResponseEntity<Problem> passwordChangeRequired(WorkspaceAuthenticationService.PasswordChangeRequiredException exception, HttpServletRequest request) {
-        return problem(HttpStatus.FORBIDDEN, "WORKSPACE_IAM_PASSWORD_CHANGE_REQUIRED", "请先修改登录密码", request);
+    ResponseEntity<Problem> passwordChangeRequired(
+            WorkspaceAuthenticationService.PasswordChangeRequiredException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.FORBIDDEN,
+                "WORKSPACE_IAM_PASSWORD_CHANGE_REQUIRED",
+                "请先修改登录密码",
+                /* format-wrap */
+                request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.AccountDisabledException.class, WorkspaceAuthenticationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceDisabledException.class, WorkspaceAdministrationService.WorkspaceStatusInvalidException.class, WorkspaceAccountService.WorkspaceDisabledException.class, WorkspaceRoleService.WorkspaceDisabledException.class})
+    @ExceptionHandler({
+        PlatformAuthenticationService.AccountDisabledException.class,
+        WorkspaceAuthenticationService.AccountDisabledException.class,
+        WorkspaceAuthenticationService.WorkspaceDisabledException.class,
+        WorkspaceAdministrationService.WorkspaceDisabledException.class,
+        WorkspaceAdministrationService.WorkspaceStatusInvalidException.class,
+        WorkspaceAccountService.WorkspaceDisabledException.class,
+        WorkspaceRoleService.WorkspaceDisabledException.class
+    })
     ResponseEntity<Problem> disabled(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof PlatformAuthenticationService.AccountDisabledException ? "PLATFORM_IAM_ACCOUNT_DISABLED"
-            : exception instanceof WorkspaceAuthenticationService.AccountDisabledException ? "WORKSPACE_IAM_ACCOUNT_DISABLED"
-            : exception instanceof WorkspaceAuthenticationService.WorkspaceDisabledException ? "WORKSPACE_IAM_WORKSPACE_DISABLED"
-            : exception instanceof WorkspaceAdministrationService.WorkspaceDisabledException || exception instanceof WorkspaceAccountService.WorkspaceDisabledException || exception instanceof WorkspaceRoleService.WorkspaceDisabledException ? "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED"
-            : "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID";
+        String code = exception instanceof PlatformAuthenticationService.AccountDisabledException
+                ? "PLATFORM_IAM_ACCOUNT_DISABLED"
+                : exception instanceof WorkspaceAuthenticationService.AccountDisabledException
+                        ? "WORKSPACE_IAM_ACCOUNT_DISABLED"
+                        : exception instanceof WorkspaceAuthenticationService.WorkspaceDisabledException
+                                ? "WORKSPACE_IAM_WORKSPACE_DISABLED"
+                                : exception instanceof WorkspaceAdministrationService.WorkspaceDisabledException
+                                                || exception
+                                                        instanceof WorkspaceAccountService.WorkspaceDisabledException
+                                                || exception instanceof WorkspaceRoleService.WorkspaceDisabledException
+                                        ? "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED"
+                                        : "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID";
         return problem(HttpStatus.FORBIDDEN, code, "当前主体不可执行该操作", request);
     }
 
@@ -369,33 +523,76 @@ public final class ContractProblemAdvice {
         OrganizationHierarchyService.OrganizationAuthorizationException.class
     })
     ResponseEntity<Problem> accessDenied(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.FORBIDDEN, "PLATFORM_COMMON_ACCESS_DENIED", "当前主体无权执行该操作", request);
+        return problem(
+                HttpStatus.FORBIDDEN,
+                "PLATFORM_COMMON_ACCESS_DENIED",
+                "当前主体无权执行该操作",
+                /* format-wrap */
+                request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.CredentialLockedException.class, WorkspaceAuthenticationService.CredentialLockedException.class})
+    @ExceptionHandler({
+        PlatformAuthenticationService.CredentialLockedException.class,
+        WorkspaceAuthenticationService.CredentialLockedException.class
+    })
     ResponseEntity<Problem> credentialLocked(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.LOCKED, exception instanceof PlatformAuthenticationService.CredentialLockedException ? "PLATFORM_IAM_CREDENTIAL_LOCKED" : "WORKSPACE_IAM_CREDENTIAL_LOCKED", "凭据已被临时锁定", request);
+        return problem(
+                HttpStatus.LOCKED,
+                exception instanceof PlatformAuthenticationService.CredentialLockedException
+                        ? "PLATFORM_IAM_CREDENTIAL_LOCKED"
+                        : "WORKSPACE_IAM_CREDENTIAL_LOCKED",
+                "凭据已被临时锁定",
+                request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.LoginRateLimitedException.class, PlatformAuthenticationService.OtpRateLimitedException.class, WorkspaceAuthenticationService.LoginRateLimitedException.class, WorkspaceAuthenticationService.OtpRateLimitedException.class})
+    @ExceptionHandler({
+        PlatformAuthenticationService.LoginRateLimitedException.class,
+        PlatformAuthenticationService.OtpRateLimitedException.class,
+        WorkspaceAuthenticationService.LoginRateLimitedException.class,
+        WorkspaceAuthenticationService.OtpRateLimitedException.class
+    })
     ResponseEntity<Problem> rateLimited(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof PlatformAuthenticationService.LoginRateLimitedException || exception instanceof PlatformAuthenticationService.OtpRateLimitedException ? "PLATFORM_IAM_RATE_LIMITED" : "WORKSPACE_IAM_RATE_LIMITED";
+        String code = exception instanceof PlatformAuthenticationService.LoginRateLimitedException
+                        || exception instanceof PlatformAuthenticationService.OtpRateLimitedException
+                ? "PLATFORM_IAM_RATE_LIMITED"
+                : "WORKSPACE_IAM_RATE_LIMITED";
         return problem(HttpStatus.TOO_MANY_REQUESTS, code, "尝试次数过多，请稍后再试", request);
     }
 
-    @ExceptionHandler({PlatformAuthenticationService.OtpInvalidException.class, PlatformAuthenticationService.RecoveryFlowInvalidException.class})
+    @ExceptionHandler({
+        PlatformAuthenticationService.OtpInvalidException.class,
+        PlatformAuthenticationService.RecoveryFlowInvalidException.class
+    })
     ResponseEntity<Problem> platformRecoveryInvalid(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.UNAUTHORIZED, "PLATFORM_IAM_INVALID_CREDENTIALS", "验证码或恢复流程不可用", request);
+        return problem(
+                HttpStatus.UNAUTHORIZED,
+                "PLATFORM_IAM_INVALID_CREDENTIALS",
+                "验证码或恢复流程不可用",
+                /* format-wrap */
+                request);
     }
 
-    @ExceptionHandler({WorkspaceAuthenticationService.OtpInvalidException.class, WorkspacePasswordRecoveryService.OtpInvalidException.class})
+    @ExceptionHandler({
+        WorkspaceAuthenticationService.OtpInvalidException.class,
+        WorkspacePasswordRecoveryService.OtpInvalidException.class
+    })
     ResponseEntity<Problem> resetOtpInvalid(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "WORKSPACE_IAM_OTP_INVALID", "验证码不可用或已失效", request);
+        return problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "WORKSPACE_IAM_OTP_INVALID",
+                "验证码不可用或已失效",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler(WorkspacePasswordRecoveryService.RecoveryStateException.class)
     ResponseEntity<Problem> operationsRecoveryState(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.CONFLICT, "WORKSPACE_IAM_GRANT_INVALID", "找回流程状态不可用或已失效", request);
+        return problem(
+                HttpStatus.CONFLICT,
+                "WORKSPACE_IAM_GRANT_INVALID",
+                "找回流程状态不可用或已失效",
+                /* format-wrap */
+                request);
     }
 
     @ExceptionHandler({
@@ -408,26 +605,43 @@ public final class ContractProblemAdvice {
         ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class
     })
     ResponseEntity<Problem> ownerResultUnknown(RuntimeException exception, HttpServletRequest request) {
-        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "PLATFORM_COMMON_RESULT_UNKNOWN", "owner 命令结果暂时无法确认，请使用同一幂等键重试或查询", request);
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "PLATFORM_COMMON_RESULT_UNKNOWN",
+                "owner 命令结果暂时无法确认，请使用同一幂等键重试或查询",
+                request);
     }
 
-    public static ResponseEntity<Problem> problem(HttpStatus status, String code, String detail, HttpServletRequest request) {
+    public static ResponseEntity<Problem> problem(
+            HttpStatus status, String code, String detail, HttpServletRequest request) {
         PublicSecurityDiagnosticRequestState.freezeFailure(request, status.value(), code);
         RequestCompletionDiagnosticState.freezeFailure(request, code);
         RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
         String correlationId = completion == null
-            ? PublicSecurityDiagnosticRequestState.correlationId(request)
-            : completion.correlationId();
-        return ResponseEntity.status(status).contentType(MediaType.valueOf("application/problem+json"))
-            .body(new Problem("about:blank", code, status.value(), detail, request.getRequestURI(), code, correlationId));
+                ? PublicSecurityDiagnosticRequestState.correlationId(request)
+                : completion.correlationId();
+        return ResponseEntity.status(status)
+                .contentType(MediaType.valueOf("application/problem+json"))
+                .body(new Problem(
+                        "about:blank", code, status.value(), detail, request.getRequestURI(), code, correlationId));
     }
 
-    public static ResponseEntity<Problem> problem(HttpStatus status, String code, String detail, EdgeRequestContext request) {
+    public static ResponseEntity<Problem> problem(
+            HttpStatus status, String code, String detail, EdgeRequestContext request) {
         String correlationId = request.correlationId();
-        if (correlationId == null || correlationId.isBlank()) correlationId = UUID.randomUUID().toString();
-        return ResponseEntity.status(status).contentType(MediaType.valueOf("application/problem+json"))
-            .body(new Problem("about:blank", code, status.value(), detail, "", code, correlationId));
+        if (correlationId == null || correlationId.isBlank())
+            correlationId = UUID.randomUUID().toString();
+        return ResponseEntity.status(status)
+                .contentType(MediaType.valueOf("application/problem+json"))
+                .body(new Problem("about:blank", code, status.value(), detail, "", code, correlationId));
     }
 
-    public record Problem(String type, String title, int status, String detail, String instance, String errorCode, String correlationId) { }
+    public record Problem(
+            String type,
+            String title,
+            int status,
+            String detail,
+            String instance,
+            String errorCode,
+            String correlationId) {}
 }

@@ -12,15 +12,17 @@ public class CreateOperationsContractOperation {
     private final OperationsStoreContractCommandApi contracts;
     private final OperationsStoreContractCommandApi.TaskReadbackApi taskReads;
 
-    public CreateOperationsContractOperation(OperationsStoreContractCommandApi contracts,
-                                             OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
+    public CreateOperationsContractOperation(
+            OperationsStoreContractCommandApi contracts, OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
         this.contracts = contracts;
         this.taskReads = taskReads;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(OperationsStoreContractCommandApi.CreateCommand command) {
+    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(
+            OperationsStoreContractCommandApi.CreateCommand command) {
         var contract = contracts.create(command);
-        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(command.workspaceUuid(), command.groupWorkspaceKey(), contract.id()));
+        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(
+                command.workspaceUuid(), command.groupWorkspaceKey(), contract.id()));
     }
 }

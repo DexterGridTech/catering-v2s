@@ -4,6 +4,5 @@ package com.catering.v2s.extension;
 public final class ExtensionBoundary {
     public static final String NAME = "extension";
 
-    private ExtensionBoundary() {
-    }
+    private ExtensionBoundary() {}
 }

@@ -3,18 +3,40 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
+import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260814_100000_000__catalog_p3_model.sql'), 'utf8');
+const inventoryIdentityMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260808_160000_000__inventory_opaque_catalog_identity_refs.sql'), 'utf8');
+const itemCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260815_010000_000__catalog_voided_item_code_release.sql'), 'utf8');
+const skuCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_020000_000__catalog_sku_voided_code_release.sql'), 'utf8');
+const dictionaryTagReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_030000_000__catalog_dictionary_tag_voided_code_release.sql'), 'utf8');
+const deadIndexMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_040000_000__remove_unusable_stock_bom_option_value_index.sql'), 'utf8');
+const dictionaryMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_010000_000__catalog_dictionary_attribute_parent_and_order_option_kind.sql'), 'utf8');
 const catalogOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java'), 'utf8');
+const productionTagOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java'), 'utf8');
+const platformAuthentication = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java'), 'utf8');
+const inventoryOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java'), 'utf8');
 const itemReferenceFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemReferenceFacts.java'), 'utf8');
 const itemMediaFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemMediaFacts.java'), 'utf8');
 const skuMediaFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogSkuMediaFacts.java'), 'utf8');
 const designCoverage = readFileSync(path.join(root, 'contracts/policy/catalog-inventory-design-byte-coverage.json'), 'utf8');
-const openApi = readFileSync(path.join(root, 'contracts/openapi/catalog-inventory.openapi.yaml'), 'utf8');
 const generator = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
 const designCoverageJson = JSON.parse(designCoverage);
-const openApiJson = JSON.parse(openApi);
+const openApiRootDocument = JSON.parse(readFileSync(path.join(root, 'contracts/openapi/catalog-inventory.openapi.json'), 'utf8'));
+const openApiJson = readCatalogInventoryOpenApi(root);
+const openApi = JSON.stringify(openApiJson);
+const normalizeJavaSource = source => source.replace(/"\s*\+\s*"/g, '').replace(/\s+/g, ' ');
+const normalizedCatalogOwner = normalizeJavaSource(catalogOwner);
+const normalizedProductionTagOwner = normalizeJavaSource(productionTagOwner);
+const normalizedPlatformAuthentication = normalizeJavaSource(platformAuthentication);
+
+test('catalog inventory root OpenAPI declares its generated projection boundary', () => {
+  assert.equal(openApiRootDocument['x-v2s-generated'], true);
+  assert.equal(openApiRootDocument['x-v2s-do-not-edit'], true);
+  assert.equal(openApiRootDocument['x-v2s-generated-from'], 'contracts/catalog/catalog-inventory-edge-placement.json and its declared JSON shards');
+  assert.deepEqual(openApiRootDocument, openApiJson);
+});
 
 test('P3 catalog model migration contains relational source-of-truth constraints only', () => {
   for (const table of [
@@ -41,6 +63,41 @@ test('P3 catalog model migration contains relational source-of-truth constraints
   assert.doesNotMatch(migration, /\b(?:INSERT INTO|UPDATE|DELETE FROM|DO \$\$|ALTER TABLE catalog\.catalog_item)\b/);
 });
 
+test('inventory identity migration names legacy constraints explicitly and fails when they are absent', () => {
+  assert.match(inventoryIdentityMigration, /DROP CONSTRAINT stock_target_data_node_ref_brand_ref_item_code_sku_code_key;/);
+  assert.match(inventoryIdentityMigration, /DROP CONSTRAINT stock_bom_data_node_ref_brand_ref_item_code_sku_code_key;/);
+  assert.doesNotMatch(inventoryIdentityMigration, /DROP CONSTRAINT IF EXISTS stock_(?:target|bom)_data_node_ref_brand_ref_item_code_sku_code_key/);
+});
+
+test('voided item and SKU code releases fail when named legacy constraints are absent', () => {
+  assert.match(itemCodeReleaseMigration, /DROP CONSTRAINT catalog_item_data_node_ref_brand_ref_code_key;/);
+  assert.doesNotMatch(itemCodeReleaseMigration, /DROP CONSTRAINT IF EXISTS catalog_item_data_node_ref_brand_ref_code_key/);
+  assert.match(skuCodeReleaseMigration, /DROP CONSTRAINT catalog_sku_status_check;/);
+  assert.match(skuCodeReleaseMigration, /DROP CONSTRAINT catalog_sku_item_ref_sku_code_key;/);
+  assert.doesNotMatch(skuCodeReleaseMigration, /DROP CONSTRAINT IF EXISTS catalog_sku_(?:status_check|item_ref_sku_code_key)/);
+});
+
+test('dictionary and production-tag codes are reusable only after VOIDED while lists retain voided rows', () => {
+  assert.match(dictionaryTagReleaseMigration, /DROP CONSTRAINT dictionary_entry_data_node_ref_brand_ref_dictionary_kind_co_key;/);
+  assert.match(dictionaryTagReleaseMigration, /CREATE UNIQUE INDEX ux_catalog_dictionary_active_code[\s\S]*WHERE status <> 'VOIDED';/);
+  assert.match(dictionaryTagReleaseMigration, /DROP CONSTRAINT production_tag_definition_data_node_ref_brand_ref_code_key;/);
+  assert.match(dictionaryTagReleaseMigration, /CREATE UNIQUE INDEX ux_production_tag_active_code[\s\S]*WHERE status <> 'VOIDED';/);
+  assert.match(normalizedCatalogOwner, /ON CONFLICT \(data_node_ref,brand_ref,dictionary_kind,code\) WHERE status <> 'VOIDED' DO NOTHING/);
+  const dictionaryListing = catalogOwner.match(/private DictionaryListing loadDictionaryListing\([\s\S]*?\n    private List<DictionaryRow> lockDictionaryEntriesForReorder/)?.[0] ?? '';
+  assert.notEqual(dictionaryListing, '');
+  assert.doesNotMatch(dictionaryListing, /status\s*<>\s*'VOIDED'/);
+  const tagListing = normalizedProductionTagOwner.match(/public JsonNode readTags\([\s\S]*?return envelope\(requestId, data\); \}/)?.[0] ?? '';
+  assert.notEqual(tagListing, '');
+  assert.doesNotMatch(tagListing, /status\s*<>\s*'VOIDED'/);
+});
+
+test('only the stock BOM partial index without a matching production predicate is retired', () => {
+  assert.match(deadIndexMigration, /DROP INDEX inventory\.ix_stock_bom_option_value;/);
+  assert.match(normalizedProductionTagOwner, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\? ORDER BY code/);
+  assert.match(normalizedPlatformAuthentication, /FROM platform_iam\.platform_password_recovery_flow WHERE token_hash=\? FOR UPDATE/);
+  assert.doesNotMatch(inventoryOwner, /stock_bom[\s\S]{0,240}option_value_code\s+IS\s+NOT\s+NULL/);
+});
+
 test('P3 keeps only unordered item-owned sets in the shared reference table', () => {
   const allowedKinds = migration.match(/CHECK \(kind IN \(\s*'([^']+)',\s*'([^']+)',\s*'([^']+)'\s*\)\)/s);
   assert.ok(allowedKinds);
@@ -51,6 +108,20 @@ test('P3 keeps only unordered item-owned sets in the shared reference table', ()
   assert.match(skuMediaFacts, /catalog\.catalog_sku_media/);
   assert.match(itemMediaFacts, /ORDER BY item_ref,display_order,asset_ref/);
   assert.match(skuMediaFacts, /ORDER BY product_sku_ref,display_order,asset_ref/);
+});
+
+test('C1-2 separates option values and enforces parent ownership at the database boundary', () => {
+  assert.match(dictionaryMigration, /ADD COLUMN IF NOT EXISTS parent_entry_ref UUID/);
+  assert.match(dictionaryMigration, /SET dictionary_kind = 'ORDER_OPTION_VALUE'/);
+  assert.match(dictionaryMigration, /CHECK \(\(dictionary_kind = 'SKU_ATTRIBUTE_VALUE'\) = \(parent_entry_ref IS NOT NULL\)\)/);
+  assert.match(dictionaryMigration, /FOREIGN KEY \(parent_entry_ref, data_node_ref, brand_ref\)/);
+  assert.match(dictionaryMigration, /CATALOG_DICTIONARY_UNCLASSIFIED_VALUE_EXISTS/);
+  assert.match(dictionaryMigration, /CATALOG_DICTIONARY_VALUE_HAS_MULTIPLE_ATTRIBUTE_PARENTS/);
+  assert.match(dictionaryMigration, /trg_catalog_sku_attribute_value_relation/);
+  assert.match(dictionaryMigration, /trg_catalog_sku_variant_axis_value_relation/);
+  assert.match(dictionaryMigration, /trg_catalog_order_option_value_relation/);
+  assert.match(catalogOwner, /parentEntryRef/);
+  assert.match(catalogOwner, /parentEntryRef.*ORDER_OPTION_VALUE|ORDER_OPTION_VALUE.*parentEntryRef/s);
 });
 
 test('P3 retires the redundant governance status dimension from the owner and contract', () => {
@@ -134,5 +205,5 @@ test('P3 item detail returns the complete candidate scope for SKU pickers', () =
   assert.equal(detailCoverage.fields.some((field) => field.path === 'queryIdentity.brandRef' && field.type === 'string'), true);
   const queryIdentity = openApiJson.components.schemas.CatalogItemDetail.properties.data.properties.queryIdentity;
   assert.equal(queryIdentity.properties.brandRef.type, 'string');
-  assert.match(catalogOwner, /data\.putObject\("queryIdentity"\)\.put\("dataNodeRef", dataNodeRef\)\.put\("brandRef", brandRef\)/);
+  assert.match(normalizedCatalogOwner, /data\.putObject\("queryIdentity"\)\s*\.put\("dataNodeRef",\s*dataNodeRef\)\s*\.put\("brandRef",\s*brandRef\)/);
 });

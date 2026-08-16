@@ -5,10 +5,7 @@ import {platformAdminThemeProfile} from './platformAdminTheme';
 describe('platform-admin theme profile', () => {
   it('uses the requested platform-admin light palette from one app-owned profile', () => {
     expect(platformAdminThemeProfile.colorScheme).toBe('light');
-    expect(platformAdminThemeProfile.theme.algorithm).toEqual([
-      theme.defaultAlgorithm,
-      theme.compactAlgorithm,
-    ]);
+    expect(platformAdminThemeProfile.theme.algorithm).toEqual([theme.defaultAlgorithm, theme.compactAlgorithm]);
     expect(platformAdminThemeProfile.theme.components?.Layout).toMatchObject({
       headerBg: 'var(--platform-admin-color-bg-container)',
       bodyBg: 'var(--platform-admin-color-bg-layout)',

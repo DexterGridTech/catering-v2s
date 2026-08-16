@@ -5,13 +5,13 @@ import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker
 import java.util.Objects;
 
 /**
- * Request-thread phase façade for database diagnostics.  It has a deliberately closed vocabulary
- * and keeps phase marks at reusable boundaries instead of scattering controller-specific logging.
+ * Request-thread phase façade for database diagnostics. It has a deliberately closed vocabulary and keeps phase marks
+ * at reusable boundaries instead of scattering controller-specific logging.
  */
 public final class RequestDiagnosticLifecycle {
     private static final ThreadLocal<Lifecycle> CURRENT = new ThreadLocal<>();
 
-    private RequestDiagnosticLifecycle() { }
+    private RequestDiagnosticLifecycle() {}
 
     static Lifecycle open(RequestDiagnosticContext context, String consumerFace) {
         Lifecycle lifecycle = new Lifecycle(context, consumerFace, CURRENT.get());
@@ -30,7 +30,8 @@ public final class RequestDiagnosticLifecycle {
     static void close(Lifecycle lifecycle) {
         if (lifecycle != null && CURRENT.get() == lifecycle) {
             Lifecycle previous = lifecycle.previous();
-            if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
+            if (previous == null) CURRENT.remove();
+            else CURRENT.set(previous);
         }
     }
 
@@ -49,6 +50,7 @@ public final class RequestDiagnosticLifecycle {
         private final RequestDiagnosticContext context;
         private final String consumerFace;
         private final Lifecycle previous;
+
         private Lifecycle(RequestDiagnosticContext context, String consumerFace, Lifecycle previous) {
             this.context = Objects.requireNonNull(context, "context");
             if (consumerFace == null || !consumerFace.matches("[A-Za-z0-9._:-]{1,128}")) {
@@ -58,11 +60,16 @@ public final class RequestDiagnosticLifecycle {
             this.previous = previous;
         }
 
-        RequestDiagnosticContext context() { return context; }
+        RequestDiagnosticContext context() {
+            return context;
+        }
 
-        String consumerFace() { return consumerFace; }
+        String consumerFace() {
+            return consumerFace;
+        }
 
-        Lifecycle previous() { return previous; }
+        Lifecycle previous() {
+            return previous;
+        }
     }
-
 }

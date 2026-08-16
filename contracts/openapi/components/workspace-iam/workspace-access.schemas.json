@@ -1,0 +1,2286 @@
+{
+  "components": {
+    "schemas": {
+      "PlatformWorkspaceInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "mobile",
+          "issuerDisplayName",
+          "targetOrganizationType",
+          "targetOrganizationPath",
+          "roleNames",
+          "status",
+          "generation",
+          "expiresAt",
+          "revision",
+          "createdAt",
+          "invitationPageUrl"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "mobile": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "issuerDisplayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "targetOrganizationType": {
+            "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
+          },
+          "targetOrganizationPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "roleNames": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "consentedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "completedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "invitationPageUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "PlatformWorkspaceInvitationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "criteria"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformWorkspaceInvitation"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "criteria": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "mobile": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 32
+              },
+              "targetOrganizationType": {
+                "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType",
+                "nullable": true
+              },
+              "targetOrganizationRef": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "roleId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "status": {
+                "$ref": "#/components/schemas/WorkspaceInvitationStatus",
+                "nullable": true
+              },
+              "expiresFrom": {
+                "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+                "nullable": true
+              },
+              "expiresTo": {
+                "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+                "nullable": true
+              },
+              "sort": {
+                "$ref": "#/components/schemas/WorkspaceInvitationSortKey"
+              },
+              "direction": {
+                "$ref": "../common/enum.schemas.json#/components/schemas/SortDirection"
+              }
+            }
+          }
+        }
+      },
+      "PublicInvitationAcceptIntent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "nextStep"
+        ],
+        "properties": {
+          "nextStep": {
+            "type": "string",
+            "enum": [
+              "VERIFY_MOBILE"
+            ]
+          }
+        }
+      },
+      "PublicInvitationCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "invitationId",
+          "status",
+          "message",
+          "loginPath"
+        ],
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "loginPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      },
+      "PublicInvitationCredentialRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verificationGrant",
+          "userName",
+          "loginName",
+          "password"
+        ],
+        "properties": {
+          "verificationGrant": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          },
+          "userName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "loginName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        }
+      },
+      "PublicInvitationCredentialResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verificationGrant",
+          "accountExists",
+          "userNameReady",
+          "loginNameReady",
+          "passwordReady",
+          "nextStep"
+        ],
+        "properties": {
+          "verificationGrant": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          },
+          "accountExists": {
+            "type": "boolean"
+          },
+          "userNameReady": {
+            "type": "boolean"
+          },
+          "loginNameReady": {
+            "type": "boolean"
+          },
+          "passwordReady": {
+            "type": "boolean"
+          },
+          "nextStep": {
+            "type": "string",
+            "enum": [
+              "COMPLETE_CREDENTIALS",
+              "FINALIZE"
+            ]
+          }
+        }
+      },
+      "PublicInvitationOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          }
+        }
+      },
+      "PublicInvitationOtpSendResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verificationId",
+          "expiresAt"
+        ],
+        "properties": {
+          "verificationId": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          },
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "debugVerificationCode": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "description": "DEV/UAT-only OTP readback. It is null outside the managed non-production exposure policy."
+          }
+        }
+      },
+      "PublicInvitationOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile",
+          "code"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 8
+          }
+        }
+      },
+      "PublicInvitationReadiness": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verificationGrant",
+          "accountExists",
+          "userNameReady",
+          "loginNameReady",
+          "passwordReady",
+          "nextStep"
+        ],
+        "properties": {
+          "verificationGrant": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          },
+          "accountExists": {
+            "type": "boolean"
+          },
+          "userNameReady": {
+            "type": "boolean"
+          },
+          "loginNameReady": {
+            "type": "boolean"
+          },
+          "passwordReady": {
+            "type": "boolean"
+          },
+          "nextStep": {
+            "type": "string",
+            "enum": [
+              "COMPLETE_CREDENTIALS",
+              "FINALIZE"
+            ]
+          }
+        }
+      },
+      "PublicInvitationView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "invitationId",
+          "groupWorkspaceKey",
+          "targetOrganizationType",
+          "targetOrganizationPath",
+          "roleNames",
+          "maskedMobile",
+          "status",
+          "nextStep",
+          "expiresAt",
+          "workspaceName",
+          "operationsTitle"
+        ],
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "operationsTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "targetOrganizationType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "targetOrganizationPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "roleNames": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "maskedMobile": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+          },
+          "nextStep": {
+            "type": "string",
+            "enum": [
+              "ACCEPT",
+              "VERIFY_MOBILE",
+              "FINALIZE",
+              "TERMINAL"
+            ]
+          },
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "workspaceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          }
+        }
+      },
+      "WorkspaceAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "displayName",
+          "mobile",
+          "loginName",
+          "status",
+          "credentialStatus",
+          "activeAssignmentCount",
+          "assignments",
+          "invitationHistory",
+          "authenticationHistory",
+          "createdAt",
+          "updatedAt",
+          "revision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "mobile": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceAccountStatus"
+          },
+          "credentialStatus": {
+            "type": "string",
+            "enum": [
+              "SET",
+              "CHANGE_REQUIRED"
+            ]
+          },
+          "activeAssignmentCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "lastLoginAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "updatedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "serviceNodeType",
+                "organizationPath",
+                "roleName",
+                "status",
+                "source",
+                "revision"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "serviceNodeType": {
+                  "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
+                },
+                "organizationPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                },
+                "roleName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "REVOKED"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "INVITATION",
+                    "ADMINISTRATION"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "invitationHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "invitationId",
+                "status",
+                "generation",
+                "expiresAt"
+              ],
+              "properties": {
+                "invitationId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "status": {
+                  "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+                },
+                "generation": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1
+                },
+                "expiresAt": {
+                  "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+                }
+              }
+            }
+          },
+          "authenticationHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "authenticatedAt"
+              ],
+              "properties": {
+                "authenticatedAt": {
+                  "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+                }
+              }
+            }
+          }
+        }
+      },
+      "WorkspaceAccountPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "sort",
+          "direction"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceAccount"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sort": {
+            "$ref": "#/components/schemas/WorkspacePlatformAccountSortKey"
+          },
+          "direction": {
+            "$ref": "../common/enum.schemas.json#/components/schemas/SortDirection"
+          }
+        }
+      },
+      "WorkspaceAccountStatus": {
+        "type": "string",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "WorkspaceAccountStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion"
+        ],
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/WorkspaceAccountStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceCredentialResetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedVersion"
+        ],
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceCredentialResetResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accountId",
+          "loginName",
+          "status",
+          "credentialStatus",
+          "revision",
+          "sessionsRevoked"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceAccountStatus"
+          },
+          "credentialStatus": {
+            "type": "string",
+            "enum": [
+              "CHANGE_REQUIRED"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sessionsRevoked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkspaceInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "maskedMobile",
+          "targetOrganizationType",
+          "targetOrganizationPath",
+          "roleNames",
+          "status",
+          "generation",
+          "expiresAt",
+          "revision",
+          "createdAt",
+          "invitationPageUrl"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "maskedMobile": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "targetOrganizationType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "targetOrganizationPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "roleNames": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "consentedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "completedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "invitationPageUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "WorkspaceInvitationCancelRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedVersion"
+        ],
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceInvitationCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "organizations",
+          "roles",
+          "metadata"
+        ],
+        "properties": {
+          "organizations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "serviceNodeType",
+                "organizationRef",
+                "path"
+              ],
+              "properties": {
+                "serviceNodeType": {
+                  "type": "string",
+                  "enum": [
+                    "GROUP",
+                    "REGION",
+                    "PROJECT",
+                    "HEAD_COMPANY",
+                    "STORE"
+                  ]
+                },
+                "organizationRef": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "format": "uuid"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                }
+              }
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceRole"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": false,
+            "required": [
+              "subjectType",
+              "page",
+              "pageSize",
+              "total"
+            ],
+            "properties": {
+              "subjectType": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "queryText": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 120
+              },
+              "page": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "selectedOrganizationRef": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 64,
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      },
+      "WorkspaceInvitationCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile",
+          "targetOrganizationType",
+          "targetOrganizationRef",
+          "roleIds"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          },
+          "targetOrganizationType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "targetOrganizationRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "format": "uuid"
+          },
+          "roleIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        }
+      },
+      "WorkspaceInvitationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "criteria"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceInvitation"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "criteria": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "mobile": {
+                "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "organizationQuery": {
+                "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "roleQuery": {
+                "type": "string",
+                "nullable": true,
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "status": {
+                "$ref": "#/components/schemas/WorkspaceInvitationStatus",
+                "nullable": true
+              },
+              "expiresFrom": {
+                "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+                "nullable": true
+              },
+              "expiresTo": {
+                "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+                "nullable": true
+              },
+              "sort": {
+                "$ref": "#/components/schemas/WorkspaceInvitationSortKey"
+              },
+              "direction": {
+                "$ref": "../common/enum.schemas.json#/components/schemas/SortDirection"
+              }
+            }
+          }
+        }
+      },
+      "WorkspaceInvitationReissueRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedVersion"
+        ],
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceInvitationSortKey": {
+        "type": "string",
+        "enum": [
+          "CREATED_AT",
+          "EXPIRES_AT"
+        ]
+      },
+      "WorkspaceInvitationStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "CANCELLED",
+          "EXPIRED",
+          "COMPLETED"
+        ]
+      },
+      "WorkspacePlatformAccountSortKey": {
+        "type": "string",
+        "enum": [
+          "DISPLAY_NAME",
+          "LOGIN_NAME",
+          "LAST_LOGIN_AT",
+          "UPDATED_AT"
+        ]
+      },
+      "WorkspaceUserSortKey": {
+        "type": "string",
+        "enum": [
+          "DISPLAY_NAME",
+          "LOGIN_NAME"
+        ]
+      },
+      "WorkspaceUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accountId",
+          "displayName",
+          "maskedMobile",
+          "loginName",
+          "status",
+          "credentialStatus",
+          "activeAssignmentCount",
+          "assignments",
+          "invitationHistory",
+          "createdAt",
+          "revision"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "maskedMobile": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceAccountStatus"
+          },
+          "credentialStatus": {
+            "type": "string",
+            "enum": [
+              "SET",
+              "CHANGE_REQUIRED"
+            ]
+          },
+          "activeAssignmentCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "lastLoginAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis",
+            "nullable": true
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "accountId",
+                "roleId",
+                "roleName",
+                "serviceNodeType",
+                "organizationPath",
+                "status",
+                "source",
+                "revision",
+                "createdAt",
+                "updatedAt"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "accountId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "roleId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "roleName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "serviceNodeType": {
+                  "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
+                },
+                "organizationPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "REVOKED"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "INVITATION",
+                    "ADMINISTRATION"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "createdAt": {
+                  "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+                },
+                "updatedAt": {
+                  "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+                }
+              }
+            }
+          },
+          "invitationHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "invitationId",
+                "status",
+                "generation",
+                "expiresAt"
+              ],
+              "properties": {
+                "invitationId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "status": {
+                  "$ref": "#/components/schemas/WorkspaceInvitationStatus"
+                },
+                "generation": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1
+                },
+                "expiresAt": {
+                  "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+                }
+              }
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceUserPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "targetOrganizationType",
+          "contextVersion",
+          "criteria"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceUser"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "targetOrganizationType": {
+            "$ref": "../common/enum.schemas.json#/components/schemas/ServiceNodeType"
+          },
+          "scopeRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 240,
+            "format": "uuid"
+          },
+          "scopeName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 240
+          },
+          "contextVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "criteria": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sort",
+              "direction"
+            ],
+            "properties": {
+              "sort": {
+                "$ref": "#/components/schemas/WorkspaceUserSortKey"
+              },
+              "direction": {
+                "$ref": "../common/enum.schemas.json#/components/schemas/SortDirection"
+              }
+            }
+          }
+        }
+      },
+      "WorkspaceUserRevokeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedVersion"
+        ],
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceUserRevokeResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revokedAssignmentId",
+          "accountRetained",
+          "user",
+          "contextVersion",
+          "sessionEntryRequired"
+        ],
+        "properties": {
+          "revokedAssignmentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "accountRetained": {
+            "type": "boolean"
+          },
+          "user": {
+            "$ref": "#/components/schemas/WorkspaceUser"
+          },
+          "contextVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "sessionEntryRequired": {
+            "type": "boolean"
+          },
+          "sessionEntry": {
+            "$ref": "workspace-session.schemas.json#/components/schemas/WorkspaceSessionEntry",
+            "nullable": true
+          }
+        }
+      },
+      "WorkspaceOperationsInvitationActionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedContextVersion",
+          "expectedVersion",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "scopeRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 240,
+            "format": "uuid"
+          },
+          "expectedContextVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "WorkspaceOperationsInvitationCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile",
+          "roleIds",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "scopeRef": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 240,
+            "format": "uuid"
+          },
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          },
+          "roleIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        }
+      },
+      "WorkspaceOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          }
+        }
+      },
+      "WorkspaceOtpSendResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expiresAt"
+        ],
+        "properties": {
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "debugVerificationCode": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "description": "DEV/UAT-only OTP readback. It is null outside the managed non-production exposure policy."
+          }
+        }
+      },
+      "WorkspaceOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mobile",
+          "code"
+        ],
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "WorkspaceRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "groupWorkspaceKey",
+          "name",
+          "serviceNodeType",
+          "capabilityKeys",
+          "pageAccessKeys",
+          "status",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "groupWorkspaceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "serviceNodeType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "capabilityKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "BC-ORG-GROUP-EDIT",
+                "BC-ORG-GROUP-STATUS",
+                "BC-ORG-REGION-CREATE",
+                "BC-ORG-REGION-EDIT",
+                "BC-ORG-REGION-STATUS",
+                "BC-ORG-PROJECT-CREATE",
+                "BC-ORG-PROJECT-EDIT",
+                "BC-ORG-PROJECT-STATUS",
+                "BC-ORG-BRAND-CREATE",
+                "BC-ORG-BRAND-EDIT",
+                "BC-ORG-BRAND-STATUS",
+                "BC-ORG-TENANT-CREATE",
+                "BC-ORG-TENANT-EDIT",
+                "BC-ORG-TENANT-STATUS",
+                "BC-ORG-HEAD-COMPANY-CREATE",
+                "BC-ORG-HEAD-COMPANY-EDIT",
+                "BC-ORG-HEAD-COMPANY-STATUS",
+                "BC-ORG-HEAD-COMPANY-BRAND",
+                "BC-ORG-STORE-CREATE",
+                "BC-ORG-STORE-EDIT",
+                "BC-ORG-STORE-STATUS",
+                "BC-IAM-GROUP-ROLE-REVOKE",
+                "BC-IAM-REGION-ROLE-REVOKE",
+                "BC-IAM-PROJECT-ROLE-REVOKE",
+                "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+                "BC-IAM-STORE-ROLE-REVOKE",
+                "BC-IAM-GROUP-INVITE",
+                "BC-IAM-REGION-INVITE",
+                "BC-IAM-PROJECT-INVITE",
+                "BC-IAM-HEAD-COMPANY-INVITE",
+                "BC-IAM-STORE-INVITE",
+                "BC-CONTRACT-CREATE",
+                "BC-CONTRACT-EDIT",
+                "BC-CONTRACT-INVALIDATE"
+              ]
+            }
+          },
+          "pageAccessKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/WorkspaceRoleStatus"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "updatedAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          }
+        }
+      },
+      "WorkspaceRoleCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "serviceNodeType",
+          "capabilityKeys",
+          "pageAccessKeys"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "serviceNodeType": {
+            "type": "string",
+            "enum": [
+              "GROUP",
+              "REGION",
+              "PROJECT",
+              "HEAD_COMPANY",
+              "STORE"
+            ]
+          },
+          "capabilityKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "BC-ORG-GROUP-EDIT",
+                "BC-ORG-GROUP-STATUS",
+                "BC-ORG-REGION-CREATE",
+                "BC-ORG-REGION-EDIT",
+                "BC-ORG-REGION-STATUS",
+                "BC-ORG-PROJECT-CREATE",
+                "BC-ORG-PROJECT-EDIT",
+                "BC-ORG-PROJECT-STATUS",
+                "BC-ORG-BRAND-CREATE",
+                "BC-ORG-BRAND-EDIT",
+                "BC-ORG-BRAND-STATUS",
+                "BC-ORG-TENANT-CREATE",
+                "BC-ORG-TENANT-EDIT",
+                "BC-ORG-TENANT-STATUS",
+                "BC-ORG-HEAD-COMPANY-CREATE",
+                "BC-ORG-HEAD-COMPANY-EDIT",
+                "BC-ORG-HEAD-COMPANY-STATUS",
+                "BC-ORG-HEAD-COMPANY-BRAND",
+                "BC-ORG-STORE-CREATE",
+                "BC-ORG-STORE-EDIT",
+                "BC-ORG-STORE-STATUS",
+                "BC-IAM-GROUP-ROLE-REVOKE",
+                "BC-IAM-REGION-ROLE-REVOKE",
+                "BC-IAM-PROJECT-ROLE-REVOKE",
+                "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+                "BC-IAM-STORE-ROLE-REVOKE",
+                "BC-IAM-GROUP-INVITE",
+                "BC-IAM-REGION-INVITE",
+                "BC-IAM-PROJECT-INVITE",
+                "BC-IAM-HEAD-COMPANY-INVITE",
+                "BC-IAM-STORE-INVITE",
+                "BC-CONTRACT-CREATE",
+                "BC-CONTRACT-EDIT",
+                "BC-CONTRACT-INVALIDATE"
+              ]
+            }
+          },
+          "pageAccessKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        }
+      },
+      "WorkspaceRolePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "capabilityCatalog",
+          "pageAccessCatalog"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceRole"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "capabilityCatalog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "actionGroupKey",
+                "actionGroupLabel",
+                "actionGroupOrder",
+                "label",
+                "description",
+                "organizationTypes"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "BC-ORG-GROUP-EDIT",
+                    "BC-ORG-GROUP-STATUS",
+                    "BC-ORG-REGION-CREATE",
+                    "BC-ORG-REGION-EDIT",
+                    "BC-ORG-REGION-STATUS",
+                    "BC-ORG-PROJECT-CREATE",
+                    "BC-ORG-PROJECT-EDIT",
+                    "BC-ORG-PROJECT-STATUS",
+                    "BC-ORG-BRAND-CREATE",
+                    "BC-ORG-BRAND-EDIT",
+                    "BC-ORG-BRAND-STATUS",
+                    "BC-ORG-TENANT-CREATE",
+                    "BC-ORG-TENANT-EDIT",
+                    "BC-ORG-TENANT-STATUS",
+                    "BC-ORG-HEAD-COMPANY-CREATE",
+                    "BC-ORG-HEAD-COMPANY-EDIT",
+                    "BC-ORG-HEAD-COMPANY-STATUS",
+                    "BC-ORG-HEAD-COMPANY-BRAND",
+                    "BC-ORG-STORE-CREATE",
+                    "BC-ORG-STORE-EDIT",
+                    "BC-ORG-STORE-STATUS",
+                    "BC-IAM-GROUP-ROLE-REVOKE",
+                    "BC-IAM-REGION-ROLE-REVOKE",
+                    "BC-IAM-PROJECT-ROLE-REVOKE",
+                    "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+                    "BC-IAM-STORE-ROLE-REVOKE",
+                    "BC-IAM-GROUP-INVITE",
+                    "BC-IAM-REGION-INVITE",
+                    "BC-IAM-PROJECT-INVITE",
+                    "BC-IAM-HEAD-COMPANY-INVITE",
+                    "BC-IAM-STORE-INVITE",
+                    "BC-CONTRACT-CREATE",
+                    "BC-CONTRACT-EDIT",
+                    "BC-CONTRACT-INVALIDATE"
+                  ]
+                },
+                "actionGroupKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "actionGroupLabel": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "actionGroupOrder": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "organizationTypes": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "GROUP",
+                      "REGION",
+                      "PROJECT",
+                      "HEAD_COMPANY",
+                      "STORE"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "pageAccessCatalog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "pageDesignKey",
+                "title",
+                "menuGroup",
+                "menuOrder",
+                "requiredDataNodeType",
+                "eligibleOrganizationTypes"
+              ],
+              "properties": {
+                "pageDesignKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "menuGroup": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "menuOrder": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
+                },
+                "requiredDataNodeType": {
+                  "type": "string",
+                  "enum": [
+                    "NONE",
+                    "REGION",
+                    "PROJECT",
+                    "STORE",
+                    "HEAD_COMPANY"
+                  ]
+                },
+                "eligibleOrganizationTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "GROUP",
+                      "REGION",
+                      "PROJECT",
+                      "HEAD_COMPANY",
+                      "STORE"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "WorkspaceRoleStatusTransitionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetStatus",
+          "expectedVersion"
+        ],
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/WorkspaceRoleStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceRoleUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "capabilityKeys",
+          "pageAccessKeys",
+          "expectedVersion"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "capabilityKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "BC-ORG-GROUP-EDIT",
+                "BC-ORG-GROUP-STATUS",
+                "BC-ORG-REGION-CREATE",
+                "BC-ORG-REGION-EDIT",
+                "BC-ORG-REGION-STATUS",
+                "BC-ORG-PROJECT-CREATE",
+                "BC-ORG-PROJECT-EDIT",
+                "BC-ORG-PROJECT-STATUS",
+                "BC-ORG-BRAND-CREATE",
+                "BC-ORG-BRAND-EDIT",
+                "BC-ORG-BRAND-STATUS",
+                "BC-ORG-TENANT-CREATE",
+                "BC-ORG-TENANT-EDIT",
+                "BC-ORG-TENANT-STATUS",
+                "BC-ORG-HEAD-COMPANY-CREATE",
+                "BC-ORG-HEAD-COMPANY-EDIT",
+                "BC-ORG-HEAD-COMPANY-STATUS",
+                "BC-ORG-HEAD-COMPANY-BRAND",
+                "BC-ORG-STORE-CREATE",
+                "BC-ORG-STORE-EDIT",
+                "BC-ORG-STORE-STATUS",
+                "BC-IAM-GROUP-ROLE-REVOKE",
+                "BC-IAM-REGION-ROLE-REVOKE",
+                "BC-IAM-PROJECT-ROLE-REVOKE",
+                "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+                "BC-IAM-STORE-ROLE-REVOKE",
+                "BC-IAM-GROUP-INVITE",
+                "BC-IAM-REGION-INVITE",
+                "BC-IAM-PROJECT-INVITE",
+                "BC-IAM-HEAD-COMPANY-INVITE",
+                "BC-IAM-STORE-INVITE",
+                "BC-CONTRACT-CREATE",
+                "BC-CONTRACT-EDIT",
+                "BC-CONTRACT-INVALIDATE"
+              ]
+            }
+          },
+          "pageAccessKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WorkspaceAssignmentRevokeRequest": {
+        "type": "object",
+        "required": [
+          "expectedVersion"
+        ],
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "WorkspaceAssignmentRevokeResult": {
+        "type": "object",
+        "required": [
+          "assignmentId",
+          "status",
+          "version",
+          "revokedAt"
+        ],
+        "properties": {
+          "assignmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REVOKED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "revokedAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperationsPasswordRecoveryStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loginName",
+          "mobile"
+        ],
+        "properties": {
+          "loginName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "mobile": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9][0-9 -]{5,30}$"
+          }
+        }
+      },
+      "OperationsPasswordRecoveryStartResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspaceName",
+          "operationsTitle"
+        ],
+        "properties": {
+          "workspaceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "operationsTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Gateway-approved display URL for the bound Logo asset; clients must not derive it from logoAssetRef."
+          }
+        }
+      },
+      "OperationsPasswordRecoveryOtpSendRequest": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "OperationsPasswordRecoveryOtpSendResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expiresAt"
+        ],
+        "properties": {
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "debugVerificationCode": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "description": "DEV/UAT-only OTP readback. It is null outside the managed non-production exposure policy."
+          }
+        }
+      },
+      "OperationsPasswordRecoveryOtpVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "OperationsPasswordRecoveryVerification": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "VERIFIED"
+            ]
+          }
+        }
+      },
+      "OperationsPasswordRecoveryCompleteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "newPassword"
+        ],
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        }
+      },
+      "OperationsPasswordRecoveryCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "sessionsRevoked"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "sessionsRevoked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkspaceRoleSortKey": {
+        "type": "string",
+        "enum": [
+          "NAME",
+          "UPDATED_AT"
+        ]
+      },
+      "WorkspaceRoleStatus": {
+        "type": "string",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "WorkspaceRoleAuthorizationReplaceRequest": {
+        "type": "object",
+        "required": [
+          "pageAccessKeys",
+          "actionCapabilityKeys",
+          "expectedVersion"
+        ],
+        "properties": {
+          "pageAccessKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "actionCapabilityKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

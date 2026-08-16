@@ -4,6 +4,5 @@ package com.catering.v2s.platform.foundation;
 public final class PlatformFoundationBoundary {
     public static final String NAME = "platform-foundation";
 
-    private PlatformFoundationBoundary() {
-    }
+    private PlatformFoundationBoundary() {}
 }

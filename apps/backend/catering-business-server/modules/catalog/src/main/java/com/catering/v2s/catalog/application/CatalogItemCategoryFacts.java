@@ -29,12 +29,18 @@ final class CatalogItemCategoryFacts {
         String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, ArrayNode> result = new LinkedHashMap<>();
         refs.forEach(ref -> result.put(ref, mapper.createArrayNode()));
-        jdbc.query("SELECT item_ref,category_ref FROM catalog.catalog_item_category WHERE item_ref IN (" + placeholders + ") ORDER BY item_ref,category_ref", statement -> {
-            for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
-        }, rows -> {
-            while (rows.next()) result.get(rows.getObject(1, UUID.class)).add(rows.getObject(2, UUID.class).toString());
-            return null;
-        });
+        jdbc.query(
+                "SELECT item_ref,category_ref FROM catalog.catalog_item_category WHERE item_ref IN (" + placeholders
+                        + ") ORDER BY item_ref,category_ref",
+                statement -> {
+                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
+                },
+                rows -> {
+                    while (rows.next())
+                        result.get(rows.getObject(1, UUID.class))
+                                .add(rows.getObject(2, UUID.class).toString());
+                    return null;
+                });
         return Map.copyOf(result);
     }
 
@@ -42,21 +48,40 @@ final class CatalogItemCategoryFacts {
         List<UUID> normalized = normalize(categoryRefs);
         jdbc.update("DELETE FROM catalog.catalog_item_category WHERE item_ref=?", itemRef);
         for (UUID categoryRef : normalized) {
-            jdbc.update("INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)", itemRef, categoryRef);
+            jdbc.update(
+                    "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)",
+                    itemRef,
+                    categoryRef);
         }
+    }
+
+    /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
+    void insertForCopy(Map<UUID, ArrayNode> categoryRefsByItem) {
+        List<Object[]> rows = new ArrayList<>();
+        if (categoryRefsByItem != null)
+            for (Map.Entry<UUID, ArrayNode> entry : categoryRefsByItem.entrySet()) {
+                for (UUID categoryRef : normalize(entry.getValue()))
+                    rows.add(new Object[] {entry.getKey(), categoryRef});
+            }
+        if (!rows.isEmpty())
+            jdbc.batchUpdate("INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)", rows);
     }
 
     private static List<UUID> normalize(ArrayNode categoryRefs) {
         if (categoryRefs == null) return List.of();
         LinkedHashSet<UUID> refs = new LinkedHashSet<>();
         for (var value : categoryRefs) {
-            if (!value.isTextual()) throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs must contain UUID refs");
+            if (!value.isTextual())
+                throw new CatalogOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs must contain UUID refs");
             try {
                 if (!refs.add(UUID.fromString(value.asText()))) {
-                    throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs cannot contain duplicates");
+                    throw new CatalogOwnerApi.Problem(
+                            "REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs cannot contain duplicates");
                 }
             } catch (IllegalArgumentException failure) {
-                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs cannot contain a business code", failure);
+                throw new CatalogOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs cannot contain a business code", failure);
             }
         }
         return List.copyOf(refs);

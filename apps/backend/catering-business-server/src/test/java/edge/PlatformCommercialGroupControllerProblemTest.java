@@ -18,11 +18,13 @@ import org.springframework.http.MediaType;
 class PlatformCommercialGroupControllerProblemTest {
     @Test
     void expiredPlatformSessionUsesCanonicalTypedProblemThroughEdgeRequestContext() {
-        var response = new PlatformCommercialGroupController(null, null, ignored -> { }).sessionExpired(request());
+        var response = new PlatformCommercialGroupController(null, null, ignored -> {}).sessionExpired(request());
         Problem problem = response.getBody();
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertEquals(MediaType.valueOf("application/problem+json"), response.getHeaders().getContentType());
+        assertEquals(
+                MediaType.valueOf("application/problem+json"),
+                response.getHeaders().getContentType());
         assertNotNull(problem);
         assertEquals("PLATFORM_IAM_SESSION_EXPIRED", problem.errorCode());
         assertEquals(401, problem.status());
@@ -32,12 +34,18 @@ class PlatformCommercialGroupControllerProblemTest {
 
     @Test
     void ownerProblemWithoutLegacyWireEnumStillMapsToCanonicalValidationProblem() {
-        var response = new PlatformCommercialGroupController(null, null, ignored -> { })
-            .validation(new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_REQUIRED, "missing root"), request());
+        var response = new PlatformCommercialGroupController(null, null, ignored -> {})
+                .validation(
+                        new OrganizationCommandException(OrganizationProblem.COMMERCIAL_GROUP_REQUIRED, "missing root"),
+                        request());
         Problem problem = response.getBody();
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), response.getStatusCode().value());
-        assertEquals(MediaType.valueOf("application/problem+json"), response.getHeaders().getContentType());
+        assertEquals(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                response.getStatusCode().value());
+        assertEquals(
+                MediaType.valueOf("application/problem+json"),
+                response.getHeaders().getContentType());
         assertNotNull(problem);
         assertEquals("VALIDATION_FAILED", problem.errorCode());
         assertEquals(422, problem.status());
@@ -46,22 +54,30 @@ class PlatformCommercialGroupControllerProblemTest {
     @Test
     void ownerCommandDiagnosticIsCorrelatedStructuredAndSecretFree() {
         List<SecurityDiagnosticEvent> events = new ArrayList<>();
-        PlatformCommercialGroupController.recordDiagnostic(events::add,
-            new EdgeRequestContext("not-for-log", "unsafe correlation password=not-for-log", null, null, null, null, null),
-            System.nanoTime(), 500, "PLATFORM_COMMON_RESULT_UNKNOWN");
+        PlatformCommercialGroupController.recordDiagnostic(
+                events::add,
+                new EdgeRequestContext(
+                        "not-for-log", "unsafe correlation password=not-for-log", null, null, null, null, null),
+                System.nanoTime(),
+                500,
+                "PLATFORM_COMMON_RESULT_UNKNOWN");
 
         assertEquals(1, events.size());
         SecurityDiagnosticEvent event = events.getFirst();
         assertEquals("INITIALIZE_COMMERCIAL_GROUP", event.context().operationId());
-        assertEquals("/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group", event.context().routeTemplate());
+        assertEquals(
+                "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
+                event.context().routeTemplate());
         assertEquals("OWNER_COMMAND", event.phase());
         assertEquals("FAILED", event.outcome());
         assertEquals(500, event.status());
         assertEquals("PLATFORM_COMMON_RESULT_UNKNOWN", event.errorCode());
-        assertNotEquals("unsafe correlation password=not-for-log", event.context().correlationId());
+        assertNotEquals(
+                "unsafe correlation password=not-for-log", event.context().correlationId());
     }
 
     private static EdgeRequestContext request() {
-        return new EdgeRequestContext("test-rate-limit-fingerprint", "correlation-platform-session", null, null, null, null, null);
+        return new EdgeRequestContext(
+                "test-rate-limit-fingerprint", "correlation-platform-session", null, null, null, null, null);
     }
 }

@@ -31,9 +31,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -43,9 +43,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -55,9 +55,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -67,9 +67,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitation-candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -79,9 +79,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -91,9 +91,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -103,9 +103,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview",
       "capability": "contract-overview",
-      "pathFile": "paths/platform-admin/contract-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/platform-admin/contract-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -115,9 +115,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview/{contractId}",
       "capability": "contract-overview",
-      "pathFile": "paths/platform-admin/contract-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/platform-admin/contract-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -127,9 +127,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry",
       "capability": "workspace-auth",
-      "pathFile": "paths/operations-admin/workspace-auth.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-auth.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "WORKSPACE_AUTH"
     },
     {
@@ -139,9 +139,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login",
       "capability": "workspace-auth",
-      "pathFile": "paths/operations-admin/workspace-auth.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-auth.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "WORKSPACE_AUTH"
     },
     {
@@ -151,9 +151,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send",
       "capability": "workspace-auth",
-      "pathFile": "paths/operations-admin/workspace-auth.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-auth.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "WORKSPACE_AUTH"
     },
     {
@@ -163,9 +163,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
       "capability": "workspace-auth",
-      "pathFile": "paths/operations-admin/workspace-auth.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-auth.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "WORKSPACE_AUTH"
     },
     {
@@ -175,9 +175,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry",
       "capability": "workspace-auth",
-      "pathFile": "paths/operations-admin/workspace-auth.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-auth.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -187,9 +187,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/context",
       "capability": "workspace-session",
-      "pathFile": "paths/operations-admin/workspace-session.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-session.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -199,9 +199,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/password",
       "capability": "workspace-session",
-      "pathFile": "paths/operations-admin/workspace-session.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-session.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -211,9 +211,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/data-node",
       "capability": "workspace-session",
-      "pathFile": "paths/operations-admin/workspace-session.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-session.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-session.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-session.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -223,9 +223,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/logout",
       "capability": "workspace-session",
-      "pathFile": "paths/operations-admin/workspace-session.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/empty.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-session.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/empty.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -235,9 +235,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -247,9 +247,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
-      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.json",
+      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -259,9 +259,9 @@
       "method": "PATCH",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
-      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.json",
+      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -271,9 +271,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates",
       "capability": "contract-overview",
-      "pathFile": "paths/platform-admin/contract-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/platform-admin/contract-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -283,9 +283,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
       "capability": "organization-overview",
-      "pathFile": "paths/platform-admin/organization-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-overview.schemas.yaml",
+      "pathFile": "paths/platform-admin/organization-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/organization-overview.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -295,9 +295,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy",
       "capability": "organization-overview",
-      "pathFile": "paths/platform-admin/organization-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/platform-admin/organization-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -307,9 +307,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/{category}/{itemId}",
       "capability": "organization-overview",
-      "pathFile": "paths/platform-admin/organization-overview.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-overview.schemas.yaml",
+      "pathFile": "paths/platform-admin/organization-overview.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/organization-overview.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -319,9 +319,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
       "capability": "commercial-group",
-      "pathFile": "paths/platform-admin/commercial-group.paths.yaml",
-      "requestComponentFile": "components/organization/commercial-group.schemas.yaml",
-      "responseComponentFile": "components/organization/commercial-group.schemas.yaml",
+      "pathFile": "paths/platform-admin/commercial-group.paths.json",
+      "requestComponentFile": "components/organization/commercial-group.schemas.json",
+      "responseComponentFile": "components/organization/commercial-group.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -331,9 +331,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       "capability": "role-management",
-      "pathFile": "paths/platform-admin/role-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/role-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -343,9 +343,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       "capability": "role-management",
-      "pathFile": "paths/platform-admin/role-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/role-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -355,9 +355,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
       "capability": "role-management",
-      "pathFile": "paths/platform-admin/role-management.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/role-management.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -367,9 +367,9 @@
       "method": "PATCH",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
       "capability": "role-management",
-      "pathFile": "paths/platform-admin/role-management.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/role-management.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -379,9 +379,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}/status",
       "capability": "role-management",
-      "pathFile": "paths/platform-admin/role-management.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/role-management.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -391,9 +391,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -403,9 +403,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -415,9 +415,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/status",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -427,9 +427,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/credential-reset",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -439,9 +439,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/platform-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/platform-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -451,9 +451,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions",
       "capability": "extension-definition",
-      "pathFile": "paths/platform-admin/extension-definition.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/platform-admin/extension-definition.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -463,9 +463,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       "capability": "extension-definition",
-      "pathFile": "paths/platform-admin/extension-definition.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/platform-admin/extension-definition.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -475,9 +475,9 @@
       "method": "PUT",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/extension-definitions/{entityType}",
       "capability": "extension-definition",
-      "pathFile": "paths/platform-admin/extension-definition.paths.yaml",
-      "requestComponentFile": "components/extension/extension.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/platform-admin/extension-definition.paths.json",
+      "requestComponentFile": "components/extension/extension.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -487,9 +487,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password-login",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_AUTH_LOGIN"
     },
     {
@@ -499,9 +499,9 @@
       "method": "GET",
       "path": "/api/platform/auth/session",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -511,9 +511,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -523,9 +523,9 @@
       "method": "POST",
       "path": "/api/platform/auth/logout",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/empty.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/empty.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -535,9 +535,9 @@
       "method": "GET",
       "path": "/api/platform/group-workspaces",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -547,9 +547,9 @@
       "method": "POST",
       "path": "/api/platform/group-workspaces",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
-      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/platform-workspace/group-workspace.schemas.json",
+      "responseComponentFile": "components/platform-workspace/group-workspace.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -559,9 +559,9 @@
       "method": "POST",
       "path": "/api/platform/assets/staging",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/platform-asset/asset.schemas.yaml",
-      "responseComponentFile": "components/platform-asset/asset.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/platform-asset/asset.schemas.json",
+      "responseComponentFile": "components/platform-asset/asset.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -571,9 +571,9 @@
       "method": "POST",
       "path": "/api/platform/assets/staging/{assetRef}/release",
       "capability": "group-workspace-management",
-      "pathFile": "paths/platform-admin/group-workspace-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/empty.schemas.yaml",
+      "pathFile": "paths/platform-admin/group-workspace-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/empty.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -583,9 +583,9 @@
       "method": "GET",
       "path": "/api/public/assets/{assetRef}/content",
       "capability": "asset-content",
-      "pathFile": "paths/public/asset-content.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-asset/asset.schemas.yaml",
+      "pathFile": "paths/public/asset-content.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-asset/asset.schemas.json",
       "errorSetRef": "PUBLIC_ASSET_CONTENT"
     },
     {
@@ -595,9 +595,9 @@
       "method": "GET",
       "path": "/api/platform/admin-users",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -607,9 +607,9 @@
       "method": "POST",
       "path": "/api/platform/admin-users",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -619,9 +619,9 @@
       "method": "GET",
       "path": "/api/platform/admin-users/{platformAdminId}",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -631,9 +631,9 @@
       "method": "PATCH",
       "path": "/api/platform/admin-users/{platformAdminId}/profile",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -643,9 +643,9 @@
       "method": "POST",
       "path": "/api/platform/admin-users/{platformAdminId}/status",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -655,9 +655,9 @@
       "method": "POST",
       "path": "/api/platform/admin-users/{platformAdminId}/credential-reset",
       "capability": "platform-admin-management",
-      "pathFile": "paths/platform-admin/platform-admin-management.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-admin-management.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -667,9 +667,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       "capability": "brand-management",
-      "pathFile": "paths/operations-admin/brand-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/brand-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -679,9 +679,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands",
       "capability": "brand-management",
-      "pathFile": "paths/operations-admin/brand-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/brand-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -691,9 +691,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       "capability": "brand-management",
-      "pathFile": "paths/operations-admin/brand-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/brand-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -703,9 +703,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}",
       "capability": "brand-management",
-      "pathFile": "paths/operations-admin/brand-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/brand-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -715,9 +715,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
       "capability": "brand-management",
-      "pathFile": "paths/operations-admin/brand-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/brand-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -727,9 +727,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       "capability": "tenant-management",
-      "pathFile": "paths/operations-admin/tenant-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/tenant-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -739,9 +739,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
       "capability": "tenant-management",
-      "pathFile": "paths/operations-admin/tenant-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/tenant-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -751,9 +751,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       "capability": "tenant-management",
-      "pathFile": "paths/operations-admin/tenant-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/tenant-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -763,9 +763,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
       "capability": "tenant-management",
-      "pathFile": "paths/operations-admin/tenant-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/tenant-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -775,9 +775,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
       "capability": "tenant-management",
-      "pathFile": "paths/operations-admin/tenant-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/tenant-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -787,9 +787,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -799,9 +799,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -811,9 +811,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -823,9 +823,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -835,9 +835,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/organization/business-entity.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/organization/business-entity.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -847,9 +847,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/organization/business-entity.schemas.yaml",
-      "responseComponentFile": "components/common/empty.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/organization/business-entity.schemas.json",
+      "responseComponentFile": "components/common/empty.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -859,9 +859,9 @@
       "method": "DELETE",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}",
       "capability": "head-company-management",
-      "pathFile": "paths/operations-admin/head-company-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/empty.schemas.yaml",
+      "pathFile": "paths/operations-admin/head-company-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/empty.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -871,9 +871,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/business-entities/extension-definition",
       "capability": "business-entity-extension",
-      "pathFile": "paths/operations-admin/business-entity-extension.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/operations-admin/business-entity-extension.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -883,9 +883,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -895,9 +895,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -907,9 +907,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -919,9 +919,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -931,9 +931,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -943,9 +943,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -955,9 +955,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -967,9 +967,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -979,9 +979,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -991,9 +991,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1003,9 +1003,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1015,9 +1015,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1027,9 +1027,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1039,9 +1039,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1051,9 +1051,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/candidates",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1063,9 +1063,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1075,9 +1075,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1087,9 +1087,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1099,9 +1099,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1111,9 +1111,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/cancel",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1123,9 +1123,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1135,9 +1135,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1147,9 +1147,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1159,9 +1159,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1171,9 +1171,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/invitations/{invitationId}/reissue",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1183,9 +1183,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1195,9 +1195,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/hierarchy/extension-definition",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1207,9 +1207,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1219,9 +1219,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1231,9 +1231,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1243,9 +1243,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1255,9 +1255,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1267,9 +1267,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1279,9 +1279,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1291,9 +1291,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1303,9 +1303,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1315,9 +1315,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/accounts/{accountId}",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1327,9 +1327,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1339,9 +1339,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/region/user/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1351,9 +1351,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/project/user/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1363,9 +1363,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/head-company/user/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1375,9 +1375,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/store/user/assignments/{assignmentId}/revoke",
       "capability": "workspace-access",
-      "pathFile": "paths/operations-admin/workspace-access.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/operations-admin/workspace-access.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1387,9 +1387,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/organization/organization-hierarchy.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1399,9 +1399,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/organization/organization-hierarchy.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1411,9 +1411,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/commercial-group",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/organization/commercial-group.schemas.yaml",
-      "responseComponentFile": "components/organization/commercial-group.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/organization/commercial-group.schemas.json",
+      "responseComponentFile": "components/organization/commercial-group.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1423,9 +1423,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/organization/organization-hierarchy.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1435,9 +1435,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status",
       "capability": "organization-hierarchy",
-      "pathFile": "paths/operations-admin/organization-hierarchy.paths.yaml",
-      "requestComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
-      "responseComponentFile": "components/organization/organization-hierarchy.schemas.yaml",
+      "pathFile": "paths/operations-admin/organization-hierarchy.paths.json",
+      "requestComponentFile": "components/organization/organization-hierarchy.schemas.json",
+      "responseComponentFile": "components/organization/organization-hierarchy.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1447,9 +1447,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1459,9 +1459,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/organization/store.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/organization/store.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1471,9 +1471,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1483,9 +1483,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1495,9 +1495,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1507,9 +1507,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1519,9 +1519,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/organization/store.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/organization/store.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1531,9 +1531,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status",
       "capability": "store-management",
-      "pathFile": "paths/operations-admin/store-management.paths.yaml",
-      "requestComponentFile": "components/organization/store.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/organization/store.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1543,9 +1543,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile",
       "capability": "store-profile",
-      "pathFile": "paths/operations-admin/store-profile.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/organization/store.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-profile.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1555,9 +1555,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1567,9 +1567,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/contract/contract.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/contract/contract.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1579,9 +1579,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/extension-definition",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/extension/extension.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/extension/extension.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1591,9 +1591,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/candidates",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1603,9 +1603,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile/contracts",
       "capability": "store-profile",
-      "pathFile": "paths/operations-admin/store-profile.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/store-profile.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1615,9 +1615,9 @@
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1627,9 +1627,9 @@
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/contract/contract.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/contract/contract.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1639,9 +1639,9 @@
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
       "capability": "contract-management",
-      "pathFile": "paths/operations-admin/contract-management.paths.yaml",
-      "requestComponentFile": "components/contract/contract.schemas.yaml",
-      "responseComponentFile": "components/contract/contract.schemas.yaml",
+      "pathFile": "paths/operations-admin/contract-management.paths.json",
+      "requestComponentFile": "components/contract/contract.schemas.json",
+      "responseComponentFile": "components/contract/contract.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
     },
     {
@@ -1651,9 +1651,9 @@
       "method": "GET",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1663,9 +1663,9 @@
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1675,9 +1675,9 @@
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1687,9 +1687,9 @@
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1699,9 +1699,9 @@
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1711,9 +1711,9 @@
       "method": "POST",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1723,9 +1723,9 @@
       "method": "GET",
       "path": "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion",
       "capability": "invitation-acceptance",
-      "pathFile": "paths/public/invitation-acceptance.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/invitation-acceptance.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "PUBLIC_INVITATION"
     },
     {
@@ -1735,9 +1735,9 @@
       "method": "GET",
       "path": "/api/platform/audit-history",
       "capability": "audit-history",
-      "pathFile": "paths/platform-admin/audit-history.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/common.schemas.yaml",
+      "pathFile": "paths/platform-admin/audit-history.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/common.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1747,9 +1747,9 @@
       "method": "GET",
       "path": "/api/operations/audit-history",
       "capability": "audit-history",
-      "pathFile": "paths/operations-admin/audit-history.paths.yaml",
-      "requestComponentFile": "components/common/empty.schemas.yaml",
-      "responseComponentFile": "components/common/common.schemas.yaml",
+      "pathFile": "paths/operations-admin/audit-history.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/common/common.schemas.json",
       "errorSetRef": "AUTHZ_READ"
     },
     {
@@ -1759,9 +1759,9 @@
       "method": "POST",
       "path": "/api/platform/auth/login-otp/send",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_LOGIN_OTP"
     },
     {
@@ -1771,9 +1771,9 @@
       "method": "POST",
       "path": "/api/platform/auth/login-otp/verify",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_LOGIN_OTP"
     },
     {
@@ -1783,9 +1783,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password-recovery/start",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_RECOVERY_DISPATCH"
     },
     {
@@ -1795,9 +1795,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password-recovery/otp/send",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_RECOVERY_DISPATCH"
     },
     {
@@ -1807,9 +1807,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password-recovery/otp/verify",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_RECOVERY_GRANT"
     },
     {
@@ -1819,9 +1819,9 @@
       "method": "POST",
       "path": "/api/platform/auth/password-recovery/complete",
       "capability": "platform-auth",
-      "pathFile": "paths/platform-admin/platform-auth.paths.yaml",
-      "requestComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
-      "responseComponentFile": "components/platform-iam/platform-identity.schemas.yaml",
+      "pathFile": "paths/platform-admin/platform-auth.paths.json",
+      "requestComponentFile": "components/platform-iam/platform-identity.schemas.json",
+      "responseComponentFile": "components/platform-iam/platform-identity.schemas.json",
       "errorSetRef": "PLATFORM_RECOVERY_GRANT"
     },
     {
@@ -1831,9 +1831,9 @@
       "method": "POST",
       "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/start",
       "capability": "access-recovery",
-      "pathFile": "paths/public/access-recovery.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/access-recovery.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OPERATIONS_RECOVERY_START"
     },
     {
@@ -1843,9 +1843,9 @@
       "method": "POST",
       "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/send",
       "capability": "access-recovery",
-      "pathFile": "paths/public/access-recovery.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/access-recovery.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OPERATIONS_RECOVERY_SEND"
     },
     {
@@ -1855,9 +1855,9 @@
       "method": "POST",
       "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/otp/verify",
       "capability": "access-recovery",
-      "pathFile": "paths/public/access-recovery.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/access-recovery.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OPERATIONS_RECOVERY_VERIFY"
     },
     {
@@ -1867,9 +1867,9 @@
       "method": "POST",
       "path": "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete",
       "capability": "access-recovery",
-      "pathFile": "paths/public/access-recovery.paths.yaml",
-      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
-      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.yaml",
+      "pathFile": "paths/public/access-recovery.paths.json",
+      "requestComponentFile": "components/workspace-iam/workspace-access.schemas.json",
+      "responseComponentFile": "components/workspace-iam/workspace-access.schemas.json",
       "errorSetRef": "OPERATIONS_RECOVERY_COMPLETE"
     }
   ],
@@ -1878,7 +1878,7 @@
       "hostComponent": "StoreContractCandidatePage",
       "propertyPath": "stores.items",
       "requiredTargetComponent": "StoreContractStoreCandidate",
-      "requiredTargetFile": "components/contract/contract.schemas.yaml",
+      "requiredTargetFile": "components/contract/contract.schemas.json",
       "evidence": "the U01 component generation report must emit this host/property/target tuple and fail on an unresolved, ambiguous or different target"
     }
   ]

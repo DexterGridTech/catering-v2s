@@ -65,8 +65,8 @@ function assertInventory(root) {
 }
 
 function validatePostGate0ContractFace(root) {
-  const specPath = path.join(root, "contracts/openapi/edge.openapi.yaml");
-  if (!fs.existsSync(specPath)) fail("R3_CONTRACT_FACE_MISSING", "contracts/openapi/edge.openapi.yaml");
+  const specPath = path.join(root, "contracts/openapi/edge.openapi.json");
+  if (!fs.existsSync(specPath)) fail("R3_CONTRACT_FACE_MISSING", "contracts/openapi/edge.openapi.json");
 
   let spec;
   try {
@@ -98,8 +98,8 @@ function validatePostGate0ContractFace(root) {
   }
   const rootRoutes = Object.entries(spec.paths ?? {});
   if (rootRoutes.length === 0 || rootRoutes.some(([, item]) => !item?.$ref?.startsWith("./paths/"))) fail("R5_CONTRACT_FACE_ROOT_REFERENCE_INVALID");
-  if (spec.components?.schemas?.Problem?.$ref !== "./components/common/problem.schemas.yaml#/components/schemas/Problem") fail("R5_CONTRACT_FACE_PROBLEM_REFERENCE_INVALID");
-  const problem = JSON.parse(fs.readFileSync(path.join(root, "contracts/openapi/components/common/problem.schemas.yaml"), "utf8")).components?.schemas?.Problem;
+  if (spec.components?.schemas?.Problem?.$ref !== "./components/common/problem.schemas.json#/components/schemas/Problem") fail("R5_CONTRACT_FACE_PROBLEM_REFERENCE_INVALID");
+  const problem = JSON.parse(fs.readFileSync(path.join(root, "contracts/openapi/components/common/problem.schemas.json"), "utf8")).components?.schemas?.Problem;
   if (!problem?.required?.includes("errorCode") || !problem?.required?.includes("correlationId") || problem.properties?.code) fail("R5_CONTRACT_FACE_PROBLEM_WIRE_INVALID");
 
   const generated = [
@@ -276,7 +276,7 @@ function runSelfTest(kind, postGate0 = false) {
 
     const redResults = [];
     if (kind === "contract" || kind === "gate-0") {
-      writeScratchFile(root, "contracts/openapi/edge.openapi.yaml");
+      writeScratchFile(root, "contracts/openapi/edge.openapi.json");
       redResults.push(expectFailure("contract", () => validateContractFace(root, postGate0), postGate0 ? "R3_CONTRACT_FACE_INVALID" : "R3_CONTRACT_FACE_NOT_EMPTY"));
       fs.rmSync(path.join(root, "contracts"), { recursive: true, force: true });
     }

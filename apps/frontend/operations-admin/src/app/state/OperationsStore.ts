@@ -7,7 +7,7 @@ export const operationsStore = configureStore({
     [operationsApi.reducerPath]: operationsApi.reducer,
     operationsScopeContext: operationsScopeContextReducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(operationsApi.middleware),
+  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(operationsApi.middleware),
 });
 
 export type OperationsRootState = ReturnType<typeof operationsStore.getState>;

@@ -1,13 +1,13 @@
 package com.catering.v2s.app.edge.platform.session;
 
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
-import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
-import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
+import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
+import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
-import com.catering.v2s.audit.contract.AuditActor;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -41,14 +41,13 @@ public final class PlatformSessionResolver {
     }
 
     /**
-     * Creates the immutable, request-local platform read fact.  Callers needing a selected
-     * workspace must explicitly derive that second fact from the workspace owner; a global
-     * platform read deliberately has no selected-workspace lookup.
+     * Creates the immutable, request-local platform read fact. Callers needing a selected workspace must explicitly
+     * derive that second fact from the workspace owner; a global platform read deliberately has no selected-workspace
+     * lookup.
      */
     public PlatformReadSessionFacts requireRead(EdgeRequestContext request) {
         return new PlatformReadSessionFacts(ReadBudgetComponent.measure(
-            ReadBudgetComponent.Component.CONTEXT_PLATFORM_IAM,
-            () -> requireUnmeasured(request)));
+                ReadBudgetComponent.Component.CONTEXT_PLATFORM_IAM, () -> requireUnmeasured(request)));
     }
 
     /** Captures the permitted immutable actor snapshot at the authentication boundary. */
@@ -74,16 +73,14 @@ public final class PlatformSessionResolver {
         }
 
         /**
-         * Resolves the selected workspace through its owning service, retaining the existing
-         * enabled-only typed failure.  The key remains explicit because it is path-specific.
+         * Resolves the selected workspace through its owning service, retaining the existing enabled-only typed
+         * failure. The key remains explicit because it is path-specific.
          */
         public EnabledSelectedWorkspaceFact requireEnabledSelectedWorkspace(
-            WorkspaceAdministrationService workspaces,
-            String groupWorkspaceKey
-        ) {
+                WorkspaceAdministrationService workspaces, String groupWorkspaceKey) {
             WorkspaceAdministrationReadback workspace = ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.CONTEXT_PLATFORM_WORKSPACE,
-                () -> Objects.requireNonNull(workspaces, "workspaces").requireEnabled(groupWorkspaceKey));
+                    ReadBudgetComponent.Component.CONTEXT_PLATFORM_WORKSPACE,
+                    () -> Objects.requireNonNull(workspaces, "workspaces").requireEnabled(groupWorkspaceKey));
             return new EnabledSelectedWorkspaceFact(workspace.workspaceUuid(), workspace.groupWorkspaceKey());
         }
     }

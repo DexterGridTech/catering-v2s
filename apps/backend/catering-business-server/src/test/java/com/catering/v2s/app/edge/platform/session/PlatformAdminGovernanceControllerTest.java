@@ -20,18 +20,42 @@ class PlatformAdminGovernanceControllerTest {
     void platformAdministratorGetsUseTypedOwnerTaskReadBoundaries() {
         PlatformAuthenticationService service = mock(PlatformAuthenticationService.class);
         when(service.requireActiveSession("platform-session"))
-            .thenReturn(new PlatformSessionReadback(UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform", Long.MAX_VALUE));
+                .thenReturn(new PlatformSessionReadback(
+                        UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform", Long.MAX_VALUE));
         UUID administratorId = UUID.randomUUID();
-        PlatformAuthenticationService.PlatformAdminReadback administrator = new PlatformAuthenticationService.PlatformAdminReadback(
-            administratorId, "root", "Root", null, "ENABLED", true, 1L, 1L, 2L, null, "NO_ADMIN_AUDIT_EVENT");
+        PlatformAuthenticationService.PlatformAdminReadback administrator =
+                new PlatformAuthenticationService.PlatformAdminReadback(
+                        administratorId,
+                        "root",
+                        "Root",
+                        null,
+                        "ENABLED",
+                        true,
+                        1L,
+                        1L,
+                        2L,
+                        null,
+                        "NO_ADMIN_AUDIT_EVENT");
         when(service.platformAdministratorPage(null, null, null, 1, 50, "USER_NAME", "ASC"))
-            .thenReturn(new PlatformAuthenticationService.PlatformAdminPage(List.of(administrator), 1, 50, 1L, "USER_NAME", "ASC"));
+                .thenReturn(new PlatformAuthenticationService.PlatformAdminPage(
+                        List.of(administrator), 1, 50, 1L, "USER_NAME", "ASC"));
         when(service.platformAdministratorDetail(administratorId)).thenReturn(administrator);
-        PlatformAdminGovernanceController controller = new PlatformAdminGovernanceController(service, new PlatformSessionResolver(service));
-        EdgeRequestContext request = new EdgeRequestContext("fingerprint", "correlation",
-            PlatformSessionCookie.fromCookie("platform-session"), null, null, null, null);
+        PlatformAdminGovernanceController controller =
+                new PlatformAdminGovernanceController(service, new PlatformSessionResolver(service));
+        EdgeRequestContext request = new EdgeRequestContext(
+                "fingerprint",
+                "correlation",
+                PlatformSessionCookie.fromCookie("platform-session"),
+                null,
+                null,
+                null,
+                null);
 
-        assertEquals(1L, controller.list(request, null, null, null, 1, 50, PlatformAdminSortKey.USER_NAME, SortDirection.ASC).total());
+        assertEquals(
+                1L,
+                controller
+                        .list(request, null, null, null, 1, 50, PlatformAdminSortKey.USER_NAME, SortDirection.ASC)
+                        .total());
         assertEquals("Root", controller.detail(request, administratorId).userName());
 
         verify(service).platformAdministratorPage(null, null, null, 1, 50, "USER_NAME", "ASC");

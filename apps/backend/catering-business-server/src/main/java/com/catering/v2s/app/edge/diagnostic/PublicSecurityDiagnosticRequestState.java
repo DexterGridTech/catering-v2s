@@ -22,7 +22,8 @@ public final class PublicSecurityDiagnosticRequestState {
         this.startedAtNanos = System.nanoTime();
     }
 
-    public static PublicSecurityDiagnosticRequestState getOrCreate(HttpServletRequest request, PublicSecurityOperationRegistry.Definition definition) {
+    public static PublicSecurityDiagnosticRequestState getOrCreate(
+            HttpServletRequest request, PublicSecurityOperationRegistry.Definition definition) {
         Object existing = request.getAttribute(ATTRIBUTE);
         if (existing instanceof PublicSecurityDiagnosticRequestState state) return state;
         RequestDiagnosticContext context = HttpRequestMetricsInterceptor.context(request);
@@ -53,7 +54,9 @@ public final class PublicSecurityDiagnosticRequestState {
     /** Reuses one trusted value for the wire Problem and the diagnostic event. */
     public static String correlationId(HttpServletRequest request) {
         PublicSecurityDiagnosticRequestState state = find(request);
-        return state == null ? sanitizeCorrelationId(request.getHeader("X-Correlation-Id")) : state.context.correlationId();
+        return state == null
+                ? sanitizeCorrelationId(request.getHeader("X-Correlation-Id"))
+                : state.context.correlationId();
     }
 
     public SecurityDiagnosticEvent startedEvent() {
@@ -87,8 +90,10 @@ public final class PublicSecurityDiagnosticRequestState {
     }
 
     private static String sanitizeCorrelationId(String candidate) {
-        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : "corr-" + UUID.randomUUID();
+        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}")
+                ? candidate
+                : "corr-" + UUID.randomUUID();
     }
 
-    private record Terminal(int status, String errorCode) { }
+    private record Terminal(int status, String errorCode) {}
 }

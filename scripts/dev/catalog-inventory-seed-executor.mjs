@@ -107,6 +107,12 @@ const productionTagLabel = (code) => businessLabel(seedBusinessLabels.production
 const dictionaryLabel = (kind, code) => businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
 const optionGroupLabel = (code) => businessLabel(seedBusinessLabels.optionGroups, code, "ORDER_OPTION_GROUP");
 const unitLabel = (code) => businessLabel(seedBusinessLabels.units, code, "UNIT");
+const skuAttributeValueCode = (attributeCode, valueCode, context = "UNKNOWN") => {
+  const attribute = String(attributeCode ?? "").trim();
+  const value = String(valueCode ?? "").trim();
+  if (!attribute || !value) fail("SEED_SKU_ATTRIBUTE_VALUE_IDENTITY_INVALID:" + context + ":" + (attribute || "MISSING_ATTRIBUTE") + ":" + (value || "MISSING_VALUE"));
+  return attribute + "-" + value;
+};
 const freshLocalRef = (refs, key) => {
   if (!refs.localRefs.has(key)) refs.localRefs.set(key, randomUUID());
   return refs.localRefs.get(key);
@@ -115,23 +121,47 @@ const dictionaryRef = (refs, kind, code) => requiredUuid(refs.dictionaryRefs.get
 const itemRef = (refs, code) => requiredUuid(refs.itemRefs.get(code), `CATALOG_ITEM:${code}`);
 const skuCode = (refs, referenceOrCode) => refs.skuCodeByReference.get(referenceOrCode) ?? referenceOrCode;
 const skuRef = (refs, referenceOrCode) => requiredUuid(refs.skuRefs.get(skuCode(refs, referenceOrCode)), `PRODUCT_SKU:${referenceOrCode}`);
-const optionValueRef = (refs, code) => requiredUuid(refs.optionValueRefs.get(code), `SKU_ATTRIBUTE_VALUE:${code}`);
+const skuAttributeValueRef = (refs, attributeCode, valueCode, context = "UNKNOWN") => dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", skuAttributeValueCode(attributeCode, valueCode, context));
+const orderOptionValueRef = (refs, code) => dictionaryRef(refs, "ORDER_OPTION_VALUE", code);
+const optionValueRef = (refs, code) => orderOptionValueRef(refs, code);
 const skuDisplayName = (itemName, sku) => {
-  const values = Object.values(sku.attributeValues ?? {}).map((valueCode) => dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode));
+  const values = Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode]) => dictionaryLabel("SKU_ATTRIBUTE_VALUE", skuAttributeValueCode(attributeCode, valueCode, "sku:" + (sku.skuCode ?? sku.code ?? "UNKNOWN"))));
   return values.length ? `${itemName}（${values.join("、")}）` : itemName;
 };
 const sourceBusinessAttributes = (source) => ({商品来源: source.headquarterTemplate ? "总部标准商品" : "门店体验商品"});
 const canonicalBusinessAttributes = () => ({商品来源: "目录体验样品"});
+const skuVariantDimensionsFor = (skus, refs, contextPrefix) => {
+  const dimensionCodes = [...new Set((skus ?? []).flatMap((sku) => Object.keys(sku.attributeValues ?? {})))];
+  return dimensionCodes.map((attributeCode) => ({
+    attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode),
+    attributeCode,
+    attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode),
+    values: (skus ?? []).map((sku, displayOrder) => {
+      const skuCode = sku.skuCode ?? sku.code ?? "UNKNOWN";
+      const valueCode = sku.attributeValues?.[attributeCode];
+      const context = `${contextPrefix}:dimension:${attributeCode}:sku:${skuCode}`;
+      const qualifiedValueCode = skuAttributeValueCode(attributeCode, valueCode, context);
+      return {
+        valueRef: skuAttributeValueRef(refs, attributeCode, valueCode, context),
+        valueCode: qualifiedValueCode,
+        valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", qualifiedValueCode),
+        displayOrder,
+        status: sku.status || "ENABLED",
+      };
+    }),
+  }));
+};
 
 const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {includeComposite = true} = {}) => {
   const shapeKey = source.shapeKey;
   const priceGranularity = shapeKey === "SKU_VARIANT_SALE_COUNTED" ? "SKU" : "ITEM";
   const price = source.standardSalePriceCents ?? null;
+  const skuVariantDimensions = skuVariantDimensionsFor(source.skus ?? [], refs, "source:" + (source.fixtureKey ?? source.catalogItemCode));
   const skus = (source.skus ?? []).map((sku) => ({
     productSkuRef: freshLocalRef(refs, `SKU:${sku.skuCode}`),
     skuCode: sku.skuCode,
     skuName: sku.skuName,
-    attributeValueRefs: Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode], index) => ({attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode), attributeCode, attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode), attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode), valueCode, valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode), displayOrder: index, status: "ENABLED"})),
+    attributeValueRefs: Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode], index) => { const context = "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":sku:" + sku.skuCode; const qualifiedValueCode = skuAttributeValueCode(attributeCode, valueCode, context); return {attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode), attributeCode, attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode), attributeValueRef: skuAttributeValueRef(refs, attributeCode, valueCode, context), valueCode: qualifiedValueCode, valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", qualifiedValueCode), displayOrder: index, status: "ENABLED"}; }),
     skuBarcode: sku.skuBarcode ?? "",
     standardSalePrice: sku.standardSalePriceCents ?? null,
     isDefault: Boolean(sku.isDefault),
@@ -139,7 +169,7 @@ const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {in
     version: 1,
     mediaRefs: assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey] ? [assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey]] : [],
   }));
-  const orderOptions = (source.optionGroups ?? []).map((group) => ({groupCode: group.optionGroupCode ?? group.optionGroupRef ?? group.groupName, groupName: group.groupName, selectionMode: group.selectionRule ?? "SINGLE", required: Boolean(group.required), values: (group.optionValues ?? []).map((value) => { const code = value.optionValueCode ?? value.optionValueRef; return {code, name: value.name, attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", code), default: false, extraPrice: value.standardPriceDeltaCents ?? null, productionEffects: value.preparationImpact ? [value.preparationImpact] : []}; })}));
+  const orderOptions = (source.optionGroups ?? []).map((group) => ({groupCode: group.optionGroupCode ?? group.optionGroupRef ?? group.groupName, groupName: group.groupName, selectionMode: group.selectionRule ?? "SINGLE", required: Boolean(group.required), values: (group.optionValues ?? []).map((value) => { const code = value.optionValueCode ?? value.optionValueRef; return {code, name: dictionaryLabel("ORDER_OPTION_VALUE", code), attributeValueRef: orderOptionValueRef(refs, code), default: false, extraPrice: value.standardPriceDeltaCents ?? null, productionEffects: value.preparationImpact ? [value.preparationImpact] : []}; })}));
   const compositeGroups = includeComposite ? (source.compositeStructure?.componentGroups ?? []).map((group, index) => ({groupCode: `GROUP-${index + 1}`, groupName: group.groupName, selectionRule: group.selectionRule, components: (group.components ?? []).map((component) => { const componentCode = sourceByKey.get(component.componentFixtureKey)?.catalogItemCode ?? component.componentFixtureKey; const componentSkuReference = component.componentSkuRef ?? null; const componentSkuCode = componentSkuReference ? skuCode(refs, componentSkuReference) : null; return {itemCode: componentCode, itemRef: itemRef(refs, componentCode), skuCode: componentSkuCode, productSkuRef: componentSkuReference ? skuRef(refs, componentSkuReference) : null, quantity: String(component.quantity ?? 1), unit: unitLabel("EACH"), default: Boolean(component.defaultSelected), extraPrice: component.standardExtraPriceCents ?? null, status: "ENABLED"}; })})) : [];
   return {
     name: source.name,
@@ -155,6 +185,7 @@ const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {in
     missingPriceCount: price === null ? 1 : 0,
     orderOptions,
     compositeGroups,
+    skuVariantDimensions,
     productionProfiles: {item: source.preparationProfile ?? {}, sku: {}, optionValue: {}},
     skus,
   };
@@ -175,16 +206,19 @@ const canonicalDraft = (dataset, item, assetRefs, refs) => {
     productSkuRef: freshLocalRef(refs, `SKU:${sku.code}`),
     skuCode: sku.code,
     skuName: skuDisplayName(item.name, sku),
-    attributeValueRefs: Object.entries(sku.attributeValues || {}).map(([attributeCode, valueCode], index) => ({
+    attributeValueRefs: Object.entries(sku.attributeValues || {}).map(([attributeCode, valueCode], index) => {
+      const qualifiedValueCode = skuAttributeValueCode(attributeCode, valueCode, "canonical:" + dataset.fixtureId + ":sku:" + sku.code);
+      return {
       attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode),
       attributeCode,
       attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode),
-      attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode),
-      valueCode,
-      valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode),
+      attributeValueRef: skuAttributeValueRef(refs, attributeCode, valueCode, "canonical:" + dataset.fixtureId + ":sku:" + sku.code),
+      valueCode: qualifiedValueCode,
+      valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", qualifiedValueCode),
       displayOrder: index,
       status: sku.status || "ENABLED",
-    })),
+      };
+    }),
     skuBarcode: `${sku.code}-BARCODE`,
     standardSalePrice: null,
     isDefault: sku.code.endsWith("-S"),
@@ -192,19 +226,7 @@ const canonicalDraft = (dataset, item, assetRefs, refs) => {
     version: 1,
     mediaRefs: assetRefs[sku.mediaAssetKey || item.mediaAssetKey] ? [assetRefs[sku.mediaAssetKey || item.mediaAssetKey]] : [],
   }));
-  const dimensionCodes = [...new Set((entities.skus || []).flatMap((sku) => Object.keys(sku.attributeValues || {})))];
-  const skuVariantDimensions = dimensionCodes.map((attributeCode) => ({
-    attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode),
-    attributeCode,
-    attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode),
-    values: (entities.skus || []).map((sku, displayOrder) => ({
-      valueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`),
-      valueCode: sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`,
-      valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", sku.attributeValues?.[attributeCode] || `${sku.code}-VALUE`),
-      displayOrder,
-      status: sku.status || "ENABLED",
-    })),
-  }));
+  const skuVariantDimensions = skuVariantDimensionsFor(entities.skus || [], refs, "canonical:" + dataset.fixtureId);
   const optionGroups = (entities.optionGroups || []).map((group) => ({
     groupCode: group.code,
     groupName: optionGroupLabel(group.code),
@@ -212,8 +234,8 @@ const canonicalDraft = (dataset, item, assetRefs, refs) => {
     required: true,
     values: (entities.optionValues || []).filter((value) => value.groupCode === group.code).map((value) => ({
       code: value.code,
-      name: dictionaryLabel("SKU_ATTRIBUTE_VALUE", value.code),
-      attributeValueRef: dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", value.code),
+      name: dictionaryLabel("ORDER_OPTION_VALUE", value.code),
+      attributeValueRef: orderOptionValueRef(refs, value.code),
       default: false,
       extraPrice: null,
       productionEffects: [],
@@ -276,18 +298,62 @@ const assertExactBusinessLabelSet = (kind, codes, labels) => {
   for (const code of expected) businessLabel(labels, code, kind);
 };
 
-const assertSeedBusinessLabels = (seedPlan) => {
+const collectSeedReferences = (seedPlan) => {
   if (!seedPlan) fail("SEED_STATIC_PLAN_REQUIRED");
   const canonical = canonicalSeedEntries(seedPlan.seedDatasets, seedPlan.canonicalDependencyOrder);
-  const attributeCodes = [];
-  const attributeValueCodes = [];
-  const unitCodes = ["EACH"];
-  const collectSku = (sku) => Object.entries(sku?.attributeValues ?? {}).forEach(([attributeCode, valueCode]) => {
-    attributeCodes.push(attributeCode); attributeValueCodes.push(valueCode);
-  });
+  const attributes = new Set();
+  const skuAttributeValues = new Map();
+  const orderOptionValues = new Set();
+  const problems = [];
+  const collectSku = (sku, origin) => {
+    for (const [attributeCode, valueCode] of Object.entries(sku?.attributeValues ?? {})) {
+      let qualifiedCode;
+      try {
+        qualifiedCode = skuAttributeValueCode(attributeCode, valueCode, origin);
+      } catch (error) {
+        problems.push(error.code || compact(error.message));
+        continue;
+      }
+      const previous = skuAttributeValues.get(qualifiedCode);
+      if (previous && (previous.attributeCode !== attributeCode || previous.valueCode !== String(valueCode).trim())) {
+        problems.push("SEED_SKU_ATTRIBUTE_VALUE_CODE_COLLISION:" + qualifiedCode + ":" + previous.attributeCode + ":" + previous.valueCode + ":" + attributeCode + ":" + valueCode);
+        continue;
+      }
+      attributes.add(attributeCode);
+      skuAttributeValues.set(qualifiedCode, {code: qualifiedCode, attributeCode, valueCode: String(valueCode).trim()});
+    }
+  };
+  const collectOrderOption = (code, origin) => {
+    const normalized = String(code ?? "").trim();
+    if (!normalized) {
+      problems.push("SEED_ORDER_OPTION_VALUE_IDENTITY_INVALID:" + origin);
+      return;
+    }
+    orderOptionValues.add(normalized);
+  };
   for (const source of seedPlan.sourceItems ?? []) {
-    (source.skus ?? []).forEach(collectSku);
-    for (const group of source.optionGroups ?? []) for (const value of group.optionValues ?? []) attributeValueCodes.push(value.optionValueCode ?? value.optionValueRef);
+    for (const sku of source.skus ?? []) collectSku(sku, "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":sku:" + (sku.skuCode ?? "UNKNOWN"));
+    for (const group of source.optionGroups ?? []) {
+      for (const value of group.optionValues ?? []) collectOrderOption(value.optionValueCode ?? value.optionValueRef, "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":option-group:" + (group.optionGroupCode ?? group.optionGroupRef ?? group.groupName));
+    }
+  }
+  for (const {dataset} of canonical) {
+    for (const sku of dataset.entities?.skus ?? []) collectSku(sku, "canonical:" + dataset.fixtureId + ":sku:" + (sku.code ?? "UNKNOWN"));
+    for (const value of dataset.entities?.optionValues ?? []) collectOrderOption(value.code, "canonical:" + dataset.fixtureId + ":option-value");
+  }
+  if (problems.length) fail("SEED_REFERENCE_PREFLIGHT_INVALID:" + problems.join("|"));
+  return {
+    attributes: [...attributes].sort(),
+    skuAttributeValues: [...skuAttributeValues.values()].sort((left, right) => left.code.localeCompare(right.code)),
+    orderOptionValues: [...orderOptionValues].sort(),
+  };
+};
+
+const assertSeedBusinessLabels = (seedPlan) => {
+  const references = collectSeedReferences(seedPlan);
+  const canonical = canonicalSeedEntries(seedPlan.seedDatasets, seedPlan.canonicalDependencyOrder);
+  const unitCodes = ["EACH"];
+  for (const source of seedPlan.sourceItems ?? []) {
     for (const rule of source.inventoryBomRules ?? []) {
       if (rule.independentStock) {
         unitCodes.push(rule.independentStock.consumptionUnitRef ?? "EACH", rule.independentStock.countingUnitRef ?? rule.independentStock.consumptionUnitRef ?? "EACH");
@@ -296,15 +362,14 @@ const assertSeedBusinessLabels = (seedPlan) => {
     }
   }
   for (const {dataset} of canonical) {
-    (dataset.entities?.skus ?? []).forEach(collectSku);
-    for (const value of dataset.entities?.optionValues ?? []) attributeValueCodes.push(value.code);
     for (const line of dataset.entities?.bomLines ?? []) unitCodes.push(line.unit ?? "EACH");
     for (const target of dataset.entities?.stockTargets ?? []) unitCodes.push(target.consumptionUnit, target.countingUnit);
   }
   assertExactBusinessLabelSet("CATALOG_CATEGORY", (seedPlan.sourceItems ?? []).map((item) => item.categoryKey), seedBusinessLabels.categories);
   assertExactBusinessLabelSet("PRODUCTION_TAG", (seedPlan.sourceItems ?? []).flatMap((item) => item.tagKeys ?? []), seedBusinessLabels.productionTags);
-  assertExactBusinessLabelSet("SKU_ATTRIBUTE", attributeCodes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
-  assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", attributeValueCodes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
+  assertExactBusinessLabelSet("SKU_ATTRIBUTE", references.attributes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
+  assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", references.skuAttributeValues.map((entry) => entry.code), seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
+  assertExactBusinessLabelSet("ORDER_OPTION_VALUE", references.orderOptionValues, seedBusinessLabels.dictionary?.ORDER_OPTION_VALUE);
   assertExactBusinessLabelSet("ORDER_OPTION_GROUP", canonical.flatMap(({dataset}) => (dataset.entities?.optionGroups ?? []).map((group) => group.code)), seedBusinessLabels.optionGroups);
   assertExactBusinessLabelSet("UNIT", unitCodes, seedBusinessLabels.units);
 };
@@ -432,23 +497,11 @@ async function execute() {
     }
     const canonicalEntries = canonicalSeedEntries(plan.seedDatasets, plan.canonicalDependencyOrder);
     const canonicalByCode = new Map(canonicalEntries.map((entry) => [entry.item.code, entry]));
-    const referenceCodes = (() => {
-      const attributes = new Set(); const values = new Set();
-      const collectSku = (sku) => Object.entries(sku.attributeValues || {}).forEach(([attributeCode, valueCode]) => { attributes.add(attributeCode); values.add(valueCode); });
-      canonicalEntries.forEach(({dataset}) => {
-        (dataset.entities?.skus || []).forEach(collectSku);
-        (dataset.entities?.optionValues || []).forEach((value) => values.add(value.code));
-      });
-      plan.sourceItems.forEach((source) => {
-        (source.skus || []).forEach(collectSku);
-        (source.optionGroups || []).forEach((group) => (group.optionValues || []).forEach((value) => values.add(value.optionValueCode ?? value.optionValueRef)));
-      });
-      return {attributes: [...attributes].filter(Boolean).sort(), values: [...values].filter(Boolean).sort()};
-    })();
+    const referenceCodes = collectSeedReferences(plan);
     const refsByClient = new Map();
     const refsFor = (client) => {
       const key = `${client.scopeType}:${client.dataNodeRef}`;
-      if (!refsByClient.has(key)) refsByClient.set(key, {categoryRefs: new Map(), productionTagRefs: new Map(), dictionaryRefs: new Map(), itemRefs: new Map(), skuRefs: new Map(), skuCodeByReference: new Map(), optionValueRefs: new Map(), localRefs: new Map()});
+      if (!refsByClient.has(key)) refsByClient.set(key, {categoryRefs: new Map(), productionTagRefs: new Map(), dictionaryRefs: new Map(), dictionaryParentRefs: new Map(), itemRefs: new Map(), skuRefs: new Map(), skuCodeByReference: new Map(), localRefs: new Map()});
       return refsByClient.get(key);
     };
     const recordItemReadback = async (client, refs, code, stage) => {
@@ -456,8 +509,19 @@ async function execute() {
       const item = (detail.json?.data ?? detail.json)?.item ?? (detail.json?.data ?? detail.json);
       refs.itemRefs.set(code, requiredUuid(item?.itemRef, `CATALOG_ITEM:${code}:readback`));
       for (const sku of item?.skus || []) refs.skuRefs.set(sku.skuCode, requiredUuid(sku.productSkuRef, `PRODUCT_SKU:${sku.skuCode}:readback`));
-      for (const dimension of item?.skuVariantDimensions || []) for (const value of dimension.values || []) refs.optionValueRefs.set(value.valueCode, requiredUuid(value.valueRef, `SKU_ATTRIBUTE_VALUE:${value.valueCode}:readback`));
-      for (const group of item?.orderOptions || []) for (const value of group.values || []) if (value.code) refs.optionValueRefs.set(value.code, requiredUuid(value.attributeValueRef, `SKU_ATTRIBUTE_VALUE:${value.code}:readback`));
+      for (const dimension of item?.skuVariantDimensions || []) for (const value of dimension.values || []) {
+        const valueCode = String(value.valueCode ?? "").trim();
+        if (!valueCode) fail(`SEED_SKU_ATTRIBUTE_VALUE_READBACK_CODE_MISSING:${client.scopeType}:${code}:${dimension.attributeCode ?? "UNKNOWN"}`);
+        const valueRef = requiredUuid(value.valueRef, `SKU_ATTRIBUTE_VALUE:${valueCode}:readback`);
+        if (dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode) !== valueRef) fail(`SEED_SKU_ATTRIBUTE_VALUE_READBACK_REF_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
+        if (value.valueLabel !== dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode)) fail(`SEED_SKU_ATTRIBUTE_VALUE_READBACK_LABEL_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
+      }
+      for (const group of item?.orderOptions || []) for (const value of group.values || []) if (value.code) {
+        const valueCode = String(value.code).trim();
+        const valueRef = requiredUuid(value.attributeValueRef, `ORDER_OPTION_VALUE:${valueCode}:readback`);
+        if (orderOptionValueRef(refs, valueCode) !== valueRef) fail(`SEED_ORDER_OPTION_VALUE_READBACK_REF_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
+        if (value.name !== dictionaryLabel("ORDER_OPTION_VALUE", valueCode)) fail(`SEED_ORDER_OPTION_VALUE_READBACK_LABEL_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
+      }
       return item;
     };
     const materializeOwnerRefs = async (client) => {
@@ -478,15 +542,28 @@ async function execute() {
         refs.productionTagRefs.set(row.code, requiredUuid(row.tagRef, `PRODUCTION_TAG:${row.code}:readback`));
       }
       for (const code of tagCodes) requiredUuid(refs.productionTagRefs.get(code), `PRODUCTION_TAG:${code}`);
-      const dictionaries = [["SKU_ATTRIBUTE", referenceCodes.attributes], ["SKU_ATTRIBUTE_VALUE", referenceCodes.values]];
-      for (const [kind, codes] of dictionaries) {
-        for (const code of codes) await request(`${client.scopeType}-${kind}-${code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code, name: dictionaryLabel(kind, code)}});
+      const materializeDictionary = async (kind, entries) => {
+        const codes = entries.map((entry) => entry.code);
+        for (const entry of entries) await request(`${client.scopeType}-${kind}-${entry.code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code: entry.code, name: dictionaryLabel(kind, entry.code), parentEntryRef: entry.parentEntryRef}});
         const dictionary = await request(`${client.scopeType}-${kind}-readback`, "getOperationsCatalogDictionary", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
         for (const row of (dictionary.json?.data ?? dictionary.json)?.entries || []) {
           if (codes.includes(row.code) && row.name !== dictionaryLabel(kind, row.code)) fail(`SEED_DICTIONARY_LABEL_READBACK_INVALID:${kind}:${row.code}`);
           refs.dictionaryRefs.set(dictionaryRefKey(kind, row.code), requiredUuid(row.entryRef, `${kind}:${row.code}:readback`));
+          refs.dictionaryParentRefs.set(dictionaryRefKey(kind, row.code), row.parentEntryRef ?? null);
         }
         for (const code of codes) dictionaryRef(refs, kind, code);
+      };
+      await materializeDictionary("SKU_ATTRIBUTE", referenceCodes.attributes.map((code) => ({code, parentEntryRef: null})));
+      await materializeDictionary("SKU_ATTRIBUTE_VALUE", referenceCodes.skuAttributeValues.map((entry) => ({code: entry.code, parentEntryRef: dictionaryRef(refs, "SKU_ATTRIBUTE", entry.attributeCode)})));
+      await materializeDictionary("ORDER_OPTION_VALUE", referenceCodes.orderOptionValues.map((code) => ({code, parentEntryRef: null})));
+      for (const entry of referenceCodes.skuAttributeValues) {
+        const key = dictionaryRefKey("SKU_ATTRIBUTE_VALUE", entry.code);
+        const actualParent = refs.dictionaryParentRefs.get(key);
+        const expectedParent = dictionaryRef(refs, "SKU_ATTRIBUTE", entry.attributeCode);
+        if (actualParent !== expectedParent) fail(`SEED_SKU_ATTRIBUTE_VALUE_PARENT_READBACK_INVALID:${client.scopeType}:${entry.code}`);
+      }
+      for (const code of referenceCodes.orderOptionValues) {
+        if (refs.dictionaryParentRefs.get(dictionaryRefKey("ORDER_OPTION_VALUE", code)) !== null) fail(`SEED_ORDER_OPTION_VALUE_PARENT_READBACK_INVALID:${client.scopeType}:${code}`);
       }
       return refs;
     };
@@ -900,6 +977,13 @@ const selfTest = () => {
       if (keys.size === 1) fail("SEED_BOM_STAGE_IDENTITY_INVALID");
     }],
     ["CODE_AS_TYPED_REF", () => requiredUuid("LATTE-001", "PRODUCT_SKU")],
+    ["RAW_SKU_ATTRIBUTE_VALUE_CODE", () => skuAttributeValueRef({dictionaryRefs: new Map([["SKU_ATTRIBUTE_VALUE:MEDIUM", "11111111-1111-4111-8111-111111111111"]])}, "DRINK_SIZE", "MEDIUM", "red-mutation")],
+    ["MISSING_SKU_ATTRIBUTE_VALUE_IDENTITY", () => skuAttributeValueCode("DRINK_SIZE", null, "red-mutation")],
+    ["ORDER_OPTION_VALUE_WRONG_KIND", () => orderOptionValueRef({dictionaryRefs: new Map([["SKU_ATTRIBUTE_VALUE:DRESSING-CLASSIC", "11111111-1111-4111-8111-111111111111"]])}, "DRESSING-CLASSIC")],
+    ["QUALIFIED_SKU_VALUE_CODE_COLLISION", () => {
+      const collisionDataset = {fixtureId: "RED-CODE-COLLISION", entities: {catalogItems: [{code: "RED-CODE-COLLISION"}], skus: [{code: "RED-1", attributeValues: {A: "B-C"}}, {code: "RED-2", attributeValues: {"A-B": "C"}}]}};
+      collectSeedReferences({...plan, seedDatasets: [...plan.seedDatasets, collisionDataset], canonicalDependencyOrder: [...plan.canonicalDependencyOrder, collisionDataset.fixtureId]});
+    }],
   ];
   const realBomStageKeys = new Set([
     bomStageKey({ownerCode: "CAESAR-001", skuCode: "SAME-CODE"}),

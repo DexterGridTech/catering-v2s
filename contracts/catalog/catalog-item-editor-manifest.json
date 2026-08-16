@@ -33,7 +33,8 @@
     "skuStatus": {
       "ENABLED": "启用",
       "DISABLED": "停用",
-      "ARCHIVED": "已归档"
+      "ARCHIVED": "已归档",
+      "VOIDED": "已作废"
     },
     "dictionaryEntryStatus": {
       "ENABLED": "启用",
@@ -161,9 +162,10 @@
       "DISABLED"
     ],
     "excludedStatuses": [
-      "ARCHIVED"
+      "ARCHIVED",
+      "VOIDED"
     ],
-    "description": "存在至少一个非 ARCHIVED SKU 即为 HAS_SKU。"
+    "description": "存在至少一个非 ARCHIVED/VOIDED SKU 即为 HAS_SKU。"
   },
   "shapeAdmission": {
     "source": "shapeKey",
@@ -289,6 +291,9 @@
         "query": {
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
+          },
+          "parentEntryRef": {
+            "fieldKey": "skuVariantAttribute"
           }
         },
         "headers": {},
@@ -2487,7 +2492,19 @@
         "condition": "HAS_SKU",
         "allowedModes": [
           "NONE"
-        ]
+        ],
+        "defaultMode": "NONE",
+        "disabledModes": [
+          {
+            "mode": "INDEPENDENT_STOCK",
+            "reason": "按 SKU 管理商品的库存由 SKU 控制。"
+          },
+          {
+            "mode": "BOM",
+            "reason": "按 SKU 管理商品的主商品不能配置 BOM。"
+          }
+        ],
+        "description": "主商品有启用或停用 SKU 时只能无库存控制。"
       },
       {
         "nodeType": "CATALOG_ITEM",
@@ -2496,7 +2513,10 @@
           "NONE",
           "INDEPENDENT_STOCK",
           "BOM"
-        ]
+        ],
+        "defaultMode": "NONE",
+        "disabledModes": [],
+        "description": "无 SKU 主商品可选择无库存、独立库存或 BOM。"
       },
       {
         "nodeType": "SKU",
@@ -2505,7 +2525,10 @@
           "NONE",
           "INDEPENDENT_STOCK",
           "BOM"
-        ]
+        ],
+        "defaultMode": "NONE",
+        "disabledModes": [],
+        "description": "SKU 可无库存、独立库存或配置 SKU BOM。"
       },
       {
         "nodeType": "OPTION_VALUE",
@@ -2513,7 +2536,15 @@
         "allowedModes": [
           "NONE",
           "BOM"
-        ]
+        ],
+        "defaultMode": "NONE",
+        "disabledModes": [
+          {
+            "mode": "INDEPENDENT_STOCK",
+            "reason": "选项值不生成独立库存对象，只能通过 BOM 消耗其他库存对象。"
+          }
+        ],
+        "description": "选项值只能无库存控制或 BOM。"
       }
     ],
     "shapeNodeAdmission": {
@@ -2575,7 +2606,11 @@
           "INDEPENDENT_STOCK",
           "BOM"
         ],
-        "SKU": [],
+        "SKU": [
+          "NONE",
+          "INDEPENDENT_STOCK",
+          "BOM"
+        ],
         "OPTION_VALUE": [
           "NONE",
           "BOM"
@@ -2590,10 +2625,7 @@
           "INDEPENDENT_STOCK",
           "BOM"
         ],
-        "OPTION_VALUE": [
-          "NONE",
-          "BOM"
-        ]
+        "OPTION_VALUE": []
       },
       "STANDARD_SALE_WEIGHED": {
         "CATALOG_ITEM": [
@@ -2601,7 +2633,11 @@
           "INDEPENDENT_STOCK",
           "BOM"
         ],
-        "SKU": [],
+        "SKU": [
+          "NONE",
+          "INDEPENDENT_STOCK",
+          "BOM"
+        ],
         "OPTION_VALUE": [
           "NONE",
           "BOM"
@@ -2614,42 +2650,22 @@
           "BOM"
         ],
         "SKU": [],
-        "OPTION_VALUE": [
-          "NONE",
-          "BOM"
-        ]
+        "OPTION_VALUE": []
       },
       "COMPOSITE": {
-        "CATALOG_ITEM": [
-          "NONE",
-          "INDEPENDENT_STOCK",
-          "BOM"
-        ],
+        "CATALOG_ITEM": [],
         "SKU": [],
-        "OPTION_VALUE": [
-          "NONE",
-          "BOM"
-        ]
+        "OPTION_VALUE": []
       },
       "SERVICE": {
-        "CATALOG_ITEM": [
-          "NONE"
-        ],
+        "CATALOG_ITEM": [],
         "SKU": [],
-        "OPTION_VALUE": [
-          "NONE",
-          "BOM"
-        ]
+        "OPTION_VALUE": []
       },
       "BENEFIT_SHELL": {
-        "CATALOG_ITEM": [
-          "NONE"
-        ],
+        "CATALOG_ITEM": [],
         "SKU": [],
-        "OPTION_VALUE": [
-          "NONE",
-          "BOM"
-        ]
+        "OPTION_VALUE": []
       }
     },
     "hasSku": {
@@ -2660,6 +2676,10 @@
       "excludedStatuses": [
         "ARCHIVED"
       ]
+    },
+    "mediaLimits": {
+      "maxImageCount": 6,
+      "maxImageBytes": 2097152
     },
     "producible": {
       "retainedInCapabilityEnum": true,
@@ -2830,6 +2850,9 @@
       "closureLimit",
       "objectVersions",
       "referenceMappings",
+      "closureEdges",
+      "mappingPreview",
+      "referenceRewritePreview",
       "compatibilityResults",
       "preflightDigest",
       "blockingCount",
@@ -2925,5 +2948,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "81d6fc0f7825e40c31ae87bb7ada6621cf95a3cc3a8b2b926553325b2325c3a5"
+  "manifestDigest": "76012e0dc4d23f8dc1c7d4aeca7b324ed186ee647ca02638e78f53f73a1e3272"
 }

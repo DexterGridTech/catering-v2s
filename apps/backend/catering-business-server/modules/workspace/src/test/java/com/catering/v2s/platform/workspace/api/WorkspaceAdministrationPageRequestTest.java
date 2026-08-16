@@ -11,8 +11,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 class WorkspaceAdministrationPageRequestTest {
-    @Test void normalizesOptionalFiltersAndRetainsBoundedPaging() {
-        var request = new WorkspaceAdministrationPageRequest("  North  ", "  north-1 ", "  North Operations ", "ENABLED", 3, 20, "UPDATED_AT", "DESC");
+    @Test
+    void normalizesOptionalFiltersAndRetainsBoundedPaging() {
+        var request = new WorkspaceAdministrationPageRequest(
+                "  North  ", "  north-1 ", "  North Operations ", "ENABLED", 3, 20, "UPDATED_AT", "DESC");
         assertEquals("North", request.name());
         assertEquals("north-1", request.groupWorkspaceKey());
         assertEquals("North Operations", request.operationsTitle());
@@ -20,18 +22,29 @@ class WorkspaceAdministrationPageRequestTest {
         assertNull(new WorkspaceAdministrationPageRequest(" ", null, null, null, 1, 1, "NAME", "ASC").name());
     }
 
-    @Test void rejectsUnboundedOrUnclosedListRequests() {
-        assertThrows(IllegalArgumentException.class, () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 0, 20, "NAME", "ASC"));
-        assertThrows(IllegalArgumentException.class, () -> new WorkspaceAdministrationPageRequest(null, null, null, "PENDING", 1, 20, "NAME", "ASC"));
-        assertThrows(IllegalArgumentException.class, () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 101, "NAME", "ASC"));
-        assertThrows(IllegalArgumentException.class, () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME; DROP", "ASC"));
+    @Test
+    void rejectsUnboundedOrUnclosedListRequests() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 0, 20, "NAME", "ASC"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new WorkspaceAdministrationPageRequest(null, null, null, "PENDING", 1, 20, "NAME", "ASC"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 101, "NAME", "ASC"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME; DROP", "ASC"));
     }
 
-    @Test void ownerPerformsTheFilteredWindowCountAndBoundedSortedReadWithoutOrganizationLookup() {
+    @Test
+    void ownerPerformsTheFilteredWindowCountAndBoundedSortedReadWithoutOrganizationLookup() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceAdministrationService(jdbc, null, null, null, null);
 
-        var page = service.list(new WorkspaceAdministrationPageRequest("North", "north-1", "Operations", "ENABLED", 3, 20, "UPDATED_AT", "DESC"));
+        var page = service.list(new WorkspaceAdministrationPageRequest(
+                "North", "north-1", "Operations", "ENABLED", 3, 20, "UPDATED_AT", "DESC"));
 
         assertEquals(0, page.total());
         assertEquals(3, page.page());
@@ -63,13 +76,15 @@ class WorkspaceAdministrationPageRequestTest {
         private Object[] countArgs;
         private int queryCalls;
 
-        @Override public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
+        @Override
+        public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
             countSql = sql;
             countArgs = args;
             return requiredType.cast(73L);
         }
 
-        @Override public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
+        @Override
+        public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
             queryCalls++;
             listSql = sql;
             listArgs = args;

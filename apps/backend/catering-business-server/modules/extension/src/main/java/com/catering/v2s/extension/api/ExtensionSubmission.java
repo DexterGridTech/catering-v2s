@@ -1,15 +1,15 @@
 package com.catering.v2s.extension.api;
 
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Owner-native submission of dynamic extension fields.
  *
- * <p>An omitted field is not submitted. {@link Mode#SET} carries canonical JSON text that only
- * the extension owner interprets against the current definition; {@link Mode#CLEAR} removes the
- * field and must not encode that business meaning as {@code null} or the string {@code "null"}.
+ * <p>An omitted field is not submitted. {@link Mode#SET} carries canonical JSON text that only the extension owner
+ * interprets against the current definition; {@link Mode#CLEAR} removes the field and must not encode that business
+ * meaning as {@code null} or the string {@code "null"}.
  */
 public record ExtensionSubmission(List<ExtensionFieldValue> fields) {
     public ExtensionSubmission {
@@ -22,7 +22,9 @@ public record ExtensionSubmission(List<ExtensionFieldValue> fields) {
             if (!fieldKeys.add(field.fieldKey())) {
                 throw new IllegalArgumentException("extension submission field keys must be unique");
             }
-            if (field.mode() == Mode.SET && (field.valueJson() == null || "null".equals(field.valueJson().trim()))) {
+            if (field.mode() == Mode.SET
+                    && (field.valueJson() == null
+                            || "null".equals(field.valueJson().trim()))) {
                 throw new IllegalArgumentException("extension SET requires canonical JSON distinct from null");
             }
             if (field.mode() == Mode.CLEAR && !"".equals(field.valueJson())) {
@@ -32,8 +34,8 @@ public record ExtensionSubmission(List<ExtensionFieldValue> fields) {
     }
 
     /**
-     * One explicitly addressed field. SET carries canonical JSON text; CLEAR carries the empty
-     * string so the explicit mode—not a Java null or JSON null—alone carries removal intent.
+     * One explicitly addressed field. SET carries canonical JSON text; CLEAR carries the empty string so the explicit
+     * mode—not a Java null or JSON null—alone carries removal intent.
      */
     public record ExtensionFieldValue(String fieldKey, String valueJson, Mode mode) {
         public static ExtensionFieldValue clear(String fieldKey) {

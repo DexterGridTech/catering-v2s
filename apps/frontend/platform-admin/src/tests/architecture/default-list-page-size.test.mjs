@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 
-const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
+const read = path => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const stateLists = [
   'features/organization-contract-overview/ui/PlatformReadPage.tsx',
   'features/platform-administration/ui/AdministratorsPage.tsx',
@@ -18,6 +18,10 @@ test('every platform management list defaults to ten rows without changing candi
     assert.match(source, /useState\(10\)/, path);
     assert.doesNotMatch(source, /useState\(20\)/, path);
   }
-  assert.match(read('features/organization-contract-overview/ui/OrganizationOverviewFilters.ts'), /pageSize: 10/);
-  assert.match(read('features/audit-history/ui/PlatformAuditHistoryModal.tsx'), /pageSize: 10/);
+  const overviewFilters = read('features/organization-contract-overview/ui/OrganizationOverviewFilters.ts');
+  const audit = read('features/audit-history/ui/PlatformAuditHistoryModal.tsx');
+  assert.match(overviewFilters, /pageSize: 10/);
+  assert.doesNotMatch(overviewFilters, /pageSize:\s*(?!10\b)\d+/);
+  assert.match(audit, /pageSize: 10/);
+  assert.doesNotMatch(audit, /pageSize:\s*(?!10\b)\d+/);
 });

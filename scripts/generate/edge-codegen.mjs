@@ -14,7 +14,7 @@ const errorsPath = "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-
 const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
-const problemComponentPath = "contracts/openapi/components/common/problem.schemas.yaml";
+const problemComponentPath = "contracts/openapi/components/common/problem.schemas.json";
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -151,7 +151,7 @@ function operationTuple({operationId, method, path: operationPath, face, owner})
   return JSON.stringify([operationId, method.toUpperCase(), operationPath, face, owner]);
 }
 function rootOpenApiOperationTuples(base) {
-  const document = read("contracts/openapi/edge.openapi.yaml", base);
+  const document = read("contracts/openapi/edge.openapi.json", base);
   const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
   const tuples = [];
   for (const [rootPath, reference] of Object.entries(document.paths || {})) {
@@ -898,7 +898,7 @@ function selfTest() {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
     writeOutputs(scratch);
-    const rootOpenApiPath = "contracts/openapi/edge.openapi.yaml";
+    const rootOpenApiPath = "contracts/openapi/edge.openapi.json";
     const rootOpenApiSource = fs.readFileSync(path.join(scratch, rootOpenApiPath), "utf8");
     const rootOpenApi = read(rootOpenApiPath, scratch);
     const releasePath = "/api/platform/assets/staging/{assetRef}/release";
@@ -908,11 +908,11 @@ function selfTest() {
     try { checkOutputs(scratch); fail("R5_EDGE_ROOT_ROUTE_REGISTRY_MISSING_ROOT_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, rootOpenApiPath), rootOpenApiSource);
     const wrongRootOpenApi = read(rootOpenApiPath, scratch);
-    wrongRootOpenApi.paths[releasePath].$ref = "./paths/platform-admin/group-workspace-management.paths.yaml#/paths/~1api~1platform~1assets~1staging";
+    wrongRootOpenApi.paths[releasePath].$ref = "./paths/platform-admin/group-workspace-management.paths.json#/paths/~1api~1platform~1assets~1staging";
     fs.writeFileSync(path.join(scratch, rootOpenApiPath), normalized(wrongRootOpenApi));
     try { checkOutputs(scratch); fail("R5_EDGE_ROOT_ROUTE_REGISTRY_WRONG_REFERENCE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, rootOpenApiPath), rootOpenApiSource);
-    const operationsAuthPath = "contracts/openapi/paths/operations-admin/workspace-auth.paths.yaml";
+    const operationsAuthPath = "contracts/openapi/paths/operations-admin/workspace-auth.paths.json";
     const operationsAuthSource = read(operationsAuthPath, scratch);
     const operationsOtpSend = operationsAuthSource.paths["/api/operations/group-workspaces/{groupWorkspaceKey}/otp/send"]?.post;
     if (!Array.isArray(operationsOtpSend?.security)) fail("R5_EDGE_OPENAPI_SECURITY_FIXTURE_INVALID");
@@ -1020,13 +1020,13 @@ function selfTest() {
     fs.writeFileSync(publicTarget, publicSource.replace(/export const EDGE_PROBLEM_CODES = \[/, "export const EDGE_PROBLEM_CODES = [\n  \"PLATFORM_IAM_ACCOUNT_DISABLED\","));
     try { checkOutputs(scratch); fail("R5_EDGE_TS_PROBLEM_CODE_FACE_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT") throw error; }
     writeOutputs(scratch);
-    const exactRefFile = "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml";
+    const exactRefFile = "contracts/openapi/components/workspace-iam/workspace-access.schemas.json";
     const exactRefSource = fs.readFileSync(path.join(scratch, exactRefFile), "utf8");
     fs.writeFileSync(
       path.join(scratch, exactRefFile),
       exactRefSource.replace(
-        "../common/enum.schemas.yaml#/components/schemas/ServiceNodeType",
-        "../common/time.schemas.yaml#/components/schemas/ServiceNodeType",
+        "../common/enum.schemas.json#/components/schemas/ServiceNodeType",
+        "../common/time.schemas.json#/components/schemas/ServiceNodeType",
       ),
     );
     try { checkOutputs(scratch); fail("R5_EDGE_WIRE_REFERENCE_FRAGMENT_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING") throw error; }
@@ -1038,7 +1038,7 @@ function selfTest() {
     try { checkOutputs(scratch); fail("R5_EDGE_OPENAPI_SUCCESS_STATUS_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, catalogPath), fs.readFileSync(path.join(root, catalogPath)));
     writeOutputs(scratch);
-    const p3CAuthorizationPath = "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml";
+    const p3CAuthorizationPath = "contracts/openapi/paths/operations-admin/workspace-access.paths.json";
     const p3CAuthorizationSource = read(p3CAuthorizationPath, scratch);
     p3CAuthorizationSource.paths["/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/user"].get.parameters.push({
       name: "pageDesignKey",
@@ -1051,7 +1051,7 @@ function selfTest() {
     fs.writeFileSync(path.join(scratch, p3CAuthorizationPath), fs.readFileSync(path.join(root, p3CAuthorizationPath)));
     writeOutputs(scratch);
     const bodyOperation = load(scratch).operations.find((candidate) => candidate.path.includes("/user-management/") && candidate.requestSchema !== "NoBody");
-    const bodyPathFile = "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml";
+    const bodyPathFile = "contracts/openapi/paths/operations-admin/workspace-access.paths.json";
     const bodyPathDocument = read(bodyPathFile, scratch);
     const bodyRequest = bodyPathDocument.paths[bodyOperation.path][bodyOperation.method.toLowerCase()].requestBody;
     if (!bodyRequest || typeof bodyRequest !== "object" || bodyRequest.required !== true) {

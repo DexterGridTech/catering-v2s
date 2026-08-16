@@ -1,0 +1,6 @@
+node_modules
+build
+dist
+**/test-results/**
+apps/frontend/*/src/app/api/generated/**
+apps/frontend/*/src/app/catalog/generatedAdminCatalog.ts

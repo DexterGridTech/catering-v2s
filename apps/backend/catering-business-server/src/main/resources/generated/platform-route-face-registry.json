@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedFrom": "contracts/openapi/edge.openapi.yaml",
+  "generatedFrom": "contracts/openapi/edge.openapi.json",
   "operations": [
     {
       "operationId": "listPlatformGroupWorkspaces",

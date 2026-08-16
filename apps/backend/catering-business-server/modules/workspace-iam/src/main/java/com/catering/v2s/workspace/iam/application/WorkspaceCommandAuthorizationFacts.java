@@ -7,22 +7,18 @@ import java.util.UUID;
 /**
  * Immutable workspace-iam projection minted once at an operations command boundary.
  *
- * <p>It intentionally contains only workspace-iam facts.  Organization scope, target-path
- * judgment and owner state remain owned and rechecked by their respective modules.</p>
+ * <p>It intentionally contains only workspace-iam facts. Organization scope, target-path judgment and owner state
+ * remain owned and rechecked by their respective modules.
  */
 public record WorkspaceCommandAuthorizationFacts(
-    WorkspaceSessionReadback sessionReadback,
-    UUID roleId,
-    String assignmentNodeType,
-    UUID assignmentNodeId
-) {
+        WorkspaceSessionReadback sessionReadback, UUID roleId, String assignmentNodeType, UUID assignmentNodeId) {
     public WorkspaceCommandAuthorizationFacts {
         Objects.requireNonNull(sessionReadback, "sessionReadback");
         Objects.requireNonNull(roleId, "roleId");
         Objects.requireNonNull(assignmentNodeType, "assignmentNodeType");
         Objects.requireNonNull(assignmentNodeId, "assignmentNodeId");
         if (!assignmentNodeType.equals(sessionReadback.assignmentNodeType())
-            || !assignmentNodeId.equals(sessionReadback.assignmentNodeId())) {
+                || !assignmentNodeId.equals(sessionReadback.assignmentNodeId())) {
             throw new IllegalArgumentException("command assignment projection mismatch");
         }
     }

@@ -4,7 +4,12 @@ import {createElement, type ReactElement, type ReactNode} from 'react';
 import {platformHttpProtocol} from './http/platformHttpProtocol';
 import {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 import {updateDirtyRegistrations, updateOpenRegistrations} from './overlay/overlayLock';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, adminWideDetailDescriptionsProps, adminWideDrawerSurfaceProps} from './overlay/drawerSurface';
+import {
+  adminDetailDescriptionsProps,
+  adminDrawerSurfaceProps,
+  adminWideDetailDescriptionsProps,
+  adminWideDrawerSurfaceProps,
+} from './overlay/drawerSurface';
 import {createAsyncGenerationGuard} from './behavior/asyncGeneration';
 import {AdminErrorBoundary} from './behavior/AdminErrorBoundary';
 import {createRefreshSignal} from './behavior/refreshSignal';
@@ -14,12 +19,69 @@ import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from
 import {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 import {EllipsisTooltip} from './presentation/EllipsisTooltip';
 import {wireUuid} from './http/wireUuid';
+import {MOBILE_PATTERN} from './validation/mobilePattern';
+import {mergeCursorCandidateItems} from './list/useCursorCandidates';
+import {updateCursorStack} from './list/useCursorStack';
+import {createContentIdempotencyKey, digestFileContent} from './behavior/contentIdempotencyKey';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
   it('accepts only actual UUID values at generated-wire boundaries', () => {
     expect(wireUuid('00000000-0000-4000-8000-000000000001')).toBe('00000000-0000-4000-8000-000000000001');
     expect(() => wireUuid('CATALOG-001')).toThrow('WIRE_UUID_REQUIRED');
     expect(() => wireUuid('')).toThrow('WIRE_UUID_REQUIRED');
+  });
+
+  it('shares one mainland mobile validation pattern across admin forms', () => {
+    expect(MOBILE_PATTERN.test('13812345678')).toBe(true);
+    expect(MOBILE_PATTERN.test('1381234567')).toBe(false);
+    expect(MOBILE_PATTERN.test('23812345678')).toBe(false);
+  });
+
+  it('derives set-value idempotency keys from operation and canonical JSON content', async () => {
+    const first = await createContentIdempotencyKey('saveOperationsCatalogItem', {
+      name: '河畔茶里',
+      attributes: {b: 2, a: 1},
+    });
+    const sameContent = await createContentIdempotencyKey('saveOperationsCatalogItem', {
+      attributes: {a: 1, b: 2},
+      name: '河畔茶里',
+    });
+    const changedPayload = await createContentIdempotencyKey('saveOperationsCatalogItem', {
+      name: '河畔茶里',
+      attributes: {a: 2, b: 2},
+    });
+    const changedOperation = await createContentIdempotencyKey('createOperationsCatalogItem', {
+      name: '河畔茶里',
+      attributes: {a: 1, b: 2},
+    });
+    expect(first).toBe(sameContent);
+    expect(first).not.toBe(changedPayload);
+    expect(first).not.toBe(changedOperation);
+    expect(first).toMatch(/^ui-content-[0-9a-f]{64}$/);
+    await expect(createContentIdempotencyKey('saveOperationsCatalogItem', {value: new Date()})).rejects.toThrow(
+      'IDEMPOTENCY_PAYLOAD_NOT_JSON',
+    );
+  });
+
+  it('derives binary content digests for multipart idempotency projections', async () => {
+    await expect(digestFileContent(new Blob(['hello']))).resolves.toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+    );
+  });
+
+  it('moves cursor pages by truncating known history and appending only the owner cursor', () => {
+    expect(updateCursorStack(['', 'cursor-2', 'cursor-3'], 1)).toEqual(['']);
+    expect(updateCursorStack(['', 'cursor-2'], 3)).toEqual(['', 'cursor-2']);
+    expect(updateCursorStack(['', 'cursor-2'], 3, 'cursor-3')).toEqual(['', 'cursor-2', 'cursor-3']);
+  });
+
+  it('accumulates candidate pages without duplicate options', () => {
+    const keyOf = (item: {id: string}) => item.id;
+    expect(mergeCursorCandidateItems([{id: 'a'}, {id: 'b'}], [{id: 'b'}, {id: 'c'}], keyOf)).toEqual([
+      {id: 'a'},
+      {id: 'b'},
+      {id: 'c'},
+    ]);
   });
 
   it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
@@ -30,7 +92,9 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
 
   it('renders the code as a smaller tertiary visual while preserving owner path segments', () => {
     const display = renderToStaticMarkup(createElement(NameCodeText, {name: '河畔项目', code: 'RIVER'}));
-    const emphasized = renderToStaticMarkup(createElement(NameCodeText, {name: '河畔项目', code: 'RIVER', emphasizeName: true}));
+    const emphasized = renderToStaticMarkup(
+      createElement(NameCodeText, {name: '河畔项目', code: 'RIVER', emphasizeName: true}),
+    );
     expect(display).toContain('河畔项目');
     expect(display).toContain('(RIVER)');
     expect(display).toContain('font-size:var(--ant-font-size-sm)');
@@ -44,7 +108,9 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     expect(path).toContain('(RIVER)');
   });
   it('renders owner task paths segment by segment without rewriting malformed transport values', () => {
-    expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe('东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)');
+    expect(formatCodeNamePath('EAST 东区 / RIVER 河畔项目 / S-OP 河畔茶里店')).toBe(
+      '东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)',
+    );
     expect(formatCodeNamePath('无编码路径')).toBe('无编码路径');
   });
 
@@ -71,8 +137,12 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   });
 
   it('keeps server cache arguments scoped by the owner-confirmed context', () => {
-    expect(contextScopedQueryArgs({page: 2}, {groupWorkspaceKey: 'space-a', identityKey: 'assignment-a', expectedContextVersion: 7}))
-      .toEqual({page: 2, groupWorkspaceKey: 'space-a', identityKey: 'assignment-a', expectedContextVersion: 7});
+    expect(
+      contextScopedQueryArgs(
+        {page: 2},
+        {groupWorkspaceKey: 'space-a', identityKey: 'assignment-a', expectedContextVersion: 7},
+      ),
+    ).toEqual({page: 2, groupWorkspaceKey: 'space-a', identityKey: 'assignment-a', expectedContextVersion: 7});
   });
 
   it('holds the shell lock until every registered overlay closes', () => {
@@ -111,7 +181,12 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
 
   it('freezes the wide two-column catalog/inventory detail surface', () => {
     expect(adminWideDrawerSurfaceProps.width).toBe('min(1024px, calc(100vw - 48px))');
-    expect(adminWideDetailDescriptionsProps).toMatchObject({bordered: true, size: 'small', column: 2, styles: {label: {width: 164}}});
+    expect(adminWideDetailDescriptionsProps).toMatchObject({
+      bordered: true,
+      size: 'small',
+      column: 2,
+      styles: {label: {width: 164}},
+    });
   });
 
   it('rejects a late async response after a newer request generation begins', () => {
@@ -133,7 +208,9 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
   it('notifies each app-owned read model exactly once after a successful write', () => {
     const signal = createRefreshSignal();
     let notifications = 0;
-    const unsubscribe = signal.subscribe(() => { notifications += 1; });
+    const unsubscribe = signal.subscribe(() => {
+      notifications += 1;
+    });
     const before = signal.snapshot();
     signal.publish();
     expect(signal.snapshot()).toBe(before + 1);
@@ -151,7 +228,9 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     serializeJsonOrMultipartBody({name: 'Aurora'}, explicitHeaders);
     expect(explicitHeaders.get('Content-Type')).toBe('application/problem+json');
     const multipartHeaders = new Headers();
-    expect(serializeJsonOrMultipartBody({file: new Blob(['x'], {type: 'text/plain'})}, multipartHeaders)).toBeInstanceOf(FormData);
+    expect(
+      serializeJsonOrMultipartBody({file: new Blob(['x'], {type: 'text/plain'})}, multipartHeaders),
+    ).toBeInstanceOf(FormData);
     expect(multipartHeaders.has('Content-Type')).toBe(false);
   });
 

@@ -135,8 +135,7 @@
         }
       ],
       "scenarioIds": [
-        "CI-API-026",
-        "CI-L2-006"
+        "CI-API-026"
       ],
       "setupChannel": "P2_HTTP_OWNER_APIS",
       "readbackSelectors": [
@@ -218,8 +217,7 @@
         }
       ],
       "scenarioIds": [
-        "CI-API-026",
-        "CI-L2-006"
+        "CI-API-026"
       ],
       "setupChannel": "P2_HTTP_OWNER_APIS",
       "readbackSelectors": [
@@ -374,8 +372,7 @@
         }
       ],
       "scenarioIds": [
-        "CI-API-026",
-        "CI-L2-006"
+        "CI-API-026"
       ],
       "setupChannel": "P2_HTTP_OWNER_APIS",
       "readbackSelectors": [
@@ -587,10 +584,7 @@
       "scenarioIds": [
         "CI-API-010",
         "CI-API-011",
-        "CI-API-026",
-        "CI-L2-006",
-        "CI-L2-012",
-        "CI-L2-013"
+        "CI-API-026"
       ],
       "setupChannel": "P2_HTTP_OWNER_APIS",
       "readbackSelectors": [
@@ -669,9 +663,7 @@
         }
       ],
       "scenarioIds": [
-        "CI-API-026",
-        "CI-L2-006",
-        "CI-L2-007"
+        "CI-API-026"
       ],
       "setupChannel": "P2_HTTP_OWNER_APIS",
       "readbackSelectors": [
@@ -711,10 +703,25 @@
         "SIZE": "杯型",
         "PORTION_SIZE": "份量",
         "DONENESS": "熟度",
-        "PIZZA_SIZE": "披萨尺寸",
-        "DRINK_SIZE": "饮品杯型"
+        "PIZZA_SIZE": "尺寸",
+        "DRINK_SIZE": "杯型"
       },
       "SKU_ATTRIBUTE_VALUE": {
+        "DONENESS-MEDIUM": "七分熟",
+        "DONENESS-MEDIUM_RARE": "五分熟",
+        "DONENESS-WELL_DONE": "全熟",
+        "DRINK_SIZE-LARGE": "大杯",
+        "DRINK_SIZE-MEDIUM": "中杯",
+        "DRINK_SIZE-SMALL": "小杯",
+        "PIZZA_SIZE-NINE_INCH": "9 寸",
+        "PIZZA_SIZE-TWELVE_INCH": "12 寸",
+        "PORTION_SIZE-LARGE": "大份",
+        "PORTION_SIZE-REGULAR": "标准份",
+        "SIZE-LARGE": "大杯",
+        "SIZE-MEDIUM": "中杯",
+        "SIZE-SMALL": "小杯"
+      },
+      "ORDER_OPTION_VALUE": {
         "BURRATA_SAUCE_BALSAMIC": "黑醋汁",
         "BURRATA_SAUCE_OLIVE": "橄榄油海盐",
         "CAESAR_ADDON_BACON": "加培根",
@@ -740,7 +747,6 @@
         "FRIES_DIP_KETCHUP": "番茄酱",
         "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱",
         "HQ_CAESAR_ADDON_CHICKEN": "加鸡胸肉",
-        "LARGE": "大份",
         "LEMONADE_FLAVOR_BERRY": "加莓果",
         "LEMONADE_FLAVOR_MINT": "加薄荷",
         "LEMONADE_ICE_LESS": "少冰",
@@ -749,12 +755,7 @@
         "LEMONADE_SWEETNESS_LESS": "少甜",
         "LEMONADE_SWEETNESS_REGULAR": "标准甜",
         "LEMONADE_SWEETNESS_ZERO": "无糖",
-        "MEDIUM": "七分熟",
-        "MEDIUM_RARE": "五分熟",
-        "NINE_INCH": "9 寸",
-        "REGULAR": "标准份",
         "SIZE-LARGE": "大份",
-        "SMALL": "小杯",
         "TOMATO_PASTA_ADDON_CHEESE": "加马苏里拉芝士",
         "TOMATO_PASTA_ADDON_CHICKEN": "加烤鸡胸",
         "TOMATO_PASTA_ADDON_MUSHROOM": "加蘑菇",
@@ -763,9 +764,7 @@
         "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
         "TOMATO_PASTA_SPICY_MILD": "微辣",
         "TOMATO_PASTA_SPICY_NONE": "不辣",
-        "TOPPING-BACON": "加培根",
-        "TWELVE_INCH": "12 寸",
-        "WELL_DONE": "全熟"
+        "TOPPING-BACON": "加培根"
       }
     },
     "optionGroups": {
@@ -1553,6 +1552,7 @@
       "purpose": "同 SKU 编码但属性组合不同，商品结构阻断",
       "scenarioIds": [
         "CI-API-018",
+        "CI-L2-007",
         "CI-L2-015"
       ],
       "ownerScopes": [
@@ -2374,6 +2374,7 @@
       "scenarioIds": [
         "CI-API-014",
         "CI-API-020",
+        "CI-L2-005",
         "CI-L2-010"
       ],
       "ownerScopes": [
@@ -2454,6 +2455,8 @@
       "purpose": "总公司到门店完整闭包复制",
       "scenarioIds": [
         "CI-API-020",
+        "CI-L2-005",
+        "CI-L2-010",
         "CI-L2-015"
       ],
       "ownerScopes": [
@@ -2530,6 +2533,7 @@
       "purpose": "库存三类变化动作读回前/变化/后",
       "scenarioIds": [
         "CI-API-012",
+        "CI-L2-012",
         "CI-L2-014"
       ],
       "ownerScopes": [
@@ -2837,8 +2841,7 @@
       "class": "TEST",
       "purpose": "五个真实复杂商品图按契约读回",
       "scenarioIds": [
-        "CI-API-026",
-        "CI-L2-006"
+        "CI-API-026"
       ],
       "ownerScopes": [
         {
@@ -2907,6 +2910,84 @@
             "type": "ScenarioState",
             "code": "FIXTURE-SEED-READBACK",
             "scenarioId": "FIXTURE-SEED-READBACK"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "fixtureId": "FIXTURE-L2-OWNER-READBACK",
+      "class": "TEST",
+      "purpose": "本轮 L2 owner HTTP fixture 的商品、库存对象和范围事实读回",
+      "scenarioIds": [
+        "CI-L2-006"
+      ],
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "objects": [
+        {
+          "type": "ScenarioState",
+          "code": "FIXTURE-L2-OWNER-READBACK",
+          "scenarioId": "FIXTURE-L2-OWNER-READBACK"
+        }
+      ],
+      "edges": [],
+      "generatorRecipe": {
+        "kind": "OWNER_COMMAND_FIXTURE",
+        "fixtureId": "FIXTURE-L2-OWNER-READBACK"
+      },
+      "setupChannel": "P2_OWNER_COMMANDS",
+      "readbackSelectors": [
+        "ownerScopes",
+        "objects",
+        "edges",
+        "expected"
+      ],
+      "expected": {
+        "readbackFields": [
+          "ownerFacts",
+          "scope",
+          "catalogItem",
+          "inventoryTarget"
+        ],
+        "caseParameterKey": "readbackKind",
+        "scenarioState": "FIXTURE-L2-OWNER-READBACK"
+      },
+      "cleanupPolicy": "RUN_SCOPED_REVERT",
+      "entities": {
+        "constructedAt": "test-run",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "objects": [
+          {
+            "type": "ScenarioState",
+            "code": "FIXTURE-L2-OWNER-READBACK",
+            "scenarioId": "FIXTURE-L2-OWNER-READBACK"
           }
         ],
         "edges": []
@@ -3531,6 +3612,7 @@
       "purpose": "九 surface loading/error/empty/recovery",
       "scenarioIds": [
         "CI-API-005",
+        "CI-L2-004",
         "CI-L2-016",
         "CI-L2-017"
       ],
@@ -3839,78 +3921,6 @@
       }
     },
     {
-      "fixtureId": "FIXTURE-SCENARIO-CI-L2-004",
-      "class": "TEST",
-      "purpose": "该 L2 场景的最小业务状态与可观察结果",
-      "scenarioIds": [
-        "CI-L2-004"
-      ],
-      "ownerScopes": [
-        {
-          "scopeKind": "HEAD_COMPANY_BRAND",
-          "headCompanyRef": "HC-A",
-          "brandRef": "BR-A",
-          "balanceAndLedgerExpected": 0
-        },
-        {
-          "scopeKind": "STORE_BRAND",
-          "storeRef": "STORE-A",
-          "brandRef": "BR-A",
-          "balanceAndLedgerExpected": "legal-sample"
-        }
-      ],
-      "objects": [
-        {
-          "type": "ScenarioState",
-          "code": "FIXTURE-SCENARIO-CI-L2-004",
-          "scenarioId": "CI-L2-004"
-        }
-      ],
-      "edges": [],
-      "generatorRecipe": {
-        "kind": "OWNER_COMMAND_FIXTURE",
-        "fixtureId": "FIXTURE-SCENARIO-CI-L2-004"
-      },
-      "setupChannel": "P2_OWNER_COMMANDS",
-      "readbackSelectors": [
-        "ownerScopes",
-        "objects",
-        "edges",
-        "expected"
-      ],
-      "expected": {
-        "scenarioState": "CI-L2-004",
-        "caseParameterKey": "variant"
-      },
-      "cleanupPolicy": "RUN_SCOPED_REVERT",
-      "entities": {
-        "constructedAt": "test-run",
-        "source": "fixture-catalog",
-        "ownerGraph": [
-          {
-            "scopeKind": "HEAD_COMPANY_BRAND",
-            "headCompanyRef": "HC-A",
-            "brandRef": "BR-A",
-            "balanceAndLedgerExpected": 0
-          },
-          {
-            "scopeKind": "STORE_BRAND",
-            "storeRef": "STORE-A",
-            "brandRef": "BR-A",
-            "balanceAndLedgerExpected": "legal-sample"
-          }
-        ],
-        "objects": [
-          {
-            "type": "ScenarioState",
-            "code": "FIXTURE-SCENARIO-CI-L2-004",
-            "scenarioId": "CI-L2-004"
-          }
-        ],
-        "edges": []
-      }
-    },
-    {
       "fixtureId": "FIXTURE-SCENARIO-CI-L2-008",
       "class": "TEST",
       "purpose": "该 L2 场景的最小业务状态与可观察结果",
@@ -4155,5 +4165,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "03ff8b7ea1cd99c7236046c092c85f625eb5f84b34b423ca7d1b34a444e2ef4b"
+  "fixtureDigest": "6ec73e1fcc7ffae2daa8d9babde973ea9a58d3298dfed4a7919d614831048cad"
 }

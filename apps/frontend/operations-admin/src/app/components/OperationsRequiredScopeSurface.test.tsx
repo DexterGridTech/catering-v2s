@@ -6,7 +6,13 @@ import {isOperationsScopeComplete} from './OperationsDataScopeContextBar';
 import type {WorkspaceScopeContext, WorkspaceScopeNode} from '../api/generated/operations-edge';
 import {wireUuid} from '../api/wireUuid';
 
-const node = (dataNodeName: string, dataNodeRef: string): WorkspaceScopeNode => ({dataNodeRef: wireUuid(dataNodeRef), dataNodeName, dataNodeCode: dataNodeName, dataNodeType: 'REGION', ancestorPath: []});
+const node = (dataNodeName: string, dataNodeRef: string): WorkspaceScopeNode => ({
+  dataNodeRef: wireUuid(dataNodeRef),
+  dataNodeName,
+  dataNodeCode: dataNodeName,
+  dataNodeType: 'REGION',
+  ancestorPath: [],
+});
 type ScopeContext = WorkspaceScopeContext;
 const completeContext: ScopeContext = {
   region: node('region', '00000000-0000-4000-8000-000000000011'),
@@ -28,16 +34,26 @@ describe('operations required scope surface', () => {
   });
 
   it('mounts a child only after the owner-confirmed scope supplied by the current entry is complete', () => {
-    const gated = renderToStaticMarkup(<OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={{...completeContext, project: null}}><button data-testid="scoped-child">业务操作</button></OperationsRequiredScopeSurface>);
+    const gated = renderToStaticMarkup(
+      <OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={{...completeContext, project: null}}>
+        <button data-testid="scoped-child">业务操作</button>
+      </OperationsRequiredScopeSurface>,
+    );
     expect(gated).toContain('operations-page-data-scope-gated');
     expect(gated).not.toContain('scoped-child');
-    const ready = renderToStaticMarkup(<OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={completeContext}><button data-testid="scoped-child">业务操作</button></OperationsRequiredScopeSurface>);
+    const ready = renderToStaticMarkup(
+      <OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={completeContext}>
+        <button data-testid="scoped-child">业务操作</button>
+      </OperationsRequiredScopeSurface>,
+    );
     expect(ready).toContain('scoped-child');
     expect(ready).not.toContain('operations-page-data-scope-gated');
   });
 
   it('covers the catalog denominator and keeps NONE pages mountable without a selection', () => {
-    const scoped = adminCatalog.operationsPages.filter((page) => page.requiredDataNodeType !== 'NONE').map((page) => `${page.pageDesignKey}:${page.requiredDataNodeType}`);
+    const scoped = adminCatalog.operationsPages
+      .filter(page => page.requiredDataNodeType !== 'NONE')
+      .map(page => `${page.pageDesignKey}:${page.requiredDataNodeType}`);
     expect(scoped).toEqual([
       'PG-ORG-STORE-MANAGE:PROJECT',
       'PG-CONTRACT-STORE-MANAGE:PROJECT',
@@ -50,7 +66,12 @@ describe('operations required scope surface', () => {
       'PG-INVENTORY-STORE-STATUS:STORE',
       'PG-CATALOG-BRAND-ITEMS:HEAD_COMPANY',
     ]);
-    expect(renderToStaticMarkup(<OperationsRequiredScopeSurface requiredDataNodeType="NONE" scopeContext={null}><button data-testid="none-child">无范围页面</button></OperationsRequiredScopeSurface>)).toContain('none-child');
+    expect(
+      renderToStaticMarkup(
+        <OperationsRequiredScopeSurface requiredDataNodeType="NONE" scopeContext={null}>
+          <button data-testid="none-child">无范围页面</button>
+        </OperationsRequiredScopeSurface>,
+      ),
+    ).toContain('none-child');
   });
-
 });

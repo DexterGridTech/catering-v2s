@@ -5,12 +5,20 @@ test('platform administrator locates a real workspace and proves display update 
   const workspaceName = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_NAME');
   const workspaceLabel = requiredL2Env('R5_L2_PLATFORM_WORKSPACE_LABEL');
   const workspaceKey = workspaceLabel.slice(`${workspaceName}(`.length, -1);
-  await signInPlatform(page); await page.goto('/platform/workspaces');
-  await page.getByLabel('集团空间名称').fill(workspaceName); await page.getByTestId('platform-workspace-filter-submit').click();
+  await signInPlatform(page);
+  await page.goto('/platform/workspaces');
+  await page.getByLabel('集团空间名称').fill(workspaceName);
+  await page.getByTestId('platform-workspace-filter-submit').click();
   await page.getByRole('button', {name: workspaceName, exact: true}).click();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText('集团空间详情', {exact: true})).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true})).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true})).toBeVisible();
+  await expect(
+    page.getByTestId('platform-workspace-detail-drawer').getByText('集团空间详情', {exact: true}),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true}),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true}),
+  ).toBeVisible();
   await page.getByTestId('platform-workspace-edit').click();
   await expect(page.getByTestId('platform-workspace-edit-submit')).toBeVisible();
   const name = page.getByTestId('platform-workspace-edit-name');
@@ -21,22 +29,49 @@ test('platform administrator locates a real workspace and proves display update 
   const currentNotes = await notes.inputValue();
   const updatedNotes = `${currentNotes.trim()} L2-${Date.now()}`.trim();
   await notes.fill(updatedNotes);
-  const requestPromise = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(request.url()).pathname));
-  const responsePromise = page.waitForResponse((response) => response.request().method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(response.url()).pathname));
+  const requestPromise = page.waitForRequest(
+    request =>
+      request.method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(request.url()).pathname),
+  );
+  const responsePromise = page.waitForResponse(
+    response =>
+      response.request().method() === 'PATCH' &&
+      /\/api\/platform\/group-workspaces\/[^/]+$/.test(new URL(response.url()).pathname),
+  );
   await page.getByTestId('platform-workspace-edit-submit').click();
   const [request, response] = await Promise.all([requestPromise, responsePromise]);
   expect(response.status()).toBe(200);
-  const body = request.postDataJSON() as {name?: string; operationsTitle?: string; notes?: string | null; logoIntent?: string; expectedVersion?: number};
-  expect(body).toMatchObject({name: currentName, operationsTitle: currentOperationsTitle, notes: updatedNotes, logoIntent: 'KEEP'});
+  const body = request.postDataJSON() as {
+    name?: string;
+    operationsTitle?: string;
+    notes?: string | null;
+    logoIntent?: string;
+    expectedVersion?: number;
+  };
+  expect(body).toMatchObject({
+    name: currentName,
+    operationsTitle: currentOperationsTitle,
+    notes: updatedNotes,
+    logoIntent: 'KEEP',
+  });
   expect(body.expectedVersion).toBeGreaterThan(0);
   expect(request.headers()['idempotency-key']).toBeTruthy();
-  const readback = await response.json() as {name?: string; operationsTitle?: string; groupWorkspaceKey?: string; version?: number};
+  const readback = (await response.json()) as {
+    name?: string;
+    operationsTitle?: string;
+    groupWorkspaceKey?: string;
+    version?: number;
+  };
   expect(readback).toMatchObject({name: currentName, operationsTitle: currentOperationsTitle});
   expect(readback.groupWorkspaceKey).toBeTruthy();
   expect(readback.version).toBeGreaterThan(0);
   expect(readback.version).toBe(body.expectedVersion! + 1);
   await expect(page.getByTestId('platform-workspace-detail-drawer')).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true})).toBeVisible();
-  await expect(page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true})).toBeVisible();
+  await expect(
+    page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceName, {exact: true}),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('platform-workspace-detail-drawer').getByText(workspaceKey, {exact: true}),
+  ).toBeVisible();
   await signOutPlatform(page);
 });

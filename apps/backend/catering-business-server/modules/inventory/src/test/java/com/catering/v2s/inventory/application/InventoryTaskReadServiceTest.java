@@ -26,6 +26,7 @@ class InventoryTaskReadServiceTest {
         assertSame(expected, reads.target("node", "brand", "target", "request", "STORE"));
 
         verify(owner).readTarget("node", "brand", "target", "request", "STORE");
-        verify(owner, never()).read(anyString(), anyString(), anyString(), any(ObjectNode.class), anyString(), anyString());
+        verify(owner, never())
+                .read(anyString(), anyString(), anyString(), any(ObjectNode.class), anyString(), anyString());
     }
 }

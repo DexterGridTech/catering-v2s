@@ -14,7 +14,9 @@ document.documentElement.style.colorScheme = platformAdminThemeProfile.colorSche
 createRoot(document.querySelector('#app')!).render(
   <ConfigProvider locale={zhCN} theme={platformAdminTheme}>
     <ProConfigProvider>
-      <Provider store={platformStore}><PlatformApp/></Provider>
+      <Provider store={platformStore}>
+        <PlatformApp />
+      </Provider>
     </ProConfigProvider>
   </ConfigProvider>,
 );

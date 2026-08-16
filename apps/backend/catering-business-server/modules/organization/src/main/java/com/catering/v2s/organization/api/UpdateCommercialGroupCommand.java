@@ -7,13 +7,12 @@ import java.util.UUID;
 /** Owner command for the already-initialized commercial-group root. */
 public interface UpdateCommercialGroupCommand {
     CommercialGroupReadback execute(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        String idempotencyKey,
-        String commercialGroupCode,
-        String commercialGroupName,
-        long expectedVersion,
-        Map<String, String> extensionValues,
-        AuditActor actor
-    );
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String idempotencyKey,
+            String commercialGroupCode,
+            String commercialGroupName,
+            long expectedVersion,
+            Map<String, String> extensionValues,
+            AuditActor actor);
 }

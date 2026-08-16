@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend", "platform", "contract", "frontend-platform", "product"]
 impacts: ["architecture", "database", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review"]
-assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY"]
-sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"]
+assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY", "BACKEND_NA_SPLIT_PACKAGE_SCOPE", "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE", "BACKEND_SOURCE_HASH_CHAIN_CLOSURE", "BACKEND_FORMATTING_GATE_SCOPE"]
+sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "doc/platform/backend-coding-standard.md", "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"]
 ---
 
 # HTTP CRUD efficiency design redlines
@@ -19,6 +19,86 @@ edge or admin feature design. They do not turn a Seed sample into implementation
 universal SQL-count ceiling, or replace detailed business/IA/owner source reread. Every backend
 operation still declares its normal-path database access shape as a design contract; that declaration
 is operation-specific, not a global performance threshold.
+
+- `COMMAND_RECEIPT_CANONICAL_REPLAY`: a typed owner-command receipt must use the shared parser and
+  canonical JSON serializer for new writes and replay. A legacy hand-encoded
+  `{"k":"<base64>"}` receipt may be decoded only on its replay path and rewritten to canonical
+  JSON in the same owner transaction; regex field extraction and permanent dual-format support are
+  prohibited. The minimum proof covers `"`, `\\`, nulls, lists, maps, an old stored receipt, and
+  the exact terminal readback. This applies only to persisted command readbacks; opaque credentials,
+  audit payloads, and already-canonical Jackson receipts are counterexamples. Source:
+  `doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md`, N-f.
+
+- `INDEX_RETIREMENT_NEEDS_PREDICATE_AND_PREFIX_PROOF`: an index is not dead because its name is
+  absent from a grep or because a narrow acceptance workload did not touch its table. Before a
+  destructive migration, inspect the indexed leading columns, partial-index predicate, and every
+  production query shape; a query that can use the leading prefix keeps the index even when its
+  full ordering is not used. `pg_stat_user_indexes` is supporting runtime evidence, not a substitute
+  for this source proof. Source: `doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md`, N-c.
+
+- `BACKEND_S07_S08_SCOPE`: S-07/S-08 的通用判据与反面对照以
+  `doc/platform/backend-coding-standard.md` §2-E/§2-F 和本轮 review 为准；本轮只把跨 owner
+  逐字节相同的 catalog target capability 映射收口到 execution-context 工具，owner 自己的
+  grant/context/copy 判定仍留在 owner 内，不能因方法名相似而继续抽象。这个适用边界用于后续
+  后台重复代码复核，避免把语义差异误报成可复用工具或只修 review 点名的三处而漏扫同族 owner。
+
+- `BACKEND_PRESERVE_STACK_TRACE_SCOPE`: 异常翻译的根因复核必须覆盖所有同族 catch 边界，
+  包括嵌套回执的直接解析与 legacy fallback；捕获到的 cause 必须沿真实错误链保留，确定性的
+  业务拒绝则留在 catch 外或使用无 cause 的明确分支。组合 owner/edge 边界的宽泛兜底 catch
+  也必须先透传 owner typed Problem；否则字段路径、实际大小和超出量等业务诊断会被降级为
+  泛化错误。具体判据以
+  `doc/platform/backend-coding-standard.md` §1-D 和本轮 review 第 10 步为准；该指针用于
+  后续后台异常边界复核，避免只修首个 PMD 命中或用无关原因遮盖真实失败。
+
+- `BACKEND_OPENAPI_JSON_EXTENSION_SCOPE`: `contracts/openapi` 的 61 个持久契约文档均为 JSON，
+  因此扫描器、resolver、生成器、placement/evidence 与生成物路径必须共同使用 `.json`；
+  Heritage YAML 只能由显式只读 source catalog + `yamlAsJson` 适配读取，scratch fixture 也必须
+  遵守被测目录的 JSON-only 扫描语义。该指针用于后续契约扩展名改动，避免只改文件名而留下
+  空扫描假绿、旧 evidence path 或 generator 分母漂移。
+
+- `BACKEND_GENERATED_PROJECTION_BOUNDARY_SCOPE`: 大型契约 root 若由 placement/shard 生成，root
+  必须在自身顶层声明生成投影、禁止手工编辑和可解析的 source reference；测试必须同时读取 raw
+  root、重建 canonical projection 并做结构对账。`.yaml` 到 `.json` 的重命名还必须扫描当前
+  active work order、generator、checker、consumer 与 evidence 引用；历史 review/evidence 只在
+  明确属于历史记录时保留，不能把活动施工入口留在已删除路径上。该族修复防止“分片是源但读者
+  看不出来”与“重命名后工单继续指向旧文件”同时发生。
+
+- `BACKEND_FORMATTING_BYTECODE_PAIR_SCOPE`: 格式化语义证据必须来自同一源码快照的独立 before
+  编译与 after 编译，并记录各自 source/build identity；对每个类的 `javap -c -p` 输出去除
+  `LineNumberTable` 后再做逐字节对账。单独的旧 baseline、Spotless PASS 或只有 class hash
+  不能证明格式化没有改变逻辑；缺少成对且新鲜的证据时只能判为未验证。
+
+- `BACKEND_SOURCE_CONTRACT_TEST_OWNING_PATH_SCOPE`: source-contract test 读取生产源码时必须绑定
+  当前实际 owning path，尤其是 operation 类型因 split-package 收口迁入 `application.operations`
+  后，测试路径必须同步迁移并扫描同族文件。对 Java 语义的 source assertion 应只把合法空白/换行
+  当作表示层归一化；不能用旧路径或单行正则把测试缺陷误报为实现缺陷，也不能因格式化折行而放宽
+  到失去关键 token 的宽泛匹配。
+
+- `BACKEND_NA_SPLIT_PACKAGE_SCOPE`: split-package 修复必须以实际迁移的 app operation 类型为
+  closed set，而不是按 owner namespace 全量推断 `application.operations`；同一 namespace 的
+  owner read、protocol 或仍未迁移的 adapter 继续留在 `application`。绑定生成器、registry、
+  controller imports 与文件系统门必须共同验证这个 exact set，避免生成不存在的类名或把 owner
+  边界误迁移。
+
+- `BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE`: owner readback 已被 Journey/详设消费的
+  字段，必须在 OpenAPI required closed schema、Java/TypeScript generated wire、controller 和
+  frontend consumer 中成套闭合；发现生成物缺字段时先修 owning schema，再运行受控 codegen，
+  并扫描同族 readback，不得手改 generated 文件或以 consumer fallback 掩盖契约漂移。
+
+- `BACKEND_SOURCE_HASH_CHAIN_CLOSURE`: 任何会改变 implementation-facing design、contract 或
+  source-bound policy 字节的机械修改，都必须沿 owning source hash、coverage policy、生成读模型、
+  generated wire 与 checker 逐层回读并由同一生成器刷新；验证器第一次报告 hash drift 是真实
+  依赖链断裂，不得只改派生 hash 或跳过生成。该规则适用于 source-bound artifact chains，
+  不适用于没有声明 source hash 的普通文档改字。
+
+- `BACKEND_FORMATTING_GATE_SCOPE`: Spotless/palantir 是 Java 格式化权威，但不能单独约束 SQL
+  text block、长字符串和深层 continuation expression 的 UTF-8 物理行宽；120-byte 扫描必须
+  接入 `spotlessCheck`。格式化 bytecode 证据必须区分注释/空白、编译期字符串折叠和真实局部变量
+  或控制流改写；格式化例外必须显式且只覆盖精确表达式，不能把动态重写 helper 当作构建能力。
+  直接匹配 Java 源码字符串拼接的 source-contract 测试也必须把相邻字面量拼接与空白视为表示层，
+  再对归一化后的 SQL/业务 token 做语义断言；不能因 formatter 行折叠把有效行为误报为回归。
+  来源：`doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md` 第 13 步、
+  `doc/platform/backend-coding-standard.md` §1-I。
 
 - `HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM`: define the authoritative generated route
   denominator and disclose attempted, correlated, passed, expected-rejected and unexecuted coverage

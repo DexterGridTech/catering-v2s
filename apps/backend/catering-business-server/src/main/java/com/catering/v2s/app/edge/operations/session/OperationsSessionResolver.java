@@ -1,12 +1,12 @@
 package com.catering.v2s.app.edge.operations.session;
 
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts;
 import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
-import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
-import com.catering.v2s.audit.contract.AuditActor;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -37,16 +37,16 @@ public final class OperationsSessionResolver {
     }
 
     /**
-     * Fresh task-read authorization projection. This is deliberately separate from {@link #require}
-     * because commands still use the legacy/session command path and must never mint read facts.
+     * Fresh task-read authorization projection. This is deliberately separate from {@link #require} because commands
+     * still use the legacy/session command path and must never mint read facts.
      */
     public WorkspaceSessionReadback requireRead(EdgeRequestContext request) {
         return requireReadFacts(request).sessionReadback();
     }
 
     /**
-     * Read-only owner facts for a task that must make its authorization decision without
-     * re-querying the session or rebuilding organization visibility in every branch.
+     * Read-only owner facts for a task that must make its authorization decision without re-querying the session or
+     * rebuilding organization visibility in every branch.
      */
     public WorkspaceReadAuthorizationFacts requireReadFacts(EdgeRequestContext request) {
         try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SESSION)) {
@@ -65,7 +65,8 @@ public final class OperationsSessionResolver {
     }
 
     /** Fresh, non-cached workspace-iam command projection; callers still require owner scope judgment. */
-    public WorkspaceCommandAuthorizationFacts requireWorkspaceCommandFacts(EdgeRequestContext request, String groupWorkspaceKey) {
+    public WorkspaceCommandAuthorizationFacts requireWorkspaceCommandFacts(
+            EdgeRequestContext request, String groupWorkspaceKey) {
         WorkspaceCommandAuthorizationFacts facts;
         try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SESSION)) {
             facts = sessions.commandAuthorizationFacts(token(request));
@@ -82,7 +83,8 @@ public final class OperationsSessionResolver {
         return requireWorkspaceCommandFacts(request, groupWorkspaceKey).sessionReadback();
     }
 
-    public WorkspaceSessionReadback requireWorkspaceCommandAtContextVersion(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
+    public WorkspaceSessionReadback requireWorkspaceCommandAtContextVersion(
+            EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
         WorkspaceSessionReadback session = requireWorkspaceCommand(request, groupWorkspaceKey);
         if (session.contextVersion() != expectedContextVersion) {
             throw new WorkspaceAuthenticationService.SessionConflictException();
@@ -94,7 +96,8 @@ public final class OperationsSessionResolver {
         return requireWorkspaceReadFacts(request, groupWorkspaceKey).sessionReadback();
     }
 
-    public WorkspaceReadAuthorizationFacts requireWorkspaceReadFacts(EdgeRequestContext request, String groupWorkspaceKey) {
+    public WorkspaceReadAuthorizationFacts requireWorkspaceReadFacts(
+            EdgeRequestContext request, String groupWorkspaceKey) {
         WorkspaceReadAuthorizationFacts facts = requireReadFacts(request);
         if (!groupWorkspaceKey.equals(facts.groupWorkspaceKey())) {
             throw new WorkspaceAuthenticationService.SessionInvalidException();
@@ -103,11 +106,12 @@ public final class OperationsSessionResolver {
     }
 
     /**
-     * A changed scope context is recoverable optimistic-concurrency state, not an
-     * authentication failure. Keeping this check here prevents individual edge
-     * adapters from accidentally redirecting a still-authenticated operator to login.
+     * A changed scope context is recoverable optimistic-concurrency state, not an authentication failure. Keeping this
+     * check here prevents individual edge adapters from accidentally redirecting a still-authenticated operator to
+     * login.
      */
-    public WorkspaceSessionReadback requireWorkspaceAtContextVersion(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
+    public WorkspaceSessionReadback requireWorkspaceAtContextVersion(
+            EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
         WorkspaceSessionReadback session = requireWorkspace(request, groupWorkspaceKey);
         if (session.contextVersion() != expectedContextVersion) {
             throw new WorkspaceAuthenticationService.SessionConflictException();
@@ -115,7 +119,8 @@ public final class OperationsSessionResolver {
         return session;
     }
 
-    public WorkspaceSessionReadback requireWorkspaceReadAtContextVersion(EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
+    public WorkspaceSessionReadback requireWorkspaceReadAtContextVersion(
+            EdgeRequestContext request, String groupWorkspaceKey, long expectedContextVersion) {
         WorkspaceSessionReadback session = requireWorkspaceRead(request, groupWorkspaceKey);
         if (session.contextVersion() != expectedContextVersion) {
             throw new WorkspaceAuthenticationService.SessionConflictException();
@@ -124,7 +129,8 @@ public final class OperationsSessionResolver {
     }
 
     /** Narrow escape hatch for the password-change route only. */
-    public WorkspaceSessionReadback requireWorkspaceForPasswordChange(EdgeRequestContext request, String groupWorkspaceKey) {
+    public WorkspaceSessionReadback requireWorkspaceForPasswordChange(
+            EdgeRequestContext request, String groupWorkspaceKey) {
         WorkspaceSessionReadback session = sessions.sessionForPasswordChange(token(request));
         if (!groupWorkspaceKey.equals(session.groupWorkspaceKey())) {
             throw new WorkspaceAuthenticationService.SessionInvalidException();

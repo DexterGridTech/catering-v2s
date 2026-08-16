@@ -54,6 +54,66 @@ const OWNER_NAMESPACES = Object.freeze({
   asset: "platform.asset",
   inventory: "inventory",
 });
+// Only the app-owned operation adapters physically moved during the split-package
+// repair use application.operations.  Owner reads/protocols in the same namespace
+// intentionally remain in application; namespace-wide inference would silently
+// rewrite those adapters to classes that do not exist.
+const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
+  "batchTransitionOperationsCatalogItemStatus",
+  "createOperationsCatalogCategory",
+  "createOperationsCatalogDictionaryEntry",
+  "createOperationsCatalogItem",
+  "deleteOperationsCatalogCategory",
+  "executeOperationsBrandCatalogCopy",
+  "executeOperationsLocalCatalogCopy",
+  "executeOperationsTemporaryCatalogItemPromotion",
+  "moveOperationsCatalogCategory",
+  "preflightOperationsBrandCatalogCopy",
+  "preflightOperationsLocalCatalogCopy",
+  "preflightOperationsTemporaryCatalogItemPromotion",
+  "reorderOperationsCatalogDictionaryEntry",
+  "saveOperationsCatalogItem",
+  "transitionOperationsCatalogDictionaryEntryStatus",
+  "transitionOperationsCatalogItemStatus",
+  "updateOperationsCatalogCategory",
+  "updateOperationsCatalogDictionaryEntry",
+  "createOperationsProductionTag",
+  "transitionOperationsProductionTagStatus",
+  "updateOperationsProductionTag",
+  "adjustOperationsInventoryTarget",
+  "countOperationsInventoryTarget",
+  "increaseOperationsInventoryTarget",
+  "updateOperationsInventoryTargetConfiguration",
+  "addOperationsOrganizationHeadCompanyBrandAuthorization",
+  "createOperationsOrganizationBrand",
+  "createOperationsOrganizationHeadCompany",
+  "createOperationsOrganizationProject",
+  "createOperationsOrganizationRegion",
+  "createOperationsOrganizationStore",
+  "createOperationsOrganizationTenant",
+  "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+  "transitionOperationsOrganizationBrandStatus",
+  "transitionOperationsOrganizationHeadCompanyStatus",
+  "transitionOperationsOrganizationNodeStatus",
+  "transitionOperationsOrganizationStoreStatus",
+  "transitionOperationsOrganizationTenantStatus",
+  "updateOperationsCommercialGroup",
+  "updateOperationsOrganizationBrand",
+  "updateOperationsOrganizationHeadCompany",
+  "updateOperationsOrganizationNode",
+  "updateOperationsOrganizationStore",
+  "updateOperationsOrganizationTenant",
+  "releaseOperationsCatalogStagedAsset",
+  "stageOperationsCatalogAsset",
+  "cancelOperationsWorkspaceInvitation",
+  "createOperationsWorkspaceInvitation",
+  "reissueOperationsWorkspaceInvitation",
+  "revokeOperationsWorkspaceGroupUserAssignment",
+  "revokeOperationsWorkspaceHeadCompanyUserAssignment",
+  "revokeOperationsWorkspaceProjectUserAssignment",
+  "revokeOperationsWorkspaceRegionUserAssignment",
+  "revokeOperationsWorkspaceStoreUserAssignment",
+]);
 const COPY_ROLE_BY_OPERATION = Object.freeze({
   getOperationsLocalCatalogCopyCandidates: "COPY_SOURCE",
   preflightOperationsLocalCatalogCopy: "COPY_TARGET",
@@ -165,7 +225,7 @@ function loadWireTypes(root) {
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) {
         visit(absolute);
-      } else if (/\.json$|\.yaml$|\.yml$/.test(entry.name)) {
+      } else if (/\.json$/.test(entry.name)) {
         try {
           const value = JSON.parse(fs.readFileSync(absolute, "utf8"));
           if (value.schemas && typeof value.schemas === "object") Object.keys(value.schemas).forEach((name) => names.add(name));
@@ -233,9 +293,10 @@ function expectedAdapter(operation) {
   const namespace = OWNER_NAMESPACES[operation.owner];
   if (!namespace) fail("BP_U02_OWNER_UNKNOWN", operation.owner);
   if (operation.operationId === "stageOperationsCatalogAsset") {
-    return "com.catering.v2s.platform.asset.application.StageOperationsCatalogAssetMultipartOperation";
+    return "com.catering.v2s.platform.asset.application.operations.StageOperationsCatalogAssetMultipartOperation";
   }
-  return `com.catering.v2s.${namespace}.application.${pascal(operation.operationId)}Operation`;
+  const packageSegment = OPERATIONS_ADAPTER_OPERATION_IDS.has(operation.operationId) ? "application.operations" : "application";
+  return `com.catering.v2s.${namespace}.${packageSegment}.${pascal(operation.operationId)}Operation`;
 }
 
 function expectedCommandBoundary(operationId, mode) {

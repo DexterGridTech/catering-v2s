@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "7f8b202b8cdc9c668c92ba604bda1d4764c153d411a4951cce72142d578dd65c"
+      "sha256": "e4ab3a5d4b3db3b59c2c795cf6c805981984c287227709cbe866da451944c101"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",

@@ -15,11 +15,11 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
+import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
-import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
-import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.lang.reflect.InvocationTargetException;
@@ -39,9 +39,19 @@ class ProductionTagOwnerScopeGrantTest {
         UUID targetId = UUID.randomUUID();
         ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
 
-        ProductionTagOwnerApi.Problem failure = assertThrows(ProductionTagOwnerApi.Problem.class, () -> service.write(
-            "createOperationsProductionTag", targetId.toString(), "brand", mapper.createObjectNode(), "request", "receipt",
-            workspaceId, "production-owner-test", "HEAD_COMPANY", grant(workspaceId, "production-owner-test", UUID.randomUUID())));
+        ProductionTagOwnerApi.Problem failure = assertThrows(
+                ProductionTagOwnerApi.Problem.class,
+                () -> service.write(
+                        "createOperationsProductionTag",
+                        targetId.toString(),
+                        "brand",
+                        mapper.createObjectNode(),
+                        "request",
+                        "receipt",
+                        workspaceId,
+                        "production-owner-test",
+                        "HEAD_COMPANY",
+                        grant(workspaceId, "production-owner-test", UUID.randomUUID())));
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
@@ -55,9 +65,17 @@ class ProductionTagOwnerScopeGrantTest {
         UUID targetId = UUID.randomUUID();
         ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
 
-        ProductionTagOwnerApi.Problem failure = assertThrows(ProductionTagOwnerApi.Problem.class, () -> service.preflightCopy(
-            sourceId.toString(), targetId.toString(), "brand", mapper.createObjectNode(), workspaceId, "production-owner-test", "STORE",
-            grant(workspaceId, "production-owner-test", sourceId)));
+        ProductionTagOwnerApi.Problem failure = assertThrows(
+                ProductionTagOwnerApi.Problem.class,
+                () -> service.preflightCopy(
+                        sourceId.toString(),
+                        targetId.toString(),
+                        "brand",
+                        mapper.createObjectNode(),
+                        workspaceId,
+                        "production-owner-test",
+                        "STORE",
+                        grant(workspaceId, "production-owner-test", sourceId)));
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
@@ -70,9 +88,19 @@ class ProductionTagOwnerScopeGrantTest {
         UUID targetId = UUID.randomUUID();
         ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
 
-        ProductionTagOwnerApi.Problem failure = assertThrows(ProductionTagOwnerApi.Problem.class, () -> service.write(
-            "createOperationsProductionTag", targetId.toString(), "brand", mapper.createObjectNode(), "request", "receipt",
-            workspaceId, "production-owner-test", "STORE", grant(workspaceId, "production-owner-test", targetId, "EDIT_STORE_INVENTORY")));
+        ProductionTagOwnerApi.Problem failure = assertThrows(
+                ProductionTagOwnerApi.Problem.class,
+                () -> service.write(
+                        "createOperationsProductionTag",
+                        targetId.toString(),
+                        "brand",
+                        mapper.createObjectNode(),
+                        "request",
+                        "receipt",
+                        workspaceId,
+                        "production-owner-test",
+                        "STORE",
+                        grant(workspaceId, "production-owner-test", targetId, "EDIT_STORE_INVENTORY")));
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
@@ -83,8 +111,9 @@ class ProductionTagOwnerScopeGrantTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID targetId = UUID.randomUUID();
         ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
-        ProductionTagOwnerApi.Problem failure = assertThrows(ProductionTagOwnerApi.Problem.class, () -> service.write(
-            typedContext(targetId), mapper.createObjectNode(), "receipt"));
+        ProductionTagOwnerApi.Problem failure = assertThrows(
+                ProductionTagOwnerApi.Problem.class,
+                () -> service.write(typedContext(targetId), mapper.createObjectNode(), "receipt"));
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
@@ -93,7 +122,10 @@ class ProductionTagOwnerScopeGrantTest {
     @Test
     void productionReceiptRequestBindsTheBrandBeforeReplayLookup() {
         ProductionTagOwnerService service = new ProductionTagOwnerService(mock(JdbcTemplate.class), mapper, () -> 1L);
-        ObjectNode request = mapper.createObjectNode().put("code", "TAG-RECEIPT").put("tagKind", "PRODUCTION").put("name", "receipt tag");
+        ObjectNode request = mapper.createObjectNode()
+                .put("code", "TAG-RECEIPT")
+                .put("tagKind", "PRODUCTION")
+                .put("name", "receipt tag");
 
         ObjectNode brandA = receiptRequest(service, request, "BRAND-A");
         ObjectNode brandB = receiptRequest(service, request, "BRAND-B");
@@ -106,7 +138,8 @@ class ProductionTagOwnerScopeGrantTest {
 
     private static ObjectNode receiptRequest(ProductionTagOwnerService service, ObjectNode request, String brand) {
         try {
-            var method = ProductionTagOwnerService.class.getDeclaredMethod("receiptRequest", com.fasterxml.jackson.databind.JsonNode.class, String.class);
+            var method = ProductionTagOwnerService.class.getDeclaredMethod(
+                    "receiptRequest", com.fasterxml.jackson.databind.JsonNode.class, String.class);
             method.setAccessible(true);
             return (ObjectNode) method.invoke(service, request, brand);
         } catch (InvocationTargetException failure) {
@@ -123,38 +156,76 @@ class ProductionTagOwnerScopeGrantTest {
         UUID assignmentId = UUID.randomUUID();
         var token = CatalogInventoryWorkspaceCommandTokens.CREATE_OPERATIONS_PRODUCTION_TAG;
         var selectedStore = new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
-            "STORE", targetId, "Production test store", "PRODUCTION-TEST-STORE", List.of(),
-            null, null, targetId, null
-        );
+                "STORE",
+                targetId,
+                "Production test store",
+                "PRODUCTION-TEST-STORE",
+                List.of(),
+                null,
+                null,
+                targetId,
+                null);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(
-            UUID.randomUUID(), workspaceId, "production-owner-test", accountId, assignmentId,
-            new WorkspaceSessionEntryReadback.ScopeContext(null, null, selectedStore, null),
-            1L, 1L, Set.of(), Set.of(token.capabilityFor("STORE")), "production test", "STORE", targetId
-        );
+                UUID.randomUUID(),
+                workspaceId,
+                "production-owner-test",
+                accountId,
+                assignmentId,
+                new WorkspaceSessionEntryReadback.ScopeContext(null, null, selectedStore, null),
+                1L,
+                1L,
+                Set.of(),
+                Set.of(token.capabilityFor("STORE")),
+                "production test",
+                "STORE",
+                targetId);
         WorkspaceAuthenticationService sessions = mock(WorkspaceAuthenticationService.class);
         when(sessions.commandAuthorizationFacts("typed-context-session"))
-            .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
-                session, UUID.randomUUID(), "STORE", targetId));
+                .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
+                        session, UUID.randomUUID(), "STORE", targetId));
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
-        when(capabilities.resolveGeneratedOperation(any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any()))
-            .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-                WorkspaceCapabilityScopeResolver.Decision.ALLOW, "EDIT_STORE_INVENTORY",
-                new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
-                    workspaceId, "production-owner-test", "STORE", targetId, "STORE", targetId, List.of(targetId))
-            ));
+        when(capabilities.resolveGeneratedOperation(
+                        any(), eq(token.requirementId()), eq(token.capabilityFor("STORE")), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                        "EDIT_STORE_INVENTORY",
+                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                workspaceId,
+                                "production-owner-test",
+                                "STORE",
+                                targetId,
+                                "STORE",
+                                targetId,
+                                List.of(targetId))));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
         when(catalogScopes.resolveCatalogBrand(any(), anyString(), eq("STORE"), eq(targetId), any()))
-            .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment("brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
-        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions).resolveCatalog(
-            "typed-context-session", token, targetId.toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue("brand"),
-            "typed-correlation", "typed-request");
+                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(
+                        "brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"));
+        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
+                .resolveCatalog(
+                        "typed-context-session",
+                        token,
+                        targetId.toString(),
+                        CatalogScopeLookup.CatalogBrandSelection.fromRequestValue("brand"),
+                        "typed-correlation",
+                        "typed-request");
     }
 
     private static OperationsOwnerScopeGrant grant(UUID workspaceId, String groupWorkspaceKey, UUID targetId) {
         return grant(workspaceId, groupWorkspaceKey, targetId, "EDIT_STORE_CATALOG");
     }
 
-    private static OperationsOwnerScopeGrant grant(UUID workspaceId, String groupWorkspaceKey, UUID targetId, String capabilityKey) {
-        return new OperationsOwnerScopeGrant(workspaceId, groupWorkspaceKey, "PRODUCTION_OWNER_TEST", capabilityKey, "STORE", targetId, "STORE", targetId, List.of(targetId));
+    private static OperationsOwnerScopeGrant grant(
+            UUID workspaceId, String groupWorkspaceKey, UUID targetId, String capabilityKey) {
+        return new OperationsOwnerScopeGrant(
+                workspaceId,
+                groupWorkspaceKey,
+                "PRODUCTION_OWNER_TEST",
+                capabilityKey,
+                "STORE",
+                targetId,
+                "STORE",
+                targetId,
+                List.of(targetId));
     }
 }

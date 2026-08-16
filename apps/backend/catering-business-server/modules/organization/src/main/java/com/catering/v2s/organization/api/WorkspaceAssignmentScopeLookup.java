@@ -6,6 +6,5 @@ import java.util.UUID;
 public interface WorkspaceAssignmentScopeLookup {
     AssignmentScope requireActiveScope(UUID workspaceUuid, String groupWorkspaceKey, UUID assignmentId);
 
-    record AssignmentScope(String serviceNodeType, UUID serviceNodeId) {
-    }
+    record AssignmentScope(String serviceNodeType, UUID serviceNodeId) {}
 }

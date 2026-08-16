@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /** Stateless SHA-256 to lowercase-hex conversion for request and content fingerprints. */
 public final class Sha256Hex {
-    private Sha256Hex() { }
+    private Sha256Hex() {}
 
     public static String digest(String value) {
         return digest(Objects.requireNonNull(value, "value").getBytes(StandardCharsets.UTF_8));

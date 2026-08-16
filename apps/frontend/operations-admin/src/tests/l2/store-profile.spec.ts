@@ -17,11 +17,17 @@ async function signInStoreOperator(page: Page) {
   const shellMenu = page.getByTestId('operations-shell-menu');
   await roleSelector.or(shellMenu).waitFor({state: 'visible'});
   if (await roleSelector.isVisible()) {
-    await selectOperationsOption(page, 'operations-role-context-select', requiredL2Env('R5_L2_STORE_PROFILE_ROLE_LABEL'));
+    await selectOperationsOption(
+      page,
+      'operations-role-context-select',
+      requiredL2Env('R5_L2_STORE_PROFILE_ROLE_LABEL'),
+    );
     await page.getByTestId('operations-role-context-enter').click();
   }
   await expect(shellMenu).toBeVisible();
-  const sessionReady = page.waitForResponse((response) => response.url().includes('/session/entry') && response.status() === 200);
+  const sessionReady = page.waitForResponse(
+    response => response.url().includes('/session/entry') && response.status() === 200,
+  );
   await page.reload();
   await sessionReady;
   await expect(shellMenu).toBeVisible();
@@ -38,7 +44,11 @@ test('store operator reads owner-returned profile and all four contract state vi
   await page.goto(requiredL2Env('R5_L2_STORE_PROFILE_ROUTE'));
   await expect(page).toHaveURL(/\/store\/profile$/);
   // The profile child is not mounted until its owner-returned store scope is confirmed.
-  await selectOperationsDataScope(page, 'STORE', {regionName: requiredL2Env('R5_L2_ORGANIZATION_REGION_NAME'), projectName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_PROJECT_NAME'), storeName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_STORE_NAME')});
+  await selectOperationsDataScope(page, 'STORE', {
+    regionName: requiredL2Env('R5_L2_ORGANIZATION_REGION_NAME'),
+    projectName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_PROJECT_NAME'),
+    storeName: requiredL2Env('R5_L2_OPERATIONS_SCOPE_STORE_NAME'),
+  });
   await expect(page.getByTestId('operations-store-profile-page')).toBeVisible();
   await expect(page.getByTestId('operations-store-profile-fields')).toBeVisible();
   await expect(page.getByText(current, {exact: true})).toBeVisible();
@@ -49,9 +59,15 @@ test('store operator reads owner-returned profile and all four contract state vi
   await expect(detailDrawer).toBeHidden();
 
   await stateTabs.getByRole('tab', {name: '待生效', exact: true}).click();
-  await expect(page.getByTestId('operations-store-profile-contract-pending_effective').getByText(pending, {exact: true})).toBeVisible();
+  await expect(
+    page.getByTestId('operations-store-profile-contract-pending_effective').getByText(pending, {exact: true}),
+  ).toBeVisible();
   await stateTabs.getByRole('tab', {name: '历史', exact: true}).click();
-  await expect(page.getByTestId('operations-store-profile-contract-history').getByText(history, {exact: true})).toBeVisible();
+  await expect(
+    page.getByTestId('operations-store-profile-contract-history').getByText(history, {exact: true}),
+  ).toBeVisible();
   await stateTabs.getByRole('tab', {name: '已作废', exact: true}).click();
-  await expect(page.getByTestId('operations-store-profile-contract-invalid').getByText(invalid, {exact: true})).toBeVisible();
+  await expect(
+    page.getByTestId('operations-store-profile-contract-invalid').getByText(invalid, {exact: true}),
+  ).toBeVisible();
 });

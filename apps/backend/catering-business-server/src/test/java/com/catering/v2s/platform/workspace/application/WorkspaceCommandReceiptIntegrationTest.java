@@ -19,29 +19,43 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /** A global platform actor must not replay a receipt from another workspace key. */
 @Testcontainers
 class WorkspaceCommandReceiptIntegrationTest {
-    @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    @Container
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+
     private static WorkspaceCommandReceiptService receipts;
     private static JdbcTemplate jdbc;
 
-    @BeforeAll static void setup() {
-        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-            .locations("filesystem:src/main/resources/db/migration").schemas("public").defaultSchema("public").load().migrate();
-        jdbc = new JdbcTemplate(new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
-        receipts = new WorkspaceCommandReceiptService(
-            jdbc,
-            (TimeProvider) () -> 1_785_000_000_000L
-        );
+    @BeforeAll
+    static void setup() {
+        Flyway.configure()
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("filesystem:src/main/resources/db/migration")
+                .schemas("public")
+                .defaultSchema("public")
+                .load()
+                .migrate();
+        jdbc = new JdbcTemplate(
+                new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
+        receipts = new WorkspaceCommandReceiptService(jdbc, (TimeProvider) () -> 1_785_000_000_000L);
     }
 
-    @AfterAll static void cleanup() {
-        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).cleanDisabled(false).load().clean();
+    @AfterAll
+    static void cleanup() {
+        Flyway.configure()
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .cleanDisabled(false)
+                .load()
+                .clean();
     }
 
-    @Test void identicalIdempotencyKeyDoesNotReplayAnotherWorkspaceReadback() {
+    @Test
+    void identicalIdempotencyKeyDoesNotReplayAnotherWorkspaceReadback() {
         String key = "workspace-receipt-key-0001";
         AtomicInteger commands = new AtomicInteger();
-        WorkspaceAdministrationReadback first = receipts.execute("workspace-a", key, "same-request", () -> readback("workspace-a", commands.incrementAndGet()));
-        WorkspaceAdministrationReadback second = receipts.execute("workspace-b", key, "same-request", () -> readback("workspace-b", commands.incrementAndGet()));
+        WorkspaceAdministrationReadback first = receipts.execute(
+                "workspace-a", key, "same-request", () -> readback("workspace-a", commands.incrementAndGet()));
+        WorkspaceAdministrationReadback second = receipts.execute(
+                "workspace-b", key, "same-request", () -> readback("workspace-b", commands.incrementAndGet()));
 
         assertEquals("workspace-a", first.groupWorkspaceKey());
         assertEquals("workspace-b", second.groupWorkspaceKey());
@@ -49,7 +63,18 @@ class WorkspaceCommandReceiptIntegrationTest {
     }
 
     private static WorkspaceAdministrationReadback readback(String groupWorkspaceKey, int serial) {
-        return new WorkspaceAdministrationReadback(UUID.nameUUIDFromBytes((groupWorkspaceKey + serial).getBytes()), groupWorkspaceKey,
-            "Workspace " + groupWorkspaceKey, "Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, false);
+        return new WorkspaceAdministrationReadback(
+                UUID.nameUUIDFromBytes((groupWorkspaceKey + serial).getBytes()),
+                groupWorkspaceKey,
+                "Workspace " + groupWorkspaceKey,
+                "Operations",
+                null,
+                null,
+                "ENABLED",
+                1L,
+                1L,
+                1L,
+                1L,
+                false);
     }
 }

@@ -15,8 +15,10 @@ export function createAsyncGenerationGuard(): AsyncGenerationGuard {
   let current = 0;
   return {
     begin: () => ++current,
-    invalidate: () => { ++current; },
-    isCurrent: (generation) => generation === current,
+    invalidate: () => {
+      ++current;
+    },
+    isCurrent: generation => generation === current,
   };
 }
 
@@ -24,6 +26,11 @@ export function createAsyncGenerationGuard(): AsyncGenerationGuard {
 export function useAsyncGenerationGuard(): AsyncGenerationGuard {
   const guard = useRef<AsyncGenerationGuard | undefined>(undefined);
   if (!guard.current) guard.current = createAsyncGenerationGuard();
-  useEffect(() => () => { guard.current?.invalidate(); }, []);
+  useEffect(
+    () => () => {
+      guard.current?.invalidate();
+    },
+    [],
+  );
   return guard.current;
 }

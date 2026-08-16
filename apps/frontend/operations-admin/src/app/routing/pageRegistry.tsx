@@ -23,42 +23,128 @@ type Registration = {
 };
 const user = (pageDesignKey: UserManagementPageDesignKey): ComponentType<OperationsPageProps> =>
   function UserPage(props) {
-    return <WorkspaceUserPage {...props} pageDesignKey={pageDesignKey}/>;
+    return <WorkspaceUserPage {...props} pageDesignKey={pageDesignKey} />;
   };
 const roleHome = (pageDesignKey: OperationsPageDesignKey): ComponentType<OperationsPageProps> =>
   function HomePage(props) {
-    return <RoleHomeBootstrapPage {...props} pageDesignKey={pageDesignKey}/>;
+    return <RoleHomeBootstrapPage {...props} pageDesignKey={pageDesignKey} />;
   };
-const businessEntity = (pageDesignKey: Extract<OperationsPageDesignKey,
-  typeof operationsPageDesignKeys.PgOrgBrand | typeof operationsPageDesignKeys.PgOrgTenant | typeof operationsPageDesignKeys.PgOrgHeadCompany>): ComponentType<OperationsPageProps> =>
+const businessEntity = (
+  pageDesignKey: Extract<
+    OperationsPageDesignKey,
+    | typeof operationsPageDesignKeys.PgOrgBrand
+    | typeof operationsPageDesignKeys.PgOrgTenant
+    | typeof operationsPageDesignKeys.PgOrgHeadCompany
+  >,
+): ComponentType<OperationsPageProps> =>
   function BusinessEntityPage(props) {
-    return <BusinessEntityManagementPage {...props} pageDesignKey={pageDesignKey}/>;
+    return <BusinessEntityManagementPage {...props} pageDesignKey={pageDesignKey} />;
   };
 
 export const operationsPageRegistry = {
-  [operationsPageDesignKeys.HomeGroup]: {pageDesignKey: operationsPageDesignKeys.HomeGroup, routeSegment: 'home/group', Component: roleHome(operationsPageDesignKeys.HomeGroup)},
-  [operationsPageDesignKeys.HomeRegion]: {pageDesignKey: operationsPageDesignKeys.HomeRegion, routeSegment: 'home/region', Component: roleHome(operationsPageDesignKeys.HomeRegion)},
-  [operationsPageDesignKeys.HomeProject]: {pageDesignKey: operationsPageDesignKeys.HomeProject, routeSegment: 'home/project', Component: roleHome(operationsPageDesignKeys.HomeProject)},
-  [operationsPageDesignKeys.HomeHeadCompany]: {pageDesignKey: operationsPageDesignKeys.HomeHeadCompany, routeSegment: 'home/head-company', Component: roleHome(operationsPageDesignKeys.HomeHeadCompany)},
-  [operationsPageDesignKeys.HomeStore]: {pageDesignKey: operationsPageDesignKeys.HomeStore, routeSegment: 'home/store', Component: roleHome(operationsPageDesignKeys.HomeStore)},
-  [operationsPageDesignKeys.PgOrgStructure]: {pageDesignKey: operationsPageDesignKeys.PgOrgStructure, routeSegment: 'organization/structure', Component: OrganizationStructurePage},
-  [operationsPageDesignKeys.PgOrgBrand]: {pageDesignKey: operationsPageDesignKeys.PgOrgBrand, routeSegment: 'organization/brands', Component: businessEntity(operationsPageDesignKeys.PgOrgBrand)},
-  [operationsPageDesignKeys.PgOrgTenant]: {pageDesignKey: operationsPageDesignKeys.PgOrgTenant, routeSegment: 'organization/tenants', Component: businessEntity(operationsPageDesignKeys.PgOrgTenant)},
-  [operationsPageDesignKeys.PgOrgHeadCompany]: {pageDesignKey: operationsPageDesignKeys.PgOrgHeadCompany, routeSegment: 'organization/head-companies', Component: businessEntity(operationsPageDesignKeys.PgOrgHeadCompany)},
-  [operationsPageDesignKeys.PgOrgStoreManage]: {pageDesignKey: operationsPageDesignKeys.PgOrgStoreManage, routeSegment: 'organization/stores', Component: StoreManagementPage},
-  [operationsPageDesignKeys.PgContractStoreManage]: {pageDesignKey: operationsPageDesignKeys.PgContractStoreManage, routeSegment: 'contracts', Component: ContractManagementPage},
-  [operationsPageDesignKeys.PgIamGroupUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamGroupUsers, routeSegment: 'access/group-users', Component: user(operationsPageDesignKeys.PgIamGroupUsers)},
-  [operationsPageDesignKeys.PgIamRegionUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamRegionUsers, routeSegment: 'access/region-users', Component: user(operationsPageDesignKeys.PgIamRegionUsers)},
-  [operationsPageDesignKeys.PgIamProjectUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamProjectUsers, routeSegment: 'access/project-users', Component: user(operationsPageDesignKeys.PgIamProjectUsers)},
-  [operationsPageDesignKeys.PgIamHeadCompanyUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamHeadCompanyUsers, routeSegment: 'access/head-company-users', Component: user(operationsPageDesignKeys.PgIamHeadCompanyUsers)},
-  [operationsPageDesignKeys.PgIamStoreUsers]: {pageDesignKey: operationsPageDesignKeys.PgIamStoreUsers, routeSegment: 'access/store-users', Component: user(operationsPageDesignKeys.PgIamStoreUsers)},
-  [operationsPageDesignKeys.PgStoreProfile]: {pageDesignKey: operationsPageDesignKeys.PgStoreProfile, routeSegment: 'store/profile', Component: StoreProfilePage},
-  [operationsPageDesignKeys.PgCatalogStoreItems]: {pageDesignKey: operationsPageDesignKeys.PgCatalogStoreItems, routeSegment: 'catalog/store-items', Component: StoreCatalogManagementPage},
-  [operationsPageDesignKeys.PgInventoryStoreStatus]: {pageDesignKey: operationsPageDesignKeys.PgInventoryStoreStatus, routeSegment: 'inventory/status', Component: InventoryManagementPage},
-  [operationsPageDesignKeys.PgCatalogBrandItems]: {pageDesignKey: operationsPageDesignKeys.PgCatalogBrandItems, routeSegment: 'catalog/brand-items', Component: BrandCatalogManagementPage},
+  [operationsPageDesignKeys.HomeGroup]: {
+    pageDesignKey: operationsPageDesignKeys.HomeGroup,
+    routeSegment: 'home/group',
+    Component: roleHome(operationsPageDesignKeys.HomeGroup),
+  },
+  [operationsPageDesignKeys.HomeRegion]: {
+    pageDesignKey: operationsPageDesignKeys.HomeRegion,
+    routeSegment: 'home/region',
+    Component: roleHome(operationsPageDesignKeys.HomeRegion),
+  },
+  [operationsPageDesignKeys.HomeProject]: {
+    pageDesignKey: operationsPageDesignKeys.HomeProject,
+    routeSegment: 'home/project',
+    Component: roleHome(operationsPageDesignKeys.HomeProject),
+  },
+  [operationsPageDesignKeys.HomeHeadCompany]: {
+    pageDesignKey: operationsPageDesignKeys.HomeHeadCompany,
+    routeSegment: 'home/head-company',
+    Component: roleHome(operationsPageDesignKeys.HomeHeadCompany),
+  },
+  [operationsPageDesignKeys.HomeStore]: {
+    pageDesignKey: operationsPageDesignKeys.HomeStore,
+    routeSegment: 'home/store',
+    Component: roleHome(operationsPageDesignKeys.HomeStore),
+  },
+  [operationsPageDesignKeys.PgOrgStructure]: {
+    pageDesignKey: operationsPageDesignKeys.PgOrgStructure,
+    routeSegment: 'organization/structure',
+    Component: OrganizationStructurePage,
+  },
+  [operationsPageDesignKeys.PgOrgBrand]: {
+    pageDesignKey: operationsPageDesignKeys.PgOrgBrand,
+    routeSegment: 'organization/brands',
+    Component: businessEntity(operationsPageDesignKeys.PgOrgBrand),
+  },
+  [operationsPageDesignKeys.PgOrgTenant]: {
+    pageDesignKey: operationsPageDesignKeys.PgOrgTenant,
+    routeSegment: 'organization/tenants',
+    Component: businessEntity(operationsPageDesignKeys.PgOrgTenant),
+  },
+  [operationsPageDesignKeys.PgOrgHeadCompany]: {
+    pageDesignKey: operationsPageDesignKeys.PgOrgHeadCompany,
+    routeSegment: 'organization/head-companies',
+    Component: businessEntity(operationsPageDesignKeys.PgOrgHeadCompany),
+  },
+  [operationsPageDesignKeys.PgOrgStoreManage]: {
+    pageDesignKey: operationsPageDesignKeys.PgOrgStoreManage,
+    routeSegment: 'organization/stores',
+    Component: StoreManagementPage,
+  },
+  [operationsPageDesignKeys.PgContractStoreManage]: {
+    pageDesignKey: operationsPageDesignKeys.PgContractStoreManage,
+    routeSegment: 'contracts',
+    Component: ContractManagementPage,
+  },
+  [operationsPageDesignKeys.PgIamGroupUsers]: {
+    pageDesignKey: operationsPageDesignKeys.PgIamGroupUsers,
+    routeSegment: 'access/group-users',
+    Component: user(operationsPageDesignKeys.PgIamGroupUsers),
+  },
+  [operationsPageDesignKeys.PgIamRegionUsers]: {
+    pageDesignKey: operationsPageDesignKeys.PgIamRegionUsers,
+    routeSegment: 'access/region-users',
+    Component: user(operationsPageDesignKeys.PgIamRegionUsers),
+  },
+  [operationsPageDesignKeys.PgIamProjectUsers]: {
+    pageDesignKey: operationsPageDesignKeys.PgIamProjectUsers,
+    routeSegment: 'access/project-users',
+    Component: user(operationsPageDesignKeys.PgIamProjectUsers),
+  },
+  [operationsPageDesignKeys.PgIamHeadCompanyUsers]: {
+    pageDesignKey: operationsPageDesignKeys.PgIamHeadCompanyUsers,
+    routeSegment: 'access/head-company-users',
+    Component: user(operationsPageDesignKeys.PgIamHeadCompanyUsers),
+  },
+  [operationsPageDesignKeys.PgIamStoreUsers]: {
+    pageDesignKey: operationsPageDesignKeys.PgIamStoreUsers,
+    routeSegment: 'access/store-users',
+    Component: user(operationsPageDesignKeys.PgIamStoreUsers),
+  },
+  [operationsPageDesignKeys.PgStoreProfile]: {
+    pageDesignKey: operationsPageDesignKeys.PgStoreProfile,
+    routeSegment: 'store/profile',
+    Component: StoreProfilePage,
+  },
+  [operationsPageDesignKeys.PgCatalogStoreItems]: {
+    pageDesignKey: operationsPageDesignKeys.PgCatalogStoreItems,
+    routeSegment: 'catalog/store-items',
+    Component: StoreCatalogManagementPage,
+  },
+  [operationsPageDesignKeys.PgInventoryStoreStatus]: {
+    pageDesignKey: operationsPageDesignKeys.PgInventoryStoreStatus,
+    routeSegment: 'inventory/status',
+    Component: InventoryManagementPage,
+  },
+  [operationsPageDesignKeys.PgCatalogBrandItems]: {
+    pageDesignKey: operationsPageDesignKeys.PgCatalogBrandItems,
+    routeSegment: 'catalog/brand-items',
+    Component: BrandCatalogManagementPage,
+  },
 } satisfies Record<OperationsPageDesignKey, Registration>;
 
-const approvedKeys = new Set<string>(adminCatalog.operationsPages.map((page) => page.pageDesignKey));
+const approvedKeys = new Set<string>(adminCatalog.operationsPages.map(page => page.pageDesignKey));
 export function parseOperationsPageDesignKey(value: string | undefined): OperationsPageDesignKey | undefined {
-  return value && approvedKeys.has(value) ? value as OperationsPageDesignKey : undefined;
+  return value && approvedKeys.has(value) ? (value as OperationsPageDesignKey) : undefined;
 }

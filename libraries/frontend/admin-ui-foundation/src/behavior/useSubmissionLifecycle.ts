@@ -11,11 +11,18 @@ export function useSubmissionLifecycle() {
     if (!key.current) key.current = `ui-${globalThis.crypto.randomUUID()}`;
     return key.current;
   }, []);
-  const markBusinessIntentChanged = useCallback(() => { key.current = undefined; }, []);
-  const reset = useCallback(() => { key.current = undefined; }, []);
+  const markBusinessIntentChanged = useCallback(() => {
+    key.current = undefined;
+  }, []);
+  const reset = useCallback(() => {
+    key.current = undefined;
+  }, []);
   // Consumers commonly place the lifecycle object in an effect dependency list
   // (for example, a Drawer form reset on open). Keep the object identity stable
   // so ordinary form changes do not look like a new lifecycle and erase the
   // user's in-progress values.
-  return useMemo(() => ({getIdempotencyKey, markBusinessIntentChanged, reset}), [getIdempotencyKey, markBusinessIntentChanged, reset]);
+  return useMemo(
+    () => ({getIdempotencyKey, markBusinessIntentChanged, reset}),
+    [getIdempotencyKey, markBusinessIntentChanged, reset],
+  );
 }

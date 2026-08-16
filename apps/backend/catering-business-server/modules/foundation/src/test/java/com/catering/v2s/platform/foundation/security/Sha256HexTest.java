@@ -8,11 +8,9 @@ import org.junit.jupiter.api.Test;
 class Sha256HexTest {
     @Test
     void usesTheStableLowercaseSha256HexEncoding() {
+        assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", Sha256Hex.digest("abc"));
         assertEquals(
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-            Sha256Hex.digest("abc")
-        );
-        assertEquals(Sha256Hex.digest("abc"), Sha256Hex.digest("abc".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                Sha256Hex.digest("abc"), Sha256Hex.digest("abc".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
     }
 
     @Test

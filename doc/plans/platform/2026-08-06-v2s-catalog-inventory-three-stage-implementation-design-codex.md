@@ -127,22 +127,22 @@ shard 放置的唯一真相。copy policy 是两个可调上限的唯一声明�
 生成/物化的 OpenAPI shards：
 
 ```text
-contracts/openapi/components/catalog/catalog-common.schemas.yaml
-contracts/openapi/components/catalog/catalog-workbench.schemas.yaml
-contracts/openapi/components/catalog/catalog-item.schemas.yaml
-contracts/openapi/components/catalog/catalog-dictionary.schemas.yaml
-contracts/openapi/components/catalog/catalog-copy.schemas.yaml
-contracts/openapi/components/inventory/inventory-common.schemas.yaml
-contracts/openapi/components/inventory/inventory-workbench.schemas.yaml
-contracts/openapi/components/inventory/inventory-command.schemas.yaml
-contracts/openapi/components/fulfillment-production/production-tag.schemas.yaml
-contracts/openapi/paths/operations-admin/catalog-workbench.paths.yaml
-contracts/openapi/paths/operations-admin/catalog-item-management.paths.yaml
-contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.yaml
-contracts/openapi/paths/operations-admin/catalog-copy.paths.yaml
-contracts/openapi/paths/operations-admin/inventory-workbench.paths.yaml
-contracts/openapi/paths/operations-admin/inventory-management.paths.yaml
-contracts/openapi/paths/operations-admin/production-tag-management.paths.yaml
+contracts/openapi/components/catalog/catalog-common.schemas.json
+contracts/openapi/components/catalog/catalog-workbench.schemas.json
+contracts/openapi/components/catalog/catalog-item.schemas.json
+contracts/openapi/components/catalog/catalog-dictionary.schemas.json
+contracts/openapi/components/catalog/catalog-copy.schemas.json
+contracts/openapi/components/inventory/inventory-common.schemas.json
+contracts/openapi/components/inventory/inventory-workbench.schemas.json
+contracts/openapi/components/inventory/inventory-command.schemas.json
+contracts/openapi/components/fulfillment-production/production-tag.schemas.json
+contracts/openapi/paths/operations-admin/catalog-workbench.paths.json
+contracts/openapi/paths/operations-admin/catalog-item-management.paths.json
+contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.json
+contracts/openapi/paths/operations-admin/catalog-copy.paths.json
+contracts/openapi/paths/operations-admin/inventory-workbench.paths.json
+contracts/openapi/paths/operations-admin/inventory-management.paths.json
+contracts/openapi/paths/operations-admin/production-tag-management.paths.json
 ```
 
 generated outputs不得手改：root OpenAPI、route/capability registry、Java wire、operations-admin

@@ -4,11 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test src/tests/architecture/*.test.mjs && vitest run src --exclude \"**/*.mjs\" --exclude \"**/*.spec.ts\"",
+    "test": "yarn test:architecture && yarn test:unit",
+    "test:architecture": "node --test src/tests/architecture/*.test.mjs",
+    "test:unit": "vitest run src --exclude \"**/*.mjs\" --exclude \"**/*.spec.ts\"",
     "lint:architecture": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "lint:style": "stylelint \"src/**/*.css\" --max-warnings=0",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "build": "yarn lint:architecture && yarn lint:style && ../../../scripts/check/frontend-architecture && yarn typecheck && vite build"
+    "lint": "yarn lint:architecture && yarn lint:style",
+    "build": "yarn lint && ../../../scripts/check/frontend-architecture && yarn typecheck && vite build"
   },
   "dependencies": {
     "@ant-design/icons": "6.3.2",

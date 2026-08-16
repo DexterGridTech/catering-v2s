@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-l2-execution-profile",
+  "revision": "CATALOG_INVENTORY_L2_REBUILD_20260816",
+  "mode": "FRAMEWORK_ONLY",
+  "enabledCaseIds": [],
+  "sourceOfTruth": "contracts/policy/catalog-inventory-l2-case-blueprint.json",
+  "noSeedRuntimeInput": true,
+  "enablementRule": "Only enable a case after the corresponding frontend remediation is complete and the business-owned owner-HTTP fixture facts and control bindings are ready."
+}

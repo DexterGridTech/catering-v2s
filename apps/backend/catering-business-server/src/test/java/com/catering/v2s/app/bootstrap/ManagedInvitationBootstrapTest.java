@@ -32,26 +32,57 @@ class ManagedInvitationBootstrapTest {
         Path runtime = Files.createTempDirectory("managed-invitation-runtime");
         Path output = runtime.resolve("results/invitation.json");
         ManagedInvitationBootstrap.Input input = ManagedInvitationBootstrap.Input.from(Map.of(
-            "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-            "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-            "V2S_MANAGED_INVITATION_ROLE_ID", roleId.toString(),
-            "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
-            "V2S_MANAGED_INVITATION_TARGET_REF", targetId.toString(),
-            "V2S_RUNTIME_DIR", runtime.toString(),
-            "V2S_MANAGED_INVITATION_OUTPUT", output.toString()
-        ));
-        when(workspaces.requireEnabled("aurora")).thenReturn(new WorkspaceAdministrationReadback(workspaceId, "aurora", "Aurora", "Aurora Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, true));
-        when(invitations.create(eq(workspaceId), eq("aurora"), eq("13800000001"), any(), any(), any())).thenReturn(
-            new WorkspaceInvitationReadback(invitationId, workspaceId, "aurora", "13800000001", "PENDING", 2L, 1L, 1L, null, null, null, "private-token")
-        );
+                "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
+                "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
+                "V2S_MANAGED_INVITATION_ROLE_ID", roleId.toString(),
+                "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
+                "V2S_MANAGED_INVITATION_TARGET_REF", targetId.toString(),
+                "V2S_RUNTIME_DIR", runtime.toString(),
+                "V2S_MANAGED_INVITATION_OUTPUT", output.toString()));
+        when(workspaces.requireEnabled("aurora"))
+                .thenReturn(new WorkspaceAdministrationReadback(
+                        workspaceId,
+                        "aurora",
+                        "Aurora",
+                        "Aurora Operations",
+                        null,
+                        null,
+                        "ENABLED",
+                        1L,
+                        1L,
+                        1L,
+                        1L,
+                        true));
+        when(invitations.create(eq(workspaceId), eq("aurora"), eq("13800000001"), any(), any(), any()))
+                .thenReturn(new WorkspaceInvitationReadback(
+                        invitationId,
+                        workspaceId,
+                        "aurora",
+                        "13800000001",
+                        "PENDING",
+                        2L,
+                        1L,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        "private-token"));
 
         ManagedInvitationBootstrap.Result result = ManagedInvitationBootstrap.create(workspaces, invitations, input);
         ManagedInvitationBootstrap.writePrivateOutput(output, result);
 
-        ArgumentCaptor<java.util.List<WorkspaceInvitationService.AssignmentIntent>> intents = ArgumentCaptor.forClass(java.util.List.class);
+        ArgumentCaptor<java.util.List<WorkspaceInvitationService.AssignmentIntent>> intents =
+                ArgumentCaptor.forClass(java.util.List.class);
         verify(invitations).create(eq(workspaceId), eq("aurora"), eq("13800000001"), intents.capture(), any(), any());
-        assertEquals(java.util.List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "GROUP", targetId)), intents.getValue());
-        assertEquals("private-token", new com.fasterxml.jackson.databind.ObjectMapper().readTree(output.toFile()).get("invitationToken").asText());
+        assertEquals(
+                java.util.List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "GROUP", targetId)),
+                intents.getValue());
+        assertEquals(
+                "private-token",
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readTree(output.toFile())
+                        .get("invitationToken")
+                        .asText());
         assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(output)));
         verify(workspaces).requireEnabled("aurora");
     }
@@ -59,15 +90,17 @@ class ManagedInvitationBootstrapTest {
     @Test
     void refusesATypeOutsideTheFixedOwnerBootstrapVocabulary() throws Exception {
         Path runtime = Files.createTempDirectory("managed-invitation-runtime");
-        assertThrows(IllegalArgumentException.class, () -> ManagedInvitationBootstrap.Input.from(Map.of(
-            "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-            "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-            "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
-            "V2S_MANAGED_INVITATION_TARGET_TYPE", "TENANT",
-            "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
-            "V2S_RUNTIME_DIR", runtime.toString(),
-            "V2S_MANAGED_INVITATION_OUTPUT", runtime.resolve("results/invitation.json").toString()
-        )));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ManagedInvitationBootstrap.Input.from(Map.of(
+                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
+                        "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
+                        "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
+                        "V2S_MANAGED_INVITATION_TARGET_TYPE", "TENANT",
+                        "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
+                        "V2S_RUNTIME_DIR", runtime.toString(),
+                        "V2S_MANAGED_INVITATION_OUTPUT",
+                                runtime.resolve("results/invitation.json").toString())));
     }
 
     @Test
@@ -77,15 +110,16 @@ class ManagedInvitationBootstrapTest {
         Files.createDirectories(output.getParent());
         Files.writeString(output, "must-not-overwrite");
 
-        assertThrows(IllegalArgumentException.class, () -> ManagedInvitationBootstrap.Input.from(Map.of(
-            "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-            "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-            "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
-            "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
-            "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
-            "V2S_RUNTIME_DIR", runtime.toString(),
-            "V2S_MANAGED_INVITATION_OUTPUT", output.toString()
-        )));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ManagedInvitationBootstrap.Input.from(Map.of(
+                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
+                        "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
+                        "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
+                        "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
+                        "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
+                        "V2S_RUNTIME_DIR", runtime.toString(),
+                        "V2S_MANAGED_INVITATION_OUTPUT", output.toString())));
     }
 
     @Test
@@ -97,7 +131,9 @@ class ManagedInvitationBootstrapTest {
 
         Path failure = ManagedInvitationBootstrap.failureOutputPath(output);
         var payload = new com.fasterxml.jackson.databind.ObjectMapper().readTree(failure.toFile());
-        assertEquals(IllegalStateException.class.getName(), payload.get("failureType").asText());
+        assertEquals(
+                IllegalStateException.class.getName(),
+                payload.get("failureType").asText());
         assertEquals("password=[REDACTED]", payload.get("failureMessage").asText());
         assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(failure)));
     }

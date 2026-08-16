@@ -1,0 +1,2296 @@
+{
+  "kind": "catalog-inventory-openapi-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "schemas": {
+    "LocalCopyCandidatePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "sourceScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "targetScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "items": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "shapeKey": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "compatibilityHint": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "shapeKey",
+                  "status",
+                  "compatibilityHint",
+                  "version"
+                ]
+              }
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "sourceScope",
+            "targetScope",
+            "items",
+            "cursor",
+            "total",
+            "generation"
+          ]
+        }
+      }
+    },
+    "LocalCopyPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "sourceScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "targetScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "selectedItems": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code",
+                  "name"
+                ]
+              }
+            },
+            "closureItems": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "action": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code",
+                  "name",
+                  "action"
+                ]
+              }
+            },
+            "closureEdges": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "fromRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "toRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "referenceKind": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "fromRef",
+                  "toRef",
+                  "referenceKind"
+                ]
+              }
+            },
+            "objectVersions": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "sourceVersion": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "targetVersion": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code",
+                  "sourceVersion",
+                  "targetVersion"
+                ]
+              }
+            },
+            "skipped": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "section": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "reasonCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "section",
+                  "reasonCode"
+                ]
+              }
+            },
+            "referenceMappings": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
+                ]
+              }
+            },
+            "mappingPreview": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "fromCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "toCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "referenceKind": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "canonicalTuple": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": false,
+                    "properties": {
+                      "ownerRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "brandRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "objectType": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "parts": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "ownerRef",
+                      "brandRef",
+                      "objectType",
+                      "parts"
+                    ]
+                  }
+                },
+                "required": [
+                  "fromCode",
+                  "toCode",
+                  "referenceKind",
+                  "status",
+                  "canonicalTuple"
+                ]
+              }
+            },
+            "referenceRewritePreview": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "referenceKind": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "sourceRef",
+                  "targetRef",
+                  "referenceKind"
+                ]
+              }
+            },
+            "compatibilityResults": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "canonicalTuple": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": false,
+                    "properties": {
+                      "ownerRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "brandRef": {
+                        "type": "string",
+                        "description": "design-bound field",
+                        "format": "uuid"
+                      },
+                      "objectType": {
+                        "type": "string",
+                        "description": "design-bound field"
+                      },
+                      "parts": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "ownerRef",
+                      "brandRef",
+                      "objectType",
+                      "parts"
+                    ]
+                  },
+                  "compatibilityId": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "result": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "reasonCode": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "enum": [
+                      "TARGET_ABSENT",
+                      "STRUCTURE_COMPATIBLE",
+                      "STRUCTURE_INCOMPATIBLE",
+                      "SKU_STRUCTURE_INCOMPATIBLE",
+                      "CONSUMPTION_UNIT_INCOMPATIBLE",
+                      "REFERENCE_MAPPING_UNRESOLVED",
+                      "REUSE_CONFIRMATION_REQUIRED",
+                      "OWNER_FACT_UNAVAILABLE"
+                    ]
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "canonicalTuple",
+                  "compatibilityId",
+                  "result",
+                  "reason",
+                  "reasonCode"
+                ]
+              }
+            },
+            "preflightDigest": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "selectedCount": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "selectedLimit": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "closureCount": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "closureLimit": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "blockingCount": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "confirmationRequiredCount": {
+              "type": "integer",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "sourceScope",
+            "targetScope",
+            "selectedItems",
+            "closureItems",
+            "closureEdges",
+            "objectVersions",
+            "skipped",
+            "referenceMappings",
+            "mappingPreview",
+            "referenceRewritePreview",
+            "compatibilityResults",
+            "preflightDigest",
+            "selectedCount",
+            "selectedLimit",
+            "closureCount",
+            "closureLimit",
+            "blockingCount",
+            "confirmationRequiredCount"
+          ]
+        }
+      }
+    },
+    "LocalCopyReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "preflightDigest": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "created": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code"
+                ]
+              }
+            },
+            "reused": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code"
+                ]
+              }
+            },
+            "skipped": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "section": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "reasonCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "section",
+                  "reasonCode"
+                ]
+              }
+            },
+            "referenceMappings": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
+                ]
+              }
+            },
+            "targetVersions": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "targetRef",
+                  "version"
+                ]
+              }
+            },
+            "ownerReadbacks": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "owner",
+                  "status",
+                  "version"
+                ]
+              }
+            }
+          },
+          "required": [
+            "preflightDigest",
+            "created",
+            "reused",
+            "skipped",
+            "referenceMappings",
+            "targetVersions",
+            "ownerReadbacks"
+          ]
+        }
+      }
+    },
+    "BrandCopyCandidatePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "sourceScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "targetScope": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "ownerType": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "ownerRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                },
+                "brandRef": {
+                  "type": "string",
+                  "description": "design-bound field",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "ownerType",
+                "ownerRef",
+                "brandRef"
+              ]
+            },
+            "copySourceAvailable": {
+              "type": "boolean",
+              "description": "design-bound field"
+            },
+            "items": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "shapeKey": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "shapeKey",
+                  "status",
+                  "version"
+                ]
+              }
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "sourceScope",
+            "targetScope",
+            "copySourceAvailable",
+            "items",
+            "cursor",
+            "total",
+            "generation"
+          ]
+        }
+      }
+    },
+    "BrandCatalogCopyPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceScope",
+        "targetScope",
+        "selectedItems",
+        "selectedCount",
+        "selectedLimit",
+        "closureItems",
+        "closureCount",
+        "closureLimit",
+        "objectVersions",
+        "referenceMappings",
+        "closureEdges",
+        "mappingPreview",
+        "referenceRewritePreview",
+        "compatibilityResults",
+        "preflightDigest",
+        "blockingCount",
+        "confirmationRequiredCount"
+      ],
+      "properties": {
+        "sourceScope": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "ownerType": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "ownerRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "brandRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "ownerType",
+            "ownerRef",
+            "brandRef"
+          ]
+        },
+        "targetScope": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "ownerType": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "ownerRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "brandRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "ownerType",
+            "ownerRef",
+            "brandRef"
+          ]
+        },
+        "selectedItems": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "objectType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "code": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "name": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "objectType",
+              "code",
+              "name"
+            ]
+          }
+        },
+        "selectedCount": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "selectedLimit": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "closureItems": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "objectType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "code": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "name": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "action": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "objectType",
+              "code",
+              "name",
+              "action"
+            ]
+          }
+        },
+        "closureEdges": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fromRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "toRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "referenceKind": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "fromRef",
+              "toRef",
+              "referenceKind"
+            ]
+          }
+        },
+        "closureCount": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "closureLimit": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "objectVersions": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "objectType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "code": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "sourceVersion": {
+                "type": "integer",
+                "description": "design-bound field"
+              },
+              "targetVersion": {
+                "type": "integer",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "objectType",
+              "code",
+              "sourceVersion",
+              "targetVersion"
+            ]
+          }
+        },
+        "referenceMappings": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "objectType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "sourceRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "targetSkuCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "design-bound field"
+              },
+              "targetOptionValueCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "objectType",
+              "sourceRef",
+              "targetRef",
+              "targetCode"
+            ]
+          }
+        },
+        "mappingPreview": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fromCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "toCode": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "referenceKind": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "status": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "canonicalTuple": {
+                "type": "object",
+                "description": "design-bound field",
+                "additionalProperties": false,
+                "properties": {
+                  "ownerRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "parts": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "ownerRef",
+                  "brandRef",
+                  "objectType",
+                  "parts"
+                ]
+              }
+            },
+            "required": [
+              "fromCode",
+              "toCode",
+              "referenceKind",
+              "status",
+              "canonicalTuple"
+            ]
+          }
+        },
+        "referenceRewritePreview": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sourceRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "targetRef": {
+                "type": "string",
+                "description": "design-bound field",
+                "format": "uuid"
+              },
+              "referenceKind": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "sourceRef",
+              "targetRef",
+              "referenceKind"
+            ]
+          }
+        },
+        "compatibilityResults": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "objectType": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "canonicalTuple": {
+                "type": "object",
+                "description": "design-bound field",
+                "additionalProperties": false,
+                "properties": {
+                  "ownerRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "parts": {
+                    "type": "array",
+                    "description": "design-bound field",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "ownerRef",
+                  "brandRef",
+                  "objectType",
+                  "parts"
+                ]
+              },
+              "compatibilityId": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "result": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reason": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field",
+                "enum": [
+                  "TARGET_ABSENT",
+                  "STRUCTURE_COMPATIBLE",
+                  "STRUCTURE_INCOMPATIBLE",
+                  "SKU_STRUCTURE_INCOMPATIBLE",
+                  "CONSUMPTION_UNIT_INCOMPATIBLE",
+                  "REFERENCE_MAPPING_UNRESOLVED",
+                  "REUSE_CONFIRMATION_REQUIRED",
+                  "OWNER_FACT_UNAVAILABLE"
+                ]
+              }
+            },
+            "required": [
+              "objectType",
+              "canonicalTuple",
+              "compatibilityId",
+              "result",
+              "reason",
+              "reasonCode"
+            ]
+          }
+        },
+        "preflightDigest": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "blockingCount": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "confirmationRequiredCount": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "BrandCatalogCopyReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "preflightDigest": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "created": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code"
+                ]
+              }
+            },
+            "reused": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "code"
+                ]
+              }
+            },
+            "referenceMappings": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objectType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "sourceRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "targetCode": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "targetSkuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "targetOptionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "objectType",
+                  "sourceRef",
+                  "targetRef",
+                  "targetCode"
+                ]
+              }
+            },
+            "targetVersions": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "targetRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "targetRef",
+                  "version"
+                ]
+              }
+            },
+            "ownerReadbacks": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "owner",
+                  "status",
+                  "version"
+                ]
+              }
+            }
+          },
+          "required": [
+            "preflightDigest",
+            "created",
+            "reused",
+            "referenceMappings",
+            "targetVersions",
+            "ownerReadbacks"
+          ]
+        }
+      }
+    },
+    "LocalCopyCandidateQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "keyword": {
+          "type": "string",
+          "description": "domain-local keyword"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        }
+      }
+    },
+    "LocalCopyPreflightRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceItemCode",
+        "targetItemCode",
+        "selectedSections",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "sourceItemCode": {
+          "type": "string",
+          "description": "source item"
+        },
+        "targetItemCode": {
+          "type": "string",
+          "description": "target item"
+        },
+        "selectedSections": {
+          "type": "array",
+          "description": "copy sections",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "BASIC_INFO",
+              "SKU_STRUCTURE",
+              "SKU_BOM",
+              "ORDER_OPTIONS",
+              "OPTION_VALUE_BOM",
+              "ITEM_BOM",
+              "PACKAGE_STRUCTURE",
+              "PRODUCTION_PROMPTS"
+            ]
+          }
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "LocalCopyExecuteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceItemCode",
+        "targetItemCode",
+        "selectedSections",
+        "preflightDigest",
+        "expectedSourceVersion",
+        "expectedTargetVersion",
+        "compatibilityDispositions",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "sourceItemCode": {
+          "type": "string",
+          "description": "source item"
+        },
+        "targetItemCode": {
+          "type": "string",
+          "description": "target item"
+        },
+        "selectedSections": {
+          "type": "array",
+          "description": "copy sections fixed by preflight",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "BASIC_INFO",
+              "SKU_STRUCTURE",
+              "SKU_BOM",
+              "ORDER_OPTIONS",
+              "OPTION_VALUE_BOM",
+              "ITEM_BOM",
+              "PACKAGE_STRUCTURE",
+              "PRODUCTION_PROMPTS"
+            ]
+          }
+        },
+        "preflightDigest": {
+          "type": "string",
+          "description": "preflight digest"
+        },
+        "expectedSourceVersion": {
+          "type": "integer",
+          "description": "expected source version"
+        },
+        "expectedTargetVersion": {
+          "type": "integer",
+          "description": "expected target version"
+        },
+        "compatibilityDispositions": {
+          "type": "array",
+          "description": "owner compatibility facts confirmed by the operator",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "compatibilityId",
+              "disposition"
+            ],
+            "properties": {
+              "compatibilityId": {
+                "type": "string",
+                "description": "stable owner compatibility fact identity"
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "CONFIRM"
+                ],
+                "description": "operator confirmed this owner compatibility fact"
+              }
+            }
+          }
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "TemporaryPromotionPreflightRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "itemCode",
+        "formalCode",
+        "shapeKey",
+        "name",
+        "expectedSourceVersion"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "formalCode": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "shapeKey": {
+          "type": "string",
+          "description": "design-bound field",
+          "enum": [
+            "STANDARD_SALE_COUNTED",
+            "SKU_VARIANT_SALE_COUNTED",
+            "STANDARD_SALE_WEIGHED",
+            "MATERIAL",
+            "COMPOSITE",
+            "SERVICE",
+            "BENEFIT_SHELL"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "shortName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field"
+        },
+        "materialRole": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": true,
+          "properties": {},
+          "required": []
+        },
+        "expectedSourceVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "TemporaryPromotionPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "shapeKey": {
+                  "type": "string",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "shapeKey"
+              ]
+            },
+            "proposed": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "shapeKey": {
+                  "type": "string",
+                  "description": "design-bound field"
+                },
+                "materialRole": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "shapeKey",
+                "materialRole"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "sourceVersion": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "formalCodeAvailable": {
+              "type": "boolean",
+              "description": "design-bound field"
+            },
+            "requiredFields": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blockedReasons": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "string"
+              }
+            },
+            "changes": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "before": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  },
+                  "after": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "field",
+                  "before",
+                  "after"
+                ]
+              }
+            },
+            "preflightDigest": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "canPromote": {
+              "type": "boolean",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "item",
+            "proposed",
+            "source",
+            "sourceVersion",
+            "formalCodeAvailable",
+            "requiredFields",
+            "blockedReasons",
+            "changes",
+            "preflightDigest",
+            "canPromote"
+          ]
+        }
+      }
+    },
+    "TemporaryPromotionExecuteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "itemCode",
+        "formalCode",
+        "shapeKey",
+        "name",
+        "expectedSourceVersion",
+        "expectedVersion",
+        "preflightDigest"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "formalCode": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "shapeKey": {
+          "type": "string",
+          "description": "design-bound field",
+          "enum": [
+            "STANDARD_SALE_COUNTED",
+            "SKU_VARIANT_SALE_COUNTED",
+            "STANDARD_SALE_WEIGHED",
+            "MATERIAL",
+            "COMPOSITE",
+            "SERVICE",
+            "BENEFIT_SHELL"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "shortName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field"
+        },
+        "materialRole": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": true,
+          "properties": {},
+          "required": []
+        },
+        "expectedSourceVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "preflightDigest": {
+          "type": "string",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "CatalogItemCommandReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result",
+        "version"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "result": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "resourceRef": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "version": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "ownerReadbacks": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "owner",
+                  "status",
+                  "version"
+                ]
+              }
+            },
+            "actionAvailability": {
+              "type": "object",
+              "description": "design-bound field",
+              "additionalProperties": false,
+              "properties": {
+                "canEdit": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "canEnable": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                },
+                "canDisable": {
+                  "type": "boolean",
+                  "description": "design-bound field"
+                }
+              },
+              "required": [
+                "canEdit",
+                "canEnable",
+                "canDisable"
+              ]
+            }
+          },
+          "required": [
+            "operation",
+            "resourceRef",
+            "status",
+            "version",
+            "ownerReadbacks",
+            "actionAvailability"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "BrandCopyCandidateQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected store node"
+        },
+        "keyword": {
+          "type": "string",
+          "description": "domain-local keyword"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        }
+      }
+    },
+    "BrandCopyPreflightRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedItemCodes",
+        "targetDataNodeRef",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "selectedItemCodes": {
+          "type": "array",
+          "description": "selected source item codes",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetDataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "target store node"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "BrandCopyExecuteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedItemCodes",
+        "targetDataNodeRef",
+        "preflightDigest",
+        "expectedSourceVersion",
+        "expectedTargetVersion",
+        "compatibilityDispositions",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "selectedItemCodes": {
+          "type": "array",
+          "description": "selected source item codes",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetDataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "target store node"
+        },
+        "preflightDigest": {
+          "type": "string",
+          "description": "preflight digest"
+        },
+        "expectedSourceVersion": {
+          "type": "integer",
+          "description": "expected source version"
+        },
+        "expectedTargetVersion": {
+          "type": "integer",
+          "description": "expected target version"
+        },
+        "compatibilityDispositions": {
+          "type": "array",
+          "description": "owner compatibility facts confirmed by the operator",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "compatibilityId",
+              "disposition"
+            ],
+            "properties": {
+              "compatibilityId": {
+                "type": "string",
+                "description": "stable owner compatibility fact identity"
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "CONFIRM"
+                ],
+                "description": "operator confirmed this owner compatibility fact"
+              }
+            }
+          }
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    }
+  }
+}

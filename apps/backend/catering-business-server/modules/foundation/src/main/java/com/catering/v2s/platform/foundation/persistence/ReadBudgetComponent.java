@@ -8,14 +8,14 @@ import java.util.function.Supplier;
 /**
  * Request-local attribution for the closed BP-U05 read-budget vocabulary.
  *
- * <p>This deliberately records only work enclosed by an explicit owner/edge boundary. Any JDBC
- * work that has not been enclosed remains {@link Component#UNCLASSIFIED} at completion; callers
- * cannot obtain a passing budget by relying on a default section or by omitting a boundary.</p>
+ * <p>This deliberately records only work enclosed by an explicit owner/edge boundary. Any JDBC work that has not been
+ * enclosed remains {@link Component#UNCLASSIFIED} at completion; callers cannot obtain a passing budget by relying on a
+ * default section or by omitting a boundary.
  */
 public final class ReadBudgetComponent {
     private static final ThreadLocal<Collector> CURRENT = new ThreadLocal<>();
 
-    private ReadBudgetComponent() { }
+    private ReadBudgetComponent() {}
 
     public enum Component {
         CONTEXT_WORKSPACE_IAM,
@@ -52,23 +52,26 @@ public final class ReadBudgetComponent {
     }
 
     /**
-     * Physical operation counts reconcile to the request diagnostic total. Logical statement
-     * counts exclude connection and transaction mechanics and are the sole basis for B caps.
+     * Physical operation counts reconcile to the request diagnostic total. Logical statement counts exclude connection
+     * and transaction mechanics and are the sole basis for B caps.
      */
     public record Snapshot(
-        Map<Component, Long> counts,
-        Map<Component, Long> logicalStatementCounts,
-        long databaseOperationCount,
-        long logicalStatementCount
-    ) {
+            Map<Component, Long> counts,
+            Map<Component, Long> logicalStatementCounts,
+            long databaseOperationCount,
+            long logicalStatementCount) {
         public Snapshot {
-            if (databaseOperationCount < 0 || logicalStatementCount < 0) throw new IllegalArgumentException("negative database metric");
+            if (databaseOperationCount < 0 || logicalStatementCount < 0)
+                throw new IllegalArgumentException("negative database metric");
             EnumMap<Component, Long> normalized = normalizedCounts(counts);
             EnumMap<Component, Long> normalizedLogical = normalizedCounts(logicalStatementCounts);
             long total = normalized.values().stream().mapToLong(Long::longValue).sum();
-            long logicalTotal = normalizedLogical.values().stream().mapToLong(Long::longValue).sum();
+            long logicalTotal = normalizedLogical.values().stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
             if (total != databaseOperationCount) throw new IllegalArgumentException("physical component total drift");
-            if (logicalTotal != logicalStatementCount) throw new IllegalArgumentException("logical statement component total drift");
+            if (logicalTotal != logicalStatementCount)
+                throw new IllegalArgumentException("logical statement component total drift");
             counts = Map.copyOf(normalized);
             logicalStatementCounts = Map.copyOf(normalizedLogical);
         }
@@ -78,20 +81,29 @@ public final class ReadBudgetComponent {
             EnumMap<Component, Long> logicalCounts = emptyCounts();
             counts.put(Component.UNCLASSIFIED, databaseSnapshot.count());
             logicalCounts.put(Component.UNCLASSIFIED, ReadBudgetComponent.logicalStatementCount(databaseSnapshot));
-            return new Snapshot(counts, logicalCounts, databaseSnapshot.count(), ReadBudgetComponent.logicalStatementCount(databaseSnapshot));
+            return new Snapshot(
+                    counts,
+                    logicalCounts,
+                    databaseSnapshot.count(),
+                    ReadBudgetComponent.logicalStatementCount(databaseSnapshot));
         }
 
-        public long unclassifiedCount() { return counts.getOrDefault(Component.UNCLASSIFIED, 0L); }
-        public long unclassifiedLogicalStatementCount() { return logicalStatementCounts.getOrDefault(Component.UNCLASSIFIED, 0L); }
+        public long unclassifiedCount() {
+            return counts.getOrDefault(Component.UNCLASSIFIED, 0L);
+        }
+
+        public long unclassifiedLogicalStatementCount() {
+            return logicalStatementCounts.getOrDefault(Component.UNCLASSIFIED, 0L);
+        }
     }
 
     private static EnumMap<Component, Long> normalizedCounts(Map<Component, Long> values) {
         EnumMap<Component, Long> normalized = new EnumMap<>(Component.class);
-            for (Component component : Component.values()) {
-                long value = values == null ? 0L : values.getOrDefault(component, 0L);
-                if (value < 0) throw new IllegalArgumentException("negative component count");
-                normalized.put(component, value);
-            }
+        for (Component component : Component.values()) {
+            long value = values == null ? 0L : values.getOrDefault(component, 0L);
+            if (value < 0) throw new IllegalArgumentException("negative component count");
+            normalized.put(component, value);
+        }
         return normalized;
     }
 
@@ -105,12 +117,16 @@ public final class ReadBudgetComponent {
             this.current = current;
         }
 
-        public Snapshot snapshot(DatabaseOperationTracker.Snapshot databaseSnapshot) { return current.snapshot(databaseSnapshot); }
+        public Snapshot snapshot(DatabaseOperationTracker.Snapshot databaseSnapshot) {
+            return current.snapshot(databaseSnapshot);
+        }
 
-        @Override public void close() {
+        @Override
+        public void close() {
             if (!closed) {
                 closed = true;
-                if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
+                if (previous == null) CURRENT.remove();
+                else CURRENT.set(previous);
             }
         }
     }
@@ -128,7 +144,8 @@ public final class ReadBudgetComponent {
                 return action.get();
             } finally {
                 DatabaseOperationTracker.Snapshot after = DatabaseOperationTracker.snapshot();
-                if (after.count() < before.count()) throw new IllegalStateException("database operation count regressed");
+                if (after.count() < before.count())
+                    throw new IllegalStateException("database operation count regressed");
                 long beforeLogical = logicalStatementCount(before);
                 long afterLogical = logicalStatementCount(after);
                 if (afterLogical < beforeLogical) throw new IllegalStateException("logical statement count regressed");
@@ -148,8 +165,10 @@ public final class ReadBudgetComponent {
                     .mapToLong(Map.Entry::getValue)
                     .sum();
             long logicalTotal = logicalStatementCount(databaseSnapshot);
-            if (attributed > databaseSnapshot.count()) throw new IllegalStateException("read budget component exceeds request count");
-            if (attributedLogical > logicalTotal) throw new IllegalStateException("read budget component exceeds logical statement count");
+            if (attributed > databaseSnapshot.count())
+                throw new IllegalStateException("read budget component exceeds request count");
+            if (attributedLogical > logicalTotal)
+                throw new IllegalStateException("read budget component exceeds logical statement count");
             EnumMap<Component, Long> result = new EnumMap<>(counts);
             EnumMap<Component, Long> logicalResult = new EnumMap<>(logicalStatementCounts);
             result.put(Component.UNCLASSIFIED, databaseSnapshot.count() - attributed);
@@ -166,8 +185,10 @@ public final class ReadBudgetComponent {
 
     private static long logicalStatementCount(DatabaseOperationTracker.Snapshot snapshot) {
         return snapshot.operations().stream()
-            .filter(operation -> "QUERY".equals(operation.kind()) || "UPDATE".equals(operation.kind()) || "BATCH".equals(operation.kind()))
-            .mapToLong(DatabaseOperationTracker.Operation::batchSize)
-            .sum();
+                .filter(operation -> "QUERY".equals(operation.kind())
+                        || "UPDATE".equals(operation.kind())
+                        || "BATCH".equals(operation.kind()))
+                .mapToLong(DatabaseOperationTracker.Operation::batchSize)
+                .sum();
     }
 }

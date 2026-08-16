@@ -1,22 +1,21 @@
 package architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.catering.v2s.app.edge.operations.organization.OperationsBusinessEntityController;
-import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.operations.contract.CrossCapabilityController;
 import com.catering.v2s.app.edge.operations.contract.JdbcTouchingController;
 import com.catering.v2s.app.edge.operations.contract.ServletReadingController;
 import com.catering.v2s.app.edge.operations.contract.SessionDependencyController;
+import com.catering.v2s.app.edge.operations.organization.OperationsBusinessEntityController;
 import com.catering.v2s.app.edge.operations.session.OperationsDependsOnPlatformSessionFixture;
+import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.platform.session.PlatformDependsOnOperationsSessionFixture;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -25,75 +24,96 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /** Production architecture boundary: the business deployable owns no TDP source tree. */
 @AnalyzeClasses(packages = "com.catering.v2s", importOptions = ImportOption.DoNotIncludeTests.class)
 class BackendModuleBoundariesTest {
     @ArchTest
     static final ArchRule DOMAIN_MODULES_ARE_FRAMEWORK_FREE = noClasses()
-        .that().resideInAnyPackage("..platform.workspace.domain..", "..organization.domain..")
-        .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..");
+            .that()
+            .resideInAnyPackage("..platform.workspace.domain..", "..organization.domain..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..", "jakarta.persistence..");
 
     @ArchTest
     static final ArchRule ORGANIZATION_DOES_NOT_REACH_WORKSPACE_INTERNALS = noClasses()
-        .that().resideInAPackage("com.catering.v2s.organization..")
-        .should().dependOnClassesThat().resideInAnyPackage("..platform.workspace.application..", "..platform.workspace.adapter..");
+            .that()
+            .resideInAPackage("com.catering.v2s.organization..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("..platform.workspace.application..", "..platform.workspace.adapter..");
 
     @ArchTest
-    static final ArchRule NO_MODULE_REFERENCES_TERMINAL_DATA_RUNTIME = noClasses()
-        .should().dependOnClassesThat().resideInAnyPackage("..terminal.data..", "..tdp..");
+    static final ArchRule NO_MODULE_REFERENCES_TERMINAL_DATA_RUNTIME =
+            noClasses().should().dependOnClassesThat().resideInAnyPackage("..terminal.data..", "..tdp..");
 
     @ArchTest
     static final ArchRule EDGE_CONTROLLERS_DO_NOT_TOUCH_SERVLET_API = noClasses()
-        .that().haveSimpleNameEndingWith("Controller")
-        .should().dependOnClassesThat().resideInAnyPackage("jakarta.servlet..");
+            .that()
+            .haveSimpleNameEndingWith("Controller")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("jakarta.servlet..");
 
     @ArchTest
     static final ArchRule EDGE_DOES_NOT_TOUCH_PERSISTENCE = noClasses()
-        .that().resideInAPackage("..app.edge..")
-        .should().dependOnClassesThat().resideInAnyPackage(
-            "org.springframework.jdbc..",
-            "org.springframework.data.repository..",
-            "java.sql..",
-            "javax.sql.."
-        );
+            .that()
+            .resideInAPackage("..app.edge..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "org.springframework.jdbc..", "org.springframework.data.repository..", "java.sql..", "javax.sql..");
 
     @ArchTest
     static final ArchRule EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS = classes()
-        .that().resideInAnyPackage("..app.edge.platform..", "..app.edge.operations..", "..app.edge.publicentry..")
-        .should(new ArchCondition<>("not depend on a peer edge capability except its face session capability") {
-            @Override
-            public void check(JavaClass item, ConditionEvents events) {
-                Optional<EdgeCapability> source = EdgeCapability.from(item.getPackageName());
-                if (source.isEmpty()) return;
-                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
-                    Optional<EdgeCapability> target = EdgeCapability.from(dependency.getTargetClass().getPackageName());
-                    if (target.isPresent() && source.get().dependsOnPeer(target.get())) {
-                        events.add(SimpleConditionEvent.violated(item, item.getFullName()
-                            + " depends on peer edge capability " + dependency.getTargetClass().getFullName()));
+            .that()
+            .resideInAnyPackage("..app.edge.platform..", "..app.edge.operations..", "..app.edge.publicentry..")
+            .should(new ArchCondition<>("not depend on a peer edge capability except its face session capability") {
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                    Optional<EdgeCapability> source = EdgeCapability.from(item.getPackageName());
+                    if (source.isEmpty()) return;
+                    for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                        Optional<EdgeCapability> target =
+                                EdgeCapability.from(dependency.getTargetClass().getPackageName());
+                        if (target.isPresent() && source.get().dependsOnPeer(target.get())) {
+                            events.add(SimpleConditionEvent.violated(
+                                    item,
+                                    item.getFullName() + " depends on peer edge capability "
+                                            + dependency.getTargetClass().getFullName()));
+                        }
                     }
                 }
-            }
-        });
+            });
 
     @ArchTest
     static final ArchRule PLATFORM_EDGE_DOES_NOT_DEPEND_ON_OPERATIONS_SESSION = noClasses()
-        .that().resideInAPackage("..app.edge.platform..")
-        .should().dependOnClassesThat().resideInAPackage("..app.edge.operations.session..");
+            .that()
+            .resideInAPackage("..app.edge.platform..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("..app.edge.operations.session..");
 
     @ArchTest
     static final ArchRule OPERATIONS_EDGE_DOES_NOT_DEPEND_ON_PLATFORM_SESSION = noClasses()
-        .that().resideInAPackage("..app.edge.operations..")
-        .should().dependOnClassesThat().resideInAPackage("..app.edge.platform.session..");
+            .that()
+            .resideInAPackage("..app.edge.operations..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("..app.edge.platform.session..");
 
     @ArchTest
     static final ArchRule EDGE_CONTROLLERS_USE_TYPED_REQUEST_PROBLEMS = noClasses()
-        .that().haveSimpleNameEndingWith("Controller")
-        .should().dependOnClassesThat().areAssignableTo(IllegalArgumentException.class);
+            .that()
+            .haveSimpleNameEndingWith("Controller")
+            .should()
+            .dependOnClassesThat()
+            .areAssignableTo(IllegalArgumentException.class);
 
     @Test
     void backendModuleBoundaries() throws Exception {
@@ -107,65 +127,55 @@ class BackendModuleBoundariesTest {
     @Test
     void edgeServletBoundaryRejectsProductionShape() {
         AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> EDGE_CONTROLLERS_DO_NOT_TOUCH_SERVLET_API.check(
-                new ClassFileImporter().importClasses(ServletReadingController.class)
-            )
-        );
+                AssertionError.class,
+                () -> EDGE_CONTROLLERS_DO_NOT_TOUCH_SERVLET_API.check(
+                        new ClassFileImporter().importClasses(ServletReadingController.class)));
         assertTrue(failure.getMessage().contains("ServletReadingController"));
     }
 
     @Test
     void edgePersistenceBoundaryRejectsProductionShape() {
         AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> EDGE_DOES_NOT_TOUCH_PERSISTENCE.check(
-                new ClassFileImporter().importClasses(JdbcTouchingController.class)
-            )
-        );
+                AssertionError.class,
+                () -> EDGE_DOES_NOT_TOUCH_PERSISTENCE.check(
+                        new ClassFileImporter().importClasses(JdbcTouchingController.class)));
         assertTrue(failure.getMessage().contains("JdbcTouchingController"));
     }
 
     @Test
     void edgeCapabilityBoundaryRejectsPeerAndAllowsSessionDependency() {
         AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(
-                new ClassFileImporter().importClasses(CrossCapabilityController.class, OperationsBusinessEntityController.class)
-            )
-        );
+                AssertionError.class,
+                () -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(new ClassFileImporter()
+                        .importClasses(CrossCapabilityController.class, OperationsBusinessEntityController.class)));
         assertTrue(failure.getMessage().contains("CrossCapabilityController"));
-        assertDoesNotThrow(() -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(
-            new ClassFileImporter().importClasses(SessionDependencyController.class, OperationsSessionResolver.class)
-        ));
+        assertDoesNotThrow(() -> EDGE_CAPABILITIES_DO_NOT_DEPEND_ON_PEERS.check(new ClassFileImporter()
+                .importClasses(SessionDependencyController.class, OperationsSessionResolver.class)));
     }
 
     @Test
     void faceLocalSessionBoundaryRejectsBothCrossFaceDependencies() {
         AssertionError platformFailure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> PLATFORM_EDGE_DOES_NOT_DEPEND_ON_OPERATIONS_SESSION.check(
-                new ClassFileImporter().importClasses(PlatformDependsOnOperationsSessionFixture.class, OperationsSessionResolver.class)
-            )
-        );
+                AssertionError.class,
+                () -> PLATFORM_EDGE_DOES_NOT_DEPEND_ON_OPERATIONS_SESSION.check(new ClassFileImporter()
+                        .importClasses(
+                                PlatformDependsOnOperationsSessionFixture.class, OperationsSessionResolver.class)));
         assertTrue(platformFailure.getMessage().contains("PlatformDependsOnOperationsSessionFixture"));
         AssertionError operationsFailure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> OPERATIONS_EDGE_DOES_NOT_DEPEND_ON_PLATFORM_SESSION.check(
-                new ClassFileImporter().importClasses(OperationsDependsOnPlatformSessionFixture.class, com.catering.v2s.app.edge.platform.session.PlatformSessionResolver.class)
-            )
-        );
+                AssertionError.class,
+                () -> OPERATIONS_EDGE_DOES_NOT_DEPEND_ON_PLATFORM_SESSION.check(new ClassFileImporter()
+                        .importClasses(
+                                OperationsDependsOnPlatformSessionFixture.class,
+                                com.catering.v2s.app.edge.platform.session.PlatformSessionResolver.class)));
         assertTrue(operationsFailure.getMessage().contains("OperationsDependsOnPlatformSessionFixture"));
     }
 
     @Test
     void edgeTypedProblemBoundaryRejectsFrameworkDefaultShape() {
         AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
-            AssertionError.class,
-            () -> EDGE_CONTROLLERS_USE_TYPED_REQUEST_PROBLEMS.check(
-                new ClassFileImporter().importClasses(architecture.fixture.IllegalArgumentController.class)
-            )
-        );
+                AssertionError.class,
+                () -> EDGE_CONTROLLERS_USE_TYPED_REQUEST_PROBLEMS.check(
+                        new ClassFileImporter().importClasses(architecture.fixture.IllegalArgumentController.class)));
         assertTrue(failure.getMessage().contains("IllegalArgumentController"));
     }
 
@@ -190,7 +200,9 @@ class BackendModuleBoundariesTest {
         }
 
         boolean dependsOnPeer(EdgeCapability other) {
-            return face.equals(other.face) && !capability.equals(other.capability) && !"session".equals(other.capability);
+            return face.equals(other.face)
+                    && !capability.equals(other.capability)
+                    && !"session".equals(other.capability);
         }
     }
 }

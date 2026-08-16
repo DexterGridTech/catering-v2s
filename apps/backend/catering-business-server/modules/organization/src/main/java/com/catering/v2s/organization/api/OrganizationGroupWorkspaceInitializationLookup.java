@@ -6,7 +6,7 @@ import java.util.Optional;
 
 /** Organization-owned facts for platform group-workspace task reads. */
 public interface OrganizationGroupWorkspaceInitializationLookup {
-    record InitializationState(String groupWorkspaceKey, boolean commercialGroupInitialized) { }
+    record InitializationState(String groupWorkspaceKey, boolean commercialGroupInitialized) {}
 
     Map<String, InitializationState> listInitializationFacts(List<String> groupWorkspaceKeys);
 

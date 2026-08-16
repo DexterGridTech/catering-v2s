@@ -16,12 +16,12 @@ class CatalogTemporaryPromotionContractTest {
     void keepsFormalCodeValidationClosedAndStable() {
         assertDoesNotThrow(() -> CatalogOwnerService.validateCatalogCode("LATTE-FORMAL-001"));
 
-        CatalogOwnerApi.Problem lowerCase = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.validateCatalogCode("latte-formal-001"));
+        CatalogOwnerApi.Problem lowerCase = assertThrows(
+                CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.validateCatalogCode("latte-formal-001"));
         assertEquals("VALIDATION_ERROR", lowerCase.code());
 
-        CatalogOwnerApi.Problem tooShort = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.validateCatalogCode("A"));
+        CatalogOwnerApi.Problem tooShort =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.validateCatalogCode("A"));
         assertEquals("VALIDATION_ERROR", tooShort.code());
     }
 
@@ -29,15 +29,16 @@ class CatalogTemporaryPromotionContractTest {
     void projectsOnlyTypedTemporarySourceFacts() {
         var sections = mapper.createObjectNode();
         var externalIdentity = sections.putObject("externalIdentity")
-            .put("sourceOrderRef", "EXT-ORDER-001")
-            .put("sourceRecordRef", "EXT-RECORD-001")
-            .put("sourceItemRef", "EXT-SKU-88")
-            .put("rawPayload", "must-not-cross-owner-boundary");
-        externalIdentity.putObject("snapshot")
-            .put("name", "外部订单临时拿铁")
-            .put("specification", "中杯 / 热")
-            .put("price", 2800)
-            .put("untyped", "ignored");
+                .put("sourceOrderRef", "EXT-ORDER-001")
+                .put("sourceRecordRef", "EXT-RECORD-001")
+                .put("sourceItemRef", "EXT-SKU-88")
+                .put("rawPayload", "must-not-cross-owner-boundary");
+        externalIdentity
+                .putObject("snapshot")
+                .put("name", "外部订单临时拿铁")
+                .put("specification", "中杯 / 热")
+                .put("price", 2800)
+                .put("untyped", "ignored");
 
         JsonNode projected = CatalogOwnerService.externalIdentityFact(mapper, sections);
 

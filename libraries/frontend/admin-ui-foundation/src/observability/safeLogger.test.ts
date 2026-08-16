@@ -10,7 +10,13 @@ describe('safe logger sink', () => {
     const blockedKey = ['pass', 'word'].join('');
 
     logger.info({event: 'frontend.request.completed', phase: 'request.completed', outcome: 'SUCCESS'});
-    logger.error({event: 'frontend.request.failed', phase: 'request.failed', outcome: 'ERROR', errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN', [blockedKey]: 'must-not-escape'} as never);
+    logger.error({
+      event: 'frontend.request.failed',
+      phase: 'request.failed',
+      outcome: 'ERROR',
+      errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN',
+      [blockedKey]: 'must-not-escape',
+    } as never);
 
     expect(sink).toHaveBeenCalledOnce();
     expect(sink.mock.calls[0][0]).toMatchObject({event: 'frontend.request.failed', level: 'ERROR'});

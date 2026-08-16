@@ -15,7 +15,15 @@ describe('operations/public Problem feedback contract', () => {
   });
 
   it('normalizes structured and network failures without exposing contract diagnostics', () => {
-    const limited = operationsProblemOf({data: {title: 'WORKSPACE_IAM_RATE_LIMITED', status: 429, detail: 'technical detail', errorCode: 'WORKSPACE_IAM_RATE_LIMITED', correlationId: 'c-2'}});
+    const limited = operationsProblemOf({
+      data: {
+        title: 'WORKSPACE_IAM_RATE_LIMITED',
+        status: 429,
+        detail: 'technical detail',
+        errorCode: 'WORKSPACE_IAM_RATE_LIMITED',
+        correlationId: 'c-2',
+      },
+    });
     expect(limited.errorCode).toBe('WORKSPACE_IAM_RATE_LIMITED');
     expect(limited.title).toBe('操作暂时受限');
     expect(limited.detail).toBe('验证码请求过于频繁，请稍后再试。');
@@ -23,6 +31,14 @@ describe('operations/public Problem feedback contract', () => {
     const unknown = operationsProblemOf({data: {title: 'SOME_NEW_CODE', status: 500, detail: 'internal stack'}});
     expect(unknown.errorCode).toBe('PLATFORM_COMMON_RESULT_UNKNOWN');
     expect(unknown.detail).not.toContain('internal stack');
+    expect(
+      operationsProblemOf({status: 'PARSING_ERROR', originalStatus: 502, data: '<html>gateway failure</html>'})
+        .errorCode,
+    ).toBe('PLATFORM_COMMON_RESULT_UNKNOWN');
+    expect(
+      operationsProblemOf({status: 'PARSING_ERROR', originalStatus: 502, data: '<html>gateway failure</html>'}).status,
+    ).toBe(502);
+    expect(operationsProblemOf({status: 503, data: null}).errorCode).toBe('PLATFORM_COMMON_RESULT_UNKNOWN');
     expect(operationsProblemOf(new Error('socket closed')).errorCode).toBe('NETWORK_ERROR');
   });
 });

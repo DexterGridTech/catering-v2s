@@ -23,14 +23,19 @@ class StoreCandidateTaskReadServiceTest {
     void platformContractCandidatesUseOneBoundedOwnerProjection() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
-        StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(jdbc, mock(WorkspaceAssignmentScopeLookup.class), mock(OrganizationTaskPathLookup.class));
+        StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(
+                jdbc, mock(WorkspaceAssignmentScopeLookup.class), mock(OrganizationTaskPathLookup.class));
 
         StoreCandidateTaskReadService.CandidatePage page = service.platformContractCandidatePage(
-            UUID.randomUUID(), "candidate-scope",
-            new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
-                StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE, "north", 1, 20, null, UUID.randomUUID()
-            )
-        );
+                UUID.randomUUID(),
+                "candidate-scope",
+                new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
+                        StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE,
+                        "north",
+                        1,
+                        20,
+                        null,
+                        UUID.randomUUID()));
 
         assertEquals(0L, page.metadata().total());
         verify(jdbc).query(anyString(), any(RowMapper.class), any(Object[].class));
@@ -42,11 +47,24 @@ class StoreCandidateTaskReadServiceTest {
         WorkspaceAssignmentScopeLookup assignments = mock(WorkspaceAssignmentScopeLookup.class);
         OrganizationTaskPathLookup taskPaths = mock(OrganizationTaskPathLookup.class);
         @SuppressWarnings({"unchecked", "rawtypes"})
-        List<StoreCandidateTaskReadService.Candidate> brands = List.of(new StoreCandidateTaskReadService.Candidate(UUID.randomUUID(), "BR-01", "Brand", null));
+        List<StoreCandidateTaskReadService.Candidate> brands =
+                List.of(new StoreCandidateTaskReadService.Candidate(UUID.randomUUID(), "BR-01", "Brand", null));
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(brands);
         StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(jdbc, assignments, taskPaths);
 
-        StoreCandidateTaskReadService.CandidatePage page = service.candidatePage(UUID.randomUUID(), "candidate-scope", UUID.randomUUID(), null, "BRAND", null, 1, 20, null, null, null, null);
+        StoreCandidateTaskReadService.CandidatePage page = service.candidatePage(
+                UUID.randomUUID(),
+                "candidate-scope",
+                UUID.randomUUID(),
+                null,
+                "BRAND",
+                null,
+                1,
+                20,
+                null,
+                null,
+                null,
+                null);
 
         assertEquals(brands, page.items());
         verifyNoInteractions(assignments, taskPaths);
@@ -59,7 +77,21 @@ class StoreCandidateTaskReadServiceTest {
         OrganizationTaskPathLookup taskPaths = mock(OrganizationTaskPathLookup.class);
         StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(jdbc, assignments, taskPaths);
 
-        assertThrows(BusinessEntityService.OrganizationNotFoundException.class, () -> service.candidatePage(UUID.randomUUID(), "candidate-scope", UUID.randomUUID(), null, "STORE", null, 1, 20, null, UUID.randomUUID(), null, null));
+        assertThrows(
+                BusinessEntityService.OrganizationNotFoundException.class,
+                () -> service.candidatePage(
+                        UUID.randomUUID(),
+                        "candidate-scope",
+                        UUID.randomUUID(),
+                        null,
+                        "STORE",
+                        null,
+                        1,
+                        20,
+                        null,
+                        UUID.randomUUID(),
+                        null,
+                        null));
 
         verifyNoInteractions(jdbc, taskPaths);
     }

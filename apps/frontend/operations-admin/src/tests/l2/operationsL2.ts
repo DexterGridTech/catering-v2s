@@ -59,13 +59,21 @@ export async function selectOperationsFieldOption(page: Page, fieldId: string, l
 }
 
 /** Selects and explicitly confirms the owner-returned management range required by the current page. */
-export async function selectOperationsDataScope(page: Page, type: 'REGION' | 'PROJECT' | 'STORE' | 'HEAD_COMPANY', preferred: {regionName?: string; projectName?: string; storeName?: string; headCompanyName?: string} = {}): Promise<void> {
+export async function selectOperationsDataScope(
+  page: Page,
+  type: 'REGION' | 'PROJECT' | 'STORE' | 'HEAD_COMPANY',
+  preferred: {regionName?: string; projectName?: string; storeName?: string; headCompanyName?: string} = {},
+): Promise<void> {
   const trigger = page.getByTestId('operations-data-scope-trigger');
   await expect(trigger).toBeVisible();
   await trigger.click();
   let submitted = false;
   if (type === 'HEAD_COMPANY') {
-    submitted = await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-head-company', preferred.headCompanyName);
+    submitted = await selectOrAssertOperationsScopeOption(
+      page,
+      'operations-data-scope-head-company',
+      preferred.headCompanyName,
+    );
     if (submitted) await page.getByRole('button', {name: '确认总公司'}).click();
     else await page.keyboard.press('Escape');
     await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
@@ -76,7 +84,11 @@ export async function selectOperationsDataScope(page: Page, type: 'REGION' | 'PR
   const region = page.getByTestId('operations-data-scope-region');
   await expect(region).toBeVisible();
   if (type === 'REGION') {
-    const changed = await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-region', preferred.regionName);
+    const changed = await selectOrAssertOperationsScopeOption(
+      page,
+      'operations-data-scope-region',
+      preferred.regionName,
+    );
     if (changed) {
       await page.getByRole('button', {name: '确认大区'}).click();
       submitted = true;
@@ -90,7 +102,8 @@ export async function selectOperationsDataScope(page: Page, type: 'REGION' | 'PR
   }
   await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-region', preferred.regionName);
   submitted = await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-project', preferred.projectName);
-  if (type === 'STORE') submitted = await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-store', preferred.storeName);
+  if (type === 'STORE')
+    submitted = await selectOrAssertOperationsScopeOption(page, 'operations-data-scope-store', preferred.storeName);
   if (submitted) await page.getByRole('button', {name: type === 'STORE' ? '确认门店' : '确认项目'}).click();
   else await page.keyboard.press('Escape');
   await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
@@ -98,7 +111,8 @@ export async function selectOperationsDataScope(page: Page, type: 'REGION' | 'PR
 
   await expect(trigger).toContainText('大区：');
   await expect(trigger).toContainText('项目：');
-  if (preferred.projectName ?? preferred.storeName) await expect(trigger).toContainText(preferred.projectName ?? preferred.storeName ?? '');
+  if (preferred.projectName ?? preferred.storeName)
+    await expect(trigger).toContainText(preferred.projectName ?? preferred.storeName ?? '');
 }
 
 /** A local draft must never change the owner-confirmed sidebar range until Confirm is clicked. */
@@ -110,7 +124,9 @@ export async function discardOperationsProjectScopeDraft(page: Page): Promise<vo
   const control = page.getByTestId('operations-data-scope-project');
   await expect(control).toBeVisible();
   await control.click();
-  const options = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible .ant-select-item-option:visible');
+  const options = page.locator(
+    '.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible .ant-select-item-option:visible',
+  );
   const current = await control.innerText();
   const count = await options.count();
   let candidate = options.last();

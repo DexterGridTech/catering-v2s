@@ -6,5 +6,8 @@ public enum SortDirection {
     DESC;
 
     public static final String DEFAULT_WIRE = "DESC";
-    public String wire() { return name(); }
+
+    public String wire() {
+        return name();
+    }
 }

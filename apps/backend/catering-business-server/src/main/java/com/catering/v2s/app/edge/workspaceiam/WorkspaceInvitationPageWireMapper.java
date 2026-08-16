@@ -9,19 +9,25 @@ import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 
 /** Maps an already filtered, sorted and bounded owner page; it never paginates an unbounded list. */
 public final class WorkspaceInvitationPageWireMapper {
-    private WorkspaceInvitationPageWireMapper() { }
+    private WorkspaceInvitationPageWireMapper() {}
 
     public static WorkspaceInvitationPage page(WorkspaceInvitationService.ManagementInvitationPage source) {
         var criteria = source.criteria();
         return new WorkspaceInvitationPage(
-            source.items().stream().map(WorkspaceInvitationWireMapper::wire).toList(),
-            (long) source.page(), (long) source.pageSize(), source.total(),
-            new WorkspaceInvitationPageCriteria(
-                criteria.mobile(), criteria.targetOrganizationRef() == null ? null : criteria.targetOrganizationRef().toString(), criteria.roleId() == null ? null : criteria.roleId().toString(),
-                criteria.status() == null ? null : WorkspaceInvitationStatus.valueOf(criteria.status()),
-                criteria.expiresFrom(), criteria.expiresTo(),
-                WorkspaceInvitationSortKey.valueOf(criteria.sort()), SortDirection.valueOf(criteria.direction())
-            )
-        );
+                source.items().stream().map(WorkspaceInvitationWireMapper::wire).toList(),
+                (long) source.page(),
+                (long) source.pageSize(),
+                source.total(),
+                new WorkspaceInvitationPageCriteria(
+                        criteria.mobile(),
+                        criteria.targetOrganizationRef() == null
+                                ? null
+                                : criteria.targetOrganizationRef().toString(),
+                        criteria.roleId() == null ? null : criteria.roleId().toString(),
+                        criteria.status() == null ? null : WorkspaceInvitationStatus.valueOf(criteria.status()),
+                        criteria.expiresFrom(),
+                        criteria.expiresTo(),
+                        WorkspaceInvitationSortKey.valueOf(criteria.sort()),
+                        SortDirection.valueOf(criteria.direction())));
     }
 }

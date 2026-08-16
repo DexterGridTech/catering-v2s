@@ -1,10 +1,13 @@
 import type {ExtensionDefinition, JsonValue} from '../../../app/api/generated/platform-edge';
 
-export function organizationOverviewExtensionItems(definition: ExtensionDefinition | undefined, values: Record<string, JsonValue> | undefined) {
+export function organizationOverviewExtensionItems(
+  definition: ExtensionDefinition | undefined,
+  values: Record<string, JsonValue> | undefined,
+) {
   return (definition?.definitions ?? [])
-    .filter((field) => field.status !== 'DISABLED')
+    .filter(field => field.status !== 'DISABLED')
     .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map((field) => ({
+    .map(field => ({
       key: `extension-${field.key}`,
       label: field.label,
       children: extensionValue(values?.[field.key], field.displaySuffix),

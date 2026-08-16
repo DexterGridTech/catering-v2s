@@ -12,7 +12,8 @@ public final class PublicSecurityDiagnosticInterceptor implements HandlerInterce
     private final PublicSecurityOperationRegistry registry;
     private final SecurityDiagnosticRecorder recorder;
 
-    public PublicSecurityDiagnosticInterceptor(PublicSecurityOperationRegistry registry, SecurityDiagnosticRecorder recorder) {
+    public PublicSecurityDiagnosticInterceptor(
+            PublicSecurityOperationRegistry registry, SecurityDiagnosticRecorder recorder) {
         this.registry = registry;
         this.recorder = recorder;
     }
@@ -23,12 +24,15 @@ public final class PublicSecurityDiagnosticInterceptor implements HandlerInterce
         PublicSecurityOperation operation = method.getMethodAnnotation(PublicSecurityOperation.class);
         if (operation == null) return true;
         PublicSecurityDiagnosticRequestState existing = PublicSecurityDiagnosticRequestState.find(request);
-        if (existing == null) record(PublicSecurityDiagnosticRequestState.getOrCreate(request, registry.resolve(operation)).startedEvent());
+        if (existing == null)
+            record(PublicSecurityDiagnosticRequestState.getOrCreate(request, registry.resolve(operation))
+                    .startedEvent());
         return true;
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
         PublicSecurityDiagnosticRequestState state = PublicSecurityDiagnosticRequestState.find(request);
         if (state == null) return;
         SecurityDiagnosticEvent terminal = state.completeOnce(response.getStatus(), exception);

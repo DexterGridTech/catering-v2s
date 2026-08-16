@@ -10,7 +10,13 @@ export type DirtyGuardTestIds = {
 export type DrawerLifecycleDiagnosticEvent = {
   operationId?: string;
   operationInstanceId: string;
-  phase: 'OPEN_OBSERVED' | 'CLOSE_REQUESTED' | 'SUCCESS_CLOSE_REQUESTED' | 'CONTROLLED_CLOSE_OBSERVED' | 'CLOSE_CONFIRMED' | 'SUCCESS_FEEDBACK_DISPATCHED';
+  phase:
+    | 'OPEN_OBSERVED'
+    | 'CLOSE_REQUESTED'
+    | 'SUCCESS_CLOSE_REQUESTED'
+    | 'CONTROLLED_CLOSE_OBSERVED'
+    | 'CLOSE_CONFIRMED'
+    | 'SUCCESS_FEEDBACK_DISPATCHED';
   outcome: 'OPEN' | 'CLOSE_REQUESTED' | 'SUCCESS_PENDING' | 'CLOSED' | 'SUCCESS_DISPATCHED';
 };
 
@@ -94,6 +100,7 @@ export function useDrawerFormLifecycle({
   const idempotencyKey = useRef<string | undefined>(undefined);
   const bypassClose = useRef(false);
   const dirtyGuardOpen = useRef(false);
+  const dirtyGuardRef = useRef<{destroy: () => void} | undefined>(undefined);
   const pendingSuccess = useRef(false);
   const observedOpen = useRef(false);
   const diagnosticOperationInstanceId = useRef<string | undefined>(undefined);
@@ -101,13 +108,30 @@ export function useDrawerFormLifecycle({
   const previouslyControlledOpen = useRef(open);
   latestControlledOpen.current = open;
 
-  const diagnostic = useCallback((phase: DrawerLifecycleDiagnosticEvent['phase'], outcome: DrawerLifecycleDiagnosticEvent['outcome']) => {
-    if (!diagnosticOperationInstanceId.current) {
-      const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      diagnosticOperationInstanceId.current = `${latestOptions.current.diagnosticOperationId ?? 'drawer'}:${suffix}`;
-    }
-    latestOptions.current.onDiagnosticEvent?.({operationId: latestOptions.current.diagnosticOperationId, operationInstanceId: diagnosticOperationInstanceId.current, phase, outcome});
-  }, []);
+  useEffect(
+    () => () => {
+      dirtyGuardRef.current?.destroy();
+      dirtyGuardRef.current = undefined;
+      dirtyGuardOpen.current = false;
+    },
+    [],
+  );
+
+  const diagnostic = useCallback(
+    (phase: DrawerLifecycleDiagnosticEvent['phase'], outcome: DrawerLifecycleDiagnosticEvent['outcome']) => {
+      if (!diagnosticOperationInstanceId.current) {
+        const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        diagnosticOperationInstanceId.current = `${latestOptions.current.diagnosticOperationId ?? 'drawer'}:${suffix}`;
+      }
+      latestOptions.current.onDiagnosticEvent?.({
+        operationId: latestOptions.current.diagnosticOperationId,
+        operationInstanceId: diagnosticOperationInstanceId.current,
+        phase,
+        outcome,
+      });
+    },
+    [],
+  );
 
   // DrawerForm may mount closed and later replay that initial closed callback
   // after its controlled `open` prop has become true. The controlled state is
@@ -154,7 +178,7 @@ export function useDrawerFormLifecycle({
     // to ask the user twice whether to discard their draft.
     if (dirtyGuardOpen.current) return;
     dirtyGuardOpen.current = true;
-    modal.confirm({
+    const confirmation = modal.confirm({
       title: '放弃当前填写内容？',
       content: latestOptions.current.dirtyMessage ?? '已填写的内容不会保存。',
       okText: '放弃并关闭',
@@ -162,14 +186,19 @@ export function useDrawerFormLifecycle({
       okButtonProps: latestOptions.current.dirtyGuardTestIds?.confirm,
       cancelButtonProps: latestOptions.current.dirtyGuardTestIds?.cancel,
       onOk: () => {
+        dirtyGuardRef.current = undefined;
         dirtyGuardOpen.current = false;
         bypassClose.current = true;
         reset();
         diagnostic('CLOSE_REQUESTED', 'CLOSE_REQUESTED');
         latestOptions.current.onOpenChange(false);
       },
-      onCancel: () => { dirtyGuardOpen.current = false; },
+      onCancel: () => {
+        dirtyGuardRef.current = undefined;
+        dirtyGuardOpen.current = false;
+      },
     });
+    dirtyGuardRef.current = confirmation;
   }, [diagnostic, modal, reset]);
 
   const closeAfterSuccess = useCallback(() => {
@@ -197,41 +226,61 @@ export function useDrawerFormLifecycle({
     }
   }, []);
 
-  const afterOpenChange = useCallback((visible: boolean) => {
-    if (visible) {
-      if (observedOpen.current) return;
-      observedOpen.current = true;
-      diagnostic('OPEN_OBSERVED', 'OPEN');
-      return;
-    }
-    if (latestControlledOpen.current) return;
-    // Ant Design may report an initial closed state while a DrawerForm is
-    // mounted. It is not the successful close transition and must not consume
-    // a later pending success before the parent has actually closed the Drawer.
-    if (observedOpen.current) {
-      diagnostic('CLOSE_CONFIRMED', 'CLOSED');
-      consumePendingSuccess();
-      // Keep the mounted form alive until Ant Design has confirmed the visual
-      // close. Remounting only now clears its local draft without allowing a
-      // ProComponents destroy-on-hide path to bypass `afterOpenChange(false)`.
-      setClosedSessionKey((current) => current + 1);
-    }
-    observedOpen.current = false;
-    diagnosticOperationInstanceId.current = undefined;
-  }, [consumePendingSuccess, diagnostic]);
+  const afterOpenChange = useCallback(
+    (visible: boolean) => {
+      if (visible) {
+        if (observedOpen.current) return;
+        observedOpen.current = true;
+        diagnostic('OPEN_OBSERVED', 'OPEN');
+        return;
+      }
+      if (latestControlledOpen.current) return;
+      // Ant Design may report an initial closed state while a DrawerForm is
+      // mounted. It is not the successful close transition and must not consume
+      // a later pending success before the parent has actually closed the Drawer.
+      if (observedOpen.current) {
+        diagnostic('CLOSE_CONFIRMED', 'CLOSED');
+        consumePendingSuccess();
+        // Keep the mounted form alive until Ant Design has confirmed the visual
+        // close. Remounting only now clears its local draft without allowing a
+        // ProComponents destroy-on-hide path to bypass `afterOpenChange(false)`.
+        setClosedSessionKey(current => current + 1);
+      }
+      observedOpen.current = false;
+      diagnosticOperationInstanceId.current = undefined;
+    },
+    [consumePendingSuccess, diagnostic],
+  );
 
-  return useMemo(() => ({
-    get dirty() { return dirtyRef.current; },
-    setDirty,
-    get submitting() { return submittingRef.current; },
-    setSubmitting,
-    reset,
-    requestClose,
-    handleOpenChange,
-    closeAfterSuccess,
-    afterOpenChange,
-    get closedSessionKey() { return closedSessionKeyRef.current; },
-    getIdempotencyKey,
-    markBusinessIntentChanged,
-  }), [afterOpenChange, closeAfterSuccess, getIdempotencyKey, handleOpenChange, markBusinessIntentChanged, requestClose, reset]);
+  return useMemo(
+    () => ({
+      get dirty() {
+        return dirtyRef.current;
+      },
+      setDirty,
+      get submitting() {
+        return submittingRef.current;
+      },
+      setSubmitting,
+      reset,
+      requestClose,
+      handleOpenChange,
+      closeAfterSuccess,
+      afterOpenChange,
+      get closedSessionKey() {
+        return closedSessionKeyRef.current;
+      },
+      getIdempotencyKey,
+      markBusinessIntentChanged,
+    }),
+    [
+      afterOpenChange,
+      closeAfterSuccess,
+      getIdempotencyKey,
+      handleOpenChange,
+      markBusinessIntentChanged,
+      requestClose,
+      reset,
+    ],
+  );
 }

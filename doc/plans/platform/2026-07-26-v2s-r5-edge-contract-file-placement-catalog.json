@@ -7,9 +7,9 @@
   "implementationAuthority": false,
   "sourceCatalog": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
   "rules": {
-    "root": "contracts/openapi/edge.openapi.yaml",
-    "operationResolution": "operation override wins, otherwise pageKeyToCapability; target path is paths/<face>/<capability>.paths.yaml",
-    "componentResolution": "exactComponentOverrides wins, otherwise first and only matching componentFamilyRules entry; target path is components/<familyToOwner[family]>/<family>.schemas.yaml",
+    "root": "contracts/openapi/edge.openapi.json",
+    "operationResolution": "operation override wins, otherwise pageKeyToCapability; target path is paths/<face>/<capability>.paths.json",
+    "componentResolution": "exactComponentOverrides wins, otherwise first and only matching componentFamilyRules entry; target path is components/<familyToOwner[family]>/<family>.schemas.json",
     "ambiguity": "FAIL",
     "unresolved": "FAIL",
     "inlineOperationOrSchema": "FORBIDDEN",
@@ -53,19 +53,19 @@
   "operationOverrides": {
     "initializeCommercialGroup": {
       "capability": "commercial-group",
-      "pathFile": "paths/platform-admin/commercial-group.paths.yaml"
+      "pathFile": "paths/platform-admin/commercial-group.paths.json"
     },
     "getPublicAssetContent": {
       "capability": "asset-content",
-      "pathFile": "paths/public/asset-content.paths.yaml"
+      "pathFile": "paths/public/asset-content.paths.json"
     },
     "getPlatformEntityAuditHistory": {
       "capability": "audit-history",
-      "pathFile": "paths/platform-admin/audit-history.paths.yaml"
+      "pathFile": "paths/platform-admin/audit-history.paths.json"
     },
     "getOperationsEntityAuditHistory": {
       "capability": "audit-history",
-      "pathFile": "paths/operations-admin/audit-history.paths.yaml"
+      "pathFile": "paths/operations-admin/audit-history.paths.json"
     }
   },
   "componentFamilyRules": [
@@ -99,27 +99,27 @@
     "workspace-access": "workspace-iam"
   },
   "exactComponentOverrides": {
-    "WorkspaceLoginEntry": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspacePasswordLoginRequest": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceSessionEntry": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceSelectContextRequest": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceCurrentPasswordChangeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceCurrentPasswordChangeResult": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceSelectDataNodeRequest": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceScopeNode": "components/workspace-iam/workspace-session.schemas.yaml",
-    "WorkspaceScopeContext": "components/workspace-iam/workspace-session.schemas.yaml",
-    "PlatformWorkspaceInvitation": "components/workspace-iam/workspace-access.schemas.yaml",
-    "PlatformWorkspaceInvitationPage": "components/workspace-iam/workspace-access.schemas.yaml",
-    "PlatformAssetStageMultipart": "components/platform-asset/asset.schemas.yaml",
-    "BinaryAssetContent": "components/platform-asset/asset.schemas.yaml",
-    "PublicAssetReference": "components/platform-asset/asset.schemas.yaml",
-    "Problem": "components/common/problem.schemas.yaml",
-    "EpochMillis": "components/common/time.schemas.yaml",
-    "SortDirection": "components/common/enum.schemas.yaml",
-    "ServiceNodeType": "components/common/enum.schemas.yaml",
-    "ProjectPhaseNames": "components/common/enum.schemas.yaml",
-    "NoBody": "components/common/empty.schemas.yaml",
-    "NoContent": "components/common/empty.schemas.yaml"
+    "WorkspaceLoginEntry": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspacePasswordLoginRequest": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceSessionEntry": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceSelectContextRequest": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceCurrentPasswordChangeRequest": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceCurrentPasswordChangeResult": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceSelectDataNodeRequest": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceScopeNode": "components/workspace-iam/workspace-session.schemas.json",
+    "WorkspaceScopeContext": "components/workspace-iam/workspace-session.schemas.json",
+    "PlatformWorkspaceInvitation": "components/workspace-iam/workspace-access.schemas.json",
+    "PlatformWorkspaceInvitationPage": "components/workspace-iam/workspace-access.schemas.json",
+    "PlatformAssetStageMultipart": "components/platform-asset/asset.schemas.json",
+    "BinaryAssetContent": "components/platform-asset/asset.schemas.json",
+    "PublicAssetReference": "components/platform-asset/asset.schemas.json",
+    "Problem": "components/common/problem.schemas.json",
+    "EpochMillis": "components/common/time.schemas.json",
+    "SortDirection": "components/common/enum.schemas.json",
+    "ServiceNodeType": "components/common/enum.schemas.json",
+    "ProjectPhaseNames": "components/common/enum.schemas.json",
+    "NoBody": "components/common/empty.schemas.json",
+    "NoContent": "components/common/empty.schemas.json"
   },
   "resolvedFieldContract": {
     "requiredOnEveryOperation": [
@@ -137,7 +137,7 @@
         "hostComponent": "StoreContractCandidatePage",
         "propertyPath": "stores.items",
         "requiredTargetComponent": "StoreContractStoreCandidate",
-        "requiredTargetFile": "components/contract/contract.schemas.yaml",
+        "requiredTargetFile": "components/contract/contract.schemas.json",
         "evidence": "the U01 component generation report must emit this host/property/target tuple and fail on an unresolved, ambiguous or different target"
       }
     ]

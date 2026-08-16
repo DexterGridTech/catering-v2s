@@ -22,7 +22,7 @@
       "contracts/catalog/catalog-inventory-read-models.json",
       "contracts/catalog/catalog-inventory-edge-contract.json",
       "contracts/catalog/catalog-inventory-edge-placement.json",
-      "contracts/openapi/catalog-inventory.openapi.yaml",
+      "contracts/openapi/catalog-inventory.openapi.json",
       "contracts/policy/catalog-inventory-design-byte-coverage.json"
     ],
     "seedAndFixtures": [
@@ -61,7 +61,7 @@
   "authorizationBoundary": "P1 definition implementation only: contract/read-model/seed-fixture/scenario/generated artifacts; no owner runtime, schema, migration, reset/seed execution, browser execution or deployment.",
   "implementationInputs": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
-    "designSha256": "e6a29687b8150da95bc2dea27ebecd49da42320ad9a8a960c0c3f3fce318c815",
+    "designSha256": "58be478cdef5423b6fa682d7a2cc75ffabbc587285b418db2387315eda56ab38",
     "designReviewIntakePath": "doc/review/platform/2026-08-06-v2s-catalog-inventory-three-stage-design-final-review-intake-codex.md",
     "designReviewIntakeSha256": "acda8e8e40109222b14c5fd4b01a2e1fab9a8e07743f73a6badf23e2ea37a4b6"
   }

@@ -8,8 +8,8 @@ import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryServi
 import java.util.UUID;
 
 /**
- * Controller-visible request facts. Browser credentials are opaque values: raw session cookie extraction is
- * face-local, and raw recovery values are readable only by their owning service.
+ * Controller-visible request facts. Browser credentials are opaque values: raw session cookie extraction is face-local,
+ * and raw recovery values are readable only by their owning service.
  */
 public final class EdgeRequestContext {
     private final String rateLimitSourceFingerprint;
@@ -24,12 +24,40 @@ public final class EdgeRequestContext {
     private final String catalogTestFailurePoint;
     private final String catalogAssetBindGrants;
 
-    public EdgeRequestContext(String rateLimitSourceFingerprint, String correlationId, PlatformSessionCookie platformSessionCookie, OperationsSessionCookie operationsSessionCookie, PasswordRecoveryFlowCredential platformRecoveryFlow, RecoveryFlowCredential operationsRecoveryFlow, RecoveryGrantCredential operationsRecoveryGrant) {
-        this(rateLimitSourceFingerprint, correlationId, platformSessionCookie, operationsSessionCookie, platformRecoveryFlow,
-            operationsRecoveryFlow, operationsRecoveryGrant, null, null, null, null);
+    public EdgeRequestContext(
+            String rateLimitSourceFingerprint,
+            String correlationId,
+            PlatformSessionCookie platformSessionCookie,
+            OperationsSessionCookie operationsSessionCookie,
+            PasswordRecoveryFlowCredential platformRecoveryFlow,
+            RecoveryFlowCredential operationsRecoveryFlow,
+            RecoveryGrantCredential operationsRecoveryGrant) {
+        this(
+                rateLimitSourceFingerprint,
+                correlationId,
+                platformSessionCookie,
+                operationsSessionCookie,
+                platformRecoveryFlow,
+                operationsRecoveryFlow,
+                operationsRecoveryGrant,
+                null,
+                null,
+                null,
+                null);
     }
 
-    public EdgeRequestContext(String rateLimitSourceFingerprint, String correlationId, PlatformSessionCookie platformSessionCookie, OperationsSessionCookie operationsSessionCookie, PasswordRecoveryFlowCredential platformRecoveryFlow, RecoveryFlowCredential operationsRecoveryFlow, RecoveryGrantCredential operationsRecoveryGrant, String requestId, String requestedBrandRef, String catalogTestFailurePoint, String catalogAssetBindGrants) {
+    public EdgeRequestContext(
+            String rateLimitSourceFingerprint,
+            String correlationId,
+            PlatformSessionCookie platformSessionCookie,
+            OperationsSessionCookie operationsSessionCookie,
+            PasswordRecoveryFlowCredential platformRecoveryFlow,
+            RecoveryFlowCredential operationsRecoveryFlow,
+            RecoveryGrantCredential operationsRecoveryGrant,
+            String requestId,
+            String requestedBrandRef,
+            String catalogTestFailurePoint,
+            String catalogAssetBindGrants) {
         this.rateLimitSourceFingerprint = rateLimitSourceFingerprint;
         this.correlationId = correlationId;
         this.platformSessionCookie = platformSessionCookie;
@@ -37,21 +65,54 @@ public final class EdgeRequestContext {
         this.platformRecoveryFlow = platformRecoveryFlow;
         this.operationsRecoveryFlow = operationsRecoveryFlow;
         this.operationsRecoveryGrant = operationsRecoveryGrant;
-        this.requestId = requestId == null || requestId.isBlank() ? UUID.randomUUID().toString() : requestId;
+        this.requestId =
+                requestId == null || requestId.isBlank() ? UUID.randomUUID().toString() : requestId;
         this.requestedBrandRef = requestedBrandRef;
         this.catalogTestFailurePoint = catalogTestFailurePoint;
         this.catalogAssetBindGrants = catalogAssetBindGrants;
     }
 
-    public String rateLimitSourceFingerprint() { return rateLimitSourceFingerprint; }
-    public String correlationId() { return correlationId; }
-    public PlatformSessionCookie platformSessionCookie() { return platformSessionCookie; }
-    public OperationsSessionCookie operationsSessionCookie() { return operationsSessionCookie; }
-    public PasswordRecoveryFlowCredential platformRecoveryFlow() { return platformRecoveryFlow; }
-    public RecoveryFlowCredential operationsRecoveryFlow() { return operationsRecoveryFlow; }
-    public RecoveryGrantCredential operationsRecoveryGrant() { return operationsRecoveryGrant; }
-    public String requestId() { return requestId; }
-    public String requestedBrandRef() { return requestedBrandRef; }
-    public String catalogTestFailurePoint() { return catalogTestFailurePoint; }
-    public String catalogAssetBindGrants() { return catalogAssetBindGrants; }
+    public String rateLimitSourceFingerprint() {
+        return rateLimitSourceFingerprint;
+    }
+
+    public String correlationId() {
+        return correlationId;
+    }
+
+    public PlatformSessionCookie platformSessionCookie() {
+        return platformSessionCookie;
+    }
+
+    public OperationsSessionCookie operationsSessionCookie() {
+        return operationsSessionCookie;
+    }
+
+    public PasswordRecoveryFlowCredential platformRecoveryFlow() {
+        return platformRecoveryFlow;
+    }
+
+    public RecoveryFlowCredential operationsRecoveryFlow() {
+        return operationsRecoveryFlow;
+    }
+
+    public RecoveryGrantCredential operationsRecoveryGrant() {
+        return operationsRecoveryGrant;
+    }
+
+    public String requestId() {
+        return requestId;
+    }
+
+    public String requestedBrandRef() {
+        return requestedBrandRef;
+    }
+
+    public String catalogTestFailurePoint() {
+        return catalogTestFailurePoint;
+    }
+
+    public String catalogAssetBindGrants() {
+        return catalogAssetBindGrants;
+    }
 }

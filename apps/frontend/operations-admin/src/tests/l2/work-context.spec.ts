@@ -16,13 +16,19 @@ async function signInToOwnerReturnedShell(page: Page) {
   const shellMenu = page.getByTestId('operations-shell-menu');
   await selector.or(shellMenu).waitFor({state: 'visible'});
   if (await selector.isVisible()) {
-    await selectOperationsOption(page, 'operations-role-context-select', requiredEnvironment('R5_L2_OPERATIONS_ROLE_LABEL'));
+    await selectOperationsOption(
+      page,
+      'operations-role-context-select',
+      requiredEnvironment('R5_L2_OPERATIONS_ROLE_LABEL'),
+    );
     await page.getByTestId('operations-role-context-enter').click();
   }
   await expect(shellMenu).toBeVisible();
 }
 
-test('operations shell renders the owner-selected role and preserves a distinct password Drawer path', async ({page}) => {
+test('operations shell renders the owner-selected role and preserves a distinct password Drawer path', async ({
+  page,
+}) => {
   await signInToOwnerReturnedShell(page);
   await expect(page.getByText('当前角色', {exact: true})).toBeVisible();
   await expect(page.getByText(new RegExp(requiredEnvironment('R5_L2_OPERATIONS_ROLE_LABEL')))).toBeVisible();

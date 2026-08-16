@@ -9,7 +9,7 @@ import java.util.Map;
 
 /** Reads the generated edge route/owner/consumer truth without deriving operation identity from input. */
 public final class EdgeRouteFaceRegistry {
-    private EdgeRouteFaceRegistry() { }
+    private EdgeRouteFaceRegistry() {}
 
     public static Map<String, Definition> load(ObjectMapper mapper) {
         try {
@@ -36,7 +36,9 @@ public final class EdgeRouteFaceRegistry {
         }
     }
 
-    private static void loadResource(ObjectMapper mapper, String resource, Map<String, Definition> result, boolean apiPrefix) throws IOException {
+    private static void loadResource(
+            ObjectMapper mapper, String resource, Map<String, Definition> result, boolean apiPrefix)
+            throws IOException {
         try (InputStream stream = EdgeRouteFaceRegistry.class.getClassLoader().getResourceAsStream(resource)) {
             if (stream == null) {
                 if (resource.contains("catalog-inventory")) return;
@@ -50,12 +52,26 @@ public final class EdgeRouteFaceRegistry {
                 if (apiPrefix && !path.startsWith("/api/")) path = "/api" + (path.startsWith("/") ? path : "/" + path);
                 String owner = entry.path("owner").asText();
                 JsonNode faces = entry.path("consumerFaces");
-                if (operationId.isBlank() || path.isBlank() || owner.isBlank() || !faces.isArray() || faces.size() != 1 || faces.get(0).asText().isBlank()) throw new IllegalStateException("invalid generated edge route registry");
+                if (operationId.isBlank()
+                        || path.isBlank()
+                        || owner.isBlank()
+                        || !faces.isArray()
+                        || faces.size() != 1
+                        || faces.get(0).asText().isBlank())
+                    throw new IllegalStateException("invalid generated edge route registry");
                 String key = method + " " + path;
-                if (result.put(key, new Definition(operationId, method, path, owner, faces.get(0).asText())) != null) throw new IllegalStateException("duplicate generated edge route registry entry");
+                if (result.put(
+                                key,
+                                new Definition(
+                                        operationId,
+                                        method,
+                                        path,
+                                        owner,
+                                        faces.get(0).asText()))
+                        != null) throw new IllegalStateException("duplicate generated edge route registry entry");
             }
         }
     }
 
-    public record Definition(String operationId, String method, String path, String owner, String consumerFace) { }
+    public record Definition(String operationId, String method, String path, String owner, String consumerFace) {}
 }

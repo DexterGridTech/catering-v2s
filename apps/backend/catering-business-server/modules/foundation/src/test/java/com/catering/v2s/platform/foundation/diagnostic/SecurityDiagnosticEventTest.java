@@ -9,8 +9,16 @@ class SecurityDiagnosticEventTest {
     @Test
     void exposesTheClosedSecretSafeEventEnvelopeAsTypedFields() {
         SecurityDiagnosticEvent event = new SecurityDiagnosticEvent(
-                new RequestDiagnosticContext("corr-1", "req-1", "PLATFORM_LOGIN", "/api/platform/auth/password-login", "platform-iam"),
-                "REQUEST_COMPLETED", "EDGE", "SUCCEEDED", 14, 200, null, 3, 27);
+                new RequestDiagnosticContext(
+                        "corr-1", "req-1", "PLATFORM_LOGIN", "/api/platform/auth/password-login", "platform-iam"),
+                "REQUEST_COMPLETED",
+                "EDGE",
+                "SUCCEEDED",
+                14,
+                200,
+                null,
+                3,
+                27);
 
         SecurityDiagnosticEvent.Fields fields = event.fields();
 

@@ -11,7 +11,8 @@ class CatalogAssetReferenceTest {
 
     @Test
     void referenceProtectionIncludesItemImagesAndSkuMediaRefs() throws Exception {
-        var sections = mapper.readTree("""
+        var sections = mapper.readTree(
+                """
             {
               "images": [{"assetRef":"item-image"}],
               "skus": [
@@ -21,6 +22,7 @@ class CatalogAssetReferenceTest {
             }
             """);
 
-        assertEquals(Set.of("item-image", "sku-media", "sku-detail-image"), CatalogOwnerService.catalogAssetRefs(sections));
+        assertEquals(
+                Set.of("item-image", "sku-media", "sku-detail-image"), CatalogOwnerService.catalogAssetRefs(sections));
     }
 }

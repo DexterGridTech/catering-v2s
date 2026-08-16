@@ -23,14 +23,17 @@ class RequestDiagnosticLifecycleTest {
                     RequestDiagnosticLifecycle.close(inner);
                 }
                 RequestDiagnosticLifecycle.mark(RequestDiagnosticLifecycle.Phase.READBACK_END);
-                List<DatabaseOperationTracker.Phase> phases = DatabaseOperationTracker.snapshot().phaseCheckpoints().stream()
-                        .map(DatabaseOperationTracker.PhaseCheckpoint::phase)
-                        .toList();
-                assertEquals(List.of(
-                        DatabaseOperationTracker.Phase.EDGE_IN,
-                        DatabaseOperationTracker.Phase.EDGE_IN,
-                        DatabaseOperationTracker.Phase.OWNER_COMMAND_BEGIN,
-                        DatabaseOperationTracker.Phase.READBACK_END), phases);
+                List<DatabaseOperationTracker.Phase> phases =
+                        DatabaseOperationTracker.snapshot().phaseCheckpoints().stream()
+                                .map(DatabaseOperationTracker.PhaseCheckpoint::phase)
+                                .toList();
+                assertEquals(
+                        List.of(
+                                DatabaseOperationTracker.Phase.EDGE_IN,
+                                DatabaseOperationTracker.Phase.EDGE_IN,
+                                DatabaseOperationTracker.Phase.OWNER_COMMAND_BEGIN,
+                                DatabaseOperationTracker.Phase.READBACK_END),
+                        phases);
             } finally {
                 RequestDiagnosticLifecycle.close(outer);
             }

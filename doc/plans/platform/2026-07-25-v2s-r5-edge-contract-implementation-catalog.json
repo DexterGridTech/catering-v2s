@@ -80,7 +80,7 @@
       "sha256": "29328e013a9169904b483f4925af84768d4c2e511608ba022ba9ea5631790d11"
     },
     {
-      "path": "contracts/openapi/components/problem.schemas.yaml",
+      "path": "contracts/openapi/components/problem.schemas.json",
       "sha256": "4d9970ac873bb26dce9c5aacb6e9de91a92a6074e11548a20f5e0dd714e5c2fb"
     }
   ],

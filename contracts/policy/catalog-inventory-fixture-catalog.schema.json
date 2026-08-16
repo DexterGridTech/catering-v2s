@@ -138,7 +138,8 @@
           "additionalProperties": false,
           "required": [
             "SKU_ATTRIBUTE",
-            "SKU_ATTRIBUTE_VALUE"
+            "SKU_ATTRIBUTE_VALUE",
+            "ORDER_OPTION_VALUE"
           ],
           "properties": {
             "SKU_ATTRIBUTE": {
@@ -148,6 +149,12 @@
               }
             },
             "SKU_ATTRIBUTE_VALUE": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "ORDER_OPTION_VALUE": {
               "type": "object",
               "additionalProperties": {
                 "type": "string"

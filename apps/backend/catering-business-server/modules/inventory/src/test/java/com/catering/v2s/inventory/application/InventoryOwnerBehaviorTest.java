@@ -31,7 +31,8 @@ class InventoryOwnerBehaviorTest {
         Method require = InventoryOwnerService.class.getDeclaredMethod("requireStoreDataNodeType", String.class);
         require.setAccessible(true);
         require.invoke(null, "STORE");
-        InvocationTargetException failure = assertThrows(InvocationTargetException.class, () -> require.invoke(null, "HEAD_COMPANY"));
+        InvocationTargetException failure =
+                assertThrows(InvocationTargetException.class, () -> require.invoke(null, "HEAD_COMPANY"));
         assertTrue(failure.getCause() instanceof InventoryOwnerApi.Problem);
         assertEquals("SCOPE_FORBIDDEN", ((InventoryOwnerApi.Problem) failure.getCause()).code());
     }

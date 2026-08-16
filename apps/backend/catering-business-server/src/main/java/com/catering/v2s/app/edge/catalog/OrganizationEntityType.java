@@ -7,5 +7,7 @@ public enum OrganizationEntityType {
     HEAD_COMPANY,
     STORE;
 
-    public String wire() { return name(); }
+    public String wire() {
+        return name();
+    }
 }

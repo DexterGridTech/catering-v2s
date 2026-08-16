@@ -139,7 +139,7 @@ function resolveCapability(operation, placement) {
   const override = placement.operationOverrides[operation.operationId];
   const capability = override?.capability || placement.pageKeyToCapability[operation.pageKey];
   if (!capability) fail("R5_EDGE_CAPABILITY_UNRESOLVED", operation.operationId);
-  const pathFile = override?.pathFile || `paths/${operation.face}/${capability}.paths.yaml`;
+  const pathFile = override?.pathFile || `paths/${operation.face}/${capability}.paths.json`;
   return { capability, pathFile };
 }
 function resolveComponentFile(component, placement) {
@@ -150,7 +150,7 @@ function resolveComponentFile(component, placement) {
   const family = matching[0].family;
   const owner = placement.familyToOwner[family];
   if (!owner) fail("R5_EDGE_COMPONENT_OWNER_UNRESOLVED", component);
-  return `components/${owner}/${family}.schemas.yaml`;
+  return `components/${owner}/${family}.schemas.json`;
 }
 function security(operation) {
   if (operation.security === "NONE") return [];
@@ -193,7 +193,7 @@ function operationDocument(operation, catalog, requirements, pathFile) {
   const successType = successContentType(operation);
   const response = successType ? { description: "Owner readback", content: { [successType]: { schema: { $ref: `#/components/schemas/${operation.responseSchema}` } } } } : { description: "No content" };
   const responses = { [operation.successStatus]: response };
-  const problemResponseRef = `${path.posix.relative(path.posix.dirname(pathFile), "edge.openapi.yaml")}#/components/responses/ProblemResponse`;
+  const problemResponseRef = `${path.posix.relative(path.posix.dirname(pathFile), "edge.openapi.json")}#/components/responses/ProblemResponse`;
   for (const status of ["400", "401", "403", "404", "409", "429", "500"]) responses[status] = { $ref: problemResponseRef };
   const document = {
     operationId: operation.operationId,
@@ -368,12 +368,12 @@ function materialize(rootDir = root, writeOutputs = true) {
     status: "GENERATED_FROM_ACCEPTED_CATALOG",
     source: { catalog: catalogPath, placement: placementPath, errorCatalog: errorCatalogPath, authorizationManifest: authorizationManifestPath },
     closure: { operations: operationRows.length, faceCounts: counts, componentBaseline: Object.keys(catalog.componentFieldBaseline).length, componentFiles: files.size, unreachable: [{ component: "BusinessEntitySource", disposition: "NOT_CARRIED_NO_EXTERNAL_SYNC_SOURCE" }] },
-    operations: operationRows.map(({ operationId, face, owner, method, path: route, capability, pathFile, requestSchema, responseSchema, errorSetRef }) => ({ operationId, face, owner, method, path: route, capability, pathFile, requestComponentFile: requestSchema === "NoBody" ? "components/common/empty.schemas.yaml" : componentFiles.get(requestSchema), responseComponentFile: responseSchema === "NoContent" ? "components/common/empty.schemas.yaml" : componentFiles.get(responseSchema), errorSetRef })),
+    operations: operationRows.map(({ operationId, face, owner, method, path: route, capability, pathFile, requestSchema, responseSchema, errorSetRef }) => ({ operationId, face, owner, method, path: route, capability, pathFile, requestComponentFile: requestSchema === "NoBody" ? "components/common/empty.schemas.json" : componentFiles.get(requestSchema), responseComponentFile: responseSchema === "NoContent" ? "components/common/empty.schemas.json" : componentFiles.get(responseSchema), errorSetRef })),
     requiredNestedReferenceChecks: placement.resolvedFieldContract.requiredNestedReferenceChecks
   };
   const result = { edge, files, pathFiles, report, errors, componentFiles };
   if (writeOutputs) {
-    write("contracts/openapi/edge.openapi.yaml", edge, rootDir);
+    write("contracts/openapi/edge.openapi.json", edge, rootDir);
     for (const [file, entries] of files) write(path.posix.join(generatedRoot, file), { components: { schemas: rewriteRefs(entries, file, componentFiles) } }, rootDir);
     for (const [file, routes] of pathFiles) write(path.posix.join(generatedRoot, file), { paths: rewriteRefs(routes, file, componentFiles) }, rootDir);
     write(outputReport, report, rootDir);
@@ -410,11 +410,11 @@ function selfTest() {
       fail("R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED");
     }
     const relativeComponentReference = rewriteRefs(
-      { $ref: "./platform-time.schemas.yaml#/components/schemas/EpochMillis" },
-      "components/workspace-iam/workspace-access.schemas.yaml",
-      new Map([["EpochMillis", "components/common/time.schemas.yaml"]]),
+      { $ref: "./platform-time.schemas.json#/components/schemas/EpochMillis" },
+      "components/workspace-iam/workspace-access.schemas.json",
+      new Map([["EpochMillis", "components/common/time.schemas.json"]]),
     ).$ref;
-    if (relativeComponentReference !== "../common/time.schemas.yaml#/components/schemas/EpochMillis") {
+    if (relativeComponentReference !== "../common/time.schemas.json#/components/schemas/EpochMillis") {
       fail("R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED");
     }
     fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
@@ -428,12 +428,12 @@ function selfTest() {
       return result;
     };
     materialize(scratch, true);
-    const sessionOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.yaml"));
+    const sessionOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.json"));
     const sessionEnums = requiredDataNodeTypeEnums(sessionOutput);
     if (sessionEnums.length < 2 || sessionEnums.some((values) => !values.includes("HEAD_COMPANY"))) {
       fail("R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING");
     }
-    const accessOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.yaml"));
+    const accessOutput = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.json"));
     const rolePageEnums = requiredDataNodeTypeEnums(accessOutput.components?.schemas?.WorkspaceRolePage);
     if (rolePageEnums.length !== 1 || !rolePageEnums[0].includes("HEAD_COMPANY")) {
       fail("R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING");
@@ -444,12 +444,12 @@ function selfTest() {
     enumMutation.componentOverrides.WorkspaceRolePage.enumAdditions.requiredDataNodeType = [];
     write(catalogPath, enumMutation, scratch);
     materialize(scratch, true);
-    const mutatedSession = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.yaml"));
+    const mutatedSession = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-session.schemas.json"));
     const mutatedEnums = requiredDataNodeTypeEnums(mutatedSession);
     if (mutatedEnums.some((values) => values.includes("HEAD_COMPANY"))) {
       fail("R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED");
     }
-    const mutatedAccess = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.yaml"));
+    const mutatedAccess = yamlAsJson(path.join(scratch, generatedRoot, "components/workspace-iam/workspace-access.schemas.json"));
     const mutatedRolePageEnums = requiredDataNodeTypeEnums(mutatedAccess.components?.schemas?.WorkspaceRolePage);
     if (mutatedRolePageEnums.some((values) => values.includes("HEAD_COMPANY"))) {
       fail("R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED");
@@ -460,11 +460,11 @@ function selfTest() {
     write(catalogPath, catalog, scratch);
     try { materialize(scratch, true); fail("R5_EDGE_MATERIALIZE_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_CAPABILITY_UNRESOLVED")) throw error; }
     const expectedOutputs = generatedOutputSnapshot(scratch);
-    const pathOutput = path.join(scratch, generatedRoot, "paths/operations-admin/store-management.paths.yaml");
+    const pathOutput = path.join(scratch, generatedRoot, "paths/operations-admin/store-management.paths.json");
     fs.appendFileSync(pathOutput, "\n");
     try { assertGeneratedOutputSnapshots(generatedOutputSnapshot(scratch), expectedOutputs); fail("R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_GENERATED_OUTPUT_DRIFT")) throw error; }
-    fs.writeFileSync(pathOutput, expectedOutputs.get("paths/operations-admin/store-management.paths.yaml"));
-    const componentOutput = path.join(scratch, generatedRoot, "components/organization/store.schemas.yaml");
+    fs.writeFileSync(pathOutput, expectedOutputs.get("paths/operations-admin/store-management.paths.json"));
+    const componentOutput = path.join(scratch, generatedRoot, "components/organization/store.schemas.json");
     fs.appendFileSync(componentOutput, "\n");
     try { assertGeneratedOutputSnapshots(generatedOutputSnapshot(scratch), expectedOutputs); fail("R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED"); } catch (error) { if (!String(error.message).includes("R5_EDGE_GENERATED_OUTPUT_DRIFT")) throw error; }
     process.stdout.write("R5_EDGE_MATERIALIZE_SELF_TEST=PASS\nRED=R5_EDGE_JSON_POINTER_TOKEN_RED_NOT_DETECTED,R5_EDGE_NESTED_FORBIDDEN_PROPERTY_RED_NOT_DETECTED,R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_SESSION_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_HEAD_COMPANY_MISSING,R5_EDGE_ROLE_PAGE_REQUIRED_DATA_NODE_TYPE_RED_NOT_DETECTED,R5_EDGE_CAPABILITY_UNRESOLVED,R5_EDGE_PATH_OUTPUT_DRIFT_RED_NOT_DETECTED,R5_EDGE_COMPONENT_OUTPUT_DRIFT_RED_NOT_DETECTED\n");

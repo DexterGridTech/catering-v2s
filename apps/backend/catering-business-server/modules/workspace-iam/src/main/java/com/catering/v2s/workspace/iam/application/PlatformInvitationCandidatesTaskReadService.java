@@ -8,7 +8,6 @@ import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,8 @@ public class PlatformInvitationCandidatesTaskReadService {
     private final OrganizationAssignmentCandidateLookup organizations;
     private final WorkspaceRoleService roles;
 
-    public PlatformInvitationCandidatesTaskReadService(OrganizationAssignmentCandidateLookup organizations, WorkspaceRoleService roles) {
+    public PlatformInvitationCandidatesTaskReadService(
+            OrganizationAssignmentCandidateLookup organizations, WorkspaceRoleService roles) {
         this.organizations = organizations;
         this.roles = roles;
     }
@@ -38,31 +38,88 @@ public class PlatformInvitationCandidatesTaskReadService {
         };
     }
 
-    private WorkspaceUserService.CandidatePage organizations(WorkspaceUserService.CandidateQuery query, InvitationTargetType targetType, String text, int page, int pageSize) {
-        var result = primary(() -> organizations.platformInvitationCandidates(query.workspaceUuid(), query.groupWorkspaceKey(), new PlatformInvitationCandidateQuery(targetType, text, page, pageSize)));
-        List<WorkspaceUserService.CandidateOrganization> items = result.items().stream().map(value -> new WorkspaceUserService.CandidateOrganization(value.serviceNodeType(), value.organizationRef(), value.path())).toList();
-        return new WorkspaceUserService.CandidatePage(new WorkspaceUserService.CandidateQueryMetadata("ORGANIZATION", text, page, pageSize, result.total(), null), items, List.of());
+    private WorkspaceUserService.CandidatePage organizations(
+            WorkspaceUserService.CandidateQuery query,
+            InvitationTargetType targetType,
+            String text,
+            int page,
+            int pageSize) {
+        var result = primary(() -> organizations.platformInvitationCandidates(
+                query.workspaceUuid(),
+                query.groupWorkspaceKey(),
+                new PlatformInvitationCandidateQuery(targetType, text, page, pageSize)));
+        List<WorkspaceUserService.CandidateOrganization> items = result.items().stream()
+                .map(value -> new WorkspaceUserService.CandidateOrganization(
+                        value.serviceNodeType(), value.organizationRef(), value.path()))
+                .toList();
+        return new WorkspaceUserService.CandidatePage(
+                new WorkspaceUserService.CandidateQueryMetadata(
+                        "ORGANIZATION", text, page, pageSize, result.total(), null),
+                items,
+                List.of());
     }
 
-    private WorkspaceUserService.CandidatePage roles(WorkspaceUserService.CandidateQuery query, InvitationTargetType targetType, String text, int page, int pageSize) {
+    private WorkspaceUserService.CandidatePage roles(
+            WorkspaceUserService.CandidateQuery query,
+            InvitationTargetType targetType,
+            String text,
+            int page,
+            int pageSize) {
         if ("INVITATION_TARGET".equals(query.candidateUsage())) {
-            primary(() -> organizations.requireEnabledInvitationTarget(query.workspaceUuid(), query.groupWorkspaceKey(), new InvitationTargetRef(targetType, query.selectedOrganizationRef())));
+            primary(() -> organizations.requireEnabledInvitationTarget(
+                    query.workspaceUuid(),
+                    query.groupWorkspaceKey(),
+                    new InvitationTargetRef(targetType, query.selectedOrganizationRef())));
         }
-        WorkspaceRoleService.Page result = roles.platformTaskPage(query.workspaceUuid(), query.groupWorkspaceKey(), text, query.targetType(), "ENABLED", page, pageSize, "NAME", "ASC");
+        WorkspaceRoleService.Page result = roles.platformTaskPage(
+                query.workspaceUuid(),
+                query.groupWorkspaceKey(),
+                text,
+                query.targetType(),
+                "ENABLED",
+                page,
+                pageSize,
+                "NAME",
+                "ASC");
         List<WorkspaceRoleReadback> items = result.items();
-        return new WorkspaceUserService.CandidatePage(new WorkspaceUserService.CandidateQueryMetadata("ROLE", text, page, pageSize, result.total(), query.selectedOrganizationRef()), List.of(), items);
+        return new WorkspaceUserService.CandidatePage(
+                new WorkspaceUserService.CandidateQueryMetadata(
+                        "ROLE", text, page, pageSize, result.total(), query.selectedOrganizationRef()),
+                List.of(),
+                items);
     }
 
     private static WorkspaceUserService.CandidateQuery platform(WorkspaceUserService.CandidateQuery query) {
-        if (query == null || query.operationsSession() != null || query.workspaceUuid() == null || query.groupWorkspaceKey() == null || query.groupWorkspaceKey().isBlank() || query.targetType() == null || query.subjectType() == null || !Set.of("ORGANIZATION", "ROLE").contains(query.subjectType()) || !Set.of("INVITATION_TARGET", "LIST_FILTER").contains(query.candidateUsage()) || ("LIST_FILTER".equals(query.candidateUsage()) && query.selectedOrganizationRef() != null) || ("INVITATION_TARGET".equals(query.candidateUsage()) && "ROLE".equals(query.subjectType()) && query.selectedOrganizationRef() == null)) throw new IllegalArgumentException("invalid candidate query");
+        if (query == null
+                || query.operationsSession() != null
+                || query.workspaceUuid() == null
+                || query.groupWorkspaceKey() == null
+                || query.groupWorkspaceKey().isBlank()
+                || query.targetType() == null
+                || query.subjectType() == null
+                || !Set.of("ORGANIZATION", "ROLE").contains(query.subjectType())
+                || !Set.of("INVITATION_TARGET", "LIST_FILTER").contains(query.candidateUsage())
+                || ("LIST_FILTER".equals(query.candidateUsage()) && query.selectedOrganizationRef() != null)
+                || ("INVITATION_TARGET".equals(query.candidateUsage())
+                        && "ROLE".equals(query.subjectType())
+                        && query.selectedOrganizationRef() == null))
+            throw new IllegalArgumentException("invalid candidate query");
         return query;
     }
 
     private static InvitationTargetType targetType(String value) {
-        try { return InvitationTargetType.valueOf(value); }
-        catch (RuntimeException error) { throw new IllegalArgumentException("invalid candidate query"); }
+        try {
+            return InvitationTargetType.valueOf(value);
+        } catch (RuntimeException error) {
+            throw new IllegalArgumentException("invalid candidate query", error);
+        }
     }
 
-    private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
-    private static <T> T primary(java.util.function.Supplier<T> action) { return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, action); }
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static <T> T primary(java.util.function.Supplier<T> action) {
+        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY, action);
+    }
 }

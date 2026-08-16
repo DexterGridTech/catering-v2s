@@ -37,6 +37,9 @@ test("inventory reference matrix declares every stock target and BOM opaque refe
     for (const field of requiredEntryFields) assert.ok(Object.hasOwn(entry, field), `${id} missing ${field}`);
     assert.equal(entry.status, "MIGRATE", `${id} keeps historical lineage only`);
   }
+  assert.match(entriesById.get("R12").sourceLookup, /kind=ORDER_OPTION_VALUE/);
+  assert.match(entriesById.get("R17").sourceLookup, /kind=ORDER_OPTION_VALUE/);
+  assert.doesNotMatch(entriesById.get("R06").sourceLookup, /ORDER_OPTION_VALUE/);
   assert.equal(matrix.entries.some((entry) => entry.id >= "R13" && entry.id <= "R17" && entry.objectType === "CATALOG_ITEM_OR_PRODUCT_SKU"), false);
 });
 

@@ -3,14 +3,20 @@ import {requiredL2Env, selectWorkspace, signInPlatform, signOutPlatform} from '.
 
 test('platform administrator verifies a role detail and proves atomic role edit owner readback', async ({page}) => {
   const roleName = requiredL2Env('R5_L2_PLATFORM_ROLE_NAME');
-  await signInPlatform(page); await page.goto('/platform/roles'); await selectWorkspace(page);
+  await signInPlatform(page);
+  await page.goto('/platform/roles');
+  await selectWorkspace(page);
   await expect(page.getByTestId('workspace-role-filter-name')).toBeVisible();
-  const filterRequest = page.waitForRequest((request) => request.method() === 'GET' && new URL(request.url()).searchParams.get('name') === roleName);
+  const filterRequest = page.waitForRequest(
+    request => request.method() === 'GET' && new URL(request.url()).searchParams.get('name') === roleName,
+  );
   await page.getByTestId('workspace-role-filter-name').fill(roleName);
   await page.getByTestId('workspace-role-filter-submit').click();
   await filterRequest;
   await expect(page.getByRole('button', {name: roleName, exact: true})).toBeVisible();
-  const sortRequest = page.waitForRequest((request) => request.method() === 'GET' && new URL(request.url()).searchParams.get('sort') === 'UPDATED_AT');
+  const sortRequest = page.waitForRequest(
+    request => request.method() === 'GET' && new URL(request.url()).searchParams.get('sort') === 'UPDATED_AT',
+  );
   await page.getByRole('columnheader', {name: '更新时间'}).click();
   await sortRequest;
   await page.getByRole('button', {name: roleName, exact: true}).click();
@@ -29,18 +35,37 @@ test('platform administrator verifies a role detail and proves atomic role edit 
   const currentDescription = await page.getByTestId('workspace-role-edit-description').inputValue();
   const updatedDescription = `${currentDescription.trim()} L2-${Date.now()}`.trim();
   await page.getByTestId('workspace-role-edit-description').fill(updatedDescription);
-  const requestPromise = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(request.url()).pathname));
-  const responsePromise = page.waitForResponse((response) => response.request().method() === 'PATCH' && /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(response.url()).pathname));
+  const requestPromise = page.waitForRequest(
+    request =>
+      request.method() === 'PATCH' &&
+      /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(request.url()).pathname),
+  );
+  const responsePromise = page.waitForResponse(
+    response =>
+      response.request().method() === 'PATCH' &&
+      /\/api\/platform\/group-workspaces\/[^/]+\/roles\/[^/]+$/.test(new URL(response.url()).pathname),
+  );
   await page.getByTestId('workspace-role-edit-submit').click();
   const [request, response] = await Promise.all([requestPromise, responsePromise]);
   expect(response.status()).toBe(200);
-  const body = request.postDataJSON() as {name?: string; description?: string | null; pageAccessKeys?: unknown[]; capabilityKeys?: unknown[]; expectedVersion?: number};
+  const body = request.postDataJSON() as {
+    name?: string;
+    description?: string | null;
+    pageAccessKeys?: unknown[];
+    capabilityKeys?: unknown[];
+    expectedVersion?: number;
+  };
   expect(body).toMatchObject({name: currentName, description: updatedDescription});
   expect(body.pageAccessKeys).toEqual(expect.any(Array));
   expect(body.capabilityKeys).toEqual(expect.any(Array));
   expect(body.expectedVersion).toBeGreaterThan(0);
   expect(request.headers()['idempotency-key']).toBeTruthy();
-  const readback = await response.json() as {name?: string; revision?: number; pageAccessKeys?: unknown[]; capabilityKeys?: unknown[]};
+  const readback = (await response.json()) as {
+    name?: string;
+    revision?: number;
+    pageAccessKeys?: unknown[];
+    capabilityKeys?: unknown[];
+  };
   expect(readback).toMatchObject({name: currentName});
   expect(readback.revision).toBeGreaterThan(0);
   expect(readback.pageAccessKeys).toEqual(expect.any(Array));

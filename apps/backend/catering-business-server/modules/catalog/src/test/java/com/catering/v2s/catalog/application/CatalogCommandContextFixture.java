@@ -18,30 +18,66 @@ import java.util.Set;
 import java.util.UUID;
 
 final class CatalogCommandContextFixture {
-    private CatalogCommandContextFixture() { }
+    private CatalogCommandContextFixture() {}
 
-    static WorkspaceExecutionContext<CatalogAuthorizationScope> context(UUID workspaceId, String groupWorkspaceKey,
-                                                                         UUID targetScope, String brandRef,
-                                                                         WorkspaceCommandOperationToken token,
-                                                                         UUID copySourceScope, String requestId) {
+    static WorkspaceExecutionContext<CatalogAuthorizationScope> context(
+            UUID workspaceId,
+            String groupWorkspaceKey,
+            UUID targetScope,
+            String brandRef,
+            WorkspaceCommandOperationToken token,
+            UUID copySourceScope,
+            String requestId) {
         WorkspaceAuthenticationService sessions = mock(WorkspaceAuthenticationService.class);
         WorkspaceCapabilityScopeResolver capabilities = mock(WorkspaceCapabilityScopeResolver.class);
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        var session = new WorkspaceSessionReadback(UUID.randomUUID(), workspaceId, groupWorkspaceKey, UUID.randomUUID(), UUID.randomUUID(),
-            new WorkspaceSessionEntryReadback.ScopeContext(null, null, new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
-                "STORE", targetScope, "test", "TEST", List.of(), null, null, targetScope, null), null),
-            1L, 1L, Set.of(), Set.of(token.capabilityFor("STORE")), "test", "STORE", targetScope);
-        when(sessions.commandAuthorizationFacts("test-session")).thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
-            session, UUID.randomUUID(), "STORE", targetScope));
-        when(capabilities.resolveGeneratedOperation(any(), any(), any(), any())).thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
-            WorkspaceCapabilityScopeResolver.Decision.ALLOW, token.capabilityFor("STORE"),
-            new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(workspaceId, groupWorkspaceKey, "STORE", targetScope, "STORE", targetScope, List.of(targetScope))));
-        when(catalogScopes.resolveCatalogBrand(any(), any(), any(), any(), any())).thenReturn(
-            new CatalogScopeLookup.CatalogBrandJudgment(brandRef, "TEST", "REVISION"));
+        var session = new WorkspaceSessionReadback(
+                UUID.randomUUID(),
+                workspaceId,
+                groupWorkspaceKey,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new WorkspaceSessionEntryReadback.ScopeContext(
+                        null,
+                        null,
+                        new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
+                                "STORE", targetScope, "test", "TEST", List.of(), null, null, targetScope, null),
+                        null),
+                1L,
+                1L,
+                Set.of(),
+                Set.of(token.capabilityFor("STORE")),
+                "test",
+                "STORE",
+                targetScope);
+        when(sessions.commandAuthorizationFacts("test-session"))
+                .thenReturn(new com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts(
+                        session, UUID.randomUUID(), "STORE", targetScope));
+        when(capabilities.resolveGeneratedOperation(any(), any(), any(), any()))
+                .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
+                        WorkspaceCapabilityScopeResolver.Decision.ALLOW,
+                        token.capabilityFor("STORE"),
+                        new WorkspaceCapabilityScopeResolver.FirstOwnerQueryPredicate(
+                                workspaceId,
+                                groupWorkspaceKey,
+                                "STORE",
+                                targetScope,
+                                "STORE",
+                                targetScope,
+                                List.of(targetScope))));
+        when(catalogScopes.resolveCatalogBrand(any(), any(), any(), any(), any()))
+                .thenReturn(new CatalogScopeLookup.CatalogBrandJudgment(brandRef, "TEST", "REVISION"));
         if (copySourceScope != null) {
-            when(catalogScopes.resolveCatalogCopySource(any(), any(), any(), any(), any())).thenReturn(copySourceScope);
+            when(catalogScopes.resolveCatalogCopySource(any(), any(), any(), any(), any()))
+                    .thenReturn(copySourceScope);
         }
-        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions).resolveCatalog("test-session", token,
-            targetScope.toString(), CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(brandRef), "correlation", requestId);
+        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
+                .resolveCatalog(
+                        "test-session",
+                        token,
+                        targetScope.toString(),
+                        CatalogScopeLookup.CatalogBrandSelection.fromRequestValue(brandRef),
+                        "correlation",
+                        requestId);
     }
 }

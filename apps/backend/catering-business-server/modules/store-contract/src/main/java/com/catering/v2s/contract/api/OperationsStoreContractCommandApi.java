@@ -11,7 +11,9 @@ import java.util.UUID;
 /** Typed operations-owner boundary for Store Contract commands. */
 public interface OperationsStoreContractCommandApi {
     StoreContractReadback create(CreateCommand command);
+
     StoreContractReadback update(UpdateCommand command);
+
     StoreContractReadback invalidate(InvalidateCommand command);
 
     /** Public contract-owner projection used only to assemble a Contract command response. */
@@ -32,7 +34,7 @@ public interface OperationsStoreContractCommandApi {
         }
     }
 
-    record StoreDerivedStatusReadback(String status) { }
+    record StoreDerivedStatusReadback(String status) {}
 
     record TaskViewQuery(UUID workspaceUuid, String groupWorkspaceKey, UUID contractId) {
         public TaskViewQuery {
@@ -43,97 +45,97 @@ public interface OperationsStoreContractCommandApi {
     }
 
     record StoreContractTaskReadback(
-        UUID id,
-        String groupWorkspaceKey,
-        Reference project,
-        Reference store,
-        Reference tenant,
-        String phaseName,
-        String contractNo,
-        LocalDate effectiveFrom,
-        LocalDate effectiveTo,
-        String note,
-        List<ExtensionValue> extensionValues,
-        long extensionRuleRevision,
-        String status,
-        long revision,
-        String source,
-        long createdAt,
-        long updatedAt,
-        List<ItemReadback> items,
-        String phaseNameSnapshot
-    ) {
+            UUID id,
+            String groupWorkspaceKey,
+            Reference project,
+            Reference store,
+            Reference tenant,
+            String phaseName,
+            String contractNo,
+            LocalDate effectiveFrom,
+            LocalDate effectiveTo,
+            String note,
+            List<ExtensionValue> extensionValues,
+            long extensionRuleRevision,
+            String status,
+            long revision,
+            String source,
+            long createdAt,
+            long updatedAt,
+            List<ItemReadback> items,
+            String phaseNameSnapshot) {
         public StoreContractTaskReadback {
             extensionValues = extensionValues == null ? List.of() : List.copyOf(extensionValues);
             items = items == null ? List.of() : List.copyOf(items);
         }
     }
 
-    record Reference(UUID id, String code, String name) { }
-    record ExtensionValue(String fieldKey, String valueJson) { }
-    record ItemReadback(String code, String name) { }
+    record Reference(UUID id, String code, String name) {}
+
+    record ExtensionValue(String fieldKey, String valueJson) {}
+
+    record ItemReadback(String code, String name) {}
 
     record CreateCommand(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        String contractNo,
-        UUID storeId,
-        UUID projectId,
-        LocalDate effectiveFrom,
-        LocalDate effectiveTo,
-        String phaseName,
-        String notes,
-        List<Item> items,
-        ExtensionSubmission extensionSubmission,
-        String idempotencyKey,
-        AuditActor actor,
-        OperationsOwnerScopeGrant ownerScopeGrant
-    ) {
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String contractNo,
+            UUID storeId,
+            UUID projectId,
+            LocalDate effectiveFrom,
+            LocalDate effectiveTo,
+            String phaseName,
+            String notes,
+            List<Item> items,
+            ExtensionSubmission extensionSubmission,
+            String idempotencyKey,
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
         public CreateCommand {
             items = items == null ? List.of() : List.copyOf(items);
-            extensionSubmission = extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
+            extensionSubmission =
+                    extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
         }
     }
 
     record UpdateCommand(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        UUID contractId,
-        LocalDate effectiveFrom,
-        LocalDate effectiveTo,
-        String phaseName,
-        String notes,
-        List<Item> items,
-        long expectedVersion,
-        ExtensionSubmission extensionSubmission,
-        String idempotencyKey,
-        AuditActor actor,
-        OperationsOwnerScopeGrant ownerScopeGrant
-    ) {
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID contractId,
+            LocalDate effectiveFrom,
+            LocalDate effectiveTo,
+            String phaseName,
+            String notes,
+            List<Item> items,
+            long expectedVersion,
+            ExtensionSubmission extensionSubmission,
+            String idempotencyKey,
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
         public UpdateCommand {
             items = items == null ? List.of() : List.copyOf(items);
-            extensionSubmission = extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
+            extensionSubmission =
+                    extensionSubmission == null ? new ExtensionSubmission(List.of()) : extensionSubmission;
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
         }
     }
 
     record InvalidateCommand(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        UUID contractId,
-        long expectedVersion,
-        String idempotencyKey,
-        AuditActor actor,
-        OperationsOwnerScopeGrant ownerScopeGrant
-    ) {
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID contractId,
+            long expectedVersion,
+            String idempotencyKey,
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
         public InvalidateCommand {
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");
         }
     }
 
-    record Item(String itemCode, String itemName) { }
+    record Item(String itemCode, String itemName) {}
 }

@@ -16,7 +16,9 @@ class CopyLimitPolicyTest {
         CopyLimitPolicy policy = CopyLimitPolicy.load(new ObjectMapper());
         assertEquals(true, policy.selectedItemCount() > 0);
         assertEquals(true, policy.closureItemCount() >= policy.selectedItemCount());
-        assertEquals(Set.of("TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"), policy.dictionaryKinds());
+        assertEquals(
+                Set.of("TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"),
+                policy.dictionaryKinds());
         assertEquals(true, policy.allowsDictionaryKind("SALES_UNIT"));
         assertEquals(false, policy.allowsDictionaryKind("SPEC"));
     }
@@ -34,23 +36,28 @@ class CopyLimitPolicyTest {
     void rejectsUnknownAndDuplicateLocalCopySectionsBeforeEitherPhaseCanProceed() {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode valid = mapper.createArrayNode().add("BASIC_INFO").add("ORDER_OPTIONS");
-        assertEquals(Set.of("BASIC_INFO", "ORDER_OPTIONS"), Set.copyOf(CatalogOwnerService.validatedLocalCopySections(valid)));
+        assertEquals(
+                Set.of("BASIC_INFO", "ORDER_OPTIONS"),
+                Set.copyOf(CatalogOwnerService.validatedLocalCopySections(valid)));
 
         CatalogOwnerApi.Problem unknown = org.junit.jupiter.api.Assertions.assertThrows(
-            CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.validatedLocalCopySections(mapper.createArrayNode().add("UNKNOWN_SECTION")));
+                CatalogOwnerApi.Problem.class,
+                () -> CatalogOwnerService.validatedLocalCopySections(
+                        mapper.createArrayNode().add("UNKNOWN_SECTION")));
         assertEquals("VALIDATION_ERROR", unknown.code());
         assertEquals("selectedSections contains an unknown section", unknown.getMessage());
 
         CatalogOwnerApi.Problem retired = org.junit.jupiter.api.Assertions.assertThrows(
-            CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.validatedLocalCopySections(mapper.createArrayNode().add("PRINT_NAME")));
+                CatalogOwnerApi.Problem.class,
+                () -> CatalogOwnerService.validatedLocalCopySections(
+                        mapper.createArrayNode().add("PRINT_NAME")));
         assertEquals("VALIDATION_ERROR", retired.code());
         assertEquals("selectedSections contains an unknown section", retired.getMessage());
 
         CatalogOwnerApi.Problem duplicate = org.junit.jupiter.api.Assertions.assertThrows(
-            CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.validatedLocalCopySections(mapper.createArrayNode().add("BASIC_INFO").add("BASIC_INFO")));
+                CatalogOwnerApi.Problem.class,
+                () -> CatalogOwnerService.validatedLocalCopySections(
+                        mapper.createArrayNode().add("BASIC_INFO").add("BASIC_INFO")));
         assertEquals("VALIDATION_ERROR", duplicate.code());
         assertEquals("selectedSections contains duplicate section", duplicate.getMessage());
     }

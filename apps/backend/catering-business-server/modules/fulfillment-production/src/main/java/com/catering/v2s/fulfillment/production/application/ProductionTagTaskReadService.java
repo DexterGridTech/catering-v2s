@@ -8,10 +8,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 public final class ProductionTagTaskReadService {
     private final ProductionTagOwnerApi owner;
 
-    public ProductionTagTaskReadService(ProductionTagOwnerApi owner) { this.owner = owner; }
+    public ProductionTagTaskReadService(ProductionTagOwnerApi owner) {
+        this.owner = owner;
+    }
 
     public JsonNode tags(String dataNodeRef, String brandRef, String requestId) {
-        return ReadBudgetComponent.measure(ReadBudgetComponent.Component.PRIMARY_QUERY,
-            () -> owner.readTags(dataNodeRef, brandRef, requestId));
+        return ReadBudgetComponent.measure(
+                ReadBudgetComponent.Component.PRIMARY_QUERY, () -> owner.readTags(dataNodeRef, brandRef, requestId));
     }
 }

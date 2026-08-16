@@ -26,17 +26,20 @@ class OperationsCatalogAuthenticationControllerTest {
     @Test
     void passwordLoginUsesOwnerReturnedEntryWithoutSecondOwnerRead() {
         Fixture fixture = fixture();
-        when(fixture.sessions.loginWithSessionEntry(KEY, "operator", "valid-password".toCharArray(), "test-rate-limit-fingerprint"))
-            .thenReturn(new WorkspaceAuthenticationService.LoginEntryResult(TOKEN, fixture.entry));
+        when(fixture.sessions.loginWithSessionEntry(
+                        KEY, "operator", "valid-password".toCharArray(), "test-rate-limit-fingerprint"))
+                .thenReturn(new WorkspaceAuthenticationService.LoginEntryResult(TOKEN, fixture.entry));
 
-        var response = fixture.controller.login(fixture.request, KEY, new WorkspacePasswordLoginRequest("operator", "valid-password"));
+        var response = fixture.controller.login(
+                fixture.request, KEY, new WorkspacePasswordLoginRequest("operator", "valid-password"));
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(KEY, response.getBody().groupWorkspaceKey());
         assertEquals(7L, response.getBody().contextVersion());
         assertEquals("EMPTY_WORKBENCH", response.getBody().outcome());
         assertEquals(TOKEN, cookieValue(response.getHeaders().getFirst("Set-Cookie")));
-        verify(fixture.sessions).loginWithSessionEntry(KEY, "operator", "valid-password".toCharArray(), "test-rate-limit-fingerprint");
+        verify(fixture.sessions)
+                .loginWithSessionEntry(KEY, "operator", "valid-password".toCharArray(), "test-rate-limit-fingerprint");
         verify(fixture.sessions, never()).sessionEntry(anyString());
     }
 
@@ -44,9 +47,10 @@ class OperationsCatalogAuthenticationControllerTest {
     void otpVerifyUsesOwnerReturnedEntryWithoutSecondOwnerRead() {
         Fixture fixture = fixture();
         when(fixture.sessions.verifyLoginOtpWithSessionEntry(KEY, "13800000000", "654321"))
-            .thenReturn(new WorkspaceAuthenticationService.LoginEntryResult(TOKEN, fixture.entry));
+                .thenReturn(new WorkspaceAuthenticationService.LoginEntryResult(TOKEN, fixture.entry));
 
-        var response = fixture.controller.verifyOtp(KEY, "operations-auth-idempotency-key", new WorkspaceOtpVerifyRequest("13800000000", "654321"));
+        var response = fixture.controller.verifyOtp(
+                KEY, "operations-auth-idempotency-key", new WorkspaceOtpVerifyRequest("13800000000", "654321"));
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(KEY, response.getBody().groupWorkspaceKey());
@@ -72,18 +76,44 @@ class OperationsCatalogAuthenticationControllerTest {
     private static Fixture fixture() {
         WorkspaceAuthenticationService sessions = mock(WorkspaceAuthenticationService.class);
         WorkspaceSessionEntryReadback entry = new WorkspaceSessionEntryReadback(
-            KEY, UUID.randomUUID(), "Operations tester", "Operations workspace", "Operations title", null,
-            7L, WorkspaceSessionEntryReadback.Mode.EMPTY, WorkspaceSessionEntryReadback.Outcome.EMPTY_WORKBENCH,
-            List.of(), Set.of(), List.of(), null, null
-        );
-        EdgeRequestContext request = new EdgeRequestContext("test-rate-limit-fingerprint", "test-correlation", null, OperationsSessionCookie.fromCookie(TOKEN), null, null, null);
+                KEY,
+                UUID.randomUUID(),
+                "Operations tester",
+                "Operations workspace",
+                "Operations title",
+                null,
+                7L,
+                WorkspaceSessionEntryReadback.Mode.EMPTY,
+                WorkspaceSessionEntryReadback.Outcome.EMPTY_WORKBENCH,
+                List.of(),
+                Set.of(),
+                List.of(),
+                null,
+                null);
+        EdgeRequestContext request = new EdgeRequestContext(
+                "test-rate-limit-fingerprint",
+                "test-correlation",
+                null,
+                OperationsSessionCookie.fromCookie(TOKEN),
+                null,
+                null,
+                null);
         OperationsCatalogAuthenticationController controller = new OperationsCatalogAuthenticationController(
-            sessions, new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(null, null, sessions), new OperationsSessionResolver(sessions), new EdgeSessionCookieWriter(), mock(PlatformAssetService.class)
-        );
+                sessions,
+                new com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService(null, null, sessions),
+                new OperationsSessionResolver(sessions),
+                new EdgeSessionCookieWriter(),
+                mock(PlatformAssetService.class));
         return new Fixture(controller, sessions, request, entry);
     }
 
-    private static String cookieValue(String setCookie) { return setCookie.substring(setCookie.indexOf('=') + 1, setCookie.indexOf(';')); }
+    private static String cookieValue(String setCookie) {
+        return setCookie.substring(setCookie.indexOf('=') + 1, setCookie.indexOf(';'));
+    }
 
-    private record Fixture(OperationsCatalogAuthenticationController controller, WorkspaceAuthenticationService sessions, EdgeRequestContext request, WorkspaceSessionEntryReadback entry) { }
+    private record Fixture(
+            OperationsCatalogAuthenticationController controller,
+            WorkspaceAuthenticationService sessions,
+            EdgeRequestContext request,
+            WorkspaceSessionEntryReadback entry) {}
 }

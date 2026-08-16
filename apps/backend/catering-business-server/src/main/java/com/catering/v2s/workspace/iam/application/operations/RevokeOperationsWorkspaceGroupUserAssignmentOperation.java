@@ -1,0 +1,32 @@
+package com.catering.v2s.workspace.iam.application.operations;
+
+import com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeRequest;
+import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi;
+import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class RevokeOperationsWorkspaceGroupUserAssignmentOperation {
+    public static final String OPERATION_ID = "revokeOperationsWorkspaceGroupUserAssignment";
+    private final WorkspaceOperationsCommandApi commands;
+
+    public RevokeOperationsWorkspaceGroupUserAssignmentOperation(WorkspaceOperationsCommandApi commands) {
+        this.commands = commands;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public WorkspaceOperationsCommandApi.OperationsAssignmentRevokeReadback execute(
+            WorkspaceCommandAuthorizationFacts facts,
+            UUID assignmentId,
+            WorkspaceUserRevokeRequest request,
+            String idempotencyKey,
+            AuditActor actor) {
+        return commands.revokeAssignment(new WorkspaceOperationsCommandApi.AssignmentRevokeCommand(
+                facts, ServiceNodeTypes.GROUP, assignmentId, request.expectedVersion(), idempotencyKey, actor));
+    }
+}

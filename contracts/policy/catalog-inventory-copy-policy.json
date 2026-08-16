@@ -6,6 +6,16 @@
     "selectedItemCount": 20,
     "closureItemCount": 500
   },
+  "compatibilityReasonCodes": [
+    "TARGET_ABSENT",
+    "STRUCTURE_COMPATIBLE",
+    "STRUCTURE_INCOMPATIBLE",
+    "SKU_STRUCTURE_INCOMPATIBLE",
+    "CONSUMPTION_UNIT_INCOMPATIBLE",
+    "REFERENCE_MAPPING_UNRESOLVED",
+    "REUSE_CONFIRMATION_REQUIRED",
+    "OWNER_FACT_UNAVAILABLE"
+  ],
   "limitResponseShape": {
     "actual": "integer",
     "limit": "integer"
@@ -14,7 +24,8 @@
     "TAG",
     "SALES_UNIT",
     "SKU_ATTRIBUTE",
-    "SKU_ATTRIBUTE_VALUE"
+    "SKU_ATTRIBUTE_VALUE",
+    "ORDER_OPTION_VALUE"
   ],
   "sourceOfTruth": "contracts/policy/catalog-inventory-copy-policy.json",
   "consumers": [

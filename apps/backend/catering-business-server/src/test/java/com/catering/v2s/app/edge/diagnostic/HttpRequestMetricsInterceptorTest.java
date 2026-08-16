@@ -24,11 +24,19 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.servlet.HandlerMapping;
 
 class HttpRequestMetricsInterceptorTest {
-    @TempDir Path tempDirectory;
+    @TempDir
+    Path tempDirectory;
 
     @Test
     void observationIsDefaultOffOutsideTheManagedNonProductionProfiles() throws Exception {
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "production", "backend-acceptance", "run-test-1234", "012345678901234567890123", "v2s-backend-acceptance-test", tempDirectory.resolve("events.jsonl").toString());
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "production",
+                "backend-acceptance",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-backend-acceptance-test",
+                tempDirectory.resolve("events.jsonl").toString());
         MockHttpServletRequest request = request("X-Backend-Acceptance", "getPlatformAdminPage");
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertTrue(interceptor.preHandle(request, response, new Object()));
@@ -38,7 +46,14 @@ class HttpRequestMetricsInterceptorTest {
     @Test
     void validSeedActivationPreservesItsCanonicalServerMetadata() throws Exception {
         Path events = tempDirectory.resolve("seed-events.jsonl");
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123", "v2s-dev-test", events.toString());
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                events.toString());
         MockHttpServletRequest request = request("X-Seed", "getPlatformAdminPage");
         request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -57,7 +72,14 @@ class HttpRequestMetricsInterceptorTest {
     @Test
     void managedCompletionEventCarriesEdgeLifecycleCheckpoints() throws Exception {
         Path events = tempDirectory.resolve("phase-events.jsonl");
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123", "v2s-dev-test", events.toString());
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                events.toString());
         MockHttpServletRequest request = request("X-Seed", "getPlatformAdminPage");
         request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -65,7 +87,8 @@ class HttpRequestMetricsInterceptorTest {
         interceptor.preHandle(request, response, new Object());
         interceptor.afterCompletion(request, response, new Object(), null);
 
-        var phaseCheckpoints = new ObjectMapper().readTree(Files.readString(events)).path("phaseCheckpoints");
+        var phaseCheckpoints =
+                new ObjectMapper().readTree(Files.readString(events)).path("phaseCheckpoints");
         assertTrue(phaseCheckpoints.isArray());
         assertTrue(phaseCheckpoints.findValuesAsText("phase").contains("EDGE_IN"));
         assertTrue(phaseCheckpoints.findValuesAsText("phase").contains("EDGE_OUT"));
@@ -74,7 +97,14 @@ class HttpRequestMetricsInterceptorTest {
     @Test
     void backendAcceptanceMetadataMismatchKeepsTheScopeAndWritesAFailedManagedEvent() throws Exception {
         Path events = tempDirectory.resolve("diagnostic-events.jsonl");
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "backend-acceptance", "run-test-1234", "012345678901234567890123", "v2s-backend-acceptance-test", events.toString());
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "backend-acceptance",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-backend-acceptance-test",
+                events.toString());
         MockHttpServletRequest request = request("X-Backend-Acceptance", "wrongOperation");
         request.addHeader("X-Backend-Acceptance-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -91,7 +121,14 @@ class HttpRequestMetricsInterceptorTest {
     @Test
     void activeScopeDoesNotRequireManagedDiagnosticHeaders() throws Exception {
         Path events = tempDirectory.resolve("unmanaged-events.jsonl");
-        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123", "v2s-dev-test", events.toString());
+        HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                events.toString());
         MockHttpServletRequest request = request("X-Seed", "getPlatformAdminPage");
         request.removeHeader("X-Seed-Run-Id");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -127,8 +164,16 @@ class HttpRequestMetricsInterceptorTest {
         Path events = tempDirectory.resolve("hmac-missing-events.jsonl");
         Path databaseOperations = tempDirectory.resolve("hmac-missing-db.jsonl");
         HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
-                new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123",
-                "v2s-dev-test", events.toString(), databaseOperations.toString(), null, null);
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                events.toString(),
+                databaseOperations.toString(),
+                null,
+                null);
         MockHttpServletRequest request = request("X-Seed", "getPlatformAdminPage");
         request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -147,10 +192,20 @@ class HttpRequestMetricsInterceptorTest {
         Path events = tempDirectory.resolve("tuple-events.jsonl");
         Path databaseOperations = tempDirectory.resolve("tuple-db.jsonl");
         Path dictionary = tempDirectory.resolve("tuple-dictionary.json");
-        String hmacKey = Base64.getUrlEncoder().withoutPadding().encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
+        String hmacKey = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
         HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
-                new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123",
-                "v2s-dev-test", events.toString(), databaseOperations.toString(), hmacKey, dictionary.toString());
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                events.toString(),
+                databaseOperations.toString(),
+                hmacKey,
+                dictionary.toString());
 
         MockHttpServletRequest unmanaged = request("X-Seed", "getPlatformAdminPage");
         MockHttpServletResponse unmanagedResponse = new MockHttpServletResponse();
@@ -171,10 +226,14 @@ class HttpRequestMetricsInterceptorTest {
 
         var mapper = new ObjectMapper();
         var event = mapper.readTree(Files.readString(events));
-        var dbOperation = mapper.readTree(Files.readString(databaseOperations).lines().findFirst().orElseThrow());
+        var dbOperation = mapper.readTree(
+                Files.readString(databaseOperations).lines().findFirst().orElseThrow());
         assertEquals(event.path("runId").asText(), dbOperation.path("runId").asText());
-        assertEquals(event.path("correlationId").asText(), dbOperation.path("correlationId").asText());
-        assertEquals(event.path("requestId").asText(), dbOperation.path("requestId").asText());
+        assertEquals(
+                event.path("correlationId").asText(),
+                dbOperation.path("correlationId").asText());
+        assertEquals(
+                event.path("requestId").asText(), dbOperation.path("requestId").asText());
         assertTrue(Files.exists(dictionary));
     }
 
@@ -184,10 +243,20 @@ class HttpRequestMetricsInterceptorTest {
         Files.writeString(blockedParent, "block event parent");
         Path databaseOperations = tempDirectory.resolve("event-write-failed-db.jsonl");
         Path dictionary = tempDirectory.resolve("event-write-failed-dictionary.json");
-        String hmacKey = Base64.getUrlEncoder().withoutPadding().encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
+        String hmacKey = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("0123456789abcdef".getBytes(StandardCharsets.UTF_8));
         HttpRequestMetricsInterceptor interceptor = new HttpRequestMetricsInterceptor(
-                new ObjectMapper(), "non-production", "r5-full", "run-test-1234", "012345678901234567890123",
-                "v2s-dev-test", blockedParent.resolve("events.jsonl").toString(), databaseOperations.toString(), hmacKey, dictionary.toString());
+                new ObjectMapper(),
+                "non-production",
+                "r5-full",
+                "run-test-1234",
+                "012345678901234567890123",
+                "v2s-dev-test",
+                blockedParent.resolve("events.jsonl").toString(),
+                databaseOperations.toString(),
+                hmacKey,
+                dictionary.toString());
         MockHttpServletRequest request = request("X-Seed", "getPlatformAdminPage");
         request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -207,7 +276,8 @@ class HttpRequestMetricsInterceptorTest {
         when(delegate.getConnection()).thenReturn(connection);
         when(connection.createStatement()).thenReturn(statement);
         when(statement.execute("select 1")).thenReturn(true);
-        try (Connection observed = new CountingDataSource(delegate).getConnection(); Statement observedStatement = observed.createStatement()) {
+        try (Connection observed = new CountingDataSource(delegate).getConnection();
+                Statement observedStatement = observed.createStatement()) {
             observedStatement.execute("select 1");
         }
     }

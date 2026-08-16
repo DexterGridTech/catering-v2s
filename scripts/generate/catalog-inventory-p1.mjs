@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import {readCatalogInventoryOpenApi} from "../lib/catalog-inventory-openapi.mjs";
 
 const ROOT = process.cwd();
 const REVISION = "CATALOG_INVENTORY_P1_20260806";
@@ -13,6 +14,7 @@ const REFERENCE_PATH_MATRIX = "contracts/policy/catalog-inventory-reference-path
 const COPY_POLICY_PATH = "contracts/policy/catalog-inventory-copy-policy.json";
 const DESIGN_COVERAGE_PATH = "contracts/policy/catalog-inventory-design-byte-coverage.json";
 const MEDIA_CATALOG_PATH = "contracts/policy/catalog-inventory-media-assets.json";
+const L2_CASE_BLUEPRINT_PATH = "contracts/policy/catalog-inventory-l2-case-blueprint.json";
 const MEDIA_ASSET_DIR = "contracts/policy/catalog-inventory-p1-media";
 const BACKEND_WIRE_SOURCE_ROOT = "apps/backend/catering-business-server/build/generated/sources/catalog-inventory-p1/main/java";
 const BACKEND_WIRE_PACKAGE = "com.catering.v2s.app.edge.generated.wire";
@@ -61,8 +63,11 @@ const referencePathMatrix = readJson(REFERENCE_PATH_MATRIX);
 const copyPolicy = readJson(COPY_POLICY_PATH);
 const designCoverage = readJson(DESIGN_COVERAGE_PATH);
 const mediaCatalog = readJson(MEDIA_CATALOG_PATH);
+const l2CaseBlueprint = readJson(L2_CASE_BLUEPRINT_PATH);
+const catalogItemImageLimits = mediaCatalog.catalogItemImageLimits;
 if (designCoverage.kind !== "catalog-inventory-design-byte-coverage" || designCoverage.schemaVersion !== 1) throw new Error("P1_DESIGN_COVERAGE_POLICY_INVALID");
 if (referencePathMatrix.policyId !== "CATALOG_TYPED_REFERENCE_PATH_MATRIX" || referencePathMatrix.status !== "DEXTER_ACCEPTED_20260808" || !Array.isArray(referencePathMatrix.entries) || referencePathMatrix.entries.filter((entry) => /^R(?:0[1-9]|1[0-7])$/.test(entry.id)).length !== 17) throw new Error("P1_REFERENCE_PATH_MATRIX_INVALID");
+if (!catalogItemImageLimits || !Number.isInteger(catalogItemImageLimits.maxImageCount) || catalogItemImageLimits.maxImageCount < 1 || !Number.isInteger(catalogItemImageLimits.maxImageBytes) || catalogItemImageLimits.maxImageBytes < 1) throw new Error("P1_CATALOG_ITEM_IMAGE_LIMITS_INVALID");
 for (const [assetKey, asset] of Object.entries(mediaCatalog.assets || {})) {
   const assetPath = path.join(ROOT, MEDIA_ASSET_DIR, asset.fileName);
   if (!fs.existsSync(assetPath) || fileHash(path.join(MEDIA_ASSET_DIR, asset.fileName)) !== asset.sha256) throw new Error("P1_MEDIA_ASSET_HASH_INVALID:" + assetKey);
@@ -72,6 +77,11 @@ if (mediaCatalog.coverage?.v4CatalogItemCount !== 73 || mediaCatalog.coverage?.v
 }
 if (!copyPolicy.limits || !Number.isInteger(copyPolicy.limits.selectedItemCount) || !Number.isInteger(copyPolicy.limits.closureItemCount)) {
   throw new Error("P1_COPY_POLICY_INVALID");
+}
+if (!Array.isArray(copyPolicy.compatibilityReasonCodes) || copyPolicy.compatibilityReasonCodes.length === 0
+  || new Set(copyPolicy.compatibilityReasonCodes).size !== copyPolicy.compatibilityReasonCodes.length
+  || copyPolicy.compatibilityReasonCodes.some((value) => typeof value !== "string" || value.trim() === "")) {
+  throw new Error("P1_COPY_COMPATIBILITY_REASON_CODES_INVALID");
 }
 const requirementsHash = fileHash(REQUIREMENTS_PATH);
 const iaHash = fileHash(IA_PATH);
@@ -181,7 +191,7 @@ const shapes = [
 // so a shape key and its Chinese label cannot drift into separate lists.
 const enumLabels = {
   catalogItemStatus: {DRAFT: "草稿", ENABLED: "启用", DISABLED: "停用", ARCHIVED: "已归档", VOIDED: "已作废"},
-  skuStatus: {ENABLED: "启用", DISABLED: "停用", ARCHIVED: "已归档"},
+  skuStatus: {ENABLED: "启用", DISABLED: "停用", ARCHIVED: "已归档", VOIDED: "已作废"},
   dictionaryEntryStatus: {ENABLED: "启用", DISABLED: "停用", VOIDED: "已作废"},
   smartViewKey: {ALL: "全部商品", EXTERNAL_ORDER_TEMP: "外部订单临时商品", INACTIVE: "未启用商品", ARCHIVED: "已归档商品", RECENTLY_UPDATED: "最近更新", AUTO_SYNC: "自动同步商品"},
   catalogSource: {SELF_MANAGED: "自主维护", COPIED: "复制引入", AUTO_SYNC: "自动同步", TEMPORARY: "临时商品"},
@@ -199,7 +209,9 @@ const enumLabels = {
   catalogSection: {BASIC_INFO: "基本信息", SKU_STRUCTURE: "SKU 结构", SKU_BOM: "SKU BOM", ORDER_OPTIONS: "点单选项", OPTION_VALUE_BOM: "选项值 BOM", ITEM_BOM: "商品 BOM", PACKAGE_STRUCTURE: "套餐结构", PRODUCTION_PROMPTS: "制作提示"}
 };
 const enumLabelEntries = Object.entries(enumLabels).flatMap(([kind, values]) => Object.entries(values).map(([value, label]) => ({kind, value, label})));
-const enumValues = (kind) => Object.keys(enumLabels[kind] || {});
+const enumValues = (kind) => kind === "copyCompatibilityReasonCode"
+  ? [...copyPolicy.compatibilityReasonCodes]
+  : Object.keys(enumLabels[kind] || {});
 const capabilityValues = enumValues("usageCapability");
 
 
@@ -294,7 +306,7 @@ const fieldDescriptors = [
   {
     fieldKey: "skuVariantValues", dataPath: "skuVariantDimensions[].values[].valueRef", label: "规格属性值", controlKind: "multiSelect", tabKey: "sku-specifications-pricing",
     admittedShapes: ["SKU_VARIANT_SALE_COUNTED"], helpText: "只选择当前商品已选规格属性下的有效属性值。",
-    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "SKU_ATTRIBUTE_VALUE"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\"", contextBindings: {attributeRef: fieldBinding("skuVariantAttribute")}})
+    optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "SKU_ATTRIBUTE_VALUE"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef"), parentEntryRef: fieldBinding("skuVariantAttribute")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\"", contextBindings: {attributeRef: fieldBinding("skuVariantAttribute")}})
   },
   {
     fieldKey: "skuMatrix", dataPath: "skus[]", label: "SKU 矩阵", controlKind: "skuVariantMatrix", tabKey: "sku-specifications-pricing",
@@ -347,6 +359,21 @@ const shapeRules = shapes.map((shape) => ({
   shapeKey: shape.key, label: enumLabels.shapeKey[shape.key], itemKind: shape.itemKind, measureMode: shape.measureMode, skuMode: shape.skuPolicy.skuMode, priceGranularity: shape.skuPolicy.priceGranularity,
   usageCapabilities: shape.usageCapabilities, createAllowed: !shape.disabledReason, visibleButDisabled: Boolean(shape.disabledReason), disabledReason: shape.disabledReason
 }));
+const modeEligibilityByShape = Object.fromEntries(shapes.map((shape) => {
+  const admission = shapeNodeAdmission[shape.key];
+  const hasSku = shape.skuPolicy.skuMode === "REQUIRED_MATRIX";
+  const modesFor = (nodeType) => {
+    if (!admission.inventoryBom || !admission.allowedNodeTypes.includes(nodeType)) return [];
+    if (nodeType === "CATALOG_ITEM" && hasSku) return ["NONE"];
+    if (nodeType === "OPTION_VALUE") return ["NONE", "BOM"];
+    return ["NONE", "INDEPENDENT_STOCK", "BOM"];
+  };
+  return [shape.key, {
+    CATALOG_ITEM: modesFor("CATALOG_ITEM"),
+    SKU: modesFor("SKU"),
+    OPTION_VALUE: modesFor("OPTION_VALUE")
+  }];
+}));
 const fieldRules = Object.fromEntries(shapes.map((shape) => [shape.key, [
   ...commonFieldRules.map((rule) => ({...rule})),
   ...fieldDescriptors
@@ -361,14 +388,11 @@ const linkageRules = {
 };
 const typeEffects = {
   shapeToFields: Object.fromEntries(shapes.map((shape) => [shape.key, {materialRoleRequired: shape.requiresMaterialRole, benefitTargetRequired: shape.requiresBenefitTargetRef, priceGranularity: shape.skuPolicy.priceGranularity}])),
-  modeToNodes: modeRules.map((rule) => ({nodeType: rule.nodeType, condition: rule.condition, allowedModes: rule.allowedModes})),
+  modeToNodes: modeRules.map((rule) => ({nodeType: rule.nodeType, condition: rule.condition, allowedModes: rule.allowedModes, defaultMode: rule.defaultMode, disabledModes: rule.disabledModes, description: rule.description})),
   shapeNodeAdmission,
-  modeEligibilityByShape: Object.fromEntries(shapes.map((shape) => [shape.key, {
-    CATALOG_ITEM: shape.key === "SERVICE" || shape.key === "BENEFIT_SHELL" ? ["NONE"] : (shape.key === "SKU_VARIANT_SALE_COUNTED" ? ["NONE"] : ["NONE", "INDEPENDENT_STOCK", "BOM"]),
-    SKU: shape.key === "SKU_VARIANT_SALE_COUNTED" ? ["NONE", "INDEPENDENT_STOCK", "BOM"] : [],
-    OPTION_VALUE: ["NONE", "BOM"]
-  }])),
+  modeEligibilityByShape,
   hasSku: {positiveStatuses: ["ENABLED", "DISABLED"], excludedStatuses: ["ARCHIVED"]},
+  mediaLimits: {maxImageCount: catalogItemImageLimits.maxImageCount, maxImageBytes: catalogItemImageLimits.maxImageBytes},
   producible: {retainedInCapabilityEnum: true, derivedByShapes: []}
 };
 const saveSections = {create: ["basic", "identifiers", "attributes", "production-prompts", "inventory-bom"], update: ["basic", "identifiers", "attributes", "production-prompts", "inventory-bom", "governance"], immutable: ["code"]};
@@ -399,7 +423,7 @@ const shapeManifest = {
   measureModes: Array.from(new Set(shapes.map((entry) => entry.measureMode))),
   skuModes: ["NONE", "OPTIONAL_TABLE", "REQUIRED_MATRIX"],
   valueGranularities: ["ITEM", "SKU"],
-  hasSkuRule: {field: "ProductSku.status", positiveStatuses: ["ENABLED", "DISABLED"], excludedStatuses: ["ARCHIVED"], description: "存在至少一个非 ARCHIVED SKU 即为 HAS_SKU。"},
+  hasSkuRule: {field: "ProductSku.status", positiveStatuses: ["ENABLED", "DISABLED"], excludedStatuses: ["ARCHIVED", "VOIDED"], description: "存在至少一个非 ARCHIVED/VOIDED SKU 即为 HAS_SKU。"},
   shapeAdmission: {
     source: "shapeKey", derivedFields: ["itemKind", "measureMode", "usageCapabilities", "skuPolicy"],
     createAllowed: shapes.filter((entry) => !entry.disabledReason).map((entry) => entry.key),
@@ -516,25 +540,25 @@ writeJson(catalogRouteRegistryPath, {
 
 const placement = {
   schemaVersion: 1, kind: "catalog-inventory-edge-placement", revision: REVISION,
-  root: "contracts/openapi/catalog-inventory.openapi.yaml",
+  root: "contracts/openapi/catalog-inventory.openapi.json",
   shards: [
-    "components/catalog/catalog-common.schemas.yaml", "components/catalog/catalog-workbench.schemas.yaml", "components/catalog/catalog-item.schemas.yaml",
-    "components/catalog/catalog-dictionary.schemas.yaml", "components/catalog/catalog-copy.schemas.yaml", "components/inventory/inventory-common.schemas.yaml",
-    "components/inventory/inventory-workbench.schemas.yaml", "components/inventory/inventory-command.schemas.yaml", "components/fulfillment-production/production-tag.schemas.yaml",
-    "paths/operations-admin/catalog-workbench.paths.yaml", "paths/operations-admin/catalog-item-management.paths.yaml", "paths/operations-admin/catalog-dictionary-management.paths.yaml",
-    "paths/operations-admin/catalog-copy.paths.yaml", "paths/operations-admin/inventory-workbench.paths.yaml", "paths/operations-admin/inventory-management.paths.yaml",
-    "paths/operations-admin/production-tag-management.paths.yaml"
+    "components/catalog/catalog-common.schemas.json", "components/catalog/catalog-workbench.schemas.json", "components/catalog/catalog-item.schemas.json",
+    "components/catalog/catalog-dictionary.schemas.json", "components/catalog/catalog-copy.schemas.json", "components/inventory/inventory-common.schemas.json",
+    "components/inventory/inventory-workbench.schemas.json", "components/inventory/inventory-command.schemas.json", "components/fulfillment-production/production-tag.schemas.json",
+    "paths/operations-admin/catalog-workbench.paths.json", "paths/operations-admin/catalog-item-management.paths.json", "paths/operations-admin/catalog-dictionary-management.paths.json",
+    "paths/operations-admin/catalog-copy.paths.json", "paths/operations-admin/inventory-workbench.paths.json", "paths/operations-admin/inventory-management.paths.json",
+    "paths/operations-admin/production-tag-management.paths.json"
   ],
   operationPlacement: operationMetadata.map(function (entry) {
     return {
       operationId: entry.operationId, face: "operations-admin", ownerModule: entry.initiatingOwner,
-      shard: entry.ordinal >= 29 && entry.ordinal <= 35 ? "paths/operations-admin/inventory-workbench.paths.yaml" :
-        entry.ordinal >= 36 && entry.ordinal <= 39 ? "paths/operations-admin/inventory-management.paths.yaml" :
-        entry.ordinal >= 21 && entry.ordinal <= 28 ? "paths/operations-admin/catalog-copy.paths.yaml" :
-        entry.ordinal >= 8 && entry.ordinal <= 16 ? "paths/operations-admin/catalog-dictionary-management.paths.yaml" :
-        entry.ordinal >= 17 && entry.ordinal <= 20 ? "paths/operations-admin/production-tag-management.paths.yaml" :
-        entry.ordinal >= 5 && entry.ordinal <= 7 ? "paths/operations-admin/catalog-item-management.paths.yaml" :
-        "paths/operations-admin/catalog-workbench.paths.yaml"
+      shard: entry.ordinal >= 29 && entry.ordinal <= 35 ? "paths/operations-admin/inventory-workbench.paths.json" :
+        entry.ordinal >= 36 && entry.ordinal <= 39 ? "paths/operations-admin/inventory-management.paths.json" :
+        entry.ordinal >= 21 && entry.ordinal <= 28 ? "paths/operations-admin/catalog-copy.paths.json" :
+        entry.ordinal >= 8 && entry.ordinal <= 16 ? "paths/operations-admin/catalog-dictionary-management.paths.json" :
+        entry.ordinal >= 17 && entry.ordinal <= 20 ? "paths/operations-admin/production-tag-management.paths.json" :
+        entry.ordinal >= 5 && entry.ordinal <= 7 ? "paths/operations-admin/catalog-item-management.paths.json" :
+        "paths/operations-admin/catalog-workbench.paths.json"
     };
   }),
   placementDigest: ""
@@ -596,6 +620,10 @@ const copyReferenceMappingSchema = typedEntry({
   targetSkuCode: {type: ["string", "null"], description: "optional target SKU business-code label"},
   targetOptionValueCode: {type: ["string", "null"], description: "optional target option-value business-code label"}
 }, ["objectType", "sourceRef", "targetRef", "targetCode"]);
+const copyCompatibilityDispositionSchema = typedEntry({
+  compatibilityId: stringField("stable owner compatibility fact identity"),
+  disposition: {type: "string", enum: ["CONFIRM"], description: "operator confirmed this owner compatibility fact"}
+}, ["compatibilityId", "disposition"]);
 function schemaFromCoverageField(spec, field) {
   const schema = {type: spec.type, description: spec.description || "design-bound field"};
   if (spec.format) schema.format = spec.format;
@@ -662,9 +690,12 @@ const queryEnvelopeModels = new Set([
   "CatalogShapeManifestView"
 ]);
 for (const model of readModels.models) {
+  const coverageSchema = designCoverageByModel.has(model.name)
+    ? schemaFromCoverageRow(designCoverageByModel.get(model.name))
+    : null;
   const dataSchema = {
     type: "object", additionalProperties: false, required: model.required,
-    properties: Object.fromEntries(model.required.map((field) => [field, typedModelFieldSchema(model.name, field)]))
+    properties: coverageSchema?.properties || Object.fromEntries(model.required.map((field) => [field, typedModelFieldSchema(model.name, field)]))
   };
   componentSchemas[model.name] = queryEnvelopeModels.has(model.name)
     ? {
@@ -698,8 +729,8 @@ const requestFieldMap = {
   CatalogCategoryUpdateRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), name: stringField("category name")},
   CatalogCategoryMoveRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version"), action: {type: "string", enum: ["REPARENT", "UP", "DOWN"], description: "category movement action"}, parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "target parent category opaque ref; required only for REPARENT"}},
   CatalogCategoryDeleteRequest: {categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, expectedVersion: integerField("expected version")},
-  CatalogDictionaryQuery: {dataNodeRef: uuidField("selected data node"), dictionaryKind: stringField("dictionary kind"), cursor: stringField("cursor"), pageSize: integerField("page size")},
-  CatalogDictionaryEntryCreateRequest: {dictionaryKind: stringField("dictionary kind"), code: stringField("immutable entry code"), name: stringField("entry name")},
+  CatalogDictionaryQuery: {dataNodeRef: uuidField("selected data node"), dictionaryKind: stringField("dictionary kind"), parentEntryRef: {type: ["string", "null"], format: "uuid", description: "optional parent SKU attribute opaque ref"}, cursor: stringField("cursor"), pageSize: integerField("page size")},
+  CatalogDictionaryEntryCreateRequest: {dictionaryKind: stringField("dictionary kind"), code: stringField("immutable entry code"), name: stringField("entry name"), parentEntryRef: {type: ["string", "null"], format: "uuid", description: "parent SKU attribute opaque ref; required for SKU_ATTRIBUTE_VALUE"}},
   CatalogDictionaryEntryUpdateRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), name: stringField("entry name")},
   CatalogDictionaryEntryReorderRequest: {dictionaryKind: stringField("dictionary kind"), orderedCodes: arrayField("same-level ordered codes")},
   CatalogDictionaryEntryTransitionRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
@@ -709,12 +740,12 @@ const requestFieldMap = {
   ProductionTagTransitionRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
   LocalCopyCandidateQuery: {dataNodeRef: uuidField("selected data node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
   LocalCopyPreflightRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: copySectionsField("copy sections")},
-  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: copySectionsField("copy sections fixed by preflight"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
+  LocalCopyExecuteRequest: {sourceItemCode: stringField("source item"), targetItemCode: stringField("target item"), selectedSections: copySectionsField("copy sections fixed by preflight"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version"), compatibilityDispositions: arrayField("owner compatibility facts confirmed by the operator", copyCompatibilityDispositionSchema)},
   TemporaryPromotionPreflightRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version")},
   TemporaryPromotionExecuteRequest: {itemCode: stringField("temporary item"), formalCode: stringField("formal immutable code"), shapeKey: {type: "string", enum: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"], description: "promoted shape"}, name: stringField("formal item name"), shortName: stringField("formal short name"), materialRole: stringField("material role"), attributes: objectField("free descriptive map", true), expectedSourceVersion: integerField("source snapshot version"), expectedVersion: integerField("temporary item version"), preflightDigest: stringField("promotion preflight digest")},
   BrandCopyCandidateQuery: {dataNodeRef: uuidField("selected store node"), keyword: stringField("domain-local keyword"), cursor: stringField("cursor")},
   BrandCopyPreflightRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: uuidField("target store node")},
-  BrandCopyExecuteRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: uuidField("target store node"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version")},
+  BrandCopyExecuteRequest: {selectedItemCodes: arrayField("selected source item codes"), targetDataNodeRef: uuidField("target store node"), preflightDigest: stringField("preflight digest"), expectedSourceVersion: integerField("expected source version"), expectedTargetVersion: integerField("expected target version"), compatibilityDispositions: arrayField("owner compatibility facts confirmed by the operator", copyCompatibilityDispositionSchema)},
   InventoryTargetPageQuery: {dataNodeRef: uuidField("selected store node"), keyword: stringField("domain-local keyword"), categoryRef: uuidField("catalog category"), stockView: stringField("stock view"), cursor: stringField("cursor"), pageSize: integerField("page size")},
   InventoryTargetQuery: {targetRef: uuidField("inventory target reference")},
   InventoryTargetPeriodQuery: {targetRef: uuidField("inventory target reference"), period: stringField("change period")},
@@ -730,12 +761,34 @@ const requestFieldMap = {
   CatalogAssetReleaseRequest: {assetRef: uuidField("staged asset reference"), expectedVersion: integerField("expected version")},
   CatalogShapeManifestQuery: {dataNodeRef: uuidField("selected data node"), revision: stringField("requested manifest revision")}
 };
+const optionalRequestFields = {
+  CatalogDictionaryQuery: new Set(["parentEntryRef"]),
+  CatalogDictionaryEntryCreateRequest: new Set(["parentEntryRef"])
+};
 const responseFieldMap = {
   CatalogItemCommandReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({operation: stringField("operation"), resourceRef: uuidField("resource reference"), status: stringField("result status"), version: integerField("new version")}, ["operation", "status"]), version: integerField("new version")},
-  CatalogItemSaveReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({item: objectField("saved item"), inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: uuidField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])), productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])), version: integerField("new version")}, ["item"]), version: integerField("new version")},
+  CatalogItemSaveReadback: {
+    revision: stringField("contract revision"),
+    requestId: stringField("request correlation"),
+    result: typedEntry({
+      item: objectField("saved item"),
+      inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: uuidField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])),
+      productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])),
+      skuTransitions: arrayField("SKU lifecycle transition judgments", typedEntry({
+        skuRef: uuidField("SKU opaque reference"),
+        targetStatus: {type: "string", enum: ["VOIDED"], description: "terminal SKU lifecycle target"},
+        version: integerField("new SKU version"),
+        canVoid: booleanField("whether the SKU was voided"),
+        blockingReferences: arrayField("blocking inbound references", typedEntry({referenceKind: stringField("reference kind"), referenceRef: uuidField("reference reference")}, ["referenceKind", "referenceRef"])),
+        dependentFacts: arrayField("dependent facts blocking void", typedEntry({factKind: stringField("fact kind"), factRef: uuidField("fact reference")}, ["factKind", "factRef"]))
+      }, ["skuRef", "targetStatus", "version", "canVoid", "blockingReferences", "dependentFacts"])),
+      version: integerField("new version")
+    }, ["item", "skuTransitions"]),
+    version: integerField("new version")
+  },
   CatalogCategoryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "category opaque ref"}, code: stringField("category business code"), name: stringField("category name"), parentCategoryRef: {type: ["string", "null"], format: "uuid", description: "parent category opaque ref"}, version: integerField("version"), displayOrder: integerField("sibling display order"), deletionAvailability: typedEntry({canDelete: booleanField("whether the category subtree can be deleted"), subtreeSize: integerField("category subtree size"), blockingReferenceCount: integerField("blocking product reference count"), blockingReferenceLabels: arrayField("safe blocking product labels")}, ["canDelete", "subtreeSize", "blockingReferenceCount", "blockingReferenceLabels"])}, ["categoryRef", "code", "name", "parentCategoryRef", "version", "displayOrder", "deletionAvailability"]), version: integerField("version")},
   CatalogCategoryDeleteReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({categoryRef: {type: "string", format: "uuid", description: "deleted category opaque ref"}, deletedSubtreeSize: integerField("deleted category subtree size"), deletedCategoryCodes: arrayField("deleted category business codes")}, ["categoryRef", "deletedSubtreeSize", "deletedCategoryCodes"]), version: integerField("version")},
-  CatalogDictionaryEntryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({dictionaryKind: stringField("dictionary kind"), code: stringField("entry code"), name: stringField("entry name"), status: stringField("status"), version: integerField("version")}, ["dictionaryKind", "code", "name", "status"]), version: integerField("version")},
+  CatalogDictionaryEntryReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({dictionaryKind: stringField("dictionary kind"), code: stringField("entry code"), name: stringField("entry name"), status: stringField("status"), parentEntryRef: {type: ["string", "null"], format: "uuid", description: "parent SKU attribute opaque ref"}, version: integerField("version")}, ["dictionaryKind", "code", "name", "status"]), version: integerField("version")},
   ProductionTagReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({tagRef: uuidField("production tag opaque reference"), code: stringField("tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "production tag kind"}, name: stringField("tag name"), ownerScope: objectField("tag owner scope"), status: stringField("status"), version: integerField("version")}, ["tagRef", "code", "tagKind", "name", "status"]), version: integerField("version")},
   LocalCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), updated: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersion: integerField("target version")}, ["preflightDigest", "referenceMappings"]), version: integerField("target version")},
   BrandCatalogCopyReadback: {revision: stringField("contract revision"), requestId: stringField("request correlation"), result: typedEntry({preflightDigest: stringField("preflight digest"), created: arrayField("created objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), reused: arrayField("reused objects", typedEntry({objectType: stringField("object type"), code: stringField("code")}, ["objectType", "code"])), referenceMappings: arrayField("opaque rewritten reference mappings", copyReferenceMappingSchema), targetVersions: arrayField("target versions", typedEntry({targetRef: uuidField("target ref"), version: integerField("version")}, ["targetRef", "version"]))}, ["preflightDigest", "referenceMappings"])},
@@ -760,7 +813,7 @@ for (const entry of operationMetadata) {
     ? {...baseFields, dataNodeRef: uuidField("selected data node")}
     : baseFields;
   const requestCoverage = designCoverageByRequest.get(entry.requestComponent);
-  const generatedRequestSchema = requestCoverage ? schemaFromCoverageRow(requestCoverage) : {type: "object", additionalProperties: false, required: Object.keys(fields).filter((field) => !["cursor", "keyword", "pageSize", "revision", "dataNodeRef"].includes(field)), properties: fields};
+  const generatedRequestSchema = requestCoverage ? schemaFromCoverageRow(requestCoverage) : {type: "object", additionalProperties: false, required: Object.keys(fields).filter((field) => !["cursor", "keyword", "pageSize", "revision", "dataNodeRef"].includes(field) && !optionalRequestFields[entry.requestComponent]?.has(field)), properties: fields};
   if (entry.mutation) {
     if (!generatedRequestSchema.properties.dataNodeRef) generatedRequestSchema.properties.dataNodeRef = uuidField("selected data node");
     generatedRequestSchema.required = Array.from(new Set([...(generatedRequestSchema.required || []), "dataNodeRef"]));
@@ -805,32 +858,25 @@ for (const entry of operationMetadata) {
   if (!paths[entry.path]) paths[entry.path] = {};
   paths[entry.path][entry.method.toLowerCase()] = operation;
 }
-const openapiRoot = {
-  openapi: "3.1.0", info: {title: "Catalog and Store Light Inventory", version: REVISION},
-  "x-v2s-status": "P1_DEFINITION_ONLY", "x-consumer-faces": ["operations-admin"], "x-shard-placement": placement.shards,
-  paths: paths, components: {schemas: componentSchemas}
-};
-writeText("contracts/openapi/catalog-inventory.openapi.yaml", JSON.stringify(openapiRoot, null, 2));
-
 const componentShardGroups = {
-  "components/catalog/catalog-common.schemas.yaml": ["CatalogShapeManifestView", "TypedProblem"],
-  "components/catalog/catalog-workbench.schemas.yaml": ["CatalogWorkbenchContext", "CatalogNavigationView", "CatalogItemPage"],
-  "components/catalog/catalog-item.schemas.yaml": ["CatalogItemDetail", "CatalogItemCommandReadback", "CatalogItemCreateRequest", "CatalogItemSaveRequest", "CatalogItemSaveReadback", "CatalogItemBatchStatusTransitionRequest", "CatalogItemBatchStatusTransitionReadback"],
-  "components/catalog/catalog-dictionary.schemas.yaml": ["CatalogDictionaryView", "CatalogDictionaryQuery", "CatalogDictionaryEntryCreateRequest", "CatalogDictionaryEntryUpdateRequest", "CatalogDictionaryEntryReorderRequest", "CatalogDictionaryEntryReadback"],
-  "components/catalog/catalog-copy.schemas.yaml": ["LocalCopyCandidatePage", "LocalCopyPreflight", "LocalCopyReadback", "BrandCopyCandidatePage", "BrandCatalogCopyPreflight", "BrandCatalogCopyReadback"],
-  "components/inventory/inventory-common.schemas.yaml": ["InventoryTargetPage", "InventoryTargetCurrentView"],
-  "components/inventory/inventory-workbench.schemas.yaml": ["InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView"],
-  "components/inventory/inventory-command.schemas.yaml": ["InventoryWriteReadback", "InventoryCountRequest", "InventoryIncreaseRequest", "InventoryAdjustmentRequest", "InventoryTargetConfigurationRequest"],
-  "components/fulfillment-production/production-tag.schemas.yaml": ["ProductionTagPage", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
+  "components/catalog/catalog-common.schemas.json": ["CatalogShapeManifestView", "TypedProblem"],
+  "components/catalog/catalog-workbench.schemas.json": ["CatalogWorkbenchContext", "CatalogNavigationView", "CatalogItemPage"],
+  "components/catalog/catalog-item.schemas.json": ["CatalogItemDetail", "CatalogItemCommandReadback", "CatalogItemCreateRequest", "CatalogItemSaveRequest", "CatalogItemSaveReadback", "CatalogItemBatchStatusTransitionRequest", "CatalogItemBatchStatusTransitionReadback"],
+  "components/catalog/catalog-dictionary.schemas.json": ["CatalogDictionaryView", "CatalogDictionaryQuery", "CatalogDictionaryEntryCreateRequest", "CatalogDictionaryEntryUpdateRequest", "CatalogDictionaryEntryReorderRequest", "CatalogDictionaryEntryReadback"],
+  "components/catalog/catalog-copy.schemas.json": ["LocalCopyCandidatePage", "LocalCopyPreflight", "LocalCopyReadback", "BrandCopyCandidatePage", "BrandCatalogCopyPreflight", "BrandCatalogCopyReadback"],
+  "components/inventory/inventory-common.schemas.json": ["InventoryTargetPage", "InventoryTargetCurrentView"],
+  "components/inventory/inventory-workbench.schemas.json": ["InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView"],
+  "components/inventory/inventory-command.schemas.json": ["InventoryWriteReadback", "InventoryCountRequest", "InventoryIncreaseRequest", "InventoryAdjustmentRequest", "InventoryTargetConfigurationRequest"],
+  "components/fulfillment-production/production-tag.schemas.json": ["ProductionTagPage", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
 };
-const schemaShardForOrdinal = (ordinal) => ordinal === 43 ? "components/catalog/catalog-item.schemas.yaml" :
-  ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.yaml" :
-  ordinal >= 36 && ordinal <= 39 ? "components/inventory/inventory-command.schemas.yaml" :
-  ordinal >= 21 && ordinal <= 28 ? "components/catalog/catalog-copy.schemas.yaml" :
-  ordinal >= 17 && ordinal <= 20 ? "components/fulfillment-production/production-tag.schemas.yaml" :
-  ordinal >= 8 && ordinal <= 16 ? "components/catalog/catalog-dictionary.schemas.yaml" :
-  ordinal >= 5 && ordinal <= 7 ? "components/catalog/catalog-item.schemas.yaml" :
-  "components/catalog/catalog-workbench.schemas.yaml";
+const schemaShardForOrdinal = (ordinal) => ordinal === 43 ? "components/catalog/catalog-item.schemas.json" :
+  ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.json" :
+  ordinal >= 36 && ordinal <= 39 ? "components/inventory/inventory-command.schemas.json" :
+  ordinal >= 21 && ordinal <= 28 ? "components/catalog/catalog-copy.schemas.json" :
+  ordinal >= 17 && ordinal <= 20 ? "components/fulfillment-production/production-tag.schemas.json" :
+  ordinal >= 8 && ordinal <= 16 ? "components/catalog/catalog-dictionary.schemas.json" :
+  ordinal >= 5 && ordinal <= 7 ? "components/catalog/catalog-item.schemas.json" :
+  "components/catalog/catalog-workbench.schemas.json";
 for (const entry of operationMetadata) {
   const shard = schemaShardForOrdinal(entry.ordinal);
   for (const name of [entry.requestComponent, entry.responseComponent]) {
@@ -838,20 +884,20 @@ for (const entry of operationMetadata) {
   }
 }
 for (const model of readModels.models) {
-  const shard = model.name.startsWith("Inventory") ? "components/inventory/inventory-workbench.schemas.yaml" : "components/catalog/catalog-workbench.schemas.yaml";
+  const shard = model.name.startsWith("Inventory") ? "components/inventory/inventory-workbench.schemas.json" : "components/catalog/catalog-workbench.schemas.json";
   if (!componentShardGroups[shard].includes(model.name)) componentShardGroups[shard].push(model.name);
 }
 for (const [shard, names] of Object.entries(componentShardGroups)) {
   writeText("contracts/openapi/" + shard, JSON.stringify({kind: "catalog-inventory-openapi-shard", revision: REVISION, schemas: Object.fromEntries(names.filter((name) => componentSchemas[name]).map((name) => [name, componentSchemas[name]]))}, null, 2));
 }
 const pathShardGroups = {
-  "paths/operations-admin/catalog-workbench.paths.yaml": [1, 2, 3, 4, 21, 26, 42],
-  "paths/operations-admin/catalog-item-management.paths.yaml": [5, 6, 7, 24, 25, 40, 41, 43],
-  "paths/operations-admin/catalog-dictionary-management.paths.yaml": [8, 9, 10, 11, 12, 13, 14, 15, 16],
-  "paths/operations-admin/catalog-copy.paths.yaml": [22, 23, 27, 28],
-  "paths/operations-admin/inventory-workbench.paths.yaml": [29, 30, 31, 32, 33, 34, 35],
-  "paths/operations-admin/inventory-management.paths.yaml": [36, 37, 38, 39],
-  "paths/operations-admin/production-tag-management.paths.yaml": [17, 18, 19, 20]
+  "paths/operations-admin/catalog-workbench.paths.json": [1, 2, 3, 4, 21, 26, 42],
+  "paths/operations-admin/catalog-item-management.paths.json": [5, 6, 7, 24, 25, 40, 41, 43],
+  "paths/operations-admin/catalog-dictionary-management.paths.json": [8, 9, 10, 11, 12, 13, 14, 15, 16],
+  "paths/operations-admin/catalog-copy.paths.json": [22, 23, 27, 28],
+  "paths/operations-admin/inventory-workbench.paths.json": [29, 30, 31, 32, 33, 34, 35],
+  "paths/operations-admin/inventory-management.paths.json": [36, 37, 38, 39],
+  "paths/operations-admin/production-tag-management.paths.json": [17, 18, 19, 20]
 };
 for (const [shard, ordinals] of Object.entries(pathShardGroups)) {
   const entries = operationMetadata.filter((entry) => ordinals.includes(entry.ordinal));
@@ -862,6 +908,9 @@ for (const [shard, ordinals] of Object.entries(pathShardGroups)) {
   }
   writeText("contracts/openapi/" + shard, JSON.stringify({kind: "catalog-inventory-openapi-path-shard", revision: REVISION, operationIds: entries.map((entry) => entry.operationId), paths: shardPaths}, null, 2));
 }
+// The root is a generated projection of the placement manifest and shards.
+// Keep it after shard writes so it cannot become a second contract source.
+writeText("contracts/openapi/catalog-inventory.openapi.json", JSON.stringify(readCatalogInventoryOpenApi(ROOT), null, 2));
 
 const seedDatasets = [
   {fixtureId: "SEED-LATTE", purpose: "三 SKU、每 SKU 独立 BOM，验证 SKU 结构和库存/BOM读模型。", entities: {
@@ -890,11 +939,11 @@ const seedDatasets = [
   }}
 ];
 const seedScenarioMap = {
-  "SEED-LATTE": ["CI-API-026", "CI-L2-006"],
-  "SEED-DINNER-SET": ["CI-API-026", "CI-L2-006"],
-  "SEED-CAESAR": ["CI-API-026", "CI-L2-006"],
-  "SEED-MATERIALS": ["CI-API-010", "CI-API-011", "CI-API-026", "CI-L2-006", "CI-L2-012", "CI-L2-013"],
-  "SEED-WEIGHED": ["CI-API-026", "CI-L2-006", "CI-L2-007"]
+  "SEED-LATTE": ["CI-API-026"],
+  "SEED-DINNER-SET": ["CI-API-026"],
+  "SEED-CAESAR": ["CI-API-026"],
+  "SEED-MATERIALS": ["CI-API-010", "CI-API-011", "CI-API-026"],
+  "SEED-WEIGHED": ["CI-API-026"]
 };
 const seedOwnerScopes = [
   {scopeKind: "HEAD_COMPANY_BRAND", headCompanyRef: "HC-A", brandRef: "BR-A", balanceAndLedgerExpected: 0},
@@ -941,25 +990,34 @@ const seedBusinessLabels = {
   },
   productionTags: {SIGNATURE: "招牌推荐", LUNCH: "午餐常用", DINNER: "晚餐常用", TAKEOUT: "适合外卖"},
   dictionary: {
-    SKU_ATTRIBUTE: {SIZE: "杯型", PORTION_SIZE: "份量", DONENESS: "熟度", PIZZA_SIZE: "披萨尺寸", DRINK_SIZE: "饮品杯型"},
+    SKU_ATTRIBUTE: {SIZE: "杯型", PORTION_SIZE: "份量", DONENESS: "熟度", PIZZA_SIZE: "尺寸", DRINK_SIZE: "杯型"},
     SKU_ATTRIBUTE_VALUE: {
+      "DONENESS-MEDIUM": "七分熟", "DONENESS-MEDIUM_RARE": "五分熟", "DONENESS-WELL_DONE": "全熟",
+      "DRINK_SIZE-LARGE": "大杯", "DRINK_SIZE-MEDIUM": "中杯", "DRINK_SIZE-SMALL": "小杯",
+      "PIZZA_SIZE-NINE_INCH": "9 寸", "PIZZA_SIZE-TWELVE_INCH": "12 寸",
+      "PORTION_SIZE-LARGE": "大份", "PORTION_SIZE-REGULAR": "标准份",
+      "SIZE-LARGE": "大杯", "SIZE-MEDIUM": "中杯", "SIZE-SMALL": "小杯"
+    },
+    ORDER_OPTION_VALUE: {
       "BURRATA_SAUCE_BALSAMIC": "黑醋汁", "BURRATA_SAUCE_OLIVE": "橄榄油海盐",
       "CAESAR_ADDON_BACON": "加培根", "CAESAR_ADDON_CHICKEN": "加鸡胸肉", "CAESAR_ADDON_EGG": "加溏心蛋",
-      "CAESAR_CUTLERY_NO": "不需要餐具", "CAESAR_CUTLERY_YES": "需要餐具", "CAESAR_SAUCE_CLASSIC": "标准凯撒酱",
-      "CAESAR_SAUCE_LIGHT": "少酱", "CAESAR_SAUCE_VINAIGRETTE": "油醋汁", "COFFEE_BEAN_COLOMBIA": "哥伦比亚",
-      "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚", "COFFEE_PROCESS_NATURAL": "日晒", "COFFEE_PROCESS_WASHED": "水洗",
+      "CAESAR_CUTLERY_NO": "不需要餐具", "CAESAR_CUTLERY_YES": "需要餐具",
+      "CAESAR_SAUCE_CLASSIC": "标准凯撒酱", "CAESAR_SAUCE_LIGHT": "少酱", "CAESAR_SAUCE_VINAIGRETTE": "油醋汁",
+      "COFFEE_BEAN_COLOMBIA": "哥伦比亚", "COFFEE_BEAN_ETHIOPIA": "埃塞俄比亚",
+      "COFFEE_PROCESS_NATURAL": "日晒", "COFFEE_PROCESS_WASHED": "水洗",
       "COFFEE_SERVE_HOT": "热手冲", "COFFEE_SERVE_ICEBALL": "加冰球", "COFFEE_SERVE_ICED": "冰手冲",
-      "DRESSING-CLASSIC": "标准凯撒酱", "FRIES_ADDON_BACON": "培根碎", "FRIES_ADDON_LARGE": "升级大份",
-      "FRIES_ADDON_PARMESAN": "帕玛森芝士", "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱", "FRIES_DIP_KETCHUP": "番茄酱",
-      "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱", "HQ_CAESAR_ADDON_CHICKEN": "加鸡胸肉", LARGE: "大份",
-      "LEMONADE_FLAVOR_BERRY": "加莓果", "LEMONADE_FLAVOR_MINT": "加薄荷", "LEMONADE_ICE_LESS": "少冰",
-      "LEMONADE_ICE_NONE": "去冰", "LEMONADE_ICE_NORMAL": "正常冰", "LEMONADE_SWEETNESS_LESS": "少甜",
-      "LEMONADE_SWEETNESS_REGULAR": "标准甜", "LEMONADE_SWEETNESS_ZERO": "无糖", MEDIUM: "七分熟",
-      MEDIUM_RARE: "五分熟", "NINE_INCH": "9 寸", REGULAR: "标准份", "SIZE-LARGE": "大份", SMALL: "小杯",
+      "DRESSING-CLASSIC": "标准凯撒酱",
+      "FRIES_ADDON_BACON": "培根碎", "FRIES_ADDON_LARGE": "升级大份", "FRIES_ADDON_PARMESAN": "帕玛森芝士",
+      "FRIES_DIP_GARLIC_MAYO": "蒜香蛋黄酱", "FRIES_DIP_KETCHUP": "番茄酱", "FRIES_DIP_TRUFFLE_CHEESE": "松露芝士酱",
+      "HQ_CAESAR_ADDON_CHICKEN": "加鸡胸肉",
+      "LEMONADE_FLAVOR_BERRY": "加莓果", "LEMONADE_FLAVOR_MINT": "加薄荷",
+      "LEMONADE_ICE_LESS": "少冰", "LEMONADE_ICE_NONE": "去冰", "LEMONADE_ICE_NORMAL": "正常冰",
+      "LEMONADE_SWEETNESS_LESS": "少甜", "LEMONADE_SWEETNESS_REGULAR": "标准甜", "LEMONADE_SWEETNESS_ZERO": "无糖",
+      "SIZE-LARGE": "大份",
       "TOMATO_PASTA_ADDON_CHEESE": "加马苏里拉芝士", "TOMATO_PASTA_ADDON_CHICKEN": "加烤鸡胸", "TOMATO_PASTA_ADDON_MUSHROOM": "加蘑菇",
-      "TOMATO_PASTA_COOK_AL_DENTE": "偏硬口感", "TOMATO_PASTA_COOK_NORMAL": "标准口感", "TOMATO_PASTA_SPICY_MEDIUM": "中辣",
-      "TOMATO_PASTA_SPICY_MILD": "微辣", "TOMATO_PASTA_SPICY_NONE": "不辣", "TOPPING-BACON": "加培根",
-      TWELVE_INCH: "12 寸", WELL_DONE: "全熟"
+      "TOMATO_PASTA_COOK_AL_DENTE": "偏硬口感", "TOMATO_PASTA_COOK_NORMAL": "标准口感",
+      "TOMATO_PASTA_SPICY_MEDIUM": "中辣", "TOMATO_PASTA_SPICY_MILD": "微辣", "TOMATO_PASTA_SPICY_NONE": "不辣",
+      "TOPPING-BACON": "加培根"
     }
   },
   optionGroups: {"CAESAR-DRESSING": "酱汁", "CAESAR-SIZE": "份量", "CAESAR-TOPPING": "配料"},
@@ -977,7 +1035,7 @@ const testDatasetSpecs = [
   ["FIXTURE-DISABLED-SKU", "只有停用 SKU，仍派生 HAS_SKU", ["CI-API-013", "CI-L2-007"]],
   ["FIXTURE-SHAPE-ADMISSION", "SERVICE/BENEFIT_SHELL 不因 NO_SKU 获得库存/BOM三态", ["CI-API-014", "CI-L2-007"]],
   ["FIXTURE-PRODUCIBLE-RETAINED", "PRODUCIBLE 在契约全集但无形态派生", ["CI-API-001", "CI-L2-007"]],
-  ["FIXTURE-SKU-STRUCTURE-CONFLICT", "同 SKU 编码但属性组合不同，商品结构阻断", ["CI-API-018", "CI-L2-015"]],
+  ["FIXTURE-SKU-STRUCTURE-CONFLICT", "同 SKU 编码但属性组合不同，商品结构阻断", ["CI-API-018", "CI-L2-007", "CI-L2-015"]],
   ["FIXTURE-DAG-CYCLE", "闭包循环引用与多层 DAG", ["CI-API-015"]],
   ["FIXTURE-REFERENCE-MAPPING-MISSING", "受控 owner 输入中的缺映射阻断；公开复制路径只验证真实可构造的完整映射", ["CI-API-020"]],
   ["FIXTURE-VOID-INBOUND-REFERENCE", "入站引用存在时作废阻断", ["CI-API-006", "CI-L2-010"]],
@@ -987,13 +1045,14 @@ const testDatasetSpecs = [
   ["FIXTURE-ASSET-PROCESSING", "资产处理失败与引用保护", ["CI-API-009", "CI-L2-011"]],
   ["FIXTURE-AUTO-SYNC", "来源字段 ownership/deniedFields", ["CI-API-007", "CI-L2-009"]],
   ["FIXTURE-TEMPORARY-ITEM", "外部订单临时商品治理转正预检", ["CI-API-007", "CI-L2-009"]],
-  ["FIXTURE-LOCAL-COPY", "当前门店内五步复制配置", ["CI-API-014", "CI-API-020", "CI-L2-010"]],
-  ["FIXTURE-BRAND-COPY", "总公司到门店完整闭包复制", ["CI-API-020", "CI-L2-015"]],
-  ["FIXTURE-COUNT-INCREASE-ADJUST", "库存三类变化动作读回前/变化/后", ["CI-API-012", "CI-L2-014"]],
+  ["FIXTURE-LOCAL-COPY", "当前门店内五步复制配置", ["CI-API-014", "CI-API-020", "CI-L2-005", "CI-L2-010"]],
+  ["FIXTURE-BRAND-COPY", "总公司到门店完整闭包复制", ["CI-API-020", "CI-L2-005", "CI-L2-010", "CI-L2-015"]],
+  ["FIXTURE-COUNT-INCREASE-ADJUST", "库存三类变化动作读回前/变化/后", ["CI-API-012", "CI-L2-012", "CI-L2-014"]],
   ["FIXTURE-CONFIG-ONLY", "库存快捷配置不产生余额与流水", ["CI-API-012", "CI-L2-014"]],
   ["FIXTURE-NO-COPY-SOURCE", "复制来源唯一性与组织归属", ["CI-API-023", "CI-API-024"]],
   ["FIXTURE-OWNER-SCOPE", "总公司+品牌、门店+品牌，项目级标签阻断", ["CI-API-024", "CI-API-025"]],
-  ["FIXTURE-SEED-READBACK", "五个真实复杂商品图按契约读回", ["CI-API-026", "CI-L2-006"]]
+  ["FIXTURE-SEED-READBACK", "五个真实复杂商品图按契约读回", ["CI-API-026"]],
+  ["FIXTURE-L2-OWNER-READBACK", "本轮 L2 owner HTTP fixture 的商品、库存对象和范围事实读回", ["CI-L2-006"]]
 ];
 const unimplementedIngressFixtures = new Map([
   ["FIXTURE-AUTO-SYNC", "AUTO_SYNC is an ERP-owned ingress fact; this phase retains its model and smart view but explicitly excludes the sync execution chain."],
@@ -1009,7 +1068,7 @@ testDatasetSpecs.push(
   ["FIXTURE-COMPATIBILITY-MATRIX", "九类兼容矩阵逐位正反例", ["CI-API-018", "CI-L2-015"]],
   ["FIXTURE-WORKBENCH-QUERY", "树节点、域内 keyword、cursor 与 generation", ["CI-API-003", "CI-L2-002", "CI-L2-016"]],
   ["FIXTURE-SMART-VIEWS", "六智能视图与需处理派生状态", ["CI-API-004", "CI-L2-003", "CI-L2-012"]],
-  ["FIXTURE-SURFACE-STATES", "九 surface loading/error/empty/recovery", ["CI-API-005", "CI-L2-016", "CI-L2-017"]],
+  ["FIXTURE-SURFACE-STATES", "九 surface loading/error/empty/recovery", ["CI-API-005", "CI-L2-004", "CI-L2-016", "CI-L2-017"]],
   ["FIXTURE-LIFECYCLE-CAS-IDEMPOTENCY", "生命周期、CAS、幂等 replay 与 mismatch", ["CI-API-008", "CI-L2-010"]],
   ["FIXTURE-REPLAY-ROLLBACK", "幂等 replay 与 owner failure 全回滚", ["CI-API-022", "CI-L2-015"]]
 );
@@ -1061,6 +1120,7 @@ const testGraphFor = (fixtureId) => {
   if (fixtureId === "FIXTURE-NO-COPY-SOURCE") graph.expected = {sourceResolution: "unique-bound-head-company"};
   if (fixtureId === "FIXTURE-OWNER-SCOPE") graph.expected = {allowed: ["headCompany+brand", "store+brand"], forbidden: ["project"]};
   if (fixtureId === "FIXTURE-SEED-READBACK") graph.expected = {seedIds: seedDatasets.map((entry) => entry.fixtureId)};
+  if (fixtureId === "FIXTURE-L2-OWNER-READBACK") graph.expected = {readbackFields: ["ownerFacts", "scope", "catalogItem", "inventoryTarget"], caseParameterKey: "readbackKind"};
   if (fixtureId === "FIXTURE-SHAPE-MATRIX") { graph.objects = ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL", "COMPOSITE", "SERVICE", "BENEFIT_SHELL"].map((shapeKey) => ({type: "CatalogItem", code: "SHAPE-" + shapeKey, shapeKey})); graph.expected = {shapeKeys: graph.objects.map((entry) => entry.shapeKey), caseParameterKey: "shapeKey"}; }
   if (fixtureId === "FIXTURE-VOID-OBJECT-TYPES") { graph.objects = ["CatalogItem", "CatalogCategory", "CatalogDictionaryEntry", "ProductionTag", "CatalogItemSku", "CatalogAsset", "StockTarget", "ProductBom"].map((type) => ({type, code: "VOID-" + type})); graph.expected = {objectTypes: graph.objects.map((entry) => entry.type), caseParameterKey: "objectType"}; }
   if (fixtureId === "FIXTURE-COMPATIBILITY-MATRIX") { graph.objects = ["CatalogItem", "CatalogCategory", "CatalogTag", "SalesUnit", "SkuAttributeValue", "ProductionTag", "StockTarget", "ProductBom", "ProductSku"].map((type) => ({type, code: "COMPAT-" + type})); graph.expected = {matrixRows: 9, outcomes: ["CONFIRM_REUSE", "STRUCTURAL_BLOCK", "NOT_APPLICABLE_NO_STRUCTURAL_BITS"], caseParameterKey: "matrixRow"}; }
@@ -1116,9 +1176,10 @@ const fixtureSchema = {
       type: "object", additionalProperties: false, required: ["categories", "productionTags", "dictionary", "optionGroups", "units"], properties: {
         categories: {type: "object", additionalProperties: {type: "string"}},
         productionTags: {type: "object", additionalProperties: {type: "string"}},
-        dictionary: {type: "object", additionalProperties: false, required: ["SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"], properties: {
+        dictionary: {type: "object", additionalProperties: false, required: ["SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"], properties: {
           SKU_ATTRIBUTE: {type: "object", additionalProperties: {type: "string"}},
-          SKU_ATTRIBUTE_VALUE: {type: "object", additionalProperties: {type: "string"}}
+          SKU_ATTRIBUTE_VALUE: {type: "object", additionalProperties: {type: "string"}},
+          ORDER_OPTION_VALUE: {type: "object", additionalProperties: {type: "string"}}
         }},
         optionGroups: {type: "object", additionalProperties: {type: "string"}},
         units: {type: "object", additionalProperties: {type: "string"}}
@@ -1262,38 +1323,36 @@ const p4CaseBindingSets = {
   typedFailureCaseIds: apiCaseRows.filter((entry) => entry.expectationKind === "TYPED_FAILURE").map((entry) => entry.caseId),
   factCaseIds: apiCaseRows.filter((entry) => entry.expectationKind === "FACT").map((entry) => entry.caseId)
 };
-const l2CaseCounts = [6, 1, 1, 1, 4, 2, 7, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1];
-const l2Descriptions = [
-  "三页导航与角色/数据节点组合", "先选树节点再域内搜索并隔离旧响应", "视图切换最左、品牌切换紧邻且结果域正确",
-  "名称与弱化编码、复合单元格、compact table", "来源事实与写 capability 双条件控制复制入口",
-  "同 Drawer 查看编辑、dirty 关闭、失败保留与焦点", "七形态页签与权益壳可见置灰原因",
-  "catalog 与 production-tag quickManage 分 owner 并回填", "自动同步锁定与临时商品治理转正",
-  "生命周期矩阵与两种复制流程隔离", "多图排序/主图/失败重试/引用保护", "库存状态、需处理与三周期变化",
-  "六区按需加载、诊断权限整区与请求不渲染", "四库存动作输入/预览/失败保留/统一结果面",
-  "预检五页签、阻断与 stale 回到预检", "query generation、分页筛选、错误恢复状态保持",
-  "overlay lock、错误焦点与具体阻断原因", "Out 项不渲染"
-];
-const l2Scenarios = l2CaseCounts.map(function (caseCount, index) {
-  const scenarioId = "CI-L2-" + String(index + 1).padStart(3, "0");
+if (l2CaseBlueprint.kind !== "catalog-inventory-l2-case-blueprint" || l2CaseBlueprint.executionBoundary?.fixtureClass !== "TEST" || l2CaseBlueprint.executionBoundary?.setupChannel !== "OWNER_HTTP_COMMANDS" || l2CaseBlueprint.executionBoundary?.seedRuntimeInput !== false) throw new Error("P1_L2_CASE_BLUEPRINT_BOUNDARY_INVALID");
+if (!Array.isArray(l2CaseBlueprint.scenarios) || l2CaseBlueprint.scenarios.length !== 18) throw new Error("P1_L2_CASE_BLUEPRINT_SCENARIO_COUNT_INVALID");
+const l2CaseCounts = l2CaseBlueprint.scenarios.map((entry) => entry.cases.length);
+if (l2CaseCounts.reduce((sum, count) => sum + count, 0) !== 41) throw new Error("P1_L2_CASE_BLUEPRINT_CASE_COUNT_INVALID");
+const l2Scenarios = l2CaseBlueprint.scenarios.map(function (blueprint) {
+  const scenarioId = blueprint.scenarioId;
   const declaredFixtures = declaredFixtureIdsForScenario(scenarioId);
   const matchingFixtures = fixtureIdsForScenario(scenarioId);
-  if (!declaredFixtures.length || (caseCount > 0 && !matchingFixtures.length)) throw new Error("P1_L2_SCENARIO_FIXTURE_MISSING:" + scenarioId);
-  const cases = Array.from({length: caseCount}, function (_, caseIndex) {
-    const fixtureRef = matchingFixtures[caseIndex % matchingFixtures.length];
-    const parameter = {journeyVariant: caseIndex + 1, fixtureRef};
+  if (!declaredFixtures.length || (!blueprint.cases.length && blueprint.executionApplicability !== "NOT_APPLICABLE_WITH_REASON")) throw new Error("P1_L2_SCENARIO_FIXTURE_MISSING:" + scenarioId);
+  const cases = blueprint.cases.map(function (blueprintCase, caseIndex) {
+    const fixtureRef = blueprintCase.fixtureRef;
+    const fixtureAllowed = blueprint.executionApplicability === "NOT_APPLICABLE_WITH_REASON"
+      ? declaredFixtures.includes(fixtureRef)
+      : matchingFixtures.includes(fixtureRef);
+    if (!fixtureAllowed || /^SEED-/.test(fixtureRef)) throw new Error("P1_L2_CASE_FIXTURE_NOT_TEST_OWNER_HTTP:" + blueprintCase.caseId);
+    const parameter = {journeyVariant: caseIndex + 1, fixtureRef, journey: blueprintCase.journey, controlKeys: blueprintCase.controlKeys, steps: blueprintCase.steps, businessOracle: blueprintCase.businessOracle};
     return {
-      caseId: scenarioId + "-" + String(caseIndex + 1).padStart(2, "0"),
+      caseId: blueprintCase.caseId,
       fixtureRef,
-      parameterization: caseCount > 1 ? "journey-variant-" + (caseIndex + 1) : "canonical",
+      parameterization: blueprint.cases.length > 1 ? "journey-variant-" + (caseIndex + 1) : "canonical",
       parameter,
-      expected: {assertionKey: scenarioId + ":journey/" + (caseIndex + 1), fixtureRef, parameter},
-      expectedBusinessResult: caseExpectedFor(l2Descriptions[index], parameter)
+      expected: {assertionKey: blueprintCase.caseId + ":business", fixtureRef, parameter},
+      expectedBusinessResult: caseExpectedFor(blueprint.businessRequirement, parameter),
+      ...(blueprint.executionApplicability ? {executionApplicability: blueprint.executionApplicability, notApplicableReason: blueprint.notApplicableReason} : {})
     };
   });
-  return {scenarioId: scenarioId, layer: "L2", caseCount: caseCount, fixtureRefs: declaredFixtures, businessRequirement: l2Descriptions[index], primaryVerifier: "browser-business", ...(unimplementedIngressScenarioReasons.has(scenarioId) ? {executionApplicability: "NOT_APPLICABLE_WITH_REASON", notApplicableReason: unimplementedIngressScenarioReasons.get(scenarioId)} : {}), cases: cases};
+  return {scenarioId, layer: "L2", caseCount: cases.length, fixtureRefs: declaredFixtures, businessRequirement: blueprint.businessRequirement, primaryVerifier: "browser-business", ...(blueprint.executionApplicability ? {executionApplicability: blueprint.executionApplicability, notApplicableReason: blueprint.notApplicableReason} : {}), cases};
 });
 const apiScenarioCatalog = {schemaVersion: 1, kind: "catalog-inventory-api-scenarios", revision: REVISION, scenarioCount: apiScenarios.length, caseCount: apiScenarios.reduce((sum, entry) => sum + entry.caseCount, 0), caseBindingSets: p4CaseBindingSets, scenarios: apiScenarios};
-const l2ScenarioCatalog = {schemaVersion: 1, kind: "catalog-inventory-l2-scenarios", revision: REVISION, scenarioCount: l2Scenarios.length, caseCount: l2Scenarios.reduce((sum, entry) => sum + entry.caseCount, 0), locatorBinding: "P3_ONLY", scenarios: l2Scenarios};
+const l2ScenarioCatalog = {schemaVersion: 1, kind: "catalog-inventory-l2-scenarios", revision: REVISION, sourceOfTruth: L2_CASE_BLUEPRINT_PATH, executionBoundary: l2CaseBlueprint.executionBoundary, scenarioCount: l2Scenarios.length, caseCount: l2Scenarios.reduce((sum, entry) => sum + entry.caseCount, 0), locatorBinding: "contracts/policy/catalog-inventory-l2-locator-bindings.json", scenarios: l2Scenarios};
 writeJson("contracts/policy/catalog-inventory-api-scenarios.json", apiScenarioCatalog);
 writeJson("contracts/policy/catalog-inventory-l2-scenarios.json", l2ScenarioCatalog);
 
@@ -1396,9 +1455,17 @@ const designFieldDigest = hash(JSON.stringify({rows: designCoverage.rows, reques
 const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes, mutation: entry.mutation, authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes, coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands || []}))});
 const javaShapeEnum = (value) => value.replace(/[^A-Za-z0-9_]/g, "_");
 const javaShapeRules = shapes.map((shape) => "    new ShapeRule(ShapeKey." + shape.key + ", \"" + javaEscape(enumLabels.shapeKey[shape.key]) + "\", \"" + javaEscape(shape.itemKind) + "\", \"" + shape.measureMode + "\", \"" + shape.skuPolicy.skuMode + "\", \"" + shape.skuPolicy.priceGranularity + "\", List.of(" + shape.usageCapabilities.map((capability) => "Capability." + capability).join(", ") + "), " + (!shape.disabledReason) + ", " + Boolean(shape.disabledReason) + ", " + (shape.disabledReason ? "\"" + javaEscape(shape.disabledReason) + "\"" : "null") + ")").join(",\n");
-const javaModeRules = modeRules.map((rule) => "    new ModeRule(\"" + rule.nodeType + "\", " + (rule.condition === null ? "null" : "\"" + rule.condition + "\"") + ", List.of(" + rule.allowedModes.map((mode) => "\"" + mode + "\"").join(", ") + "))").join(",\n");
+const javaModeRules = modeRules.map((rule) => {
+  const condition = rule.condition === null ? "null" : `"${javaEscape(rule.condition)}"`;
+  const allowedModes = `List.of(${rule.allowedModes.map((mode) => `"${javaEscape(mode)}"`).join(", ")})`;
+  const disabledModes = rule.disabledModes.length === 0
+    ? "List.of()"
+    : `List.of(${rule.disabledModes.map((disabled) => `new DisabledMode("${javaEscape(disabled.mode)}", "${javaEscape(disabled.reason)}")`).join(", ")})`;
+  return `    new ModeRule("${javaEscape(rule.nodeType)}", ${condition}, ${allowedModes}, "${javaEscape(rule.defaultMode)}", ${disabledModes}, "${javaEscape(rule.description)}")`;
+}).join(",\n");
 const javaEnumLabels = enumLabelEntries.map((entry) => "    new EnumLabel(\"" + javaEscape(entry.kind) + "\", \"" + javaEscape(entry.value) + "\", \"" + javaEscape(entry.label) + "\")").join(",\n");
 const javaSmartViewRules = enumValues("smartViewKey").filter((value) => value !== "ALL").map((value) => "    new SmartViewRule(\"" + value + "\", \"" + javaEscape(enumLabels.smartViewKey[value]) + "\")").join(",\n");
+const javaCopyCompatibilityReasonCodes = copyPolicy.compatibilityReasonCodes.map((value) => "\"" + javaEscape(value) + "\"").join(", ");
 const javaMap = (values) => { const entries = Object.entries(values); return entries.length === 0 ? "Map.of()" : "Map.of(" + entries.map(([key, value]) => "\"" + key + "\", \"" + value + "\"").join(", ") + ")"; };
 const javaCommandList = (commands) => !commands?.length ? "List.of()" : "List.of(" + commands.map((command) => "\"" + command + "\"").join(", ") + ")";
 const javaEdgeOperations = operationMetadata.map((entry) => "    new Operation(\"" + entry.operationId + "\", \"" + entry.method + "\", \"" + javaEscape(entry.path) + "\", \"" + entry.requestComponent + "\", \"" + entry.responseComponent + "\", List.of(" + entry.problemCodes.map((code) => "\"" + code + "\"").join(", ") + "), " + entry.mutation + ", " + (entry.authorizationRequirementId ? "\"" + entry.authorizationRequirementId + "\"" : "null") + ", " + javaMap(entry.capabilityByDataNodeType) + ", List.of(" + entry.allowedDataNodeTypes.map((type) => "\"" + type + "\"").join(", ") + "), " + javaCommandList(entry.coordinatedInventoryDefinitionCommands) + ")").join(",\n");
@@ -1416,7 +1483,13 @@ if (inventoryReferenceDeclarations.length !== 5
 }
 const inventoryReferenceDeclarationsByType = Object.groupBy(inventoryReferenceDeclarations, (entry) => entry.objectType);
 const javaInventoryReferenceCases = Object.entries(inventoryReferenceDeclarationsByType)
-  .map(([objectType, entries]) => "      case \"" + objectType + "\" -> List.of(" + entries.map((entry) => "new Source(\"" + entry.tableName + "\", \"" + entry.columnName + "\")").join(", ") + ");")
+  .map(([objectType, entries]) => {
+    const sourceEntries = entries.map((entry) => "new Source(\"" + entry.tableName + "\", \"" + entry.columnName + "\")").join(", ");
+    const oneLine = "            case \"" + objectType + "\" -> List.of(" + sourceEntries + ");";
+    return Buffer.byteLength(oneLine, "utf8") <= 120
+      ? oneLine
+      : "            case \"" + objectType + "\" -> List.of(\n                    " + sourceEntries + ");";
+  })
   .join("\n");
 writeText(javaPath,
   "package com.catering.v2s.contracts.generated.cataloginventory;\n\n" +
@@ -1426,18 +1499,22 @@ writeText(javaPath,
   "  public enum Capability { SELLABLE, STOCK_MANAGED, BOM_COMPONENT, PRODUCIBLE }\n" +
   "  public enum ShapeKey { " + shapes.map((shape) => javaShapeEnum(shape.key)).join(", ") + " }\n" +
   "  public record ShapeRule(ShapeKey shapeKey, String label, String itemKind, String measureMode, String skuMode, String priceGranularity, List<Capability> usageCapabilities, boolean createAllowed, boolean visibleButDisabled, String disabledReason) {}\n" +
-  "  public record ModeRule(String nodeType, String condition, List<String> allowedModes) {}\n" +
+  "  public record DisabledMode(String mode, String reason) {}\n" +
+  "  public record ModeRule(String nodeType, String condition, List<String> allowedModes, String defaultMode, List<DisabledMode> disabledModes, String description) {}\n" +
   "  public record EnumLabel(String kind, String value, String label) {}\n" +
   "  public record SmartViewRule(String viewKey, String label) {}\n" +
   "  public static final String REVISION = \"" + REVISION + "\";\n" +
   "  public static final String MANIFEST_DIGEST = \"" + shapeManifestWithDigest.manifestDigest + "\";\n" +
   "  public static final int SHAPE_COUNT = " + shapes.length + ";\n" +
+  "  public static final int CATALOG_ITEM_IMAGE_MAX_COUNT = " + catalogItemImageLimits.maxImageCount + ";\n" +
+  "  public static final long CATALOG_ITEM_IMAGE_MAX_BYTES = " + catalogItemImageLimits.maxImageBytes + "L;\n" +
   "  public static final String[] CAPABILITY_VALUES = {\"SELLABLE\", \"STOCK_MANAGED\", \"BOM_COMPONENT\", \"PRODUCIBLE\"};\n" +
   "  public static final String[] SHAPE_KEYS = {" + shapes.map((shape) => "\"" + shape.key + "\"").join(", ") + "};\n" +
   "  public static final List<ShapeRule> SHAPE_RULES = List.of(\n" + javaShapeRules + "\n  );\n" +
   "  public static final List<ModeRule> MODE_RULES = List.of(\n" + javaModeRules + "\n  );\n" +
   "  public static final List<EnumLabel> ENUM_LABELS = List.of(\n" + javaEnumLabels + "\n  );\n" +
   "  public static final List<SmartViewRule> SMART_VIEWS = List.of(\n" + javaSmartViewRules + "\n  );\n" +
+  "  public static final List<String> COPY_COMPATIBILITY_REASON_CODES = List.of(" + javaCopyCompatibilityReasonCodes + ");\n" +
   "  public static List<String> enumValues(String kind) { return ENUM_LABELS.stream().filter(entry -> entry.kind().equals(kind)).map(EnumLabel::value).toList(); }\n" +
   "  public static boolean accepts(String kind, String value) { return enumValues(kind).contains(value); }\n" +
   "  public static String label(String kind, String value) { return ENUM_LABELS.stream().filter(entry -> entry.kind().equals(kind) && entry.value().equals(value)).findFirst().map(EnumLabel::label).orElseThrow(() -> new IllegalArgumentException(\"unknown catalog enum: \" + kind + \"/\" + value)); }\n" +
@@ -1454,13 +1531,13 @@ writeText(inventoryReferenceDeclarationsPath,
   "import java.util.List;\n\n" +
   "/** Generated from catalog-inventory-reference-path-matrix.json; do not edit. */\n" +
   "final class InventoryCatalogReferenceDeclarations {\n" +
-  "  record Source(String tableName, String columnName) {}\n" +
-  "  static List<Source> sourcesFor(String objectType) {\n" +
-  "    return switch (objectType) {\n" + javaInventoryReferenceCases + "\n" +
-  "      default -> List.of();\n" +
-  "    };\n" +
-  "  }\n" +
-  "  private InventoryCatalogReferenceDeclarations() {}\n" +
+  "    record Source(String tableName, String columnName) {}\n\n" +
+  "    static List<Source> sourcesFor(String objectType) {\n" +
+  "        return switch (objectType) {\n" + javaInventoryReferenceCases + "\n" +
+  "            default -> List.of();\n" +
+  "        };\n" +
+  "    }\n\n" +
+  "    private InventoryCatalogReferenceDeclarations() {}\n" +
   "}\n"
 );
 writeText("contracts/catalog/CatalogInventoryEdgeWire.java",
@@ -1607,7 +1684,7 @@ const backendWireManifestSource =
   "  public static final int CATALOG_COMMAND_OPERATION_COUNT = " + catalogCommandOperations.length + ";\n" +
   "  public static final int DTO_TYPE_COUNT = " + backendWireEntries.length + ";\n" +
   "  public static final String P1_GENERATOR_SHA256 = \"" + fileHash("scripts/generate/catalog-inventory-p1.mjs") + "\";\n" +
-  "  public static final String OPENAPI_ROOT_SHA256 = \"" + fileHash("contracts/openapi/catalog-inventory.openapi.yaml") + "\";\n" +
+  "  public static final String OPENAPI_ROOT_SHA256 = \"" + fileHash("contracts/openapi/catalog-inventory.openapi.json") + "\";\n" +
   "  public static final String OPENAPI_COMPONENTS_SHA256 = \"" + backendWireComponentDigest + "\";\n" +
   "  public static final String GENERATED_TYPES_SHA256 = \"" + backendWireDigest + "\";\n" +
   "  public static final String[] DTO_TYPES = {" + backendWireEntries.map((entry) => "\"" + entry.name + "\"").join(", ") + "};\n" +
@@ -1622,7 +1699,7 @@ const implementationManifest = {
   businessStatus: "NOT_APPLICABLE_WITH_REASON", cleanupStatus: "NOT_APPLICABLE_WITH_REASON",
   sourceDenominators: {
     requirements: [REQUIREMENTS_PATH, IA_PATH, OPERATION_CONTRACT_PATH],
-    contracts: ["contracts/catalog/catalog-item-editor-manifest.json", "contracts/catalog/catalog-inventory-read-models.json", "contracts/catalog/catalog-inventory-edge-contract.json", "contracts/catalog/catalog-inventory-edge-placement.json", "contracts/openapi/catalog-inventory.openapi.yaml", DESIGN_COVERAGE_PATH],
+    contracts: ["contracts/catalog/catalog-item-editor-manifest.json", "contracts/catalog/catalog-inventory-read-models.json", "contracts/catalog/catalog-inventory-edge-contract.json", "contracts/catalog/catalog-inventory-edge-placement.json", "contracts/openapi/catalog-inventory.openapi.json", DESIGN_COVERAGE_PATH],
     seedAndFixtures: ["contracts/policy/catalog-inventory-fixture-catalog.schema.json", "contracts/policy/catalog-inventory-fixture-catalog.json", MEDIA_CATALOG_PATH, MEDIA_ASSET_DIR],
     apiScenarios: ["contracts/policy/catalog-inventory-api-scenarios.json"],
     l2Scenarios: ["contracts/policy/catalog-inventory-l2-scenarios.json"],

@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @interface AcceptanceScenario {
     String id();
+
     String module();
+
     String operation();
 }
-

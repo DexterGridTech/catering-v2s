@@ -4,15 +4,11 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * This boundary type is deliberately not an account, role, session, or credential model.
- * The signed edge adapter applies fixed consumer-face validation.
+ * This boundary type is deliberately not an account, role, session, or credential model. The signed edge adapter
+ * applies fixed consumer-face validation.
  */
 public record PlatformExecutionContext(
-    String externalSubject,
-    String consumerFace,
-    Instant expiresAt,
-    String correlationId
-) {
+        String externalSubject, String consumerFace, Instant expiresAt, String correlationId) {
     public PlatformExecutionContext {
         externalSubject = require(externalSubject, "externalSubject");
         consumerFace = require(consumerFace, "consumerFace");

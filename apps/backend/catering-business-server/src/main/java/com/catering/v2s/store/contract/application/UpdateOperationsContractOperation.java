@@ -12,15 +12,17 @@ public class UpdateOperationsContractOperation {
     private final OperationsStoreContractCommandApi contracts;
     private final OperationsStoreContractCommandApi.TaskReadbackApi taskReads;
 
-    public UpdateOperationsContractOperation(OperationsStoreContractCommandApi contracts,
-                                             OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
+    public UpdateOperationsContractOperation(
+            OperationsStoreContractCommandApi contracts, OperationsStoreContractCommandApi.TaskReadbackApi taskReads) {
         this.contracts = contracts;
         this.taskReads = taskReads;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(OperationsStoreContractCommandApi.UpdateCommand command) {
+    public OperationsStoreContractCommandApi.StoreContractTaskReadback execute(
+            OperationsStoreContractCommandApi.UpdateCommand command) {
         contracts.update(command);
-        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId()));
+        return taskReads.readTaskView(new OperationsStoreContractCommandApi.TaskViewQuery(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId()));
     }
 }

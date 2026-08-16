@@ -26,23 +26,44 @@ class PlatformExtensionDefinitionControllerTest {
     void platformExtensionGetsUseTypedOwnerTaskReadBoundaries() {
         PlatformAuthenticationService authentication = mock(PlatformAuthenticationService.class);
         when(authentication.requireActiveSession("platform-session"))
-            .thenReturn(new PlatformSessionReadback(UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform", Long.MAX_VALUE));
+                .thenReturn(new PlatformSessionReadback(
+                        UUID.randomUUID(), 1L, UUID.randomUUID(), "Platform", Long.MAX_VALUE));
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
         UUID workspaceId = UUID.randomUUID();
-        when(workspaces.requireEnabled(WORKSPACE_KEY)).thenReturn(new WorkspaceAdministrationReadback(
-            workspaceId, WORKSPACE_KEY, "Workspace", "Operations", null, null, "ENABLED", 1L, 1L, 1L, 1L, true));
+        when(workspaces.requireEnabled(WORKSPACE_KEY))
+                .thenReturn(new WorkspaceAdministrationReadback(
+                        workspaceId,
+                        WORKSPACE_KEY,
+                        "Workspace",
+                        "Operations",
+                        null,
+                        null,
+                        "ENABLED",
+                        1L,
+                        1L,
+                        1L,
+                        1L,
+                        true));
         ExtensionDefinitionService definitions = mock(ExtensionDefinitionService.class);
-        when(definitions.platformManagementDefinitions(workspaceId, WORKSPACE_KEY)).thenReturn(List.of(
-            new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of())));
+        when(definitions.platformManagementDefinitions(workspaceId, WORKSPACE_KEY))
+                .thenReturn(List.of(new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of())));
         when(definitions.platformManagementDefinition(workspaceId, WORKSPACE_KEY, "BRAND"))
-            .thenReturn(new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of()));
+                .thenReturn(new ExtensionDefinitionReadback(WORKSPACE_KEY, "BRAND", 1L, 2L, List.of()));
         PlatformExtensionDefinitionController controller = new PlatformExtensionDefinitionController(
-            new PlatformSessionResolver(authentication), workspaces, definitions);
-        EdgeRequestContext request = new EdgeRequestContext("fingerprint", "correlation",
-            PlatformSessionCookie.fromCookie("platform-session"), null, null, null, null);
+                new PlatformSessionResolver(authentication), workspaces, definitions);
+        EdgeRequestContext request = new EdgeRequestContext(
+                "fingerprint",
+                "correlation",
+                PlatformSessionCookie.fromCookie("platform-session"),
+                null,
+                null,
+                null,
+                null);
 
         assertEquals(1, controller.list(request, WORKSPACE_KEY).items().size());
-        assertEquals("BRAND", controller.detail(request, WORKSPACE_KEY, "BRAND").entityType().wire());
+        assertEquals(
+                "BRAND",
+                controller.detail(request, WORKSPACE_KEY, "BRAND").entityType().wire());
 
         verify(definitions).platformManagementDefinitions(eq(workspaceId), eq(WORKSPACE_KEY));
         verify(definitions).platformManagementDefinition(eq(workspaceId), eq(WORKSPACE_KEY), eq("BRAND"));

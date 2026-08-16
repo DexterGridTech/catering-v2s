@@ -1,31 +1,29 @@
 package com.catering.v2s.app.edge.operations.context;
 
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
-
-import com.catering.v2s.app.edge.generated.wire.WorkspaceAccountStatus;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
+import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
+import com.catering.v2s.app.edge.generated.wire.SortDirection;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceAccountStatus;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationStatus;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUser;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserAssignmentsItem;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserInvitationHistoryItem;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserPage;
+import com.catering.v2s.app.edge.generated.wire.WorkspaceUserPageCriteria;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeRequest;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserRevokeResult;
-import com.catering.v2s.app.edge.generated.wire.ServiceNodeType;
-import com.catering.v2s.app.edge.generated.wire.SortDirection;
-import com.catering.v2s.app.edge.generated.wire.WorkspaceInvitationStatus;
-import com.catering.v2s.app.edge.generated.wire.WorkspaceUserPageCriteria;
 import com.catering.v2s.app.edge.generated.wire.WorkspaceUserSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
-import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceGroupUserAssignmentOperation;
-import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation;
-import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceProjectUserAssignmentOperation;
-import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceRegionUserAssignmentOperation;
-import com.catering.v2s.workspace.iam.application.RevokeOperationsWorkspaceStoreUserAssignmentOperation;
-import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
-import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.workspace.iam.application.operations.*;
+import com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceGroupUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceProjectUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceRegionUserAssignmentOperation;
+import com.catering.v2s.workspace.iam.application.operations.RevokeOperationsWorkspaceStoreUserAssignmentOperation;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,46 +38,451 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/user-management")
 public final class OperationsWorkspaceUserController {
-    private final OperationsSessionResolver sessions; private final WorkspaceUserService user; private final WorkspaceTaskReadService reads;
+    private final OperationsSessionResolver sessions;
+    private final WorkspaceUserService user;
+    private final WorkspaceTaskReadService reads;
     private final RevokeOperationsWorkspaceGroupUserAssignmentOperation groupUserAssignmentRevoke;
     private final RevokeOperationsWorkspaceRegionUserAssignmentOperation regionUserAssignmentRevoke;
     private final RevokeOperationsWorkspaceProjectUserAssignmentOperation projectUserAssignmentRevoke;
     private final RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation headCompanyUserAssignmentRevoke;
     private final RevokeOperationsWorkspaceStoreUserAssignmentOperation storeUserAssignmentRevoke;
     private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
-    public OperationsWorkspaceUserController(OperationsSessionResolver sessions, WorkspaceUserService user, WorkspaceTaskReadService reads, RevokeOperationsWorkspaceGroupUserAssignmentOperation groupUserAssignmentRevoke, RevokeOperationsWorkspaceRegionUserAssignmentOperation regionUserAssignmentRevoke, RevokeOperationsWorkspaceProjectUserAssignmentOperation projectUserAssignmentRevoke, RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation headCompanyUserAssignmentRevoke, RevokeOperationsWorkspaceStoreUserAssignmentOperation storeUserAssignmentRevoke) { this(sessions, user, reads, groupUserAssignmentRevoke, regionUserAssignmentRevoke, projectUserAssignmentRevoke, headCompanyUserAssignmentRevoke, storeUserAssignmentRevoke, BackendPerformanceM1CommandExecutionBindings.forWorkspaceUser(groupUserAssignmentRevoke, headCompanyUserAssignmentRevoke, projectUserAssignmentRevoke, regionUserAssignmentRevoke, storeUserAssignmentRevoke)); }
+
+    public OperationsWorkspaceUserController(
+            OperationsSessionResolver sessions,
+            WorkspaceUserService user,
+            WorkspaceTaskReadService reads,
+            RevokeOperationsWorkspaceGroupUserAssignmentOperation groupUserAssignmentRevoke,
+            RevokeOperationsWorkspaceRegionUserAssignmentOperation regionUserAssignmentRevoke,
+            RevokeOperationsWorkspaceProjectUserAssignmentOperation projectUserAssignmentRevoke,
+            RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation headCompanyUserAssignmentRevoke,
+            RevokeOperationsWorkspaceStoreUserAssignmentOperation storeUserAssignmentRevoke) {
+        this(
+                sessions,
+                user,
+                reads,
+                groupUserAssignmentRevoke,
+                regionUserAssignmentRevoke,
+                projectUserAssignmentRevoke,
+                headCompanyUserAssignmentRevoke,
+                storeUserAssignmentRevoke,
+                BackendPerformanceM1CommandExecutionBindings.forWorkspaceUser(
+                        groupUserAssignmentRevoke,
+                        headCompanyUserAssignmentRevoke,
+                        projectUserAssignmentRevoke,
+                        regionUserAssignmentRevoke,
+                        storeUserAssignmentRevoke));
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
-    public OperationsWorkspaceUserController(OperationsSessionResolver sessions, WorkspaceUserService user, WorkspaceTaskReadService reads, RevokeOperationsWorkspaceGroupUserAssignmentOperation groupUserAssignmentRevoke, RevokeOperationsWorkspaceRegionUserAssignmentOperation regionUserAssignmentRevoke, RevokeOperationsWorkspaceProjectUserAssignmentOperation projectUserAssignmentRevoke, RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation headCompanyUserAssignmentRevoke, RevokeOperationsWorkspaceStoreUserAssignmentOperation storeUserAssignmentRevoke, BackendPerformanceM1CommandExecutionBindings m1Bindings) { this.sessions = sessions; this.user = user; this.reads = reads; this.groupUserAssignmentRevoke = groupUserAssignmentRevoke; this.regionUserAssignmentRevoke = regionUserAssignmentRevoke; this.projectUserAssignmentRevoke = projectUserAssignmentRevoke; this.headCompanyUserAssignmentRevoke = headCompanyUserAssignmentRevoke; this.storeUserAssignmentRevoke = storeUserAssignmentRevoke; this.m1Bindings = m1Bindings; }
+    public OperationsWorkspaceUserController(
+            OperationsSessionResolver sessions,
+            WorkspaceUserService user,
+            WorkspaceTaskReadService reads,
+            RevokeOperationsWorkspaceGroupUserAssignmentOperation groupUserAssignmentRevoke,
+            RevokeOperationsWorkspaceRegionUserAssignmentOperation regionUserAssignmentRevoke,
+            RevokeOperationsWorkspaceProjectUserAssignmentOperation projectUserAssignmentRevoke,
+            RevokeOperationsWorkspaceHeadCompanyUserAssignmentOperation headCompanyUserAssignmentRevoke,
+            RevokeOperationsWorkspaceStoreUserAssignmentOperation storeUserAssignmentRevoke,
+            BackendPerformanceM1CommandExecutionBindings m1Bindings) {
+        this.sessions = sessions;
+        this.user = user;
+        this.reads = reads;
+        this.groupUserAssignmentRevoke = groupUserAssignmentRevoke;
+        this.regionUserAssignmentRevoke = regionUserAssignmentRevoke;
+        this.projectUserAssignmentRevoke = projectUserAssignmentRevoke;
+        this.headCompanyUserAssignmentRevoke = headCompanyUserAssignmentRevoke;
+        this.storeUserAssignmentRevoke = storeUserAssignmentRevoke;
+        this.m1Bindings = m1Bindings;
+    }
 
-    @GetMapping("/group/user") WorkspaceUserPage groupPage(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) UUID scopeRef, @RequestParam(required = false) String userName, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceAccountStatus status, @RequestParam(required = false) WorkspaceUserSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return page(request, groupWorkspaceKey, ServiceNodeTypes.GROUP, scopeRef, userName, mobile, roleId, status, sort, direction, page, pageSize, expectedContextVersion); }
-    @GetMapping("/region/user") WorkspaceUserPage regionPage(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) UUID scopeRef, @RequestParam(required = false) String userName, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceAccountStatus status, @RequestParam(required = false) WorkspaceUserSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return page(request, groupWorkspaceKey, ServiceNodeTypes.REGION, scopeRef, userName, mobile, roleId, status, sort, direction, page, pageSize, expectedContextVersion); }
-    @GetMapping("/project/user") WorkspaceUserPage projectPage(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) UUID scopeRef, @RequestParam(required = false) String userName, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceAccountStatus status, @RequestParam(required = false) WorkspaceUserSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return page(request, groupWorkspaceKey, ServiceNodeTypes.PROJECT, scopeRef, userName, mobile, roleId, status, sort, direction, page, pageSize, expectedContextVersion); }
-    @GetMapping("/head-company/user") WorkspaceUserPage headCompanyPage(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) UUID scopeRef, @RequestParam(required = false) String userName, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceAccountStatus status, @RequestParam(required = false) WorkspaceUserSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return page(request, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, scopeRef, userName, mobile, roleId, status, sort, direction, page, pageSize, expectedContextVersion); }
-    @GetMapping("/store/user") WorkspaceUserPage storePage(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @RequestParam(required = false) UUID scopeRef, @RequestParam(required = false) String userName, @RequestParam(required = false) String mobile, @RequestParam(required = false) UUID roleId, @RequestParam(required = false) WorkspaceAccountStatus status, @RequestParam(required = false) WorkspaceUserSortKey sort, @RequestParam(required = false) SortDirection direction, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize, @RequestParam long expectedContextVersion) { return page(request, groupWorkspaceKey, ServiceNodeTypes.STORE, scopeRef, userName, mobile, roleId, status, sort, direction, page, pageSize, expectedContextVersion); }
+    @GetMapping("/group/user")
+    WorkspaceUserPage groupPage(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestParam(required = false) UUID scopeRef,
+            @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) UUID roleId,
+            @RequestParam(required = false) WorkspaceAccountStatus status,
+            @RequestParam(required = false) WorkspaceUserSortKey sort,
+            @RequestParam(required = false) SortDirection direction,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam long expectedContextVersion) {
+        return page(
+                request,
+                groupWorkspaceKey,
+                ServiceNodeTypes.GROUP,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                expectedContextVersion);
+    }
 
-    @GetMapping("/group/user/accounts/{accountId}") WorkspaceUser groupDetail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID accountId, @RequestParam long expectedContextVersion) { return detail(request, groupWorkspaceKey, ServiceNodeTypes.GROUP, accountId, expectedContextVersion); }
-    @GetMapping("/region/user/accounts/{accountId}") WorkspaceUser regionDetail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID accountId, @RequestParam long expectedContextVersion) { return detail(request, groupWorkspaceKey, ServiceNodeTypes.REGION, accountId, expectedContextVersion); }
-    @GetMapping("/project/user/accounts/{accountId}") WorkspaceUser projectDetail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID accountId, @RequestParam long expectedContextVersion) { return detail(request, groupWorkspaceKey, ServiceNodeTypes.PROJECT, accountId, expectedContextVersion); }
-    @GetMapping("/head-company/user/accounts/{accountId}") WorkspaceUser headCompanyDetail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID accountId, @RequestParam long expectedContextVersion) { return detail(request, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, accountId, expectedContextVersion); }
-    @GetMapping("/store/user/accounts/{accountId}") WorkspaceUser storeDetail(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID accountId, @RequestParam long expectedContextVersion) { return detail(request, groupWorkspaceKey, ServiceNodeTypes.STORE, accountId, expectedContextVersion); }
+    @GetMapping("/region/user")
+    WorkspaceUserPage regionPage(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestParam(required = false) UUID scopeRef,
+            @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) UUID roleId,
+            @RequestParam(required = false) WorkspaceAccountStatus status,
+            @RequestParam(required = false) WorkspaceUserSortKey sort,
+            @RequestParam(required = false) SortDirection direction,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam long expectedContextVersion) {
+        return page(
+                request,
+                groupWorkspaceKey,
+                ServiceNodeTypes.REGION,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                expectedContextVersion);
+    }
 
-    @PostMapping("/group/user/assignments/{assignmentId}/revoke") WorkspaceUserRevokeResult groupRevoke(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID assignmentId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody WorkspaceUserRevokeRequest body) { var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceGroupUserAssignment(facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback()))); }
-    @PostMapping("/region/user/assignments/{assignmentId}/revoke") WorkspaceUserRevokeResult regionRevoke(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID assignmentId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody WorkspaceUserRevokeRequest body) { var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceRegionUserAssignment(facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback()))); }
-    @PostMapping("/project/user/assignments/{assignmentId}/revoke") WorkspaceUserRevokeResult projectRevoke(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID assignmentId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody WorkspaceUserRevokeRequest body) { var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceProjectUserAssignment(facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback()))); }
-    @PostMapping("/head-company/user/assignments/{assignmentId}/revoke") WorkspaceUserRevokeResult headCompanyRevoke(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID assignmentId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody WorkspaceUserRevokeRequest body) { var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceHeadCompanyUserAssignment(facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback()))); }
-    @PostMapping("/store/user/assignments/{assignmentId}/revoke") WorkspaceUserRevokeResult storeRevoke(EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID assignmentId, @RequestHeader("Idempotency-Key") String idempotencyKey, @RequestBody WorkspaceUserRevokeRequest body) { var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey); return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceStoreUserAssignment(facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback()))); }
+    @GetMapping("/project/user")
+    WorkspaceUserPage projectPage(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestParam(required = false) UUID scopeRef,
+            @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) UUID roleId,
+            @RequestParam(required = false) WorkspaceAccountStatus status,
+            @RequestParam(required = false) WorkspaceUserSortKey sort,
+            @RequestParam(required = false) SortDirection direction,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam long expectedContextVersion) {
+        return page(
+                request,
+                groupWorkspaceKey,
+                ServiceNodeTypes.PROJECT,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                expectedContextVersion);
+    }
 
-    private WorkspaceUserPage page(EdgeRequestContext request, String groupWorkspaceKey, String expectedTargetType, UUID scopeRef, String userName, String mobile, UUID roleId, WorkspaceAccountStatus status, WorkspaceUserSortKey sort, SortDirection direction, int page, int pageSize, long expectedContextVersion) { var session = session(request, groupWorkspaceKey, expectedContextVersion); return page(reads.userPage(WorkspaceUserService.AccountPageQuery.forOperations(session, expectedTargetType, scopeRef, userName, mobile, roleId, status == null ? null : status.name(), sort == null ? null : sort.wire(), direction == null ? null : direction.wire(), page, pageSize))); }
-    private WorkspaceUser detail(EdgeRequestContext request, String groupWorkspaceKey, String expectedTargetType, UUID accountId, long expectedContextVersion) { var session = session(request, groupWorkspaceKey, expectedContextVersion); return user(reads.userDetail(WorkspaceUserService.AccountDetailQuery.forOperations(session, expectedTargetType, accountId))); }
-    private com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts revokeFacts(EdgeRequestContext request, String groupWorkspaceKey, String idempotencyKey) { key(idempotencyKey); return sessions.requireWorkspaceCommandFacts(request, groupWorkspaceKey); }
-    private static WorkspaceUserRevokeResult revokeResult(com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi.OperationsAssignmentRevokeReadback readback) { return new WorkspaceUserRevokeResult(readback.assignmentId().toString(), true, user(readback.user()), readback.contextVersion(), false, null); }
+    @GetMapping("/head-company/user")
+    WorkspaceUserPage headCompanyPage(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestParam(required = false) UUID scopeRef,
+            @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) UUID roleId,
+            @RequestParam(required = false) WorkspaceAccountStatus status,
+            @RequestParam(required = false) WorkspaceUserSortKey sort,
+            @RequestParam(required = false) SortDirection direction,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam long expectedContextVersion) {
+        return page(
+                request,
+                groupWorkspaceKey,
+                ServiceNodeTypes.HEAD_COMPANY,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                expectedContextVersion);
+    }
 
-    static WorkspaceUserPage page(WorkspaceUserService.AccountPage value) { return new WorkspaceUserPage(value.items().stream().map(OperationsWorkspaceUserController::user).toList(), (long) value.page(), (long) value.pageSize(), value.total(), ServiceNodeType.valueOf(value.targetOrganizationType()), scopeRef(value.scopeRef()), value.scopeName(), value.contextVersion(), new WorkspaceUserPageCriteria(WorkspaceUserSortKey.valueOf(value.sort()), SortDirection.valueOf(value.direction()))); }
-    static WorkspaceUser user(WorkspaceUserService.User value) { return new WorkspaceUser(value.accountId().toString(), value.displayName(), value.maskedMobile(), value.loginName(), WorkspaceAccountStatus.valueOf(value.status()), value.credentialStatus(), (long) value.activeAssignmentCount(), null, value.createdAt(), value.assignments().stream().map(OperationsWorkspaceUserController::assignment).toList(), value.invitationHistory().stream().map(OperationsWorkspaceUserController::invitation).toList(), value.revision()); }
-    private static WorkspaceUserAssignmentsItem assignment(WorkspaceUserService.Assignment value) { return new WorkspaceUserAssignmentsItem(value.id().toString(), value.accountId().toString(), value.roleId().toString(), value.roleName(), ServiceNodeType.valueOf(value.serviceNodeType()), value.organizationPath(), value.status(), value.source(), value.revision(), value.createdAt(), value.updatedAt()); }
-    private static WorkspaceUserInvitationHistoryItem invitation(WorkspaceUserService.Invitation value) { return new WorkspaceUserInvitationHistoryItem(value.invitationId().toString(), WorkspaceInvitationStatus.valueOf(value.status()), (long) value.generation(), value.expiresAt()); }
+    @GetMapping("/store/user")
+    WorkspaceUserPage storePage(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @RequestParam(required = false) UUID scopeRef,
+            @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) UUID roleId,
+            @RequestParam(required = false) WorkspaceAccountStatus status,
+            @RequestParam(required = false) WorkspaceUserSortKey sort,
+            @RequestParam(required = false) SortDirection direction,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam long expectedContextVersion) {
+        return page(
+                request,
+                groupWorkspaceKey,
+                ServiceNodeTypes.STORE,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                expectedContextVersion);
+    }
 
-    private WorkspaceSessionReadback session(EdgeRequestContext request, String key, long version) { return sessions.requireWorkspaceReadAtContextVersion(request, key, version); }
-    private static UUID scopeRef(String value) { if (value == null) return null; try { return UUID.fromString(value); } catch (IllegalArgumentException exception) { throw new IllegalStateException("workspace owner emitted invalid scope reference", exception); } }
-    private static void key(String value) { if (value == null || value.length() < 16 || value.length() > 128) throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("invalid idempotency key"); }
+    @GetMapping("/group/user/accounts/{accountId}")
+    WorkspaceUser groupDetail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID accountId,
+            @RequestParam long expectedContextVersion) {
+        return detail(request, groupWorkspaceKey, ServiceNodeTypes.GROUP, accountId, expectedContextVersion);
+    }
+
+    @GetMapping("/region/user/accounts/{accountId}")
+    WorkspaceUser regionDetail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID accountId,
+            @RequestParam long expectedContextVersion) {
+        return detail(request, groupWorkspaceKey, ServiceNodeTypes.REGION, accountId, expectedContextVersion);
+    }
+
+    @GetMapping("/project/user/accounts/{accountId}")
+    WorkspaceUser projectDetail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID accountId,
+            @RequestParam long expectedContextVersion) {
+        return detail(request, groupWorkspaceKey, ServiceNodeTypes.PROJECT, accountId, expectedContextVersion);
+    }
+
+    @GetMapping("/head-company/user/accounts/{accountId}")
+    WorkspaceUser headCompanyDetail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID accountId,
+            @RequestParam long expectedContextVersion) {
+        return detail(request, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, accountId, expectedContextVersion);
+    }
+
+    @GetMapping("/store/user/accounts/{accountId}")
+    WorkspaceUser storeDetail(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID accountId,
+            @RequestParam long expectedContextVersion) {
+        return detail(request, groupWorkspaceKey, ServiceNodeTypes.STORE, accountId, expectedContextVersion);
+    }
+
+    @PostMapping("/group/user/assignments/{assignmentId}/revoke")
+    WorkspaceUserRevokeResult groupRevoke(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID assignmentId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody WorkspaceUserRevokeRequest body) {
+        var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey);
+        return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceGroupUserAssignment(
+                facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback())));
+    }
+
+    @PostMapping("/region/user/assignments/{assignmentId}/revoke")
+    WorkspaceUserRevokeResult regionRevoke(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID assignmentId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody WorkspaceUserRevokeRequest body) {
+        var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey);
+        return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceRegionUserAssignment(
+                facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback())));
+    }
+
+    @PostMapping("/project/user/assignments/{assignmentId}/revoke")
+    WorkspaceUserRevokeResult projectRevoke(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID assignmentId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody WorkspaceUserRevokeRequest body) {
+        var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey);
+        return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceProjectUserAssignment(
+                facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback())));
+    }
+
+    @PostMapping("/head-company/user/assignments/{assignmentId}/revoke")
+    WorkspaceUserRevokeResult headCompanyRevoke(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID assignmentId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody WorkspaceUserRevokeRequest body) {
+        var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey);
+        return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceHeadCompanyUserAssignment(
+                facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback())));
+    }
+
+    @PostMapping("/store/user/assignments/{assignmentId}/revoke")
+    WorkspaceUserRevokeResult storeRevoke(
+            EdgeRequestContext request,
+            @PathVariable String groupWorkspaceKey,
+            @PathVariable UUID assignmentId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody WorkspaceUserRevokeRequest body) {
+        var facts = revokeFacts(request, groupWorkspaceKey, idempotencyKey);
+        return revokeResult(m1Bindings.bindRevokeOperationsWorkspaceStoreUserAssignment(
+                facts, assignmentId, body, idempotencyKey, sessions.actor(facts.sessionReadback())));
+    }
+
+    private WorkspaceUserPage page(
+            EdgeRequestContext request,
+            String groupWorkspaceKey,
+            String expectedTargetType,
+            UUID scopeRef,
+            String userName,
+            String mobile,
+            UUID roleId,
+            WorkspaceAccountStatus status,
+            WorkspaceUserSortKey sort,
+            SortDirection direction,
+            int page,
+            int pageSize,
+            long expectedContextVersion) {
+        var session = session(request, groupWorkspaceKey, expectedContextVersion);
+        return page(reads.userPage(WorkspaceUserService.AccountPageQuery.forOperations(
+                session,
+                expectedTargetType,
+                scopeRef,
+                userName,
+                mobile,
+                roleId,
+                status == null ? null : status.name(),
+                sort == null ? null : sort.wire(),
+                direction == null ? null : direction.wire(),
+                page,
+                pageSize)));
+    }
+
+    private WorkspaceUser detail(
+            EdgeRequestContext request,
+            String groupWorkspaceKey,
+            String expectedTargetType,
+            UUID accountId,
+            long expectedContextVersion) {
+        var session = session(request, groupWorkspaceKey, expectedContextVersion);
+        return user(reads.userDetail(
+                WorkspaceUserService.AccountDetailQuery.forOperations(session, expectedTargetType, accountId)));
+    }
+
+    private com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts revokeFacts(
+            EdgeRequestContext request, String groupWorkspaceKey, String idempotencyKey) {
+        key(idempotencyKey);
+        return sessions.requireWorkspaceCommandFacts(request, groupWorkspaceKey);
+    }
+
+    private static WorkspaceUserRevokeResult revokeResult(
+            com.catering.v2s.workspace.iam.api.WorkspaceOperationsCommandApi.OperationsAssignmentRevokeReadback
+                    readback) {
+        return new WorkspaceUserRevokeResult(
+                readback.assignmentId().toString(),
+                true,
+                user(readback.user()),
+                readback.contextVersion(),
+                false,
+                null);
+    }
+
+    static WorkspaceUserPage page(WorkspaceUserService.AccountPage value) {
+        return new WorkspaceUserPage(
+                value.items().stream()
+                        .map(OperationsWorkspaceUserController::user)
+                        .toList(),
+                (long) value.page(),
+                (long) value.pageSize(),
+                value.total(),
+                ServiceNodeType.valueOf(value.targetOrganizationType()),
+                scopeRef(value.scopeRef()),
+                value.scopeName(),
+                value.contextVersion(),
+                new WorkspaceUserPageCriteria(
+                        WorkspaceUserSortKey.valueOf(value.sort()), SortDirection.valueOf(value.direction())));
+    }
+
+    static WorkspaceUser user(WorkspaceUserService.User value) {
+        return new WorkspaceUser(
+                value.accountId().toString(),
+                value.displayName(),
+                value.maskedMobile(),
+                value.loginName(),
+                WorkspaceAccountStatus.valueOf(value.status()),
+                value.credentialStatus(),
+                (long) value.activeAssignmentCount(),
+                null,
+                value.createdAt(),
+                value.assignments().stream()
+                        .map(OperationsWorkspaceUserController::assignment)
+                        .toList(),
+                value.invitationHistory().stream()
+                        .map(OperationsWorkspaceUserController::invitation)
+                        .toList(),
+                value.revision());
+    }
+
+    private static WorkspaceUserAssignmentsItem assignment(WorkspaceUserService.Assignment value) {
+        return new WorkspaceUserAssignmentsItem(
+                value.id().toString(),
+                value.accountId().toString(),
+                value.roleId().toString(),
+                value.roleName(),
+                ServiceNodeType.valueOf(value.serviceNodeType()),
+                value.organizationPath(),
+                value.status(),
+                value.source(),
+                value.revision(),
+                value.createdAt(),
+                value.updatedAt());
+    }
+
+    private static WorkspaceUserInvitationHistoryItem invitation(WorkspaceUserService.Invitation value) {
+        return new WorkspaceUserInvitationHistoryItem(
+                value.invitationId().toString(),
+                WorkspaceInvitationStatus.valueOf(value.status()),
+                (long) value.generation(),
+                value.expiresAt());
+    }
+
+    private WorkspaceSessionReadback session(EdgeRequestContext request, String key, long version) {
+        return sessions.requireWorkspaceReadAtContextVersion(request, key, version);
+    }
+
+    private static UUID scopeRef(String value) {
+        if (value == null) return null;
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("workspace owner emitted invalid scope reference", exception);
+        }
+    }
+
+    private static void key(String value) {
+        if (value == null || value.length() < 16 || value.length() > 128)
+            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("invalid idempotency key");
+    }
 }

@@ -22,29 +22,40 @@ class WorkspaceCapabilityScopeResolverTest {
     void mapsOrgNodeEditFromServerResolvedRegionAndCarriesOwnerAncestorPredicate() {
         UUID target = UUID.randomUUID();
         WorkspaceCapabilityScopeResolver resolver = resolver("REGION", true);
-        String expectedCapability = WorkspaceCapabilityRequirementCatalog
-            .resolveCapabilityKey("ORG_NODE_EDIT", "REGION")
-            .orElseThrow();
+        String expectedCapability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
+                        "ORG_NODE_EDIT", "REGION")
+                .orElseThrow();
 
-        var result = resolver.resolve(session(Set.of(expectedCapability)), "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", target));
+        var result = resolver.resolve(
+                session(Set.of(expectedCapability)),
+                "ORG_NODE_EDIT",
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", target));
 
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, result.decision());
         assertEquals(expectedCapability, result.capabilityKey());
         assertNotNull(result.firstOwnerQueryPredicate());
         assertEquals(target, result.firstOwnerQueryPredicate().resourceId());
         assertEquals(assignmentNode, result.firstOwnerQueryPredicate().assignmentNodeId());
-        assertEquals(List.of(assignmentNode, target), result.firstOwnerQueryPredicate().targetAncestorIds());
+        assertEquals(
+                List.of(assignmentNode, target),
+                result.firstOwnerQueryPredicate().targetAncestorIds());
     }
 
     @Test
     void mapsOrgNodeEditFromServerResolvedProjectAndDeniesUnsupportedType() {
         WorkspaceCapabilityScopeResolver resolver = resolver("REGION", true);
-        String projectCapability = WorkspaceCapabilityRequirementCatalog
-            .resolveCapabilityKey("ORG_NODE_EDIT", "PROJECT")
-            .orElseThrow();
+        String projectCapability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
+                        "ORG_NODE_EDIT", "PROJECT")
+                .orElseThrow();
 
-        var project = resolver.resolve(session(Set.of(projectCapability)), "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", UUID.randomUUID()));
-        var unsupported = resolver.resolve(session(Set.of(projectCapability)), "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", UUID.randomUUID()));
+        var project = resolver.resolve(
+                session(Set.of(projectCapability)),
+                "ORG_NODE_EDIT",
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", UUID.randomUUID()));
+        var unsupported = resolver.resolve(
+                session(Set.of(projectCapability)),
+                "ORG_NODE_EDIT",
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", UUID.randomUUID()));
 
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, project.decision());
         assertEquals(projectCapability, project.capabilityKey());
@@ -54,11 +65,18 @@ class WorkspaceCapabilityScopeResolverTest {
 
     @Test
     void deniesScopeOutAndUnregisteredRequirementBeforeAnOwnerQueryCanBeBuilt() {
-        String capability = WorkspaceCapabilityRequirementCatalog
-            .resolveCapabilityKey("ORG_NODE_EDIT", "REGION")
-            .orElseThrow();
-        var scopeOut = resolver("REGION", false).resolve(session(Set.of(capability)), "ORG_NODE_EDIT", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", UUID.randomUUID()));
-        var unknown = resolver("REGION", true).resolve(session(Set.of(capability)), "REQ_NOT_REGISTERED", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", UUID.randomUUID()));
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey("ORG_NODE_EDIT", "REGION")
+                .orElseThrow();
+        var scopeOut = resolver("REGION", false)
+                .resolve(
+                        session(Set.of(capability)),
+                        "ORG_NODE_EDIT",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", UUID.randomUUID()));
+        var unknown = resolver("REGION", true)
+                .resolve(
+                        session(Set.of(capability)),
+                        "REQ_NOT_REGISTERED",
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("REGION", UUID.randomUUID()));
 
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.DENY, scopeOut.decision());
         assertNull(scopeOut.firstOwnerQueryPredicate());
@@ -70,30 +88,54 @@ class WorkspaceCapabilityScopeResolverTest {
     void provesOwnerPredicateForAllFivePgIamTargetTypes() {
         for (String targetType : List.of("GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE")) {
             String requirement = "REQ_CREATE_OPERATIONS_WORKSPACE_" + targetType + "_INVITATION";
-            String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, targetType).orElseThrow();
+            String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, targetType)
+                    .orElseThrow();
             UUID target = UUID.randomUUID();
-            var result = resolver(targetType, true).resolve(session(Set.of(capability)), requirement, new WorkspaceCapabilityScopeResolver.ServerResolvedResource(targetType, target));
+            var result = resolver(targetType, true)
+                    .resolve(
+                            session(Set.of(capability)),
+                            requirement,
+                            new WorkspaceCapabilityScopeResolver.ServerResolvedResource(targetType, target));
             assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, result.decision(), targetType);
             assertEquals(targetType, result.firstOwnerQueryPredicate().resourceType(), targetType);
-            assertEquals(List.of(assignmentNode, target), result.firstOwnerQueryPredicate().targetAncestorIds(), targetType);
+            assertEquals(
+                    List.of(assignmentNode, target),
+                    result.firstOwnerQueryPredicate().targetAncestorIds(),
+                    targetType);
         }
     }
 
     @Test
     void allowsOnlyTheHeadCompanyCreateCapabilityForAHeadCompanyAssignmentAgainstTheOwningGroup() {
         UUID groupId = UUID.randomUUID();
-        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("HEAD_COMPANY", assignmentNode);
+        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) ->
+                new WorkspaceAssignmentScopeLookup.AssignmentScope("HEAD_COMPANY", assignmentNode);
         OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
-            @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+            @Override
+            public TaskPath requireTaskPath(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 return new TaskPath(targetType, targetId, List.of(targetId), "Group target");
             }
-            @Override public boolean isScopeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath target) { return false; }
+
+            @Override
+            public boolean isScopeAllowed(
+                    UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath target) {
+                return false;
+            }
         };
         WorkspaceCapabilityScopeResolver resolver = new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
-        String createCapability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey("REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", "GROUP").orElseThrow();
+        String createCapability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
+                        "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", "GROUP")
+                .orElseThrow();
 
-        var allowed = resolver.resolve(session(Set.of(createCapability)), "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
-        var denied = resolver.resolve(session(Set.of(createCapability)), "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND", new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
+        var allowed = resolver.resolve(
+                session(Set.of(createCapability)),
+                "REQ_CREATE_OPERATIONS_ORGANIZATION_HEAD_COMPANY",
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
+        var denied = resolver.resolve(
+                session(Set.of(createCapability)),
+                "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("GROUP", groupId));
 
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, allowed.decision());
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.DENY, denied.decision());
@@ -103,22 +145,38 @@ class WorkspaceCapabilityScopeResolverTest {
     void statusTransitionUsesTheExplicitPersistedTargetPathWithoutChangingTheNormalLookup() {
         UUID target = UUID.randomUUID();
         String requirement = "REQ_TRANSITION_OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS";
-        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, "HEAD_COMPANY").orElseThrow();
-        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> new WorkspaceAssignmentScopeLookup.AssignmentScope("GROUP", assignmentNode);
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, "HEAD_COMPANY")
+                .orElseThrow();
+        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) ->
+                new WorkspaceAssignmentScopeLookup.AssignmentScope("GROUP", assignmentNode);
         OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
-            @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+            @Override
+            public TaskPath requireTaskPath(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 throw new AssertionError("normal enabled-only lookup must not authorize a status transition");
             }
-            @Override public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
-                return new TaskPath(targetType, targetId, List.of(assignmentNode, targetId), "persisted disabled target");
+
+            @Override
+            public TaskPath requireStatusTransitionTaskPath(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                return new TaskPath(
+                        targetType, targetId, List.of(assignmentNode, targetId), "persisted disabled target");
             }
-            @Override public boolean isScopeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath path) {
-                return "GROUP".equals(scopeType) && assignmentNode.equals(scopeId) && path.ancestorIds().contains(scopeId);
+
+            @Override
+            public boolean isScopeAllowed(
+                    UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath path) {
+                return "GROUP".equals(scopeType)
+                        && assignmentNode.equals(scopeId)
+                        && path.ancestorIds().contains(scopeId);
             }
         };
         WorkspaceCapabilityScopeResolver resolver = new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
 
-        var result = resolver.resolveStatusTransition(session(Set.of(capability)), requirement, new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", target));
+        var result = resolver.resolveStatusTransition(
+                session(Set.of(capability)),
+                requirement,
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("HEAD_COMPANY", target));
 
         assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, result.decision());
         assertEquals(target, result.firstOwnerQueryPredicate().resourceId());
@@ -132,17 +190,36 @@ class WorkspaceCapabilityScopeResolverTest {
             return new WorkspaceAssignmentScopeLookup.AssignmentScope(assignmentType, assignmentNode);
         };
         OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
-            @Override public TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+            @Override
+            public TaskPath requireTaskPath(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
                 return new TaskPath(targetType, targetId, List.of(assignmentNode, targetId), targetType + " target");
             }
-            @Override public boolean isScopeAllowed(UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath target) {
-                return allowed && assignmentType.equals(scopeType) && assignmentNode.equals(scopeId) && target.ancestorIds().contains(scopeId);
+
+            @Override
+            public boolean isScopeAllowed(
+                    UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath target) {
+                return allowed
+                        && assignmentType.equals(scopeType)
+                        && assignmentNode.equals(scopeId)
+                        && target.ancestorIds().contains(scopeId);
             }
         };
         return new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
     }
 
     private WorkspaceSessionReadback session(Set<String> capabilities) {
-        return new WorkspaceSessionReadback(UUID.randomUUID(), workspace, "scope-test", UUID.randomUUID(), assignmentId, com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(), 1L, 1L, Set.of(), capabilities, "Scope tester");
+        return new WorkspaceSessionReadback(
+                UUID.randomUUID(),
+                workspace,
+                "scope-test",
+                UUID.randomUUID(),
+                assignmentId,
+                com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback.ScopeContext.empty(),
+                1L,
+                1L,
+                Set.of(),
+                capabilities,
+                "Scope tester");
     }
 }

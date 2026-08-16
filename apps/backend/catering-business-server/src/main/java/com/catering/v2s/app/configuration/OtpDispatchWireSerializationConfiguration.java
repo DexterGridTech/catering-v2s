@@ -15,8 +15,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /** Keeps debug OTP code omission local to public OTP dispatch wires; global mapper policy is unchanged. */
 @Configuration
 public class OtpDispatchWireSerializationConfiguration implements WebMvcConfigurer {
-    @Override public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.stream().filter(MappingJackson2HttpMessageConverter.class::isInstance).map(MappingJackson2HttpMessageConverter.class::cast).forEach(converter -> configure(converter.getObjectMapper()));
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.stream()
+                .filter(MappingJackson2HttpMessageConverter.class::isInstance)
+                .map(MappingJackson2HttpMessageConverter.class::cast)
+                .forEach(converter -> configure(converter.getObjectMapper()));
     }
 
     static void configure(ObjectMapper mapper) {
@@ -27,5 +31,5 @@ public class OtpDispatchWireSerializationConfiguration implements WebMvcConfigur
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private abstract static class OmitNullFields { }
+    private abstract static class OmitNullFields {}
 }

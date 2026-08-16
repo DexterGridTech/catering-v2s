@@ -12,6 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/public/assets/{assetRef}/content")
 public final class PublicAssetController {
     private final PlatformAssetService assets;
-    public PublicAssetController(PlatformAssetService assets) { this.assets = assets; }
-    @GetMapping PublicAssetReference content(@PathVariable UUID assetRef) { var reference = assets.requireActivePublicReference(assetRef); return new PublicAssetReference(reference.publicUrl(), reference.contentType(), reference.sha256()); }
+
+    public PublicAssetController(PlatformAssetService assets) {
+        this.assets = assets;
+    }
+
+    @GetMapping
+    PublicAssetReference content(@PathVariable UUID assetRef) {
+        var reference = assets.requireActivePublicReference(assetRef);
+        return new PublicAssetReference(reference.publicUrl(), reference.contentType(), reference.sha256());
+    }
 }

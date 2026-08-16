@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const source = (name) => fs.readFileSync(new URL(`../../features/platform-administration/ui/${name}`, import.meta.url), 'utf8');
+const source = name =>
+  fs.readFileSync(new URL(`../../features/platform-administration/ui/${name}`, import.meta.url), 'utf8');
 const page = source('AdministratorsPage.tsx');
 const create = source('AdministratorCreateDrawer.tsx');
 const edit = source('AdministratorEditDrawer.tsx');
@@ -29,7 +30,10 @@ test('administrator write surfaces reuse drawer lifecycles and never substitute 
   for (const candidate of [create, edit, credential]) {
     assert.match(candidate, /useDrawerFormLifecycle/);
     assert.match(candidate, /Idempotency-Key/);
-    assert.doesNotMatch(candidate, /fetch\(|platformHttpProtocol|startPlatformPasswordRecovery|completePlatformPasswordRecovery/);
+    assert.doesNotMatch(
+      candidate,
+      /fetch\(|platformHttpProtocol|startPlatformPasswordRecovery|completePlatformPasswordRecovery/,
+    );
   }
   assert.match(create, /platformClient\.createPlatformAdmin/);
   assert.match(edit, /platformClient\.updatePlatformAdminProfile/);

@@ -17,11 +17,13 @@ import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 class WorkspaceRolePageRequestTest {
-    @Test void ownerUsesOnePredicateForCountAndBoundedRoleRead() {
+    @Test
+    void ownerUsesOnePredicateForCountAndBoundedRoleRead() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceRoleService(jdbc, null);
 
-        var page = service.page(UUID.randomUUID(), "workspace-a", "operator", "PROJECT", "ENABLED", 3, 20, "UPDATED_AT", "DESC");
+        var page = service.page(
+                UUID.randomUUID(), "workspace-a", "operator", "PROJECT", "ENABLED", 3, 20, "UPDATED_AT", "DESC");
 
         assertEquals(73, page.total());
         assertEquals(3, page.page());
@@ -38,19 +40,33 @@ class WorkspaceRolePageRequestTest {
         assertTrue(jdbc.querySql.contains("ORDER BY updated_at_epoch_millis DESC, id ASC"));
     }
 
-    @Test void rejectsInvalidRolePageInputsBeforeAnyQuery() {
+    @Test
+    void rejectsInvalidRolePageInputsBeforeAnyQuery() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceRoleService(jdbc, null);
 
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, "UNKNOWN", null, 1, 20, "NAME", "ASC"));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, "PENDING", 1, 20, "NAME", "ASC"));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 0, 20, "NAME", "ASC"));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 101, "NAME", "ASC"));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "STATUS", "ASC"));
-        assertThrows(WorkspaceRoleService.RoleValidationException.class, () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "NAME", "SIDEWAYS"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, "UNKNOWN", null, 1, 20, "NAME", "ASC"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, null, "PENDING", 1, 20, "NAME", "ASC"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 0, 20, "NAME", "ASC"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 101, "NAME", "ASC"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "STATUS", "ASC"));
+        assertThrows(
+                WorkspaceRoleService.RoleValidationException.class,
+                () -> service.page(UUID.randomUUID(), "workspace-a", null, null, null, 1, 20, "NAME", "SIDEWAYS"));
     }
 
-    @Test void defaultsRoleSortToNameAscendingWithStableIdTieBreaker() {
+    @Test
+    void defaultsRoleSortToNameAscendingWithStableIdTieBreaker() {
         var jdbc = new RecordingJdbcTemplate();
         var service = new WorkspaceRoleService(jdbc, null);
 
@@ -59,7 +75,9 @@ class WorkspaceRolePageRequestTest {
         assertTrue(jdbc.querySql.contains("ORDER BY name ASC, id ASC"));
     }
 
-    private static int occurrences(String value, String token) { return value.split(java.util.regex.Pattern.quote(token), -1).length - 1; }
+    private static int occurrences(String value, String token) {
+        return value.split(java.util.regex.Pattern.quote(token), -1).length - 1;
+    }
 
     private static final class RecordingJdbcTemplate extends JdbcTemplate {
         private String querySql;
@@ -70,18 +88,19 @@ class WorkspaceRolePageRequestTest {
             querySql = sql;
             Map<Integer, Object> bound = new TreeMap<>();
             PreparedStatement statement = (PreparedStatement) Proxy.newProxyInstance(
-                PreparedStatement.class.getClassLoader(), new Class<?>[]{PreparedStatement.class},
-                (proxy, method, args) -> {
-                    if (method.getName().startsWith("set") && args != null && args.length >= 2 && args[0] instanceof Integer index) {
-                        bound.put(index, args[1]);
-                    }
-                    return defaultValue(method.getReturnType());
-                }
-            );
+                    PreparedStatement.class.getClassLoader(),
+                    new Class<?>[] {PreparedStatement.class},
+                    (proxy, method, args) -> {
+                        if (method.getName().startsWith("set")
+                                && args != null
+                                && args.length >= 2
+                                && args[0] instanceof Integer index) {
+                            bound.put(index, args[1]);
+                        }
+                        return defaultValue(method.getReturnType());
+                    });
             ResultSet result = (ResultSet) Proxy.newProxyInstance(
-                ResultSet.class.getClassLoader(), new Class<?>[]{ResultSet.class},
-                new ResultSetHandler()
-            );
+                    ResultSet.class.getClassLoader(), new Class<?>[] {ResultSet.class}, new ResultSetHandler());
             try {
                 setter.setValues(statement);
                 queryArgs = bound.values().toArray();

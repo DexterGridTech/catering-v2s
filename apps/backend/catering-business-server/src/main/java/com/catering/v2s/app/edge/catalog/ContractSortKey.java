@@ -5,5 +5,8 @@ public enum ContractSortKey {
     UPDATED_AT;
 
     public static final String DEFAULT_WIRE = "UPDATED_AT";
-    public String wire() { return name(); }
+
+    public String wire() {
+        return name();
+    }
 }

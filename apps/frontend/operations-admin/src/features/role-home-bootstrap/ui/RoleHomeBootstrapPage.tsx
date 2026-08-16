@@ -9,7 +9,7 @@ type Props = OperationsPageProps & {pageDesignKey: OperationsPageDesignKey};
  * context without inventing a dashboard, metrics, task feed, or a new operation.
  */
 export function RoleHomeBootstrapPage({pageDesignKey}: Props) {
-  const page = adminCatalog.operationsPages.find((entry) => entry.pageDesignKey === pageDesignKey);
+  const page = adminCatalog.operationsPages.find(entry => entry.pageDesignKey === pageDesignKey);
   if (!page) return null;
   return <div {...testId(`role-home-${pageDesignKey}`)}>v2 bootstrap 内容出口</div>;
 }

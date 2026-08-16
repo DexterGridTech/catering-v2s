@@ -1,8 +1,4 @@
-import {
-  operationsClient,
-  operationsProblemOf,
-  type ApiProblem,
-} from '../../../app/api/OperationsTransport';
+import {operationsClient, operationsProblemOf, type ApiProblem} from '../../../app/api/OperationsTransport';
 import type {BrandPage, HeadCompany} from '../../../app/api/generated/operations-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 
@@ -104,13 +100,19 @@ export class HeadCompanyBrandAuthorizationActionAdapter {
     const path = {groupWorkspaceKey: context.groupWorkspaceKey, headCompanyId: context.headCompanyId};
     const headers = {'Idempotency-Key': intent.idempotencyKey};
     return action === 'add'
-      ? this.client.addOperationsOrganizationHeadCompanyBrandAuthorization(path, {body: {brandId: wireUuid(intent.brandId)}, headers})
-      : this.client.removeOperationsOrganizationHeadCompanyBrandAuthorization({...path, brandId: wireUuid(intent.brandId)}, {headers});
+      ? this.client.addOperationsOrganizationHeadCompanyBrandAuthorization(path, {
+          body: {brandId: wireUuid(intent.brandId)},
+          headers,
+        })
+      : this.client.removeOperationsOrganizationHeadCompanyBrandAuthorization(
+          {...path, brandId: wireUuid(intent.brandId)},
+          {headers},
+        );
   }
 }
 
 function membershipMatches(headCompany: HeadCompany, brandId: string, action: 'add' | 'remove') {
-  const present = headCompany.authorizedBrands.some((brand) => brand.id === brandId);
+  const present = headCompany.authorizedBrands.some(brand => brand.id === brandId);
   return action === 'add' ? present : !present;
 }
 

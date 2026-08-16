@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.organization.api.CommercialGroupLookup;
-import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup.EnabledInvitationTarget;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup.InvitationTargetRef;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup.InvitationTargetType;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup.PlatformInvitationCandidatePage;
@@ -30,9 +29,9 @@ class OrganizationAssignmentCandidateServiceTest {
         OrganizationAssignmentCandidateService service = service(jdbc);
 
         PlatformInvitationCandidatePage actual = service.platformInvitationCandidates(
-            UUID.randomUUID(), "workspace-key",
-            new PlatformInvitationCandidateQuery(InvitationTargetType.STORE, "north", 1, 20)
-        );
+                UUID.randomUUID(),
+                "workspace-key",
+                new PlatformInvitationCandidateQuery(InvitationTargetType.STORE, "north", 1, 20));
 
         assertEquals(List.of(), actual.items());
         assertEquals(0L, actual.total());
@@ -46,30 +45,25 @@ class OrganizationAssignmentCandidateServiceTest {
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
         OrganizationAssignmentCandidateService service = service(jdbc);
 
-        assertThrows(OrganizationTaskPathService.TaskPathNotFoundException.class, () ->
-            service.requireEnabledInvitationTarget(
-                UUID.randomUUID(), "workspace-key",
-                new InvitationTargetRef(InvitationTargetType.PROJECT, UUID.randomUUID())
-            )
-        );
+        assertThrows(
+                OrganizationTaskPathService.TaskPathNotFoundException.class,
+                () -> service.requireEnabledInvitationTarget(
+                        UUID.randomUUID(),
+                        "workspace-key",
+                        new InvitationTargetRef(InvitationTargetType.PROJECT, UUID.randomUUID())));
         verify(jdbc).query(anyString(), any(RowMapper.class), any(Object[].class));
     }
 
     @Test
     void typedCandidateInputsRejectInvalidPageAndNullTargetReference() {
-        assertThrows(IllegalArgumentException.class, () ->
-            new PlatformInvitationCandidateQuery(InvitationTargetType.REGION, null, 0, 20)
-        );
-        assertThrows(NullPointerException.class, () ->
-            new InvitationTargetRef(InvitationTargetType.REGION, null)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new PlatformInvitationCandidateQuery(InvitationTargetType.REGION, null, 0, 20));
+        assertThrows(NullPointerException.class, () -> new InvitationTargetRef(InvitationTargetType.REGION, null));
     }
 
     private static OrganizationAssignmentCandidateService service(JdbcTemplate jdbc) {
         return new OrganizationAssignmentCandidateService(
-            jdbc,
-            mock(CommercialGroupLookup.class),
-            mock(OrganizationTaskPathLookup.class)
-        );
+                jdbc, mock(CommercialGroupLookup.class), mock(OrganizationTaskPathLookup.class));
     }
 }

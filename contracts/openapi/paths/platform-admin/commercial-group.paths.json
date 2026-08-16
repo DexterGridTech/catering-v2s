@@ -1,0 +1,101 @@
+{
+  "paths": {
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group": {
+      "post": {
+        "operationId": "initializeCommercialGroup",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "D01-S05",
+          "D02-S01"
+        ],
+        "x-page-key": "PLATFORM-WORKSPACES",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "INVALID_EDGE_CONTEXT",
+          "GROUP_WORKSPACE_NOT_FOUND",
+          "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+          "IDEMPOTENCY_CONFLICT",
+          "VALIDATION_FAILED",
+          "UNKNOWN_SUBMISSION_RESULT"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/commercial-group.schemas.json#/components/schemas/CommercialGroupRoot"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_INITIALIZE_COMMERCIAL_GROUP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/commercial-group.schemas.json#/components/schemas/CommercialGroupInitializeRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

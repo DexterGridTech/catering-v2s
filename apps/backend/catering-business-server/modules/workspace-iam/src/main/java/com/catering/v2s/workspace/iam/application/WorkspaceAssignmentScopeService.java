@@ -16,27 +16,22 @@ public class WorkspaceAssignmentScopeService implements WorkspaceAssignmentScope
 
     @Override
     @Transactional(readOnly = true)
-    public AssignmentScope requireActiveScope(
-        UUID workspaceUuid,
-        String groupWorkspaceKey,
-        UUID assignmentId
-    ) {
+    public AssignmentScope requireActiveScope(UUID workspaceUuid, String groupWorkspaceKey, UUID assignmentId) {
         return jdbc.query(
-            "SELECT service_node_type, service_node_id FROM workspace_iam.role_assignment WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ACTIVE'",
-            statement -> {
-                statement.setObject(1, assignmentId);
-                statement.setObject(2, workspaceUuid);
-                statement.setString(3, groupWorkspaceKey);
-            },
-            result -> {
-                if (!result.next()) {
-                    throw new AssignmentScopeNotFoundException();
-                }
-                return new AssignmentScope(result.getString(1), result.getObject(2, UUID.class));
-            }
-        );
+                "SELECT service_node_type, service_node_id FROM workspace_iam.role_assignment WHERE id=? AND "
+                        + "workspace_uuid=? AND group_workspace_key=? AND status='ACTIVE'",
+                statement -> {
+                    statement.setObject(1, assignmentId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) {
+                        throw new AssignmentScopeNotFoundException();
+                    }
+                    return new AssignmentScope(result.getString(1), result.getObject(2, UUID.class));
+                });
     }
 
-    public static final class AssignmentScopeNotFoundException extends RuntimeException {
-    }
+    public static final class AssignmentScopeNotFoundException extends RuntimeException {}
 }

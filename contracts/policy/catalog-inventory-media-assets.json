@@ -20,6 +20,11 @@
     "maxRequestSizeBytes": 6291456,
     "source": "platform.asset MAX_IMAGE_BYTES plus multipart envelope"
   },
+  "catalogItemImageLimits": {
+    "maxImageCount": 6,
+    "maxImageBytes": 2097152,
+    "source": "catalog item IA: 1 primary image plus 5 additional images; server-side save invariant"
+  },
   "assetDirectory": "contracts/policy/catalog-inventory-p1-media",
   "assets": {
     "caesarSalad": {

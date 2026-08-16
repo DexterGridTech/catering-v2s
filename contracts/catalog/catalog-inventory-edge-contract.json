@@ -6467,12 +6467,12 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "7f8b202b8cdc9c668c92ba604bda1d4764c153d411a4951cce72142d578dd65c"
+      "sha256": "e4ab3a5d4b3db3b59c2c795cf6c805981984c287227709cbe866da451944c101"
     },
     "shapeManifest": {
       "path": "contracts/catalog/catalog-item-editor-manifest.json",
-      "digest": "81d6fc0f7825e40c31ae87bb7ada6621cf95a3cc3a8b2b926553325b2325c3a5"
+      "digest": "76012e0dc4d23f8dc1c7d4aeca7b324ed186ee647ca02638e78f53f73a1e3272"
     }
   },
-  "contractDigest": "cf7e6b0a3b26fd6a2d4a62848eafc096a8e70ecfcf690bd42ab9024984c7960a"
+  "contractDigest": "f12e7063b4496b024e144de7678efed442d7fbcdf5dd078dd096751799960d24"
 }

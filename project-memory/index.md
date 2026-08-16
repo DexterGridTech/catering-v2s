@@ -28,3 +28,5 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.test-closed-loop](../project-memory/operations/test-closed-loop.md)
 - [operations.backend-acceptance](../project-memory/operations/backend-acceptance.md)
 - [pitfalls.green-by-existence-check](../project-memory/pitfalls/green-by-existence-check.md)
+- [operations.backend-coding-standard](../project-memory/operations/backend-coding-standard.md)
+- [operations.frontend-coding-standard](../project-memory/operations/frontend-coding-standard.md)

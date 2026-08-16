@@ -19,12 +19,13 @@ class PlatformAssetControllerTest {
         MultipartFile catalogImage = mock(MultipartFile.class);
         when(catalogImage.getContentType()).thenReturn("image/png");
 
-        assertThrows(PlatformAssetService.AssetInputInvalidException.class, () -> controller.stage(
-            mock(EdgeRequestContext.class),
-            "platform-stage-catalog-image",
-            "CATALOG_ITEM_IMAGE",
-            catalogImage
-        ));
+        assertThrows(
+                PlatformAssetService.AssetInputInvalidException.class,
+                () -> controller.stage(
+                        mock(EdgeRequestContext.class),
+                        "platform-stage-catalog-image",
+                        "CATALOG_ITEM_IMAGE",
+                        catalogImage));
 
         verifyNoInteractions(assets);
     }

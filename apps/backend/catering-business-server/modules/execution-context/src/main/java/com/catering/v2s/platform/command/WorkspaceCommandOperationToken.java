@@ -5,15 +5,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Generated, immutable operation policy used only to bind a command resolver
- * to a finite catalog-inventory operation.  It deliberately has no public
- * constructor and never accepts an operation id from a request.
+ * Generated, immutable operation policy used only to bind a command resolver to a finite catalog-inventory operation.
+ * It deliberately has no public constructor and never accepts an operation id from a request.
  */
 public final class WorkspaceCommandOperationToken {
     /**
-     * The source of a copy is operation policy, not a client-controlled
-     * data-node reference.  COPY_TARGET alone only says which side receives
-     * the result; it does not say how a source is resolved.
+     * The source of a copy is operation policy, not a client-controlled data-node reference. COPY_TARGET alone only
+     * says which side receives the result; it does not say how a source is resolved.
      */
     public enum CopySourcePolicy {
         NONE,
@@ -31,14 +29,13 @@ public final class WorkspaceCommandOperationToken {
     private final CopySourcePolicy copySourcePolicy;
 
     WorkspaceCommandOperationToken(
-        String operationId,
-        String owner,
-        String requirementId,
-        List<String> allowedDataNodeTypes,
-        Map<String, String> capabilityByDataNodeType,
-        String copyRole,
-        CopySourcePolicy copySourcePolicy
-    ) {
+            String operationId,
+            String owner,
+            String requirementId,
+            List<String> allowedDataNodeTypes,
+            Map<String, String> capabilityByDataNodeType,
+            String copyRole,
+            CopySourcePolicy copySourcePolicy) {
         this.operationId = required(operationId, "operationId");
         this.owner = required(owner, "owner");
         this.requirementId = required(requirementId, "requirementId");
@@ -48,13 +45,33 @@ public final class WorkspaceCommandOperationToken {
         this.copySourcePolicy = Objects.requireNonNull(copySourcePolicy, "copySourcePolicy");
     }
 
-    public String operationId() { return operationId; }
-    public String owner() { return owner; }
-    public String requirementId() { return requirementId; }
-    public List<String> allowedDataNodeTypes() { return allowedDataNodeTypes; }
-    public String capabilityFor(String dataNodeType) { return capabilityByDataNodeType.get(dataNodeType); }
-    public String copyRole() { return copyRole; }
-    public CopySourcePolicy copySourcePolicy() { return copySourcePolicy; }
+    public String operationId() {
+        return operationId;
+    }
+
+    public String owner() {
+        return owner;
+    }
+
+    public String requirementId() {
+        return requirementId;
+    }
+
+    public List<String> allowedDataNodeTypes() {
+        return allowedDataNodeTypes;
+    }
+
+    public String capabilityFor(String dataNodeType) {
+        return capabilityByDataNodeType.get(dataNodeType);
+    }
+
+    public String copyRole() {
+        return copyRole;
+    }
+
+    public CopySourcePolicy copySourcePolicy() {
+        return copySourcePolicy;
+    }
 
     public boolean isFor(String operationId, String owner) {
         return Objects.equals(this.operationId, operationId) && Objects.equals(this.owner, owner);

@@ -4,12 +4,7 @@ import java.util.Objects;
 
 /** Immutable, allowlisted diagnostic context; it intentionally carries no request payload. */
 public record RequestDiagnosticContext(
-        String correlationId,
-        String requestId,
-        String operationId,
-        String routeTemplate,
-        String owner
-) {
+        String correlationId, String requestId, String operationId, String routeTemplate, String owner) {
     public RequestDiagnosticContext {
         correlationId = required(correlationId, "correlationId");
         requestId = required(requestId, "requestId");

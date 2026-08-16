@@ -17,7 +17,7 @@ export const PLATFORM_PROBLEM_FEEDBACK: Record<EdgeProblemCode, ProblemFeedback>
   PLATFORM_ASSET_BIND_CONFLICT: {title: 'Logo 状态已变化', detail: '请刷新详情后重试。'},
   PLATFORM_COMMON_ACCESS_DENIED: {title: '没有操作权限', detail: '当前账号无权执行此操作。'},
   PLATFORM_COMMON_AUTHENTICATION_REQUIRED: {title: '登录状态已失效', detail: '请重新登录后继续。'},
-  PLATFORM_COMMON_CONTEXT_STALE: {title: '页面资料已更新', detail: '请刷新当前页面后重试。'},
+  PLATFORM_COMMON_CONTEXT_STALE: {title: '页面资料已更新', detail: '当前页面上下文已更新，请重新打开当前操作后重试。'},
   PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED: {title: '集团空间不可用', detail: '当前集团空间已停用。'},
   PLATFORM_COMMON_IDEMPOTENCY_CONFLICT: {title: '操作请求已变化', detail: '请重新提交当前操作。'},
   PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION: {title: '操作暂时不可用', detail: '当前资料状态异常，请稍后重试。'},

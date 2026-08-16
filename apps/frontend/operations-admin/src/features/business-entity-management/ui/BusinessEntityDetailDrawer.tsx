@@ -1,10 +1,20 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space} from 'antd';
-import {adminDetailDescriptionsProps, adminDrawerSurfaceProps, testId, useDetailDrawer, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminDetailDescriptionsProps,
+  adminDrawerSurfaceProps,
+  testId,
+  useDetailDrawer,
+  useOverlayLock,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {Brand, HeadCompany, Tenant} from '../../../app/api/generated/operations-edge';
-import {ACTION_CAPABILITIES, adminCatalog, type AdminActionCapabilityKey} from '../../../app/catalog/generatedAdminCatalog';
+import {
+  ACTION_CAPABILITIES,
+  adminCatalog,
+  type AdminActionCapabilityKey,
+} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {OperationsAuditHistoryModal} from '../../audit-history';
 
@@ -43,7 +53,7 @@ const statusCapabilityByKind: Record<BusinessEntityKind, AdminActionCapabilityKe
 const brandAuthorizationCapability = ACTION_CAPABILITIES.ORG_HEAD_COMPANY_BRAND;
 
 function catalogActionLabel(actionKey: AdminActionCapabilityKey) {
-  const label = adminCatalog.actions.find((action) => action.actionKey === actionKey)?.actionLabel;
+  const label = adminCatalog.actions.find(action => action.actionKey === actionKey)?.actionLabel;
   if (!label) throw new Error('ADMIN_CATALOG_BUSINESS_ENTITY_ACTION_MISSING');
   return label;
 }
@@ -115,21 +125,21 @@ export function BusinessEntityDetailDrawer({
     ),
     {skip: !entity},
   );
-  const selected = kind === 'BRAND'
-    ? brandDetail.data
-    : kind === 'TENANT'
-      ? tenantDetail.data
-      : headCompanyDetail.data;
-  const detailLoading = kind === 'BRAND'
-    ? brandDetail.isLoading
-    : kind === 'TENANT'
-      ? tenantDetail.isLoading
-      : headCompanyDetail.isLoading;
-  const detailError = kind === 'BRAND'
-    ? brandDetail.error
-    : kind === 'TENANT'
-      ? tenantDetail.error
-      : headCompanyDetail.error;
+  const selectedResult =
+    kind === 'BRAND'
+      ? brandDetail.currentData
+      : kind === 'TENANT'
+        ? tenantDetail.currentData
+        : headCompanyDetail.currentData;
+  const selected = selectedResult?.id === entity?.id ? selectedResult : undefined;
+  const detailLoading =
+    kind === 'BRAND'
+      ? brandDetail.isFetching
+      : kind === 'TENANT'
+        ? tenantDetail.isFetching
+        : headCompanyDetail.isFetching;
+  const detailError =
+    kind === 'BRAND' ? brandDetail.error : kind === 'TENANT' ? tenantDetail.error : headCompanyDetail.error;
   const detailReady = Boolean(selected) && !detailLoading && !detailError;
 
   useEffect(() => {
@@ -139,11 +149,12 @@ export function BusinessEntityDetailDrawer({
 
   const canEdit = actionCapabilityKeys.includes(editCapabilityByKind[kind]);
   const canStatus = actionCapabilityKeys.includes(statusCapabilityByKind[kind]);
-  const canAuthorizeBrands = kind === 'HEAD_COMPANY'
-    && actionCapabilityKeys.includes(brandAuthorizationCapability)
-    && Boolean(onAuthorizeBrands);
-  const enabledDefinitions = [...(definitionResult.data?.definitions ?? [])]
-    .filter((definition) => definition.status !== 'DISABLED')
+  const canAuthorizeBrands =
+    kind === 'HEAD_COMPANY' &&
+    actionCapabilityKeys.includes(brandAuthorizationCapability) &&
+    Boolean(onAuthorizeBrands);
+  const enabledDefinitions = [...(definitionResult.currentData?.definitions ?? [])]
+    .filter(definition => definition.status !== 'DISABLED')
     .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0));
 
   const closeThen = (next: (current: BusinessEntity) => void) => {
@@ -155,55 +166,77 @@ export function BusinessEntityDetailDrawer({
 
   const entityLabel = detailLabels[kind];
   const statusLabel = selected?.status === 'ENABLED' ? '停用' : '启用';
-  return <><Drawer
-    title={selected ? `${entityLabel}详情：${selected.name}` : `${entityLabel}详情`}
-    open={Boolean(entity)}
-    loading={detailLoading}
-    size={640}
-    destroyOnHidden
-    maskClosable
-    onClose={() => {
-      clearLatestDetail();
-      onClose();
-    }}
-    {...adminDrawerSurfaceProps}
-    {...testId('operations-business-entity-detail-drawer')}
-    extra={detailReady && selected && <Space>
-      <Button onClick={() => setAuditOpen(true)} {...testId('operations-business-entity-detail-audit-history')}>操作历史</Button>
-      {canEdit && <Button
-        onClick={() => closeThen(onEdit)}
-        {...testId('operations-business-entity-detail-edit')}
+  return (
+    <>
+      <Drawer
+        title={selected ? `${entityLabel}详情：${selected.name}` : `${entityLabel}详情`}
+        open={Boolean(entity)}
+        loading={detailLoading}
+        size={640}
+        destroyOnHidden
+        maskClosable
+        onClose={() => {
+          clearLatestDetail();
+          onClose();
+        }}
+        {...adminDrawerSurfaceProps}
+        {...testId('operations-business-entity-detail-drawer')}
+        extra={
+          detailReady &&
+          selected && (
+            <Space>
+              <Button onClick={() => setAuditOpen(true)} {...testId('operations-business-entity-detail-audit-history')}>
+                操作历史
+              </Button>
+              {canEdit && (
+                <Button onClick={() => closeThen(onEdit)} {...testId('operations-business-entity-detail-edit')}>
+                  {catalogActionLabel(editCapabilityByKind[kind])}
+                </Button>
+              )}
+              {canAuthorizeBrands && isHeadCompany(selected, kind) && (
+                <Button
+                  onClick={() => closeThen(current => onAuthorizeBrands?.(current as HeadCompany))}
+                  {...testId('operations-business-entity-detail-authorize-brands')}
+                >
+                  经营品牌
+                </Button>
+              )}
+              {canStatus && (
+                <Button onClick={() => closeThen(onStatus)} {...testId('operations-business-entity-detail-status')}>
+                  {statusLabel}
+                </Button>
+              )}
+            </Space>
+          )
+        }
       >
-        {catalogActionLabel(editCapabilityByKind[kind])}
-      </Button>}
-      {canAuthorizeBrands && isHeadCompany(selected, kind) && <Button
-        onClick={() => closeThen((current) => onAuthorizeBrands?.(current as HeadCompany))}
-        {...testId('operations-business-entity-detail-authorize-brands')}
-      >
-        经营品牌
-      </Button>}
-      {canStatus && <Button
-        onClick={() => closeThen(onStatus)}
-        {...testId('operations-business-entity-detail-status')}
-      >
-        {statusLabel}
-      </Button>}
-    </Space>}
-  >
-    {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}
-    {detailError && <Alert type="error" showIcon title="详情加载失败" description="请关闭后重新进入详情。"/>}
-    {selected && <Descriptions {...adminDetailDescriptionsProps} items={[
-      {key: 'name', label: '名称', children: selected.name},
-      {key: 'code', label: '编码', children: selected.code},
-      ...typeSpecificItems(selected, kind),
-      {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '已启用' : '已停用'},
-      {key: 'remark', label: '备注', children: selected.remark ?? '—'},
-      {key: 'updatedAt', label: '更新时间', children: displayTime(selected.updatedAt)},
-      ...enabledDefinitions.map((definition) => ({
-        key: `extension-${definition.key}`,
-        label: definition.label,
-        children: displayValue(selected.extensionValues[definition.key]),
-      })),
-    ]}/>} 
-  </Drawer><OperationsAuditHistoryModal open={auditOpen} target={selected ? {entityType: kind, entityId: selected.id, displayName: selected.name} : undefined} groupWorkspaceKey={groupWorkspaceKey} onClose={() => setAuditOpen(false)}/></>;
+        {detailLoading && <Skeleton active {...testId('operations-business-entity-detail-loading')} />}
+        {detailError && <Alert type="error" showIcon title="详情加载失败" description="请关闭后重新进入详情。" />}
+        {selected && (
+          <Descriptions
+            {...adminDetailDescriptionsProps}
+            items={[
+              {key: 'name', label: '名称', children: selected.name},
+              {key: 'code', label: '编码', children: selected.code},
+              ...typeSpecificItems(selected, kind),
+              {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '已启用' : '已停用'},
+              {key: 'remark', label: '备注', children: selected.remark ?? '—'},
+              {key: 'updatedAt', label: '更新时间', children: displayTime(selected.updatedAt)},
+              ...enabledDefinitions.map(definition => ({
+                key: `extension-${definition.key}`,
+                label: definition.label,
+                children: displayValue(selected.extensionValues[definition.key]),
+              })),
+            ]}
+          />
+        )}
+      </Drawer>
+      <OperationsAuditHistoryModal
+        open={auditOpen}
+        target={selected ? {entityType: kind, entityId: selected.id, displayName: selected.name} : undefined}
+        groupWorkspaceKey={groupWorkspaceKey}
+        onClose={() => setAuditOpen(false)}
+      />
+    </>
+  );
 }

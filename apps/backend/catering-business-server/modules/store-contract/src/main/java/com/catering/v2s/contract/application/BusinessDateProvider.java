@@ -10,6 +10,14 @@ import org.springframework.stereotype.Component;
 public final class BusinessDateProvider {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
     private final TimeProvider time;
-    public BusinessDateProvider(TimeProvider time) { this.time = time; }
-    public LocalDate today() { return Instant.ofEpochMilli(time.currentEpochMillis()).atZone(BUSINESS_ZONE).toLocalDate(); }
+
+    public BusinessDateProvider(TimeProvider time) {
+        this.time = time;
+    }
+
+    public LocalDate today() {
+        return Instant.ofEpochMilli(time.currentEpochMillis())
+                .atZone(BUSINESS_ZONE)
+                .toLocalDate();
+    }
 }

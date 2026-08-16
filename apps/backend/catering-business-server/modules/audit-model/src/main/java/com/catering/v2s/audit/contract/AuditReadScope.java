@@ -7,6 +7,7 @@ import java.util.UUID;
 public record AuditReadScope(UUID workspaceUuid, String groupWorkspaceKey) {
     public AuditReadScope {
         groupWorkspaceKey = Objects.requireNonNullElse(groupWorkspaceKey, "").trim();
-        if (workspaceUuid == null || groupWorkspaceKey.isEmpty() || groupWorkspaceKey.length() > 128) throw new IllegalArgumentException("audit read scope is invalid");
+        if (workspaceUuid == null || groupWorkspaceKey.isEmpty() || groupWorkspaceKey.length() > 128)
+            throw new IllegalArgumentException("audit read scope is invalid");
     }
 }

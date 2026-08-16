@@ -27,7 +27,9 @@ public final class RequestCompletionDiagnosticInterceptor implements HandlerInte
         if (pattern == null || pattern.isBlank()) return true;
         String method = request.getMethod().toUpperCase(java.util.Locale.ROOT);
         EdgeRouteFaceRegistry.Definition definition = definitions.get(method + " " + pattern);
-        if (definition == null) definition = new EdgeRouteFaceRegistry.Definition("route.unresolved", method, safePattern(pattern), "unresolved", "unknown");
+        if (definition == null)
+            definition = new EdgeRouteFaceRegistry.Definition(
+                    "route.unresolved", method, safePattern(pattern), "unresolved", "unknown");
         RequestCompletionDiagnosticState.getOrCreate(request, response, definition);
         RequestCompletionDiagnosticState state = RequestCompletionDiagnosticState.find(request);
         response.setHeader("X-Correlation-Id", state.correlationId());
@@ -36,7 +38,8 @@ public final class RequestCompletionDiagnosticInterceptor implements HandlerInte
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception exception) {
         RequestCompletionDiagnosticState state = RequestCompletionDiagnosticState.find(request);
         if (state == null) return;
         RequestCompletionEvent event = state.completeOnce(response.getStatus(), exception);
@@ -47,7 +50,10 @@ public final class RequestCompletionDiagnosticInterceptor implements HandlerInte
         try {
             recorder.recordCompletion(event);
         } catch (RuntimeException failure) {
-            try { recorder.recordCompletionWriteFailure(event); } catch (RuntimeException ignored) { }
+            try {
+                recorder.recordCompletionWriteFailure(event);
+            } catch (RuntimeException ignored) {
+            }
         }
     }
 

@@ -1,10 +1,10 @@
 package com.catering.v2s.platform.workspace.application;
 
+import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.organization.api.InitializeCommercialGroupCommand;
-import com.catering.v2s.audit.contract.AuditActor;
-import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
+import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.workspace.api.GroupWorkspaceDetail;
 import com.catering.v2s.platform.workspace.api.GroupWorkspaceSummary;
 import com.catering.v2s.platform.workspace.api.GroupWorkspaceTaskQuery;
@@ -25,11 +25,10 @@ public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, Platfo
     private final TimeProvider time;
 
     public PlatformWorkspaceService(
-        GroupWorkspaceRepository repository,
-        InitializeCommercialGroupCommand initializeCommercialGroupCommand,
-        JdbcTemplate jdbc,
-        TimeProvider time
-    ) {
+            GroupWorkspaceRepository repository,
+            InitializeCommercialGroupCommand initializeCommercialGroupCommand,
+            JdbcTemplate jdbc,
+            TimeProvider time) {
         this.repository = repository;
         this.initializeCommercialGroupCommand = initializeCommercialGroupCommand;
         this.jdbc = jdbc;
@@ -51,31 +50,34 @@ public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, Platfo
     @Override
     @Transactional
     public CommercialGroupReadback initializeCommercialGroup(
-        PlatformExecutionContext context,
-        String groupWorkspaceKey,
-        String idempotencyKey,
-        String commercialGroupCode,
-        String commercialGroupName,
-        Map<String, String> extensionValues,
-        AuditActor actor
-    ) {
-        GroupWorkspaceDetail workspace = repository.detail(context, groupWorkspaceKey)
-            .orElseThrow(() -> new GroupWorkspaceNotFoundException(groupWorkspaceKey));
+            PlatformExecutionContext context,
+            String groupWorkspaceKey,
+            String idempotencyKey,
+            String commercialGroupCode,
+            String commercialGroupName,
+            Map<String, String> extensionValues,
+            AuditActor actor) {
+        GroupWorkspaceDetail workspace = repository
+                .detail(context, groupWorkspaceKey)
+                .orElseThrow(() -> new GroupWorkspaceNotFoundException(groupWorkspaceKey));
         if (!"ENABLED".equals(workspace.workspaceStatus())) {
             throw new GroupWorkspaceNotEligibleException(groupWorkspaceKey);
         }
-        UUID workspaceUuid = jdbc.queryForObject("SELECT workspace_uuid FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND id=?", UUID.class, workspace.groupWorkspaceKey(), workspace.id());
+        UUID workspaceUuid = jdbc.queryForObject(
+                "SELECT workspace_uuid FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND id=?",
+                UUID.class,
+                workspace.groupWorkspaceKey(),
+                workspace.id());
         return initializeCommercialGroupCommand.execute(
-            context,
-            workspaceUuid,
-            workspace.groupWorkspaceKey(),
-            workspace.id(),
-            idempotencyKey,
-            commercialGroupCode,
-            commercialGroupName,
-            extensionValues,
-            actor
-        );
+                context,
+                workspaceUuid,
+                workspace.groupWorkspaceKey(),
+                workspace.id(),
+                idempotencyKey,
+                commercialGroupCode,
+                commercialGroupName,
+                extensionValues,
+                actor);
     }
 
     public static final class GroupWorkspaceNotFoundException extends RuntimeException {

@@ -1,10 +1,20 @@
 import {createApi} from '@reduxjs/toolkit/query/react';
 import type {FetchArgs} from '@reduxjs/toolkit/query';
-import {createBeaconLogSink, createObservedBaseQuery, createRefreshSignal, createSafeLogger, serializeJsonOrMultipartBody} from '@catering-v2s/admin-ui-foundation';
+import {
+  createBeaconLogSink,
+  createObservedBaseQuery,
+  createRefreshSignal,
+  createSafeLogger,
+  serializeJsonOrMultipartBody,
+} from '@catering-v2s/admin-ui-foundation';
 import {createPlatformAdminRtkEndpoints} from './generated/platform-edge.rtk';
 import type {FaceOperationContracts, FaceOperationRequest} from './generated/platform-edge';
 
-const logger = createSafeLogger({service: 'platform-admin', enabled: import.meta.env.DEV, sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL)});
+const logger = createSafeLogger({
+  service: 'platform-admin',
+  enabled: import.meta.env.DEV,
+  sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL),
+});
 const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 /** Successful generated commands publish here; read models remain app-owned subscribers. */
@@ -17,7 +27,9 @@ export function recordPlatformRenderError(_error: Error) {
 /** The platform shell owns the outcome; this substrate only fans a 401 out once. */
 export function registerPlatformUnauthorizedRecovery(recovery: () => void | Promise<void>) {
   unauthorizedRecovery = recovery;
-  return () => { if (unauthorizedRecovery === recovery) unauthorizedRecovery = undefined; };
+  return () => {
+    if (unauthorizedRecovery === recovery) unauthorizedRecovery = undefined;
+  };
 }
 
 /** Local session transitions call this before cache reset so outstanding responses cannot win late. */
@@ -28,7 +40,9 @@ export function abortPlatformRequests() {
 
 type ObservedFetchArgs<RequiresSession extends boolean> = FetchArgs & {requiresSession: RequiresSession};
 
-function toWireRequest<I extends keyof FaceOperationContracts>(request: FaceOperationRequest<I>): ObservedFetchArgs<FaceOperationContracts[I]['requiresSession']> {
+function toWireRequest<I extends keyof FaceOperationContracts>(
+  request: FaceOperationRequest<I>,
+): ObservedFetchArgs<FaceOperationContracts[I]['requiresSession']> {
   const path = expandPath(request.path, request.pathParameters);
   const query = new URLSearchParams(
     Object.entries(request.query ?? {})
@@ -53,19 +67,22 @@ export const platformApi = createApi({
     baseUrl: '/',
     credentials: 'include',
     logger,
-    onUnauthorized: async () => { await unauthorizedRecovery?.(); },
-    registerAbortController: (controller) => {
+    onUnauthorized: async () => {
+      await unauthorizedRecovery?.();
+    },
+    registerAbortController: controller => {
       activeControllers.add(controller);
       return () => activeControllers.delete(controller);
     },
   }),
   tagTypes: ['wire'],
-  endpoints: (build) => createPlatformAdminRtkEndpoints(build, toWireRequest),
+  endpoints: build => createPlatformAdminRtkEndpoints(build, toWireRequest),
 });
 
 function expandPath(template: string, pathParameters: object): string {
   let unresolved = template;
-  for (const [name, value] of Object.entries(pathParameters)) unresolved = unresolved.replace(`{${name}}`, encodeURIComponent(String(value)));
+  for (const [name, value] of Object.entries(pathParameters))
+    unresolved = unresolved.replace(`{${name}}`, encodeURIComponent(String(value)));
   if (/\{[^}]+\}/.test(unresolved)) throw new Error(`PLATFORM_EDGE_PATH_PARAMETER_MISSING:${template}`);
   return unresolved;
 }

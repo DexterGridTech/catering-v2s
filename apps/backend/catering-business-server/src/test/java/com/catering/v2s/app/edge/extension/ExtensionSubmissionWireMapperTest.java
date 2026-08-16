@@ -13,25 +13,30 @@ class ExtensionSubmissionWireMapperTest {
 
     @Test
     void mapsObjectValuesToSetAndClearIntent() throws Exception {
-        ExtensionSubmission result = ExtensionSubmissionWireMapper.toSubmission(
-            JSON.readTree("{\"remark\":\"test\",\"obsolete\":null}"));
+        ExtensionSubmission result =
+                ExtensionSubmissionWireMapper.toSubmission(JSON.readTree("{\"remark\":\"test\",\"obsolete\":null}"));
 
-        assertEquals(List.of(
-            new ExtensionSubmission.ExtensionFieldValue("remark", "\"test\"", ExtensionSubmission.Mode.SET),
-            ExtensionSubmission.ExtensionFieldValue.clear("obsolete")), result.fields());
+        assertEquals(
+                List.of(
+                        new ExtensionSubmission.ExtensionFieldValue("remark", "\"test\"", ExtensionSubmission.Mode.SET),
+                        ExtensionSubmission.ExtensionFieldValue.clear("obsolete")),
+                result.fields());
     }
 
     @Test
     void preservesLegacyFieldListPayload() throws Exception {
         ExtensionSubmission result = ExtensionSubmissionWireMapper.toSubmission(
-            JSON.readTree("[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}]"));
+                JSON.readTree("[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}]"));
 
-        assertEquals(List.of(new ExtensionSubmission.ExtensionFieldValue("remark", "\"test\"", ExtensionSubmission.Mode.SET)), result.fields());
+        assertEquals(
+                List.of(new ExtensionSubmission.ExtensionFieldValue(
+                        "remark", "\"test\"", ExtensionSubmission.Mode.SET)),
+                result.fields());
     }
 
     @Test
     void rejectsMalformedPayloadShape() throws Exception {
-        assertThrows(IllegalArgumentException.class,
-            () -> ExtensionSubmissionWireMapper.toSubmission(JSON.readTree("[1]")));
+        assertThrows(
+                IllegalArgumentException.class, () -> ExtensionSubmissionWireMapper.toSubmission(JSON.readTree("[1]")));
     }
 }

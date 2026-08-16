@@ -1,19 +1,44 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import type {CatalogShapeManifestView} from '../../../app/api/generated/catalog-inventory-edge';
-import {assertCatalogOptionBindingSet, CATALOG_OPTION_OPERATION_IDS, catalogFieldFingerprint, createCatalogOptionResolver} from './catalogFieldRuntime';
+import {
+  assertCatalogOptionBindingSet,
+  CATALOG_OPTION_OPERATION_IDS,
+  catalogFieldFingerprint,
+  createCatalogOptionResolver,
+  missingCatalogContextBindings,
+} from './catalogFieldRuntime';
+import {visibleDescriptorOptions} from '../ui/CatalogDescriptorPicker';
 
-const source = {kind: 'endpoint' as const, operationId: 'getOperationsCatalogDictionary' as const, path: {dictionaryKind: 'SKU_ATTRIBUTE_VALUE'}, query: {dataNodeRef: {context: 'scope.dataNodeRef'}}, itemsPath: 'data.entries', valueField: 'entryRef', labelField: 'name', contextBindings: {attributeRef: {fieldKey: 'skuVariantAttribute'}}};
+const source = {
+  kind: 'endpoint' as const,
+  operationId: 'getOperationsCatalogDictionary' as const,
+  path: {dictionaryKind: 'SKU_ATTRIBUTE_VALUE'},
+  query: {dataNodeRef: {context: 'scope.dataNodeRef'}, parentEntryRef: {fieldKey: 'skuVariantAttribute'}},
+  itemsPath: 'data.entries',
+  valueField: 'entryRef',
+  labelField: 'name',
+  contextBindings: {attributeRef: {fieldKey: 'skuVariantAttribute'}},
+};
 function context(attribute: string, revision = 1, brandRef = 'brand-a') {
-  return {scope: {dataNodeRef: '00000000-0000-4000-8000-000000000001' as never, brandRef}, readField: () => attribute, readSection: () => [], sectionRevision: () => revision};
+  return {
+    scope: {dataNodeRef: '00000000-0000-4000-8000-000000000001' as never, brandRef},
+    readField: () => attribute,
+    readSection: () => [],
+    sectionRevision: () => revision,
+  };
 }
 
 describe('catalog descriptor field runtime', () => {
   it('requires the manifest endpoint operation set to equal the generated binding set', () => {
     const manifest = {
-      fields: CATALOG_OPTION_OPERATION_IDS.map((operationId) => ({optionSourceRef: {kind: 'endpoint' as const, operationId}})),
+      fields: CATALOG_OPTION_OPERATION_IDS.map(operationId => ({
+        optionSourceRef: {kind: 'endpoint' as const, operationId},
+      })),
     };
     expect(() => assertCatalogOptionBindingSet(manifest as Pick<CatalogShapeManifestView, 'fields'>)).not.toThrow();
-    expect(() => assertCatalogOptionBindingSet({fields: manifest.fields.slice(0, -1)} as Pick<CatalogShapeManifestView, 'fields'>)).toThrow('CATALOG_OPTION_OPERATION_BINDING_SET_MISMATCH');
+    expect(() =>
+      assertCatalogOptionBindingSet({fields: manifest.fields.slice(0, -1)} as Pick<CatalogShapeManifestView, 'fields'>),
+    ).toThrow('CATALOG_OPTION_OPERATION_BINDING_SET_MISMATCH');
   });
 
   it('keeps the endpoint binding denominator explicit and fingerprints context, sections and scope', () => {
@@ -24,9 +49,19 @@ describe('catalog descriptor field runtime', () => {
     expect(catalogFieldFingerprint(source, context('TASTE', 1, 'brand-b'))).not.toBe(first);
   });
 
+  it('fails closed when a required candidate context binding is missing', async () => {
+    const executor = vi.fn(async () => ({data: {entries: [{entryRef: 'should-not-load', name: '不应加载'}]}}));
+    const resolver = createCatalogOptionResolver(executor);
+    const missing = context('');
+
+    expect(missingCatalogContextBindings(source, missing)).toEqual(['attributeRef']);
+    await expect(resolver(source, missing)).resolves.toMatchObject({options: [], rows: [], treeData: [], stale: false});
+    expect(executor).not.toHaveBeenCalled();
+  });
+
   it('does not let a late endpoint response replace a newer context result', async () => {
     const pending: Array<(value: unknown) => void> = [];
-    const resolver = createCatalogOptionResolver(async () => new Promise((resolve) => pending.push(resolve)));
+    const resolver = createCatalogOptionResolver(async () => new Promise(resolve => pending.push(resolve)));
     const first = resolver(source, context('A'));
     const second = resolver(source, context('B'));
     pending[1]({data: {entries: [{entryRef: 'b-ref', name: 'B', status: 'ENABLED'}]}});
@@ -37,34 +72,70 @@ describe('catalog descriptor field runtime', () => {
 
   it('recomputes local candidates from the section rather than issuing a request', async () => {
     const resolver = createCatalogOptionResolver();
-    const result = await resolver({kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'}, {
-      ...context('unused'),
-      readSection: () => [{attributeValueRef: 'value-a', name: '加辣'}],
-    });
+    const result = await resolver(
+      {kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'},
+      {
+        ...context('unused'),
+        readSection: () => [{attributeValueRef: 'value-a', name: '加辣'}],
+      },
+    );
     expect(result).toMatchObject({stale: false, options: [{value: 'value-a', label: '加辣'}]});
     expect(result.rows).toEqual([{attributeValueRef: 'value-a', name: '加辣'}]);
   });
 
   it('flattens nested order-options values without turning the local source into an endpoint', async () => {
     const resolver = createCatalogOptionResolver();
-    const result = await resolver({kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'}, {
-      ...context('unused'),
-      readSection: () => [{groupCode: 'TEMP', values: [{attributeValueRef: 'value-a', name: '加辣'}, {attributeValueRef: 'value-b', name: '加葱'}]}],
-    });
-    expect(result.options).toEqual([{value: 'value-a', label: '加辣', disabled: false}, {value: 'value-b', label: '加葱', disabled: false}]);
-    expect(result.rows).toEqual([{attributeValueRef: 'value-a', name: '加辣'}, {attributeValueRef: 'value-b', name: '加葱'}]);
+    const result = await resolver(
+      {kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'},
+      {
+        ...context('unused'),
+        readSection: () => [
+          {
+            groupCode: 'TEMP',
+            values: [
+              {attributeValueRef: 'value-a', name: '加辣'},
+              {attributeValueRef: 'value-b', name: '加葱'},
+            ],
+          },
+        ],
+      },
+    );
+    expect(result.options).toEqual([
+      {value: 'value-a', label: '加辣', disabled: false},
+      {value: 'value-b', label: '加葱', disabled: false},
+    ]);
+    expect(result.rows).toEqual([
+      {attributeValueRef: 'value-a', name: '加辣'},
+      {attributeValueRef: 'value-b', name: '加葱'},
+    ]);
   });
 
   it('keeps independently mounted picker resolvers from invalidating one another', async () => {
     const pending: Array<(value: unknown) => void> = [];
-    const firstResolver = createCatalogOptionResolver(async () => new Promise((resolve) => pending.push(resolve)));
-    const secondResolver = createCatalogOptionResolver(async () => new Promise((resolve) => pending.push(resolve)));
+    const firstResolver = createCatalogOptionResolver(async () => new Promise(resolve => pending.push(resolve)));
+    const secondResolver = createCatalogOptionResolver(async () => new Promise(resolve => pending.push(resolve)));
     const first = firstResolver(source, context('first'));
     const second = secondResolver(source, context('second'));
     pending[0]({data: {entries: [{entryRef: 'first-ref', name: '第一项', status: 'ENABLED'}]}});
     pending[1]({data: {entries: [{entryRef: 'second-ref', name: '第二项', status: 'ENABLED'}]}});
     await expect(first).resolves.toMatchObject({stale: false, options: [{value: 'first-ref', label: '第一项'}]});
     await expect(second).resolves.toMatchObject({stale: false, options: [{value: 'second-ref', label: '第二项'}]});
+  });
+
+  it('keeps the selected disabled value visible while excluding other disabled values', () => {
+    expect(
+      visibleDescriptorOptions(
+        [
+          {value: 'active', label: '有效', disabled: false},
+          {value: 'selected-disabled', label: '已选', disabled: true},
+          {value: 'other-disabled', label: '其他', disabled: true},
+        ],
+        'selected-disabled',
+      ),
+    ).toEqual([
+      {value: 'active', label: '有效', disabled: false},
+      {value: 'selected-disabled', label: '已选 (已停用)', disabled: true},
+    ]);
   });
 
   it('maps the navigation parent field into descriptor tree data without losing flat values', async () => {
@@ -79,12 +150,27 @@ describe('catalog descriptor field runtime', () => {
       parentField: 'parentCategoryRef',
       disabledWhen: null,
     };
-    const resolver = createCatalogOptionResolver(async () => ({data: {tree: [
-      {categoryRef: 'root', name: '饮品', parentCategoryRef: null},
-      {categoryRef: 'child', name: '咖啡', parentCategoryRef: 'root'},
-    ]}}));
+    const resolver = createCatalogOptionResolver(async () => ({
+      data: {
+        tree: [
+          {categoryRef: 'root', name: '饮品', parentCategoryRef: null},
+          {categoryRef: 'child', name: '咖啡', parentCategoryRef: 'root'},
+        ],
+      },
+    }));
     const result = await resolver(navigationSource, context('unused'));
-    expect(result.options).toEqual([{value: 'root', label: '饮品', disabled: false}, {value: 'child', label: '咖啡', disabled: false}]);
-    expect(result.treeData).toEqual([{key: 'root', value: 'root', title: '饮品', disabled: false, children: [{key: 'child', value: 'child', title: '咖啡', disabled: false}]}]);
+    expect(result.options).toEqual([
+      {value: 'root', label: '饮品', disabled: false},
+      {value: 'child', label: '咖啡', disabled: false},
+    ]);
+    expect(result.treeData).toEqual([
+      {
+        key: 'root',
+        value: 'root',
+        title: '饮品',
+        disabled: false,
+        children: [{key: 'child', value: 'child', title: '咖啡', disabled: false}],
+      },
+    ]);
   });
 });

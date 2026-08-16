@@ -5,5 +5,7 @@ public enum WorkspaceSessionState {
     AUTHENTICATED,
     NONE;
 
-    public String wire() { return name(); }
+    public String wire() {
+        return name();
+    }
 }

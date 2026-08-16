@@ -24,7 +24,11 @@ public class PlatformWorkspaceAdministrationTaskReadService {
     private final PlatformAssetService assets;
     private final WorkspaceIamSummaryLookup workspaceIam;
 
-    public PlatformWorkspaceAdministrationTaskReadService(WorkspaceAdministrationService workspaces, OrganizationGroupWorkspaceInitializationLookup initializationFacts, PlatformAssetService assets, WorkspaceIamSummaryLookup workspaceIam) {
+    public PlatformWorkspaceAdministrationTaskReadService(
+            WorkspaceAdministrationService workspaces,
+            OrganizationGroupWorkspaceInitializationLookup initializationFacts,
+            PlatformAssetService assets,
+            WorkspaceIamSummaryLookup workspaceIam) {
         this.workspaces = workspaces;
         this.initializationFacts = initializationFacts;
         this.assets = assets;
@@ -34,25 +38,45 @@ public class PlatformWorkspaceAdministrationTaskReadService {
     @Transactional(readOnly = true)
     public PageReadback page(WorkspaceAdministrationPageRequest request) {
         WorkspaceAdministrationPage page = workspaces.list(request);
-        Map<String, OrganizationGroupWorkspaceInitializationLookup.InitializationState> initialized = initializationFacts.listInitializationFacts(page.items().stream().map(WorkspaceAdministrationReadback::groupWorkspaceKey).toList());
-        Map<UUID, PlatformAssetService.PublicAssetReference> logos = assets.requireActivePublicReferences(assetRefs(page.items()));
+        Map<String, OrganizationGroupWorkspaceInitializationLookup.InitializationState> initialized =
+                initializationFacts.listInitializationFacts(page.items().stream()
+                        .map(WorkspaceAdministrationReadback::groupWorkspaceKey)
+                        .toList());
+        Map<UUID, PlatformAssetService.PublicAssetReference> logos =
+                assets.requireActivePublicReferences(assetRefs(page.items()));
         return new PageReadback(page, initialized, logos);
     }
 
     @Transactional(readOnly = true)
     public DetailReadback detail(String groupWorkspaceKey) {
         WorkspaceAdministrationReadback workspace = workspaces.require(groupWorkspaceKey);
-        Optional<CommercialGroupReadback> commercialGroup = initializationFacts.initializationFact(workspace.groupWorkspaceKey());
-        Map<UUID, PlatformAssetService.PublicAssetReference> logos = assets.requireActivePublicReferences(assetRefs(List.of(workspace)));
-        PlatformAssetService.PublicAssetReference logo = workspace.logoAssetRef() == null ? null : logos.get(UUID.fromString(workspace.logoAssetRef()));
-        WorkspaceIamSummaryLookup.AccountAndRoleSummary summary = workspaceIam.accountAndRoleSummary(workspace.workspaceUuid());
+        Optional<CommercialGroupReadback> commercialGroup =
+                initializationFacts.initializationFact(workspace.groupWorkspaceKey());
+        Map<UUID, PlatformAssetService.PublicAssetReference> logos =
+                assets.requireActivePublicReferences(assetRefs(List.of(workspace)));
+        PlatformAssetService.PublicAssetReference logo =
+                workspace.logoAssetRef() == null ? null : logos.get(UUID.fromString(workspace.logoAssetRef()));
+        WorkspaceIamSummaryLookup.AccountAndRoleSummary summary =
+                workspaceIam.accountAndRoleSummary(workspace.workspaceUuid());
         return new DetailReadback(workspace, commercialGroup, logo, summary);
     }
 
     private static Set<UUID> assetRefs(List<WorkspaceAdministrationReadback> workspaces) {
-        return workspaces.stream().map(WorkspaceAdministrationReadback::logoAssetRef).filter(java.util.Objects::nonNull).map(UUID::fromString).collect(Collectors.toUnmodifiableSet());
+        return workspaces.stream()
+                .map(WorkspaceAdministrationReadback::logoAssetRef)
+                .filter(java.util.Objects::nonNull)
+                .map(UUID::fromString)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    public record PageReadback(WorkspaceAdministrationPage workspacePage, Map<String, OrganizationGroupWorkspaceInitializationLookup.InitializationState> initializationFacts, Map<UUID, PlatformAssetService.PublicAssetReference> logoReferences) { }
-    public record DetailReadback(WorkspaceAdministrationReadback workspace, Optional<CommercialGroupReadback> commercialGroup, PlatformAssetService.PublicAssetReference logoReference, WorkspaceIamSummaryLookup.AccountAndRoleSummary accountAndRoleSummary) { }
+    public record PageReadback(
+            WorkspaceAdministrationPage workspacePage,
+            Map<String, OrganizationGroupWorkspaceInitializationLookup.InitializationState> initializationFacts,
+            Map<UUID, PlatformAssetService.PublicAssetReference> logoReferences) {}
+
+    public record DetailReadback(
+            WorkspaceAdministrationReadback workspace,
+            Optional<CommercialGroupReadback> commercialGroup,
+            PlatformAssetService.PublicAssetReference logoReference,
+            WorkspaceIamSummaryLookup.AccountAndRoleSummary accountAndRoleSummary) {}
 }

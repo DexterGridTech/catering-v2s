@@ -21,7 +21,7 @@ const API_SCENARIO_PATH = "contracts/policy/catalog-inventory-api-scenarios.json
 const L2_SCENARIO_PATH = "contracts/policy/catalog-inventory-l2-scenarios.json";
 const OPERATION_DESIGN_PATH = "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json";
 const DESIGN_PATH = "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md";
-const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
+const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.json";
 const GENERATED_EDGE_JAVA = "contracts/catalog/CatalogInventoryEdgeWire.java";
 const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
 const OPERATIONS_TRANSPORT_PATH = "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts";
@@ -345,6 +345,10 @@ function fieldBinding(value) {
   return value && typeof value === "object" && typeof value.fieldKey === "string";
 }
 
+function descriptorBinding(value) {
+  return contextBinding(value) || fieldBinding(value);
+}
+
 function schemaHasPath(openapi, schema, fieldPath) {
   try { schemaAtPath(openapi, schema, fieldPath); return true; }
   catch (error) {
@@ -380,17 +384,17 @@ function validateB3OptionSource(shape, field, source, edge, openapi) {
   for (const [parameterName, value] of Object.entries(source.path || {})) {
     const parameter = (operation.parameters || []).find((entry) => entry.in === "path" && entry.name === parameterName);
     expect(parameter, "P1_B3_PATH_PARAMETER:" + fieldKey + "." + parameterName);
-    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_PATH_BINDING:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || descriptorBinding(value), "P1_B3_PATH_BINDING:" + fieldKey + "." + parameterName);
   }
   for (const [parameterName, value] of Object.entries(source.query || {})) {
     const parameter = (operation.parameters || []).find((entry) => entry.in === "query" && entry.name === parameterName);
     expect(parameter, "P1_B3_QUERY_PARAMETER:" + fieldKey + "." + parameterName);
-    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_QUERY_BINDING:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || descriptorBinding(value), "P1_B3_QUERY_BINDING:" + fieldKey + "." + parameterName);
   }
   for (const [parameterName, value] of Object.entries(source.headers || {})) {
     const parameter = (operation.parameters || []).find((entry) => entry.in === "header" && entry.name === parameterName);
     expect(parameter, "P1_B3_HEADER_PARAMETER:" + fieldKey + "." + parameterName);
-    expect(value === null || typeof value === "string" || contextBinding(value), "P1_B3_HEADER_BINDING:" + fieldKey + "." + parameterName);
+    expect(value === null || typeof value === "string" || descriptorBinding(value), "P1_B3_HEADER_BINDING:" + fieldKey + "." + parameterName);
   }
   expect(typeof source.itemsPath === "string", "P1_B3_ITEMS_PATH:" + fieldKey);
   const itemCollection = schemaAtPath(openapi, schema, source.itemsPath);
@@ -508,8 +512,11 @@ function validate(root = ROOT) {
   expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "shapeKey").readonlyWhen.update, "P1_SHAPE_IMMUTABLE_AFTER_CREATE");
   expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "usageCapabilities").readonly === true, "P1_CAPABILITY_READONLY");
   expect(shape.typeEffects.shapeNodeAdmission.SERVICE.inventoryBom === false && shape.typeEffects.shapeNodeAdmission.BENEFIT_SHELL.inventoryBom === false, "P1_SHAPE_NODE_ADMISSION");
-  expect(shape.typeEffects.modeEligibilityByShape.SERVICE.CATALOG_ITEM.length === 1 && shape.typeEffects.modeEligibilityByShape.SERVICE.CATALOG_ITEM[0] === "NONE", "P1_SERVICE_MODE_GATE");
-  expect(shape.typeEffects.modeEligibilityByShape.BENEFIT_SHELL.CATALOG_ITEM.length === 1 && shape.typeEffects.modeEligibilityByShape.BENEFIT_SHELL.CATALOG_ITEM[0] === "NONE", "P1_BENEFIT_MODE_GATE");
+  for (const shapeKey of ["SERVICE", "BENEFIT_SHELL"]) {
+    const admission = shape.typeEffects.shapeNodeAdmission[shapeKey];
+    const eligibility = shape.typeEffects.modeEligibilityByShape[shapeKey];
+    expect(admission.inventoryBom === false && Object.values(eligibility).every((modes) => Array.isArray(modes) && modes.length === 0), "P1_NO_INVENTORY_MODE_GATE:" + shapeKey);
+  }
   const generatedJava = fs.readFileSync(abs("contracts/catalog/CatalogInventoryShapeManifest.java"), "utf8");
   const generatedTs = fs.readFileSync(abs("contracts/catalog/catalogInventoryShapeManifest.ts"), "utf8");
   expect(generatedJava.includes(shape.manifestDigest) && generatedJava.includes("SHAPE_COUNT = 7") && generatedJava.includes("SURFACE_KEYS") && generatedJava.includes("record ShapeRule") && generatedJava.includes("record ModeRule") && generatedJava.includes("SHAPE_RULES") && generatedJava.includes("MODE_RULES"), "P1_GENERATED_JAVA_DRIFT");
@@ -569,7 +576,7 @@ function validate(root = ROOT) {
     const mapping = mappings.items;
     expect(mapping?.properties?.objectType?.type === "string" && mapping.properties?.sourceRef?.format === "uuid" && mapping.properties?.targetRef?.format === "uuid" && mapping.properties?.targetCode?.type === "string", "P1_COPY_REFERENCE_MAPPING_SHAPE:" + name);
     expect(["objectType", "sourceRef", "targetRef", "targetCode"].every((field) => mapping.required?.includes(field)), "P1_COPY_REFERENCE_MAPPING_REQUIRED:" + name);
-    expect(!JSON.stringify(schema).includes("fromCode") && !JSON.stringify(schema).includes("toCode"), "P1_COPY_REFERENCE_MAPPING_NO_CODE_IDENTITY:" + name);
+    expect(!JSON.stringify(mapping).includes("fromCode") && !JSON.stringify(mapping).includes("toCode"), "P1_COPY_REFERENCE_MAPPING_NO_CODE_IDENTITY:" + name);
   }
   const designByteCoverage = validateDesignByteCoverage(openapi, readModels, designCoverage, shape);
   validateOpaqueReferencePaths(openapi, designCoverage, referencePathMatrix);
@@ -577,7 +584,7 @@ function validate(root = ROOT) {
   expect(Number.isInteger(policy.limits.selectedItemCount) && Number.isInteger(policy.limits.closureItemCount), "P1_COPY_LIMIT_SHAPE");
   expect(policy.limitResponseShape?.actual === "integer" && policy.limitResponseShape?.limit === "integer", "P1_COPY_LIMIT_RESPONSE_SHAPE");
   expect(policy.adjustmentRule && policy.sourceOfTruth === POLICY_PATH, "P1_COPY_LIMIT_POLICY_SOURCE");
-  const limitScanRoots = ["contracts/catalog/catalog-item-editor-manifest.json", "contracts/catalog/catalog-inventory-read-models.json", "contracts/catalog/catalog-inventory-edge-contract.json", "contracts/catalog/catalog-inventory-edge-placement.json", "contracts/catalog/CatalogInventoryShapeManifest.java", "contracts/catalog/catalogInventoryShapeManifest.ts", GENERATED_EDGE_JAVA, GENERATED_EDGE_TS, "contracts/openapi/catalog-inventory.openapi.yaml", "contracts/openapi/components/catalog", "contracts/openapi/components/inventory", "contracts/openapi/components/fulfillment-production/production-tag.schemas.yaml", "contracts/openapi/paths/operations-admin/catalog-workbench.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-item-management.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.yaml", "contracts/openapi/paths/operations-admin/catalog-copy.paths.yaml", "contracts/openapi/paths/operations-admin/inventory-workbench.paths.yaml", "contracts/openapi/paths/operations-admin/inventory-management.paths.yaml", "contracts/openapi/paths/operations-admin/production-tag-management.paths.yaml", "contracts/policy/catalog-inventory-fixture-catalog.json", "contracts/policy/catalog-inventory-api-scenarios.json", "contracts/policy/catalog-inventory-l2-scenarios.json"];
+  const limitScanRoots = ["contracts/catalog/catalog-item-editor-manifest.json", "contracts/catalog/catalog-inventory-read-models.json", "contracts/catalog/catalog-inventory-edge-contract.json", "contracts/catalog/catalog-inventory-edge-placement.json", "contracts/catalog/CatalogInventoryShapeManifest.java", "contracts/catalog/catalogInventoryShapeManifest.ts", GENERATED_EDGE_JAVA, GENERATED_EDGE_TS, "contracts/openapi/catalog-inventory.openapi.json", "contracts/openapi/components/catalog", "contracts/openapi/components/inventory", "contracts/openapi/components/fulfillment-production/production-tag.schemas.json", "contracts/openapi/paths/operations-admin/catalog-workbench.paths.json", "contracts/openapi/paths/operations-admin/catalog-item-management.paths.json", "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.json", "contracts/openapi/paths/operations-admin/catalog-copy.paths.json", "contracts/openapi/paths/operations-admin/inventory-workbench.paths.json", "contracts/openapi/paths/operations-admin/inventory-management.paths.json", "contracts/openapi/paths/operations-admin/production-tag-management.paths.json", "contracts/policy/catalog-inventory-fixture-catalog.json", "contracts/policy/catalog-inventory-api-scenarios.json", "contracts/policy/catalog-inventory-l2-scenarios.json"];
   for (const rootPath of limitScanRoots) {
     const absolute = abs(rootPath);
     const files = fs.existsSync(absolute) && fs.statSync(absolute).isDirectory() ? walk(absolute) : [absolute];

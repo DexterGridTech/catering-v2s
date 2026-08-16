@@ -5,7 +5,7 @@
   "source": {
     "designPath": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-three-stage-implementation-design-codex.md",
     "designHeading": "### 3.4 读模型一次定全",
-    "designSha256": "e6a29687b8150da95bc2dea27ebecd49da42320ad9a8a960c0c3f3fce318c815"
+    "designSha256": "58be478cdef5423b6fa682d7a2cc75ffabbc587285b418db2387315eda56ab38"
   },
   "requiredModelCount": 25,
   "rows": [
@@ -367,11 +367,6 @@
           "type": "integer"
         },
         {
-          "path": "items[].riskFlags",
-          "type": "array",
-          "itemType": "string"
-        },
-        {
           "path": "items[].version",
           "type": "integer"
         },
@@ -542,6 +537,42 @@
         {
           "path": "item.skus[].status",
           "type": "string"
+        },
+        {
+          "path": "item.skus[].voidAvailability",
+          "type": "object"
+        },
+        {
+          "path": "item.skus[].voidAvailability.canVoid",
+          "type": "boolean"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReferences",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReferences[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].voidAvailability.blockingReferences[].referenceRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "item.skus[].voidAvailability.dependentFacts",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "item.skus[].voidAvailability.dependentFacts[].factKind",
+          "type": "string"
+        },
+        {
+          "path": "item.skus[].voidAvailability.dependentFacts[].factRef",
+          "type": "string",
+          "format": "uuid"
         },
         {
           "path": "item.skus[].version",
@@ -766,6 +797,18 @@
           "type": "string"
         },
         {
+          "path": "item.compositeGroups[].minSelections",
+          "type": "integer"
+        },
+        {
+          "path": "item.compositeGroups[].maxSelections",
+          "type": "integer"
+        },
+        {
+          "path": "item.compositeGroups[].displayOrder",
+          "type": "integer"
+        },
+        {
           "path": "item.compositeGroups[].components",
           "type": "array",
           "itemType": "object"
@@ -815,6 +858,10 @@
         {
           "path": "item.compositeGroups[].components[].status",
           "type": "string"
+        },
+        {
+          "path": "item.compositeGroups[].components[].displayOrder",
+          "type": "integer"
         },
         {
           "path": "item.inventoryBom",
@@ -1019,6 +1066,11 @@
           "type": "string"
         },
         {
+          "path": "references[].referenceRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
           "path": "references[].code",
           "type": "string"
         },
@@ -1155,6 +1207,18 @@
           "type": "string"
         },
         {
+          "path": "compositeGroups[].minSelections",
+          "type": "integer"
+        },
+        {
+          "path": "compositeGroups[].maxSelections",
+          "type": "integer"
+        },
+        {
+          "path": "compositeGroups[].displayOrder",
+          "type": "integer"
+        },
+        {
           "path": "compositeGroups[].components",
           "type": "array",
           "itemType": "object"
@@ -1204,6 +1268,10 @@
         {
           "path": "compositeGroups[].components[].status",
           "type": "string"
+        },
+        {
+          "path": "compositeGroups[].components[].displayOrder",
+          "type": "integer"
         },
         {
           "path": "productionTags",
@@ -1493,6 +1561,14 @@
         {
           "path": "data.entries[].name",
           "type": "string"
+        },
+        {
+          "path": "data.entries[].parentEntryRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
         },
         {
           "path": "data.entries[].status",
@@ -1873,6 +1949,23 @@
           "type": "string"
         },
         {
+          "path": "data.closureEdges",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.closureEdges[].fromRef",
+          "type": "string"
+        },
+        {
+          "path": "data.closureEdges[].toRef",
+          "type": "string"
+        },
+        {
+          "path": "data.closureEdges[].referenceKind",
+          "type": "string"
+        },
+        {
           "path": "data.objectVersions",
           "type": "array",
           "itemType": "object"
@@ -1940,6 +2033,67 @@
           "required": false
         },
         {
+          "path": "data.mappingPreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.mappingPreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].status",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].canonicalTuple",
+          "type": "object"
+        },
+        {
+          "path": "data.mappingPreview[].canonicalTuple.ownerRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.mappingPreview[].canonicalTuple.brandRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.mappingPreview[].canonicalTuple.objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.mappingPreview[].canonicalTuple.parts",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "data.referenceRewritePreview[].sourceRef",
+          "type": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "data.referenceRewritePreview[].referenceKind",
+          "type": "string"
+        },
+        {
           "path": "data.compatibilityResults",
           "type": "array",
           "itemType": "object"
@@ -1949,12 +2103,44 @@
           "type": "string"
         },
         {
+          "path": "data.compatibilityResults[].canonicalTuple",
+          "type": "object"
+        },
+        {
+          "path": "data.compatibilityResults[].canonicalTuple.ownerRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.compatibilityResults[].canonicalTuple.brandRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "data.compatibilityResults[].canonicalTuple.objectType",
+          "type": "string"
+        },
+        {
+          "path": "data.compatibilityResults[].canonicalTuple.parts",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "data.compatibilityResults[].compatibilityId",
+          "type": "string"
+        },
+        {
           "path": "data.compatibilityResults[].result",
           "type": "string"
         },
         {
           "path": "data.compatibilityResults[].reason",
           "type": "string"
+        },
+        {
+          "path": "data.compatibilityResults[].reasonCode",
+          "type": "string",
+          "enumSource": "copyCompatibilityReasonCode"
         },
         {
           "path": "data.preflightDigest",
@@ -2412,6 +2598,9 @@
         "closureLimit",
         "objectVersions",
         "referenceMappings",
+        "closureEdges",
+        "mappingPreview",
+        "referenceRewritePreview",
         "compatibilityResults",
         "preflightDigest",
         "blockingCount",
@@ -2497,6 +2686,23 @@
           "type": "string"
         },
         {
+          "path": "closureEdges",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "closureEdges[].fromRef",
+          "type": "string"
+        },
+        {
+          "path": "closureEdges[].toRef",
+          "type": "string"
+        },
+        {
+          "path": "closureEdges[].referenceKind",
+          "type": "string"
+        },
+        {
           "path": "closureCount",
           "type": "integer"
         },
@@ -2559,6 +2765,67 @@
           "required": false
         },
         {
+          "path": "mappingPreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "mappingPreview[].fromCode",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].toCode",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].referenceKind",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].status",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].canonicalTuple",
+          "type": "object"
+        },
+        {
+          "path": "mappingPreview[].canonicalTuple.ownerRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "mappingPreview[].canonicalTuple.brandRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "mappingPreview[].canonicalTuple.objectType",
+          "type": "string"
+        },
+        {
+          "path": "mappingPreview[].canonicalTuple.parts",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "referenceRewritePreview",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "referenceRewritePreview[].sourceRef",
+          "type": "string"
+        },
+        {
+          "path": "referenceRewritePreview[].targetRef",
+          "type": "string"
+        },
+        {
+          "path": "referenceRewritePreview[].referenceKind",
+          "type": "string"
+        },
+        {
           "path": "compatibilityResults",
           "type": "array",
           "itemType": "object"
@@ -2568,12 +2835,44 @@
           "type": "string"
         },
         {
+          "path": "compatibilityResults[].canonicalTuple",
+          "type": "object"
+        },
+        {
+          "path": "compatibilityResults[].canonicalTuple.ownerRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "compatibilityResults[].canonicalTuple.brandRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "compatibilityResults[].canonicalTuple.objectType",
+          "type": "string"
+        },
+        {
+          "path": "compatibilityResults[].canonicalTuple.parts",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "compatibilityResults[].compatibilityId",
+          "type": "string"
+        },
+        {
           "path": "compatibilityResults[].result",
           "type": "string"
         },
         {
           "path": "compatibilityResults[].reason",
           "type": "string"
+        },
+        {
+          "path": "compatibilityResults[].reasonCode",
+          "type": "string",
+          "enumSource": "copyCompatibilityReasonCode"
         },
         {
           "path": "preflightDigest",
@@ -3932,6 +4231,27 @@
           "itemType": "string"
         },
         {
+          "path": "modeRules[].defaultMode",
+          "type": "string"
+        },
+        {
+          "path": "modeRules[].disabledModes",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "modeRules[].disabledModes[].mode",
+          "type": "string"
+        },
+        {
+          "path": "modeRules[].disabledModes[].reason",
+          "type": "string"
+        },
+        {
+          "path": "modeRules[].description",
+          "type": "string"
+        },
+        {
           "path": "shapeRules",
           "type": "array",
           "itemType": "object"
@@ -4316,6 +4636,26 @@
       ],
       "fields": [
         {
+          "path": "skuTransitions",
+          "type": "array",
+          "itemType": "object",
+          "required": false
+        },
+        {
+          "path": "skuTransitions[].skuRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "skuTransitions[].targetStatus",
+          "type": "string",
+          "enum": ["VOIDED"]
+        },
+        {
+          "path": "skuTransitions[].expectedVersion",
+          "type": "integer"
+        },
+        {
           "path": "sections.catalogDraft.skuVariantDimensions",
           "type": "array",
           "itemType": "object",
@@ -4558,6 +4898,18 @@
           "type": "string"
         },
         {
+          "path": "sections.catalogDraft.compositeGroups[].minSelections",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].maxSelections",
+          "type": "integer"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].displayOrder",
+          "type": "integer"
+        },
+        {
           "path": "sections.catalogDraft.compositeGroups[].components",
           "type": "array",
           "itemType": "object"
@@ -4607,6 +4959,10 @@
         {
           "path": "sections.catalogDraft.compositeGroups[].components[].status",
           "type": "string"
+        },
+        {
+          "path": "sections.catalogDraft.compositeGroups[].components[].displayOrder",
+          "type": "integer"
         },
         {
           "path": "sections.catalogDraft.productionProfiles",
@@ -5036,7 +5392,7 @@
     }
   ],
   "generatedTargets": [
-    "contracts/openapi/catalog-inventory.openapi.yaml",
+    "contracts/openapi/catalog-inventory.openapi.json",
     "contracts/catalog/CatalogInventoryEdgeWire.java",
     "contracts/catalog/catalogInventoryEdgeWire.ts"
   ],

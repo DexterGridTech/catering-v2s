@@ -3,14 +3,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {readCatalogInventoryOpenApi} from "../../scripts/lib/catalog-inventory-openapi.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 function fail(code, detail = "") { const error = new Error(`${code}${detail ? `:${detail}` : ""}`); error.code = code; throw error; }
-function yamlFiles(directory) {
+function jsonFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const absolute = path.join(directory, entry.name);
-    return entry.isDirectory() ? yamlFiles(absolute) : /\.ya?ml$/.test(entry.name) ? [absolute] : [];
+    return entry.isDirectory() ? jsonFiles(absolute) : /\.json$/.test(entry.name) ? [absolute] : [];
   });
 }
 function pointer(document, fragment) {
@@ -24,12 +25,15 @@ function pointer(document, fragment) {
   return current;
 }
 function scan(contractRoot) {
-  const documents = new Map(yamlFiles(contractRoot).map((file) => {
+  const documents = new Map(jsonFiles(contractRoot).map((file) => {
     try { return [file, JSON.parse(fs.readFileSync(file, "utf8"))]; }
     catch { fail("R5_STRICT_OPENAPI_JSON_DOCUMENT_INVALID", path.relative(contractRoot, file)); }
   }));
-  const rootDocument = documents.get(path.join(contractRoot, "edge.openapi.yaml"));
-  const catalogInventoryRootDocument = documents.get(path.join(contractRoot, "catalog-inventory.openapi.yaml"));
+  const rootDocument = documents.get(path.join(contractRoot, "edge.openapi.json"));
+  const artifactRootDocument = documents.get(path.join(contractRoot, "catalog-inventory.openapi.json"));
+  let catalogInventoryRootDocument;
+  try { catalogInventoryRootDocument = readCatalogInventoryOpenApi(path.resolve(contractRoot, "../..")); }
+  catch { catalogInventoryRootDocument = artifactRootDocument; }
   const localReferenceDocument = (file, fragment) => {
     const document = documents.get(file);
     // Generated catalog path shards are fragments of the edge document, not
@@ -72,18 +76,18 @@ function print(result) { process.stdout.write(`${JSON.stringify(result, null, 2)
 function selfTest() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-openapi-resolver-"));
   try {
-    const component = path.join(scratch, "components.yaml");
-    const edge = path.join(scratch, "edge.openapi.yaml");
+    const component = path.join(scratch, "components.json");
+    const edge = path.join(scratch, "edge.openapi.json");
     fs.writeFileSync(component, `${JSON.stringify({components:{schemas:{Value:{type:"string"}}}})}\n`);
-    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Value"}}}})}\n`);
+    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.json#/components/schemas/Value"}}}})}\n`);
     if (scan(scratch).unresolved !== 0) fail("R5_STRICT_OPENAPI_SELF_TEST_CLEAN_INVALID");
-    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Missing"}}}})}\n`);
+    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.json#/components/schemas/Missing"}}}})}\n`);
     const red = scan(scratch);
     if (red.unresolved !== 1 || red.missingPointer !== 1) fail("R5_STRICT_OPENAPI_SELF_TEST_RED_NOT_DETECTED");
-    const pathShard = path.join(scratch, "paths.yaml");
-    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.yaml#/components/schemas/Value"}}}})}\n`);
-    const catalogInventoryRoot = path.join(scratch, "catalog-inventory.openapi.yaml");
-    fs.writeFileSync(catalogInventoryRoot, `${JSON.stringify({openapi:"3.1.0",paths:{"/x":{$ref:"./paths.yaml#/paths/~1x"}},components:{schemas:{Value:{type:"string"}}}})}\n`);
+    const pathShard = path.join(scratch, "paths.json");
+    fs.writeFileSync(edge, `${JSON.stringify({openapi:"3.1.0",components:{schemas:{Use:{$ref:"./components.json#/components/schemas/Value"}}}})}\n`);
+    const catalogInventoryRoot = path.join(scratch, "catalog-inventory.openapi.json");
+    fs.writeFileSync(catalogInventoryRoot, `${JSON.stringify({openapi:"3.1.0",paths:{"/x":{$ref:"./paths.json#/paths/~1x"}},components:{schemas:{Value:{type:"string"}}}})}\n`);
     fs.writeFileSync(pathShard, `${JSON.stringify({kind:"catalog-inventory-openapi-path-shard",paths:{"/x":{get:{responses:{"200":{content:{"application/json":{schema:{$ref:"#/components/schemas/Value"}}}}}}}}})}\n`);
     if (scan(scratch).unresolved !== 0) fail("R5_STRICT_OPENAPI_PATH_SHARD_ROOT_COMPONENT_SELF_TEST_CLEAN_INVALID");
     fs.writeFileSync(pathShard, `${JSON.stringify({kind:"catalog-inventory-openapi-path-shard",paths:{"/x":{get:{responses:{"200":{content:{"application/json":{schema:{$ref:"#/components/schemas/Missing"}}}}}}}}})}\n`);

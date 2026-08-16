@@ -13,8 +13,8 @@ class CatalogDictionaryKindTest {
         assertEquals("SALES_UNIT", CatalogOwnerService.dictionaryObjectType("SALES_UNIT"));
         assertEquals("SKU_ATTRIBUTE", CatalogOwnerService.dictionaryObjectType("SKU_ATTRIBUTE"));
         assertEquals("SKU_ATTRIBUTE_VALUE", CatalogOwnerService.dictionaryObjectType("SKU_ATTRIBUTE_VALUE"));
-        CatalogOwnerApi.Problem problem = assertThrows(CatalogOwnerApi.Problem.class,
-            () -> CatalogOwnerService.dictionaryObjectType("SPEC"));
+        CatalogOwnerApi.Problem problem =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.dictionaryObjectType("SPEC"));
         assertEquals("VALIDATION_ERROR", problem.code());
         assertEquals(422, problem.status());
     }

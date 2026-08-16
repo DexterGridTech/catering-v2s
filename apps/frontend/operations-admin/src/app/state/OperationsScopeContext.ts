@@ -19,7 +19,7 @@ const scopeContext = createSlice({
     replaceOwnerScopeContext: (state, action: PayloadAction<WorkspaceScopeContext | null>) => {
       state.context = action.payload;
     },
-    clearOwnerScopeContext: (state) => {
+    clearOwnerScopeContext: state => {
       state.context = null;
     },
   },

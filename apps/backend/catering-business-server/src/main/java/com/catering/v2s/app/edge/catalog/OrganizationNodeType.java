@@ -8,5 +8,7 @@ public enum OrganizationNodeType {
     HEAD_COMPANY,
     STORE;
 
-    public String wire() { return name(); }
+    public String wire() {
+        return name();
+    }
 }

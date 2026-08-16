@@ -22,12 +22,14 @@ class WorkspaceIamSummaryReadServiceTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID workspace = UUID.randomUUID();
         AccountAndRoleSummary expected = new AccountAndRoleSummary(3, 4);
-        when(jdbc.queryForObject(any(String.class), any(RowMapper.class), eq(workspace), eq(workspace))).thenReturn(expected);
+        when(jdbc.queryForObject(any(String.class), any(RowMapper.class), eq(workspace), eq(workspace)))
+                .thenReturn(expected);
 
         AccountAndRoleSummary actual = new WorkspaceIamSummaryReadService(jdbc).accountAndRoleSummary(workspace);
 
         assertEquals(expected, actual);
-        verify(jdbc, times(1)).queryForObject(contains("workspace_account"), any(RowMapper.class), eq(workspace), eq(workspace));
+        verify(jdbc, times(1))
+                .queryForObject(contains("workspace_account"), any(RowMapper.class), eq(workspace), eq(workspace));
         verifyNoMoreInteractions(jdbc);
     }
 }

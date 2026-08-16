@@ -6,13 +6,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Catalog's closed task-read boundary.  It deliberately exposes no operation
- * id so a read route cannot fall back to the legacy dispatcher by accident.
+ * Catalog's closed task-read boundary. It deliberately exposes no operation id so a read route cannot fall back to the
+ * legacy dispatcher by accident.
  */
 public final class CatalogTaskReadService {
     private final CatalogOwnerApi owner;
 
-    public CatalogTaskReadService(CatalogOwnerApi owner) { this.owner = owner; }
+    public CatalogTaskReadService(CatalogOwnerApi owner) {
+        this.owner = owner;
+    }
 
     public JsonNode workbenchContext(String dataNodeRef, String brandRef, String requestId) {
         return primary(() -> owner.readWorkbenchContext(dataNodeRef, brandRef, requestId));
@@ -30,7 +32,8 @@ public final class CatalogTaskReadService {
         return primary(() -> owner.readItem(dataNodeRef, brandRef, itemCode, requestId));
     }
 
-    public JsonNode dictionary(String dataNodeRef, String brandRef, String dictionaryKind, ObjectNode request, String requestId) {
+    public JsonNode dictionary(
+            String dataNodeRef, String brandRef, String dictionaryKind, ObjectNode request, String requestId) {
         return primary(() -> owner.readDictionary(dataNodeRef, brandRef, dictionaryKind, request, requestId));
     }
 

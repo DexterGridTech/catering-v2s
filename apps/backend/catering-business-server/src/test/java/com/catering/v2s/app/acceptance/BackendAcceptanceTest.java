@@ -7,11 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.app.bootstrap.CateringV2sApplication;
 import com.catering.v2s.audit.contract.AuditActor;
-import com.catering.v2s.organization.application.BusinessEntityService;
-import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.api.InitializeCommercialGroupCommand;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
+import com.catering.v2s.organization.application.BusinessEntityService;
+import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
@@ -69,57 +69,134 @@ class BackendAcceptanceTest {
     private static final String PLATFORM_RATE_LIMIT_HMAC = "backend-acceptance-platform-rate-limit-hmac";
     private static final String WORKSPACE_RATE_LIMIT_HMAC = "backend-acceptance-workspace-rate-limit-hmac";
     static final String OPERATIONS_PASSWORD = "Acceptance-Pass-123!";
-    static final byte[] PNG = Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==");
-    static final RouteIdentity PUBLIC_INVITATION_VIEW = new RouteIdentity("getPublicInvitationView", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}");
-    static final RouteIdentity ACCEPT_PUBLIC_INVITATION = new RouteIdentity("acceptPublicInvitation", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}");
-    static final RouteIdentity SEND_PUBLIC_INVITATION_OTP = new RouteIdentity("sendPublicInvitationOtp", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send");
-    static final RouteIdentity VERIFY_PUBLIC_INVITATION_OTP = new RouteIdentity("verifyPublicInvitationOtp", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify");
-    static final RouteIdentity SAVE_PUBLIC_INVITATION_CREDENTIALS = new RouteIdentity("savePublicInvitationCredentials", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials");
-    static final RouteIdentity COMPLETE_PUBLIC_INVITATION = new RouteIdentity("completePublicInvitation", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete");
-    static final RouteIdentity PUBLIC_INVITATION_COMPLETION = new RouteIdentity("getPublicInvitationCompletion", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion");
-    static final RouteIdentity OPERATIONS_WORKSPACE_LOGIN_ENTRY = new RouteIdentity("getOperationsWorkspaceLoginEntry", "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry");
-    static final RouteIdentity OPERATIONS_WORKSPACE_PASSWORD_LOGIN = new RouteIdentity("operationsWorkspacePasswordLogin", "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login");
-    static final RouteIdentity OPERATIONS_WORKSPACE_SESSION_ENTRY = new RouteIdentity("getOperationsWorkspaceSessionEntry", "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_REGION_CREATE = new RouteIdentity("createOperationsOrganizationRegion", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_PROJECT_CREATE = new RouteIdentity("createOperationsOrganizationProject", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_NODE_UPDATE = new RouteIdentity("updateOperationsOrganizationNode", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_NODE_STATUS = new RouteIdentity("transitionOperationsOrganizationNodeStatus", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_HIERARCHY = new RouteIdentity("getOperationsOrganizationHierarchy", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_CREATE = new RouteIdentity("createOperationsOrganizationBrand", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_UPDATE = new RouteIdentity("updateOperationsOrganizationBrand", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_STATUS = new RouteIdentity("transitionOperationsOrganizationBrandStatus", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_TENANT_CREATE = new RouteIdentity("createOperationsOrganizationTenant", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_TENANT_STATUS = new RouteIdentity("transitionOperationsOrganizationTenantStatus", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY_CREATE = new RouteIdentity("createOperationsOrganizationHeadCompany", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY = new RouteIdentity("getOperationsOrganizationHeadCompany", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS = new RouteIdentity("transitionOperationsOrganizationHeadCompanyStatus", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status");
-    static final RouteIdentity OPERATIONS_HEAD_COMPANY_BRAND_ADD = new RouteIdentity("addOperationsOrganizationHeadCompanyBrandAuthorization", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations");
-    static final RouteIdentity OPERATIONS_HEAD_COMPANY_BRAND_REMOVE = new RouteIdentity("removeOperationsOrganizationHeadCompanyBrandAuthorization", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations/{brandId}");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_CREATE = new RouteIdentity("createOperationsOrganizationStore", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_UPDATE = new RouteIdentity("updateOperationsOrganizationStore", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_STATUS = new RouteIdentity("transitionOperationsOrganizationStoreStatus", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status");
-    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE = new RouteIdentity("getOperationsOrganizationStore", "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
-    static final RouteIdentity OPERATIONS_CONTRACT_CREATE = new RouteIdentity("createOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts");
-    static final RouteIdentity OPERATIONS_CONTRACT_UPDATE = new RouteIdentity("updateOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}");
-    static final RouteIdentity OPERATIONS_CONTRACT_INVALIDATE = new RouteIdentity("invalidateOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate");
-    static final RouteIdentity OPERATIONS_CONTRACT = new RouteIdentity("getOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}");
-    static final RouteIdentity OPERATIONS_ASSET_STAGE = new RouteIdentity("stageOperationsCatalogAsset", "/api/operations/catalog-inventory/assets/stage");
-    static final RouteIdentity OPERATIONS_ASSET_RELEASE = new RouteIdentity("releaseOperationsCatalogStagedAsset", "/api/operations/catalog-inventory/assets/{assetRef}/release");
-    static final RouteIdentity OPERATIONS_CATALOG_ITEM_CREATE = new RouteIdentity("createOperationsCatalogItem", "/api/operations/catalog-inventory/items");
-    static final RouteIdentity OPERATIONS_CATALOG_ITEM_SAVE = new RouteIdentity("saveOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
-    static final RouteIdentity OPERATIONS_CATALOG_ITEM_STATUS = new RouteIdentity("transitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/{itemCode}/status");
-    static final RouteIdentity OPERATIONS_CATALOG_ITEM_READ = new RouteIdentity("getOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
-    static final RouteIdentity OPERATIONS_CATALOG_SHAPE_MANIFEST = new RouteIdentity("getOperationsCatalogShapeManifest", "/api/operations/catalog-inventory/shape-manifest");
-    static final RouteIdentity OPERATIONS_CATALOG_BATCH_STATUS = new RouteIdentity("batchTransitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/status");
-    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_READ = new RouteIdentity("getOperationsCatalogDictionary", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}");
-    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_CREATE = new RouteIdentity("createOperationsCatalogDictionaryEntry", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries");
-    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_UPDATE = new RouteIdentity("updateOperationsCatalogDictionaryEntry", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}");
-    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_STATUS = new RouteIdentity("transitionOperationsCatalogDictionaryEntryStatus", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status");
-    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_CREATE = new RouteIdentity("createOperationsCatalogCategory", "/api/operations/catalog-inventory/categories");
-    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_DELETE = new RouteIdentity("deleteOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}");
-    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_PREFLIGHT = new RouteIdentity("preflightOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/preflight");
-    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_EXECUTE = new RouteIdentity("executeOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/execute");
-    static final RouteIdentity OPERATIONS_INVENTORY_TARGET_READ = new RouteIdentity("getOperationsInventoryTarget", "/api/operations/catalog-inventory/inventory-targets/{targetRef}");
+    static final byte[] PNG = Base64.getDecoder()
+            .decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==");
+    static final RouteIdentity PUBLIC_INVITATION_VIEW = new RouteIdentity(
+            "getPublicInvitationView", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}");
+    static final RouteIdentity ACCEPT_PUBLIC_INVITATION = new RouteIdentity(
+            "acceptPublicInvitation", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}");
+    static final RouteIdentity SEND_PUBLIC_INVITATION_OTP = new RouteIdentity(
+            "sendPublicInvitationOtp", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/send");
+    static final RouteIdentity VERIFY_PUBLIC_INVITATION_OTP = new RouteIdentity(
+            "verifyPublicInvitationOtp", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/otp/verify");
+    static final RouteIdentity SAVE_PUBLIC_INVITATION_CREDENTIALS = new RouteIdentity(
+            "savePublicInvitationCredentials",
+            "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/credentials");
+    static final RouteIdentity COMPLETE_PUBLIC_INVITATION = new RouteIdentity(
+            "completePublicInvitation", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/complete");
+    static final RouteIdentity PUBLIC_INVITATION_COMPLETION = new RouteIdentity(
+            "getPublicInvitationCompletion",
+            "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}/completion");
+    static final RouteIdentity OPERATIONS_WORKSPACE_LOGIN_ENTRY = new RouteIdentity(
+            "getOperationsWorkspaceLoginEntry", "/api/operations/group-workspaces/{groupWorkspaceKey}/login-entry");
+    static final RouteIdentity OPERATIONS_WORKSPACE_PASSWORD_LOGIN = new RouteIdentity(
+            "operationsWorkspacePasswordLogin", "/api/operations/group-workspaces/{groupWorkspaceKey}/password-login");
+    static final RouteIdentity OPERATIONS_WORKSPACE_SESSION_ENTRY = new RouteIdentity(
+            "getOperationsWorkspaceSessionEntry", "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_REGION_CREATE = new RouteIdentity(
+            "createOperationsOrganizationRegion",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_PROJECT_CREATE = new RouteIdentity(
+            "createOperationsOrganizationProject",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/regions/{regionId}/projects");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_NODE_UPDATE = new RouteIdentity(
+            "updateOperationsOrganizationNode",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_NODE_STATUS = new RouteIdentity(
+            "transitionOperationsOrganizationNodeStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_HIERARCHY = new RouteIdentity(
+            "getOperationsOrganizationHierarchy", "/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_CREATE = new RouteIdentity(
+            "createOperationsOrganizationBrand",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_UPDATE = new RouteIdentity(
+            "updateOperationsOrganizationBrand",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_BRAND_STATUS = new RouteIdentity(
+            "transitionOperationsOrganizationBrandStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_TENANT_CREATE = new RouteIdentity(
+            "createOperationsOrganizationTenant",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_TENANT_STATUS = new RouteIdentity(
+            "transitionOperationsOrganizationTenantStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY_CREATE = new RouteIdentity(
+            "createOperationsOrganizationHeadCompany",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY = new RouteIdentity(
+            "getOperationsOrganizationHeadCompany",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_HEAD_COMPANY_STATUS = new RouteIdentity(
+            "transitionOperationsOrganizationHeadCompanyStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/status");
+    static final RouteIdentity OPERATIONS_HEAD_COMPANY_BRAND_ADD = new RouteIdentity(
+            "addOperationsOrganizationHeadCompanyBrandAuthorization",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-aut"
+                    + "horizations");
+    static final RouteIdentity OPERATIONS_HEAD_COMPANY_BRAND_REMOVE = new RouteIdentity(
+            "removeOperationsOrganizationHeadCompanyBrandAuthorization",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-aut"
+                    + "horizations/{brandId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_CREATE = new RouteIdentity(
+            "createOperationsOrganizationStore",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_UPDATE = new RouteIdentity(
+            "updateOperationsOrganizationStore",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_STATUS = new RouteIdentity(
+            "transitionOperationsOrganizationStoreStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE = new RouteIdentity(
+            "getOperationsOrganizationStore",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
+    static final RouteIdentity OPERATIONS_CONTRACT_CREATE = new RouteIdentity(
+            "createOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts");
+    static final RouteIdentity OPERATIONS_CONTRACT_UPDATE = new RouteIdentity(
+            "updateOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}");
+    static final RouteIdentity OPERATIONS_CONTRACT_INVALIDATE = new RouteIdentity(
+            "invalidateOperationsContract",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate");
+    static final RouteIdentity OPERATIONS_CONTRACT = new RouteIdentity(
+            "getOperationsContract", "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}");
+    static final RouteIdentity OPERATIONS_ASSET_STAGE =
+            new RouteIdentity("stageOperationsCatalogAsset", "/api/operations/catalog-inventory/assets/stage");
+    static final RouteIdentity OPERATIONS_ASSET_RELEASE = new RouteIdentity(
+            "releaseOperationsCatalogStagedAsset", "/api/operations/catalog-inventory/assets/{assetRef}/release");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_CREATE =
+            new RouteIdentity("createOperationsCatalogItem", "/api/operations/catalog-inventory/items");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_SAVE =
+            new RouteIdentity("saveOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_STATUS = new RouteIdentity(
+            "transitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/{itemCode}/status");
+    static final RouteIdentity OPERATIONS_CATALOG_ITEM_READ =
+            new RouteIdentity("getOperationsCatalogItem", "/api/operations/catalog-inventory/items/{itemCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_SHAPE_MANIFEST =
+            new RouteIdentity("getOperationsCatalogShapeManifest", "/api/operations/catalog-inventory/shape-manifest");
+    static final RouteIdentity OPERATIONS_CATALOG_BATCH_STATUS = new RouteIdentity(
+            "batchTransitionOperationsCatalogItemStatus", "/api/operations/catalog-inventory/items/status");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_READ = new RouteIdentity(
+            "getOperationsCatalogDictionary", "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_CREATE = new RouteIdentity(
+            "createOperationsCatalogDictionaryEntry",
+            "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_UPDATE = new RouteIdentity(
+            "updateOperationsCatalogDictionaryEntry",
+            "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}");
+    static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_STATUS = new RouteIdentity(
+            "transitionOperationsCatalogDictionaryEntryStatus",
+            "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries/{entryCode}/status");
+    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_CREATE =
+            new RouteIdentity("createOperationsCatalogCategory", "/api/operations/catalog-inventory/categories");
+    static final RouteIdentity OPERATIONS_CATALOG_CATEGORY_DELETE = new RouteIdentity(
+            "deleteOperationsCatalogCategory", "/api/operations/catalog-inventory/categories/{categoryRef}");
+    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_PREFLIGHT = new RouteIdentity(
+            "preflightOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/preflight");
+    static final RouteIdentity OPERATIONS_CATALOG_LOCAL_COPY_EXECUTE = new RouteIdentity(
+            "executeOperationsLocalCatalogCopy", "/api/operations/catalog-inventory/copy/local/execute");
+    static final RouteIdentity OPERATIONS_INVENTORY_TARGET_READ = new RouteIdentity(
+            "getOperationsInventoryTarget", "/api/operations/catalog-inventory/inventory-targets/{targetRef}");
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -132,15 +209,32 @@ class BackendAcceptanceTest {
             .withCommand("server", "/data", "--console-address", ":9001")
             .waitingFor(Wait.forHttp("/minio/health/ready").forPort(9000).forStatusCode(200));
 
-    @Autowired private JdbcTemplate jdbc;
-    @Autowired private InitializeCommercialGroupCommand commercialGroups;
-    @Autowired private OrganizationHierarchyService hierarchy;
-    @Autowired private BusinessEntityService entities;
-    @Autowired private WorkspaceRoleService roles;
-    @Autowired private WorkspaceInvitationService invitations;
-    @Autowired private BackendAcceptanceDatabaseMetricsSink metricsSink;
-    @Autowired ObjectMapper mapper;
-    @LocalServerPort private int port;
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @Autowired
+    private InitializeCommercialGroupCommand commercialGroups;
+
+    @Autowired
+    private OrganizationHierarchyService hierarchy;
+
+    @Autowired
+    private BusinessEntityService entities;
+
+    @Autowired
+    private WorkspaceRoleService roles;
+
+    @Autowired
+    private WorkspaceInvitationService invitations;
+
+    @Autowired
+    private BackendAcceptanceDatabaseMetricsSink metricsSink;
+
+    @Autowired
+    ObjectMapper mapper;
+
+    @LocalServerPort
+    private int port;
 
     @DynamicPropertySource
     static void applicationProperties(DynamicPropertyRegistry registry) {
@@ -164,14 +258,21 @@ class BackendAcceptanceTest {
         List<ScenarioDefinition> discovered = BackendAcceptanceScenarioCatalog.discover(this);
         List<ScenarioDefinition> selected = "all".equals(selectedOperation)
                 ? discovered
-                : discovered.stream().filter(value -> value.annotation().id().equals(selectedOperation) || value.annotation().operation().equals(selectedOperation)).toList();
+                : discovered.stream()
+                        .filter(value -> value.annotation().id().equals(selectedOperation)
+                                || value.annotation().operation().equals(selectedOperation))
+                        .toList();
         assertFalse(selected.isEmpty(), "BACKEND_ACCEPTANCE_OPERATION_NOT_DISCOVERED:" + selectedOperation);
         assertTrue(discovered.size() <= 80, "backend acceptance scenario count must stay within 80");
         writeDiscovery(discovered.size(), selected.size(), selectedOperation);
-        System.out.printf("BACKEND_ACCEPTANCE_DISCOVERY DISCOVERED=%d SELECTED=%d OPERATION=%s%n", discovered.size(), selected.size(), selectedOperation);
-        return selected.stream().map(definition -> DynamicTest.dynamicTest(
-                definition.annotation().id() + " [" + definition.annotation().module() + "]",
-                () -> executeScenario(definition)));
+        System.out.printf(
+                "BACKEND_ACCEPTANCE_DISCOVERY DISCOVERED=%d SELECTED=%d OPERATION=%s%n",
+                discovered.size(), selected.size(), selectedOperation);
+        return selected.stream()
+                .map(definition -> DynamicTest.dynamicTest(
+                        definition.annotation().id() + " ["
+                                + definition.annotation().module() + "]",
+                        () -> executeScenario(definition)));
     }
 
     private void executeScenario(ScenarioDefinition definition) throws Throwable {
@@ -195,69 +296,243 @@ class BackendAcceptanceTest {
         String workspaceName = "Acceptance workspace " + suffix;
         UUID workspaceUuid = UUID.randomUUID();
         long now = Instant.now().toEpochMilli();
-        jdbc.update("INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, name_normalized, operations_title, status, revision, version, created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, ?, ?, 'Acceptance Operations', 'ENABLED', 1, 1, ?, ?, ?)", workspaceUuid, key, workspaceName, workspaceName.toLowerCase(java.util.Locale.ROOT), now, now, now);
-        long workspaceId = jdbc.queryForObject("SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=?", Long.class, key);
-        var commercialGroup = commercialGroups.execute(new PlatformExecutionContext("backend-acceptance", "platform-admin", Instant.now().plusSeconds(60), "backend-acceptance-" + suffix), workspaceUuid, key, workspaceId, "backend-acceptance-commercial-group-" + suffix, "ACCEPTANCE-ROOT", "Acceptance root", AuditActor.system());
-        OrganizationNodeReadback region = hierarchy.create(workspaceUuid, key, "REGION", null, "acceptance-region", "Acceptance Region");
-        OrganizationNodeReadback project = hierarchy.create(workspaceUuid, key, "PROJECT", region.id(), "acceptance-project", "Acceptance Project", null, List.of("Opening"));
-        OrganizationEntityReadback brand = entities.createEntity("BRAND", workspaceUuid, key, "acceptance-brand", "Acceptance Brand", null, null, Map.of());
-        OrganizationEntityReadback tenant = entities.createEntity("TENANT", workspaceUuid, key, "acceptance-tenant", "Acceptance Tenant", "Acceptance Tenant Ltd", "91310000ACCEPTANCE", Map.of());
-        OrganizationEntityReadback store = entities.createStore(workspaceUuid, key, project.id(), tenant.id(), brand.id(), null, "acceptance-store", "Acceptance Store", "Acceptance Store Notes", Map.of());
+        jdbc.update(
+                "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
+                        + "name_normalized, operations_title, status, revision, version, created_at_epoch_millis, "
+                        + "updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, ?, ?, 'Acceptance "
+                        + "Operations', "
+                        + "'ENABLED', 1, 1, ?, ?, ?)",
+                workspaceUuid,
+                key,
+                workspaceName,
+                workspaceName.toLowerCase(java.util.Locale.ROOT),
+                now,
+                now,
+                now);
+        long workspaceId = jdbc.queryForObject(
+                "SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=?", Long.class, key);
+        var commercialGroup = commercialGroups.execute(
+                new PlatformExecutionContext(
+                        "backend-acceptance",
+                        "platform-admin",
+                        Instant.now().plusSeconds(60),
+                        "backend-acceptance-" + suffix),
+                workspaceUuid,
+                key,
+                workspaceId,
+                "backend-acceptance-commercial-group-" + suffix,
+                "ACCEPTANCE-ROOT",
+                "Acceptance root",
+                AuditActor.system());
+        OrganizationNodeReadback region =
+                hierarchy.create(workspaceUuid, key, "REGION", null, "acceptance-region", "Acceptance Region");
+        OrganizationNodeReadback project = hierarchy.create(
+                workspaceUuid,
+                key,
+                "PROJECT",
+                region.id(),
+                "acceptance-project",
+                "Acceptance Project",
+                null,
+                List.of("Opening"));
+        OrganizationEntityReadback brand = entities.createEntity(
+                "BRAND", workspaceUuid, key, "acceptance-brand", "Acceptance Brand", null, null, Map.of());
+        OrganizationEntityReadback tenant = entities.createEntity(
+                "TENANT",
+                workspaceUuid,
+                key,
+                "acceptance-tenant",
+                "Acceptance Tenant",
+                "Acceptance Tenant Ltd",
+                "91310000ACCEPTANCE",
+                Map.of());
+        OrganizationEntityReadback store = entities.createStore(
+                workspaceUuid,
+                key,
+                project.id(),
+                tenant.id(),
+                brand.id(),
+                null,
+                "acceptance-store",
+                "Acceptance Store",
+                "Acceptance Store Notes",
+                Map.of());
         OrganizationEntityReadback headCompany = "HEAD_COMPANY".equals(targetType)
-                ? entities.createEntity("HEAD_COMPANY", workspaceUuid, key, "acceptance-head-company", "Acceptance Head Company", "Acceptance Head Company Ltd", "91310000HEADACCEPT", Map.of())
+                ? entities.createEntity(
+                        "HEAD_COMPANY",
+                        workspaceUuid,
+                        key,
+                        "acceptance-head-company",
+                        "Acceptance Head Company",
+                        "Acceptance Head Company Ltd",
+                        "91310000HEADACCEPT",
+                        Map.of())
                 : null;
         String roleNodeType = targetType;
-        UUID roleNodeId = switch (targetType) {
-            case "GROUP" -> commercialGroup.id();
-            case "REGION" -> region.id();
-            case "PROJECT" -> project.id();
-            case "STORE" -> store.id();
-            case "HEAD_COMPANY" -> headCompany.id();
-            default -> throw new IllegalArgumentException("unsupported acceptance target " + targetType);
-        };
+        UUID roleNodeId =
+                switch (targetType) {
+                    case "GROUP" -> commercialGroup.id();
+                    case "REGION" -> region.id();
+                    case "PROJECT" -> project.id();
+                    case "STORE" -> store.id();
+                    case "HEAD_COMPANY" -> headCompany.id();
+                    default -> throw new IllegalArgumentException("unsupported acceptance target " + targetType);
+                };
         String roleName = "REGION".equals(targetType) ? "Acceptance Region Operator" : targetType + " Operator";
-        UUID roleId = roles.create(workspaceUuid, key, roleName, roleNodeType, null, Set.of(), capabilities).id();
+        UUID roleId = roles.create(workspaceUuid, key, roleName, roleNodeType, null, Set.of(), capabilities)
+                .id();
         String mobile = "13800000012";
         String loginName = "operator-" + suffix;
-        var invitation = invitations.create(workspaceUuid, key, mobile, List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, roleNodeType, roleNodeId)), now + 3_600_000L);
-        return new Fixture(workspaceUuid, key, commercialGroup.id(), region.id(), project.id(), brand.id(), tenant.id(), store.id(), headCompany == null ? null : headCompany.id(), invitation.id(), invitation.rawInvitationToken(), mobile, loginName);
+        var invitation = invitations.create(
+                workspaceUuid,
+                key,
+                mobile,
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, roleNodeType, roleNodeId)),
+                now + 3_600_000L);
+        return new Fixture(
+                workspaceUuid,
+                key,
+                commercialGroup.id(),
+                region.id(),
+                project.id(),
+                brand.id(),
+                tenant.id(),
+                store.id(),
+                headCompany == null ? null : headCompany.id(),
+                invitation.id(),
+                invitation.rawInvitationToken(),
+                mobile,
+                loginName);
     }
 
     /** Creates an independently authorized store/brand context in an existing isolated workspace. */
     Fixture siblingStoreFixture(Fixture existing, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
-        OrganizationEntityReadback brand = entities.createEntity("BRAND", existing.workspaceUuid(), existing.groupWorkspaceKey(),
-                "acceptance-brand-" + suffix, "Acceptance Brand " + suffix, null, null, Map.of());
-        OrganizationEntityReadback tenant = entities.createEntity("TENANT", existing.workspaceUuid(), existing.groupWorkspaceKey(),
-                "acceptance-tenant-" + suffix, "Acceptance Tenant " + suffix, "Acceptance Tenant " + suffix + " Ltd", "91310000" + suffix, Map.of());
-        OrganizationEntityReadback store = entities.createStore(existing.workspaceUuid(), existing.groupWorkspaceKey(), existing.projectId(), tenant.id(), brand.id(), null,
-                "acceptance-store-" + suffix, "Acceptance Store " + suffix, "Acceptance Store Notes", Map.of());
-        UUID roleId = roles.create(existing.workspaceUuid(), existing.groupWorkspaceKey(), "Acceptance Store Operator " + suffix,
-                "STORE", null, Set.of(), capabilities).id();
-        String mobile = "139" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        OrganizationEntityReadback brand = entities.createEntity(
+                "BRAND",
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                "acceptance-brand-" + suffix,
+                "Acceptance Brand " + suffix,
+                null,
+                null,
+                Map.of());
+        OrganizationEntityReadback tenant = entities.createEntity(
+                "TENANT",
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                "acceptance-tenant-" + suffix,
+                "Acceptance Tenant " + suffix,
+                "Acceptance Tenant " + suffix + " Ltd",
+                "91310000" + suffix,
+                Map.of());
+        OrganizationEntityReadback store = entities.createStore(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.projectId(),
+                tenant.id(),
+                brand.id(),
+                null,
+                "acceptance-store-" + suffix,
+                "Acceptance Store " + suffix,
+                "Acceptance Store Notes",
+                Map.of());
+        UUID roleId = roles.create(
+                        existing.workspaceUuid(),
+                        existing.groupWorkspaceKey(),
+                        "Acceptance Store Operator " + suffix,
+                        "STORE",
+                        null,
+                        Set.of(),
+                        capabilities)
+                .id();
+        String mobile =
+                "139" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
         String loginName = "operator-" + suffix;
-        var invitation = invitations.create(existing.workspaceUuid(), existing.groupWorkspaceKey(), mobile,
-                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "STORE", store.id())), now + 3_600_000L);
-        return new Fixture(existing.workspaceUuid(), existing.groupWorkspaceKey(), existing.groupId(), existing.regionId(), existing.projectId(),
-                brand.id(), tenant.id(), store.id(), null, invitation.id(), invitation.rawInvitationToken(), mobile, loginName);
+        var invitation = invitations.create(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                mobile,
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "STORE", store.id())),
+                now + 3_600_000L);
+        return new Fixture(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.groupId(),
+                existing.regionId(),
+                existing.projectId(),
+                brand.id(),
+                tenant.id(),
+                store.id(),
+                null,
+                invitation.id(),
+                invitation.rawInvitationToken(),
+                mobile,
+                loginName);
     }
 
     void completeInvitation(ScenarioContext context, Fixture fixture) throws Exception {
         context.post(ACCEPT_PUBLIC_INVITATION, publicInvitationPath(fixture), null, Map.of(), Set.of(200));
-        Response sent = context.post(SEND_PUBLIC_INVITATION_OTP, publicInvitationPath(fixture) + "/otp/send", null, Map.of("mobile", fixture.mobile()), Set.of(200));
+        Response sent = context.post(
+                SEND_PUBLIC_INVITATION_OTP,
+                publicInvitationPath(fixture) + "/otp/send",
+                null,
+                Map.of("mobile", fixture.mobile()),
+                Set.of(200));
         String code = sent.json().path("debugVerificationCode").asText();
         assertTrue(code.matches("[0-9]{6}"), "BUSINESS: managed OTP delivery exposes only the test code");
-        Response verified = context.post(VERIFY_PUBLIC_INVITATION_OTP, publicInvitationPath(fixture) + "/otp/verify", null, Map.of("mobile", fixture.mobile(), "code", code), Set.of(200));
-        context.post(SAVE_PUBLIC_INVITATION_CREDENTIALS, publicInvitationPath(fixture) + "/credentials", null, Map.of("verificationGrant", verified.json().path("verificationGrant").asText(), "userName", "Acceptance Operator", "loginName", fixture.loginName(), "password", OPERATIONS_PASSWORD), Set.of(200));
-        assertEquals("COMPLETED", context.post(COMPLETE_PUBLIC_INVITATION, publicInvitationPath(fixture) + "/complete", null, Map.of(), Set.of(200)).json().path("status").asText(), "BUSINESS: fixture invitation is completed through HTTP");
+        Response verified = context.post(
+                VERIFY_PUBLIC_INVITATION_OTP,
+                publicInvitationPath(fixture) + "/otp/verify",
+                null,
+                Map.of("mobile", fixture.mobile(), "code", code),
+                Set.of(200));
+        context.post(
+                SAVE_PUBLIC_INVITATION_CREDENTIALS,
+                publicInvitationPath(fixture) + "/credentials",
+                null,
+                Map.of(
+                        "verificationGrant",
+                        verified.json().path("verificationGrant").asText(),
+                        "userName",
+                        "Acceptance Operator",
+                        "loginName",
+                        fixture.loginName(),
+                        "password",
+                        OPERATIONS_PASSWORD),
+                Set.of(200));
+        assertEquals(
+                "COMPLETED",
+                context.post(
+                                COMPLETE_PUBLIC_INVITATION,
+                                publicInvitationPath(fixture) + "/complete",
+                                null,
+                                Map.of(),
+                                Set.of(200))
+                        .json()
+                        .path("status")
+                        .asText(),
+                "BUSINESS: fixture invitation is completed through HTTP");
     }
 
     Session login(ScenarioContext context, Fixture fixture) throws Exception {
-        Response response = context.post(OPERATIONS_WORKSPACE_PASSWORD_LOGIN, "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/password-login", null, Map.of("loginName", fixture.loginName(), "password", OPERATIONS_PASSWORD), Set.of(200));
-        String cookie = response.http().headers().allValues("set-cookie").stream().findFirst().map(value -> value.substring(0, value.indexOf(';'))).orElseThrow();
-        assertEquals(fixture.groupWorkspaceKey(), response.json().path("groupWorkspaceKey").asText(), "BUSINESS: login returns the requested workspace");
-        return new Session(cookie, response.json(), response.json().path("contextVersion").asLong());
+        Response response = context.post(
+                OPERATIONS_WORKSPACE_PASSWORD_LOGIN,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/password-login",
+                null,
+                Map.of("loginName", fixture.loginName(), "password", OPERATIONS_PASSWORD),
+                Set.of(200));
+        String cookie = response.http().headers().allValues("set-cookie").stream()
+                .findFirst()
+                .map(value -> value.substring(0, value.indexOf(';')))
+                .orElseThrow();
+        assertEquals(
+                fixture.groupWorkspaceKey(),
+                response.json().path("groupWorkspaceKey").asText(),
+                "BUSINESS: login returns the requested workspace");
+        return new Session(
+                cookie, response.json(), response.json().path("contextVersion").asLong());
     }
 
     static String publicInvitationPath(Fixture fixture) {
@@ -278,7 +553,20 @@ class BackendAcceptanceTest {
 
     private void writeDiscovery(int discovered, int selected, String operation) {
         try {
-            Files.writeString(Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")), mapper.writeValueAsString(Map.of("type", "discovery", "discovered", discovered, "selected", selected, "operation", operation)) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.writeString(
+                    Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")),
+                    mapper.writeValueAsString(Map.of(
+                                    "type",
+                                    "discovery",
+                                    "discovered",
+                                    discovered,
+                                    "selected",
+                                    selected,
+                                    "operation",
+                                    operation))
+                            + "\n",
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
         } catch (Exception failure) {
             throw new IllegalStateException("BACKEND_ACCEPTANCE_DISCOVERY_RESULT_WRITE_FAILED", failure);
         }
@@ -292,7 +580,10 @@ class BackendAcceptanceTest {
     }
 
     private static void requireRemoteExecution() {
-        assertEquals("remote", System.getenv("V2S_TESTCONTAINERS_EXECUTION_PLANE"), "Testcontainers must run through the managed remote runner");
+        assertEquals(
+                "remote",
+                System.getenv("V2S_TESTCONTAINERS_EXECUTION_PLANE"),
+                "Testcontainers must run through the managed remote runner");
     }
 
     private static String requiredEnvironment(String name) {
@@ -305,9 +596,24 @@ class BackendAcceptanceTest {
         return "http://127.0.0.1:" + MINIO.getMappedPort(9000);
     }
 
-    record RouteIdentity(String operationId, String routeTemplate) { }
-    record Fixture(UUID workspaceUuid, String groupWorkspaceKey, UUID groupId, UUID regionId, UUID projectId, UUID brandId, UUID tenantId, UUID storeId, UUID headCompanyId, UUID invitationId, String invitationToken, String mobile, String loginName) { }
-    record Session(String cookie, JsonNode entry, long contextVersion) { }
+    record RouteIdentity(String operationId, String routeTemplate) {}
+
+    record Fixture(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID groupId,
+            UUID regionId,
+            UUID projectId,
+            UUID brandId,
+            UUID tenantId,
+            UUID storeId,
+            UUID headCompanyId,
+            UUID invitationId,
+            String invitationToken,
+            String mobile,
+            String loginName) {}
+
+    record Session(String cookie, JsonNode entry, long contextVersion) {}
 
     final class ScenarioContext {
         private final AcceptanceScenario scenario;
@@ -323,15 +629,24 @@ class BackendAcceptanceTest {
             return send(route, "GET", path, cookie, (String) null, null, expected);
         }
 
-        Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected) throws Exception {
+        Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
+                throws Exception {
             return send(route, "POST", path, cookie, mapper.writeValueAsString(body), null, expected);
         }
 
-        Response patch(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected) throws Exception {
+        Response patch(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
+                throws Exception {
             return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, expected);
         }
 
-        Response patch(RouteIdentity route, String path, String cookie, Map<String, Object> body, Map<String, String> headers, Set<Integer> expected) throws Exception {
+        Response patch(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                Map<String, Object> body,
+                Map<String, String> headers,
+                Set<Integer> expected)
+                throws Exception {
             return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, headers, expected);
         }
 
@@ -339,35 +654,88 @@ class BackendAcceptanceTest {
             return send(route, "DELETE", path, cookie, (String) null, null, expected);
         }
 
-        Response delete(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected) throws Exception {
+        Response delete(
+                RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
+                throws Exception {
             return send(route, "DELETE", path, cookie, mapper.writeValueAsString(body), null, expected);
         }
 
-        Response multipartAsset(RouteIdentity route, Fixture fixture, String cookie, String dataNodeRef, String digest, Set<Integer> expected) throws Exception {
+        Response multipartAsset(
+                RouteIdentity route,
+                Fixture fixture,
+                String cookie,
+                String dataNodeRef,
+                String digest,
+                Set<Integer> expected)
+                throws Exception {
             String boundary = "----backend-acceptance-" + UUID.randomUUID();
             ByteArrayOutputStream content = new ByteArrayOutputStream();
             writePart(content, boundary, "content", "acceptance.png", "image/png", PNG);
             content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-            String query = "?fileName=acceptance.png&mediaType=" + encode("image/png") + "&contentDigest=" + encode(digest) + "&dataNodeRef=" + encode(dataNodeRef);
-            return send(route, "POST", "/api/operations/catalog-inventory/assets/stage" + query, cookie, content.toByteArray(), boundary, expected);
+            String query = "?fileName=acceptance.png&mediaType=" + encode("image/png") + "&contentDigest="
+                    + encode(digest) + "&dataNodeRef=" + encode(dataNodeRef);
+            return send(
+                    route,
+                    "POST",
+                    "/api/operations/catalog-inventory/assets/stage" + query,
+                    cookie,
+                    content.toByteArray(),
+                    boundary,
+                    expected);
         }
 
-        private Response send(RouteIdentity route, String method, String path, String cookie, String json, String boundary, Set<Integer> expected) throws Exception {
+        private Response send(
+                RouteIdentity route,
+                String method,
+                String path,
+                String cookie,
+                String json,
+                String boundary,
+                Set<Integer> expected)
+                throws Exception {
             byte[] body = json == null ? new byte[0] : json.getBytes(StandardCharsets.UTF_8);
             return send(route, method, path, cookie, body, boundary, Map.of(), expected);
         }
 
-        private Response send(RouteIdentity route, String method, String path, String cookie, byte[] body, String boundary, Set<Integer> expected) throws Exception {
+        private Response send(
+                RouteIdentity route,
+                String method,
+                String path,
+                String cookie,
+                byte[] body,
+                String boundary,
+                Set<Integer> expected)
+                throws Exception {
             return send(route, method, path, cookie, body, boundary, Map.of(), expected);
         }
 
-        private Response send(RouteIdentity route, String method, String path, String cookie, String json, String boundary, Map<String, String> headers, Set<Integer> expected) throws Exception {
+        private Response send(
+                RouteIdentity route,
+                String method,
+                String path,
+                String cookie,
+                String json,
+                String boundary,
+                Map<String, String> headers,
+                Set<Integer> expected)
+                throws Exception {
             byte[] body = json == null ? new byte[0] : json.getBytes(StandardCharsets.UTF_8);
             return send(route, method, path, cookie, body, boundary, headers, expected);
         }
 
-        private Response send(RouteIdentity route, String method, String path, String cookie, byte[] body, String boundary, Map<String, String> headers, Set<Integer> expected) throws Exception {
-            HttpRequest.BodyPublisher publisher = body.length == 0 ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(body);
+        private Response send(
+                RouteIdentity route,
+                String method,
+                String path,
+                String cookie,
+                byte[] body,
+                String boundary,
+                Map<String, String> headers,
+                Set<Integer> expected)
+                throws Exception {
+            HttpRequest.BodyPublisher publisher = body.length == 0
+                    ? HttpRequest.BodyPublishers.noBody()
+                    : HttpRequest.BodyPublishers.ofByteArray(body);
             HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                     .header("Accept", "application/json")
                     .header("X-Correlation-Id", correlationId)
@@ -385,15 +753,21 @@ class BackendAcceptanceTest {
             HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             JsonNode bodyJson;
             try {
-                bodyJson = response.body() == null || response.body().isBlank() ? mapper.createObjectNode() : mapper.readTree(response.body());
+                bodyJson = response.body() == null || response.body().isBlank()
+                        ? mapper.createObjectNode()
+                        : mapper.readTree(response.body());
             } catch (Exception invalidJson) {
                 bodyJson = mapper.createObjectNode();
             }
-            Response result = new Response(response.statusCode(), response.body() == null ? "" : response.body(), bodyJson, response);
+            Response result = new Response(
+                    response.statusCode(), response.body() == null ? "" : response.body(), bodyJson, response);
             if (!expected.contains(result.status())) {
                 contractPass = false;
-                throw new AssertionError("CONTRACT: unexpected HTTP status=" + result.status() + " problem=" + result.problemCode()
-                        + " detail=" + result.json().path("detail").asText(result.json().path("message").asText("")));
+                throw new AssertionError("CONTRACT: unexpected HTTP status=" + result.status() + " problem="
+                        + result.problemCode() + " detail="
+                        + result.json()
+                                .path("detail")
+                                .asText(result.json().path("message").asText("")));
             }
             return result;
         }
@@ -401,19 +775,72 @@ class BackendAcceptanceTest {
         private void pass() throws Exception {
             DatabaseOperationTracker.Snapshot snapshot = metricsSink.snapshotFor(correlationId);
             assertNotNull(snapshot, "DB operation observation is available for the completed HTTP scenario");
-            writeResult(Map.of("operation", scenario.id(), "module", scenario.module(), "contract", "PASS", "business", "PASS", "businessMode", "REAL", "businessAssertion", "HAND_WRITTEN_BUSINESS_ORACLE", "dbOperations", snapshot.count(), "status", "PASS"));
-            System.out.printf("BACKEND_ACCEPTANCE_RESULT SCENARIO=%s MODULE=%s CONTRACT=PASS BUSINESS=PASS DB_OPERATIONS=%d%n", scenario.id(), scenario.module(), snapshot.count());
+            writeResult(Map.of(
+                    "operation",
+                    scenario.id(),
+                    "module",
+                    scenario.module(),
+                    "contract",
+                    "PASS",
+                    "business",
+                    "PASS",
+                    "businessMode",
+                    "REAL",
+                    "businessAssertion",
+                    "HAND_WRITTEN_BUSINESS_ORACLE",
+                    "dbOperations",
+                    snapshot.count(),
+                    "status",
+                    "PASS"));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_RESULT SCENARIO=%s MODULE=%s CONTRACT=PASS BUSINESS=PASS DB_OPERATIONS=%d%n",
+                    scenario.id(), scenario.module(), snapshot.count());
         }
 
         private void fail(Throwable failure) throws Exception {
             DatabaseOperationTracker.Snapshot snapshot = metricsSink.snapshotFor(correlationId);
-            String category = failure instanceof AssertionError && failure.getMessage() != null && failure.getMessage().startsWith("CONTRACT") ? "HTTP_CONTRACT" : "BUSINESS_ORACLE";
-            writeResult(Map.of("operation", scenario.id(), "module", scenario.module(), "contract", contractPass ? "PASS" : "FAIL", "business", "FAIL", "businessMode", "REAL", "businessAssertion", "HAND_WRITTEN_BUSINESS_ORACLE", "dbOperations", snapshot == null ? 0 : snapshot.count(), "status", "FAIL", "failureCategory", category, "failure", compact(failure.getMessage())));
-            System.out.printf("BACKEND_ACCEPTANCE_RESULT SCENARIO=%s MODULE=%s CONTRACT=%s BUSINESS=FAIL DB_OPERATIONS=%d FAILURE_CATEGORY=%s%n", scenario.id(), scenario.module(), contractPass ? "PASS" : "FAIL", snapshot == null ? 0 : snapshot.count(), category);
+            String category = failure instanceof AssertionError
+                            && failure.getMessage() != null
+                            && failure.getMessage().startsWith("CONTRACT")
+                    ? "HTTP_CONTRACT"
+                    : "BUSINESS_ORACLE";
+            writeResult(Map.of(
+                    "operation",
+                    scenario.id(),
+                    "module",
+                    scenario.module(),
+                    "contract",
+                    contractPass ? "PASS" : "FAIL",
+                    "business",
+                    "FAIL",
+                    "businessMode",
+                    "REAL",
+                    "businessAssertion",
+                    "HAND_WRITTEN_BUSINESS_ORACLE",
+                    "dbOperations",
+                    snapshot == null ? 0 : snapshot.count(),
+                    "status",
+                    "FAIL",
+                    "failureCategory",
+                    category,
+                    "failure",
+                    compact(failure.getMessage())));
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_RESULT SCENARIO=%s MODULE=%s CONTRACT=%s BUSINESS=FAIL DB_OPERATIONS=%d "
+                            + "FAILURE_CATEGORY=%s%n",
+                    scenario.id(),
+                    scenario.module(),
+                    contractPass ? "PASS" : "FAIL",
+                    snapshot == null ? 0 : snapshot.count(),
+                    category);
         }
 
         private void writeResult(Map<String, Object> result) throws Exception {
-            Files.writeString(Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")), mapper.writeValueAsString(result) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.writeString(
+                    Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")),
+                    mapper.writeValueAsString(result) + "\n",
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
         }
     }
 
@@ -430,9 +857,17 @@ class BackendAcceptanceTest {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
-    private static void writePart(ByteArrayOutputStream output, String boundary, String name, String fileName, String contentType, byte[] value) throws Exception {
+    private static void writePart(
+            ByteArrayOutputStream output,
+            String boundary,
+            String name,
+            String fileName,
+            String contentType,
+            byte[] value)
+            throws Exception {
         output.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-        output.write(("Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + fileName + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+        output.write(("Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + fileName + "\"\r\n")
+                .getBytes(StandardCharsets.UTF_8));
         output.write(("Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
         output.write(value);
         output.write("\r\n".getBytes(StandardCharsets.UTF_8));

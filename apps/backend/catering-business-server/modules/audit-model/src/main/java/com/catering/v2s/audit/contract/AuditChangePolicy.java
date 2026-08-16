@@ -11,12 +11,14 @@ public record AuditChangePolicy(String entityType, String action, Set<String> al
         entityType = required(entityType, "entityType");
         action = required(action, "action");
         allowedFieldKeys = Set.copyOf(new LinkedHashSet<>(allowedFieldKeys == null ? Set.of() : allowedFieldKeys));
-        if (allowedFieldKeys.stream().anyMatch(value -> value == null || value.isBlank())) throw new IllegalArgumentException("audit policy field key is invalid");
+        if (allowedFieldKeys.stream().anyMatch(value -> value == null || value.isBlank()))
+            throw new IllegalArgumentException("audit policy field key is invalid");
     }
 
     public List<AuditChange> allow(List<AuditChange> candidates) {
         List<AuditChange> values = candidates == null ? List.of() : List.copyOf(candidates);
-        if (values.stream().anyMatch(value -> !allowedFieldKeys.contains(value.fieldKey()))) throw new IllegalArgumentException("audit change field is forbidden");
+        if (values.stream().anyMatch(value -> !allowedFieldKeys.contains(value.fieldKey())))
+            throw new IllegalArgumentException("audit change field is forbidden");
         return values;
     }
 

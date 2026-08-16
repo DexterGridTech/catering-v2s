@@ -152,7 +152,7 @@ ALTER TABLE inventory.stock_bom
     ALTER COLUMN item_ref SET NOT NULL;
 
 ALTER TABLE inventory.stock_target
-    DROP CONSTRAINT IF EXISTS stock_target_data_node_ref_brand_ref_item_code_sku_code_key;
+    DROP CONSTRAINT stock_target_data_node_ref_brand_ref_item_code_sku_code_key;
 DROP INDEX IF EXISTS inventory.ux_stock_target_identity;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_stock_target_catalog_identity_ref
     ON inventory.stock_target (data_node_ref, brand_ref, item_ref, COALESCE(product_sku_ref, '00000000-0000-0000-0000-000000000000'::uuid));
@@ -160,7 +160,7 @@ CREATE INDEX IF NOT EXISTS ix_stock_target_scope_item_ref
     ON inventory.stock_target (data_node_ref, brand_ref, item_ref);
 
 ALTER TABLE inventory.stock_bom
-    DROP CONSTRAINT IF EXISTS stock_bom_data_node_ref_brand_ref_item_code_sku_code_key;
+    DROP CONSTRAINT stock_bom_data_node_ref_brand_ref_item_code_sku_code_key;
 DROP INDEX IF EXISTS inventory.ux_stock_bom_owner_identity;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_stock_bom_catalog_owner_identity_ref
     ON inventory.stock_bom (data_node_ref, brand_ref, item_ref, COALESCE(product_sku_ref, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(option_value_ref, '00000000-0000-0000-0000-000000000000'::uuid));

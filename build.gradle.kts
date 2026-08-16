@@ -19,6 +19,23 @@ buildscript {
 
 plugins {
     java
+    id("com.diffplug.spotless") version "7.0.2"
+}
+
+spotless {
+    java {
+        target("src/**/*.java")
+        targetExclude(
+            "**/app/edge/generated/**",
+            "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+            "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+            "**/build/generated/**",
+        )
+        palantirJavaFormat("2.39.0").formatJavadoc(true)
+        toggleOffOn()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 allprojects {
@@ -28,6 +45,67 @@ allprojects {
 
 subprojects {
     apply(plugin = "java")
+    apply(plugin = "pmd")
+    apply(plugin = "com.diffplug.spotless")
+
+    extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        java {
+            target("src/**/*.java")
+            targetExclude(
+                "**/app/edge/generated/**",
+                "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+                "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+                "**/build/generated/**",
+            )
+            palantirJavaFormat("2.39.0").formatJavadoc(true)
+            toggleOffOn()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
+
+    val backendJavaUtf8LineLimit = tasks.register("backendJavaUtf8LineLimit") {
+        group = "verification"
+        description = "Checks the backend Java source set for UTF-8 lines over 120 bytes."
+        doLast {
+            val violations = fileTree(projectDir) {
+                include("src/**/*.java")
+                exclude(
+                    "**/app/edge/generated/**",
+                    "**/com/catering/v2s/workspace/iam/api/WorkspaceAuthorizationCatalog.java",
+                    "**/com/catering/v2s/workspace/iam/api/WorkspaceCapabilityRequirementCatalog.java",
+                    "**/build/generated/**",
+                )
+            }.files.flatMap { source ->
+                source.readLines(Charsets.UTF_8).mapIndexedNotNull { index, line ->
+                    val bytes = line.toByteArray(Charsets.UTF_8).size
+                    if (bytes > 120) "${source.relativeTo(projectDir)}:${index + 1}:$bytes" else null
+                }
+            }
+            if (violations.isNotEmpty()) {
+                throw GradleException("BACKEND_JAVA_UTF8_LINE_LIMIT:120:${violations.take(3).joinToString()}")
+            }
+        }
+    }
+
+    tasks.named("spotlessCheck") {
+        dependsOn(backendJavaUtf8LineLimit)
+    }
+
+    extensions.configure<org.gradle.api.plugins.quality.PmdExtension> {
+        toolVersion = "7.17.0"
+        isIgnoreFailures = false
+        isConsoleOutput = true
+        ruleSetFiles = files(rootProject.file("tools/verify-gates/preserve-stack-trace.xml"))
+        ruleSets = emptyList()
+    }
+
+    tasks.withType<org.gradle.api.plugins.quality.Pmd>().configureEach {
+        exclude("**/app/edge/generated/wire/**")
+        exclude("**/build/generated/**")
+        reports.xml.required.set(true)
+        reports.html.required.set(false)
+    }
 
     java {
         toolchain {
@@ -78,4 +156,22 @@ subprojects {
             }
         }
     }
+}
+
+tasks.register("backendPmdPreserveStackTrace") {
+    group = "verification"
+    description = "Runs the curated backend PMD PreserveStackTrace rule only."
+    dependsOn(
+        subprojects
+            .filter { it.path.startsWith(":apps:backend:catering-business-server") }
+            .map { it.tasks.named("pmdMain") },
+    )
+}
+
+tasks.named("spotlessCheck") {
+    dependsOn(subprojects.map { it.tasks.named("spotlessCheck") })
+}
+
+tasks.named("spotlessApply") {
+    dependsOn(subprojects.map { it.tasks.named("spotlessApply") })
 }

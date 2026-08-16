@@ -11,29 +11,55 @@ class CatalogSkuStructureFingerprintTest {
 
     @Test
     void sortsSkuCodesAndAttributePairsIntoAStableCompatibilityBit() throws Exception {
-        var first = mapper.readTree("{\"skus\":[{\"code\":\"SKU-B\",\"attributeValues\":{\"SIZE\":\"LARGE\",\"COLOR\":\"RED\"}},{\"code\":\"SKU-A\",\"attributeValues\":{\"SIZE\":\"SMALL\"}}]}");
-        var reordered = mapper.readTree("{\"skus\":[{\"code\":\"SKU-A\",\"attributeValues\":{\"SIZE\":\"SMALL\"}},{\"code\":\"SKU-B\",\"attributeValues\":{\"COLOR\":\"RED\",\"SIZE\":\"LARGE\"}}]}");
-        var changed = mapper.readTree("{\"skus\":[{\"code\":\"SKU-A\",\"attributeValues\":{\"SIZE\":\"MEDIUM\"}},{\"code\":\"SKU-B\",\"attributeValues\":{\"COLOR\":\"RED\",\"SIZE\":\"LARGE\"}}]}");
+        var first = mapper.readTree(
+                "{\"skus\":[{\"code\":\"SKU-B\",\"attributeValues\":{\"SIZE\":\"LARGE\",\"COLOR\":\"RED\"}},{\"code\":"
+                        + "\"SKU-A\",\"attributeValues\":{\"SIZE\":\"SMALL\"}}]}");
+        var reordered = mapper.readTree(
+                "{\"skus\":[{\"code\":\"SKU-A\",\"attributeValues\":{\"SIZE\":\"SMALL\"}},{\"code\":\"SKU-B\",\"attribu"
+                        + "teValues\":{\"COLOR\":\"RED\",\"SIZE\":\"LARGE\"}}]}");
+        var changed = mapper.readTree(
+                "{\"skus\":[{\"code\":\"SKU-A\",\"attributeValues\":{\"SIZE\":\"MEDIUM\"}},{\"code\":\"SKU-B\",\"attrib"
+                        + "uteValues\":{\"COLOR\":\"RED\",\"SIZE\":\"LARGE\"}}]}");
 
-        assertEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(reordered));
-        assertNotEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(changed));
+        assertEquals(
+                CatalogOwnerService.skuStructureFingerprint(first),
+                CatalogOwnerService.skuStructureFingerprint(reordered));
+        assertNotEquals(
+                CatalogOwnerService.skuStructureFingerprint(first),
+                CatalogOwnerService.skuStructureFingerprint(changed));
     }
 
     @Test
     void includesTypedAttributeValueReferencesInTheCompatibilityBit() throws Exception {
-        var first = mapper.readTree("{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
-        var reordered = mapper.readTree("{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"valueCode\":\"SMALL\",\"attributeCode\":\"SIZE\"}]}]}");
-        var changed = mapper.readTree("{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"LARGE\"}]}]}");
+        var first = mapper.readTree(
+                "{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":"
+                        + "\"SMALL\"}]}]}");
+        var reordered = mapper.readTree(
+                "{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"valueCode\":\"SMALL\",\"attributeCode\""
+                        + ":\"SIZE\"}]}]}");
+        var changed = mapper.readTree(
+                "{\"skus\":[{\"skuCode\":\"SKU-001\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":"
+                        + "\"LARGE\"}]}]}");
 
-        assertEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(reordered));
-        assertNotEquals(CatalogOwnerService.skuStructureFingerprint(first), CatalogOwnerService.skuStructureFingerprint(changed));
+        assertEquals(
+                CatalogOwnerService.skuStructureFingerprint(first),
+                CatalogOwnerService.skuStructureFingerprint(reordered));
+        assertNotEquals(
+                CatalogOwnerService.skuStructureFingerprint(first),
+                CatalogOwnerService.skuStructureFingerprint(changed));
     }
 
     @Test
     void prefersCanonicalSkuCodeWhenLegacyCodeIsAlsoPresent() throws Exception {
-        var canonical = mapper.readTree("{\"skus\":[{\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
-        var conflictingAliases = mapper.readTree("{\"skus\":[{\"code\":\"legacy-code\",\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
+        var canonical = mapper.readTree(
+                "{\"skus\":[{\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attributeCode\":\"SIZE\",\"valueC"
+                        + "ode\":\"SMALL\"}]}]}");
+        var conflictingAliases = mapper.readTree(
+                "{\"skus\":[{\"code\":\"legacy-code\",\"skuCode\":\"SKU-CANONICAL\",\"attributeValueRefs\":[{\"attribut"
+                        + "eCode\":\"SIZE\",\"valueCode\":\"SMALL\"}]}]}");
 
-        assertEquals(CatalogOwnerService.skuStructureFingerprint(canonical), CatalogOwnerService.skuStructureFingerprint(conflictingAliases));
+        assertEquals(
+                CatalogOwnerService.skuStructureFingerprint(canonical),
+                CatalogOwnerService.skuStructureFingerprint(conflictingAliases));
     }
 }

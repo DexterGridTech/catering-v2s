@@ -7,13 +7,15 @@ const CORRELATION_HEADER = platformHttpProtocol.CORRELATION_ID;
 const REQUEST_HEADER = platformHttpProtocol.REQUEST_ID;
 const TRACE_HEADER = platformHttpProtocol.TRACE_ID;
 
-const id = () => globalThis.crypto?.randomUUID?.() ?? 'frontend-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+const id = () =>
+  globalThis.crypto?.randomUUID?.() ?? 'frontend-' + Date.now() + '-' + Math.random().toString(16).slice(2);
 
-const routeTemplate = (value: string) => value
-  .split('?')[0]
-  .replace(/(\/api\/public\/invitations\/[^/]+\/)[^/]+/gi, '$1:invitation-token')
-  .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, ':id')
-  .replace(/\/[0-9]{4,}(?=\/|$)/g, '/:id');
+const routeTemplate = (value: string) =>
+  value
+    .split('?')[0]
+    .replace(/(\/api\/public\/invitations\/[^/]+\/)[^/]+/gi, '$1:invitation-token')
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, ':id')
+    .replace(/\/[0-9]{4,}(?=\/|$)/g, '/:id');
 
 const errorCode = (error: FetchBaseQueryError) => {
   const data = error.data;
@@ -32,7 +34,9 @@ export type ObservedBaseQueryOptions = {
   registerAbortController?: (controller: AbortController) => void | (() => void);
 };
 
-export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta> => {
+export const createObservedBaseQuery = (
+  options: ObservedBaseQueryOptions,
+): BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta> => {
   const baseQuery = fetchBaseQuery({baseUrl: options.baseUrl, credentials: options.credentials ?? 'include'});
   return async (rawArgs, api, extraOptions) => {
     const started = performance.now();
@@ -80,13 +84,18 @@ export const createObservedBaseQuery = (options: ObservedBaseQueryOptions): Base
       requiresSession,
       durationMs: Math.round(performance.now() - started),
     };
-    if (result.error) options.logger.error({...baseEvent, event: 'frontend.request.failed', errorCode: errorCode(result.error)});
+    if (result.error)
+      options.logger.error({...baseEvent, event: 'frontend.request.failed', errorCode: errorCode(result.error)});
     else options.logger.info({...baseEvent, event: 'frontend.request.completed'});
     if (status === 401 && requiresSession) {
       try {
         await options.onUnauthorized?.();
       } catch (error) {
-        options.logger.error({...baseEvent, event: 'frontend.request.unauthorized-recovery-failed', errorCode: error instanceof Error ? error.name : 'UNAUTHORIZED_RECOVERY_FAILED'});
+        options.logger.error({
+          ...baseEvent,
+          event: 'frontend.request.unauthorized-recovery-failed',
+          errorCode: error instanceof Error ? error.name : 'UNAUTHORIZED_RECOVERY_FAILED',
+        });
       }
     }
     return result;

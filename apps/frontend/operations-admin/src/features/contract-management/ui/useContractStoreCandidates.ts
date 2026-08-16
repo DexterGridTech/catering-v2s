@@ -1,4 +1,5 @@
-import {useCallback, useEffect, useMemo, useRef, useState, type UIEvent} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {StoreContractStoreCandidate} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -6,62 +7,63 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 
 const PAGE_SIZE = 50;
 
-export function useContractStoreCandidates({open, queryContext, selectedStoreId}: {
+export function useContractStoreCandidates({
+  open,
+  queryContext,
+  selectedStoreId,
+}: {
   open: boolean;
   queryContext: OperationsPageContext;
   selectedStoreId?: string;
 }) {
   const [storeSearch, setStoreSearchState] = useState<string>();
-  const [page, setPage] = useState(1);
-  const [stores, setStores] = useState<StoreContractStoreCandidate[]>([]);
-  const request = useMemo(() => operationsAdminRtkRequest.getOperationsContractCandidates(
-    {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-    {query: {
-      expectedContextVersion: queryContext.expectedContextVersion,
+  const candidates = useCursorCandidates<StoreContractStoreCandidate>({
+    queryText: storeSearch,
+    resetKey: [open, queryContext.groupWorkspaceKey, queryContext.expectedContextVersion, selectedStoreId ?? ''].join(
+      '|',
+    ),
+    pageSize: PAGE_SIZE,
+    keyOf: store => store.id,
+  });
+  const request = useMemo(
+    () =>
+      operationsAdminRtkRequest.getOperationsContractCandidates(
+        {groupWorkspaceKey: queryContext.groupWorkspaceKey},
+        {
+          query: {
+            expectedContextVersion: queryContext.expectedContextVersion,
+            selectedStoreId,
+            storeSearch: candidates.debouncedQueryText,
+            page: candidates.page,
+            pageSize: PAGE_SIZE,
+          },
+        },
+      ),
+    [
+      candidates.debouncedQueryText,
+      candidates.page,
+      queryContext.expectedContextVersion,
+      queryContext.groupWorkspaceKey,
       selectedStoreId,
-      storeSearch,
-      page,
-      pageSize: PAGE_SIZE,
-    }},
-  ), [page, queryContext.expectedContextVersion, queryContext.groupWorkspaceKey, selectedStoreId, storeSearch]);
+    ],
+  );
   const result = operationsRtk.useGetOperationsContractCandidatesQuery(request, {skip: !open});
-  const queryIdentity = `${queryContext.groupWorkspaceKey}|${queryContext.expectedContextVersion}|${selectedStoreId ?? ''}|${storeSearch ?? ''}`;
-  const previousIdentity = useRef(queryIdentity);
-
   useEffect(() => {
-    if (previousIdentity.current === queryIdentity) return;
-    previousIdentity.current = queryIdentity;
-    setPage(1);
-    setStores([]);
-  }, [queryIdentity]);
-
-  useEffect(() => {
-    const data = result.data;
+    const data = result.currentData;
     if (!data) return;
-    setStores((current) => {
-      const next = page === 1 ? [] : current;
-      const byId = new Map(next.map((store) => [store.id, store]));
-      for (const store of data.stores) byId.set(store.id, store);
-      return [...byId.values()];
-    });
-  }, [page, result.data]);
+    candidates.acceptPage(data.stores, data.metadata);
+  }, [candidates.acceptPage, candidates.page, result.currentData]);
 
   const setStoreSearch = useCallback((value: string) => {
-    setStoreSearchState(value.trim() || undefined);
-    setPage(1);
-    setStores([]);
+    setStoreSearchState(value);
   }, []);
-  const onPopupScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    if (target.scrollTop + target.clientHeight < target.scrollHeight - 8) return;
-    if (!result.data || result.isFetching || page * result.data.metadata.pageSize >= result.data.metadata.total) return;
-    setPage((current) => current + 1);
-  }, [page, result.data, result.isFetching]);
+  const onPopupScroll = (event: Parameters<typeof candidates.onPopupScroll>[0]) =>
+    candidates.onPopupScroll(event, result.isFetching);
 
   return {
     ...result,
-    data: result.data,
-    stores,
+    data: result.currentData,
+    stores: candidates.items,
     storeSearch,
     setStoreSearch,
     onPopupScroll,

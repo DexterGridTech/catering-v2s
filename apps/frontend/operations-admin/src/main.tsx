@@ -14,7 +14,9 @@ document.documentElement.style.colorScheme = operationsAdminThemeProfile.colorSc
 createRoot(document.querySelector('#app')!).render(
   <ConfigProvider locale={zhCN} theme={operationsAdminTheme}>
     <ProConfigProvider>
-      <Provider store={operationsStore}><OperationsApp/></Provider>
+      <Provider store={operationsStore}>
+        <OperationsApp />
+      </Provider>
     </ProConfigProvider>
   </ConfigProvider>,
 );

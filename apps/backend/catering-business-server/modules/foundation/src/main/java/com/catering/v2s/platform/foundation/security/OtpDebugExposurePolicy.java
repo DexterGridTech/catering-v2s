@@ -9,9 +9,8 @@ public final class OtpDebugExposurePolicy {
     private final boolean enabled;
 
     public OtpDebugExposurePolicy(
-        @Value("${v2s.runtime-environment:}") String runtimeEnvironment,
-        @Value("${platform.otp.debug-code-exposure:false}") boolean configuredExposure
-    ) {
+            @Value("${v2s.runtime-environment:}") String runtimeEnvironment,
+            @Value("${platform.otp.debug-code-exposure:false}") boolean configuredExposure) {
         this.enabled = resolve(runtimeEnvironment, configuredExposure);
     }
 
@@ -20,7 +19,8 @@ public final class OtpDebugExposurePolicy {
     }
 
     static boolean resolve(String runtimeEnvironment, boolean configuredExposure) {
-        String runtime = runtimeEnvironment == null ? "" : runtimeEnvironment.trim().toLowerCase();
+        String runtime =
+                runtimeEnvironment == null ? "" : runtimeEnvironment.trim().toLowerCase();
         if ("non-production".equals(runtime) || "uat".equals(runtime)) {
             if (!configuredExposure) throw new IllegalStateException("OTP_DEBUG_EXPOSURE_REQUIRED_NON_PRODUCTION");
             return true;

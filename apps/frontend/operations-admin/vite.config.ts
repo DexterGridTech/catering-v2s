@@ -8,7 +8,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {alias: {'@ant-design/icons-svg/lib/asn': '@ant-design/icons-svg/es/asn'}},
   server: {
-    host: '0.0.0.0', port: 5175, strictPort: true,
+    host: '0.0.0.0',
+    port: 5175,
+    strictPort: true,
     watch: createFrontendWatchBoundary(import.meta.dirname),
     proxy: gatewayProxyTarget ? {'/api': {target: gatewayProxyTarget, changeOrigin: false}} : undefined,
   },

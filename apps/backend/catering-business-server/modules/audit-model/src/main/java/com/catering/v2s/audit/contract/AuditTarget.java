@@ -11,7 +11,8 @@ public record AuditTarget(String entityType, String entityRef) {
 
     private static String required(String value, String name, int limit) {
         String normalized = Objects.requireNonNullElse(value, "").trim();
-        if (normalized.isEmpty() || normalized.length() > limit) throw new IllegalArgumentException(name + " is invalid");
+        if (normalized.isEmpty() || normalized.length() > limit)
+            throw new IllegalArgumentException(name + " is invalid");
         return normalized;
     }
 }

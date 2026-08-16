@@ -32,7 +32,10 @@ export type FrontendLogEvent = {
   durationMs?: number;
 };
 
-export type FrontendLogInput = Omit<FrontendLogEvent, 'eventId' | 'occurredAt' | 'sequence' | 'runId' | 'layer' | 'attempt' | 'level' | 'service' | 'owner' | 'instanceId'> & {
+export type FrontendLogInput = Omit<
+  FrontendLogEvent,
+  'eventId' | 'occurredAt' | 'sequence' | 'runId' | 'layer' | 'attempt' | 'level' | 'service' | 'owner' | 'instanceId'
+> & {
   service?: string;
   owner?: string;
   instanceId?: string;
@@ -49,7 +52,8 @@ export type SafeLogger = {
   snapshot: () => readonly FrontendLogEvent[];
 };
 
-const blockedKeys = /password|passwordhash|otp|token|cookie|authorization|credential|requestbody|responsebody|rawpayload|mobile/i;
+const blockedKeys =
+  /password|passwordhash|otp|token|cookie|authorization|credential|requestbody|responsebody|rawpayload|mobile/i;
 
 const safeId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -67,20 +71,34 @@ const clean = (event: FrontendLogEvent): FrontendLogEvent => {
 export const createBeaconLogSink = (endpoint?: string): FrontendLogSink | undefined => {
   const target = endpoint?.trim();
   if (!target) return undefined;
-  return (event) => {
+  return event => {
     const body = JSON.stringify(event);
     try {
       if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
         if (navigator.sendBeacon(target, new Blob([body], {type: 'application/json'}))) return;
       }
-    } catch { /* telemetry must never change the user operation */ }
+    } catch {
+      /* telemetry must never change the user operation */
+    }
     if (typeof fetch === 'function') {
-      void fetch(target, {method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'}, body, keepalive: true}).catch(() => undefined);
+      void fetch(target, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body,
+        keepalive: true,
+      }).catch(() => undefined);
     }
   };
 };
 
-export const createSafeLogger = (options?: {service?: string; enabled?: boolean; maxEvents?: number; runId?: string; sink?: FrontendLogSink}): SafeLogger => {
+export const createSafeLogger = (options?: {
+  service?: string;
+  enabled?: boolean;
+  maxEvents?: number;
+  runId?: string;
+  sink?: FrontendLogSink;
+}): SafeLogger => {
   const service = options?.service ?? 'admin-ui';
   const enabled = options?.enabled ?? false;
   const maxEvents = options?.maxEvents ?? 100;
@@ -89,14 +107,10 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
   const parentEventByOperationInstance = new Map<string, string>();
   let sequence = 0;
 
-  const emit = (
-    level: FrontendLogLevel,
-    event: FrontendLogInput,
-  ) => {
+  const emit = (level: FrontendLogLevel, event: FrontendLogInput) => {
     if (!enabled && level === 'DEBUG') return;
-    const operationKey = event.operationId && event.operationInstanceId
-      ? `${event.operationId}:${event.operationInstanceId}`
-      : undefined;
+    const operationKey =
+      event.operationId && event.operationInstanceId ? `${event.operationId}:${event.operationInstanceId}` : undefined;
     const safe = clean({
       ...event,
       service,
@@ -109,7 +123,8 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
       layer: 'frontend',
       attempt: event.attempt ?? 1,
       level,
-      parentEventId: event.parentEventId ?? (operationKey ? parentEventByOperationInstance.get(operationKey) : undefined),
+      parentEventId:
+        event.parentEventId ?? (operationKey ? parentEventByOperationInstance.get(operationKey) : undefined),
     });
     if (operationKey) parentEventByOperationInstance.set(operationKey, safe.eventId);
     events.push(safe);
@@ -117,8 +132,11 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
     if (options?.sink && (enabled || level === 'WARN' || level === 'ERROR')) {
       try {
         const result = options.sink(safe);
-        if (result && typeof (result as Promise<void>).catch === 'function') void (result as Promise<void>).catch(() => undefined);
-      } catch { /* telemetry must never change the user operation */ }
+        if (result && typeof (result as Promise<void>).catch === 'function')
+          void (result as Promise<void>).catch(() => undefined);
+      } catch {
+        /* telemetry must never change the user operation */
+      }
     }
     if (!enabled) return;
     const line = `[${service}] ${JSON.stringify(safe)}`;
@@ -129,10 +147,10 @@ export const createSafeLogger = (options?: {service?: string; enabled?: boolean;
   };
 
   return {
-    info: (event) => emit('INFO', event),
-    warn: (event) => emit('WARN', event),
-    error: (event) => emit('ERROR', event),
-    debug: (event) => emit('DEBUG', event),
+    info: event => emit('INFO', event),
+    warn: event => emit('WARN', event),
+    error: event => emit('ERROR', event),
+    debug: event => emit('DEBUG', event),
     snapshot: () => [...events],
   };
 };

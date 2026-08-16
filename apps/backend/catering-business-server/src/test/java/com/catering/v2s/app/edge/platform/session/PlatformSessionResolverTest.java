@@ -6,11 +6,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
-import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
-import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.foundation.persistence.CountingDataSource;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
+import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import java.sql.Connection;
@@ -24,10 +24,29 @@ class PlatformSessionResolverTest {
     void readFactsRequireThePlatformSessionBeforeDerivingEnabledSelectedWorkspace() throws Exception {
         PlatformAuthenticationService authentication = mock(PlatformAuthenticationService.class);
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
-        PlatformSessionReadback session = new PlatformSessionReadback(UUID.randomUUID(), 1L, UUID.randomUUID(), "平台管理员", Long.MAX_VALUE);
+        PlatformSessionReadback session = new PlatformSessionReadback(
+                UUID.randomUUID(),
+                1L,
+                UUID.randomUUID(),
+                "平台管理员",
+                /* format-wrap */
+                Long.MAX_VALUE);
         WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
-            UUID.randomUUID(), "platform-read", "平台读取空间", "运营空间", null, null,
-            "ENABLED", 1L, 1L, 1L, 1L, true);
+                UUID.randomUUID(),
+                "platform-read",
+                "平"
+                        /* format-wrap */
+                        + "台读取空间",
+                "运营空间",
+                null,
+                null,
+                "ENABLED",
+                1L,
+                1L,
+                1L,
+                1L,
+                /* format-wrap */
+                true);
         when(authentication.requireActiveSession("platform-session")).thenAnswer(invocation -> {
             executeObservedStatement();
             return session;
@@ -37,12 +56,19 @@ class PlatformSessionResolverTest {
             return workspace;
         });
         PlatformSessionResolver resolver = new PlatformSessionResolver(authentication);
-        EdgeRequestContext request = new EdgeRequestContext("fingerprint", "correlation",
-            PlatformSessionCookie.fromCookie("platform-session"), null, null, null, null);
+        EdgeRequestContext request = new EdgeRequestContext(
+                "fingerprint",
+                "correlation",
+                PlatformSessionCookie.fromCookie("platform-session"),
+                null,
+                null,
+                null,
+                null);
 
         PlatformSessionResolver.EnabledSelectedWorkspaceFact selected;
         ReadBudgetComponent.Snapshot budget;
-        try (var database = DatabaseOperationTracker.open(); var readBudget = ReadBudgetComponent.open()) {
+        try (var database = DatabaseOperationTracker.open();
+                var readBudget = ReadBudgetComponent.open()) {
             selected = resolver.requireRead(request).requireEnabledSelectedWorkspace(workspaces, "platform-read");
             budget = readBudget.snapshot(DatabaseOperationTracker.snapshot());
         }
@@ -65,7 +91,8 @@ class PlatformSessionResolverTest {
         Statement statement = mock(Statement.class);
         when(delegate.getConnection()).thenReturn(connection);
         when(connection.createStatement()).thenReturn(statement);
-        try (Connection observed = new CountingDataSource(delegate).getConnection(); Statement observedStatement = observed.createStatement()) {
+        try (Connection observed = new CountingDataSource(delegate).getConnection();
+                Statement observedStatement = observed.createStatement()) {
             observedStatement.execute("SELECT 1");
         }
     }

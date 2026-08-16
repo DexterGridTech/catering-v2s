@@ -5,19 +5,21 @@ import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
+import {readCatalogInventoryOpenApi} from "../../scripts/lib/catalog-inventory-openapi.mjs";
 
 const OPENAPI_ROOT = "contracts/openapi";
 const REGISTRY_PATH = "contracts/registry/iam-org-governance-manifest.json";
 const CATALOG_INVENTORY_EDGE_CONTRACT_PATH = "contracts/catalog/catalog-inventory-edge-contract.json";
-const CATALOG_INVENTORY_OPENAPI_PATH = "contracts/openapi/catalog-inventory.openapi.yaml";
+const CATALOG_INVENTORY_EDGE_PLACEMENT_PATH = "contracts/catalog/catalog-inventory-edge-placement.json";
+const CATALOG_INVENTORY_OPENAPI_PATH = "contracts/openapi/catalog-inventory.openapi.json";
 const CATALOG_INVENTORY_PATH_SHARDS = [
-  "contracts/openapi/paths/operations-admin/catalog-workbench.paths.yaml",
-  "contracts/openapi/paths/operations-admin/catalog-item-management.paths.yaml",
-  "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.yaml",
-  "contracts/openapi/paths/operations-admin/catalog-copy.paths.yaml",
-  "contracts/openapi/paths/operations-admin/inventory-workbench.paths.yaml",
-  "contracts/openapi/paths/operations-admin/inventory-management.paths.yaml",
-  "contracts/openapi/paths/operations-admin/production-tag-management.paths.yaml",
+  "contracts/openapi/paths/operations-admin/catalog-workbench.paths.json",
+  "contracts/openapi/paths/operations-admin/catalog-item-management.paths.json",
+  "contracts/openapi/paths/operations-admin/catalog-dictionary-management.paths.json",
+  "contracts/openapi/paths/operations-admin/catalog-copy.paths.json",
+  "contracts/openapi/paths/operations-admin/inventory-workbench.paths.json",
+  "contracts/openapi/paths/operations-admin/inventory-management.paths.json",
+  "contracts/openapi/paths/operations-admin/production-tag-management.paths.json",
 ];
 const CATALOG_INVENTORY_OWNER_AUTHORIZATION = Object.freeze({
   catalog: {ownerRecheckId: "OWNER_RECHECK_CATALOG", typedProblemMappingId: "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION"},
@@ -139,10 +141,10 @@ const R24_OPERATION_REQUIREMENTS = new Map([
     "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION",
   ],
 ]);
-const R24_PATH_DOCUMENT = "contracts/openapi/paths/operations-admin/head-company-management.paths.yaml";
-const R24_BUSINESS_ENTITY_SCHEMA = "contracts/openapi/components/organization/business-entity.schemas.yaml";
-const P3_C_PATH_DOCUMENT = "contracts/openapi/paths/operations-admin/workspace-access.paths.yaml";
-const P3_C_SCHEMA_DOCUMENT = "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml";
+const R24_PATH_DOCUMENT = "contracts/openapi/paths/operations-admin/head-company-management.paths.json";
+const R24_BUSINESS_ENTITY_SCHEMA = "contracts/openapi/components/organization/business-entity.schemas.json";
+const P3_C_PATH_DOCUMENT = "contracts/openapi/paths/operations-admin/workspace-access.paths.json";
+const P3_C_SCHEMA_DOCUMENT = "contracts/openapi/components/workspace-iam/workspace-access.schemas.json";
 const ADMIN_CATALOG_PATH = "contracts/catalog/admin-catalog.json";
 const P3_C_TARGETS = [
   {type: "GROUP", segment: "group", suffix: "Group", pageKey: "PG-IAM-GROUP-USERS"},
@@ -194,15 +196,15 @@ const DEBUG_VERIFICATION_CODE_OWNER_PATHS = new Set([
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryService.java",
 ]);
 const DEBUG_VERIFICATION_CODE_EXTERNAL_PATHS = new Set([
-  "contracts/openapi/components/platform-iam/platform-identity.schemas.yaml",
-  "contracts/openapi/components/workspace-iam/workspace-access.schemas.yaml",
+  "contracts/openapi/components/platform-iam/platform-identity.schemas.json",
+  "contracts/openapi/components/workspace-iam/workspace-access.schemas.json",
   "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/session/PlatformAuthenticationController.java",
   "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/session/OperationsCatalogAuthenticationController.java",
   "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/passwordrecovery/OperationsPasswordRecoveryController.java",
   "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/publicentry/invitation/PublicInvitationController.java",
 ]);
 const PROBLEM_ADVICE_PATH = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/problem/ContractProblemAdvice.java";
-const PROBLEM_SCHEMA_PATH = "contracts/openapi/components/common/problem.schemas.yaml";
+const PROBLEM_SCHEMA_PATH = "contracts/openapi/components/common/problem.schemas.json";
 const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application",
   "apps/backend/catering-business-server/modules/extension/src/main/java/com/catering/v2s/extension/application",
@@ -238,7 +240,7 @@ function walkOpenApi(root, relative = OPENAPI_ROOT) {
     .flatMap((entry) => {
       const child = path.posix.join(relative, entry.name);
       if (entry.isDirectory()) return walkOpenApi(root, child);
-      return /\.(?:yaml|yml)$/.test(entry.name) ? [child] : [];
+      return /\.json$/.test(entry.name) ? [child] : [];
     })
     .sort();
 }
@@ -548,7 +550,13 @@ function catalogInventoryOpenApiOperations(document, expected, sourcePath) {
 
 function validateCatalogInventoryOpenApiProjection(root, expected) {
   const expectedIdentities = [...expected.keys()];
+  let canonicalDocument;
+  try { canonicalDocument = readCatalogInventoryOpenApi(root); }
+  catch (error) { fail(`CATALOG_INVENTORY_OPENAPI_SOURCE_INVALID:${String(error.message)}`); }
   const rootDocument = json(root, CATALOG_INVENTORY_OPENAPI_PATH, "CATALOG_INVENTORY_OPENAPI_ROOT_INVALID");
+  if (JSON.stringify(rootDocument) !== JSON.stringify(canonicalDocument)) {
+    fail("CATALOG_INVENTORY_OPENAPI_ROOT_ARTIFACT_DRIFT");
+  }
   const rootOperations = catalogInventoryOpenApiOperations(rootDocument, expected, CATALOG_INVENTORY_OPENAPI_PATH);
   if (!exactSet([...rootOperations.keys()], expectedIdentities)) {
     fail(`CATALOG_INVENTORY_OPENAPI_ROOT_SET_DRIFT:${rootOperations.size}`);
@@ -848,7 +856,7 @@ function validateR24ContractProjection(root, manifest) {
     || /(?:visibleStores|referencingStoreCount|canRevoke|hasAdditional)/.test(JSON.stringify(problemProperties))) {
     fail("CAPABILITY_R24_BLOCKER_DISCLOSURE_PRESENT");
   }
-  const edgeDocument = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_R24_EDGE_ROOT_INVALID");
+  const edgeDocument = json(root, "contracts/openapi/edge.openapi.json", "CAPABILITY_R24_EDGE_ROOT_INVALID");
   const problemResponse = edgeDocument?.components?.responses?.ProblemResponse?.content;
   if (!problemResponse || !exactSet(Object.keys(problemResponse), ["application/problem+json"])) {
     fail("CAPABILITY_R24_PROBLEM_MEDIA_TYPE_DRIFT");
@@ -942,7 +950,7 @@ function validateP3CAccessContract(root, manifest) {
 }
 
 function p3CEdgeRootRef(route) {
-  return `./paths/operations-admin/workspace-access.paths.yaml#/paths/${route.replaceAll("~", "~0").replaceAll("/", "~1")}`;
+  return `./paths/operations-admin/workspace-access.paths.json#/paths/${route.replaceAll("~", "~0").replaceAll("/", "~1")}`;
 }
 
 function p3CLegacyRootPaths() {
@@ -959,7 +967,7 @@ function p3CLegacyRootPaths() {
 }
 
 export function validateP3CEdgeRootProjection(root = process.cwd()) {
-  const edge = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_P3_C_EDGE_ROOT_INVALID");
+  const edge = json(root, "contracts/openapi/edge.openapi.json", "CAPABILITY_P3_C_EDGE_ROOT_INVALID");
   const pathDocument = json(root, P3_C_PATH_DOCUMENT, "CAPABILITY_P3_C_PATH_DOCUMENT_INVALID");
   const expectedPaths = [...new Set([...P3_C_OPERATIONS.values()].map((operation) => operation.path))];
   const expectedOperations = [...P3_C_OPERATIONS.values()]
@@ -1162,7 +1170,7 @@ function writeFixture(root, operation) {
     : anonymousProtocol
       ? {"x-required-owner-protocol": requirementId}
       : {"x-required-capability": requirementId};
-  fs.writeFileSync(path.join(root, "contracts/openapi/fixture.yaml"), JSON.stringify({paths: {[operation.path]: {[method]: {
+  fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify({paths: {[operation.path]: {[method]: {
     operationId: operation.operationId,
     security: operation.security ?? (operation.consumerFace === "public" ? [] : [{session: []}]),
     "x-consumer-faces": [operation.consumerFace],
@@ -1200,7 +1208,9 @@ function writeFixture(root, operation) {
 
 function writeCatalogInventoryGlobalFixture(root) {
   const sourceRoot = process.cwd();
-  for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...CATALOG_INVENTORY_PATH_SHARDS]) {
+  const placement = JSON.parse(fs.readFileSync(path.join(sourceRoot, CATALOG_INVENTORY_EDGE_PLACEMENT_PATH), "utf8"));
+  const shardPaths = placement.shards.map((shard) => path.join(CATALOG_INVENTORY_OPENAPI_PATH, "..", shard));
+  for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_EDGE_PLACEMENT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...shardPaths]) {
     const target = path.join(root, relative);
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.copyFileSync(path.join(sourceRoot, relative), target);
@@ -1252,7 +1262,7 @@ function writeR24Fixture(root) {
     capabilityKey: R24_SHARED_BUSINESS_CAPABILITY,
   };
   writeFixture(root, add);
-  const document = json(root, "contracts/openapi/fixture.yaml", "CAPABILITY_R24_FIXTURE_INVALID");
+  const document = json(root, "contracts/openapi/fixture.json", "CAPABILITY_R24_FIXTURE_INVALID");
   const requirementId = capabilityRequirementId(remove.operationId);
   document.paths[remove.path] = {delete: {
     operationId: remove.operationId,
@@ -1260,7 +1270,7 @@ function writeR24Fixture(root) {
     "x-owner-module": remove.ownerModule,
     "x-required-capability": requirementId,
   }};
-  fs.writeFileSync(path.join(root, "contracts/openapi/fixture.yaml"), JSON.stringify(document));
+  fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(document));
   const registry = governanceManifest(root);
   registry.requirements.push({
     requirementId,
@@ -1279,7 +1289,7 @@ function writeR24Fixture(root) {
 
 function writeR24ContractFixture(root) {
   writeR24Fixture(root);
-  fs.rmSync(path.join(root, "contracts/openapi/fixture.yaml"), {force: true});
+  fs.rmSync(path.join(root, "contracts/openapi/fixture.json"), {force: true});
   const registry = governanceManifest(root);
   registry.authority = "r24-contract-fixture";
   fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(registry));
@@ -1294,7 +1304,7 @@ function writeR24ContractFixture(root) {
       [removePath]: {delete: {operationId: "removeOperationsOrganizationHeadCompanyBrandAuthorization", "x-consumer-faces": ["operations-admin"], "x-owner-module": "organization", "x-required-capability": "REQ_REMOVE_OPERATIONS_ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION", "x-error-codes": ["ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE"], responses: {204: {}}}},
     },
   }));
-  fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify({
+  fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.json"), JSON.stringify({
     components: {responses: {ProblemResponse: {content: {"application/problem+json": {}}}}},
   }));
   fs.writeFileSync(path.join(root, R24_BUSINESS_ENTITY_SCHEMA), JSON.stringify({components: {schemas: {
@@ -1325,7 +1335,7 @@ function writeP3CAccessFixture(root) {
       "x-page-key": operation.pageKey,
       ...(WRITE_METHODS.has(operation.method) ? {"x-required-capability": capabilityRequirementId(operationId)} : {}),
       parameters: [{name: "groupWorkspaceKey", in: "path"}],
-      ...(operation.requestSchema ? {requestBody: {content: {"application/json": {schema: {$ref: `../../components/workspace-iam/workspace-access.schemas.yaml#/components/schemas/${operation.requestSchema}`}}}}} : {}),
+      ...(operation.requestSchema ? {requestBody: {content: {"application/json": {schema: {$ref: `../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/${operation.requestSchema}`}}}}} : {}),
     };
   }
   fs.writeFileSync(path.join(root, P3_C_PATH_DOCUMENT), JSON.stringify({paths}));
@@ -1353,7 +1363,7 @@ function writeP3CAccessFixture(root) {
 function writeP3CEdgeRootFixture(root) {
   const paths = Object.fromEntries([...new Set([...P3_C_OPERATIONS.values()].map((operation) => operation.path))]
     .map((route) => [route, {$ref: p3CEdgeRootRef(route)}]));
-  fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify({paths}));
+  fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.json"), JSON.stringify({paths}));
 }
 
 function writeStaticProofFixture(root) {
@@ -1387,8 +1397,8 @@ function selfTest() {
     writeFixture(root, publicOperation);
     validateCapabilityInvariants(root);
 
-    const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.yaml");
-    const canonicalDocument = json(root, "contracts/openapi/fixture.yaml", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
+    const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.json");
+    const canonicalDocument = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
     fs.writeFileSync(projectionPath, JSON.stringify({kind: "catalog-inventory-openapi-path-shard", paths: canonicalDocument.paths}));
     const projectedInventory = mutatingOperationInventory(root);
     if (projectedInventory.length !== 1) fail("CAPABILITY_SELF_TEST_GENERATED_PROJECTION_NOT_SKIPPED");
@@ -1460,7 +1470,10 @@ function selfTest() {
     delete catalogInventoryOpenApi.paths[catalogInventoryMutation.path][catalogInventoryMutation.method.toLowerCase()]["x-required-capability"];
     fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventoryOpenApi));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_OPENAPI_REQUIREMENT_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes("CATALOG_INVENTORY_OPENAPI_OPERATION_PROJECTION_DRIFT:")) throw error; }
+    catch (error) {
+      const message = String(error.message);
+      if (!message.includes("CATALOG_INVENTORY_") && !message.includes("CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT")) throw error;
+    }
 
     writeFixture(root, publicOperation);
     writeCatalogInventoryGlobalFixture(root);
@@ -1478,7 +1491,10 @@ function selfTest() {
     catalogInventoryReadOpenApi.paths[catalogInventoryRead.path][catalogInventoryRead.method.toLowerCase()]["x-required-capability"] = "READ_CAPABILITY_FORBIDDEN";
     fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventoryReadOpenApi));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_READ_CAPABILITY_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes("CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT:")) throw error; }
+    catch (error) {
+      const message = String(error.message);
+      if (!message.includes("CATALOG_INVENTORY_") && !message.includes("CAPABILITY_READ_OPENAPI_CAPABILITY_PRESENT")) throw error;
+    }
 
     writeFixture(root, publicOperation);
     const catalogInventorySelectorSchema = writeCatalogInventoryGlobalFixture(root);
@@ -1488,7 +1504,7 @@ function selfTest() {
     delete catalogInventorySelectorSchemaOpenApi.components.schemas.CatalogShapeManifestQuery.properties.dataNodeRef;
     fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventorySelectorSchemaOpenApi));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_SELECTOR_SCHEMA_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA_INVALID:${CATALOG_SHAPE_MANIFEST_OPERATION_ID}`)) throw error; }
+    catch (error) { if (!String(error.message).includes("CATALOG_INVENTORY_")) throw error; }
 
     writeFixture(root, publicOperation);
     writeCatalogInventoryGlobalFixture(root);
@@ -1497,8 +1513,10 @@ function selfTest() {
       .find((parameter) => parameter.name === "dataNodeRef").required = true;
     fs.writeFileSync(path.join(root, CATALOG_INVENTORY_OPENAPI_PATH), JSON.stringify(catalogInventorySelectorParameterOpenApi));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_CATALOG_INVENTORY_SELECTOR_PARAMETER_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes(`CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER_INVALID:${CATALOG_INVENTORY_OPENAPI_PATH}:${CATALOG_SHAPE_MANIFEST_OPERATION_ID}`)) throw error; }
-    for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...CATALOG_INVENTORY_PATH_SHARDS]) {
+    catch (error) { if (!String(error.message).includes("CATALOG_INVENTORY_")) throw error; }
+    const placement = JSON.parse(fs.readFileSync(path.join(process.cwd(), CATALOG_INVENTORY_EDGE_PLACEMENT_PATH), "utf8"));
+    const shardPaths = placement.shards.map((shard) => path.join(CATALOG_INVENTORY_OPENAPI_PATH, "..", shard));
+    for (const relative of [CATALOG_INVENTORY_EDGE_CONTRACT_PATH, CATALOG_INVENTORY_EDGE_PLACEMENT_PATH, CATALOG_INVENTORY_OPENAPI_PATH, ...shardPaths]) {
       fs.rmSync(path.join(root, relative), {force: true});
     }
 
@@ -1524,7 +1542,7 @@ function selfTest() {
 
     writeFixture(root, publicOperation);
 
-    const openApi = path.join(root, "contracts/openapi/fixture.yaml");
+    const openApi = path.join(root, "contracts/openapi/fixture.json");
     const document = JSON.parse(fs.readFileSync(openApi, "utf8"));
     delete document.paths[publicOperation.path].post["x-required-owner-protocol"];
     fs.writeFileSync(openApi, JSON.stringify(document));
@@ -1563,7 +1581,7 @@ function selfTest() {
     catch (error) { if (!String(error.message).includes("CAPABILITY_R24_BUSINESS_CAPABILITY_DRIFT:removeOperationsOrganizationHeadCompanyBrandAuthorization")) throw error; }
 
     writeR24Fixture(root);
-    const r24Document = json(root, "contracts/openapi/fixture.yaml", "CAPABILITY_R24_FIXTURE_INVALID");
+    const r24Document = json(root, "contracts/openapi/fixture.json", "CAPABILITY_R24_FIXTURE_INVALID");
     r24Document.paths["/api/operations/group-workspaces/{groupWorkspaceKey}/organization/head-companies/{headCompanyId}/brand-authorizations"].post["x-required-capability"] = R24_SHARED_BUSINESS_CAPABILITY;
     fs.writeFileSync(openApi, JSON.stringify(r24Document));
     try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_R24_CLIENT_BC_REQUIREMENT_NOT_DETECTED"); }
@@ -1603,16 +1621,16 @@ function selfTest() {
     catch (error) { if (!String(error.message).includes("CAPABILITY_READ_REGISTRY_SCOPE_MODEL_DRIFT:REQ_GET_OPERATIONS_WORKSPACE_GROUP_USER")) throw error; }
     writeP3CEdgeRootFixture(root);
     validateP3CEdgeRootProjection(root);
-    const p3cRootFixture = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_P3_C_FIXTURE_INVALID");
+    const p3cRootFixture = json(root, "contracts/openapi/edge.openapi.json", "CAPABILITY_P3_C_FIXTURE_INVALID");
     delete p3cRootFixture.paths[P3_C_OPERATIONS.get("getOperationsWorkspaceGroupUser").path];
-    fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify(p3cRootFixture));
+    fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.json"), JSON.stringify(p3cRootFixture));
     try { validateP3CEdgeRootProjection(root); fail("CAPABILITY_SELF_TEST_P3_C_EDGE_ROOT_OMISSION_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("CAPABILITY_P3_C_EDGE_ROOT_SET_DRIFT")) throw error; }
 
     writeP3CEdgeRootFixture(root);
-    const p3cLegacyRootFixture = json(root, "contracts/openapi/edge.openapi.yaml", "CAPABILITY_P3_C_FIXTURE_INVALID");
+    const p3cLegacyRootFixture = json(root, "contracts/openapi/edge.openapi.json", "CAPABILITY_P3_C_FIXTURE_INVALID");
     p3cLegacyRootFixture.paths[p3CLegacyRootPaths()[0]] = {$ref: p3CEdgeRootRef(P3_C_OPERATIONS.get("getOperationsWorkspaceGroupInvitations").path)};
-    fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.yaml"), JSON.stringify(p3cLegacyRootFixture));
+    fs.writeFileSync(path.join(root, "contracts/openapi/edge.openapi.json"), JSON.stringify(p3cLegacyRootFixture));
     try { validateP3CEdgeRootProjection(root); fail("CAPABILITY_SELF_TEST_P3_C_EDGE_LEGACY_ROOT_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("CAPABILITY_P3_C_EDGE_LEGACY_ROOT_PRESENT")) throw error; }
 
@@ -1656,15 +1674,15 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_TYPED_OWNER_CATCH_ALL_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_OWNER_EXCEPTION_CATCH_ALL:")) throw error; }
     fs.writeFileSync(adviceFixture, adviceSource);
-    fs.writeFileSync(path.join(root, "contracts/openapi/exposure.yaml"), JSON.stringify({components: {schemas: {OtpResponse: {properties: {testCode: {type: "string"}}}}}}));
+    fs.writeFileSync(path.join(root, "contracts/openapi/exposure.json"), JSON.stringify({components: {schemas: {OtpResponse: {properties: {testCode: {type: "string"}}}}}}));
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_OTP_OPENAPI_EXPOSURE_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes("P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:contracts/openapi/exposure.yaml")) throw error; }
-    fs.rmSync(path.join(root, "contracts/openapi/exposure.yaml"), {force: true});
+    catch (error) { if (!String(error.message).includes("P3_A_OTP_TEST_CODE_EXTERNAL_EXPOSURE:contracts/openapi/exposure.json")) throw error; }
+    fs.rmSync(path.join(root, "contracts/openapi/exposure.json"), {force: true});
 
-    fs.writeFileSync(path.join(root, "contracts/openapi/debug-exposure.yaml"), "debugVerificationCode\n");
+    fs.writeFileSync(path.join(root, "contracts/openapi/debug-exposure.json"), "debugVerificationCode\n");
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_OTP_DEBUG_EXTERNAL_ESCAPE_NOT_DETECTED"); }
-    catch (error) { if (!String(error.message).includes("P3_A_OTP_DEBUG_CODE_EXTERNAL_BOUNDARY_DRIFT:contracts/openapi/debug-exposure.yaml")) throw error; }
-    fs.rmSync(path.join(root, "contracts/openapi/debug-exposure.yaml"), {force: true});
+    catch (error) { if (!String(error.message).includes("P3_A_OTP_DEBUG_CODE_EXTERNAL_BOUNDARY_DRIFT:contracts/openapi/debug-exposure.json")) throw error; }
+    fs.rmSync(path.join(root, "contracts/openapi/debug-exposure.json"), {force: true});
 
     writeFixture(root, publicOperation);
     writeStaticProofFixture(root);

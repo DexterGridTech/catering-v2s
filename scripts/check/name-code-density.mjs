@@ -24,9 +24,12 @@ function scanSource(source, relativeFile) {
   const handBuilt = [];
   for (const match of source.matchAll(/`[^`]*`/gs)) {
     const lineStart = source.lastIndexOf('\n', match.index) + 1;
-    const lineEnd = source.indexOf('\n', match.index);
-    const lineText = source.slice(lineStart, lineEnd < 0 ? source.length : lineEnd);
-    if (!/\bkey\s*[:=]/.test(lineText) && /\$\{[^}]*(?:name|Name)[^}]*\}/.test(match[0]) && /\$\{[^}]*(?:code|Code)[^}]*\}/.test(match[0])) handBuilt.push(match);
+    const prefix = source.slice(lineStart, match.index);
+    // A React `key={...}` is an identity expression, not user-facing text.
+    // Do not suppress object properties (`key: ...`) or arbitrary assignments:
+    // those may still be rendering a hand-built name/code label.
+    const isJsxKeyValue = /\bkey\s*=\s*\{\s*$/.test(prefix);
+    if (!isJsxKeyValue && /\$\{[^}]*(?:name|Name)[^}]*\}/.test(match[0]) && /\$\{[^}]*(?:code|Code)[^}]*\}/.test(match[0])) handBuilt.push(match);
   }
   for (const match of source.matchAll(/<[^>]+>\s*\{[^}]*(?:name|Name)[^}]*\}\s*<\/[^>]+>\s*<[^>]+>\s*\{[^}]*(?:code|Code)[^}]*\}\s*<\/[^>]+>/gi)) handBuilt.push(match);
   for (const pattern of [
@@ -69,6 +72,9 @@ function selfTest() {
   const handBuiltJsx = scanSource('<span>{node.name}</span><span>{node.code}</span>', 'fixture.ts');
   const handBuiltSameElement = scanSource('<Typography.Text>{row.productName}（{row.productCode}）</Typography.Text>', 'fixture.ts');
   const handBuiltConcat = scanSource("const label = row.name + '（' + row.code;", 'fixture.ts');
+  const handBuiltWithSiblingKey = scanSource('const label = `${dataNodeName} (${dataNodeCode})`; return <Row key={dataNodeCode}/>;', 'fixture.ts');
+  const keyValue = scanSource('<Row key={`${dataNodeName} (${dataNodeCode})`}/>;', 'fixture.ts');
+  const objectKey = scanSource('const row = {key: `${dataNodeName} (${dataNodeCode})`};', 'fixture.ts');
   const clean = scanSource('const label = <NameCodeText name={name} code={code}/>;', 'fixture.ts');
   if (!legacy.some((finding) => finding.kind === 'LEGACY_FORMATTER')) throw new Error('NAME_CODE_SELF_TEST_LEGACY_RED_NOT_DETECTED');
   if (!handBuilt.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_HAND_BUILT_RED_NOT_DETECTED');
@@ -76,6 +82,9 @@ function selfTest() {
   if (!handBuiltJsx.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_JSX_RED_NOT_DETECTED');
   if (!handBuiltSameElement.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_SAME_ELEMENT_RED_NOT_DETECTED');
   if (!handBuiltConcat.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_CONCAT_RED_NOT_DETECTED');
+  if (!handBuiltWithSiblingKey.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_SIBLING_KEY_RED_NOT_DETECTED');
+  if (keyValue.length) throw new Error('NAME_CODE_SELF_TEST_KEY_VALUE_FALSE_POSITIVE');
+  if (!objectKey.some((finding) => finding.kind === 'HAND_BUILT_NAME_CODE')) throw new Error('NAME_CODE_SELF_TEST_OBJECT_KEY_RED_NOT_DETECTED');
   if (clean.length) throw new Error('NAME_CODE_SELF_TEST_CLEAN_FIXTURE_FALSE_POSITIVE');
   process.stdout.write('NAME_CODE_DENSITY_SELF_TEST=PASS\nRED_LEGACY_FORMATTER=PASS\nRED_HAND_BUILT_NAME_CODE=PASS\n');
 }

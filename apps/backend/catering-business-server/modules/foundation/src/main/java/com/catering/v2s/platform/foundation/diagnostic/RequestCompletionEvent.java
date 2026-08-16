@@ -11,8 +11,7 @@ public record RequestCompletionEvent(
         Integer status,
         String errorCode,
         long databaseOperationCount,
-        long databaseDurationMillis
-) {
+        long databaseDurationMillis) {
     public RequestCompletionEvent {
         context = Objects.requireNonNull(context, "context");
         consumerFace = allowed(consumerFace, "consumerFace");
@@ -20,14 +19,25 @@ public record RequestCompletionEvent(
         if (durationMillis < 0 || databaseOperationCount < 0 || databaseDurationMillis < 0) {
             throw new IllegalArgumentException("negative completion metric");
         }
-        if (status == null || status < 100 || status > 599) throw new IllegalArgumentException("invalid completion status");
+        if (status == null || status < 100 || status > 599)
+            throw new IllegalArgumentException("invalid completion status");
         if (errorCode != null) errorCode = allowed(errorCode, "errorCode");
     }
 
     public Fields fields() {
         return new Fields(
-                context.correlationId(), context.requestId(), context.operationId(), context.routeTemplate(), context.owner(),
-                consumerFace, outcome, durationMillis, status, errorCode, databaseOperationCount, databaseDurationMillis);
+                context.correlationId(),
+                context.requestId(),
+                context.operationId(),
+                context.routeTemplate(),
+                context.owner(),
+                consumerFace,
+                outcome,
+                durationMillis,
+                status,
+                errorCode,
+                databaseOperationCount,
+                databaseDurationMillis);
     }
 
     public record Fields(
@@ -42,8 +52,7 @@ public record RequestCompletionEvent(
             Integer status,
             String errorCode,
             long databaseOperationCount,
-            long databaseDurationMillis
-    ) { }
+            long databaseDurationMillis) {}
 
     private static String allowed(String value, String name) {
         Objects.requireNonNull(value, name);

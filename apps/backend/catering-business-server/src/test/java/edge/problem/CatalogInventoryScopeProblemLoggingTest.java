@@ -15,20 +15,20 @@ import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.read.ListAppender;
 import com.catering.v2s.app.edge.operations.cataloginventory.OperationsCatalogInventoryController;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
-import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +44,8 @@ class CatalogInventoryScopeProblemLoggingTest {
     void inventoryReadScopeFailureKeeps403ContractAndLogsOriginalStackFromLiveControllerPath() {
         IllegalStateException failure = new IllegalStateException("brand lookup infrastructure failure");
         CatalogScopeLookup scopes = mock(CatalogScopeLookup.class);
-        when(scopes.requireCatalogBrand(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, BRAND_REF)).thenThrow(failure);
+        when(scopes.requireCatalogBrand(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, BRAND_REF))
+                .thenThrow(failure);
 
         Outcome outcome = exerciseInventoryTargets(controller(scopes));
 
@@ -61,8 +62,10 @@ class CatalogInventoryScopeProblemLoggingTest {
     void brandCopyCandidateScopeFailureKeeps403ContractAndLogsOriginalStackFromLiveControllerPath() {
         IllegalStateException failure = new IllegalStateException("copy source lookup infrastructure failure");
         CatalogScopeLookup scopes = mock(CatalogScopeLookup.class);
-        when(scopes.requireCatalogBrand(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, BRAND_REF)).thenReturn("brand-1");
-        when(scopes.resolveCatalogCopySource(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, "brand-1")).thenThrow(failure);
+        when(scopes.requireCatalogBrand(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, BRAND_REF))
+                .thenReturn("brand-1");
+        when(scopes.resolveCatalogCopySource(WORKSPACE, GROUP_WORKSPACE, "STORE", STORE, "brand-1"))
+                .thenThrow(failure);
 
         Outcome outcome = exerciseBrandCopyCandidates(controller(scopes));
 
@@ -77,14 +80,15 @@ class CatalogInventoryScopeProblemLoggingTest {
 
     @Test
     void directTypedOwnerProblemWithoutNestedCauseStillLogsItsOwnStack() {
-        CatalogOwnerApi.Problem ownerProblem = new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "fixture is invalid");
+        CatalogOwnerApi.Problem ownerProblem =
+                new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "fixture is invalid");
         Logger logger = (Logger) LoggerFactory.getLogger(ContractProblemAdvice.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
         try {
-            ResponseEntity<ContractProblemAdvice.Problem> response = mapThroughAdvice(ownerProblem,
-                new MockHttpServletRequest("PATCH", "/api/operations/catalog-inventory/items/item"));
+            ResponseEntity<ContractProblemAdvice.Problem> response = mapThroughAdvice(
+                    ownerProblem, new MockHttpServletRequest("PATCH", "/api/operations/catalog-inventory/items/item"));
             assertEquals(422, response.getStatusCode().value());
             assertOriginalStackIsLogged(List.copyOf(appender.list), ownerProblem);
         } finally {
@@ -126,13 +130,13 @@ class CatalogInventoryScopeProblemLoggingTest {
 
     @SuppressWarnings("unchecked")
     private static ResponseEntity<ContractProblemAdvice.Problem> mapThroughAdvice(
-        CatalogOwnerApi.Problem ownerProblem, HttpServletRequest request
-    ) {
+            CatalogOwnerApi.Problem ownerProblem, HttpServletRequest request) {
         try {
             Method handler = ContractProblemAdvice.class.getDeclaredMethod(
-                "catalogInventory", RuntimeException.class, HttpServletRequest.class);
+                    "catalogInventory", RuntimeException.class, HttpServletRequest.class);
             handler.setAccessible(true);
-            return (ResponseEntity<ContractProblemAdvice.Problem>) handler.invoke(new ContractProblemAdvice(), ownerProblem, request);
+            return (ResponseEntity<ContractProblemAdvice.Problem>)
+                    handler.invoke(new ContractProblemAdvice(), ownerProblem, request);
         } catch (InvocationTargetException failure) {
             throw new AssertionError(failure.getCause());
         } catch (ReflectiveOperationException failure) {
@@ -142,9 +146,9 @@ class CatalogInventoryScopeProblemLoggingTest {
 
     private static void assertOriginalStackIsLogged(List<ILoggingEvent> events, Throwable original) {
         ILoggingEvent event = events.stream()
-            .filter(candidate -> candidate.getFormattedMessage().contains("catalog-inventory owner problem"))
-            .findFirst()
-            .orElseThrow();
+                .filter(candidate -> candidate.getFormattedMessage().contains("catalog-inventory owner problem"))
+                .findFirst()
+                .orElseThrow();
         assertNotNull(event.getThrowableProxy());
         String renderedThrowable = ThrowableProxyUtil.asString(event.getThrowableProxy());
         assertTrue(renderedThrowable.contains(original.getClass().getName()));
@@ -156,26 +160,34 @@ class CatalogInventoryScopeProblemLoggingTest {
     }
 
     private static EdgeRequestContext context() {
-        return new EdgeRequestContext("source", "correlation", null, null, null, null, null,
-            "request-1", BRAND_REF, null, null);
+        return new EdgeRequestContext(
+                "source", "correlation", null, null, null, null, null, "request-1", BRAND_REF, null, null);
     }
 
     private static WorkspaceSessionReadback session() {
-        WorkspaceSessionEntryReadback.VisibleDataNodeCandidate store = new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
-            "STORE", STORE, "Store", "STORE-1", List.of(), null, null, STORE, null);
+        WorkspaceSessionEntryReadback.VisibleDataNodeCandidate store =
+                new WorkspaceSessionEntryReadback.VisibleDataNodeCandidate(
+                        "STORE", STORE, "Store", "STORE-1", List.of(), null, null, STORE, null);
         return new WorkspaceSessionReadback(
-            UUID.fromString("33333333-3333-3333-3333-333333333333"), WORKSPACE, GROUP_WORKSPACE,
-            UUID.fromString("44444444-4444-4444-4444-444444444444"),
-            UUID.fromString("55555555-5555-5555-5555-555555555555"),
-            new WorkspaceSessionEntryReadback.ScopeContext(null, null, store, null),
-            1L, 1L, Set.of(), Set.of(), "operator", "STORE", STORE);
+                UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                WORKSPACE,
+                GROUP_WORKSPACE,
+                UUID.fromString("44444444-4444-4444-4444-444444444444"),
+                UUID.fromString("55555555-5555-5555-5555-555555555555"),
+                new WorkspaceSessionEntryReadback.ScopeContext(null, null, store, null),
+                1L,
+                1L,
+                Set.of(),
+                Set.of(),
+                "operator",
+                "STORE",
+                STORE);
     }
 
     private record Outcome(
-        CatalogOwnerApi.Problem ownerProblem,
-        ResponseEntity<ContractProblemAdvice.Problem> response,
-        List<ILoggingEvent> events
-    ) { }
+            CatalogOwnerApi.Problem ownerProblem,
+            ResponseEntity<ContractProblemAdvice.Problem> response,
+            List<ILoggingEvent> events) {}
 
     @FunctionalInterface
     private interface ThrowingOperation {

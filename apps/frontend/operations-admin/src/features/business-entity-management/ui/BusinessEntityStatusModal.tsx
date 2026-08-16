@@ -41,20 +41,21 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
       headers: {'Idempotency-Key': getIdempotencyKey()},
     };
     try {
-      const updated = kind === 'BRAND'
-        ? await operationsClient.transitionOperationsOrganizationBrandStatus(
-          {groupWorkspaceKey: queryContext.groupWorkspaceKey, brandId: entity.id},
-          options,
-        )
-        : kind === 'TENANT'
-          ? await operationsClient.transitionOperationsOrganizationTenantStatus(
-            {groupWorkspaceKey: queryContext.groupWorkspaceKey, tenantId: entity.id},
-            options,
-          )
-          : await operationsClient.transitionOperationsOrganizationHeadCompanyStatus(
-            {groupWorkspaceKey: queryContext.groupWorkspaceKey, headCompanyId: entity.id},
-            options,
-          );
+      const updated =
+        kind === 'BRAND'
+          ? await operationsClient.transitionOperationsOrganizationBrandStatus(
+              {groupWorkspaceKey: queryContext.groupWorkspaceKey, brandId: entity.id},
+              options,
+            )
+          : kind === 'TENANT'
+            ? await operationsClient.transitionOperationsOrganizationTenantStatus(
+                {groupWorkspaceKey: queryContext.groupWorkspaceKey, tenantId: entity.id},
+                options,
+              )
+            : await operationsClient.transitionOperationsOrganizationHeadCompanyStatus(
+                {groupWorkspaceKey: queryContext.groupWorkspaceKey, headCompanyId: entity.id},
+                options,
+              );
       onUpdated(updated);
       onClose();
     } catch (error) {
@@ -64,19 +65,36 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
     }
   };
 
-  return <Modal
-    title={entity ? `确认${actionLabel}“${entity.name}”？` : '确认状态操作'}
-    open={Boolean(entity)}
-    destroyOnHidden
-    onCancel={submitting ? undefined : onClose}
-    mask={{closable: !submitting}}
-    keyboard={!submitting}
-    footer={[
-      <Button key="cancel" onClick={onClose} disabled={submitting} {...testId('operations-business-entity-status-cancel')}>取消</Button>,
-      <Button key="confirm" type="primary" loading={submitting} onClick={() => void submit()} {...testId('operations-business-entity-status-confirm')}>确认</Button>,
-    ]}
-    {...testId('operations-business-entity-status-modal')}
-  >
-    {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem}/>}
-  </Modal>;
+  return (
+    <Modal
+      title={entity ? `确认${actionLabel}“${entity.name}”？` : '确认状态操作'}
+      open={Boolean(entity)}
+      destroyOnHidden
+      onCancel={submitting ? undefined : onClose}
+      mask={{closable: !submitting}}
+      keyboard={!submitting}
+      footer={[
+        <Button
+          key="cancel"
+          onClick={onClose}
+          disabled={submitting}
+          {...testId('operations-business-entity-status-cancel')}
+        >
+          取消
+        </Button>,
+        <Button
+          key="confirm"
+          type="primary"
+          loading={submitting}
+          onClick={() => void submit()}
+          {...testId('operations-business-entity-status-confirm')}
+        >
+          确认
+        </Button>,
+      ]}
+      {...testId('operations-business-entity-status-modal')}
+    >
+      {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem} />}
+    </Modal>
+  );
 }

@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 class WorkspaceAuthenticationServiceNodeTypeTest {
     @Test
     void onlyTheContractServiceNodeVocabularyIsEnterable() {
-        for (String type : new String[]{"GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"}) {
+        for (String type : new String[] {"GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"}) {
             assertTrue(WorkspaceAuthenticationService.isSupportedServiceNodeType(type), type);
         }
-        for (String type : new String[]{null, "BRAND", "TENANT", "UNKNOWN"}) {
+        for (String type : new String[] {null, "BRAND", "TENANT", "UNKNOWN"}) {
             assertFalse(WorkspaceAuthenticationService.isSupportedServiceNodeType(type), type);
         }
     }

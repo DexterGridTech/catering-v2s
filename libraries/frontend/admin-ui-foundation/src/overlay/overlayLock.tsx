@@ -10,11 +10,19 @@ type OverlayLockContextValue = {
 
 const OverlayLockContext = createContext<OverlayLockContextValue | null>(null);
 
-export function updateOpenRegistrations(current: ReadonlySet<string>, registrationId: string, open: boolean): Set<string> {
+export function updateOpenRegistrations(
+  current: ReadonlySet<string>,
+  registrationId: string,
+  open: boolean,
+): Set<string> {
   return updateRegistrations(current, registrationId, open);
 }
 
-export function updateDirtyRegistrations(current: ReadonlySet<string>, registrationId: string, dirty: boolean): Set<string> {
+export function updateDirtyRegistrations(
+  current: ReadonlySet<string>,
+  registrationId: string,
+  dirty: boolean,
+): Set<string> {
   return updateRegistrations(current, registrationId, dirty);
 }
 
@@ -30,10 +38,10 @@ export function OverlayLockProvider({children}: {children: ReactNode}) {
   const [openRegistrations, setOpenRegistrations] = useState<Set<string>>(() => new Set());
   const [dirtyRegistrations, setDirtyRegistrations] = useState<Set<string>>(() => new Set());
   const setOpen = useCallback((registrationId: string, open: boolean) => {
-    setOpenRegistrations((current) => updateOpenRegistrations(current, registrationId, open));
+    setOpenRegistrations(current => updateOpenRegistrations(current, registrationId, open));
   }, []);
   const setDirty = useCallback((registrationId: string, dirty: boolean) => {
-    setDirtyRegistrations((current) => updateDirtyRegistrations(current, registrationId, dirty));
+    setDirtyRegistrations(current => updateDirtyRegistrations(current, registrationId, dirty));
   }, []);
   const value = useMemo(() => {
     const overlayLocked = openRegistrations.size > 0;

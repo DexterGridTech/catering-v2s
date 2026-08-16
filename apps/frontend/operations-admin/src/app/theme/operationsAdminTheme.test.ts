@@ -6,10 +6,7 @@ describe('operations-admin theme profile', () => {
   it('uses the requested operations-admin light palette from one app-owned profile', () => {
     expect(operationsAdminThemeProfile.colorScheme).toBe('light');
     expect(operationsAdminThemeProfile.proLayoutNavTheme).toBe('light');
-    expect(operationsAdminThemeProfile.theme.algorithm).toEqual([
-      theme.defaultAlgorithm,
-      theme.compactAlgorithm,
-    ]);
+    expect(operationsAdminThemeProfile.theme.algorithm).toEqual([theme.defaultAlgorithm, theme.compactAlgorithm]);
     expect(operationsAdminThemeProfile.theme.components?.Layout).toMatchObject({
       headerBg: 'var(--operations-admin-color-bg-container)',
       bodyBg: 'var(--operations-admin-color-bg-layout)',

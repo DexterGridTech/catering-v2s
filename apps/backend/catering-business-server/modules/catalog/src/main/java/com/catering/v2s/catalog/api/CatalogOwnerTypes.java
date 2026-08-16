@@ -4,7 +4,7 @@ import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventorySha
 import java.util.List;
 
 public final class CatalogOwnerTypes {
-    private CatalogOwnerTypes() { }
+    private CatalogOwnerTypes() {}
 
     public static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
     public static final List<String> SHAPES = CatalogInventoryShapeManifest.enumValues("shapeKey");

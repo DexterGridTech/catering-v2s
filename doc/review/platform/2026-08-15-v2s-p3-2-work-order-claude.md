@@ -394,7 +394,7 @@ SKU 属性与属性值四个自由文本框 · 套餐组件 SKU 手打编码 · 
 > 「只写中间层不写两端」这个毛病,在我自以为补完一端之后**又在那一端内部重演了一次**。
 
 ✅ **亲验**:`fields` 在 `contracts/catalog/catalog-inventory-read-models.json` 与
-`contracts/openapi/catalog-inventory.openapi.yaml` 里**各 0 次命中**。
+`contracts/openapi/catalog-inventory.openapi.json` 里**各 0 次命中**。
 
 `推论(取自 Codex review,我未逐环打开)`:生成器当前只把 `fieldRules` 等**八项**写进 manifest 与
 `contractSurfaceKeys`;`CatalogOwnerService.shapeManifest()` 也**只投影八项**。
@@ -411,7 +411,7 @@ SKU 属性与属性值四个自由文本框 · 套餐组件 SKU 手打编码 · 
 | 2 | `contracts/catalog/CatalogInventoryShapeManifest.java` | 由 1 重新生成,**不手改** |
 | 3 | `CatalogOwnerService.shapeManifest()` 的投影白名单 | 从八项加到九项 |
 | 4 | `contracts/catalog/catalog-inventory-read-models.json` | 补 `fields` 的 property 与 required |
-| 5 | `contracts/openapi/catalog-inventory.openapi.yaml` | 同上 |
+| 5 | `contracts/openapi/catalog-inventory.openapi.json` | 同上 |
 | 6 | edge 生成物(`catalog-inventory-edge.ts` 等) | 由 5 重新生成 |
 | 7 | P1 的 exact-surface check | 分母同步,否则它会因为多出一项而红 |
 
@@ -1687,7 +1687,7 @@ B2 要动前端消费者(见"删除必须同批"那条规则),**分母不先扩,
 | ~~C-b~~ | ⚠️ **已不成立,撤回。** `entryRef` **现在是 `CatalogDictionaryView` 的首个 property**(`format: uuid`),生成 TS 已带 | ~~原契约前置~~ | **同上。F5 的属性那处现在也是纯前端。** |
 > ⚠️ **前一版这里每条只有一句话 —— 那是方向不是规格。**
 > 没有 Codex 详设这一环,**字段名、类型、层级、必填性、连带门每一项都得由本文定死**,否则实施必然走偏。
-> 以下逐条写到"照着加"的程度。**契约文件是 `contracts/openapi/catalog-inventory.openapi.yaml`(后缀 yaml 实为 JSON),schema 在 `components.schemas` 下。**
+> 以下逐条写到"照着加"的程度。**契约生成物是 `contracts/openapi/catalog-inventory.openapi.json`，顶层已明确标记为生成投影且禁止手工编辑；schema 在 `components.schemas` 下。**
 
 | # | 规格 |
 |---|---|

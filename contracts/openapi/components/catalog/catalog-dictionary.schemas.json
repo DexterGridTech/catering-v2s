@@ -1,0 +1,696 @@
+{
+  "kind": "catalog-inventory-openapi-shard",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "schemas": {
+    "CatalogDictionaryView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "data": {
+          "type": "object",
+          "description": "design-bound field",
+          "additionalProperties": false,
+          "properties": {
+            "dictionaryKind": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "entries": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "entryRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "parentEntryRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "ownerType": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "ownerRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "brandRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  },
+                  "updatedAt": {
+                    "type": "integer",
+                    "description": "design-bound field",
+                    "format": "epoch-millis"
+                  },
+                  "voidAvailability": {
+                    "type": "object",
+                    "description": "design-bound field",
+                    "additionalProperties": false,
+                    "properties": {
+                      "canVoid": {
+                        "type": "boolean",
+                        "description": "design-bound field"
+                      },
+                      "blockingReferences": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "referenceKind": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "referenceRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "referenceKind",
+                            "referenceRef"
+                          ]
+                        }
+                      },
+                      "dependentFacts": {
+                        "type": "array",
+                        "description": "design-bound field",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "factKind": {
+                              "type": "string",
+                              "description": "design-bound field"
+                            },
+                            "factRef": {
+                              "type": "string",
+                              "description": "design-bound field",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "factKind",
+                            "factRef"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "canVoid",
+                      "blockingReferences",
+                      "dependentFacts"
+                    ]
+                  }
+                },
+                "required": [
+                  "entryRef",
+                  "code",
+                  "name",
+                  "parentEntryRef",
+                  "status",
+                  "ownerType",
+                  "ownerRef",
+                  "brandRef",
+                  "version",
+                  "updatedAt",
+                  "voidAvailability"
+                ]
+              }
+            },
+            "cursor": {
+              "type": "string",
+              "description": "design-bound field"
+            },
+            "total": {
+              "type": "integer",
+              "description": "design-bound field"
+            },
+            "generation": {
+              "type": "string",
+              "description": "design-bound field"
+            }
+          },
+          "required": [
+            "dictionaryKind",
+            "entries",
+            "cursor",
+            "total",
+            "generation"
+          ]
+        }
+      }
+    },
+    "CatalogDictionaryQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryKind"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "dictionaryKind": {
+          "type": "string",
+          "description": "dictionary kind"
+        },
+        "parentEntryRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid",
+          "description": "optional parent SKU attribute opaque ref"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
+    "CatalogDictionaryEntryCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryKind",
+        "code",
+        "name",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dictionaryKind": {
+          "type": "string",
+          "description": "dictionary kind"
+        },
+        "code": {
+          "type": "string",
+          "description": "immutable entry code"
+        },
+        "name": {
+          "type": "string",
+          "description": "entry name"
+        },
+        "parentEntryRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid",
+          "description": "parent SKU attribute opaque ref; required for SKU_ATTRIBUTE_VALUE"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "CatalogDictionaryEntryUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryKind",
+        "entryCode",
+        "expectedVersion",
+        "name",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dictionaryKind": {
+          "type": "string",
+          "description": "dictionary kind"
+        },
+        "entryCode": {
+          "type": "string",
+          "description": "entry code"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "name": {
+          "type": "string",
+          "description": "entry name"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "CatalogDictionaryEntryReorderRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryKind",
+        "orderedCodes",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dictionaryKind": {
+          "type": "string",
+          "description": "dictionary kind"
+        },
+        "orderedCodes": {
+          "type": "array",
+          "description": "same-level ordered codes",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "CatalogDictionaryEntryReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dictionaryKind",
+            "code",
+            "name",
+            "status"
+          ],
+          "properties": {
+            "dictionaryKind": {
+              "type": "string",
+              "description": "dictionary kind"
+            },
+            "code": {
+              "type": "string",
+              "description": "entry code"
+            },
+            "name": {
+              "type": "string",
+              "description": "entry name"
+            },
+            "status": {
+              "type": "string",
+              "description": "status"
+            },
+            "parentEntryRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid",
+              "description": "parent SKU attribute opaque ref"
+            },
+            "version": {
+              "type": "integer",
+              "description": "version"
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "version"
+        }
+      }
+    },
+    "CatalogCategoryCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "code",
+        "name",
+        "parentCategoryRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "code": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "name": {
+          "type": "string",
+          "description": "design-bound field"
+        },
+        "parentCategoryRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field",
+          "format": "uuid"
+        }
+      }
+    },
+    "CatalogCategoryReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categoryRef",
+            "code",
+            "name",
+            "parentCategoryRef",
+            "version",
+            "displayOrder",
+            "deletionAvailability"
+          ],
+          "properties": {
+            "categoryRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "category opaque ref"
+            },
+            "code": {
+              "type": "string",
+              "description": "category business code"
+            },
+            "name": {
+              "type": "string",
+              "description": "category name"
+            },
+            "parentCategoryRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid",
+              "description": "parent category opaque ref"
+            },
+            "version": {
+              "type": "integer",
+              "description": "version"
+            },
+            "displayOrder": {
+              "type": "integer",
+              "description": "sibling display order"
+            },
+            "deletionAvailability": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "canDelete",
+                "subtreeSize",
+                "blockingReferenceCount",
+                "blockingReferenceLabels"
+              ],
+              "properties": {
+                "canDelete": {
+                  "type": "boolean",
+                  "description": "whether the category subtree can be deleted"
+                },
+                "subtreeSize": {
+                  "type": "integer",
+                  "description": "category subtree size"
+                },
+                "blockingReferenceCount": {
+                  "type": "integer",
+                  "description": "blocking product reference count"
+                },
+                "blockingReferenceLabels": {
+                  "type": "array",
+                  "description": "safe blocking product labels",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "version"
+        }
+      }
+    },
+    "CatalogCategoryUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "categoryRef",
+        "expectedVersion",
+        "name"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "categoryRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "name": {
+          "type": "string",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "CatalogCategoryMoveRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "categoryRef",
+        "expectedVersion",
+        "action"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "categoryRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        },
+        "action": {
+          "type": "string",
+          "description": "design-bound field",
+          "enum": [
+            "REPARENT",
+            "UP",
+            "DOWN"
+          ]
+        },
+        "parentCategoryRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "design-bound field",
+          "format": "uuid"
+        }
+      }
+    },
+    "CatalogCategoryDeleteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataNodeRef",
+        "categoryRef",
+        "expectedVersion"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "categoryRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "design-bound field"
+        }
+      }
+    },
+    "CatalogCategoryDeleteReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categoryRef",
+            "deletedSubtreeSize",
+            "deletedCategoryCodes"
+          ],
+          "properties": {
+            "categoryRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "deleted category opaque ref"
+            },
+            "deletedSubtreeSize": {
+              "type": "integer",
+              "description": "deleted category subtree size"
+            },
+            "deletedCategoryCodes": {
+              "type": "array",
+              "description": "deleted category business codes",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "version"
+        }
+      }
+    },
+    "CatalogDictionaryEntryTransitionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryKind",
+        "entryCode",
+        "expectedVersion",
+        "targetStatus",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dictionaryKind": {
+          "type": "string",
+          "description": "dictionary kind"
+        },
+        "entryCode": {
+          "type": "string",
+          "description": "entry code"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "targetStatus": {
+          "type": "string",
+          "description": "target lifecycle status"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    }
+  }
+}

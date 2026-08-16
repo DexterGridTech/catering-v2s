@@ -22,17 +22,23 @@ class PlatformWorkspaceAdministrationTaskReadServiceTest {
     @Test
     void pageUsesOnlyTheThreeNamedOwnerStages() {
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
-        OrganizationGroupWorkspaceInitializationLookup initialization = mock(OrganizationGroupWorkspaceInitializationLookup.class);
+        OrganizationGroupWorkspaceInitializationLookup initialization =
+                mock(OrganizationGroupWorkspaceInitializationLookup.class);
         PlatformAssetService assets = mock(PlatformAssetService.class);
         WorkspaceIamSummaryLookup iam = mock(WorkspaceIamSummaryLookup.class);
-        WorkspaceAdministrationReadback item = new WorkspaceAdministrationReadback(UUID.randomUUID(), "gw", "name", "title", null, null, "ENABLED", 1, 1, 1, 1, true);
+        WorkspaceAdministrationReadback item = new WorkspaceAdministrationReadback(
+                UUID.randomUUID(), "gw", "name", "title", null, null, "ENABLED", 1, 1, 1, 1, true);
         WorkspaceAdministrationPage page = new WorkspaceAdministrationPage(List.of(item), 1, 20, 1, "NAME", "ASC");
-        WorkspaceAdministrationPageRequest request = new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME", "ASC");
+        WorkspaceAdministrationPageRequest request =
+                new WorkspaceAdministrationPageRequest(null, null, null, null, 1, 20, "NAME", "ASC");
         when(workspaces.list(request)).thenReturn(page);
-        when(initialization.listInitializationFacts(List.of("gw"))).thenReturn(Map.of("gw", new OrganizationGroupWorkspaceInitializationLookup.InitializationState("gw", true)));
+        when(initialization.listInitializationFacts(List.of("gw")))
+                .thenReturn(Map.of(
+                        "gw", new OrganizationGroupWorkspaceInitializationLookup.InitializationState("gw", true)));
         when(assets.requireActivePublicReferences(any())).thenReturn(Map.of());
 
-        var result = new PlatformWorkspaceAdministrationTaskReadService(workspaces, initialization, assets, iam).page(request);
+        var result = new PlatformWorkspaceAdministrationTaskReadService(workspaces, initialization, assets, iam)
+                .page(request);
 
         assertSame(page, result.workspacePage());
         verify(workspaces).list(request);
@@ -44,16 +50,20 @@ class PlatformWorkspaceAdministrationTaskReadServiceTest {
     @Test
     void detailUsesExactlyTheFrozenFourOwnerStages() {
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
-        OrganizationGroupWorkspaceInitializationLookup initialization = mock(OrganizationGroupWorkspaceInitializationLookup.class);
+        OrganizationGroupWorkspaceInitializationLookup initialization =
+                mock(OrganizationGroupWorkspaceInitializationLookup.class);
         PlatformAssetService assets = mock(PlatformAssetService.class);
         WorkspaceIamSummaryLookup iam = mock(WorkspaceIamSummaryLookup.class);
-        WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(UUID.randomUUID(), "gw", "name", "title", null, null, "ENABLED", 1, 1, 1, 1, true);
+        WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
+                UUID.randomUUID(), "gw", "name", "title", null, null, "ENABLED", 1, 1, 1, 1, true);
         when(workspaces.require("gw")).thenReturn(workspace);
         when(initialization.initializationFact("gw")).thenReturn(java.util.Optional.empty());
         when(assets.requireActivePublicReferences(any())).thenReturn(Map.of());
-        when(iam.accountAndRoleSummary(workspace.workspaceUuid())).thenReturn(new WorkspaceIamSummaryLookup.AccountAndRoleSummary(3, 4));
+        when(iam.accountAndRoleSummary(workspace.workspaceUuid()))
+                .thenReturn(new WorkspaceIamSummaryLookup.AccountAndRoleSummary(3, 4));
 
-        var result = new PlatformWorkspaceAdministrationTaskReadService(workspaces, initialization, assets, iam).detail("gw");
+        var result = new PlatformWorkspaceAdministrationTaskReadService(workspaces, initialization, assets, iam)
+                .detail("gw");
 
         assertSame(workspace, result.workspace());
         verify(workspaces).require("gw");

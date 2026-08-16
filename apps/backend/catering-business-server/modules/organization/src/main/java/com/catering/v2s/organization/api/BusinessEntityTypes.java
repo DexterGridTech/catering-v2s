@@ -10,5 +10,5 @@ public final class BusinessEntityTypes {
     public static final String STORE = "STORE";
     public static final Set<String> VALUES = Set.of(BRAND, TENANT, HEAD_COMPANY, STORE);
 
-    private BusinessEntityTypes() { }
+    private BusinessEntityTypes() {}
 }

@@ -25,7 +25,8 @@ public final class RequestCompletionDiagnosticState {
         this.startedAtNanos = System.nanoTime();
     }
 
-    public static RequestCompletionDiagnosticState getOrCreate(HttpServletRequest request, HttpServletResponse response, EdgeRouteFaceRegistry.Definition definition) {
+    public static RequestCompletionDiagnosticState getOrCreate(
+            HttpServletRequest request, HttpServletResponse response, EdgeRouteFaceRegistry.Definition definition) {
         Object existing = request.getAttribute(ATTRIBUTE);
         if (existing instanceof RequestCompletionDiagnosticState state) return state;
         RequestDiagnosticContext context = HttpRequestMetricsInterceptor.context(request);
@@ -37,7 +38,8 @@ public final class RequestCompletionDiagnosticState {
                     definition.path(),
                     definition.owner());
         }
-        RequestCompletionDiagnosticState state = new RequestCompletionDiagnosticState(context, definition.consumerFace());
+        RequestCompletionDiagnosticState state =
+                new RequestCompletionDiagnosticState(context, definition.consumerFace());
         request.setAttribute(ATTRIBUTE, state);
         return state;
     }
@@ -50,7 +52,8 @@ public final class RequestCompletionDiagnosticState {
     public static void freezeFailure(HttpServletRequest request, String errorCode) {
         RequestCompletionDiagnosticState state = find(request);
         if (state == null) return;
-        if (errorCode == null || !errorCode.matches("[A-Z0-9_:-]{1,128}")) throw new IllegalArgumentException("invalid completion error code");
+        if (errorCode == null || !errorCode.matches("[A-Z0-9_:-]{1,128}"))
+            throw new IllegalArgumentException("invalid completion error code");
         state.frozenErrorCode.compareAndSet(null, errorCode);
     }
 
@@ -72,21 +75,35 @@ public final class RequestCompletionDiagnosticState {
                 snapshot.durationMillis());
     }
 
-    public String correlationId() { return context.correlationId(); }
+    public String correlationId() {
+        return context.correlationId();
+    }
 
-    public String requestId() { return context.requestId(); }
+    public String requestId() {
+        return context.requestId();
+    }
 
-    public String operationId() { return context.operationId(); }
+    public String operationId() {
+        return context.operationId();
+    }
 
-    public String routeTemplate() { return context.routeTemplate(); }
+    public String routeTemplate() {
+        return context.routeTemplate();
+    }
 
-    public String owner() { return context.owner(); }
+    public String owner() {
+        return context.owner();
+    }
 
     private static String sanitizeCorrelationId(String candidate) {
-        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : "corr-" + UUID.randomUUID();
+        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}")
+                ? candidate
+                : "corr-" + UUID.randomUUID();
     }
 
     private static String sanitizeRequestId(String candidate) {
-        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}") ? candidate : "req-" + UUID.randomUUID();
+        return candidate != null && candidate.matches("[A-Za-z0-9._:-]{1,128}")
+                ? candidate
+                : "req-" + UUID.randomUUID();
     }
 }

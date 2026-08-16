@@ -4,6 +4,5 @@ package com.catering.v2s.workspace.iam;
 public final class WorkspaceIamBoundary {
     public static final String NAME = "workspace-iam";
 
-    private WorkspaceIamBoundary() {
-    }
+    private WorkspaceIamBoundary() {}
 }

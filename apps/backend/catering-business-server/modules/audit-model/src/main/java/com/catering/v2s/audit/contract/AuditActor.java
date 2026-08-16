@@ -15,11 +15,14 @@ public record AuditActor(String actorType, UUID actorId, String displaySnapshot)
         }
     }
 
-    public static AuditActor system() { return new AuditActor("SYSTEM", null, "系统"); }
+    public static AuditActor system() {
+        return new AuditActor("SYSTEM", null, "系统");
+    }
 
     private static String required(String value, String name, int limit) {
         String normalized = Objects.requireNonNullElse(value, "").trim();
-        if (normalized.isEmpty() || normalized.length() > limit) throw new IllegalArgumentException(name + " is invalid");
+        if (normalized.isEmpty() || normalized.length() > limit)
+            throw new IllegalArgumentException(name + " is invalid");
         return normalized;
     }
 }

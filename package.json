@@ -11,6 +11,10 @@
   ],
   "devDependencies": {
     "eslint": "9.39.5",
-    "eslint-plugin-react-hooks": "7.0.1"
+    "eslint-plugin-react-hooks": "7.0.1",
+    "prettier": "3.9.6"
+  },
+  "scripts": {
+    "format:check": "prettier --check \"apps/frontend/**/*.{css,json,js,mjs,ts,tsx}\" \"libraries/frontend/**/*.{css,json,js,mjs,ts,tsx}\""
   }
 }
