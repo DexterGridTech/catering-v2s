@@ -16,9 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
@@ -87,6 +89,36 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                 });
         data.putNull("cursor").put("total", entries.size()).put("generation", dataNodeRef + ":" + brandRef);
         return envelope(requestId, data);
+    }
+
+    @Override
+    public List<ProductionTagOwnerApi.ProductionTagReferenceReadback> readTagReferencesByRefs(
+            String dataNodeRef, String brandRef, List<UUID> tagRefs, String requestId) {
+        requireScope(dataNodeRef, brandRef);
+        List<UUID> requested = tagRefs == null
+                ? List.of()
+                : tagRefs.stream().filter(Objects::nonNull).distinct().toList();
+        if (requested.isEmpty()) return List.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(requested.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(dataNodeRef);
+        arguments.add(brandRef);
+        arguments.addAll(requested);
+        Map<UUID, ProductionTagOwnerApi.ProductionTagReferenceReadback> found = new HashMap<>();
+        jdbc.query(
+                        "SELECT tag_ref,code,name,status,version FROM fulfillment_production.production_tag_definition "
+                                + "WHERE data_node_ref=? AND brand_ref=? AND tag_ref IN ("
+                                + placeholders
+                                + ") ORDER BY tag_ref",
+                        (result, index) -> new ProductionTagOwnerApi.ProductionTagReferenceReadback(
+                                result.getObject("tag_ref", UUID.class),
+                                result.getString("code"),
+                                result.getString("name"),
+                                result.getString("status"),
+                                result.getLong("version")),
+                        arguments.toArray())
+                .forEach(value -> found.put(value.tagRef(), value));
+        return requested.stream().map(found::get).filter(Objects::nonNull).toList();
     }
 
     @Override
@@ -742,6 +774,15 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     /* format-wrap */
                     ("生产标签复制闭包缺少标签引用"));
         }
+        List<UUID> requestedRefs = requestedProductionTagRefs(codes);
+        Map<UUID, TagRow> sourceRowsByRef = tagsByRef(sourceDataNodeRef, brandRef, requestedRefs);
+        List<String> sourceCodes = requestedRefs.stream()
+                .map(sourceRowsByRef::get)
+                .filter(source -> source != null && !"VOIDED".equals(source.status()))
+                .map(TagRow::code)
+                .distinct()
+                .toList();
+        Map<String, TagRow> targetRowsByCode = tagsByCode(targetDataNodeRef, brandRef, sourceCodes);
         ObjectNode snapshot = mapper.createObjectNode();
         ArrayNode versions = snapshot.putArray("versions");
         ArrayNode closureItems = snapshot.putArray("closureItems");
@@ -752,7 +793,8 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String firstBlocking = "";
         for (JsonNode refNode : codes) {
             String sourceRef = refNode.asText();
-            TagRow source = findByRef(sourceDataNodeRef, brandRef, sourceRef);
+            UUID sourceUuid = parseProductionTagRef(sourceRef);
+            TagRow source = sourceRowsByRef.get(sourceUuid);
             if (source == null) {
                 firstBlocking = firstBlocking.isBlank() ? "REFERENCE_MAPPING_UNRESOLVED" : firstBlocking;
                 results.addObject()
@@ -768,7 +810,24 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                                 canonicalTuple(targetDataNodeRef, brandRef, "PRODUCTION_TAG", List.of(sourceRef)));
                 continue;
             }
-            TagRow target = find(targetDataNodeRef, brandRef, source.code());
+            if ("VOIDED".equals(source.status())) {
+                firstBlocking = firstBlocking.isBlank() ? "REFERENCE_MAPPING_UNRESOLVED" : firstBlocking;
+                results.addObject()
+                        .put("objectType", "PRODUCTION_TAG")
+                        .put("compatibilityId", "PRODUCTION_TAG:" + sourceRef)
+                        .put("sourceRef", sourceRef)
+                        .put("code", source.code())
+                        .put("tagKind", source.tagKind())
+                        .put("result", "BLOCKED")
+                        .put("reason", "来源标签已作废")
+                        .put("reasonCode", "REFERENCE_MAPPING_UNRESOLVED")
+                        .put("problemCode", "REFERENCE_MAPPING_UNRESOLVED")
+                        .set(
+                                "canonicalTuple",
+                                canonicalTuple(targetDataNodeRef, brandRef, "PRODUCTION_TAG", List.of(sourceRef)));
+                continue;
+            }
+            TagRow target = targetRowsByCode.get(source.code());
             UUID targetRef = plannedTargetRef(request, source.ref(), target == null ? null : target.ref());
             String problem = "";
             String result = target == null ? "CREATE" : "REUSE";
@@ -897,8 +956,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     /* format-wrap */
                     ("生产标签复制闭包缺少标签引用"));
         }
-        for (JsonNode ref : refs) {
-            TagRow source = findByRef(sourceScope, brand, ref.asText());
+        List<UUID> requestedRefs = requestedProductionTagRefs(refs);
+        Map<UUID, TagRow> sourceRowsByRef = tagsByRef(sourceScope, brand, requestedRefs);
+        for (UUID ref : requestedRefs) {
+            TagRow source = sourceRowsByRef.get(ref);
             if (source == null || "VOIDED".equals(source.status())) {
                 throw new ProductionTagOwnerApi.Problem(
                         ("REFERENCE_MAPPING_UNRESOLVED"),
@@ -1045,6 +1106,45 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                         row.getString(5),
                         row.getLong(6)),
                 args.toArray());
+    }
+
+    private List<UUID> requestedProductionTagRefs(JsonNode values) {
+        List<UUID> refs = new ArrayList<>();
+        for (JsonNode value : values) refs.add(parseProductionTagRef(value.asText()));
+        if (new java.util.LinkedHashSet<>(refs).size() != refs.size()) {
+            String failureMessage = "生产标签引用不唯一";
+            throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, failureMessage);
+        }
+        return refs;
+    }
+
+    private UUID parseProductionTagRef(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException failure) {
+            throw new ProductionTagOwnerApi.Problem(
+                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("生产标签引用必须为UUID"), (failure));
+        }
+    }
+
+    private Map<UUID, TagRow> tagsByRef(String scope, String brand, List<UUID> refs) {
+        Map<UUID, TagRow> result = new LinkedHashMap<>();
+        for (TagRow row : tagsByRefs(scope, brand, refs, "tag_ref")) {
+            if (result.putIfAbsent(row.ref(), row) != null) {
+                String failureMessage = "生产标签引用不唯一";
+                throw new ProductionTagOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, failureMessage);
+            }
+        }
+        return result;
+    }
+
+    private Map<String, TagRow> tagsByCode(String scope, String brand, List<String> codes) {
+        Map<String, TagRow> result = new LinkedHashMap<>();
+        for (TagRow row : tagsByStrings(scope, brand, codes))
+            if (result.putIfAbsent(row.code(), row) != null)
+                throw new ProductionTagOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED", 422, "目标生产标签编码引用不唯一: " + row.code());
+        return result;
     }
 
     private UUID plannedTargetRef(ObjectNode request, UUID sourceRef, UUID existingTargetRef) {

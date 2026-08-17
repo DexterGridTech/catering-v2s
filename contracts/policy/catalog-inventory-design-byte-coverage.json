@@ -3227,8 +3227,6 @@
         "gap",
         "changeSummary",
         "recentChanges",
-        "references",
-        "ledger",
         "diagnosticsAvailability"
       ],
       "fields": [
@@ -3454,73 +3452,6 @@
         {
           "path": "recentChanges[].source",
           "type": "string"
-        },
-        {
-          "path": "references",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "references[].sourceCode",
-          "type": "string"
-        },
-        {
-          "path": "references[].sourceKind",
-          "type": "string"
-        },
-        {
-          "path": "references[].quantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "references[].unit",
-          "type": "string"
-        },
-        {
-          "path": "references[].timing",
-          "type": "string"
-        },
-        {
-          "path": "references[].status",
-          "type": "string"
-        },
-        {
-          "path": "ledger",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "ledger[].entryRef",
-          "type": "string"
-        },
-        {
-          "path": "ledger[].source",
-          "type": "string"
-        },
-        {
-          "path": "ledger[].reasonCode",
-          "type": "string"
-        },
-        {
-          "path": "ledger[].beforeQuantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "ledger[].changeQuantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "ledger[].afterQuantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "ledger[].occurredAt",
-          "type": "integer",
-          "format": "epoch-millis"
         },
         {
           "path": "diagnosticsAvailability",

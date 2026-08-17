@@ -117,6 +117,25 @@ void write(Scope scope, UUID ref, long expected) {
 
 原文与正反例:`project-memory/practices/metadata-classified-by-attachment.md`
 
+### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象
+
+**规则**:读取按**当前业务任务的事实闭集**驱动,不按「已经有的那个大对象」或通用机制驱动。
+
+四个时刻各有一条正本(原文与 ❌/✅ 在 `project-memory/practices/`):
+
+| 时刻 | 条目 |
+|---|---|
+| 该复用现有读模型还是新建 | `read-model-granularity` |
+| 用户选了 N 个要一起做 | `set-interaction-not-n-times-single` |
+| 写完了界面怎么刷新 | `cache-invalidation-granularity` |
+| 同一请求里又需要前面读过的对象 | `reuse-projection-within-request` |
+
+⛔ **不可为减少读取而牺牲的**:owner 命令事务内的授权/状态/CAS/幂等重核验 · 审计 ·
+真实 readback · 已经 set-based 的实现。
+⛔ **Java 层过滤不能伪装成选择性查询。**
+
+**判别式**:这个消费者真正**用到**的字段闭集,和我要复用的那个读模型返回的,是同一个吗?
+
 ## 2 · 底座必须不能
 
 ### 2-A · 不为想象中的未来付费

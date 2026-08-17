@@ -652,7 +652,7 @@ function tsRtkEndpoint(operation) {
   const operationId = JSON.stringify(operation.operationId);
   const result = `FaceOperationContracts[${operationId}]["response"]`;
   const request = `FaceOperationRequest<${operationId}>`;
-  const tags = `[{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}]`;
+  const tags = `[{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}]`;
   if (operation.method === "GET") {
     return `    ${operation.operationId}: build.query<${result}, ${request}>({\n      query: (request) => toWireRequest(request),\n      providesTags: (_result, _error, request) => ${tags},\n    })`;
   }
@@ -674,6 +674,19 @@ function tsRtkFace(face, operations) {
   const endpointFactory = `create${faceType}RtkEndpoints`;
   const requestHelper = `${faceType[0].toLowerCase()}${faceType.slice(1)}RtkRequest`;
   return `// Generated from accepted R5 edge catalog; do not edit.\n\nimport type {BaseQueryFn, EndpointBuilder, FetchArgs, FetchBaseQueryError, FetchBaseQueryMeta} from "@reduxjs/toolkit/query";\nimport type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest} from ${JSON.stringify(source)};\n\ntype EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;\nexport type ${faceType}OperationId = keyof FaceOperationContracts;\nexport type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n\n/**\n * Operation-shaped request constructors for RTK hooks. Consumers supply only\n * typed path parameters and operation options; catalog id, method and path are\n * frozen here rather than handwritten in pages.\n */\nexport const ${requestHelper} = {\n${selected.map(tsRtkRequestHelper).join(",\n")}\n} as const;\n\n/**\n * Operation-shaped RTK definitions generated from the face catalog.  The app\n * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.\n */\nexport function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,\n  toWireRequest: ${faceType}RtkWireRequest,\n) {\n  return {\n${selected.map(tsRtkEndpoint).join(",\n")}\n  };\n}\n`;
+}
+function tsRtkFaceWithFlexibleTagTypes(face, operations) {
+  const faceType = faceTypeName(face);
+  const endpointFactory = `create${faceType}RtkEndpoints`;
+  return tsRtkFace(face, operations)
+    .replace(
+      `export type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\n`,
+      `export type ${faceType}RtkWireRequest = <I extends ${faceType}OperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};\nexport type ${faceType}RtkTagType = "wire" | "catalogInventory";\n`,
+    )
+    .replace(
+      `export function ${endpointFactory}(\n  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,`,
+      `export function ${endpointFactory}<TagTypes extends ${faceType}RtkTagType = "wire">(\n  build: EndpointBuilder<EdgeBaseQuery, TagTypes, string>,`,
+    );
 }
 function javaMap(entries) {
   const values = Object.entries(entries || {}).sort(([left], [right]) => left.localeCompare(right));
@@ -808,9 +821,9 @@ function expected(base = root) {
     [targets.platformTs, tsFace("platform-admin", operations, codesByFace["platform-admin"], components)],
     [targets.operationsTs, tsFace("operations-admin", operations, codesByFace["operations-admin"], components)],
     [targets.publicTs, tsFace("public", operations, codesByFace.public, components)],
-    [targets.platformRtkTs, tsRtkFace("platform-admin", operations)],
-    [targets.operationsRtkTs, tsRtkFace("operations-admin", operations)],
-    [targets.publicRtkTs, tsRtkFace("public", operations)],
+    [targets.platformRtkTs, tsRtkFaceWithFlexibleTagTypes("platform-admin", operations)],
+    [targets.operationsRtkTs, tsRtkFaceWithFlexibleTagTypes("operations-admin", operations)],
+    [targets.publicRtkTs, tsRtkFaceWithFlexibleTagTypes("public", operations)],
     [targets.platformAdminCatalogTs, tsAdminCatalog("platform-admin", base)],
     [targets.operationsAdminCatalogTs, tsAdminCatalog("operations-admin", base)],
     [targets.workspaceAuthorizationCatalogJava, enforceRoleHomeLookupCardinality(javaWorkspaceAuthorizationCatalog(base))],

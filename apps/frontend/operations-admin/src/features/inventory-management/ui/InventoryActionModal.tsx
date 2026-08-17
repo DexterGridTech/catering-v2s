@@ -51,7 +51,6 @@ type Props = {
   expectedVersion?: number;
   queryContext: OperationsPageContext;
   onClose: () => void;
-  onCompleted: () => void;
 };
 type FormValues = {
   quantity?: number;
@@ -146,7 +145,7 @@ function resultFromConfiguration(
   };
 }
 
-export function InventoryActionModal({action, current, expectedVersion, queryContext, onClose, onCompleted}: Props) {
+export function InventoryActionModal({action, current, expectedVersion, queryContext, onClose}: Props) {
   const [form] = Form.useForm<FormValues>();
   const [problem, setProblem] = useState<string>();
   const [result, setResult] = useState<InventoryWriteResult>();
@@ -316,7 +315,6 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
         setResult(readback);
       }
       setProblem(undefined);
-      onCompleted();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       setProblem(operationsProblemOf(error).detail || '库存操作未完成，请重试。');

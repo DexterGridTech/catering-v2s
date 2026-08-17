@@ -6,6 +6,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type PublicOperationId = keyof FaceOperationContracts;
 export type PublicRtkWireRequest = <I extends PublicOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
+export type PublicRtkTagType = "wire" | "catalogInventory";
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -115,58 +116,58 @@ export const publicRtkRequest = {
  * Operation-shaped RTK definitions generated from the face catalog.  The app
  * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.
  */
-export function createPublicRtkEndpoints(
-  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,
+export function createPublicRtkEndpoints<TagTypes extends PublicRtkTagType = "wire">(
+  build: EndpointBuilder<EdgeBaseQuery, TagTypes, string>,
   toWireRequest: PublicRtkWireRequest,
 ) {
   return {
     acceptPublicInvitation: build.mutation<FaceOperationContracts["acceptPublicInvitation"]["response"], FaceOperationRequest<"acceptPublicInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     completeOperationsPasswordRecovery: build.mutation<FaceOperationContracts["completeOperationsPasswordRecovery"]["response"], FaceOperationRequest<"completeOperationsPasswordRecovery">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     completePublicInvitation: build.mutation<FaceOperationContracts["completePublicInvitation"]["response"], FaceOperationRequest<"completePublicInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPublicAssetContent: build.query<FaceOperationContracts["getPublicAssetContent"]["response"], FaceOperationRequest<"getPublicAssetContent">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPublicInvitationCompletion: build.query<FaceOperationContracts["getPublicInvitationCompletion"]["response"], FaceOperationRequest<"getPublicInvitationCompletion">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPublicInvitationView: build.query<FaceOperationContracts["getPublicInvitationView"]["response"], FaceOperationRequest<"getPublicInvitationView">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     savePublicInvitationCredentials: build.mutation<FaceOperationContracts["savePublicInvitationCredentials"]["response"], FaceOperationRequest<"savePublicInvitationCredentials">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     sendOperationsPasswordRecoveryOtp: build.mutation<FaceOperationContracts["sendOperationsPasswordRecoveryOtp"]["response"], FaceOperationRequest<"sendOperationsPasswordRecoveryOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     sendPublicInvitationOtp: build.mutation<FaceOperationContracts["sendPublicInvitationOtp"]["response"], FaceOperationRequest<"sendPublicInvitationOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     startOperationsPasswordRecovery: build.mutation<FaceOperationContracts["startOperationsPasswordRecovery"]["response"], FaceOperationRequest<"startOperationsPasswordRecovery">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     verifyOperationsPasswordRecoveryOtp: build.mutation<FaceOperationContracts["verifyOperationsPasswordRecoveryOtp"]["response"], FaceOperationRequest<"verifyOperationsPasswordRecoveryOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     verifyPublicInvitationOtp: build.mutation<FaceOperationContracts["verifyPublicInvitationOtp"]["response"], FaceOperationRequest<"verifyPublicInvitationOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     })
   };
 }

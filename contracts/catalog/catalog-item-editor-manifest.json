@@ -2880,8 +2880,6 @@
       "gap",
       "changeSummary",
       "recentChanges",
-      "references",
-      "ledger",
       "diagnosticsAvailability"
     ],
     "InventoryChangeSummaryView": [
@@ -2948,5 +2946,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "23887b1e738d818d9758db88bb087c6dd1720b8c9b8104f7931e93cf940e11ff"
+  "manifestDigest": "10e504f81f5e55b41fb8071f1c3d149aee9175c67722537628aca2742b97fee7"
 }

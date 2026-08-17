@@ -30,6 +30,6 @@ test('backend acceptance discovers all real scenarios through explicit domain gr
   const ids = scenarioSources.flatMap(source =>
     [...source.matchAll(/@AcceptanceScenario\s*\(\s*id\s*=\s*"([^"]+)"/g)].map(match => match[1]),
   );
-  assert.equal(ids.length, 28);
+  assert.equal(ids.length, 30);
   assert.equal(new Set(ids).size, ids.length);
 });

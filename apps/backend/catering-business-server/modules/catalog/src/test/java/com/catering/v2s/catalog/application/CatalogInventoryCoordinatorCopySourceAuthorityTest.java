@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -179,26 +180,8 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         CatalogInventoryCoordinator service =
                 new CatalogInventoryCoordinator(catalog, inventory, null, null, mapper, null, null);
         UUID itemRef = UUID.randomUUID();
-        UUID categoryRef = UUID.randomUUID();
         ObjectNode inventoryPage = mapper.createObjectNode();
         inventoryPage.putObject("data").putArray("items").addObject().put("itemRef", itemRef.toString());
-        ObjectNode catalogPage = mapper.createObjectNode();
-        catalogPage
-                .putObject("data")
-                .putArray("items")
-                .addObject()
-                .put("itemRef", itemRef.toString())
-                .put("name", "咖啡豆");
-        ((ObjectNode) catalogPage.path("data").path("items").path(0))
-                .putArray("categoryRefs")
-                .add(categoryRef.toString());
-        ObjectNode navigation = mapper.createObjectNode();
-        navigation
-                .putObject("data")
-                .putArray("tree")
-                .addObject()
-                .put("categoryRef", categoryRef.toString())
-                .put("name", "饮品");
         when(inventory.readTargets(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
@@ -206,30 +189,88 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(inventoryPage);
+        when(catalog.readInventoryDisplayFacts(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(List.of(inventoryDisplayFact(itemRef)));
+
+        JsonNode result = service.readInventoryTargets("scope", "brand", mapper.createObjectNode(), "request", "STORE");
+
+        assertEquals(
+                "beverage",
+                result.path("data").path("items").path(0).path("categoryName").asText());
+        verify(catalog)
+                .readInventoryDisplayFacts(
+                        org.mockito.ArgumentMatchers.eq("scope"),
+                        org.mockito.ArgumentMatchers.eq("brand"),
+                        org.mockito.ArgumentMatchers.eq(List.of(itemRef)));
+        verify(catalog, never())
+                .readItems(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
+                        org.mockito.ArgumentMatchers.anyString());
+        verify(catalog, never())
+                .readNavigation(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
+                        org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void inventoryTargetDetailKeepsTheGenericReadItemsProjection() {
+        ObjectMapper mapper = new ObjectMapper();
+        CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
+        InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
+        CatalogInventoryCoordinator service =
+                new CatalogInventoryCoordinator(catalog, inventory, null, null, mapper, null, null);
+        UUID itemRef = UUID.randomUUID();
+        ObjectNode target = mapper.createObjectNode().put("itemRef", itemRef.toString());
+        ObjectNode inventoryDetail = mapper.createObjectNode();
+        inventoryDetail.putObject("target").set("itemRef", target.path("itemRef"));
+        ObjectNode catalogPage = mapper.createObjectNode();
+        catalogPage
+                .putObject("data")
+                .putArray("items")
+                .addObject()
+                .put("itemRef", itemRef.toString())
+                .put("name", "咖啡豆")
+                .put("shapeKey", "MATERIAL")
+                .putArray("skus");
+        when(inventory.readTarget(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(inventoryDetail);
         when(catalog.readItems(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.any(ObjectNode.class),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(catalogPage);
-        when(catalog.readNavigation(
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
-                        org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn(navigation);
 
-        JsonNode result = service.readInventoryTargets("scope", "brand", mapper.createObjectNode(), "request", "STORE");
+        service.readInventoryTarget("scope", "brand", "target", "request", "STORE");
 
-        assertEquals(
-                "饮品",
-                result.path("data").path("items").path(0).path("categoryName").asText());
         verify(catalog)
-                .readNavigation(
+                .readItems(
                         org.mockito.ArgumentMatchers.eq("scope"),
                         org.mockito.ArgumentMatchers.eq("brand"),
-                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
+                        org.mockito.ArgumentMatchers.argThat(
+                                value -> value.path("itemRefs").path(0).asText().equals(itemRef.toString())),
                         org.mockito.ArgumentMatchers.eq("request"));
+        verify(catalog, never())
+                .readInventoryDisplayFacts(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyList());
+    }
+
+    private static CatalogOwnerApi.InventoryDisplayFact inventoryDisplayFact(UUID itemRef) {
+        return new CatalogOwnerApi.InventoryDisplayFact(itemRef, "coffee beans", "default", "MATERIAL", "beverage");
     }
 
     @Test
@@ -265,12 +306,6 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(definition);
-        when(production.readTags(
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn(mapper.createObjectNode().putObject("data").putArray("entries"));
-
         JsonNode result = service.readCatalogItem("scope", "brand", "ITEM-1", mapper.createObjectNode(), "request");
         JsonNode availability = result.path("data").path("actionAvailability").path("voidAvailability");
 
@@ -285,6 +320,11 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         assertEquals(
                 "INVENTORY_BOM",
                 availability.path("dependentFacts").path(0).path("factKind").asText());
+        verify(production, never())
+                .readTags(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test

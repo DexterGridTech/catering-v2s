@@ -149,8 +149,6 @@ public interface InventoryOwnerApi {
             BigDecimal gap,
             InventoryChangeSummaryReadback changeSummary,
             java.util.List<InventoryRecentChangeReadback> recentChanges,
-            java.util.List<InventoryReferenceReadback> references,
-            java.util.List<InventoryLedgerEntryReadback> ledger,
             InventoryDiagnosticsAvailabilityReadback diagnosticsAvailability) {}
 
     record InventoryTargetReadback(
@@ -177,16 +175,6 @@ public interface InventoryOwnerApi {
             BigDecimal increase, BigDecimal decrease, BigDecimal netChange, long entryCount) {}
 
     record InventoryRecentChangeReadback(long occurredAt, String changeType, BigDecimal quantity, String source) {}
-
-    record InventoryReferenceReadback(
-            String sourceCode,
-            String sourceSkuCode,
-            String sourceOptionValueCode,
-            String sourceKind,
-            BigDecimal quantity,
-            String unit,
-            String timing,
-            String status) {}
 
     record InventoryLedgerEntryReadback(
             UUID entryRef,
@@ -304,6 +292,13 @@ public interface InventoryOwnerApi {
      */
     CatalogReferenceDependenciesReadback catalogReferenceDependencies(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, String objectType, String reference);
+
+    /**
+     * Typed collection judgement for lifecycle guards. The inventory owner keeps the table declarations and returns one
+     * independently attributable readback per requested reference.
+     */
+    List<CatalogReferenceDependenciesReadback> catalogReferenceDependenciesByRefs(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, String objectType, List<UUID> references);
 
     record CatalogReferenceDependenciesReadback(
             String objectType, UUID reference, long totalCount, List<CatalogReferenceDependencySource> sources) {

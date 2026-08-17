@@ -50,7 +50,6 @@ type Props = {
   canEdit: boolean;
   queryContext: OperationsPageContext;
   onClose: () => void;
-  onListChanged: () => void;
 };
 type InventoryZone = 'current' | 'changes' | 'history' | 'references' | 'ledger' | 'diagnostics';
 
@@ -101,7 +100,7 @@ function CursorControls({
   );
 }
 
-export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose, onListChanged}: Props) {
+export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose}: Props) {
   const [action, setAction] = useState<InventoryActionKind>();
   const [expandedZones, setExpandedZones] = useState<string[]>(['current']);
   const historyCursorState = useCursorStack({resetKey: targetRef ?? ''});
@@ -123,24 +122,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const current = operationsRtk.useGetOperationsInventoryTargetQuery(
     path ? catalogInventoryRtkRequest.getOperationsInventoryTarget(path) : skipToken,
     {skip: !open},
-  );
-  const changesToday = operationsRtk.useGetOperationsInventoryTargetChangeSummaryQuery(
-    path
-      ? catalogInventoryRtkRequest.getOperationsInventoryTargetChangeSummary(path, {query: {period: 'TODAY'}})
-      : skipToken,
-    {skip: !zoneLoaded('changes')},
-  );
-  const changes7d = operationsRtk.useGetOperationsInventoryTargetChangeSummaryQuery(
-    path
-      ? catalogInventoryRtkRequest.getOperationsInventoryTargetChangeSummary(path, {query: {period: '7D'}})
-      : skipToken,
-    {skip: !zoneLoaded('changes')},
-  );
-  const changes30d = operationsRtk.useGetOperationsInventoryTargetChangeSummaryQuery(
-    path
-      ? catalogInventoryRtkRequest.getOperationsInventoryTargetChangeSummary(path, {query: {period: '30D'}})
-      : skipToken,
-    {skip: !zoneLoaded('changes')},
   );
   const history = operationsRtk.useGetOperationsInventoryTargetBusinessHistoryQuery(
     path
@@ -169,7 +150,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
       : skipToken,
     {skip: !zoneLoaded('ledger')},
   );
-  const requestDiagnostics = shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'));
   const diagnostics = operationsRtk.useGetOperationsInventoryTargetDiagnosticsQuery(
     path ? catalogInventoryRtkRequest.getOperationsInventoryTargetDiagnostics(path) : skipToken,
     {skip: !shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'))},
@@ -180,36 +160,13 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const ledgerPage = envelopeData<CursorPage<InventoryLedgerEntry>>(ledger.currentData);
   const diagnosticsView = envelopeData<InventoryDiagnostics>(diagnostics.currentData);
   const periodChanges = useMemo(() => {
-    const fromResponse = (
-      query: typeof changesToday,
-      fallback: InventoryCurrentView['changeSummary'][keyof InventoryCurrentView['changeSummary']],
-      label: string,
-    ) => {
-      const value = envelopeData<{
-        period?: string;
-        increase?: string;
-        decrease?: string;
-        netChange?: string;
-        entryCount?: number;
-      }>(query.currentData);
-      return value?.period
-        ? {
-            period: label,
-            increase: value.increase ?? '0',
-            decrease: value.decrease ?? '0',
-            netChange: value.netChange ?? '0',
-            entryCount: value.entryCount ?? 0,
-          }
-        : {period: label, ...fallback};
-    };
-    return currentView
-      ? [
-          fromResponse(changesToday, currentView.changeSummary.today, '今日'),
-          fromResponse(changes7d, currentView.changeSummary.sevenDays, '7天'),
-          fromResponse(changes30d, currentView.changeSummary.thirtyDays, '30天'),
-        ]
-      : [];
-  }, [changes30d, changes7d, changesToday, currentView]);
+    if (!currentView) return [];
+    return [
+      {...currentView.changeSummary.today, period: '今日'},
+      {...currentView.changeSummary.sevenDays, period: '7天'},
+      {...currentView.changeSummary.thirtyDays, period: '30天'},
+    ];
+  }, [currentView]);
 
   const close = () => {
     setAction(undefined);
@@ -222,19 +179,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const openAction = (nextAction: InventoryActionKind, trigger: HTMLElement) => {
     actionTriggerRef.current = trigger;
     setAction(nextAction);
-  };
-  const refreshAll = () => {
-    void current.refetch();
-    if (zoneLoaded('changes')) {
-      void changesToday.refetch();
-      void changes7d.refetch();
-      void changes30d.refetch();
-    }
-    if (zoneLoaded('history')) void history.refetch();
-    if (zoneLoaded('references')) void references.refetch();
-    if (zoneLoaded('ledger')) void ledger.refetch();
-    if (requestDiagnostics) void diagnostics.refetch();
-    onListChanged();
   };
   const handleZoneChange = (keys: string | string[]) => setExpandedZones(Array.isArray(keys) ? keys : [keys]);
   const title = currentView ? (
@@ -347,37 +291,22 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
       label: '② 库存变化',
       children: (
         <Card size="small" title="② 库存变化" {...testId('inventory-zone-changes')}>
-          {changesToday.error || changes7d.error || changes30d.error ? (
-            <ZoneProblem
-              title="库存变化"
-              onRetry={() => {
-                void changesToday.refetch();
-                void changes7d.refetch();
-                void changes30d.refetch();
-              }}
-            />
-          ) : (changesToday.isFetching && !changesToday.currentData) ||
-            (changes7d.isFetching && !changes7d.currentData) ||
-            (changes30d.isFetching && !changes30d.currentData) ? (
-            <Skeleton active />
-          ) : (
-            <Space direction="vertical" size={12} style={{display: 'flex'}}>
-              {periodChanges.length === 0 ? (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无库存变化" />
-              ) : (
-                <Table
-                  size="small"
-                  rowKey="period"
-                  pagination={false}
-                  dataSource={periodChanges}
-                  columns={[
-                    {title: '周期', dataIndex: 'period'},
-                    {title: '变化量', dataIndex: 'netChange'},
-                  ]}
-                />
-              )}
-            </Space>
-          )}
+          <Space direction="vertical" size={12} style={{display: 'flex'}}>
+            {periodChanges.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无库存变化" />
+            ) : (
+              <Table
+                size="small"
+                rowKey="period"
+                pagination={false}
+                dataSource={periodChanges}
+                columns={[
+                  {title: '周期', dataIndex: 'period'},
+                  {title: '变化量', dataIndex: 'netChange'},
+                ]}
+              />
+            )}
+          </Space>
         </Card>
       ),
     },
@@ -605,7 +534,6 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
         expectedVersion={currentView?.version}
         queryContext={queryContext}
         onClose={closeAction}
-        onCompleted={refreshAll}
       />
     </>
   );

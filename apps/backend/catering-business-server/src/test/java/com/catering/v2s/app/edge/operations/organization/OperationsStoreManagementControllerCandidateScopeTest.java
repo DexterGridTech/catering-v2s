@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -243,6 +244,67 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         1,
                         20);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
+    }
+
+    @Test
+    void detailReusesScopedStoreProjectionWithoutASecondOwnerDetailRead() {
+        Fixture fixture = fixture();
+        UUID storeId = UUID.randomUUID();
+        UUID projectId = selectedProjectId(fixture);
+        OrganizationOverviewTaskReadService.Item detail = storeDetail(storeId, projectId);
+        when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId))
+                .thenReturn(detail);
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, projectId))
+                .thenReturn(projectPath(projectId));
+        when(fixture.entities.requireEntity("STORE", fixture.workspaceId, KEY, storeId))
+                .thenReturn(storeEntity(detail, fixture.workspaceId));
+        when(fixture.contracts.derivedStoreStatus(fixture.workspaceId, KEY, storeId))
+                .thenReturn("OPERATING");
+
+        var response = fixture.controller.detail(fixture.request, KEY, storeId, fixture.session.contextVersion());
+
+        assertEquals(storeId.toString(), response.id());
+        assertEquals(projectId.toString(), response.project().id());
+        assertEquals("OPERATING", response.contractDerivedStatus());
+        verify(fixture.overview, times(1)).detail(fixture.workspaceId, KEY, "STORE", storeId);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, projectId);
+        verify(fixture.entities).requireEntity("STORE", fixture.workspaceId, KEY, storeId);
+        verify(fixture.contracts).derivedStoreStatus(fixture.workspaceId, KEY, storeId);
+    }
+
+    @Test
+    void detailPreservesScopeDeniedFailureBeforeBaseReadback() {
+        Fixture fixture = fixture();
+        UUID storeId = UUID.randomUUID();
+        UUID projectId = selectedProjectId(fixture);
+        OrganizationOverviewTaskReadService.Item detail = storeDetail(storeId, projectId);
+        when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId))
+                .thenReturn(detail);
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, projectId))
+                .thenThrow(new WorkspaceUserService.TaskScopeDeniedException());
+
+        assertThrows(
+                WorkspaceUserService.TaskScopeDeniedException.class,
+                () -> fixture.controller.detail(fixture.request, KEY, storeId, fixture.session.contextVersion()));
+
+        verify(fixture.overview, times(1)).detail(fixture.workspaceId, KEY, "STORE", storeId);
+        verify(fixture.user).resolveSelectedProjectScope(fixture.session, projectId);
+        verifyNoInteractions(fixture.entities, fixture.contracts);
+    }
+
+    @Test
+    void detailPreservesAbsentStoreFailureBeforeScopeAndBaseReadback() {
+        Fixture fixture = fixture();
+        UUID storeId = UUID.randomUUID();
+        when(fixture.overview.detail(fixture.workspaceId, KEY, "STORE", storeId))
+                .thenThrow(new BusinessEntityService.OrganizationNotFoundException());
+
+        assertThrows(
+                BusinessEntityService.OrganizationNotFoundException.class,
+                () -> fixture.controller.detail(fixture.request, KEY, storeId, fixture.session.contextVersion()));
+
+        verify(fixture.overview, times(1)).detail(fixture.workspaceId, KEY, "STORE", storeId);
+        verifyNoInteractions(fixture.user, fixture.entities, fixture.contracts);
     }
 
     @Test
@@ -521,12 +583,62 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     }
 
     private static void selectedProject(Fixture fixture, UUID projectId) {
-        when(fixture.user.resolveSelectedProjectScope(fixture.session, null))
-                .thenReturn(new OrganizationTaskPathLookup.TaskPath(
-                        "PROJECT",
-                        projectId,
-                        List.of(projectId),
-                        /* format-wrap */
-                        "集团 / 项目"));
+        when(fixture.user.resolveSelectedProjectScope(fixture.session, null)).thenReturn(projectPath(projectId));
+    }
+
+    private static OrganizationTaskPathLookup.TaskPath projectPath(UUID projectId) {
+        return new OrganizationTaskPathLookup.TaskPath(
+                "PROJECT", projectId, List.of(projectId), /* format-wrap */ "集团 / 项目");
+    }
+
+    private static OrganizationOverviewTaskReadService.Item storeDetail(UUID storeId, UUID projectId) {
+        UUID brandId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID headCompanyId = UUID.randomUUID();
+        return new OrganizationOverviewTaskReadService.Item(
+                storeId,
+                KEY,
+                "STORE",
+                "STORE",
+                "STORE-01",
+                "门店一",
+                List.of(),
+                "ENABLED",
+                "MANUAL",
+                3L,
+                10L,
+                11L,
+                "备注",
+                null,
+                null,
+                new OrganizationOverviewTaskReadService.Reference(projectId, "PRJ-01", "项目一", true),
+                new OrganizationOverviewTaskReadService.Reference(brandId, "BR-01", "品牌一", true),
+                new OrganizationOverviewTaskReadService.Reference(tenantId, "TEN-01", "经营主体一", true),
+                new OrganizationOverviewTaskReadService.Reference(headCompanyId, "HC-01", "总公司一", true),
+                List.of(),
+                List.of(),
+                null);
+    }
+
+    private static OrganizationEntityReadback storeEntity(
+            OrganizationOverviewTaskReadService.Item detail, UUID workspaceId) {
+        return new OrganizationEntityReadback(
+                detail.id(),
+                "STORE",
+                workspaceId,
+                detail.groupWorkspaceKey(),
+                detail.code(),
+                detail.name(),
+                null,
+                null,
+                detail.status(),
+                detail.version(),
+                null,
+                null,
+                detail.notes(),
+                0L,
+                detail.createdAt(),
+                detail.updatedAt(),
+                Map.of());
     }
 }

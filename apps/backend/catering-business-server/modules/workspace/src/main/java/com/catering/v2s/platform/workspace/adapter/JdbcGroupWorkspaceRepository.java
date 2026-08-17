@@ -47,7 +47,7 @@ public class JdbcGroupWorkspaceRepository implements GroupWorkspaceRepository {
     public Optional<GroupWorkspaceDetail> detail(PlatformExecutionContext context, String groupWorkspaceKey) {
         List<GroupWorkspaceDetail> rows = jdbcTemplate.query(
                 """
-            SELECT gw.id, gw.group_workspace_key, gw.name, gw.status AS workspace_status,
+            SELECT gw.id, gw.workspace_uuid, gw.group_workspace_key, gw.name, gw.status AS workspace_status,
                    CASE WHEN cg.id IS NULL THEN 'NOT_INITIALIZED' ELSE 'INITIALIZED' END AS commercial_group_status,
                    cg.id AS commercial_group_id, cg.commercial_group_code, cg.commercial_group_name,
                    cg.extension_values::text AS commercial_group_extension_values, cg.extension_rule_revision,
@@ -76,6 +76,7 @@ public class JdbcGroupWorkspaceRepository implements GroupWorkspaceRepository {
                         resultSet.getLong("created_at_epoch_millis"));
         return new GroupWorkspaceDetail(
                 resultSet.getLong("id"),
+                resultSet.getObject("workspace_uuid", java.util.UUID.class),
                 resultSet.getString("group_workspace_key"),
                 resultSet.getString("name"),
                 resultSet.getString("workspace_status"),

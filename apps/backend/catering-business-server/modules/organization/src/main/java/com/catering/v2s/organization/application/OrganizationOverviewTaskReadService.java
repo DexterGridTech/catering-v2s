@@ -233,7 +233,12 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                    AND (p.scope_node_id IS NULL OR s.id=p.scope_node_id OR s.project_id IN (SELECT id FROM \
                    visible_scope WHERE node_type='PROJECT'))
             ), filtered AS MATERIALIZED (
-                SELECT item.*, COUNT(*) OVER () AS total
+                SELECT item.id, item.category, item.type, item.code, item.name, item.status, item.source,
+                       item.version, item.created_at, item.updated_at, item.notes,
+                       item.legal_name, item.credit_code, item.alias, item.path,
+                       item.project, item.brand, item.tenant, item.head_company,
+                       item.project_filter_id, item.brand_filter_id, item.tenant_filter_id,
+                       item.head_filter_id, item.project_phases, COUNT(*) OVER () AS total
                   FROM all_items item CROSS JOIN params p
                  WHERE item.category=p.category
                    AND (p.type IS NULL OR item.type=p.type)
@@ -248,7 +253,13 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                    AND (p.tenant_id IS NULL OR item.tenant_filter_id=p.tenant_id)
                    AND (p.head_company_id IS NULL OR item.head_filter_id=p.head_company_id)
             ), paged AS (
-                SELECT * FROM filtered
+                SELECT filtered.id, filtered.category, filtered.type, filtered.code, filtered.name, filtered.status,
+                       filtered.source, filtered.version, filtered.created_at, filtered.updated_at, filtered.notes,
+                       filtered.legal_name, filtered.credit_code, filtered.alias, filtered.path,
+                       filtered.project, filtered.brand, filtered.tenant, filtered.head_company,
+                       filtered.project_filter_id, filtered.brand_filter_id, filtered.tenant_filter_id,
+                       filtered.head_filter_id, filtered.project_phases, filtered.total
+                  FROM filtered
                  ORDER BY"""
                                 + " " + platformOrder(safe)
                                 + """
@@ -377,7 +388,10 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                 + "parent_id, code, name, 0 AS depth FROM target UNION ALL SELECT parent.id, parent.parent_id, "
                 + "parent.code, parent.name, ancestry.depth+1 FROM organization.organization_node parent JOIN "
                 + "ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? AND "
-                + "parent.group_workspace_key=?) SELECT target.*, array_agg(ancestry.id ORDER BY ancestry.depth "
+                + "parent.group_workspace_key=?) SELECT target.id, target.parent_id, target.node_type, target.code, "
+                + "target.name, target.status, target.version, target.created_at_epoch_millis, "
+                + "target.updated_at_epoch_millis, target.notes, target.extension_values, "
+                + "array_agg(ancestry.id ORDER BY ancestry.depth "
                 + "DESC) AS path_ids, array_agg(ancestry.code ORDER BY ancestry.depth DESC) AS path_codes, "
                 + "array_agg(ancestry.name ORDER BY ancestry.depth DESC) AS path_names FROM target JOIN ancestry "
                 + "ON true GROUP BY target.id, target.parent_id, target.node_type, target.code, target.name, "
@@ -434,7 +448,9 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                 + "AND group_workspace_key=? AND id=? UNION ALL SELECT id, 'HEAD_COMPANY', code, name, legal_name, "
                 + "credit_code, NULL, remark, status, version, created_at_epoch_millis, updated_at_epoch_millis, "
                 + "extension_values::text FROM organization.head_company WHERE workspace_uuid=? AND "
-                + "group_workspace_key=? AND id=?) SELECT * FROM target";
+                + "group_workspace_key=? AND id=?) SELECT target.id, target.entity_type, target.code, target.name, "
+                + "target.legal_name, target.credit_code, target.alias, target.notes, target.status, target.version, "
+                + "target.created_at_epoch_millis, target.updated_at_epoch_millis, target.extension_values FROM target";
         return jdbc.query(
                 sql,
                 statement -> {
@@ -489,7 +505,12 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                 + "organization.organization_node node ON node.id=target.project_id UNION ALL SELECT "
                 + "ancestry.target_id, parent.id, parent.parent_id, parent.code, parent.name, ancestry.depth+1 "
                 + "FROM organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE "
-                + "parent.workspace_uuid=? AND parent.group_workspace_key=?) SELECT target.*, "
+                + "parent.workspace_uuid=? AND parent.group_workspace_key=?) "
+                + "SELECT target.id, target.code, target.name, "
+                + "target.status, target.version, target.created_at_epoch_millis, target.updated_at_epoch_millis, "
+                + "target.notes, target.extension_values, target.project_id, target.project_code, target.project_name, "
+                + "target.brand_id, target.brand_code, target.brand_name, target.tenant_id, target.tenant_code, "
+                + "target.tenant_name, target.head_id, target.head_code, target.head_name, "
                 + "array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS path_ids, array_agg(ancestry.code ORDER "
                 + "BY ancestry.depth DESC) AS path_codes, array_agg(ancestry.name ORDER BY ancestry.depth DESC) AS "
                 + "path_names FROM target JOIN ancestry ON ancestry.target_id=target.project_id GROUP BY "

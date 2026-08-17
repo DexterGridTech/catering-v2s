@@ -400,35 +400,28 @@ export function productionTagCandidateFromReadback(
   };
 }
 
-/**
- * Build the smallest valid catalog save request for a batch category/tag
- * update. The generated contract requires inventoryConfiguration.nodes, so
- * relationship-only actions send an explicitly empty array. The coordinator
- * treats that array as a no-op and never retires existing targets; optional
- * catalog sections remain omitted rather than copied from a list projection
- * that cannot prove their contents.
- */
+type CatalogBatchCatalogDraft = Partial<
+  Pick<CatalogItemSaveRequest['sections']['catalogDraft'], 'categoryRefs' | 'tagRefs'>
+>;
+
+/** Build a relation-only save from facts already present in the list row. */
 export function buildCatalogBatchSaveRequest(
-  detail: CatalogDetail,
+  row: Pick<CatalogItemSummary, 'code' | 'version'>,
   dataNodeRef: Uuid,
   kind: CatalogBatchUpdateKind,
   refs: Uuid[],
 ): CatalogItemSaveRequest {
+  const catalogDraft: CatalogBatchCatalogDraft = kind === 'CATEGORY' ? {categoryRefs: [...refs]} : {tagRefs: [...refs]};
+
   return {
     dataNodeRef,
-    itemCode: detail.item.code,
+    itemCode: row.code,
     sections: {
-      catalogDraft: {
-        name: detail.item.name,
-        shapeKey: detail.item.shapeKey,
-        attributes: detail.item.attributes,
-        images: [...detail.item.images],
-        productionTagRefs: [...detail.item.productionTagRefs],
-        categoryRefs: kind === 'CATEGORY' ? [...refs] : [...detail.item.categoryRefs],
-        ...(kind === 'TAG' ? {tagRefs: [...refs]} : {}),
-      },
+      // The generated editor envelope models the full draft as required, but
+      // the catalog owner intentionally merges omitted unchanged draft facts.
+      catalogDraft: catalogDraft as CatalogItemSaveRequest['sections']['catalogDraft'],
       inventoryConfiguration: {nodes: []},
-      expectedCatalogVersion: detail.item.version,
+      expectedCatalogVersion: row.version,
       expectedInventoryVersions: [],
     },
   };

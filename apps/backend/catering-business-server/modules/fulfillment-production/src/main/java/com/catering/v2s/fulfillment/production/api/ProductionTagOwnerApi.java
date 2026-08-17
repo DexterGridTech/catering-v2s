@@ -14,6 +14,9 @@ public interface ProductionTagOwnerApi {
 
     JsonNode readTags(String dataNodeRef, String brandRef, String requestId);
 
+    List<ProductionTagReferenceReadback> readTagReferencesByRefs(
+            String dataNodeRef, String brandRef, List<UUID> tagRefs, String requestId);
+
     JsonNode write(
             String operationId,
             String dataNodeRef,
@@ -51,6 +54,8 @@ public interface ProductionTagOwnerApi {
     record UpdateTagCommand(String tagCode, long expectedVersion, String tagKind, String name) {}
 
     record TransitionTagStatusCommand(String tagCode, long expectedVersion, String targetStatus) {}
+
+    record ProductionTagReferenceReadback(UUID tagRef, String code, String name, String status, long version) {}
     /** Owner-native command readback; edge contract serialization is deliberately separate. */
     record ProductionTagCommandReadback(
             UUID tagRef, String code, String tagKind, String name, String status, long version) {}

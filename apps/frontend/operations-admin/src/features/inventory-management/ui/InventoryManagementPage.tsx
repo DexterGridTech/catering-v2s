@@ -373,7 +373,6 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         canEdit={canEdit}
         queryContext={queryContext}
         onClose={closeDetail}
-        onListChanged={() => void list.refetch()}
       />
     </section>
   );

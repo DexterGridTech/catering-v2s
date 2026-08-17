@@ -12,8 +12,6 @@ import com.catering.v2s.platform.workspace.api.PlatformWorkspaceCoordinator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, PlatformWorkspaceCoordinator {
     private final GroupWorkspaceRepository repository;
     private final InitializeCommercialGroupCommand initializeCommercialGroupCommand;
-    private final JdbcTemplate jdbc;
     private final TimeProvider time;
 
     public PlatformWorkspaceService(
             GroupWorkspaceRepository repository,
             InitializeCommercialGroupCommand initializeCommercialGroupCommand,
-            JdbcTemplate jdbc,
             TimeProvider time) {
         this.repository = repository;
         this.initializeCommercialGroupCommand = initializeCommercialGroupCommand;
-        this.jdbc = jdbc;
         this.time = time;
     }
 
@@ -63,14 +58,9 @@ public class PlatformWorkspaceService implements GroupWorkspaceTaskQuery, Platfo
         if (!"ENABLED".equals(workspace.workspaceStatus())) {
             throw new GroupWorkspaceNotEligibleException(groupWorkspaceKey);
         }
-        UUID workspaceUuid = jdbc.queryForObject(
-                "SELECT workspace_uuid FROM platform_workspace.group_workspace WHERE group_workspace_key=? AND id=?",
-                UUID.class,
-                workspace.groupWorkspaceKey(),
-                workspace.id());
         return initializeCommercialGroupCommand.execute(
                 context,
-                workspaceUuid,
+                workspace.workspaceUuid(),
                 workspace.groupWorkspaceKey(),
                 workspace.id(),
                 idempotencyKey,

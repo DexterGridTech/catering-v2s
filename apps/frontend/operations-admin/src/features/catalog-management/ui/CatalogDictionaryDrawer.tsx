@@ -19,7 +19,7 @@ import {
   Typography,
 } from 'antd';
 import {createContentIdempotencyKey, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
@@ -61,8 +61,8 @@ type DictionaryRow = {
   voidAvailability?: VoidAvailability;
 };
 type RebuildRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
-type NameEditRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind; refresh: () => Promise<void>};
-type StatusChangeRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind; refresh: () => Promise<void>};
+type NameEditRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
+type StatusChangeRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
 
 function voidReason(value?: VoidAvailability) {
   if (!value || value.canVoid) return undefined;
@@ -129,14 +129,17 @@ export function CatalogDictionaryDrawer({
   const [selectedAttributeRef, setSelectedAttributeRef] = useState<string>();
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const isProduction = kind === 'PRODUCTION_TAG';
-  const formForKind = (value: Exclude<DictionaryKind, 'SKU_ATTRIBUTE_VALUE'>) =>
-    value === 'TAG'
-      ? tagForm
-      : value === 'SALES_UNIT'
-        ? salesUnitForm
-        : value === 'SKU_ATTRIBUTE'
-          ? skuAttributeForm
-          : productionTagForm;
+  const formForKind = useCallback(
+    (value: Exclude<DictionaryKind, 'SKU_ATTRIBUTE_VALUE'>) =>
+      value === 'TAG'
+        ? tagForm
+        : value === 'SALES_UNIT'
+          ? salesUnitForm
+          : value === 'SKU_ATTRIBUTE'
+            ? skuAttributeForm
+            : productionTagForm,
+    [productionTagForm, salesUnitForm, skuAttributeForm, tagForm],
+  );
   const activeForm = kind === 'SKU_ATTRIBUTE_VALUE' ? attributeValueForm : formForKind(kind);
   const close = () => onClose(kind);
   const lifecycle = useDrawerFormLifecycle({
@@ -235,7 +238,7 @@ export function CatalogDictionaryDrawer({
       setProblem(undefined);
       setSelectedAttributeRef(undefined);
     }
-  }, [open]);
+  }, [editNameForm, open]);
   useEffect(() => {
     if (!open) return;
     if (kind !== 'SKU_ATTRIBUTE') {
@@ -260,7 +263,7 @@ export function CatalogDictionaryDrawer({
     });
     setCreatingKind(rebuildFrom.dictionaryKind);
     lifecycle.setDirty(true);
-  }, [attributeValueForm, lifecycle, rebuildFrom, tagForm, salesUnitForm, skuAttributeForm, productionTagForm]);
+  }, [attributeValueForm, formForKind, lifecycle, rebuildFrom]);
 
   const create = async () => {
     try {
@@ -295,11 +298,12 @@ export function CatalogDictionaryDrawer({
           return;
         }
         onCreated?.(candidate);
-        await productionQuery.refetch();
         activeForm.resetFields();
         setRebuildFrom(undefined);
         setCreatingKind(undefined);
         lifecycle.reset();
+        // The command readback carries tagRef and RTK invalidates the production-tag page.
+        // No second GET is needed just to display the created candidate.
         if (quickManage) close();
       } else {
         const body = {
@@ -323,6 +327,8 @@ export function CatalogDictionaryDrawer({
         setRebuildFrom(undefined);
         setCreatingKind(undefined);
         lifecycle.reset();
+        // The readback intentionally omits entryRef. This narrow identity lookup is
+        // required to select a newly created parent in quick-manage flows.
         const refreshed = await dictionaryQuery.refetch();
         if (!quickManage && kind === 'SKU_ATTRIBUTE') {
           setSelectedAttributeRef(refreshed.data?.data.entries.find(entry => entry.code === code)?.entryRef);
@@ -383,6 +389,8 @@ export function CatalogDictionaryDrawer({
       setRebuildFrom(undefined);
       setCreatingKind(undefined);
       lifecycle.reset();
+      // The current child readback omits the child entryRef; refresh the active
+      // parent value list so the new option can be rendered and managed.
       await attributeValuesQuery.refetch();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
@@ -398,21 +406,14 @@ export function CatalogDictionaryDrawer({
     }
   };
 
-  const refreshRows = async () => {
-    if (isProduction) await productionQuery.refetch();
-    else await dictionaryQuery.refetch();
-  };
-  const refreshAttributeValues = async () => {
-    if (selectedAttributeRef) await attributeValuesQuery.refetch();
-  };
-  const openNameEdit = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind, refresh = refreshRows) => {
+  const openNameEdit = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     editNameForm.setFieldsValue({name: row.name});
     setProblem(undefined);
-    setEditingEntry({row, dictionaryKind, refresh});
+    setEditingEntry({row, dictionaryKind});
   };
   const saveName = async () => {
     if (!editingEntry) return;
-    const {row, dictionaryKind, refresh} = editingEntry;
+    const {row, dictionaryKind} = editingEntry;
     try {
       const values = await editNameForm.validateFields();
       const name = values.name.trim();
@@ -449,7 +450,6 @@ export function CatalogDictionaryDrawer({
           ),
         ).unwrap();
       }
-      await refresh();
       editNameForm.resetFields();
       setEditingEntry(undefined);
     } catch (error) {
@@ -457,14 +457,14 @@ export function CatalogDictionaryDrawer({
       setProblem(operationsProblemOf(error).detail || '字典名称更新未完成，请重试。');
     }
   };
-  const openStatusChange = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind, refresh = refreshRows) => {
+  const openStatusChange = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     if (row.status === 'VOIDED') return;
     setProblem(undefined);
-    setStatusChange({row, dictionaryKind, refresh});
+    setStatusChange({row, dictionaryKind});
   };
   const changeStatus = async () => {
     if (!statusChange) return;
-    const {row, dictionaryKind, refresh} = statusChange;
+    const {row, dictionaryKind} = statusChange;
     const targetStatus = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
     try {
       setProblem(undefined);
@@ -494,17 +494,12 @@ export function CatalogDictionaryDrawer({
           ),
         ).unwrap();
       }
-      await refresh();
       setStatusChange(undefined);
     } catch (error) {
       setProblem(operationsProblemOf(error).detail || '字典状态更新未完成，请重试。');
     }
   };
-  const voidAndPrepareRebuild = (
-    row: DictionaryRow,
-    dictionaryKind: DictionaryKind = kind,
-    refresh: () => Promise<void> = refreshRows,
-  ) => {
+  const voidAndPrepareRebuild = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     if (!row.voidAvailability?.canVoid) return;
     modal.confirm({
       title: `作废并重建“${row.name}”`,
@@ -553,7 +548,6 @@ export function CatalogDictionaryDrawer({
           }
           setRebuildFrom({row, dictionaryKind});
           setCreatingKind(dictionaryKind);
-          await refresh();
         } catch (error) {
           setProblem(operationsProblemOf(error).detail || '作废未完成，请重试。');
           throw error;
@@ -836,7 +830,7 @@ export function CatalogDictionaryDrawer({
                                 <Button
                                   type="link"
                                   disabled={!canWrite}
-                                  onClick={() => openNameEdit(row, 'SKU_ATTRIBUTE_VALUE', refreshAttributeValues)}
+                                  onClick={() => openNameEdit(row, 'SKU_ATTRIBUTE_VALUE')}
                                 >
                                   编辑名称
                                 </Button>,
@@ -848,7 +842,7 @@ export function CatalogDictionaryDrawer({
                                 <Button
                                   type="link"
                                   disabled={!canWrite}
-                                  onClick={() => openStatusChange(row, 'SKU_ATTRIBUTE_VALUE', refreshAttributeValues)}
+                                  onClick={() => openStatusChange(row, 'SKU_ATTRIBUTE_VALUE')}
                                 >
                                   {row.status === 'ENABLED' ? '停用' : '启用'}
                                 </Button>,
@@ -861,9 +855,7 @@ export function CatalogDictionaryDrawer({
                                   type="link"
                                   danger
                                   disabled={!canWrite || !row.voidAvailability?.canVoid}
-                                  onClick={() =>
-                                    voidAndPrepareRebuild(row, 'SKU_ATTRIBUTE_VALUE', refreshAttributeValues)
-                                  }
+                                  onClick={() => voidAndPrepareRebuild(row, 'SKU_ATTRIBUTE_VALUE')}
                                 >
                                   {voidActionLabel(row.voidAvailability)}
                                 </Button>,

@@ -112,6 +112,18 @@ class CatalogAssetGlobalReferenceTest {
         assertEquals(2, counting.queryCount(), "one set-based query per item-media and SKU-media owner");
     }
 
+    @Test
+    void assetReferenceReadbackUsesOneNarrowOwnerProjection() {
+        CountingJdbcTemplate counting = new CountingJdbcTemplate(dataSource);
+        CatalogOwnerService narrowCatalog =
+                new CatalogOwnerService(counting, new ObjectMapper(), () -> 1_785_000_000_000L, assets);
+
+        assertEquals(
+                List.of(UUID.fromString(SHARED_ASSET)),
+                narrowCatalog.readAssetReferences("scope-b", "brand-1", "B").assetRefs());
+        assertEquals(1, counting.queryCount(), "asset settlement reads one owner-local asset-ref projection");
+    }
+
     /* Legacy operation-id catalog write coverage retired with that compatibility entry. */
     /* @Test void releaseAndCrossScopeReuseSerializeOnTheSameAssetRef() throws Exception {
         UUID assetRef = UUID.randomUUID();

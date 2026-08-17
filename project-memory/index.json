@@ -2650,6 +2650,275 @@
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
       ]
+    },
+    {
+      "id": "practices.read-model-granularity",
+      "path": "project-memory/practices/read-model-granularity.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "READ_MODEL_BY_TASK_FACT_CLOSURE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "READ_MODEL_BY_TASK_FACT_CLOSURE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.set-interaction-not-n-times-single",
+      "path": "project-memory/practices/set-interaction-not-n-times-single.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "SET_INTERACTION_NOT_N_TIMES_SINGLE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "SET_INTERACTION_NOT_N_TIMES_SINGLE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.cache-invalidation-granularity",
+      "path": "project-memory/practices/cache-invalidation-granularity.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "frontend-platform",
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.reuse-projection-within-request",
+      "path": "project-memory/practices/reuse-projection-within-request.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend"
+        ],
+        "impacts": [
+          "architecture",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.failure-condition-names-the-wrong-shape",
+      "path": "project-memory/practices/failure-condition-names-the-wrong-shape.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE",
+          "path": "doc/platform/implementation-task-template.md",
+          "anchor": "## 正本(逐字复制以下代码块)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/implementation-task-template.md"
+      ]
+    },
+    {
+      "id": "practices.preflight-execute-failure-parity",
+      "path": "project-memory/practices/preflight-execute-failure-parity.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "PREFLIGHT_EXECUTE_FAILURE_PARITY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PREFLIGHT_EXECUTE_FAILURE_PARITY",
+          "path": "project-memory/practices/preflight-execute-failure-parity.md",
+          "anchor": "## 规则"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/preflight-execute-failure-parity.md"
+      ]
     }
   ]
 }

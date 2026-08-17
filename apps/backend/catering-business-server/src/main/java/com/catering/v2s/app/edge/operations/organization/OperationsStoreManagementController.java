@@ -208,11 +208,8 @@ public final class OperationsStoreManagementController {
             @PathVariable UUID storeId,
             @RequestParam long expectedContextVersion) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
-        scopedReadStore(session, groupWorkspaceKey, storeId);
-        return store(
-                session,
-                groupWorkspaceKey,
-                entities.requireEntity(ServiceNodeTypes.STORE, session.workspaceUuid(), groupWorkspaceKey, storeId));
+        OrganizationOverviewTaskReadService.Item current = scopedReadStore(session, groupWorkspaceKey, storeId);
+        return store(session, groupWorkspaceKey, current);
     }
 
     @GetMapping("/candidates")
@@ -293,11 +290,12 @@ public final class OperationsStoreManagementController {
         return StoreWireMapper.store(result.store(), result.organizationDetail(), result.contractDerivedStatus());
     }
 
-    private OrganizationStore store(WorkspaceSessionReadback session, String key, OrganizationEntityReadback value) {
+    private OrganizationStore store(
+            WorkspaceSessionReadback session, String key, OrganizationOverviewTaskReadService.Item detail) {
+        OrganizationEntityReadback value =
+                entities.requireEntity(ServiceNodeTypes.STORE, session.workspaceUuid(), key, detail.id());
         return StoreWireMapper.store(
-                value,
-                overview.detail(session.workspaceUuid(), key, ServiceNodeTypes.STORE, value.id()),
-                contracts.derivedStoreStatus(session.workspaceUuid(), key, value.id()));
+                value, detail, contracts.derivedStoreStatus(session.workspaceUuid(), key, detail.id()));
     }
 
     private OrganizationOverviewTaskReadService.Item scopedReadStore(

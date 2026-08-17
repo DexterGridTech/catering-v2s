@@ -122,6 +122,55 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     @Override
+    public List<CatalogOwnerApi.InventoryDisplayFact> readInventoryDisplayFacts(
+            String dataNodeRef, String brandRef, List<UUID> orderedItemRefs) {
+        requireScope(dataNodeRef, brandRef);
+        if (orderedItemRefs == null || orderedItemRefs.isEmpty()) return List.of();
+
+        List<UUID> distinctItemRefs = new ArrayList<>(new LinkedHashSet<>(orderedItemRefs));
+        String placeholders = String.join(",", Collections.nCopies(distinctItemRefs.size(), "?"));
+        List<Object> args = new ArrayList<>();
+        args.add(dataNodeRef);
+        args.add(brandRef);
+        args.addAll(distinctItemRefs);
+        List<CatalogOwnerApi.InventoryDisplayFact> projectedFacts = jdbc.query(
+                "SELECT item.item_ref,item.name,sku.sku_name,item.sections->>'materialRole',category.name "
+                        + "FROM catalog.catalog_item item "
+                        + "LEFT JOIN LATERAL (SELECT catalog_sku.sku_name "
+                        + "FROM catalog.catalog_sku "
+                        + "WHERE catalog_sku.item_ref=item.item_ref AND catalog_sku.status <> 'VOIDED' "
+                        + "ORDER BY catalog_sku.is_default DESC,catalog_sku.display_order,catalog_sku.sku_code "
+                        + "LIMIT 1) sku ON TRUE "
+                        + "LEFT JOIN LATERAL (SELECT catalog_category.name "
+                        + "FROM catalog.catalog_item_category relation "
+                        + "JOIN catalog.catalog_category "
+                        + "ON catalog_category.category_ref=relation.category_ref "
+                        + "WHERE relation.item_ref=item.item_ref "
+                        + "AND catalog_category.data_node_ref=item.data_node_ref "
+                        + "AND catalog_category.brand_ref=item.brand_ref "
+                        + "AND catalog_category.status <> 'VOIDED' "
+                        + "ORDER BY relation.category_ref "
+                        + "LIMIT 1) category ON TRUE "
+                        + "WHERE item.data_node_ref=? AND item.brand_ref=? "
+                        + "AND item.item_ref IN ("
+                        + placeholders
+                        + ") AND item.status <> 'VOIDED'",
+                (rows, row) -> new CatalogOwnerApi.InventoryDisplayFact(
+                        rows.getObject(1, UUID.class),
+                        rows.getString(2),
+                        rows.getString(3),
+                        rows.getString(4),
+                        rows.getString(5)),
+                args.toArray());
+        Map<UUID, CatalogOwnerApi.InventoryDisplayFact> factsByItemRef = new LinkedHashMap<>();
+        projectedFacts.forEach(fact -> factsByItemRef.put(fact.itemRef(), fact));
+        return orderedItemRefs.stream()
+                .map(itemRef ->
+                        factsByItemRef.getOrDefault(itemRef, CatalogOwnerApi.InventoryDisplayFact.absent(itemRef)))
+                .toList();
+    }
+
+    @Override
     public JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         requireScope(dataNodeRef, brandRef);
         return detail(dataNodeRef, brandRef, requestId, itemCode);
@@ -2140,6 +2189,35 @@ public class CatalogOwnerService implements CatalogOwnerApi {
 
     @Override
     @Transactional(readOnly = true)
+    public CatalogOwnerApi.CatalogAssetReferenceReadback readAssetReferences(
+            String dataNodeRef, String brandRef, String itemCode) {
+        requireScope(dataNodeRef, brandRef);
+        if (itemCode == null || itemCode.isBlank()) return new CatalogOwnerApi.CatalogAssetReferenceReadback(List.of());
+        List<UUID> refs = jdbc.query(
+                "SELECT asset_ref FROM ("
+                        + "SELECT image.asset_ref FROM catalog.catalog_item_image image "
+                        + "JOIN catalog.catalog_item item ON item.item_ref=image.item_ref "
+                        + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.code=? "
+                        + "AND item.status <> 'VOIDED' "
+                        + "UNION "
+                        + "SELECT media.asset_ref FROM catalog.catalog_sku_media media "
+                        + "JOIN catalog.catalog_sku sku ON sku.product_sku_ref=media.product_sku_ref "
+                        + "JOIN catalog.catalog_item item ON item.item_ref=sku.item_ref "
+                        + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.code=? "
+                        + "AND item.status <> 'VOIDED'"
+                        + ") asset_refs ORDER BY asset_ref",
+                (rows, row) -> rows.getObject(1, UUID.class),
+                dataNodeRef,
+                brandRef,
+                itemCode,
+                dataNodeRef,
+                brandRef,
+                itemCode);
+        return new CatalogOwnerApi.CatalogAssetReferenceReadback(List.copyOf(refs));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public void requireAssetUnreferencedAnywhere(UUID assetRef) {
         if (assetRef == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "assetRef is required");
         if (assetReferencedAnywhere(assetRef.toString())) {
@@ -2942,21 +3020,36 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         String dataNodeRef = scope.dataNodeId().toString();
         String brandRef = scope.brandRef();
         lockProductSkuRefs(archivedSkuRefs);
-        for (UUID skuRef : archivedSkuRefs) {
-            List<SkuInboundReference> catalogReferences = skuInboundReferences(dataNodeRef, brandRef, skuRef);
+        List<UUID> orderedSkuRefs = new ArrayList<>(archivedSkuRefs);
+        Map<UUID, List<SkuInboundReference>> catalogReferencesBySku =
+                skuInboundReferencesByRefs(dataNodeRef, brandRef, orderedSkuRefs);
+        Map<UUID, InventoryOwnerApi.CatalogReferenceDependenciesReadback> inventoryDependenciesBySku =
+                inventory.catalogReferenceDependenciesByRefs(commandContext, "PRODUCT_SKU", orderedSkuRefs).stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                InventoryOwnerApi.CatalogReferenceDependenciesReadback::reference,
+                                value -> value,
+                                (left, right) -> left,
+                                LinkedHashMap::new));
+        for (UUID skuRef : orderedSkuRefs) {
+            List<SkuInboundReference> catalogReferences = catalogReferencesBySku.getOrDefault(skuRef, List.of());
             if (!catalogReferences.isEmpty()) {
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_BLOCKS_VOID",
                         422,
-                        "product SKU is still referenced by catalog facts: " + skuInboundSources(catalogReferences));
+                        "product SKU " + skuRef + " is still referenced by catalog facts: "
+                                + skuInboundSources(catalogReferences));
             }
             InventoryOwnerApi.CatalogReferenceDependenciesReadback dependencies =
-                    inventory.catalogReferenceDependencies(commandContext, "PRODUCT_SKU", skuRef.toString());
+                    inventoryDependenciesBySku.get(skuRef);
+            if (dependencies == null) {
+                throw new CatalogOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED", 422, "SKU inventory dependency readback is missing");
+            }
             if (dependencies.hasDependentFacts()) {
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_BLOCKS_VOID",
                         422,
-                        "product SKU is still referenced by inventory facts: "
+                        "product SKU " + skuRef + " is still referenced by inventory facts: "
                                 + inventoryDependencySources(dependencies));
             }
         }
@@ -3119,24 +3212,43 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
     }
 
-    private List<SkuInboundReference> skuInboundReferences(String dataNodeRef, String brandRef, UUID skuRef) {
+    private Map<UUID, List<SkuInboundReference>> skuInboundReferencesByRefs(
+            String dataNodeRef, String brandRef, Collection<UUID> skuRefs) {
+        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(skuRefs));
+        if (orderedRefs.isEmpty()) return Map.of();
+        UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
-                "SELECT component.composite_component_ref,owner_item.item_ref,owner_item.code FROM "
+                "SELECT component.product_sku_ref,component.composite_component_ref,"
+                        + "owner_item.item_ref,owner_item.code FROM "
                         + "catalog.catalog_composite_component component JOIN catalog.catalog_composite_group "
                         + "group_row ON "
                         + "group_row.composite_group_ref=component.composite_group_ref JOIN catalog.catalog_item "
                         + "owner_item ON owner_item.item_ref=group_row.item_ref JOIN catalog.catalog_sku target_sku ON "
-                        + "target_sku.product_sku_ref=? WHERE owner_item.data_node_ref=? AND owner_item.brand_ref=? "
+                        + "target_sku.product_sku_ref=component.product_sku_ref WHERE owner_item.data_node_ref=? AND "
+                        + "owner_item.brand_ref=? "
                         + "AND "
-                        + "owner_item.status <> 'VOIDED' AND component.product_sku_ref=? AND component.status <> "
+                        + "owner_item.status <> 'VOIDED' AND component.product_sku_ref = ANY(?::uuid[]) "
+                        + "AND component.status <> "
                         + "'ARCHIVED' AND owner_item.item_ref <> target_sku.item_ref ORDER BY "
-                        + "owner_item.code,component.composite_component_ref",
-                (result, row) -> new SkuInboundReference(
-                        result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3)),
-                skuRef,
-                dataNodeRef,
-                brandRef,
-                skuRef);
+                        + "component.product_sku_ref,owner_item.code,component.composite_component_ref",
+                statement -> {
+                    statement.setString(1, dataNodeRef);
+                    statement.setString(2, brandRef);
+                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
+                },
+                result -> {
+                    Map<UUID, List<SkuInboundReference>> referencesBySku = new LinkedHashMap<>();
+                    while (result.next()) {
+                        UUID skuRef = result.getObject(1, UUID.class);
+                        referencesBySku
+                                .computeIfAbsent(skuRef, ignored -> new ArrayList<>())
+                                .add(new SkuInboundReference(
+                                        result.getObject(2, UUID.class),
+                                        result.getObject(3, UUID.class),
+                                        result.getString(4)));
+                    }
+                    return referencesBySku;
+                });
     }
 
     private String skuInboundSources(List<SkuInboundReference> references) {
@@ -4185,16 +4297,22 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .put("code", row.code())
                 .put("sourceVersion", row.version())
                 .put("targetVersion", targetVersion));
+        Map<String, Long> preflightCategoryVersions = targetCategoryVersions(target, brandRef, graph.categories());
+        Map<DictionaryKey, Long> preflightDictionaryVersions =
+                targetDictionaryVersions(target, brandRef, graph.dictionaries());
         graph.categories().forEach(row -> versions.addObject()
                 .put("objectType", "CATALOG_CATEGORY")
                 .put("code", row.code())
                 .put("sourceVersion", row.version())
-                .put("targetVersion", targetObjectVersion(target, brandRef, row)));
+                .put("targetVersion", preflightCategoryVersions.getOrDefault(row.code(), 0L)));
         graph.dictionaries().forEach(row -> versions.addObject()
                 .put("objectType", row.objectType())
                 .put("code", row.code())
                 .put("sourceVersion", row.version())
-                .put("targetVersion", targetObjectVersion(target, brandRef, row)));
+                .put(
+                        "targetVersion",
+                        preflightDictionaryVersions.getOrDefault(
+                                new DictionaryKey(row.dictionaryKind(), row.code()), 0L)));
         ArrayNode mappings = data.putArray("mappingPreview");
         ArrayNode compatibility = data.putArray("compatibilityResults");
         ArrayNode rewrites = data.putArray("referenceRewritePreview");
@@ -4767,21 +4885,20 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (productionTags == null)
             throw new CatalogOwnerApi.Problem(
                     "REFERENCE_MAPPING_UNRESOLVED", 422, "production tag owner API is required");
-        JsonNode candidates = productionTags
-                .read(
-                        "getOperationsProductionTags",
-                        scope,
-                        brand,
-                        mapper.createObjectNode(),
-                        "catalog-production-tag-validation")
-                .path("data")
-                .path("entries");
-        Set<String> available = new LinkedHashSet<>();
-        if (candidates.isArray())
-            for (JsonNode candidate : candidates)
-                if (!"VOIDED".equals(candidate.path("status").asText()))
-                    available.add(candidate.path("tagRef").asText());
-        if (!available.containsAll(refs))
+        List<UUID> requested = refs.stream().map(UUID::fromString).toList();
+        Map<UUID, com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi.ProductionTagReferenceReadback>
+                found =
+                        productionTags
+                                .readTagReferencesByRefs(scope, brand, requested, "catalog-production-tag-validation")
+                                .stream()
+                                .collect(java.util.stream.Collectors.toMap(
+                                        com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi
+                                                        .ProductionTagReferenceReadback::tagRef,
+                                        value -> value,
+                                        (left, right) -> left));
+        if (requested.stream()
+                .anyMatch(ref -> !found.containsKey(ref)
+                        || "VOIDED".equals(found.get(ref).status())))
             throw new CatalogOwnerApi.Problem(
                     "REFERENCE_MAPPING_UNRESOLVED", 422, "production tag ref is not available in this owner scope");
     }
@@ -4793,21 +4910,22 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (productionTags == null)
             throw new CatalogOwnerApi.Problem(
                     "RESULT_UNKNOWN", 500, "production tag owner API is required for detail projection");
-        Map<String, JsonNode> tagsByRef = new LinkedHashMap<>();
-        JsonNode entries = productionTags
-                .read("getOperationsProductionTags", scope, brand, mapper.createObjectNode(), requestId)
-                .path("data")
-                .path("entries");
-        if (entries.isArray())
-            for (JsonNode entry : entries) tagsByRef.put(entry.path("tagRef").asText(), entry);
+        List<UUID> requested = refs.stream().map(UUID::fromString).toList();
+        Map<String, com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi.ProductionTagReferenceReadback>
+                tagsByRef = productionTags.readTagReferencesByRefs(scope, brand, requested, requestId).stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                value -> value.tagRef().toString(),
+                                value -> value,
+                                (left, right) -> left,
+                                LinkedHashMap::new));
         for (String ref : refs) {
-            JsonNode tag = tagsByRef.get(ref);
+            var tag = tagsByRef.get(ref);
             if (tag == null)
                 throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "production tag readback is missing: " + ref);
             result.addObject()
                     .put("tagRef", ref)
-                    .put("code", tag.path("code").asText())
-                    .put("name", tag.path("name").asText())
+                    .put("code", tag.code())
+                    .put("name", tag.name())
                     .put("owner", "fulfillment-production");
         }
         return result;
@@ -5618,7 +5736,15 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private ArrayNode skuRows(JsonNode node, String dataNodeRef, String brandRef) {
         ArrayNode result = mapper.createArrayNode();
         if (node == null || !node.isArray()) return result;
-        node.forEach(sku -> {
+        List<JsonNode> skuNodes = new ArrayList<>();
+        node.forEach(skuNodes::add);
+        List<UUID> skuRefs = skuNodes.stream()
+                .map(sku -> UUID.fromString(sku.path("productSkuRef").asText()))
+                .toList();
+        Map<UUID, List<SkuInboundReference>> inboundBySku = skuInboundReferencesByRefs(dataNodeRef, brandRef, skuRefs);
+        for (int index = 0; index < skuNodes.size(); index++) {
+            JsonNode sku = skuNodes.get(index);
+            UUID skuRef = skuRefs.get(index);
             ObjectNode target = result.addObject();
             target.put("productSkuRef", sku.path("productSkuRef").asText(""));
             target.put("skuCode", firstText(sku, "skuCode", "code") == null ? "" : firstText(sku, "skuCode", "code"));
@@ -5647,10 +5773,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             target.put("version", sku.path("version").asLong(0));
             ArrayNode blockingReferences = target.putObject("voidAvailability").putArray("blockingReferences");
             ArrayNode dependentFacts = target.with("voidAvailability").putArray("dependentFacts");
-            List<SkuInboundReference> inbound = skuInboundReferences(
-                    dataNodeRef,
-                    brandRef,
-                    UUID.fromString(sku.path("productSkuRef").asText()));
+            List<SkuInboundReference> inbound = inboundBySku.getOrDefault(skuRef, List.of());
             inbound.forEach(reference -> {
                 blockingReferences
                         .addObject()
@@ -5669,7 +5792,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                                     && inbound.isEmpty());
             ArrayNode mediaRefs = target.putArray("mediaRefs");
             if (sku.path("mediaRefs").isArray()) sku.path("mediaRefs").forEach(value -> mediaRefs.add(value.asText()));
-        });
+        }
         return result;
     }
 
@@ -6635,32 +6758,119 @@ public class CatalogOwnerService implements CatalogOwnerApi {
 
     private long targetScopeVersion(String target, String brand, ObjectNode request, CatalogClosure graph) {
         long max = targetScopeVersion(target, brand, request, graph.items());
-        for (CategoryRow row : graph.categories()) max = Math.max(max, targetObjectVersion(target, brand, row));
-        for (DictionaryRow row : graph.dictionaries()) max = Math.max(max, targetObjectVersion(target, brand, row));
+        Map<String, Long> categoryVersions = targetCategoryVersions(target, brand, graph.categories());
+        for (CategoryRow row : graph.categories()) max = Math.max(max, categoryVersions.getOrDefault(row.code(), 0L));
+        Map<DictionaryKey, Long> dictionaryVersions = targetDictionaryVersions(target, brand, graph.dictionaries());
+        for (DictionaryRow row : graph.dictionaries()) {
+            DictionaryKey key = new DictionaryKey(row.dictionaryKind(), row.code());
+            max = Math.max(max, dictionaryVersions.getOrDefault(key, 0L));
+        }
         return max;
     }
 
-    private long targetObjectVersion(String target, String brand, CategoryRow row) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND code=?",
-                Long.class,
-                target,
-                brand,
-                row.code());
-        return value == null ? 0L : value;
+    private Map<String, Long> targetCategoryVersions(String target, String brand, List<CategoryRow> rows) {
+        List<String> codes = rows.stream().map(CategoryRow::code).distinct().toList();
+        if (codes.isEmpty()) return Map.of();
+        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
+        List<Object> args = new ArrayList<>();
+        args.add(target);
+        args.add(brand);
+        args.addAll(codes);
+        return jdbc.query(
+                "SELECT code,MAX(version) FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? "
+                        + "AND code IN ("
+                        + placeholders + ") GROUP BY code",
+                result -> {
+                    Map<String, Long> versions = new LinkedHashMap<>();
+                    while (result.next()) versions.put(result.getString(1), result.getLong(2));
+                    return versions;
+                },
+                args.toArray());
     }
 
-    private long targetObjectVersion(String target, String brand, DictionaryRow row) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND dictionary_kind=? AND code=?",
-                Long.class,
-                target,
-                brand,
-                row.dictionaryKind(),
-                row.code());
-        return value == null ? 0L : value;
+    private Map<DictionaryKey, Long> targetDictionaryVersions(String target, String brand, List<DictionaryRow> rows) {
+        List<DictionaryKey> keys = rows.stream()
+                .map(row -> new DictionaryKey(row.dictionaryKind(), row.code()))
+                .distinct()
+                .toList();
+        if (keys.isEmpty()) return Map.of();
+        String predicates = String.join(" OR ", Collections.nCopies(keys.size(), "(dictionary_kind=? AND code=?)"));
+        List<Object> args = new ArrayList<>();
+        args.add(target);
+        args.add(brand);
+        for (DictionaryKey key : keys) {
+            args.add(key.kind());
+            args.add(key.code());
+        }
+        return jdbc.query(
+                "SELECT dictionary_kind,code,MAX(version) FROM catalog.dictionary_entry WHERE data_node_ref=? AND "
+                        + "brand_ref=? AND (" + predicates + ") GROUP BY dictionary_kind,code",
+                result -> {
+                    Map<DictionaryKey, Long> versions = new LinkedHashMap<>();
+                    while (result.next())
+                        versions.put(new DictionaryKey(result.getString(1), result.getString(2)), result.getLong(3));
+                    return versions;
+                },
+                args.toArray());
+    }
+
+    private Map<String, UUID> activeCategoryRefsByCode(String target, String brand, List<CategoryRow> rows) {
+        List<String> codes = rows.stream().map(CategoryRow::code).distinct().toList();
+        if (codes.isEmpty()) return Map.of();
+        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
+        List<Object> args = new ArrayList<>();
+        args.add(target);
+        args.add(brand);
+        args.addAll(codes);
+        return jdbc.query(
+                "SELECT code,category_ref FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? "
+                        + "AND code IN ("
+                        + placeholders + ") AND status <> 'VOIDED' ORDER BY code,category_ref",
+                result -> {
+                    Map<String, UUID> refs = new LinkedHashMap<>();
+                    while (result.next()) {
+                        String code = result.getString(1);
+                        UUID ref = result.getObject(2, UUID.class);
+                        if (refs.putIfAbsent(code, ref) != null)
+                            throw new CatalogOwnerApi.Problem(
+                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "目标分类编码引用不唯一: " + code);
+                    }
+                    return refs;
+                },
+                args.toArray());
+    }
+
+    private Map<DictionaryKey, UUID> activeDictionaryRefsByKey(String target, String brand, List<DictionaryRow> rows) {
+        List<DictionaryKey> keys = rows.stream()
+                .map(row -> new DictionaryKey(row.dictionaryKind(), row.code()))
+                .distinct()
+                .toList();
+        if (keys.isEmpty()) return Map.of();
+        String predicates = String.join(" OR ", Collections.nCopies(keys.size(), "(dictionary_kind=? AND code=?)"));
+        List<Object> args = new ArrayList<>();
+        args.add(target);
+        args.add(brand);
+        for (DictionaryKey key : keys) {
+            args.add(key.kind());
+            args.add(key.code());
+        }
+        return jdbc.query(
+                "SELECT dictionary_kind,code,entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND "
+                        + "brand_ref=? AND (" + predicates + ") AND status <> 'VOIDED' "
+                        + "ORDER BY dictionary_kind,code,entry_ref",
+                result -> {
+                    Map<DictionaryKey, UUID> refs = new LinkedHashMap<>();
+                    while (result.next()) {
+                        DictionaryKey key = new DictionaryKey(result.getString(1), result.getString(2));
+                        UUID ref = result.getObject(3, UUID.class);
+                        if (refs.putIfAbsent(key, ref) != null) {
+                            String failureMessage = "目标字典编码引用不唯一: " + key.code();
+                            throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, failureMessage);
+                        }
+                    }
+                    return refs;
+                },
+                args.toArray());
     }
 
     private Object[] concatArgs(Class<?> ignored, String target, String brand, List<ItemRow> source) {
@@ -6717,31 +6927,16 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                             existing == null ? null : existing.ref(),
                             supplied));
         }
+        Map<String, UUID> targetCategoryRefs = activeCategoryRefsByCode(target, brand, graph.categories());
         for (CategoryRow row : graph.categories()) {
-            UUID existing = jdbc.query(
-                    "SELECT category_ref FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND "
-                            + "code=? AND status <> 'VOIDED'",
-                    statement -> {
-                        statement.setString(1, target);
-                        statement.setString(2, brand);
-                        statement.setString(3, row.code());
-                    },
-                    rows -> rows.next() ? rows.getObject(1, UUID.class) : null);
+            UUID existing = targetCategoryRefs.get(row.code());
             mapping.put(
                     new ReferenceKey("CATALOG_CATEGORY", row.ref().toString()),
                     targetRefFor(new ReferenceKey("CATALOG_CATEGORY", row.ref().toString()), existing, supplied));
         }
+        Map<DictionaryKey, UUID> targetDictionaryRefs = activeDictionaryRefsByKey(target, brand, graph.dictionaries());
         for (DictionaryRow row : graph.dictionaries()) {
-            UUID existing = jdbc.query(
-                    "SELECT entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                            + "dictionary_kind=? AND code=? AND status <> 'VOIDED'",
-                    statement -> {
-                        statement.setString(1, target);
-                        statement.setString(2, brand);
-                        statement.setString(3, row.dictionaryKind());
-                        statement.setString(4, row.code());
-                    },
-                    rows -> rows.next() ? rows.getObject(1, UUID.class) : null);
+            UUID existing = targetDictionaryRefs.get(new DictionaryKey(row.dictionaryKind(), row.code()));
             mapping.put(
                     new ReferenceKey(row.objectType(), row.ref().toString()),
                     targetRefFor(new ReferenceKey(row.objectType(), row.ref().toString()), existing, supplied));
@@ -7355,6 +7550,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private record ClosureEdge(String fromRef, String toRef, String referenceKind) {}
 
     private record ReferenceKey(String objectType, String ref) {}
+
+    private record DictionaryKey(String kind, String code) {}
 
     private interface CatalogObject {
         String objectType();

@@ -56,7 +56,6 @@ type Props = {
   queryContext: OperationsPageProps['queryContext'];
   brandRef?: string;
   onClose: () => void;
-  onCompleted: () => void;
 };
 type CatalogManifest = Pick<CatalogShapeManifestView, 'enumLabels' | 'fields' | 'tabRules'>;
 type WizardStep = 'source-scope' | 'source-item' | 'copy-scope' | 'bom-mapping' | 'preview';
@@ -87,15 +86,7 @@ const LOCAL_COPY_SCOPE_DESCRIPTIONS: Record<LocalCopyScope, string> = {
   PRODUCTION_PROMPTS: '复制生产提示与生产标签等制作处理配置。',
 };
 
-export function LocalCatalogCopyDrawer({
-  open,
-  sourceItemCode,
-  targetShapeKey,
-  queryContext,
-  brandRef,
-  onClose,
-  onCompleted,
-}: Props) {
+export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, queryContext, brandRef, onClose}: Props) {
   // The detail drawer opens this journey for the current item. The selected
   // candidate is therefore the source and sourceItemCode is the immutable target.
   const targetItemCode = sourceItemCode;
@@ -446,7 +437,7 @@ export function LocalCatalogCopyDrawer({
           executeLoading={executeState.isLoading}
           onBack={() => setStep('bom-mapping')}
           onExecute={() => void execute()}
-          onComplete={onCompleted}
+          onComplete={onClose}
         />
       )}
     </Drawer>
@@ -1108,7 +1099,7 @@ function renderReferenceMappingRow(row: LocalCopyPreflightData['referenceMapping
   );
 }
 
-function renderSkippedRow(row: LocalCopyPreflightData['skipped'][number]) {
+function renderSkippedRow(_row: LocalCopyPreflightData['skipped'][number]) {
   return (
     <Space size={8}>
       <Tag color="gold">未复制</Tag>

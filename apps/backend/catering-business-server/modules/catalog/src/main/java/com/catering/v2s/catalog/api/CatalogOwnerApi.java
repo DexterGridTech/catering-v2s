@@ -16,6 +16,24 @@ public interface CatalogOwnerApi {
 
     JsonNode readItems(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
 
+    /**
+     * The inventory page's bounded display projection. The five components are the complete display fact set;
+     * {@link InventoryDisplayFact#absent(UUID)} keeps an input ref visible when catalog has no matching item.
+     */
+    record InventoryDisplayFact(
+            UUID itemRef, String itemName, String skuName, String materialRole, String categoryDisplayName) {
+        public static InventoryDisplayFact absent(UUID itemRef) {
+            return new InventoryDisplayFact(itemRef, null, null, null, null);
+        }
+
+        public boolean present() {
+            return itemName != null;
+        }
+    }
+
+    List<InventoryDisplayFact> readInventoryDisplayFacts(
+            String dataNodeRef, String brandRef, List<UUID> orderedItemRefs);
+
     JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId);
 
     JsonNode readDictionary(
@@ -342,6 +360,11 @@ public interface CatalogOwnerApi {
 
     /** Set-based global form; assets remain shared across every catalog scope. */
     java.util.Set<String> assetRefsStillReferenced(java.util.Set<String> assetRefs);
+
+    /** Narrow task read for a single catalog item; it returns only persisted item/SKU asset references. */
+    record CatalogAssetReferenceReadback(List<UUID> assetRefs) {}
+
+    CatalogAssetReferenceReadback readAssetReferences(String dataNodeRef, String brandRef, String itemCode);
 
     /** Narrow lifecycle judgment: reject release while any live catalog reference remains. */
     void requireAssetUnreferencedAnywhere(UUID assetRef);

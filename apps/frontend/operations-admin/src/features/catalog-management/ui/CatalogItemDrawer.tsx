@@ -108,7 +108,6 @@ type Props = {
   dictionaryRevision?: Partial<Record<DictionaryKind, number>>;
   onVoidAndRebuild?: (source: {code: string; name: string; shapeKey: string}) => void;
   onClose: () => void;
-  onChanged: () => void;
 };
 
 type MediaDraft = {
@@ -269,7 +268,6 @@ export function CatalogItemDrawer({
   dictionaryRevision = {},
   onVoidAndRebuild,
   onClose,
-  onChanged,
 }: Props) {
   void surface;
   const [mode, setMode] = useState<'view' | 'edit'>('view');
@@ -779,8 +777,6 @@ export function CatalogItemDrawer({
       setSkuStagedMedia(current =>
         current.map(asset => ({...asset, bindGrant: undefined, file: undefined, staged: false})),
       );
-      await detailQuery.refetch();
-      onChanged();
     } catch (error) {
       setProblem(operationsProblemOf(error).detail);
       lifecycle.setSubmitting(false);
@@ -804,8 +800,6 @@ export function CatalogItemDrawer({
           {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
         ),
       ).unwrap();
-      await detailQuery.refetch();
-      onChanged();
       if (targetStatus === 'VOIDED')
         onVoidAndRebuild?.({code: detail.item.code, name: detail.item.name, shapeKey: detail.item.shapeKey});
     } catch (error) {
@@ -881,8 +875,6 @@ export function CatalogItemDrawer({
           setSkusDraft(current =>
             normalizeSkuDraftRows(mergeCatalogSkuVoidReadback(current, sku.productSkuRef, transitionReadback)),
           );
-          await detailQuery.refetch();
-          onChanged();
         } catch (error) {
           setProblem(operationsProblemOf(error).detail || 'SKU 作废未完成，请刷新后重试。');
         } finally {
@@ -969,8 +961,6 @@ export function CatalogItemDrawer({
       setPromotionOpen(false);
       setPromotionProblem(undefined);
       if (codeChanged) onClose();
-      else await detailQuery.refetch();
-      onChanged();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       const feedback = operationsProblemOf(error);
@@ -1760,11 +1750,6 @@ export function CatalogItemDrawer({
         queryContext={queryContext}
         brandRef={brandRef}
         onClose={() => setLocalCopyOpen(false)}
-        onCompleted={() => {
-          setLocalCopyOpen(false);
-          void detailQuery.refetch();
-          onChanged();
-        }}
       />
       <CatalogDictionaryDrawer
         open={productionTagQuickManageOpen}

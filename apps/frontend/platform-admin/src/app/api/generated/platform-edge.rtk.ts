@@ -6,6 +6,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type PlatformAdminOperationId = keyof FaceOperationContracts;
 export type PlatformAdminRtkWireRequest = <I extends PlatformAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
+export type PlatformAdminRtkTagType = "wire" | "catalogInventory";
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -419,210 +420,210 @@ export const platformAdminRtkRequest = {
  * Operation-shaped RTK definitions generated from the face catalog.  The app
  * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.
  */
-export function createPlatformAdminRtkEndpoints(
-  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,
+export function createPlatformAdminRtkEndpoints<TagTypes extends PlatformAdminRtkTagType = "wire">(
+  build: EndpointBuilder<EdgeBaseQuery, TagTypes, string>,
   toWireRequest: PlatformAdminRtkWireRequest,
 ) {
   return {
     cancelWorkspaceInvitation: build.mutation<FaceOperationContracts["cancelWorkspaceInvitation"]["response"], FaceOperationRequest<"cancelWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     changeCurrentPlatformPassword: build.mutation<FaceOperationContracts["changeCurrentPlatformPassword"]["response"], FaceOperationRequest<"changeCurrentPlatformPassword">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     completePlatformPasswordRecovery: build.mutation<FaceOperationContracts["completePlatformPasswordRecovery"]["response"], FaceOperationRequest<"completePlatformPasswordRecovery">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createPlatformAdmin: build.mutation<FaceOperationContracts["createPlatformAdmin"]["response"], FaceOperationRequest<"createPlatformAdmin">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createPlatformGroupWorkspace: build.mutation<FaceOperationContracts["createPlatformGroupWorkspace"]["response"], FaceOperationRequest<"createPlatformGroupWorkspace">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createWorkspaceInvitation: build.mutation<FaceOperationContracts["createWorkspaceInvitation"]["response"], FaceOperationRequest<"createWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createWorkspaceRole: build.mutation<FaceOperationContracts["createWorkspaceRole"]["response"], FaceOperationRequest<"createWorkspaceRole">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getCurrentPlatformSession: build.query<FaceOperationContracts["getCurrentPlatformSession"]["response"], FaceOperationRequest<"getCurrentPlatformSession">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getExtensionDefinition: build.query<FaceOperationContracts["getExtensionDefinition"]["response"], FaceOperationRequest<"getExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getExtensionEntityCatalog: build.query<FaceOperationContracts["getExtensionEntityCatalog"]["response"], FaceOperationRequest<"getExtensionEntityCatalog">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformAdminDetail: build.query<FaceOperationContracts["getPlatformAdminDetail"]["response"], FaceOperationRequest<"getPlatformAdminDetail">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformAdminPage: build.query<FaceOperationContracts["getPlatformAdminPage"]["response"], FaceOperationRequest<"getPlatformAdminPage">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformContractOverviewDetail: build.query<FaceOperationContracts["getPlatformContractOverviewDetail"]["response"], FaceOperationRequest<"getPlatformContractOverviewDetail">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformContractOverviewPage: build.query<FaceOperationContracts["getPlatformContractOverviewPage"]["response"], FaceOperationRequest<"getPlatformContractOverviewPage">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformEntityAuditHistory: build.query<FaceOperationContracts["getPlatformEntityAuditHistory"]["response"], FaceOperationRequest<"getPlatformEntityAuditHistory">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformGroupWorkspaceDetail: build.query<FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["response"], FaceOperationRequest<"getPlatformGroupWorkspaceDetail">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformOrganizationCandidates: build.query<FaceOperationContracts["getPlatformOrganizationCandidates"]["response"], FaceOperationRequest<"getPlatformOrganizationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformOrganizationHierarchyTree: build.query<FaceOperationContracts["getPlatformOrganizationHierarchyTree"]["response"], FaceOperationRequest<"getPlatformOrganizationHierarchyTree">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformOrganizationOverviewDetail: build.query<FaceOperationContracts["getPlatformOrganizationOverviewDetail"]["response"], FaceOperationRequest<"getPlatformOrganizationOverviewDetail">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getPlatformOrganizationOverviewPage: build.query<FaceOperationContracts["getPlatformOrganizationOverviewPage"]["response"], FaceOperationRequest<"getPlatformOrganizationOverviewPage">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceAccount: build.query<FaceOperationContracts["getWorkspaceAccount"]["response"], FaceOperationRequest<"getWorkspaceAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceAccounts: build.query<FaceOperationContracts["getWorkspaceAccounts"]["response"], FaceOperationRequest<"getWorkspaceAccounts">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceInvitation: build.query<FaceOperationContracts["getWorkspaceInvitation"]["response"], FaceOperationRequest<"getWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceInvitationCandidates: build.query<FaceOperationContracts["getWorkspaceInvitationCandidates"]["response"], FaceOperationRequest<"getWorkspaceInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceInvitations: build.query<FaceOperationContracts["getWorkspaceInvitations"]["response"], FaceOperationRequest<"getWorkspaceInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceRole: build.query<FaceOperationContracts["getWorkspaceRole"]["response"], FaceOperationRequest<"getWorkspaceRole">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getWorkspaceRoles: build.query<FaceOperationContracts["getWorkspaceRoles"]["response"], FaceOperationRequest<"getWorkspaceRoles">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     initializeCommercialGroup: build.mutation<FaceOperationContracts["initializeCommercialGroup"]["response"], FaceOperationRequest<"initializeCommercialGroup">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     listPlatformGroupWorkspaces: build.query<FaceOperationContracts["listPlatformGroupWorkspaces"]["response"], FaceOperationRequest<"listPlatformGroupWorkspaces">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     platformLogout: build.mutation<FaceOperationContracts["platformLogout"]["response"], FaceOperationRequest<"platformLogout">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     platformPasswordLogin: build.mutation<FaceOperationContracts["platformPasswordLogin"]["response"], FaceOperationRequest<"platformPasswordLogin">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueWorkspaceInvitation: build.mutation<FaceOperationContracts["reissueWorkspaceInvitation"]["response"], FaceOperationRequest<"reissueWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     releasePlatformStagedAsset: build.mutation<FaceOperationContracts["releasePlatformStagedAsset"]["response"], FaceOperationRequest<"releasePlatformStagedAsset">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     replaceExtensionDefinition: build.mutation<FaceOperationContracts["replaceExtensionDefinition"]["response"], FaceOperationRequest<"replaceExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     requestWorkspaceCredentialReset: build.mutation<FaceOperationContracts["requestWorkspaceCredentialReset"]["response"], FaceOperationRequest<"requestWorkspaceCredentialReset">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     resetPlatformAdminCredential: build.mutation<FaceOperationContracts["resetPlatformAdminCredential"]["response"], FaceOperationRequest<"resetPlatformAdminCredential">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokePlatformWorkspaceAssignment: build.mutation<FaceOperationContracts["revokePlatformWorkspaceAssignment"]["response"], FaceOperationRequest<"revokePlatformWorkspaceAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     sendPlatformLoginOtp: build.mutation<FaceOperationContracts["sendPlatformLoginOtp"]["response"], FaceOperationRequest<"sendPlatformLoginOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     sendPlatformPasswordRecoveryOtp: build.mutation<FaceOperationContracts["sendPlatformPasswordRecoveryOtp"]["response"], FaceOperationRequest<"sendPlatformPasswordRecoveryOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     stagePlatformAsset: build.mutation<FaceOperationContracts["stagePlatformAsset"]["response"], FaceOperationRequest<"stagePlatformAsset">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     startPlatformPasswordRecovery: build.mutation<FaceOperationContracts["startPlatformPasswordRecovery"]["response"], FaceOperationRequest<"startPlatformPasswordRecovery">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionPlatformAdminStatus: build.mutation<FaceOperationContracts["transitionPlatformAdminStatus"]["response"], FaceOperationRequest<"transitionPlatformAdminStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionPlatformGroupWorkspaceStatus: build.mutation<FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["response"], FaceOperationRequest<"transitionPlatformGroupWorkspaceStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionWorkspaceAccountStatus: build.mutation<FaceOperationContracts["transitionWorkspaceAccountStatus"]["response"], FaceOperationRequest<"transitionWorkspaceAccountStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionWorkspaceRoleStatus: build.mutation<FaceOperationContracts["transitionWorkspaceRoleStatus"]["response"], FaceOperationRequest<"transitionWorkspaceRoleStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updatePlatformAdminProfile: build.mutation<FaceOperationContracts["updatePlatformAdminProfile"]["response"], FaceOperationRequest<"updatePlatformAdminProfile">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updatePlatformGroupWorkspaceDisplay: build.mutation<FaceOperationContracts["updatePlatformGroupWorkspaceDisplay"]["response"], FaceOperationRequest<"updatePlatformGroupWorkspaceDisplay">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateWorkspaceRole: build.mutation<FaceOperationContracts["updateWorkspaceRole"]["response"], FaceOperationRequest<"updateWorkspaceRole">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     verifyPlatformLoginOtp: build.mutation<FaceOperationContracts["verifyPlatformLoginOtp"]["response"], FaceOperationRequest<"verifyPlatformLoginOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     verifyPlatformPasswordRecoveryOtp: build.mutation<FaceOperationContracts["verifyPlatformPasswordRecoveryOtp"]["response"], FaceOperationRequest<"verifyPlatformPasswordRecoveryOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     })
   };
 }

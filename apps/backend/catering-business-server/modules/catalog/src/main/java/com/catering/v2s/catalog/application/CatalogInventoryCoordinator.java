@@ -1295,21 +1295,8 @@ public class CatalogInventoryCoordinator {
                 enrichCatalogItemVoidAvailability(data, definitionData.path("nodes"));
             }
         }
-        // Cross-owner detail enrichment remains deliberately unclassified until
-        // its combined query shape has a source-bound read budget proof.
-        JsonNode tagPage = production.readTags(dataNodeRef, brandRef, requestId);
-        java.util.Map<String, String> tagNames = new java.util.HashMap<>();
-        tagPage.path("data")
-                .path("entries")
-                .forEach(tag ->
-                        tagNames.put(tag.path("code").asText(), tag.path("name").asText()));
-        data.path("productionTags").forEach(tag -> {
-            if (tag instanceof ObjectNode row)
-                row.put(
-                        "name",
-                        tagNames.getOrDefault(
-                                tag.path("code").asText(), tag.path("name").asText()));
-        });
+        // Catalog detail already receives production-tag names from the production owner
+        // selected-ref readback; do not re-read the full candidate page to overwrite them.
     }
 
     /** Inventory owns stock/BOM references; merge only the typed SKU blocking facts into the catalog read model. */
@@ -1404,68 +1391,43 @@ public class CatalogInventoryCoordinator {
     private void enrichInventoryTargets(
             JsonNode result, String dataNodeRef, String brandRef, String requestId, JsonNode prefetchedCatalog) {
         if (!(result instanceof ObjectNode envelope) || !envelope.path("data").isObject()) return;
-        JsonNode catalogPage = prefetchedCatalog;
-        if (catalogPage == null) {
-            ArrayNode refs = mapper.createArrayNode();
-            envelope.path("data").path("items").forEach(item -> {
-                if (item.hasNonNull("itemRef")) refs.add(item.path("itemRef").asText());
-            });
-            if (refs.isEmpty()) return;
-            ObjectNode lookup = mapper.createObjectNode();
-            lookup.set("itemRefs", refs);
-            lookup.put("pageSize", Math.min(refs.size(), 100));
-            catalogPage = catalog.readItems(dataNodeRef, brandRef, lookup, requestId);
-        }
-        java.util.Map<String, JsonNode> items = new java.util.HashMap<>();
-        catalogPage
-                .path("data")
-                .path("items")
-                .forEach(item -> items.put(item.path("itemRef").asText(), item));
-        java.util.Map<String, String> categoryNames = categoryNames(dataNodeRef, brandRef, requestId, catalogPage);
+        List<UUID> orderedItemRefs = new ArrayList<>();
+        envelope.path("data").path("items").forEach(item -> {
+            if (item.hasNonNull("itemRef")) {
+                try {
+                    orderedItemRefs.add(UUID.fromString(item.path("itemRef").asText()));
+                } catch (IllegalArgumentException ignored) {
+                    // Inventory owner facts are expected to be UUID refs; malformed refs remain explicitly un-enriched.
+                }
+            }
+        });
+        if (orderedItemRefs.isEmpty()) return;
+        java.util.Map<UUID, CatalogOwnerApi.InventoryDisplayFact> factsByItemRef = new java.util.HashMap<>();
+        catalog.readInventoryDisplayFacts(dataNodeRef, brandRef, orderedItemRefs)
+                .forEach(fact -> factsByItemRef.put(fact.itemRef(), fact));
         envelope.path("data").path("items").forEach(item -> {
             if (!(item instanceof ObjectNode row)) return;
-            JsonNode catalogItem = items.get(row.path("itemRef").asText());
-            if (catalogItem == null) return;
-            row.put(
-                    "productName",
-                    catalogItem.path("name").asText(row.path("productName").asText()));
-            String categoryRef = catalogItem.path("categoryRefs").isArray()
-                            && catalogItem.path("categoryRefs").size() > 0
-                    ? catalogItem.path("categoryRefs").get(0).asText("")
-                    : "";
-            if (categoryRef.isBlank()) row.putNull("categoryName");
-            else row.put("categoryName", categoryNames.getOrDefault(categoryRef, ""));
-            if (catalogItem.hasNonNull("materialRole"))
-                row.put("materialRole", catalogItem.path("materialRole").asText());
-            else row.putNull("materialRole");
-            String skuRef = row.path("productSkuRef").asText("");
-            if (!skuRef.isBlank() && catalogItem.path("skus").isArray())
-                catalogItem.path("skus").forEach(sku -> {
-                    if (skuRef.equals(sku.path("productSkuRef").asText()))
-                        row.put(
-                                "skuName",
-                                sku.path("skuName").asText(row.path("skuName").asText()));
-                });
+            CatalogOwnerApi.InventoryDisplayFact fact;
+            try {
+                fact = factsByItemRef.get(UUID.fromString(row.path("itemRef").asText()));
+            } catch (IllegalArgumentException ignored) {
+                fact = null;
+            }
+            if (fact == null || !fact.present()) {
+                row.putNull("productName")
+                        .putNull("skuName")
+                        .putNull("categoryName")
+                        .putNull("materialRole");
+                return;
+            }
+            row.put("productName", fact.itemName());
+            if (fact.skuName() == null) row.putNull("skuName");
+            else row.put("skuName", fact.skuName());
+            if (fact.categoryDisplayName() == null) row.putNull("categoryName");
+            else row.put("categoryName", fact.categoryDisplayName());
+            if (fact.materialRole() == null) row.putNull("materialRole");
+            else row.put("materialRole", fact.materialRole());
         });
-    }
-
-    /** Resolve category refs once from the catalog navigation task-read; never display an opaque UUID as a name. */
-    private java.util.Map<String, String> categoryNames(
-            String dataNodeRef, String brandRef, String requestId, JsonNode catalogPage) {
-        java.util.Set<String> refs = new java.util.LinkedHashSet<>();
-        catalogPage.path("data").path("items").forEach(item -> item.path("categoryRefs")
-                .forEach(value -> {
-                    if (value.isTextual() && !value.asText().isBlank()) refs.add(value.asText());
-                }));
-        if (refs.isEmpty()) return java.util.Map.of();
-        JsonNode navigation = catalogReads.navigation(dataNodeRef, brandRef, mapper.createObjectNode(), requestId);
-        java.util.Map<String, String> names = new java.util.HashMap<>();
-        navigation.path("data").path("tree").forEach(node -> {
-            String ref = node.path("categoryRef").asText("");
-            String name = node.path("name").asText("");
-            if (refs.contains(ref) && !name.isBlank()) names.put(ref, name);
-        });
-        return names;
     }
 
     private void enrichInventoryTarget(JsonNode result, String dataNodeRef, String brandRef, String requestId) {
@@ -1646,9 +1608,9 @@ public class CatalogInventoryCoordinator {
 
     private Set<String> catalogItemAssetRefs(String dataNodeRef, String brandRef, String itemCode, String requestId) {
         if (itemCode == null || itemCode.isBlank()) return Set.of();
-        JsonNode detail = catalog.readItem(dataNodeRef, brandRef, itemCode, requestId);
-        JsonNode detailRoot = detail.path("data");
-        return catalogAssetRefs(detailRoot.path("item"));
+        return catalog.readAssetReferences(dataNodeRef, brandRef, itemCode).assetRefs().stream()
+                .map(UUID::toString)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
     }
 
     private Set<String> assetRefs(JsonNode values) {

@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "kind": "catalog-inventory-rtk-tag-policy",
+  "revision": "CATALOG_INVENTORY_P1_20260806",
+  "tagType": "catalogInventory",
+  "operationCount": 43,
+  "operations": [
+    {
+      "operationId": "getOperationsCatalogWorkbenchContext",
+      "provides": [{"kind": "static", "id": "catalog-workbench"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsCatalogNavigation",
+      "provides": [{"kind": "static", "id": "catalog-navigation"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsCatalogItems",
+      "provides": [{"kind": "static", "id": "catalog-item-page"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsCatalogItem",
+      "provides": [
+        {"kind": "requestPath", "prefix": "catalog-item-code", "path": "itemCode"},
+        {"kind": "responsePath", "prefix": "catalog-item-ref", "path": ["data", "item", "itemRef"]},
+        {
+          "kind": "responseArrayValue",
+          "prefix": "production-tag-ref",
+          "arrayPath": ["data", "productionTags"],
+          "valuePath": "tagRef"
+        }
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsCatalogItem",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "brand-copy-candidates"}
+      ]
+    },
+    {
+      "operationId": "saveOperationsCatalogItem",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "requestPath", "prefix": "catalog-item-code", "path": "itemCode"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "brand-copy-candidates"},
+        {"kind": "static", "id": "inventory-target-page"},
+        {
+          "kind": "responseArrayValue",
+          "prefix": "inventory-target",
+          "arrayPath": ["result", "inventoryBom"],
+          "valuePath": "targetRef"
+        }
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogItemStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "requestPath", "prefix": "catalog-item-code", "path": "itemCode"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "brand-copy-candidates"}
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogCategory",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "inventory-target-page"}
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogCategory",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "inventory-target-page"}
+      ]
+    },
+    {
+      "operationId": "moveOperationsCatalogCategory",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "inventory-target-page"}
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogCategory",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "inventory-target-page"}
+      ]
+    },
+    {
+      "operationId": "getOperationsCatalogDictionary",
+      "provides": [{"kind": "requestPath", "prefix": "catalog-dictionary", "path": "dictionaryKind"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsCatalogDictionaryEntry",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "requestPath", "prefix": "catalog-dictionary", "path": "dictionaryKind"}
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogDictionaryEntry",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "requestPath", "prefix": "catalog-dictionary", "path": "dictionaryKind"}
+      ]
+    },
+    {
+      "operationId": "reorderOperationsCatalogDictionaryEntry",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "requestPath", "prefix": "catalog-dictionary", "path": "dictionaryKind"}
+      ]
+    },
+    {
+      "operationId": "transitionOperationsCatalogDictionaryEntryStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "requestPath", "prefix": "catalog-dictionary", "path": "dictionaryKind"}
+      ]
+    },
+    {
+      "operationId": "getOperationsProductionTags",
+      "provides": [{"kind": "static", "id": "production-tag-page"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsProductionTag",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "production-tag-page"},
+        {"kind": "responsePath", "prefix": "production-tag-ref", "path": ["tagRef"]}
+      ]
+    },
+    {
+      "operationId": "updateOperationsProductionTag",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "production-tag-page"},
+        {"kind": "responsePath", "prefix": "production-tag-ref", "path": ["tagRef"]}
+      ]
+    },
+    {
+      "operationId": "transitionOperationsProductionTagStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "production-tag-page"},
+        {"kind": "responsePath", "prefix": "production-tag-ref", "path": ["tagRef"]}
+      ]
+    },
+    {
+      "operationId": "getOperationsLocalCatalogCopyCandidates",
+      "provides": [{"kind": "static", "id": "local-copy-candidates"}],
+      "invalidates": []
+    },
+    {"operationId": "preflightOperationsLocalCatalogCopy", "provides": [], "invalidates": []},
+    {
+      "operationId": "executeOperationsLocalCatalogCopy",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "inventory-target-page"},
+        {
+          "kind": "responseArrayValue",
+          "prefix": "catalog-item-ref",
+          "arrayPath": ["data", "targetVersions"],
+          "valuePath": "targetRef"
+        }
+      ]
+    },
+    {"operationId": "preflightOperationsTemporaryCatalogItemPromotion", "provides": [], "invalidates": []},
+    {
+      "operationId": "executeOperationsTemporaryCatalogItemPromotion",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "requestPath", "prefix": "catalog-item-code", "path": "itemCode"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "brand-copy-candidates"}
+      ]
+    },
+    {
+      "operationId": "getOperationsBrandCatalogCopyCandidates",
+      "provides": [{"kind": "static", "id": "brand-copy-candidates"}],
+      "invalidates": []
+    },
+    {"operationId": "preflightOperationsBrandCatalogCopy", "provides": [], "invalidates": []},
+    {
+      "operationId": "executeOperationsBrandCatalogCopy",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "static", "id": "brand-copy-candidates"},
+        {"kind": "static", "id": "inventory-target-page"},
+        {
+          "kind": "responseArrayValue",
+          "prefix": "catalog-item-ref",
+          "arrayPath": ["data", "targetVersions"],
+          "valuePath": "targetRef"
+        }
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryTargets",
+      "provides": [{"kind": "static", "id": "inventory-target-page"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTarget",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTargetChangeSummary",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTargetBusinessHistory",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTargetConsumptionReferences",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTargetLedger",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsInventoryTargetDiagnostics",
+      "provides": [{"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "countOperationsInventoryTarget",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "inventory-target-page"},
+        {"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}
+      ]
+    },
+    {
+      "operationId": "increaseOperationsInventoryTarget",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "inventory-target-page"},
+        {"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}
+      ]
+    },
+    {
+      "operationId": "adjustOperationsInventoryTarget",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "inventory-target-page"},
+        {"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}
+      ]
+    },
+    {
+      "operationId": "updateOperationsInventoryTargetConfiguration",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "inventory-target-page"},
+        {"kind": "requestPath", "prefix": "inventory-target", "path": "targetRef"}
+      ]
+    },
+    {"operationId": "stageOperationsCatalogAsset", "provides": [], "invalidates": []},
+    {"operationId": "releaseOperationsCatalogStagedAsset", "provides": [], "invalidates": []},
+    {
+      "operationId": "getOperationsCatalogShapeManifest",
+      "provides": [{"kind": "static", "id": "catalog-shape-manifest"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "batchTransitionOperationsCatalogItemStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "static", "id": "catalog-workbench"},
+        {"kind": "static", "id": "catalog-navigation"},
+        {"kind": "static", "id": "catalog-item-page"},
+        {"kind": "responseArrayValue", "prefix": "catalog-item-ref", "arrayPath": ["results"], "valuePath": "itemRef"},
+        {"kind": "static", "id": "local-copy-candidates"},
+        {"kind": "static", "id": "brand-copy-candidates"}
+      ]
+    }
+  ]
+}

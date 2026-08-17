@@ -701,74 +701,38 @@ describe('catalog management runtime model contracts', () => {
     ).toBeUndefined();
   });
 
-  it('builds a category batch save from the detail facts without clearing optional sections', () => {
-    const detail = decodeDetail({
-      data: {
-        item: {
-          code: 'LATTE-001',
-          name: '拿铁',
-          shapeKey: 'STANDARD_SALE_COUNTED',
-          version: 7,
-          attributes: {materialRole: 'DRINK'},
-          images: ['asset-1'],
-          productionTagRefs: ['production-1'],
-          categoryRefs: ['old-category'],
-          tagRefs: ['tag-1'],
-          inventoryBom: [
-            {
-              nodeType: 'ITEM_BOM',
-              mode: 'BOM',
-              targetRef: 'target-1',
-              quantity: '1',
-              unit: '份',
-              itemRef: 'item-1',
-              skuCode: null,
-              optionValueRef: null,
-            },
-          ],
-        },
-        governance: {externalIdentity: null},
-      },
-    } as CatalogInventoryEnvelope)!;
-    const request = buildCatalogBatchSaveRequest(detail, testUuid('node-1'), 'CATEGORY', [testUuid('new-category')]);
+  it('builds a category batch save from list facts with a relation-only draft', () => {
+    const row = {
+      code: 'LATTE-001',
+      version: 7,
+      categoryRefs: [testUuid('old-category')],
+      tagRefs: [testUuid('tag-1')],
+    };
+    const request = buildCatalogBatchSaveRequest(row, testUuid('node-1'), 'CATEGORY', [testUuid('new-category')]);
     expect(request).toMatchObject({
       dataNodeRef: 'node-1',
       itemCode: 'LATTE-001',
       sections: {expectedCatalogVersion: 7, expectedInventoryVersions: []},
     });
-    expect(request.sections.catalogDraft).toMatchObject({
-      name: '拿铁',
-      shapeKey: 'STANDARD_SALE_COUNTED',
-      attributes: {materialRole: 'DRINK'},
-      images: ['asset-1'],
-      productionTagRefs: ['production-1'],
-      categoryRefs: ['new-category'],
-    });
+    expect(request.sections.catalogDraft).toEqual({categoryRefs: ['new-category']});
+    expect(request.sections.catalogDraft).not.toHaveProperty('name');
+    expect(request.sections.catalogDraft).not.toHaveProperty('attributes');
+    expect(request.sections.catalogDraft).not.toHaveProperty('images');
     expect(request.sections.catalogDraft).not.toHaveProperty('tagRefs');
-    expect(request.sections.catalogDraft).not.toHaveProperty('orderOptions');
-    expect(request.sections.catalogDraft).not.toHaveProperty('inventoryBom');
     expect(request.sections.inventoryConfiguration).toEqual({nodes: []});
   });
 
-  it('builds a tag batch save while retaining the current category relationship', () => {
-    const detail = decodeDetail({
-      data: {
-        item: {
-          code: 'LATTE-002',
-          name: '燕麦拿铁',
-          shapeKey: 'STANDARD_SALE_COUNTED',
-          version: 3,
-          attributes: {},
-          images: [],
-          productionTagRefs: [],
-          categoryRefs: ['category-1'],
-          tagRefs: ['old-tag'],
-        },
-        governance: {externalIdentity: null},
-      },
-    } as CatalogInventoryEnvelope)!;
-    const request = buildCatalogBatchSaveRequest(detail, testUuid('node-2'), 'TAG', [testUuid('new-tag')]);
-    expect(request.sections.catalogDraft).toMatchObject({categoryRefs: ['category-1'], tagRefs: ['new-tag']});
+  it('builds a tag batch save without copying the row category relationship', () => {
+    const row = {
+      code: 'LATTE-002',
+      version: 3,
+      categoryRefs: [testUuid('category-1')],
+      tagRefs: [testUuid('old-tag')],
+    };
+    const request = buildCatalogBatchSaveRequest(row, testUuid('node-2'), 'TAG', [testUuid('new-tag')]);
+    expect(request.sections.expectedCatalogVersion).toBe(3);
+    expect(request.sections.catalogDraft).toEqual({tagRefs: ['new-tag']});
+    expect(request.sections.catalogDraft).not.toHaveProperty('categoryRefs');
   });
 
   it('keeps batch status versions and request order separate from response order', () => {

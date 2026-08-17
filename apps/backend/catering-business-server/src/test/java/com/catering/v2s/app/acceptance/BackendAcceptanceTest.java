@@ -72,6 +72,8 @@ class BackendAcceptanceTest {
     static final String OPERATIONS_PASSWORD = "Acceptance-Pass-123!";
     static final byte[] PNG = Base64.getDecoder()
             .decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==");
+    static final byte[] OTHER_PNG = Base64.getDecoder()
+            .decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
     static final RouteIdentity PUBLIC_INVITATION_VIEW = new RouteIdentity(
             "getPublicInvitationView", "/api/public/invitations/{groupWorkspaceKey}/{invitationToken}");
     static final RouteIdentity ACCEPT_PUBLIC_INVITATION = new RouteIdentity(

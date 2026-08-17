@@ -314,6 +314,74 @@ final class CatalogAcceptanceScenarios {
         assertEquals(3, failures, "BUSINESS: exactly three items fail while forty-seven commit");
     }
 
+    @AcceptanceScenario(
+            id = "catalog.save-asset-reference-lifecycle",
+            module = "CATALOG",
+            operation = "saveOperationsCatalogItem")
+    void saveAssetReferenceLifecycle(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        Fixture siblingFixture = host.siblingStoreFixture(fixture, Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, siblingFixture);
+        Session siblingSession = host.login(context, siblingFixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+        JsonNode oldStaged = context.multipartAsset(
+                        OPERATIONS_ASSET_STAGE,
+                        fixture,
+                        session.cookie(),
+                        fixture.storeId().toString(),
+                        BackendAcceptanceTest.sha256(PNG),
+                        Set.of(200))
+                .json()
+                .path("result");
+        String oldAssetRef = oldStaged.path("assetRef").asText();
+        String oldBindGrant = oldStaged.path("bindGrant").asText();
+        String firstCode = "ACC-ASSET-FIRST-" + suffix;
+        String siblingCode = "ACC-ASSET-SIBLING-" + suffix;
+        CreatedItem first = createItemWithAttributes(context, fixture, session, firstCode, "First", Map.of());
+        saveImage(context, fixture, session, firstCode, first.version(), oldAssetRef, oldBindGrant);
+        CreatedItem sibling =
+                createItemWithAttributes(context, siblingFixture, siblingSession, siblingCode, "Sibling", Map.of());
+        saveImage(context, siblingFixture, siblingSession, siblingCode, sibling.version(), oldAssetRef, null);
+
+        JsonNode replacementStaged = context.multipartAsset(
+                        OPERATIONS_ASSET_STAGE,
+                        fixture,
+                        session.cookie(),
+                        fixture.storeId().toString(),
+                        BackendAcceptanceTest.sha256(OTHER_PNG),
+                        Set.of(200))
+                .json()
+                .path("result");
+        String replacementRef = replacementStaged.path("assetRef").asText();
+        long firstUpdatedVersion = saveImage(
+                context,
+                fixture,
+                session,
+                firstCode,
+                readItem(context, fixture, session, firstCode).path("version").asLong(),
+                replacementRef,
+                replacementStaged.path("bindGrant").asText());
+
+        assertTrue(firstUpdatedVersion > first.version(), "BUSINESS: replacing an image advances the first item");
+        assertEquals(
+                replacementRef,
+                readItem(context, fixture, session, firstCode)
+                        .path("images")
+                        .get(0)
+                        .asText(),
+                "BUSINESS: the replaced item reads back the new asset reference");
+        assertEquals(
+                oldAssetRef,
+                readItem(context, siblingFixture, siblingSession, siblingCode)
+                        .path("images")
+                        .get(0)
+                        .asText(),
+                "BUSINESS: an old asset still referenced by another scope remains intact");
+    }
+
     /**
      * Fixture: creates two independent item shells and drives their lifecycle through real HTTP. Proves the
      * lifecycle-specific code reservation rule, not historical read behaviour.
@@ -575,6 +643,68 @@ final class CatalogAcceptanceScenarios {
                 skuRef,
                 target.path("productSkuRef").asText(),
                 "BUSINESS: Inventory remains attached by SKU ref after a code rename");
+    }
+
+    @AcceptanceScenario(
+            id = "inventory.current-readback-separates-lazy-zones",
+            module = "CATALOG",
+            operation = "getOperationsInventoryTarget")
+    void inventoryCurrentReadbackSeparatesLazyZones(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String code = "ACC-INVENTORY-CURRENT-" + UUID.randomUUID().toString().substring(0, 8);
+        long createdVersion = createItem(context, fixture, session, code, "current readback target");
+        saveIndependentSku(context, fixture, session, code, createdVersion, null, "ACC-INVENTORY-SKU");
+        JsonNode item = readItem(context, fixture, session, code);
+        String targetRef = item.path("inventoryBom").get(0).path("targetRef").asText();
+        String path = "/api/operations/catalog-inventory/inventory-targets/" + targetRef;
+        Response current = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                path + "?dataNodeRef=" + fixture.storeId(),
+                session.cookie(),
+                Set.of(200));
+        JsonNode currentJson = current.json();
+        assertTrue(
+                currentJson.path("changeSummary").isObject()
+                        && currentJson.path("recentChanges").isArray(),
+                "BUSINESS: current readback keeps the current-zone change facts");
+        assertTrue(
+                currentJson.path("references").isMissingNode()
+                        && currentJson.path("ledger").isMissingNode(),
+                "BUSINESS: current readback does not prefetch lazy reference and ledger zones");
+
+        long version = currentJson.path("version").asLong();
+        Response updated = context.patch(
+                new RouteIdentity(
+                        "updateOperationsInventoryTargetConfiguration",
+                        "/api/operations/catalog-inventory/inventory-targets/{targetRef}/configuration"),
+                path + "/configuration",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "targetRef",
+                        targetRef,
+                        "expectedVersion",
+                        version,
+                        "configuration",
+                        Map.of(
+                                "allowNegative",
+                                false,
+                                "lowStockThreshold",
+                                "0",
+                                "countingUnit",
+                                "EA",
+                                "conversionFactor",
+                                "1")),
+                Map.of("Idempotency-Key", "acceptance-current-readback-" + UUID.randomUUID()),
+                Set.of(200));
+        assertTrue(
+                updated.json().path("changeSummary").isObject()
+                        && updated.json().path("references").isMissingNode()
+                        && updated.json().path("ledger").isMissingNode(),
+                "BUSINESS: configuration command readback follows the same lazy-zone contract");
     }
 
     /**
@@ -1208,12 +1338,24 @@ final class CatalogAcceptanceScenarios {
             String assetRef,
             String bindGrant)
             throws Exception {
+        return saveImages(context, fixture, session, itemCode, expectedVersion, List.of(assetRef), bindGrant);
+    }
+
+    private long saveImages(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            List<String> assetRefs,
+            String bindGrant)
+            throws Exception {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("catalogDraft", Map.of("images", List.of(assetRef)));
+        sections.put("catalogDraft", Map.of("images", assetRefs));
         Map<String, String> headers = bindGrant == null
                 ? Map.of()
-                : Map.of("X-Catalog-Asset-Bind-Grants", "{\"" + assetRef + "\":\"" + bindGrant + "\"}");
+                : Map.of("X-Catalog-Asset-Bind-Grants", "{\"" + assetRefs.get(0) + "\":\"" + bindGrant + "\"}");
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),

@@ -100,7 +100,7 @@ export const operationsApi = createApi({
       return () => activeControllers.delete(controller);
     },
   }),
-  tagTypes: ['wire'],
+  tagTypes: ['wire', 'catalogInventory'],
   endpoints: build => ({
     ...createOperationsAdminRtkEndpoints(build, toOperationsWireRequest),
     ...createCatalogInventoryRtkEndpoints(build, toCatalogInventoryWireRequest),

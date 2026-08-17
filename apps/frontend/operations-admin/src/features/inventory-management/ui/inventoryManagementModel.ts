@@ -84,8 +84,6 @@ export type InventoryCurrentView = {
   gap: string | null;
   changeSummary: {today: PeriodChange; sevenDays: PeriodChange; thirtyDays: PeriodChange};
   recentChanges: Array<{occurredAt: number; changeType: string; quantity: string; source: string}>;
-  references: InventoryReference[];
-  ledger: InventoryLedgerEntry[];
   diagnosticsAvailability: {canRead: boolean; reason: string | null};
 };
 

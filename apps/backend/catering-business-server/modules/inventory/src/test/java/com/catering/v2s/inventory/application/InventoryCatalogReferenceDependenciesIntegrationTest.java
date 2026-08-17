@@ -1,7 +1,9 @@
 package com.catering.v2s.inventory.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -107,6 +109,107 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                 () -> service.catalogReferenceDependencies(
                         context(), "CATALOG_CATEGORY", UUID.randomUUID().toString()));
         assertEquals("VALIDATION_ERROR", failure.code());
+    }
+
+    @Test
+    void typedCatalogDependencyBatchKeepsInputAttributionAndScopeIsolation() {
+        UUID firstSkuRef = UUID.randomUUID();
+        UUID secondSkuRef = UUID.randomUUID();
+        UUID absentSkuRef = UUID.randomUUID();
+        insertTarget(SCOPE, BRAND, UUID.randomUUID(), firstSkuRef);
+        insertBom(SCOPE, BRAND, UUID.randomUUID(), firstSkuRef, UUID.randomUUID());
+        insertTarget(SCOPE, BRAND, UUID.randomUUID(), secondSkuRef);
+        insertTarget(UUID.randomUUID(), "OTHER-BRAND", UUID.randomUUID(), secondSkuRef);
+
+        List<InventoryOwnerApi.CatalogReferenceDependenciesReadback> actual =
+                service.catalogReferenceDependenciesByRefs(
+                        context(), "PRODUCT_SKU", List.of(firstSkuRef, secondSkuRef, absentSkuRef));
+
+        assertEquals(
+                List.of(firstSkuRef, secondSkuRef, absentSkuRef),
+                actual.stream()
+                        .map(InventoryOwnerApi.CatalogReferenceDependenciesReadback::reference)
+                        .toList());
+        assertEquals(2L, actual.get(0).totalCount());
+        assertEquals(1L, actual.get(0).sources().get(0).count());
+        assertEquals(1L, actual.get(0).sources().get(1).count());
+        assertEquals(1L, actual.get(1).totalCount());
+        assertEquals(0L, actual.get(1).sources().get(1).count());
+        assertEquals(0L, actual.get(2).totalCount());
+        assertTrue(actual.get(2).sources().stream().allMatch(source -> source.count() == 0L));
+    }
+
+    @Test
+    void consumptionReferencesAreFilteredByPostgresAndExposeTheRepresentativePlan() {
+        UUID targetRef = UUID.randomUUID();
+        UUID sourceItemRef = UUID.randomUUID();
+        insertTarget(targetRef, SCOPE, BRAND, UUID.randomUUID(), UUID.randomUUID(), "QG12-TARGET", "QG12-SKU");
+        insertBomWithRows(
+                SCOPE,
+                BRAND,
+                sourceItemRef,
+                UUID.randomUUID(),
+                "QG12-SOURCE",
+                "QG12-SOURCE-SKU",
+                "[{\"targetRef\":\"" + targetRef + "\",\"quantity\":\"2\",\"unit\":\"KG\"}]");
+        insertBomWithRows(
+                SCOPE,
+                BRAND,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "QG12-DISTRACTOR",
+                "QG12-DISTRACTOR-SKU",
+                "[{\"targetRef\":\"" + UUID.randomUUID() + "\",\"quantity\":\"9\",\"unit\":\"KG\"}]");
+        insertBomWithRows(
+                UUID.randomUUID(),
+                BRAND,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "QG12-OTHER-SCOPE",
+                "QG12-OTHER-SCOPE-SKU",
+                "[{\"targetRef\":\"" + targetRef + "\",\"quantity\":\"7\",\"unit\":\"KG\"}]");
+
+        var actual = service.readTargetConsumptionReferences(
+                SCOPE.toString(),
+                BRAND,
+                targetRef.toString(),
+                new ObjectMapper().createObjectNode().put("pageSize", 20),
+                "qg12-reference-plan");
+        assertEquals(1, actual.path("entries").size());
+        assertEquals(
+                "QG12-SOURCE", actual.path("entries").path(0).path("sourceCode").asText());
+        assertEquals(1L, actual.path("total").asLong());
+
+        List<String> plan = jdbc.query(
+                "EXPLAIN (COSTS OFF) WITH expanded AS ("
+                        + "SELECT sb.item_ref,sb.item_code,sb.sku_code,sb.option_value_code,"
+                        + "entry->>'nodeType' AS source_kind,COALESCE(entry->>'quantity',"
+                        + "entry->>'quantityPerUnit','0') AS quantity,COALESCE(entry->>'unit','') AS unit,"
+                        + "entry->>'timing' AS timing,COALESCE(entry->>'status','ACTIVE') AS status,ord,"
+                        + "COUNT(*) OVER() AS total FROM inventory.stock_bom sb "
+                        + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(sb.rows)='array' "
+                        + "THEN sb.rows ELSE '[]'::jsonb END) WITH ORDINALITY AS e(entry,ord) "
+                        + "WHERE sb.data_node_ref=? AND sb.brand_ref=? "
+                        + "AND jsonb_path_exists(CASE WHEN jsonb_typeof(sb.rows)='array' THEN sb.rows "
+                        + "ELSE '[]'::jsonb END, "
+                        + "'$[*] ? (@.targetRef == $targetRef || @.componentTargetRef == $targetRef)', "
+                        + "jsonb_build_object('targetRef',to_jsonb(CAST(? AS text)))) "
+                        + "AND COALESCE(entry->>'targetRef',entry->>'componentTargetRef')=?"
+                        + ") SELECT item_ref,item_code,sku_code,option_value_code,source_kind,quantity,unit,"
+                        + "timing,status,total FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord "
+                        + "LIMIT ? OFFSET ?",
+                (result, rowNumber) -> result.getString(1),
+                SCOPE.toString(),
+                BRAND,
+                targetRef.toString(),
+                targetRef.toString(),
+                21,
+                0);
+        String renderedPlan = String.join(System.lineSeparator(), plan);
+        System.out.println("QG12_EXPLAIN_BEGIN\n" + renderedPlan + "\nQG12_EXPLAIN_END");
+        assertFalse(plan.isEmpty(), "the managed PostgreSQL EXPLAIN must return a plan");
+        assertTrue(renderedPlan.contains("jsonb_path_exists"), renderedPlan);
+        assertTrue(renderedPlan.contains("Filter"), renderedPlan);
     }
 
     @Test
@@ -233,6 +336,26 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                 "ITEM",
                 "SKU",
                 "OPTION");
+    }
+
+    private static void insertBomWithRows(
+            UUID scope, String brand, UUID itemRef, UUID skuRef, String itemCode, String skuCode, String rows) {
+        jdbc.update(
+                "INSERT INTO "
+                        + "inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_re"
+                        + "f,it"
+                        + "em_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?,?,?,?,?,?,?,1,CAST(? AS JSONB),1)",
+                UUID.randomUUID(),
+                scope.toString(),
+                brand,
+                itemRef,
+                skuRef,
+                null,
+                itemCode,
+                skuCode,
+                null,
+                rows);
     }
 
     private static WorkspaceExecutionContext<CatalogAuthorizationScope> context() {

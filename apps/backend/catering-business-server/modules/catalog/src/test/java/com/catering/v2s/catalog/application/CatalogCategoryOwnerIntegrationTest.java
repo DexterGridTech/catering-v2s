@@ -417,6 +417,69 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void skuRetirementBatchKeepsEachInventoryBlockerAttributedToItsSku() {
+        String itemCode = generatedCatalogCode("SKU-BATCH-GUARD");
+        UUID itemRef = UUID.randomUUID();
+        UUID ownerItemRef = UUID.randomUUID();
+        UUID catalogBlockedSkuRef = UUID.randomUUID();
+        UUID inventoryBlockedSkuRef = UUID.randomUUID();
+        UUID freeSkuRef = UUID.randomUUID();
+        insertQG10Item(itemRef, itemCode, "SKU batch guard");
+        insertQG10Item(ownerItemRef, generatedCatalogCode("SKU-BATCH-OWNER"), "SKU batch owner");
+        insertQG10Sku(itemRef, catalogBlockedSkuRef, "QG10-CATALOG-BLOCK", true, "qg10-retire-1");
+        insertQG10Sku(itemRef, inventoryBlockedSkuRef, "QG10-INVENTORY-BLOCK", false, "qg10-retire-2");
+        insertQG10Sku(itemRef, freeSkuRef, "QG10-FREE", false, "qg10-retire-3");
+        UUID groupRef = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,"
+                        + "selection_rule,min_selections,max_selections,display_order) "
+                        + "VALUES(?,?,?,'配菜','OPTIONAL',0,3,0)",
+                groupRef,
+                ownerItemRef,
+                "QG10-RETIRE-GROUP");
+        insertQG10CompositeComponent(groupRef, itemRef, catalogBlockedSkuRef, 0);
+        jdbc.update(
+                "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,"
+                        + "item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,"
+                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+                UUID.randomUUID(),
+                SCOPE.toString(),
+                BRAND,
+                itemRef,
+                inventoryBlockedSkuRef,
+                itemCode,
+                "QG10-INVENTORY-BLOCK");
+
+        JsonNode before = service.readItem(SCOPE.toString(), BRAND, itemCode, "qg10-retire-before")
+                .path("data")
+                .path("item");
+        ObjectNode batchVoid = skuVoidSaveMany(
+                itemCode, before.path("version").asLong(), before, List.of(inventoryBlockedSkuRef, freeSkuRef), 1L);
+        CatalogOwnerApi.Problem blocked =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", batchVoid));
+        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
+        assertTrue(blocked.getMessage().contains(inventoryBlockedSkuRef.toString()));
+        assertEquals(
+                "ENABLED",
+                jdbc.queryForObject(
+                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, freeSkuRef));
+        jdbc.update("DELETE FROM inventory.stock_target WHERE product_sku_ref=?", inventoryBlockedSkuRef);
+
+        JsonNode succeeded = write("saveOperationsCatalogItem", batchVoid);
+        assertEquals(2, succeeded.path("skuTransitions").size());
+        assertEquals(
+                "VOIDED",
+                jdbc.queryForObject(
+                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?",
+                        String.class,
+                        inventoryBlockedSkuRef));
+        assertEquals(
+                "VOIDED",
+                jdbc.queryForObject(
+                        "SELECT status FROM catalog.catalog_sku WHERE product_sku_ref=?", String.class, freeSkuRef));
+    }
+
+    @Test
     void productionTagDetailIsProjectedFromTheRelationInsteadOfPersistedJson() {
         UUID tagRef = UUID.randomUUID();
         insertProductionTag(SCOPE, tagRef, "RELATION-PRODUCTION-TAG");
@@ -2640,6 +2703,60 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void skuDetailReadsAllInboundCompositeBlockersWithOneCollectionQuery() {
+        String itemCode = generatedCatalogCode("SKU-INBOUND-BATCH");
+        UUID itemRef = UUID.randomUUID();
+        UUID ownerItemRef = UUID.randomUUID();
+        UUID firstSkuRef = UUID.randomUUID();
+        UUID secondSkuRef = UUID.randomUUID();
+        UUID thirdSkuRef = UUID.randomUUID();
+        insertQG10Item(itemRef, itemCode, "SKU inbound batch");
+        insertQG10Item(ownerItemRef, generatedCatalogCode("SKU-INBOUND-OWNER"), "SKU inbound owner");
+        insertQG10Sku(itemRef, firstSkuRef, "QG10-SKU-1", true, "qg10-digest-1");
+        insertQG10Sku(itemRef, secondSkuRef, "QG10-SKU-2", false, "qg10-digest-2");
+        insertQG10Sku(itemRef, thirdSkuRef, "QG10-SKU-3", false, "qg10-digest-3");
+        UUID groupRef = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO catalog.catalog_composite_group(composite_group_ref,item_ref,group_code,group_name,"
+                        + "selection_rule,min_selections,max_selections,display_order) "
+                        + "VALUES(?,?,?,'配菜','OPTIONAL',0,3,0)",
+                groupRef,
+                ownerItemRef,
+                "QG10-GROUP");
+        insertQG10CompositeComponent(groupRef, itemRef, firstSkuRef, 0);
+        insertQG10CompositeComponent(groupRef, itemRef, secondSkuRef, 1);
+
+        RecordingJdbcTemplate recordingJdbc = new RecordingJdbcTemplate(dataSource());
+        CatalogOwnerService recordingService = new CatalogOwnerService(
+                recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L, mock(CatalogAssetReferenceLock.class));
+        JsonNode detail = recordingService
+                .readItem(SCOPE.toString(), BRAND, itemCode, "qg10-sku-detail")
+                .path("data")
+                .path("item")
+                .path("skus");
+
+        assertEquals(3, detail.size());
+        assertFalse(skuDetail(detail, firstSkuRef)
+                .path("voidAvailability")
+                .path("canVoid")
+                .asBoolean());
+        assertFalse(skuDetail(detail, secondSkuRef)
+                .path("voidAvailability")
+                .path("canVoid")
+                .asBoolean());
+        assertTrue(skuDetail(detail, thirdSkuRef)
+                .path("voidAvailability")
+                .path("canVoid")
+                .asBoolean());
+        assertEquals(
+                1,
+                recordingJdbc.recordedSql().stream()
+                        .filter(sql -> sql.contains("product_sku_ref = ANY(?::uuid[])")
+                                && sql.contains("catalog.catalog_composite_component"))
+                        .count());
+    }
+
+    @Test
     void brandCopyWritesMappedSkuFactsWithoutRestoringTheJsonSourceOfTruth() {
         String sourceCode = generatedCatalogCode("BRAND-SKU-SOURCE");
         write(
@@ -3983,12 +4100,18 @@ class CatalogCategoryOwnerIntegrationTest {
 
     private static ObjectNode skuVoidSave(
             String itemCode, long expectedVersion, JsonNode currentItem, UUID skuRef, long skuVersion) {
+        return skuVoidSaveMany(itemCode, expectedVersion, currentItem, List.of(skuRef), skuVersion);
+    }
+
+    private static ObjectNode skuVoidSaveMany(
+            String itemCode, long expectedVersion, JsonNode currentItem, List<UUID> skuRefs, long skuVersion) {
         ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
-        request.putArray("skuTransitions")
+        ArrayNode transitions = request.putArray("skuTransitions");
+        skuRefs.forEach(skuRef -> transitions
                 .addObject()
                 .put("skuRef", skuRef.toString())
                 .put("targetStatus", "VOIDED")
-                .put("expectedVersion", skuVersion);
+                .put("expectedVersion", skuVersion));
         ObjectNode sections = request.putObject("sections").put("expectedCatalogVersion", expectedVersion);
         ObjectNode draft = sections.putObject("catalogDraft")
                 .put("name", currentItem.path("name").asText())
@@ -4384,6 +4507,50 @@ class CatalogCategoryOwnerIntegrationTest {
 
     private static String generatedCatalogCode(String prefix) {
         return prefix + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
+    }
+
+    private static void insertQG10Item(UUID itemRef, String code, String name) {
+        jdbc.update(
+                "INSERT INTO catalog.catalog_item(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
+                        + "attributes,sections,version,created_at_epoch_millis,"
+                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,"
+                        + "'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                itemRef,
+                SCOPE.toString(),
+                BRAND,
+                code,
+                name);
+    }
+
+    private static void insertQG10Sku(UUID itemRef, UUID skuRef, String skuCode, boolean isDefault, String digest) {
+        jdbc.update(
+                "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
+                        + "display_order,variant_combination_digest) VALUES(?,?,?,? ,?,'ENABLED',0,?)",
+                skuRef,
+                itemRef,
+                skuCode,
+                skuCode,
+                isDefault,
+                digest);
+    }
+
+    private static void insertQG10CompositeComponent(UUID groupRef, UUID itemRef, UUID skuRef, int displayOrder) {
+        jdbc.update(
+                "INSERT INTO catalog.catalog_composite_component(composite_component_ref,composite_group_ref,"
+                        + "component_item_ref,product_sku_ref,quantity,unit,is_default,display_order) "
+                        + "VALUES(?,?,?,?,1,'份',"
+                        + "false,?)",
+                UUID.randomUUID(),
+                groupRef,
+                itemRef,
+                skuRef,
+                displayOrder);
+    }
+
+    private static JsonNode skuDetail(JsonNode skus, UUID skuRef) {
+        for (JsonNode sku : skus)
+            if (skuRef.toString().equals(sku.path("productSkuRef").asText())) return sku;
+        throw new AssertionError("missing sku detail " + skuRef);
     }
 
     @Test

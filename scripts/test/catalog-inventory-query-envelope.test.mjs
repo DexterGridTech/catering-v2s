@@ -301,7 +301,7 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
   );
   const strictDetailRead = 'JsonNode item = detail.path("data").path("item");';
   const strictItemPageRead = 'JsonNode catalogData = catalogPage.path("data");';
-  const strictDetailAssetRead = 'JsonNode detailRoot = detail.path("data");';
+  const strictAssetRead = 'catalog.readAssetReferences(dataNodeRef, brandRef, itemCode)';
   const forbiddenCatalogOwnerFallback =
     /(?:JsonNode item = detail\.path\("data"\)\.path\("item"\)\.isObject\(\) \? detail\.path\("data"\)\.path\("item"\) : detail\.path\("item"\);|ObjectNode data = root\.path\("data"\)\.isObject\(\) \? \(ObjectNode\) root\.path\("data"\) : root;|JsonNode catalogData = catalogPage\.path\("data"\)\.isObject\(\) \? catalogPage\.path\("data"\) : catalogPage;|JsonNode detailRoot = detail\.path\("data"\)\.isObject\(\) \? detail\.path\("data"\) : detail;)/;
 
@@ -312,7 +312,7 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
   assert.ok(
     [...coordinator.matchAll(new RegExp(strictDetailRead.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))].length >= 1,
   );
-  for (const strictRead of [strictItemPageRead, strictDetailAssetRead]) assert.ok(coordinator.includes(strictRead));
+  for (const strictRead of [strictItemPageRead, strictAssetRead]) assert.ok(coordinator.includes(strictRead));
   assert.ok(coordinator.includes('JsonNode dataNode = root.path("data");'));
   assert.doesNotMatch(coordinator, forbiddenCatalogOwnerFallback);
   assert.match(catalogOwner, /private ObjectNode items[\s\S]*?return envelope\(requestId, data\);/);
@@ -329,7 +329,7 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
   assert.match(inventoryOwner, /private ObjectNode references[\s\S]*?return data;/);
 
   const redMutation = coordinator.replace(
-    strictDetailAssetRead,
+    strictAssetRead,
     'JsonNode detailRoot = detail.path("data").isObject() ? detail.path("data") : detail;',
   );
   assert.throws(() => assert.doesNotMatch(redMutation, forbiddenCatalogOwnerFallback), /expected.*not match/i);

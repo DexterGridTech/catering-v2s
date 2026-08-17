@@ -10910,8 +10910,6 @@
           "gap",
           "changeSummary",
           "recentChanges",
-          "references",
-          "ledger",
           "diagnosticsAvailability"
         ],
         "properties": {
@@ -11223,101 +11221,6 @@
                 "changeType",
                 "quantity",
                 "source"
-              ]
-            }
-          },
-          "references": {
-            "type": "array",
-            "description": "design-bound field",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "sourceCode": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "sourceKind": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "quantity": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "format": "decimal"
-                },
-                "unit": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "timing": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "status": {
-                  "type": "string",
-                  "description": "design-bound field"
-                }
-              },
-              "required": [
-                "sourceCode",
-                "sourceKind",
-                "quantity",
-                "unit",
-                "timing",
-                "status"
-              ]
-            }
-          },
-          "ledger": {
-            "type": "array",
-            "description": "design-bound field",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "entryRef": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "format": "uuid"
-                },
-                "source": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "reasonCode": {
-                  "type": "string",
-                  "description": "design-bound field"
-                },
-                "beforeQuantity": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "format": "decimal"
-                },
-                "changeQuantity": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "format": "decimal"
-                },
-                "afterQuantity": {
-                  "type": "string",
-                  "description": "design-bound field",
-                  "format": "decimal"
-                },
-                "occurredAt": {
-                  "type": "integer",
-                  "description": "design-bound field",
-                  "format": "epoch-millis"
-                }
-              },
-              "required": [
-                "entryRef",
-                "source",
-                "reasonCode",
-                "beforeQuantity",
-                "changeQuantity",
-                "afterQuantity",
-                "occurredAt"
               ]
             }
           },

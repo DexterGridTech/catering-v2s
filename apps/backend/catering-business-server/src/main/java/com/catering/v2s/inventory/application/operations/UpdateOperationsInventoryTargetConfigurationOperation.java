@@ -106,8 +106,6 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                         periodSevenDays(summary.sevenDays()),
                         periodThirtyDays(summary.thirtyDays())),
                 recentChanges(value.recentChanges()),
-                references(value.references()),
-                ledger(value.ledger()),
                 new InventoryTargetCurrentView.DiagnosticsAvailability(
                         value.diagnosticsAvailability().canRead(),
                         value.diagnosticsAvailability().reason()));
@@ -136,33 +134,6 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
         return values.stream()
                 .map(value -> new InventoryTargetCurrentView.RecentChangesItem(
                         value.occurredAt(), value.changeType(), decimal(value.quantity()), value.source()))
-                .toList();
-    }
-
-    private static List<InventoryTargetCurrentView.ReferencesItem> references(
-            List<InventoryOwnerApi.InventoryReferenceReadback> values) {
-        return values.stream()
-                .map(value -> new InventoryTargetCurrentView.ReferencesItem(
-                        value.sourceCode(),
-                        value.sourceKind(),
-                        decimal(value.quantity()),
-                        value.unit(),
-                        value.timing(),
-                        value.status()))
-                .toList();
-    }
-
-    private static List<InventoryTargetCurrentView.LedgerItem> ledger(
-            List<InventoryOwnerApi.InventoryLedgerEntryReadback> values) {
-        return values.stream()
-                .map(value -> new InventoryTargetCurrentView.LedgerItem(
-                        value.entryRef(),
-                        value.source(),
-                        value.reasonCode(),
-                        decimal(value.beforeQuantity()),
-                        decimal(value.changeQuantity()),
-                        decimal(value.afterQuantity()),
-                        value.occurredAt()))
                 .toList();
     }
 

@@ -6,6 +6,7 @@ import type {FaceOperationContracts, FaceOperationOptions, FaceOperationRequest}
 type EdgeBaseQuery = BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError, {}, FetchBaseQueryMeta>;
 export type OperationsAdminOperationId = keyof FaceOperationContracts;
 export type OperationsAdminRtkWireRequest = <I extends OperationsAdminOperationId>(request: FaceOperationRequest<I>) => FetchArgs & {requiresSession: FaceOperationContracts[I]["requiresSession"]};
+export type OperationsAdminRtkTagType = "wire" | "catalogInventory";
 
 /**
  * Operation-shaped request constructors for RTK hooks. Consumers supply only
@@ -755,378 +756,378 @@ export const operationsAdminRtkRequest = {
  * Operation-shaped RTK definitions generated from the face catalog.  The app
  * supplies only HTTP encoding; it cannot invent paths, methods or endpoint ids.
  */
-export function createOperationsAdminRtkEndpoints(
-  build: EndpointBuilder<EdgeBaseQuery, "wire", string>,
+export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdminRtkTagType = "wire">(
+  build: EndpointBuilder<EdgeBaseQuery, TagTypes, string>,
   toWireRequest: OperationsAdminRtkWireRequest,
 ) {
   return {
     addOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["addOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"addOperationsOrganizationHeadCompanyBrandAuthorization">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceHeadCompanyInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceProjectInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceRegionInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     cancelOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["cancelOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"cancelOperationsWorkspaceStoreInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     changeCurrentWorkspacePassword: build.mutation<FaceOperationContracts["changeCurrentWorkspacePassword"]["response"], FaceOperationRequest<"changeCurrentWorkspacePassword">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsContract: build.mutation<FaceOperationContracts["createOperationsContract"]["response"], FaceOperationRequest<"createOperationsContract">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationBrand: build.mutation<FaceOperationContracts["createOperationsOrganizationBrand"]["response"], FaceOperationRequest<"createOperationsOrganizationBrand">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationHeadCompany: build.mutation<FaceOperationContracts["createOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"createOperationsOrganizationHeadCompany">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationProject: build.mutation<FaceOperationContracts["createOperationsOrganizationProject"]["response"], FaceOperationRequest<"createOperationsOrganizationProject">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationRegion: build.mutation<FaceOperationContracts["createOperationsOrganizationRegion"]["response"], FaceOperationRequest<"createOperationsOrganizationRegion">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationStore: build.mutation<FaceOperationContracts["createOperationsOrganizationStore"]["response"], FaceOperationRequest<"createOperationsOrganizationStore">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOrganizationTenant: build.mutation<FaceOperationContracts["createOperationsOrganizationTenant"]["response"], FaceOperationRequest<"createOperationsOrganizationTenant">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceHeadCompanyInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceProjectInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceRegionInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceStoreInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsContract: build.query<FaceOperationContracts["getOperationsContract"]["response"], FaceOperationRequest<"getOperationsContract">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsContractCandidates: build.query<FaceOperationContracts["getOperationsContractCandidates"]["response"], FaceOperationRequest<"getOperationsContractCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsContractExtensionDefinition: build.query<FaceOperationContracts["getOperationsContractExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsContractExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsContracts: build.query<FaceOperationContracts["getOperationsContracts"]["response"], FaceOperationRequest<"getOperationsContracts">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsEntityAuditHistory: build.query<FaceOperationContracts["getOperationsEntityAuditHistory"]["response"], FaceOperationRequest<"getOperationsEntityAuditHistory">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsFixedStoreContracts: build.query<FaceOperationContracts["getOperationsFixedStoreContracts"]["response"], FaceOperationRequest<"getOperationsFixedStoreContracts">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationBrand: build.query<FaceOperationContracts["getOperationsOrganizationBrand"]["response"], FaceOperationRequest<"getOperationsOrganizationBrand">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationBrands: build.query<FaceOperationContracts["getOperationsOrganizationBrands"]["response"], FaceOperationRequest<"getOperationsOrganizationBrands">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationBusinessEntityExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationBusinessEntityExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationBusinessEntityExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationCandidates: build.query<FaceOperationContracts["getOperationsOrganizationCandidates"]["response"], FaceOperationRequest<"getOperationsOrganizationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationHeadCompanies: build.query<FaceOperationContracts["getOperationsOrganizationHeadCompanies"]["response"], FaceOperationRequest<"getOperationsOrganizationHeadCompanies">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationHeadCompany: build.query<FaceOperationContracts["getOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"getOperationsOrganizationHeadCompany">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationHierarchy: build.query<FaceOperationContracts["getOperationsOrganizationHierarchy"]["response"], FaceOperationRequest<"getOperationsOrganizationHierarchy">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationHierarchyExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationHierarchyExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationHierarchyExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationStore: build.query<FaceOperationContracts["getOperationsOrganizationStore"]["response"], FaceOperationRequest<"getOperationsOrganizationStore">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationStoreCandidates: build.query<FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationStoreExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationStores: build.query<FaceOperationContracts["getOperationsOrganizationStores"]["response"], FaceOperationRequest<"getOperationsOrganizationStores">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationTenant: build.query<FaceOperationContracts["getOperationsOrganizationTenant"]["response"], FaceOperationRequest<"getOperationsOrganizationTenant">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationTenants: build.query<FaceOperationContracts["getOperationsOrganizationTenants"]["response"], FaceOperationRequest<"getOperationsOrganizationTenants">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsStoreProfile: build.query<FaceOperationContracts["getOperationsStoreProfile"]["response"], FaceOperationRequest<"getOperationsStoreProfile">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceGroupInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceGroupInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceGroupUser: build.query<FaceOperationContracts["getOperationsWorkspaceGroupUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupUser">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceGroupUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceGroupUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupUserAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceHeadCompanyInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceHeadCompanyInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceHeadCompanyUser: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUser">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceHeadCompanyUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceHeadCompanyUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceHeadCompanyUserAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceLoginEntry: build.query<FaceOperationContracts["getOperationsWorkspaceLoginEntry"]["response"], FaceOperationRequest<"getOperationsWorkspaceLoginEntry">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceProjectInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceProjectInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceProjectInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceProjectInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceProjectUser: build.query<FaceOperationContracts["getOperationsWorkspaceProjectUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectUser">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceProjectUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceProjectUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceProjectUserAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceRegionInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceRegionInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceRegionInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceRegionInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceRegionUser: build.query<FaceOperationContracts["getOperationsWorkspaceRegionUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionUser">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceRegionUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceRegionUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceRegionUserAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceSessionEntry: build.query<FaceOperationContracts["getOperationsWorkspaceSessionEntry"]["response"], FaceOperationRequest<"getOperationsWorkspaceSessionEntry">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceStoreInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceStoreInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreInvitationCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceStoreInvitations: build.query<FaceOperationContracts["getOperationsWorkspaceStoreInvitations"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreInvitations">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceStoreUser: build.query<FaceOperationContracts["getOperationsWorkspaceStoreUser"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreUser">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceStoreUserAccount: build.query<FaceOperationContracts["getOperationsWorkspaceStoreUserAccount"]["response"], FaceOperationRequest<"getOperationsWorkspaceStoreUserAccount">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     invalidateOperationsContract: build.mutation<FaceOperationContracts["invalidateOperationsContract"]["response"], FaceOperationRequest<"invalidateOperationsContract">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     operationsWorkspaceLogout: build.mutation<FaceOperationContracts["operationsWorkspaceLogout"]["response"], FaceOperationRequest<"operationsWorkspaceLogout">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     operationsWorkspacePasswordLogin: build.mutation<FaceOperationContracts["operationsWorkspacePasswordLogin"]["response"], FaceOperationRequest<"operationsWorkspacePasswordLogin">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceHeadCompanyInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceHeadCompanyInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceHeadCompanyInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceProjectInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceProjectInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceProjectInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceRegionInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceRegionInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceRegionInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceStoreInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceStoreInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceStoreInvitation">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     removeOperationsOrganizationHeadCompanyBrandAuthorization: build.mutation<FaceOperationContracts["removeOperationsOrganizationHeadCompanyBrandAuthorization"]["response"], FaceOperationRequest<"removeOperationsOrganizationHeadCompanyBrandAuthorization">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokeOperationsWorkspaceGroupUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceGroupUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceGroupUserAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokeOperationsWorkspaceHeadCompanyUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceHeadCompanyUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceHeadCompanyUserAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokeOperationsWorkspaceProjectUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceProjectUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceProjectUserAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokeOperationsWorkspaceRegionUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceRegionUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceRegionUserAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     revokeOperationsWorkspaceStoreUserAssignment: build.mutation<FaceOperationContracts["revokeOperationsWorkspaceStoreUserAssignment"]["response"], FaceOperationRequest<"revokeOperationsWorkspaceStoreUserAssignment">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     selectOperationsWorkspaceSessionContext: build.mutation<FaceOperationContracts["selectOperationsWorkspaceSessionContext"]["response"], FaceOperationRequest<"selectOperationsWorkspaceSessionContext">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     selectOperationsWorkspaceSessionDataNode: build.mutation<FaceOperationContracts["selectOperationsWorkspaceSessionDataNode"]["response"], FaceOperationRequest<"selectOperationsWorkspaceSessionDataNode">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     sendOperationsWorkspaceOtp: build.mutation<FaceOperationContracts["sendOperationsWorkspaceOtp"]["response"], FaceOperationRequest<"sendOperationsWorkspaceOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationBrandStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationBrandStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationHeadCompanyStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationHeadCompanyStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationHeadCompanyStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationNodeStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationNodeStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationNodeStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationStoreStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationStoreStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationStoreStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationTenantStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationTenantStatus">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsCommercialGroup: build.mutation<FaceOperationContracts["updateOperationsCommercialGroup"]["response"], FaceOperationRequest<"updateOperationsCommercialGroup">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsContract: build.mutation<FaceOperationContracts["updateOperationsContract"]["response"], FaceOperationRequest<"updateOperationsContract">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationBrand: build.mutation<FaceOperationContracts["updateOperationsOrganizationBrand"]["response"], FaceOperationRequest<"updateOperationsOrganizationBrand">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationHeadCompany: build.mutation<FaceOperationContracts["updateOperationsOrganizationHeadCompany"]["response"], FaceOperationRequest<"updateOperationsOrganizationHeadCompany">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationNode: build.mutation<FaceOperationContracts["updateOperationsOrganizationNode"]["response"], FaceOperationRequest<"updateOperationsOrganizationNode">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationStore: build.mutation<FaceOperationContracts["updateOperationsOrganizationStore"]["response"], FaceOperationRequest<"updateOperationsOrganizationStore">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationTenant: build.mutation<FaceOperationContracts["updateOperationsOrganizationTenant"]["response"], FaceOperationRequest<"updateOperationsOrganizationTenant">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     verifyOperationsWorkspaceOtp: build.mutation<FaceOperationContracts["verifyOperationsWorkspaceOtp"]["response"], FaceOperationRequest<"verifyOperationsWorkspaceOtp">>({
       query: (request) => toWireRequest(request),
-      invalidatesTags: (_result, _error, request) => [{type: "wire", id: request.operationId}, {type: "wire", id: "LIST"}],
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     })
   };
 }

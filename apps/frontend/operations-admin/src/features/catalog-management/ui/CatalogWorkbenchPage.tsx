@@ -64,7 +64,6 @@ import {
   buildCatalogBatchSaveRequest,
   buildCatalogBatchStatusRequest,
   buildCatalogItemsQuery,
-  catalogCategoryCodeExists,
   catalogFilterConflictReason,
   catalogPriceLabel,
   decodeCatalogBatchResults,
@@ -526,7 +525,6 @@ function CatalogWorkbenchPage({
         ).unwrap();
       }
       finishCategoryAction();
-      refresh();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       setCategoryProblem(operationsProblemOf(error).detail || '分类操作未完成，请重试。');
@@ -552,7 +550,7 @@ function CatalogWorkbenchPage({
       setExpandedRows([]);
       if (next.kind === 'SMART' && next.ref !== 'ALL') setFilters(current => ({keyword: current.keyword}));
     },
-    [generation],
+    [generation, resetCursor],
   );
   const resetListPresentation = useCallback(() => {
     resetCursor();
@@ -631,13 +629,7 @@ function CatalogWorkbenchPage({
         const results = await Promise.all(
           selectedItemRows.map(async (row): Promise<CatalogBatchRowResult> => {
             try {
-              const detailResponse = await catalogInventoryClient.getOperationsCatalogItem(
-                {itemCode: row.code},
-                {query: {dataNodeRef}, headers},
-              );
-              const detail = decodeDetail(detailResponse);
-              if (!detail) throw new Error('CATALOG_DETAIL_UNAVAILABLE');
-              const body = buildCatalogBatchSaveRequest(detail, dataNodeRef, updateKind, refs);
+              const body = buildCatalogBatchSaveRequest(row, dataNodeRef, updateKind, refs);
               const idempotencyKey = await createContentIdempotencyKey(
                 CATALOG_INVENTORY_OPERATION_IDS.saveOperationsCatalogItem,
                 body,
@@ -661,14 +653,13 @@ function CatalogWorkbenchPage({
         setBatchResults(results);
       }
       setSelectedRows([]);
-      refresh();
     } catch (error) {
       const problem = operationsProblemOf(error);
       setBatchProblem(problem.detail || '批量操作未完成，请检查当前选择后重试。');
     } finally {
       setBatchSubmitting(false);
     }
-  }, [batchAction, batchCategoryRefs, batchStatus, batchTagRefs, headers, queryContext, refresh, selectedItemRows]);
+  }, [batchAction, batchCategoryRefs, batchStatus, batchTagRefs, headers, queryContext, selectedItemRows]);
   const treeData = useMemo<CatalogTreeNode[]>(() => {
     const match = treeSearch.trim().toLocaleLowerCase();
     const categoryByParent = new Map<string, CatalogNavigation['tree']>();
@@ -1434,7 +1425,6 @@ function CatalogWorkbenchPage({
           setCreateOpen(true);
         }}
         onClose={closeDetail}
-        onChanged={refresh}
       />
       <CatalogItemCreateDrawer
         open={createOpen}
@@ -1448,7 +1438,6 @@ function CatalogWorkbenchPage({
         onCreated={createdCode => {
           setCreateOpen(false);
           setRebuildPrefill(undefined);
-          refresh();
           detailTriggerRef.current = null;
           detail.open(createdCode);
         }}
@@ -1462,7 +1451,6 @@ function CatalogWorkbenchPage({
         onClose={(closedKind = dictionaryKind) => {
           setDictionaryOpen(false);
           setDictionaryRevision(current => ({...current, [closedKind]: (current[closedKind] ?? 0) + 1}));
-          void tagDictionaryQuery.refetch();
         }}
       />
       {surface === 'store' && (
@@ -1471,7 +1459,6 @@ function CatalogWorkbenchPage({
           queryContext={queryContext}
           brandRef={context?.brandRef}
           onClose={() => setCopyOpen(false)}
-          onCompleted={refresh}
         />
       )}
       <Modal
