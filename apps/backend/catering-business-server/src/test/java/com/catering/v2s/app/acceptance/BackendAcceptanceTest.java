@@ -14,6 +14,7 @@ import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -57,7 +58,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** Real HTTP/Testcontainers business oracles; scenarios are discovered by the explicit Java domain catalog. */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "V2S_BACKEND_ACCEPTANCE_OPERATION", matches = "\\S+")
+@EnabledIfEnvironmentVariable(named = RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, matches = "\\S+")
 @Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest(classes = CateringV2sApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(BackendAcceptanceMetricsConfiguration.class)
@@ -254,7 +255,8 @@ class BackendAcceptanceTest {
     @TestFactory
     Stream<DynamicTest> backendAcceptanceScenarios() {
         requireRemoteExecution();
-        String selectedOperation = System.getenv().getOrDefault("V2S_BACKEND_ACCEPTANCE_OPERATION", "all");
+        String selectedOperation =
+                System.getenv().getOrDefault(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_OPERATION, "all");
         List<ScenarioDefinition> discovered = BackendAcceptanceScenarioCatalog.discover(this);
         List<ScenarioDefinition> selected = "all".equals(selectedOperation)
                 ? discovered
@@ -554,7 +556,7 @@ class BackendAcceptanceTest {
     private void writeDiscovery(int discovered, int selected, String operation) {
         try {
             Files.writeString(
-                    Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")),
+                    Path.of(requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RESULT)),
                     mapper.writeValueAsString(Map.of(
                                     "type",
                                     "discovery",
@@ -582,7 +584,7 @@ class BackendAcceptanceTest {
     private static void requireRemoteExecution() {
         assertEquals(
                 "remote",
-                System.getenv("V2S_TESTCONTAINERS_EXECUTION_PLANE"),
+                System.getenv(RuntimeEnvironmentKeys.V2S_TESTCONTAINERS_EXECUTION_PLANE),
                 "Testcontainers must run through the managed remote runner");
     }
 
@@ -739,8 +741,12 @@ class BackendAcceptanceTest {
             HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                     .header("Accept", "application/json")
                     .header("X-Correlation-Id", correlationId)
-                    .header("X-Backend-Acceptance-Run-Id", requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID"))
-                    .header("X-Backend-Acceptance-Secret", requiredEnvironment("V2S_BACKEND_ACCEPTANCE_SECRET"))
+                    .header(
+                            "X-Backend-Acceptance-Run-Id",
+                            requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID))
+                    .header(
+                            "X-Backend-Acceptance-Secret",
+                            requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET))
                     .header("X-Backend-Acceptance-Operation-Id", route.operationId())
                     .header("X-Backend-Acceptance-Route-Template", route.routeTemplate())
                     .header("X-Request-Id", UUID.randomUUID().toString())
@@ -837,7 +843,7 @@ class BackendAcceptanceTest {
 
         private void writeResult(Map<String, Object> result) throws Exception {
             Files.writeString(
-                    Path.of(requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RESULT")),
+                    Path.of(requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RESULT)),
                     mapper.writeValueAsString(result) + "\n",
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND);

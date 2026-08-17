@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -81,6 +82,10 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                         new ExtensionCommandReceiptService.ExtensionReceiptCorruptException(
                                 new IllegalStateException("corrupt")),
                         request),
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "PLATFORM_COMMON_RESULT_UNKNOWN");
+        assertProblem(
+                advice.ownerResultUnknown(new DuplicateKeyException("duplicate"), request),
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "PLATFORM_COMMON_RESULT_UNKNOWN");
         assertProblem(
@@ -259,6 +264,7 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(CommandExecutionContextResolver.CatalogScopeForbiddenException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
+        assertTrue(declared.contains(DuplicateKeyException.class));
         assertTrue(declared.contains(MaxUploadSizeExceededException.class));
         assertTrue(declared.contains(HttpMessageNotReadableException.class));
     }

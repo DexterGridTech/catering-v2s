@@ -12,7 +12,7 @@ import {
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {operationsClient, operationsProblemOf, type ApiProblem} from '../../../app/api/OperationsTransport';
-import {operationsLoginFormPageLayout} from './loginFormPageLayout';
+import {operationsSignInFormPageLayout} from './loginFormPageLayout';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
 
 type EntryState =
@@ -138,7 +138,7 @@ export function OperationsLoginPage({
 
   if (entryState.kind === 'loading')
     return (
-      <LoginFormPage form={form} {...operationsLoginFormPageLayout} logo={<LockOutlined />}>
+      <LoginFormPage form={form} {...operationsSignInFormPageLayout} logo={<LockOutlined />}>
         <Skeleton active paragraph={{rows: 4}} {...testId('operations-login-loading')} />
       </LoginFormPage>
     );
@@ -155,10 +155,10 @@ export function OperationsLoginPage({
   return (
     <LoginFormPage<LoginFields>
       className="auth-login-page operations-login-page"
-      {...operationsLoginFormPageLayout}
+      {...operationsSignInFormPageLayout}
       logo={entryState.logoUrl ? <img src={entryState.logoUrl} alt="" /> : <LockOutlined />}
-      title={entryState.workspaceName}
-      subTitle={entryState.operationsTitle}
+      title={entryState.operationsTitle}
+      subTitle={entryState.workspaceName}
       form={form}
       message={problem ? <Alert type="error" showIcon title={problem.title} description={problem.detail} /> : false}
       submitter={{

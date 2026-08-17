@@ -17,6 +17,7 @@ import com.catering.v2s.app.edge.generated.wire.PlatformPasswordRecoveryVerifica
 import com.catering.v2s.app.edge.generated.wire.PlatformSessionView;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.session.EdgeSessionCookieWriter;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import org.springframework.http.HttpHeaders;
@@ -58,7 +59,9 @@ public final class PlatformAuthenticationController {
                 request.password() == null ? new char[0] : request.password().toCharArray(),
                 context.rateLimitSourceFingerprint());
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookies.issue("V2S_PLATFORM_SESSION", result.rawSessionToken()))
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        cookies.issue(RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION, result.rawSessionToken()))
                 .body(toResponse(result.session()));
     }
 
@@ -82,7 +85,9 @@ public final class PlatformAuthenticationController {
         key(idempotencyKey);
         var result = service.verifyLoginOtp(body.mobile(), body.code(), context.rateLimitSourceFingerprint());
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookies.issue("V2S_PLATFORM_SESSION", result.rawSessionToken()))
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        cookies.issue(RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION, result.rawSessionToken()))
                 .body(toResponse(result.session()));
     }
 
@@ -151,7 +156,7 @@ public final class PlatformAuthenticationController {
     ResponseEntity<Void> logout(EdgeRequestContext request) {
         service.logout(sessionResolver.token(request));
         return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, cookies.clear("V2S_PLATFORM_SESSION"))
+                .header(HttpHeaders.SET_COOKIE, cookies.clear(RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION))
                 .build();
     }
 

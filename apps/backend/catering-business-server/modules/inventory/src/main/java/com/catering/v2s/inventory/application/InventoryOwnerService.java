@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -3339,9 +3340,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private JsonNode replay(String scope, String key, String operation, JsonNode request) {
+        AdvisoryLock.acquire(jdbc, "inventory-receipt", scope, key);
         List<Receipt> rows = jdbc.query(
                 "SELECT operation_id,request_hash,response::text FROM inventory.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=? FOR UPDATE",
+                        + "AND idempotency_key=?",
                 (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
                 scope,
                 key);
@@ -3731,13 +3733,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x43534B55 ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534B55, ref));
     }
     /** Must stay byte-for-byte compatible with CatalogOwnerService's item lifecycle lock. */
     private void lockCatalogItemRefs(java.util.Collection<UUID> refs) {
@@ -3746,13 +3742,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x4349544D ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x4349544D, ref));
     }
     /** Must stay byte-for-byte compatible with CatalogOwnerService's dictionary lifecycle lock. */
     private void lockSkuAttributeValueRefs(java.util.Collection<UUID> refs) {
@@ -3761,13 +3751,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x43534156 ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534156, ref));
     }
 
     private long periodStart(String period) {

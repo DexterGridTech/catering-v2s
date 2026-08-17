@@ -242,17 +242,17 @@ HOST_AND_ENTRY=/operations/{集团空间编码}/login；未认证运营用户从
 ACTOR=商场运营方或店铺运营方的运营用户
 BUSINESS_SCENARIO=运营用户通过所属集团空间的入口开始日常组织、主体、门店、合同或用户管理工作前
 BUSINESS_GOAL=进入所属集团空间并继续选择本次使用的任职
-USER_VISIBLE_COPY=品牌区**必须将“<集团空间 LOGO>”与“<集团空间名称>”左右并列显示**，并在其下显示“<运营管理后台标题>”；字段“登录名”“登录密码”“手机号”“验证码”；方式“账号密码登录”“手机号验证码登录”；按钮“登录运营管理后台”“获取验证码”“验证并登录”；链接“忘记密码”；入口状态“正在准备登录页面”“入口不存在”“该集团空间暂不可进入运营管理后台”“暂时无法打开登录入口，请稍后重试”；仅当 owner 返回本次非空测试验证码时显示提示“当前为测试环境，验证码：<code>”
+USER_VISIBLE_COPY=品牌区**必须将“<集团空间 LOGO>”与“<运营管理后台标题>”左右并列显示**，并在其下显示“<集团空间名称>”；字段“登录名”“登录密码”“手机号”“验证码”；方式“账号密码登录”“手机号验证码登录”；按钮“登录运营管理后台”“获取验证码”“验证并登录”；链接“忘记密码”；入口状态“正在准备登录页面”“入口不存在”“该集团空间暂不可进入运营管理后台”“暂时无法打开登录入口，请稍后重试”；仅当 owner 返回本次非空测试验证码时显示提示“当前为测试环境，验证码：<code>”
 TECHNICAL_BOUNDARY=URL 中的 groupWorkspaceKey 仅定位入口；先由匿名 getOperationsWorkspaceLoginEntry 读取 workspaceName、operationsTitle、gateway-approved logoUrl、status 和 sessionState，再由既有登录 operation 作最终核验。当前 login-entry 只有 logoAssetRef 且 controller 固定返回 null，不能满足本 screen；final P6 详设必须将 owner-approved logoUrl 加入其 readback，并复用平台集团空间详情的资产 owner URL 解析规则，client 绝不从 logoAssetRef 推导 URL。session entry、Idempotency-Key、Problem code 不显示给用户；URL 或 login-entry 绝不构成授权；测试验证码提示仅由服务端非生产配置决定，生产不存在，页面不能推导
 FOUNDATION_PRIMITIVE=useAsyncGenerationGuard, useSubmissionLifecycle, testId
 LOGIN_FORM_PAGE_VERSION=@ant-design/pro-components@3.1.12-0
-LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:直接传入 gateway-approved logoUrl 所展示的“<集团空间 LOGO>”，不从资源引用拼接，且与 title 在官方 header 左右并列；未配置 LOGO 或图片加载失败时才显示统一默认标识；title:“<集团空间名称>”；subTitle:在 header 下方显示“<运营管理后台标题>”；message:仅在登录失败时显示业务化 Alert；children:账号密码/手机验证码 Tabs 与对应 ProForm 字段；submitter:默认全宽 large 主按钮，文字按 tab 为“登录运营管理后台”或“验证并登录”；actions:账号密码 Tab 下显示唯一“忘记密码”链接，进入 IA05-RECOVERY-VERIFY；activityConfig:不使用，登录不是营销入口；background:不使用，遵从组件默认页面画布
+LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:直接传入 gateway-approved logoUrl 所展示的“<集团空间 LOGO>”，不从资源引用拼接，且与 title 在官方 header 左右并列；未配置 LOGO 或图片加载失败时才显示统一默认标识；title:“<运营管理后台标题>”；subTitle:在 header 下方显示“<集团空间名称>”；message:仅在登录失败时显示业务化 Alert；children:账号密码/手机验证码 Tabs 与对应 ProForm 字段；submitter:默认全宽 large 主按钮，文字按 tab 为“登录运营管理后台”或“验证并登录”；actions:账号密码 Tab 下显示唯一“忘记密码”链接，进入 IA05-RECOVERY-VERIFY；activityConfig:不使用，登录不是营销入口；background:不使用，遵从组件默认页面画布
 ```
 
 ```text
 ┌──────────────────── 登录页面 ────────────────────┐
-│        [<集团空间 LOGO> / 默认标识]  <集团空间名称>     │
-│                    <运营管理后台标题>                    │
+│        [<集团空间 LOGO> / 默认标识]  <运营管理后台标题>   │
+│                    <集团空间名称>                        │
 │                                                          │
 │  登录方式  [账号密码登录]  [手机号验证码登录]              │
 │  登录名 [____________________________]                  │
@@ -272,7 +272,7 @@ LOGIN_FORM_PAGE_OFFICIAL_COMPOSITION=logo:直接传入 gateway-approved logoUrl 
 不作为用户字段，也不在品牌区回显。先调用既有 `getOperationsWorkspaceLoginEntry`：加载中只显示
 登录页骨架；找不到时显示“入口不存在”；状态为停用时禁用全部登录操作并显示“该集团空间暂不可
 进入运营管理后台”；读取失败时显示可重试的“暂时无法打开登录入口，请稍后重试”。成功读回后，
-以 `workspaceName` 作与 LOGO 左右并列的官方主标题、以 `operationsTitle` 作 header 下方副标题，并把 owner 返回的 `logoUrl` 直接传给
+以 `operationsTitle` 作与 LOGO 左右并列的官方主标题、以 `workspaceName` 作 header 下方副标题，并把 owner 返回的 `logoUrl` 直接传给
 `LoginFormPage.logo`，使登录框显示该集团空间的 LOGO；不得把资源引用拼成 URL。集团空间没有配置
 LOGO，或已批准 URL 的图片加载失败时，才显示统一默认标识且不阻塞登录，不显示资源引用。若
 `sessionState=AUTHENTICATED`，不据此自行进入业务页，仍由既有

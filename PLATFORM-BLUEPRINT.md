@@ -50,12 +50,9 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 ## Backend acceptance 设计红线
 
-后台动态验收只有 `backend-acceptance` 一条能力。当前只验证
-`getPublicInvitationView`：真实 PostgreSQL/对象存储容器与真实 HTTP，手写 fixture、请求和
-业务字段断言，分别输出 CONTRACT、BUSINESS 和供人查看的 DB 操作数。
-
-197 个 provider 与 scenario registry 是未来待办目录，不是实现或覆盖。新增 operation 时只
-复制当前真实场景的 fixture/request/business assertion 结构；必须能区分 HTTP 成功与业务
+后台动态验收当前实现并运行 28 条真实场景，覆盖 IAM、ORG、商业合同、asset 与 Catalog；原 196 个
+provider 壳与 scenario registry 已下线删除。新增 operation 时只复制当前真实场景的
+fixture/request/business assertion 结构；必须能区分 HTTP 成功与业务
 断言成功，不能以 `response.ok`、路径字符串或“不抛异常”代替业务真值。
 
 PERFORMANCE/CLEANUP verdict、baseline、known-uncovered、自动精确分母、lane/并行、校准和

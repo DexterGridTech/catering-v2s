@@ -361,7 +361,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
     <Card
       title={
         <Typography.Paragraph type="secondary" style={{margin: 0}}>
-          管理当前集团空间任意组织节点的邀请；发出、取消和重发均以最新 owner 读回为准。
+          管理当前集团空间各组织节点的邀请，可发出、取消或重发邀请。
         </Typography.Paragraph>
       }
       extra={

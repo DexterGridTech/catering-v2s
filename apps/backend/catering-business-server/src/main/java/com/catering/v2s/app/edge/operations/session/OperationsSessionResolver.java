@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.operations.session;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationFacts;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 /** The only operations edge component allowed to decode the operations session cookie. */
 @Component
 public final class OperationsSessionResolver {
-    private static final String COOKIE = "V2S_OPERATIONS_SESSION";
+    private static final String COOKIE = RuntimeEnvironmentKeys.V2S_OPERATIONS_SESSION;
     private final WorkspaceAuthenticationService sessions;
 
     public OperationsSessionResolver(WorkspaceAuthenticationService sessions) {

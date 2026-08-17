@@ -4,6 +4,7 @@ import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionCookie;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService.PasswordRecoveryFlowCredential;
 import com.catering.v2s.workspace.iam.application.WorkspacePasswordRecoveryService.RecoveryFlowCredential;
@@ -40,8 +41,8 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
         return new EdgeRequestContext(
                 rateLimitSourceFingerprint(servlet.getRemoteAddr()),
                 correlationId,
-                PlatformSessionCookie.fromCookie(cookie(servlet, "V2S_PLATFORM_SESSION")),
-                OperationsSessionCookie.fromCookie(cookie(servlet, "V2S_OPERATIONS_SESSION")),
+                PlatformSessionCookie.fromCookie(cookie(servlet, RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION)),
+                OperationsSessionCookie.fromCookie(cookie(servlet, RuntimeEnvironmentKeys.V2S_OPERATIONS_SESSION)),
                 PasswordRecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_PLATFORM_PASSWORD_RECOVERY")),
                 RecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_FLOW")),
                 RecoveryGrantCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_GRANT")),

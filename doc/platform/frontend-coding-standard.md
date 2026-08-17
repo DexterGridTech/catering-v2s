@@ -187,6 +187,7 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 **为什么不做成门**:判断"这两处是不是同一件事"需要理解语义,做成关键词匹配就会变成"门全绿而功能是坏的"。
 
+
 ### 3-B · 读 RTK 数据用 `currentData`,判加载用 `isFetching`
 
 **规则**:换 arg 的场景下,`data` 与 `isLoading` **不得**用于渲染。
@@ -194,6 +195,21 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 **反例**:`WorkspaceUserPage.tsx:152` 用 `activeDetailQuery.data` —— RTK 2.12.0 实测
 `data = isSuccess ? currentState.data : lastResult?.data`,`lastResult` 是不清的 `useRef`。
 → 点李四时抽屉里显示的是**张三的姓名、账号、任职机构和角色**,撤销任职按钮挂在张三的 assignment 上。
+
+**判别式(不是「凡 `.data` 都改」)**:问一句 —— **这个 query 的参数,来自会变的组件 state 吗?**
+来自 state(tab / 分页 / 筛选 / 选中行)⇒ 必须 `currentData`;参数固定(会话、常量)⇒ `.data` 正确,不要改。
+⛔ **不能做成门** —— 门分不清参数是否会变,禁止 `xxxQuery.data` 会误伤合法用法。
+
+**当前分母(2026-08-17 实测)**:`currentData` **98 处** · query 结果读 `.data` **33 处**。
+⚠️ **那 33 处不是 33 个 bug**,需逐处套判别式。
+已知正确:`OperationsApp.tsx` 的 `sessionEntryQuery.data`(参数固定)。
+已知需判:`PlatformReadPage.tsx` 多处参数来自 `hierarchyNodeId` 等 state。
+**尚未逐处核完,不得宣称「已清理」。**
+
+**新增正例(2026-08-17)**:`CatalogDictionaryDrawer.tsx` 的 `productionQuery.currentData?.data`
+配 `loading={xxxQuery.isLoading || xxxQuery.isFetching}` ——
+Dexter 在 DEV 体验时报出「切 tab 后内容漂移回上一个 tab」,根因即读了 `data`,Codex 按本条修复。
+**这是本条从「有反例无正例」变成「有正例」的一次。**
 
 **最重的一处**:`StoreProfilePage` 四个合同状态 tab 共用一个 query,点「已作废」时 data 还是「当前」那批
 → **「已作废」tab 下列着当前生效的合同,状态列印着「有效」**。
@@ -344,6 +360,37 @@ return receipt.response();                             // 键同且完全相同 
 **这段手写检查是唯一守卫**。按原判交出去会直接开洞。
 
 ---
+
+### 4-D · 动手写新规则、新方案、新裁决之前,先查仓内有没有
+
+**规则**:在写下任何「规范条目 / 设计方案 / 裁决」之前,必须先检索**四处**:
+`doc/platform/*-coding-standard.md`(两份规范正本)· `doc/decisions/` · **`project-memory/`**
+· `HANDOFF.md` · `doc/review/platform/`(既有评审文档)。
+⚠️ **`project-memory/` 是本条自己漏过的那一处**(2026-08-17,写完当天):
+`project-memory/pitfalls/catalog-code-rule-invention.md` 明令禁止臆造商品编码格式,
+而同日的详设 `CP-11` 要求恢复编码正则与长度上限 —— Codex 实施时撞上并停机。
+**四处变五处,`project-memory/` 与 `doc/decisions/` 同等重要,且两者常互为 `sourceRefs`。**
+查到已有的 ⇒ **改那一处或指过去,不得新写一份**。
+
+**⚠️ 本条不是前端专属**,与 4-A 同属通用工作纪律,只是这两份规范里只有这里有「评审纪律」一节。
+后台侧见 `backend-coding-standard.md` 的维护约定指针。
+
+**为什么(2026-08-17 一天内漏了三次,前两次是别人抓出来的)**:
+
+| # | 漏查什么 | 后果 |
+|---|---|---|
+| 1 | `HANDOFF.md` 的 `HEALTH_READINESS` | 已裁「不建第二端点」,却把它当成「用哪个依赖」的技术选型重裁了一遍 |
+| 2 | `backend-coding-standard.md` §2-E | 里面记着 Dexter 对 P-1 的原话与根因诊断,而设计文档在不引用、不处置的情况下把 P-1 列入「本轮明确不做」 |
+| 3 | 本文件 §3-B | 规则一字不差已存在(且反例比新写的更重),仍新起了一节 3-A2 —— 写完才撞见,已删 |
+
+**根因**:「我知道这件事该怎么办」与「这件事仓内已经办过」是两件事。
+**前者成立不代表后者不成立**,而后者成立时,新写一份就是制造第二个真相源。
+
+**判别式**:动笔前问一句 —— **这件事如果有人已经想过,他会写在哪?**
+写不出至少一个候选位置,说明对仓内结构还不熟,先查再写。
+
+⛔ 不接受「我搜过了没有」——按 4-A,那是否定式全称命题,一种写法没命中不算。
+
 
 ## 5 · 明确不上的
 

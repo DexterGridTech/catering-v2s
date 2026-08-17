@@ -33,13 +33,14 @@ describe('operations required scope surface', () => {
     expect(isOperationsScopeComplete('HEAD_COMPANY', {...completeContext, headCompany: null})).toBe(false);
   });
 
-  it('mounts a child only after the owner-confirmed scope supplied by the current entry is complete', () => {
+  it('only shows the left-bottom selection instruction until the owner-confirmed scope is complete', () => {
     const gated = renderToStaticMarkup(
       <OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={{...completeContext, project: null}}>
         <button data-testid="scoped-child">业务操作</button>
       </OperationsRequiredScopeSurface>,
     );
     expect(gated).toContain('operations-page-data-scope-gated');
+    expect(gated).toContain('请在左下角选择要管理的项目。');
     expect(gated).not.toContain('scoped-child');
     const ready = renderToStaticMarkup(
       <OperationsRequiredScopeSurface requiredDataNodeType="PROJECT" scopeContext={completeContext}>
@@ -48,6 +49,8 @@ describe('operations required scope surface', () => {
     );
     expect(ready).toContain('scoped-child');
     expect(ready).not.toContain('operations-page-data-scope-gated');
+    expect(ready).not.toContain('operations-page-data-scope-current');
+    expect(ready).not.toContain('当前项目');
   });
 
   it('covers the catalog denominator and keeps NONE pages mountable without a selection', () => {

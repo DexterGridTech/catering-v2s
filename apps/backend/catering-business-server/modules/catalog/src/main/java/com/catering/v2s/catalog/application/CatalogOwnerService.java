@@ -11,6 +11,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -418,6 +419,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     @Override
+    @Transactional
     public CatalogOwnerApi.CatalogItemBatchStatusTransitionReadback transitionCatalogItemStatuses(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand command,
@@ -3151,13 +3153,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x43534B55 ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534B55, ref));
     }
 
     /** Must stay byte-for-byte compatible with InventoryOwnerService's item lifecycle lock. */
@@ -3167,13 +3163,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x4349544D ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x4349544D, ref));
     }
 
     /** Must stay byte-for-byte compatible with InventoryOwnerService's BOM option-value lock. */
@@ -3183,13 +3173,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, 0x43534156 ^ (int) (ref.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) ref.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534156, ref));
     }
 
     /** Assigns server-owned SKU identities and normalizes the relation payload before the sole relational write. */
@@ -4507,9 +4491,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     static void validateCatalogCode(String code) {
-        if (code == null || !code.matches("[A-Z0-9][A-Z0-9_-]{1,63}"))
-            throw new CatalogOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, "formalCode must be 2-64 uppercase letters, digits, underscore or hyphen");
+        if (code == null || code.isBlank())
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "formalCode is required");
     }
 
     private boolean formalCodeAvailable(String dataNodeRef, String brandRef, String code, UUID currentRef) {
@@ -6305,9 +6288,10 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     }
 
     private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
+        AdvisoryLock.acquire(jdbc, "catalog-receipt", dataNodeRef, key);
         List<Receipt> rows = jdbc.query(
                 "SELECT operation_id,request_hash,response::text FROM catalog.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=? FOR UPDATE",
+                        + "AND idempotency_key=?",
                 (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
                 dataNodeRef,
                 key);
@@ -6323,8 +6307,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 "INSERT INTO "
                         + "catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,"
                         + "resp"
-                        + "onse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT "
-                        + "(data_node_ref,idempotency_key) DO NOTHING",
+                        + "onse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
                 UUID.randomUUID(),
                 scope,
                 key,

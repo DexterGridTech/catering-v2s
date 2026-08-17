@@ -313,12 +313,15 @@ BUSINESS_GOAL=打开“选择可查看范围”Popover，而不改变任职和�
 USER_VISIBLE_COPY=控件标题“可查看范围”；当前值“大区/项目/门店：<当前机构名称>”或“请选择可查看范围”；无可选范围时“当前任职没有可查看范围”
 TECHNICAL_BOUNDARY=requiredDataNodeType、scopeRef、session entry 不展示
 FOUNDATION_PRIMITIVE=testId
+LAYOUT_BOUNDARY=侧栏固定占用页面可视高度；折叠控件与“可查看范围”不参与菜单滚动。菜单独占中间剩余高度，项目过长时仅在菜单内部垂直滚动。
 ```
 
 ```text
 侧栏底部：
-可查看范围
-项目：当前机构名称                         ⇄
+可查看范围                                 ›
+大区  <当前大区名称(编码)>
+项目  <当前项目名称(编码)>
+门店  <当前门店名称(编码)>
 ```
 
 <a id="platform-workspace-selector-decision"></a>

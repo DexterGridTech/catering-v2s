@@ -50,7 +50,7 @@ test("a static gate fails closed on its first missing marker", () => {
 
 test("verify retains true static gates and has no retired control-plane dependency", () => {
   const commandLabels = new Set(verify.staticCommands.map(([label]) => label));
-  for (const required of ["frontend-architecture", "openapi-contracts", "code-layout", "backend-archunit"]) {
+  for (const required of ["frontend-architecture", "openapi-contracts", "code-layout", "runtime-environment-keys", "backend-archunit"]) {
     assert.equal(commandLabels.has(required), true, `missing static gate: ${required}`);
   }
   for (const retired of ["database-operation-budget", "agent-lifecycle", "foundation-standard-actions", "project-memory", "provider-free-context", "roadmap-program-registry"]) {

@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.diagnostic;
 import com.catering.v2s.platform.foundation.diagnostic.RequestDiagnosticContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,15 +44,15 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     public HttpRequestMetricsInterceptor(ObjectMapper mapper) {
         this(
                 mapper,
-                env("V2S_RUNTIME_ENVIRONMENT"),
-                env("V2S_DEV_PROFILE"),
-                runIdFor(env("V2S_DEV_PROFILE")),
-                secretFor(env("V2S_DEV_PROFILE")),
-                env("V2S_DEV_NAMESPACE"),
-                eventsFor(env("V2S_DEV_PROFILE")),
-                env("V2S_DB_OPERATIONS_EVENTS"),
-                env("V2S_DB_OPERATIONS_HMAC_KEY"),
-                env("V2S_DB_STATEMENT_DICTIONARY"));
+                env(RuntimeEnvironmentKeys.V2S_RUNTIME_ENVIRONMENT),
+                env(RuntimeEnvironmentKeys.V2S_DEV_PROFILE),
+                runIdFor(env(RuntimeEnvironmentKeys.V2S_DEV_PROFILE)),
+                secretFor(env(RuntimeEnvironmentKeys.V2S_DEV_PROFILE)),
+                env(RuntimeEnvironmentKeys.V2S_DEV_NAMESPACE),
+                eventsFor(env(RuntimeEnvironmentKeys.V2S_DEV_PROFILE)),
+                env(RuntimeEnvironmentKeys.V2S_DB_OPERATIONS_EVENTS),
+                env(RuntimeEnvironmentKeys.V2S_DB_OPERATIONS_HMAC_KEY),
+                env(RuntimeEnvironmentKeys.V2S_DB_STATEMENT_DICTIONARY));
     }
 
     HttpRequestMetricsInterceptor(

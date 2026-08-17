@@ -1563,7 +1563,8 @@
         "STATIC_PASS_NOT_DYNAMIC_PASS",
         "FAILURE_TAXONOMY_IS_TYPED",
         "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
-        "BACKEND_ACCEPTANCE_REAL_SCENARIOS"
+        "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
+        "EXPLICIT_NODE_TEST_DENOMINATOR_MUST_MATCH_DISCOVERY"
       ],
       "assertionSources": [
         {
@@ -1585,6 +1586,11 @@
           "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
           "path": "scripts/README.md",
           "anchor": "### Backend acceptance（当前真实业务能力）"
+        },
+        {
+          "assertionKey": "EXPLICIT_NODE_TEST_DENOMINATOR_MUST_MATCH_DISCOVERY",
+          "path": "scripts/README.md",
+          "anchor": "- `scripts/test/test-health-entry-runner.mjs --self-test` 只验证显式 Node 测试入口的分母与红变异；`--node` 才执行这份有限清单，并要求 `DISCOVERED_TEST_FILES` 与 `EXECUTED_TEST_FILES` 精确相等。新增目录必须作为显式入口加入，禁止用宽 glob 掩盖空匹配。"
         }
       ],
       "sourceRefs": [
@@ -1670,6 +1676,122 @@
       ]
     },
     {
+      "id": "pitfalls.machine-gate-selftest-format-fragility",
+      "path": "project-memory/pitfalls/machine-gate-selftest-format-fragility.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "contract"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "SELF_TEST_FIXTURE_MUST_MATCH_STRUCTURE",
+        "MUTATION_MUST_CHANGE_SOURCE",
+        "NEGATIVE_CONTROL_MUST_BE_SEMANTIC"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "SELF_TEST_FIXTURE_MUST_MATCH_STRUCTURE",
+          "path": "tools/verify-gates/cli.mjs",
+          "anchor": "function selfTest(action) {"
+        },
+        {
+          "assertionKey": "MUTATION_MUST_CHANGE_SOURCE",
+          "path": "tools/verify-gates/cli.mjs",
+          "anchor": "function selfTest(action) {"
+        },
+        {
+          "assertionKey": "NEGATIVE_CONTROL_MUST_BE_SEMANTIC",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "## 3. 适用边界与反例"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+        "tools/verify-gates/cli.mjs"
+      ]
+    },
+    {
+      "id": "pitfalls.machine-gate-test-api-false-positive",
+      "path": "project-memory/pitfalls/machine-gate-test-api-false-positive.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "backend"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "PRODUCTION_GATE_SCOPE_MUST_EXCLUDE_TEST_SEAMS",
+        "TEST_API_TYPES_MUST_NOT_BE_PRODUCTION_FINDINGS",
+        "PRODUCTION_NEGATIVE_CONTROL_MUST_REMAIN"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PRODUCTION_GATE_SCOPE_MUST_EXCLUDE_TEST_SEAMS",
+          "path": "tools/verify-gates/cli.mjs",
+          "anchor": "function database(base = root) {"
+        },
+        {
+          "assertionKey": "TEST_API_TYPES_MUST_NOT_BE_PRODUCTION_FINDINGS",
+          "path": "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/AdvisoryLockTest.java",
+          "anchor": "        public List<Map<String, Object>> queryForList(String sql, Object... args) {"
+        },
+        {
+          "assertionKey": "PRODUCTION_NEGATIVE_CONTROL_MUST_REMAIN",
+          "path": "tools/verify-gates/cli.mjs",
+          "anchor": "  assertNoMatch(businessSources.filter((file) => !file.includes(\"/src/test/\")), /Map\\s*<\\s*String\\s*,\\s*Object\\s*>/, \"R4_DATABASE_UNTYPED_ROW_OR_COMMAND\", base);"
+        }
+      ],
+      "sourceRefs": [
+        "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/AdvisoryLockTest.java",
+        "tools/verify-gates/cli.mjs"
+      ]
+    },
+    {
       "id": "pitfalls.green-by-existence-check",
       "path": "project-memory/pitfalls/green-by-existence-check.md",
       "layer": "routed",
@@ -1716,7 +1838,7 @@
         {
           "assertionKey": "EMPTY_GLOB_MUST_FAIL",
           "path": "scripts/test/test-health-entry-runner.mjs",
-          "anchor": "  const broadNodeGlob = [\"**\", \"/*.test.mjs\"].join(\"\");"
+          "anchor": "  const broadNodeGlob = ['**', '/*.test.mjs'].join('');"
         }
       ],
       "sourceRefs": [
@@ -1830,6 +1952,703 @@
           "path": "doc/platform/frontend-coding-standard.md",
           "anchor": "### 1-0 · 门只写禁止句"
         }
+      ]
+    },
+    {
+      "id": "pitfalls.negative-universal-claim",
+      "path": "project-memory/pitfalls/negative-universal-claim.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "NEGATIVE_CLAIM_REQUIRES_EXHAUSTION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "NEGATIVE_CLAIM_REQUIRES_EXHAUSTION",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-B · 否定式全称命题必须穷举后才能写"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.line-number-as-anchor",
+      "path": "project-memory/pitfalls/line-number-as-anchor.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "design"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "LOCATE_BY_ANCHOR_NOT_LINE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-A · 定位用锚点,不用行号"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.denominator-inherited-not-built",
+      "path": "project-memory/pitfalls/denominator-inherited-not-built.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "DENOMINATOR_MUST_BE_SELF_BUILT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "DENOMINATOR_MUST_BE_SELF_BUILT",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.check-repo-before-authoring",
+      "path": "project-memory/pitfalls/check-repo-before-authoring.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance",
+          "memory"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "CHECK_EXISTING_BEFORE_AUTHORING",
+        "RECHECK_AT_IMPLEMENTATION_TIME"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CHECK_EXISTING_BEFORE_AUTHORING",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
+        },
+        {
+          "assertionKey": "RECHECK_AT_IMPLEMENTATION_TIME",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.claim-versus-behavior",
+      "path": "project-memory/pitfalls/claim-versus-behavior.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "implementation",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "CLAIM_IS_NOT_BEHAVIOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CLAIM_IS_NOT_BEHAVIOR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "## 4 · 声称 ≠ 行为"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.owner-boundary-reverse-inference",
+      "path": "project-memory/pitfalls/owner-boundary-reverse-inference.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review",
+          "implementation"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "product",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "UI_TASK_NOT_INFERRED_FROM_OWNER"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "UI_TASK_NOT_INFERRED_FROM_OWNER",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 8-C · 不得从现有接口、表结构或旧页面反推用户任务"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.insert-as-claim-ownership",
+      "path": "project-memory/practices/insert-as-claim-ownership.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend"
+        ],
+        "impacts": [
+          "transaction",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "LINEARIZATION_POINT_BEFORE_MECHANISM",
+        "FOR_UPDATE_LOCKS_NO_ABSENT_ROW"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "LINEARIZATION_POINT_BEFORE_MECHANISM",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-C · owner 在命令事务内复核"
+        },
+        {
+          "assertionKey": "FOR_UPDATE_LOCKS_NO_ABSENT_ROW",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-C · owner 在命令事务内复核"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.gate-four-pieces",
+      "path": "project-memory/practices/gate-four-pieces.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "testing",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "GATE_REQUIRES_FOUR_PIECES"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "GATE_REQUIRES_FOUR_PIECES",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 6-A · 每道门四件套,缺一不算门"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.atomic-group-expected-error",
+      "path": "project-memory/practices/atomic-group-expected-error.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-C · 会同时坏的东西必须声明为原子组"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.decided-undecided-marking",
+      "path": "project-memory/practices/decided-undecided-marking.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "DOC_STATE_IS_THREE_VALUED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "DOC_STATE_IS_THREE_VALUED",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-A · 每一条只能是两种状态"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.cross-boundary-string-agreement",
+      "path": "project-memory/practices/cross-boundary-string-agreement.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "contract",
+          "backend",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "contract",
+          "backend",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "BARE_STRING_CLASSIFIED_BY_AGREEMENT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BARE_STRING_CLASSIFIED_BY_AGREEMENT",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-D · 跨界字面量按「谁必须达成一致」分类"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.metadata-classified-by-attachment",
+      "path": "project-memory/practices/metadata-classified-by-attachment.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review",
+          "implementation"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "operations-admin"
+        ],
+        "owners": [
+          "product",
+          "backend"
+        ],
+        "impacts": [
+          "architecture",
+          "database"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "METADATA_CLASSIFIED_BY_ATTACHMENT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "METADATA_CLASSIFIED_BY_ATTACHMENT",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-G · 元数据还是实例数据,看它挂在谁身上"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.catalog-code-rule-invention",
+      "path": "project-memory/pitfalls/catalog-code-rule-invention.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "backend",
+          "contract"
+        ],
+        "consumerFaces": [
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
+        "OWNER_SUBMIT_UNIQUENESS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
+          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
+          "anchor": "## 交互约束"
+        },
+        {
+          "assertionKey": "OWNER_SUBMIT_UNIQUENESS",
+          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
+          "anchor": "## 交互约束"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md"
+      ]
+    },
+    {
+      "id": "pitfalls.repo-rule-cited-against-dexter",
+      "path": "project-memory/pitfalls/repo-rule-cited-against-dexter.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance",
+          "session"
+        ],
+        "triggers": [
+          "review",
+          "implementation",
+          "status-question"
+        ]
+      },
+      "requiredAssertions": [
+        "REPO_RULES_GOVERN_UNATTENDED_EXECUTION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REPO_RULES_GOVERN_UNATTENDED_EXECUTION",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 8-A · 谁定什么"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.count-without-member-list",
+      "path": "project-memory/pitfalls/count-without-member-list.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "requiredAssertions": [
+        "INVENTORY_MUST_PERSIST_MEMBER_LIST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INVENTORY_MUST_PERSIST_MEMBER_LIST",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.after-state-not-checked-against-other-gates",
+      "path": "project-memory/pitfalls/after-state-not-checked-against-other-gates.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "AFTER_STATE_MUST_CLEAR_ALL_GATES"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "AFTER_STATE_MUST_CLEAR_ALL_GATES",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-E · AFTER 状态必须先过一遍既有的门"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
       ]
     }
   ]

@@ -322,22 +322,18 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
       {...testId('operations-data-scope-trigger')}
     >
       {collapsed ? null : (
-        <div className="operations-scope-trigger-summary">
+        <span className="operations-scope-trigger-summary">
           {triggerLines.map(([name, node]) => (
-            <div key={name} className="operations-scope-trigger-line">
+            <span key={name} className="operations-scope-trigger-line">
               <Typography.Text type="secondary" className="operations-scope-trigger-type">
                 {name}：
               </Typography.Text>
               <span className="operations-scope-trigger-value">
-                {node ? (
-                  label(node as WorkspaceScopeNode, true)
-                ) : (
-                  <Typography.Text type="secondary">未选择</Typography.Text>
-                )}
+                {node ? label(node as WorkspaceScopeNode) : <Typography.Text type="secondary">未选择</Typography.Text>}
               </span>
-            </div>
+            </span>
           ))}
-        </div>
+        </span>
       )}
     </Button>
   );

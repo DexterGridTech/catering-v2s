@@ -13,6 +13,7 @@ import com.catering.v2s.app.edge.generated.wire.WorkspaceSessionEntry;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.app.edge.session.EdgeSessionCookieWriter;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceTaskReadService;
 import java.util.UUID;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}")
 public final class OperationsCatalogAuthenticationController {
-    private static final String COOKIE = "V2S_OPERATIONS_SESSION";
+    private static final String COOKIE = RuntimeEnvironmentKeys.V2S_OPERATIONS_SESSION;
     private final WorkspaceAuthenticationService sessions;
     private final WorkspaceTaskReadService reads;
     private final OperationsSessionResolver sessionResolver;

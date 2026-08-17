@@ -205,11 +205,8 @@ function descriptorRow(value: CatalogCandidateRow | CatalogCandidateRow[] | unde
 
 function catalogVoidBlockReason(availability: CatalogDetail['actionAvailability']['voidAvailability'] | undefined) {
   if (availability?.canVoid) return undefined;
-  const facts = [
-    ...(availability?.blockingReferences ?? []).map(fact => `引用 ${fact.referenceKind}（${fact.referenceRef}）`),
-    ...(availability?.dependentFacts ?? []).map(fact => `依赖 ${fact.factKind}（${fact.factRef}）`),
-  ];
-  return facts.length ? `作废被以下事实阻断：${facts.join('、')}` : '存在 owner 阻断事实，暂不能作废。';
+  const factCount = (availability?.blockingReferences.length ?? 0) + (availability?.dependentFacts.length ?? 0);
+  return factCount ? `存在 ${factCount} 条关联或依赖，暂不能作废。` : '当前商品暂不能作废。';
 }
 
 const catalogDeniedFieldLabels: Record<string, string> = {
@@ -1826,10 +1823,7 @@ export function CatalogItemDrawer({
               <Form.Item
                 label="正式商品编码"
                 name="formalCode"
-                rules={[
-                  {required: true, message: '请输入正式商品编码'},
-                  {pattern: /^[A-Z0-9][A-Z0-9_-]{1,63}$/, message: '请输入 2-64 位大写字母、数字、下划线或短横线'},
-                ]}
+                rules={[{required: true, message: '请输入正式商品编码'}]}
               >
                 <Input {...testId('catalog-temporary-promotion-formal-code')} />
               </Form.Item>
@@ -2491,7 +2485,7 @@ function CatalogTabContent({
       [...detailProductionTags, ...availableProductionTags, ...selectedProductionTags].map(tag => [tag.tagRef, tag]),
     );
     const selectedTags = selectedProductionTagRefs.map(
-      tagRef => tagMap.get(tagRef) ?? {tagRef, code: '', name: tagRef, owner: 'fulfillment-production'},
+      tagRef => tagMap.get(tagRef) ?? {tagRef, code: '', name: '', owner: 'fulfillment-production'},
     );
     const options = Array.from(tagMap.values()).map(tag => ({
       label: tag.name || tag.code || tag.tagRef,
@@ -2518,11 +2512,7 @@ function CatalogTabContent({
         ) : (
           <Space wrap>
             {selectedTags.length ? (
-              selectedTags.map(tag => (
-                <Tag key={tag.tagRef}>
-                  {tag.name || tag.code || tag.tagRef} · owner:{tag.owner}
-                </Tag>
-              ))
+              selectedTags.map(tag => <Tag key={tag.tagRef}>{tag.name || tag.code || '未命名标签'}</Tag>)
             ) : (
               <EmptySection text="未维护生产提示或商品处理标签" />
             )}
@@ -2660,15 +2650,7 @@ function CatalogTabContent({
         )}
       </Space>
     );
-  return (
-    <EmptySection
-      text={
-        editing
-          ? '当前页签已进入编辑上下文；当前契约未提供可安全提交的字段，未渲染伪编辑控件。'
-          : `${catalogTabLabel(tabKey)}尚未维护`
-      }
-    />
-  );
+  return <EmptySection text={editing ? '当前页暂不支持编辑。' : `${catalogTabLabel(tabKey)}尚未维护`} />;
 }
 
 function CatalogCategoryDescriptorField({
@@ -2715,14 +2697,14 @@ function CatalogCategoryDescriptorField({
     let cancelled = false;
     if (!field || !source) {
       setTreeData([]);
-      setError('分类字段描述未加载，无法安全渲染分类选择器。');
+      setError('分类信息暂不可用，请稍后重试。');
       return () => {
         cancelled = true;
       };
     }
     if (!scopeRef) {
       setTreeData([]);
-      setError('缺少数据节点上下文，无法加载分类候选。');
+      setError('请先选择可查看范围，再加载分类。');
       return () => {
         cancelled = true;
       };
@@ -2748,7 +2730,7 @@ function CatalogCategoryDescriptorField({
     };
   }, [context, field, resolver, scopeRef, source]);
   if (!renderedField)
-    return <Alert type="error" showIcon title="分类字段契约未登记" {...testId('catalog-item-category-field-error')} />;
+    return <Alert type="error" showIcon title="分类信息暂不可用" {...testId('catalog-item-category-field-error')} />;
   return (
     <div {...testId('catalog-item-category-field')}>
       <DescriptorFieldRenderer
@@ -2990,11 +2972,7 @@ function SkuMatrixEditor({
   };
   return (
     <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-sku-matrix-editor')}>
-      <Alert
-        type="info"
-        showIcon
-        title="SKU 规格与价格属于商品 owner 的矩阵事实；编码创建后不可修改，属性值只能引用已存在的销售属性字典。"
-      />
+      <Alert type="info" showIcon title="SKU 编码创建后不可修改；属性值请从已有销售属性中选择。" />
       <Card
         size="small"
         title="规格维度"
@@ -3666,11 +3644,7 @@ function OrderOptionsEditor({
   };
   return (
     <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-order-options-editor')}>
-      <Alert
-        type="info"
-        showIcon
-        title="点单选项由商品 owner 内联维护；左侧选择分组，中间编辑事实，右侧实时预览并显示具体校验原因。"
-      />
+      <Alert type="info" showIcon title="设置点单分组和选项值；右侧可预览当前效果并查看需要修复的内容。" />
       <Button onClick={addGroup} {...testId('catalog-item-order-option-group-add')}>
         新增选项组
       </Button>
@@ -3909,7 +3883,7 @@ function OrderOptionsEditor({
                     />
                   )}
                   <Typography.Text type="secondary">
-                    实时预览只反映当前草稿；保存前仍会由商品 owner 重新校验全部分组。
+                    实时预览仅反映当前编辑内容；保存时会再次检查全部分组。
                   </Typography.Text>
                 </Space>
               ) : (
@@ -4015,11 +3989,7 @@ function ProductionProfileEditor({
           {...testId('catalog-production-profile-node')}
         />
       </Space>
-      <Alert
-        type="info"
-        showIcon
-        title="商品、SKU、选项值分别维护 typed production profile；切换节点不会隐式继承其他层。"
-      />
+      <Alert type="info" showIcon title="商品、SKU 和选项值可分别设置制作信息；切换对象不会自动沿用其他对象的设置。" />
       {profileFields.map(field =>
         field.kind === 'tags' ? (
           <Input
@@ -4050,14 +4020,6 @@ function ProductionProfileEditor({
           />
         ),
       )}
-      {Object.keys(profile).some(key => !profileFields.some(field => field.key === key)) && (
-        <Typography.Text type="secondary">
-          其他 typed 字段：
-          {Object.keys(profile)
-            .filter(key => !profileFields.some(field => field.key === key))
-            .join('、')}
-        </Typography.Text>
-      )}
     </Space>
   );
 }
@@ -4078,7 +4040,7 @@ function ProductionProfilesReadOnly({profiles}: {profiles: ProductionProfileDraf
               column={2}
               items={Object.entries(profiles[layer]).map(([key, value]) => ({
                 key,
-                label: profileFields.find(field => field.key === key)?.label ?? key,
+                label: profileFields.find(field => field.key === key)?.label ?? '其他制作信息',
                 children: profileDisplayValue(value),
               }))}
             />
@@ -4138,11 +4100,7 @@ function InventoryBomEditor({
   };
   return (
     <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-editor')}>
-      <Alert
-        type="info"
-        showIcon
-        title="这里只维护库存节点/BOM 定义，不显示余额流水；库存对象只能从本商品页签建立，BOM 组件必须引用已有库存对象。"
-      />
+      <Alert type="info" showIcon title="在此配置库存方式和配方；实际库存请到门店库存管理查看。" />
       <Button
         onClick={() => {
           onChange([
@@ -4198,7 +4156,6 @@ function InventoryBomEditor({
           }
         >
           <Space wrap>
-            <Typography.Text type="secondary">lineSign：{entry.lineSign ?? entry.nodeType}</Typography.Text>
             <Select
               value={entry.mode}
               options={catalogEnumOptions(manifest, 'inventoryMode')}
@@ -4364,7 +4321,7 @@ function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; v
                   ) : entry.skuCode ? (
                     <Typography.Text code>{entry.skuCode}</Typography.Text>
                   ) : (
-                    '契约未提供库存对象编码'
+                    '未设置库存对象编码'
                   ),
                 },
                 {key: 'quantity', label: 'BOM 每份消耗', children: `${entry.quantity || '—'} ${entry.unit || ''}`},
@@ -4473,7 +4430,7 @@ function CompositeCandidatePicker({
         <Alert
           type="info"
           showIcon
-          title="只能选择当前商品库中可引用的商品；候选查询由 catalog owner 提供，不能手写商品名称或编码。"
+          title="请选择当前商品库中可引用的商品，不能手工填写商品名称或编码。"
           style={{marginBottom: 12}}
         />
         <Row gutter={12} align="top">
@@ -4511,7 +4468,7 @@ function CompositeCandidatePicker({
                   type="error"
                   showIcon
                   title="候选查询失败"
-                  description="商品 owner 未返回可验证候选，请重试。"
+                  description="暂时无法加载可选商品，请重试。"
                   action={
                     <Button size="small" onClick={() => void itemsQuery.refetch()}>
                       重试
@@ -4669,7 +4626,7 @@ function CompositeGroupsEditor({
     );
   return (
     <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-composite-groups-editor')}>
-      <Alert type="info" showIcon title="套餐组件只维护商品 owner 的结构；库存/BOM 提示不在此跨 owner 修改。" />
+      <Alert type="info" showIcon title="在此设置套餐组件；库存和制作信息请在相应商品中维护。" />
       <Button
         onClick={() => {
           onChange([

@@ -10,6 +10,7 @@ import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
@@ -1683,7 +1684,8 @@ public class CatalogInventoryCoordinator {
 
     private static void failForManagedTestPoint(
             String actual, String expected, String code, int status, String message) {
-        if (expected.equals(actual) && "true".equalsIgnoreCase(System.getenv("V2S_CATALOG_TEST_FAULTS"))) {
+        if (expected.equals(actual)
+                && "true".equalsIgnoreCase(System.getenv(RuntimeEnvironmentKeys.V2S_CATALOG_TEST_FAULTS))) {
             throw new CatalogOwnerApi.Problem(code, status, message);
         }
     }

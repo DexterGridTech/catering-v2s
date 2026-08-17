@@ -52,7 +52,7 @@ Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 
 
 保留的机器验证只包括编译、类型、既有测试、契约生成及真正验证行为的门；不得用关键词/字段匹配把语义伪装成 checker。业务语义、用户任务、方案取舍与 UI 合理性，必须通过 fresh 独立对抗审查。evidence/package/hash-chain 的台账、分母和交叉对账控制已退役，不得以其替代亲验。
 
-后台动态验收的唯一能力是 `backend-acceptance`。当前已实现并运行 18 条 IAM、ORG、商业合同和 asset 真实场景；Catalog group 的 8 条场景作为 P3-1 同批实现，完成后总数为 26。它们以真实 HTTP、真实容器和手写 fixture/request/business assertion 产出分离的 `CONTRACT/BUSINESS`，另打印不设门的 DB 调用数。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`；`BackendAcceptanceTest` 只保留唯一 Testcontainers/HTTP 入口与共享支撑，业务断言按 IAM、ORG、商业合同、asset、Catalog 分别扩展对应的 `*AcceptanceScenarios.java`，总数保持在 80 条以内。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再作为测试入口或覆盖目录。PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动精确分母、lane/并行/心跳/work-stealing、calibration 和 correctnessCases 均已退役。
+后台动态验收的唯一能力是 `backend-acceptance`。当前已实现并运行 28 条真实场景，覆盖 IAM、ORG、商业合同、asset 与 Catalog。它们以真实 HTTP、真实容器和手写 fixture/request/business assertion 产出分离的 `CONTRACT/BUSINESS`，另打印不设门的 DB 调用数。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`；`BackendAcceptanceTest` 只保留唯一 Testcontainers/HTTP 入口与共享支撑，业务断言按 IAM、ORG、商业合同、asset、Catalog 分别扩展对应的 `*AcceptanceScenarios.java`，总数保持在 80 条以内。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再作为测试入口或覆盖目录。PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动精确分母、lane/并行/心跳/work-stealing、calibration 和 correctnessCases 均已退役。
 
 评审时优先要求小批量、冻结即审；超过半小时难以核完的交付应先切小。`scripts/verify` 必须保持分钟级，变慢时先砍最弱门而不是接受变慢。方案是否该做及 severity 是否可接受仍由 Dexter 裁定。
 

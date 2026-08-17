@@ -443,8 +443,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   },
                   {
                     title: '来源层级',
-                    render: (_, row) =>
-                      row.ownerScope ? `${row.ownerScope.ownerType} / ${row.ownerScope.ownerRef}` : '—',
+                    render: (_, row) => (row.ownerScope ? inventoryReferenceScopeLabel(row.ownerScope.ownerType) : '—'),
                   },
                   {title: '每份消耗', render: (_, row) => `${row.quantity} ${row.unit}`},
                   {title: '时机', dataIndex: 'timing'},
@@ -610,4 +609,10 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
       />
     </>
   );
+}
+
+function inventoryReferenceScopeLabel(ownerType: string) {
+  if (ownerType === 'STORE') return '门店商品库';
+  if (ownerType === 'HEAD_COMPANY') return '品牌商品库';
+  return '当前商品库';
 }

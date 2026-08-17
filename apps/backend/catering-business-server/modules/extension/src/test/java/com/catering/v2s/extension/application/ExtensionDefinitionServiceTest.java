@@ -14,7 +14,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -28,6 +30,7 @@ class ExtensionDefinitionServiceTest {
     private static ExtensionDefinitionService service;
     private static UUID workspaceId;
     private static JdbcTemplate jdbc;
+    private static TransactionTemplate transactions;
 
     @BeforeAll
     static void setup() {
@@ -39,8 +42,10 @@ class ExtensionDefinitionServiceTest {
                 .cleanDisabled(false)
                 .load();
         flyway.migrate();
-        jdbc = new JdbcTemplate(
-                new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
+        DriverManagerDataSource dataSource =
+                new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        jdbc = new JdbcTemplate(dataSource);
+        transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         workspaceId = UUID.randomUUID();
         long now = 1_785_000_000_000L;
         jdbc.update(
@@ -97,25 +102,25 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test
-    void firstConfigurationRequiresAdministratorDefinedStableKeyAndPreservesItAcrossReplacement() {
+    void ownerAssignsHiddenStableKeysForNewFieldsAndPreservesThemAcrossReplacement() {
         var first = service.replaceDraft(
                 workspaceId,
                 "extension-test",
                 "CONTRACT",
                 0,
                 List.of(new ExtensionDefinitionService.DraftField(
-                        "floorArea", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)),
+                        null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)),
                 com.catering.v2s.audit.contract.AuditActor.system(),
                 "extension-draft-key-0001");
         String ownerKey = first.fields().getFirst().fieldKey();
-        assertEquals("floorArea", ownerKey);
+        assertEquals("field_1", ownerKey);
         var replay = service.replaceDraft(
                 workspaceId,
                 "extension-test",
                 "CONTRACT",
                 0,
                 List.of(new ExtensionDefinitionService.DraftField(
-                        "floorArea", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)),
+                        null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)),
                 com.catering.v2s.audit.contract.AuditActor.system(),
                 "extension-draft-key-0001");
         assertEquals(first, replay);
@@ -139,11 +144,11 @@ class ExtensionDefinitionServiceTest {
                         new ExtensionDefinitionService.DraftField(
                                 ownerKey, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null),
                         new ExtensionDefinitionService.DraftField(
-                                "seatCount", "Seat count", "NUMBER", false, List.of(), "ENABLED", 1, null)),
+                                null, "Seat count", "NUMBER", false, List.of(), "ENABLED", 1, null)),
                 com.catering.v2s.audit.contract.AuditActor.system(),
                 "extension-draft-key-0002");
         assertEquals(ownerKey, second.fields().getFirst().fieldKey());
-        assertEquals("seatCount", second.fields().get(1).fieldKey());
+        assertEquals("field_2", second.fields().get(1).fieldKey());
         assertThrows(
                 ExtensionDefinitionService.DefinitionInvalidException.class,
                 () -> service.replaceDraft(
@@ -151,10 +156,27 @@ class ExtensionDefinitionServiceTest {
                         "extension-test",
                         "CONTRACT",
                         second.version(),
-                        List.of(new ExtensionDefinitionService.DraftField(
-                                null, "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null)),
+                        List.of(
+                                new ExtensionDefinitionService.DraftField(
+                                        "duplicate", "Floor area", "NUMBER", true, List.of(), "ENABLED", 0, null),
+                                new ExtensionDefinitionService.DraftField(
+                                        "duplicate", "Seat count", "NUMBER", false, List.of(), "ENABLED", 1, null)),
                         com.catering.v2s.audit.contract.AuditActor.system(),
                         "extension-draft-key-0003"));
+    }
+
+    @Test
+    void sequentialReplayInIndependentTransactionsReturnsCommittedReceipt() {
+        String key = "extension-transaction-replay-0001";
+        List<ExtensionDefinitionService.DraftField> draft = List.of(new ExtensionDefinitionService.DraftField(
+                null, "Transaction field", "TEXT", true, List.of(), "ENABLED", 0, null));
+
+        var first = transactions.execute(status ->
+                service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
+        var replay = transactions.execute(status ->
+                service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
+
+        assertEquals(first, replay);
     }
 
     @Test

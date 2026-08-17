@@ -270,9 +270,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 () -> replace(workspaceUuid, groupWorkspaceKey, hostType, expectedVersion, normalized, actor));
     }
     /**
-     * Edge-facing whole-group replacement. Every key is an administrator-defined, stable entity value anchor. Existing
-     * keys are preserved by the UI, while a newly added field must supply its own valid key; this owner never silently
-     * renames or randomly allocates one.
+     * Edge-facing whole-group replacement. Existing keys remain stable hidden owner identities. For a new field with no
+     * key, this owner assigns the next deterministic field_n identity; the browser never creates or exposes it.
      */
     @Transactional
     public ExtensionDefinitionReadback replaceDraft(
@@ -294,11 +293,20 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 hostType,
                 draftRequest(hostType, expectedVersion, fields),
                 () -> {
+                    Set<String> assignedKeys = new java.util.LinkedHashSet<>();
+                    for (DraftField field : fields) {
+                        if (field.fieldKey() != null && !field.fieldKey().isBlank()) assignedKeys.add(field.fieldKey());
+                    }
+                    int nextGeneratedKey = 1;
                     List<Field> ownerFields = new java.util.ArrayList<>();
                     for (int index = 0; index < fields.size(); index++) {
                         DraftField field = fields.get(index);
                         String key = field.fieldKey();
-                        if (key == null || key.isBlank()) throw new DefinitionInvalidException();
+                        if (key == null || key.isBlank()) {
+                            do {
+                                key = "field_" + nextGeneratedKey++;
+                            } while (!assignedKeys.add(key));
+                        }
                         ownerFields.add(new Field(
                                 key,
                                 field.label(),

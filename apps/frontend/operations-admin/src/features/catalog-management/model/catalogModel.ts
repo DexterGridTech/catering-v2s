@@ -66,19 +66,6 @@ export function decodeCatalogDictionaryLabels(response: CatalogDictionaryView | 
   );
 }
 
-/** Return the active owner fact occupying a code; VOIDED rows have released it. */
-export type CatalogDictionaryCodeConflict = {name: string; code: string};
-
-export function catalogDictionaryCodeConflict(
-  rows: Array<{code: string; name: string; status: string}>,
-  rawCode: string,
-): CatalogDictionaryCodeConflict | undefined {
-  const code = rawCode.trim().toLocaleUpperCase();
-  if (!code) return undefined;
-  const occupied = rows.find(row => row.status !== 'VOIDED' && row.code.trim().toLocaleUpperCase() === code);
-  return occupied ? {name: occupied.name, code: occupied.code} : undefined;
-}
-
 export type CatalogNavigation = {
   allCount: number;
   tree: Array<{
@@ -650,6 +637,40 @@ export type CatalogCopyReferenceMapping = {
   targetSkuCode?: string;
   targetOptionValueCode?: string;
 };
+
+const catalogCopyObjectTypeLabels: Record<string, string> = {
+  CATALOG_ITEM: '商品',
+  CATALOG_CATEGORY: '商品分类',
+  CATALOG_TAG: '商品标签',
+  SALES_UNIT: '销售单位',
+  SKU: 'SKU',
+  SKU_ATTRIBUTE: '销售属性',
+  SKU_ATTRIBUTE_VALUE: '销售属性值',
+  ORDER_OPTION_GROUP: '点单分组',
+  ORDER_OPTION_VALUE: '点单选项',
+  INVENTORY_TARGET: '库存对象',
+  BOM: '配方',
+  PACKAGE_COMPONENT: '套餐组件',
+  PRODUCTION_PROMPT: '制作信息',
+};
+
+export function catalogCopyObjectTypeLabel(value: string) {
+  return catalogCopyObjectTypeLabels[value] ?? '关联内容';
+}
+
+export function catalogCopyActionLabel(value: string) {
+  if (value === 'CREATE') return '新建';
+  if (value.includes('REUSE')) return '复用';
+  if (value === 'SKIP') return '跳过';
+  if (value === 'BLOCKED') return '不可复制';
+  return '已检查';
+}
+
+export function catalogCopyScopeLabel(value: string) {
+  if (value === 'HEAD_COMPANY') return '品牌商品库';
+  if (value === 'STORE') return '门店商品库';
+  return '当前商品库';
+}
 export type BrandCopyReadback = {
   preflightDigest: string;
   created: Array<{objectType: string; code: string}>;

@@ -6,7 +6,7 @@ import {
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
-import {catalogInventoryClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
 import type {CatalogItemCreateRequest, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
@@ -28,8 +28,6 @@ type FormValues = {code: string; name: string; shapeKey: string; attributesText?
 export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialValues, onClose, onCreated}: Props) {
   const [form] = Form.useForm<FormValues>();
   const [problem, setProblem] = useState<string>();
-  const [codeAvailability, setCodeAvailability] = useState<{code: string; available: boolean}>();
-  const [checkingCode, setCheckingCode] = useState(false);
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const manifestRequest = useMemo(
     () =>
@@ -71,44 +69,11 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
       return;
     }
     form.setFieldsValue({code: initialValues?.code, name: initialValues?.name, shapeKey: initialValues?.shapeKey});
-    setCodeAvailability(undefined);
   }, [form, initialValues, lifecycle, open]);
-
-  const checkCodeAvailability = async (rawCode: string | undefined) => {
-    const code = rawCode?.trim().toUpperCase() ?? '';
-    if (!code || !/^[A-Z0-9][A-Z0-9_-]*$/.test(code)) {
-      setCodeAvailability(undefined);
-      return undefined;
-    }
-    setCheckingCode(true);
-    try {
-      await catalogInventoryClient.getOperationsCatalogItem(
-        {itemCode: code},
-        {query: {dataNodeRef: requireOperationsScopeRef(queryContext)}, headers},
-      );
-      setCodeAvailability({code, available: false});
-      form.setFields([{name: 'code', errors: ['当前作用域中已存在该商品编码。']}]);
-      return false;
-    } catch (error) {
-      const feedback = operationsProblemOf(error);
-      if (feedback.errorCode === 'NOT_FOUND') {
-        setCodeAvailability({code, available: true});
-        form.setFields([{name: 'code', errors: []}]);
-        return true;
-      }
-      setCodeAvailability(undefined);
-      return undefined;
-    } finally {
-      setCheckingCode(false);
-    }
-  };
 
   const submit = async () => {
     try {
       const values = await form.validateFields();
-      const available = await checkCodeAvailability(values.code);
-      if (available === false) throw new Error('CATALOG_CODE_UNAVAILABLE');
-      if (available === undefined) throw new Error('CATALOG_CODE_AVAILABILITY_UNKNOWN');
       const attributes = parseAttributes(values.attributesText);
       lifecycle.setSubmitting(true);
       setProblem(undefined);
@@ -136,11 +101,7 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
       setProblem(
         error instanceof Error && error.message === 'ATTRIBUTES_OBJECT_REQUIRED'
           ? '描述属性必须是 JSON 对象。'
-          : error instanceof Error && error.message === 'CATALOG_CODE_UNAVAILABLE'
-            ? '当前作用域中已存在该商品编码。'
-            : error instanceof Error && error.message === 'CATALOG_CODE_AVAILABILITY_UNKNOWN'
-              ? '暂时无法确认编码是否可用，请重试。'
-              : operationsProblemOf(error).detail || '商品创建未完成，请重试。',
+          : operationsProblemOf(error).detail || '商品创建未完成，请重试。',
       );
       lifecycle.setSubmitting(false);
     }
@@ -171,34 +132,12 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
         type="info"
         showIcon
         title="编码与形态创建后不可修改"
-        description="创建时会校验当前商品库编码唯一性；权益商品壳保留在契约中，但本期不可创建。"
+        description="商品编码需保持唯一；权益商品本期暂不支持创建。"
         style={{marginBottom: 16}}
       />
       <Form form={form} layout="vertical" onValuesChange={() => lifecycle.setDirty(true)}>
-        <Form.Item
-          label="商品编码"
-          name="code"
-          validateStatus={codeAvailability?.available === false ? 'error' : undefined}
-          help={
-            codeAvailability?.available === false
-              ? '当前作用域中已存在该商品编码。'
-              : codeAvailability?.available === true
-                ? '编码可用。'
-                : undefined
-          }
-          rules={[
-            {required: true, message: '请输入商品编码'},
-            {pattern: /^[A-Z0-9][A-Z0-9_-]*$/, message: '编码仅支持大写字母、数字、下划线和短横线'},
-          ]}
-        >
-          <Input
-            maxLength={80}
-            onBlur={() => {
-              void checkCodeAvailability(form.getFieldValue('code'));
-            }}
-            suffix={checkingCode ? '校验中…' : undefined}
-            {...testId('catalog-create-code')}
-          />
+        <Form.Item label="商品编码" name="code" rules={[{required: true, message: '请输入商品编码'}]}>
+          <Input maxLength={80} {...testId('catalog-create-code')} />
         </Form.Item>
         <Form.Item label="商品名称" name="name" rules={[{required: true, message: '请输入商品名称'}]}>
           <Input maxLength={160} {...testId('catalog-create-name')} />

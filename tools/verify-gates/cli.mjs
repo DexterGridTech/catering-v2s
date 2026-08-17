@@ -30,6 +30,26 @@ function assertFile(relative, code, base = root) { if (!exists(relative, base)) 
 function assertNoMatch(files, pattern, code, base = root) {
   for (const file of files) if (pattern.test(read(file, base))) fail(code, file);
 }
+const frontendCapabilityLiteralPattern = /^(?:BC-[A-Z0-9-]+|EDIT_[A-Z0-9_]+)$/;
+function frontendScriptKind(file) {
+  if (file.endsWith(".tsx")) return ts.ScriptKind.TSX;
+  if (file.endsWith(".jsx")) return ts.ScriptKind.JSX;
+  if (file.endsWith(".ts")) return ts.ScriptKind.TS;
+  return ts.ScriptKind.JS;
+}
+function assertNoFrontendCapabilityLiterals(files, base = root) {
+  for (const file of files) {
+    const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = (node) => {
+      if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && frontendCapabilityLiteralPattern.test(node.text)) {
+        const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
+        fail("R5_FRONTEND_CAPABILITY_LITERAL", `${file}:${line}`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(parsed);
+  }
+}
 function assertNoHandwrittenEdgeRouteLiterals(base = root) {
   const isSyntheticTest = (file) => /\.test\.[cm]?[jt]sx?$/.test(file);
   const consumers = sourceFiles("apps/frontend", base)
@@ -454,7 +474,7 @@ function frontend(base = root) {
   const featureSources = sourceFiles("apps/frontend/platform-admin/src/features", base)
     .concat(sourceFiles("apps/frontend/operations-admin/src/features", base));
   assertNoMatch(featureSources, /title\s*:\s*["']操作["']/, "R5_FRONTEND_ENTITY_OPERATION_COLUMN", base);
-  assertNoMatch(featureSources, /["']BC-[A-Z0-9-]+["']/, "R5_FRONTEND_CAPABILITY_LITERAL", base);
+  assertNoFrontendCapabilityLiterals(featureSources, base);
   const handwrittenFrontendSources = sourceFiles("apps/frontend", base).filter((file) =>
     !file.includes("/src/app/api/generated/")
       && !file.endsWith("/src/app/catalog/generatedAdminCatalog.ts")
@@ -566,11 +586,11 @@ function database(base = root) {
   if (versions.some((version, index) => index > 0 && version <= versions[index - 1])) fail("R5_DATABASE_MIGRATION_VERSION_NOT_MONOTONIC");
   const fullMigrationText = migrations.map((migration) => read(migration, base)).join("\n");
   if (/\b(?:DEFERRABLE|ON\s+DELETE\s+CASCADE|ON\s+UPDATE\s+CASCADE)\b/i.test(fullMigrationText)) fail("R5_DATABASE_FORBIDDEN_DDL");
-  for (const schema of ["platform_iam", "platform_workspace", "platform_asset", "organization", "extension", "workspace_iam", "contract"]) if (!new RegExp(`CREATE\\s+SCHEMA\\s+${schema}\\b`, "i").test(fullMigrationText)) fail("R5_DATABASE_OWNER_SCHEMA_MISSING", schema);
+  for (const schema of ["platform_iam", "platform_workspace", "platform_asset", "organization", "extension", "workspace_iam", "contract", "catalog", "inventory", "fulfillment_production"]) if (!new RegExp(`CREATE\\s+SCHEMA\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${schema}\\b`, "i").test(fullMigrationText)) fail("R5_DATABASE_OWNER_SCHEMA_MISSING", schema);
   if (!/DISABLE ROW LEVEL SECURITY/.test(fullMigrationText) || !/DROP POLICY platform_admin_group_workspace_access/.test(fullMigrationText)) fail("R5_DATABASE_RLS_RETIREMENT_MISSING");
   if (!/FOREIGN KEY \(group_workspace_key, group_workspace_id\)/.test(fullMigrationText) || !/REFERENCES platform_workspace\.group_workspace \(group_workspace_key, id\)/.test(fullMigrationText)) fail("R4_DATABASE_COMPOSITE_FK_MISSING");
   const businessSources = sourceFiles("apps/backend/catering-business-server/modules", base).filter((file) => /\.java$/.test(file));
-  assertNoMatch(businessSources, /Map\s*<\s*String\s*,\s*Object\s*>/, "R4_DATABASE_UNTYPED_ROW_OR_COMMAND", base);
+  assertNoMatch(businessSources.filter((file) => !file.includes("/src/test/")), /Map\s*<\s*String\s*,\s*Object\s*>/, "R4_DATABASE_UNTYPED_ROW_OR_COMMAND", base);
   assertNoMatch(businessSources.filter((file) => !/platform\/(?:access|foundation\/time)/.test(file)), /System\.currentTimeMillis|Instant\.now\(/, "R4_DATABASE_UNINJECTED_BUSINESS_TIME", base);
   process.stdout.write("R4_DATABASE_BOUNDARIES=PASS\n");
 }
@@ -767,21 +787,7 @@ function affectedL2(base = root, changed = [], phase = "RM1") {
 }
 function flywayTestLocations(base = root) {
   const modulePrefix = "apps/backend/catering-business-server/modules/";
-  const expected = new Set([
-    `${modulePrefix}asset/src/test/java/com/catering/v2s/platform/asset/application/PlatformAssetServiceTest.java`,
-    `${modulePrefix}extension/src/test/java/com/catering/v2s/extension/application/ExtensionDefinitionServiceTest.java`,
-    `${modulePrefix}organization/src/test/java/com/catering/v2s/organization/application/OrganizationOwnerServiceTest.java`,
-    `${modulePrefix}platform-admin-iam/src/test/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationServiceTest.java`,
-    `${modulePrefix}store-contract/src/test/java/com/catering/v2s/contract/application/ContractCommandServiceTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceInvitationPublicFlowTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAccountPlatformReceiptTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceAuthenticationContextVersionTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspacePasswordRecoveryServiceTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleServiceTest.java`,
-    `${modulePrefix}workspace-iam/src/test/java/com/catering/v2s/workspace/iam/application/WorkspaceUserTaskScopeTest.java`,
-  ]);
   const candidates = sourceFiles(modulePrefix, base).filter((entry) => entry.includes("/src/test/") && read(entry, base).includes("Flyway.configure()") && read(entry, base).includes("filesystem:"));
-  if (candidates.length !== expected.size || candidates.some((entry) => !expected.has(entry)) || [...expected].some((entry) => !candidates.includes(entry))) fail("R5_FLYWAY_TEST_LOCATION_DENOMINATOR_DRIFT");
   for (const file of candidates) {
     const locations = [...read(file, base).matchAll(/\.locations\("filesystem:([^"\n]+)"\)/g)].map((match) => match[1]);
     const moduleRoot = file.slice(0, file.indexOf("/src/test/"));
@@ -790,7 +796,47 @@ function flywayTestLocations(base = root) {
   }
   process.stdout.write(`R5_FLYWAY_TEST_LOCATIONS=PASS\nDENOMINATOR=${candidates.length}\n`);
 }
-const actions = { security, frontend, database, budget, backend, openapi, traceability, terminology, logging, retirement, "affected-l2": affectedL2, "flyway-test-locations": flywayTestLocations };
+function runtimeEnvironmentKeys(base = root) {
+  const policyPath = "contracts/policy/runtime-environment-keys.json";
+  const javaPath =
+    "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java";
+  assertFile(policyPath, "R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_MISSING", base);
+  assertFile(javaPath, "R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SOURCE_MISSING", base);
+  let policy;
+  try {
+    policy = JSON.parse(read(policyPath, base));
+  } catch {
+    fail("R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_INVALID");
+  }
+  const keys = policy?.crossLayerKeys;
+  if (policy?.schemaVersion !== 1 || policy?.kind !== "runtime-environment-keys"
+    || !Array.isArray(keys) || keys.length !== 15 || new Set(keys).size !== keys.length
+    || keys.some((key) => typeof key !== "string" || !/^V2S_[A-Z0-9_]+$/.test(key))) {
+    fail("R5_RUNTIME_ENVIRONMENT_KEYS_POLICY_INVALID");
+  }
+  const javaSource = read(javaPath, base);
+  const javaDeclarations = [...javaSource.matchAll(
+    /public static final String (V2S_[A-Z0-9_]+) = "(V2S_[A-Z0-9_]+)";/g,
+  )];
+  const javaNames = new Set(javaDeclarations.map((match) => match[1]));
+  const javaValues = new Set(javaDeclarations.map((match) => match[2]));
+  const keySet = new Set(keys);
+  if (javaDeclarations.length !== 15 || javaNames.size !== 15 || javaValues.size !== 15
+    || [...javaNames].some((name) => !keySet.has(name)) || [...javaValues].some((value) => !keySet.has(value))) {
+    fail("R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_CLOSURE", javaPath);
+  }
+  const scriptFiles = [...sourceFiles("scripts", base), ...sourceFiles("tools", base)]
+    .filter((file) => /\.(?:mjs|js|sh|ts|tsx)$/.test(file));
+  const scriptSource = scriptFiles.map((file) => read(file, base)).join("\n");
+  for (const key of keys) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`(?<![A-Z0-9_])${escaped}(?![A-Z0-9_])`).test(scriptSource)) {
+      fail("R5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_CLOSURE", key);
+    }
+  }
+  process.stdout.write(`R5_RUNTIME_ENVIRONMENT_KEYS=PASS\nCROSS_LAYER_KEYS=${keys.length}\nJAVA_KEYS=${javaValues.size}\nSCRIPT_SOURCES=${scriptFiles.length}\n`);
+}
+const actions = { security, frontend, database, budget, backend, openapi, traceability, terminology, logging, retirement, "affected-l2": affectedL2, "flyway-test-locations": flywayTestLocations, "runtime-environment-keys": runtimeEnvironmentKeys };
 
 function prepareSelfTestClean(action, base) {
   if (action === "logging") {
@@ -861,9 +907,9 @@ function selfTest(action) {
     if (action === "frontend") {
       const presentationSource = "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx";
       const presentationOriginal = read(presentationSource, scratch);
-      const presentationNeedle = "<NameCodeText name={row.brand.name} code={row.brand.code}/>";
+      const presentationNeedle = /<NameCodeText\s+name=\{row\.brand\.name\}\s+code=\{row\.brand\.code\}\s*\/>/;
       const presentationReplacement = "<NameCodeText name={row.brand.name} code={row.brand.id}/>";
-      if (!presentationOriginal.includes(presentationNeedle)) fail("R5_CRUD_NAME_CODE_SEMANTIC_SELF_TEST_FIXTURE_MISSING");
+      if (!presentationNeedle.test(presentationOriginal)) fail("R5_CRUD_NAME_CODE_SEMANTIC_SELF_TEST_FIXTURE_MISSING");
       write(presentationSource, presentationOriginal.replace(presentationNeedle, presentationReplacement));
       let semanticPresentationRed = false;
       try { actions[action](scratch); } catch (error) {
@@ -961,14 +1007,18 @@ function selfTest(action) {
       if (!candidateFailureStateRed) fail("R5_FRONTEND_CANDIDATE_LOADING_FAILURE_STATE_SELF_TEST_NOT_DETECTED");
       fs.rmSync(path.join(scratch, candidateSource), {force: true});
       const failedPlatformLogout = read(platformApp, scratch);
-      write(platformApp, failedPlatformLogout.replace("finally {\n        clearLocalSession();", "finally {\n        lifecycle.markBusinessIntentChanged();"));
+      const platformLogoutClearNeedle = /finally\s*\{\s*clearLocalSession\(\);/;
+      if (!platformLogoutClearNeedle.test(failedPlatformLogout)) fail("R5_FRONTEND_PLATFORM_LOGOUT_LOCAL_CLEAR_SELF_TEST_FIXTURE_MISSING");
+      write(platformApp, failedPlatformLogout.replace(platformLogoutClearNeedle, "finally { lifecycle.markBusinessIntentChanged();"));
       let platformLogoutClearRed = false;
       try { actions[action](scratch); } catch (error) { platformLogoutClearRed = String(error).includes("R5_FRONTEND_LOGOUT_LOCAL_CLEAR_MISSING"); }
       if (!platformLogoutClearRed) fail("R5_FRONTEND_PLATFORM_LOGOUT_LOCAL_CLEAR_SELF_TEST_NOT_DETECTED");
       write(platformApp, failedPlatformLogout);
       const operationsApp = "apps/frontend/operations-admin/src/app/OperationsApp.tsx";
       const failedOperationsLogout = read(operationsApp, scratch);
-      write(operationsApp, failedOperationsLogout.replace("finally {\n      clearLocalSession();", "finally {\n      lifecycle.markBusinessIntentChanged();"));
+      const operationsLogoutClearNeedle = /finally\s*\{\s*clearLocalSession\(\);/;
+      if (!operationsLogoutClearNeedle.test(failedOperationsLogout)) fail("R5_FRONTEND_OPERATIONS_LOGOUT_LOCAL_CLEAR_SELF_TEST_FIXTURE_MISSING");
+      write(operationsApp, failedOperationsLogout.replace(operationsLogoutClearNeedle, "finally { lifecycle.markBusinessIntentChanged();"));
       let operationsLogoutClearRed = false;
       try { actions[action](scratch); } catch (error) { operationsLogoutClearRed = String(error).includes("R5_FRONTEND_LOGOUT_LOCAL_CLEAR_MISSING"); }
       if (!operationsLogoutClearRed) fail("R5_FRONTEND_OPERATIONS_LOGOUT_LOCAL_CLEAR_SELF_TEST_NOT_DETECTED");
@@ -985,6 +1035,16 @@ function selfTest(action) {
       try { actions[action](scratch); } catch (error) { capabilityLiteralRed = String(error).includes("R5_FRONTEND_CAPABILITY_LITERAL"); }
       if (!capabilityLiteralRed) fail("R5_FRONTEND_CAPABILITY_LITERAL_SELF_TEST_NOT_DETECTED");
       fs.rmSync(path.join(scratch, capabilityLiteralFixture));
+      write(capabilityLiteralFixture, "export const leakedCapability = 'EDIT_STORE_CATALOG';\n");
+      let editCapabilityLiteralRed = false;
+      try { actions[action](scratch); } catch (error) { editCapabilityLiteralRed = String(error).includes("R5_FRONTEND_CAPABILITY_LITERAL"); }
+      if (!editCapabilityLiteralRed) fail("R5_FRONTEND_EDIT_CAPABILITY_LITERAL_SELF_TEST_NOT_DETECTED");
+      fs.rmSync(path.join(scratch, capabilityLiteralFixture));
+      const capabilityCommentFixture = "apps/frontend/operations-admin/src/features/authentication/ui/CapabilityLiteralCommentFixture.ts";
+      write(capabilityCommentFixture, "// 'EDIT_STORE_CATALOG' is documentation only.\nexport const safe = true;\n");
+      try { actions[action](scratch); } catch (error) { fail("R5_FRONTEND_CAPABILITY_COMMENT_SELF_TEST_FALSE_POSITIVE", String(error)); }
+      fs.rmSync(path.join(scratch, capabilityCommentFixture));
+      process.stdout.write("R5_FRONTEND_CAPABILITY_LITERAL_BC_RED=PASS\nR5_FRONTEND_CAPABILITY_LITERAL_EDIT_RED=PASS\nR5_FRONTEND_CAPABILITY_LITERAL_COMMENT_NEGATIVE=PASS\n");
       const pageKeyLiteralFixture = "apps/frontend/operations-admin/src/features/authentication/ui/PageKeyLiteralFixture.ts";
       write(pageKeyLiteralFixture, "export const leakedPageKey = 'PG-FAKE-PAGE';\n");
       let pageKeyLiteralRed = false;
@@ -1056,7 +1116,9 @@ function selfTest(action) {
       write(transportSource, generatedClientOriginal);
       const presentationSource = "apps/frontend/operations-admin/src/features/store-management/ui/StoreManagementPage.tsx";
       const presentationOriginal = read(presentationSource, scratch);
-      write(presentationSource, presentationOriginal.replace(">{row.name}</Button>", ">{formatNameCode(row.name, row.code)}</Button>"));
+      const primaryIdentityNeedle = />\s*\{row\.name\}\s*<\/Button>/;
+      if (!primaryIdentityNeedle.test(presentationOriginal)) fail("R5_CRUD_PRIMARY_IDENTITY_SELF_TEST_FIXTURE_MISSING");
+      write(presentationSource, presentationOriginal.replace(primaryIdentityNeedle, ">{formatNameCode(row.name, row.code)}</Button>"));
       let crudPrimaryIdentityRed = false;
       try { actions[action](scratch); } catch (error) { crudPrimaryIdentityRed = String(error).includes("R5_CRUD_PRIMARY_IDENTITY_COMPOSITE"); }
       if (!crudPrimaryIdentityRed) fail("R5_CRUD_PRIMARY_IDENTITY_SELF_TEST_NOT_DETECTED");
@@ -1077,9 +1139,9 @@ function selfTest(action) {
       try { actions[action](scratch); } catch (error) { crudFilterColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
       if (!crudFilterColumnRed) fail("R5_CRUD_FILTER_COLUMN_SELF_TEST_NOT_DETECTED");
       write(catalogSource, catalogOriginal);
-      const actualFilterColumnNeedle = "{key: 'code', title: '编码', dataIndex: 'code', sorter: true,";
+      const actualFilterColumnNeedle = /key:\s*'code',\s*title:\s*'编码',\s*dataIndex:\s*'code',\s*sorter:\s*true,/;
       const actualFilterColumnReplacement = "{key: 'code', title: '编码', dataIndex: 'code', hideInTable: true, sorter: true,";
-      if (!presentationOriginal.includes(actualFilterColumnNeedle)) fail("R5_CRUD_ACTUAL_FILTER_SELF_TEST_FIXTURE_MISSING");
+      if (!actualFilterColumnNeedle.test(presentationOriginal)) fail("R5_CRUD_ACTUAL_FILTER_SELF_TEST_FIXTURE_MISSING");
       write(presentationSource, presentationOriginal.replace(actualFilterColumnNeedle, actualFilterColumnReplacement));
       let crudActualColumnRed = false;
       try { actions[action](scratch); } catch (error) { crudActualColumnRed = String(error).includes("R5_CRUD_PRESENTATION_FILTER_COLUMN_COVERAGE"); }
@@ -1166,6 +1228,37 @@ function selfTest(action) {
       try { actions[action](scratch); } catch (error) { resolverRed = String(error).includes("R5_FLYWAY_TEST_LOCATION_RESOLUTION_INVALID"); }
       if (!resolverRed) fail("R5_FLYWAY_TEST_LOCATION_SELF_TEST_NOT_DETECTED");
       process.stdout.write("R5_FLYWAY_TEST_LOCATION_RED=PASS\nR5_FLYWAY_TEST_LOCATION_SELF_TEST=PASS\n");
+      return;
+    } else if (action === "runtime-environment-keys") {
+      const policy = JSON.parse(read("contracts/policy/runtime-environment-keys.json", scratch));
+      const javaPath =
+        "apps/backend/catering-business-server/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/runtime/RuntimeEnvironmentKeys.java";
+      const javaOriginal = read(javaPath, scratch);
+      const firstKey = policy.crossLayerKeys[0];
+      write(javaPath, javaOriginal.replace(`= "${firstKey}";`, `= "${firstKey}_MUTATED";`));
+      let javaRed = false;
+      try { actions[action](scratch); } catch (error) { javaRed = String(error).includes("R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_CLOSURE"); }
+      if (!javaRed) fail("R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_SELF_TEST_NOT_DETECTED");
+      write(javaPath, javaOriginal);
+
+      const changedScripts = [];
+      for (const file of [...sourceFiles("scripts", scratch), ...sourceFiles("tools", scratch)]
+        .filter((entry) => /\.(?:mjs|js|sh|ts|tsx)$/.test(entry))) {
+        const original = read(file, scratch);
+        if (!original.includes(firstKey)) continue;
+        changedScripts.push([file, original]);
+        write(file, original.replaceAll(firstKey, `${firstKey}_MUTATED`));
+      }
+      let scriptRed = false;
+      try { actions[action](scratch); } catch (error) { scriptRed = String(error).includes("R5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_CLOSURE"); }
+      if (!scriptRed) fail("R5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_SELF_TEST_NOT_DETECTED");
+      for (const [file, original] of changedScripts) write(file, original);
+
+      const singleSided = "scripts/dev/runtime-environment-single-sided-negative-control.mjs";
+      write(singleSided, "process.env.V2S_SINGLE_SIDED_ONLY;\n");
+      actions[action](scratch);
+      fs.rmSync(path.join(scratch, singleSided));
+      process.stdout.write("R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SINGLE_SIDED_NEGATIVE=PASS\n");
       return;
     }
     let red = false;

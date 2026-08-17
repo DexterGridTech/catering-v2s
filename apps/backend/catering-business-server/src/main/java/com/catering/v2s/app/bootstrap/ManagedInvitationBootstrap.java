@@ -2,6 +2,7 @@ package com.catering.v2s.app.bootstrap;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
@@ -157,7 +158,7 @@ public final class ManagedInvitationBootstrap {
             if (!TARGET_TYPES.contains(targetType))
                 throw new IllegalArgumentException("MANAGED_INVITATION_TARGET_TYPE_INVALID");
             UUID targetRef = uuid(required(environment, "V2S_MANAGED_INVITATION_TARGET_REF"));
-            Path runtime = Path.of(required(environment, "V2S_RUNTIME_DIR"))
+            Path runtime = Path.of(required(environment, RuntimeEnvironmentKeys.V2S_RUNTIME_DIR))
                     .toAbsolutePath()
                     .normalize();
             Path output = Path.of(required(environment, "V2S_MANAGED_INVITATION_OUTPUT"))

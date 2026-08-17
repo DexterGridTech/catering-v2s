@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "f12e7063b4496b024e144de7678efed442d7fbcdf5dd078dd096751799960d24",
+  "contractDigest": "76879e8bd8930f2a7afa38f81f4b70ee831d7787ecc3587dca29ca053c4ef8ed",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",

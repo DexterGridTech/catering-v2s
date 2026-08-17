@@ -12,6 +12,7 @@ import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerSer
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
+import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -67,6 +70,20 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 production,
                 inventory,
                 new DataSourceTransactionManager(dataSource));
+    }
+
+    @Test
+    void batchStatusOwnerBoundaryDeclaresRequiredTransactionForTheNoManagerConstructionPath() throws Exception {
+        Transactional transaction = CatalogOwnerService.class
+                .getMethod(
+                        "transitionCatalogItemStatuses",
+                        WorkspaceExecutionContext.class,
+                        CatalogOwnerApi.CatalogItemBatchStatusTransitionCommand.class,
+                        String.class)
+                .getAnnotation(Transactional.class);
+
+        assertNotNull(transaction);
+        assertEquals(Propagation.REQUIRED, transaction.propagation());
     }
 
     @Test

@@ -2,6 +2,8 @@
 
 本文件只登记当前架构明确推迟、且有客观激活事实的七项生产化欠账；它不是第二份 Roadmap，也不授权 R2/W1。触发事实成立后，必须在 v2s 新建 decision 与实施计划，不能把本表直接当作写入许可。
 
+编码规范唯一正本入口：后台见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)，前端见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只提供指针，不复制规范内容。
+
 | id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
 |---|---|---|---|---|---|---|
 | CI_EXECUTION_PLATFORM | `scripts/verify` 由 Codex/Claude 本地显式执行，无 CI 平台 | solo+AI 阶段先保留证据语义 | 人工漏跑验证 | CI_PROVIDER_SELECTED | provider workflow 运行 verify、保存 business/cleanup 与失败红例 | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"}] |
@@ -16,6 +18,16 @@
 | DIAGNOSTIC_COST_SAMPLING | S2 诊断成本采样/限流未按部署流量裁定 | 当前无生产流量，静态事件保持常开 | 高流量下日志成本不可控 | PRODUCTION_TRAFFIC_ENABLED | 采样策略、成本基线、关键失败不丢失与恢复证据 | [{"path":"doc/decisions/2026-08-05-v2s-whole-engineering-d1-d7-rulings-claude.md","anchor":"D1"}] |
 
 激活 token 只允许上表 exact 值。`WHEN_NEEDED`、`SCALE_GROWS`、`TEAM_GT_N`、复合 `AND/OR` 或任意自由文本都不具备可验收性，不能通过校验。
+
+## B1 后台健壮性欠账记录
+
+本节是 B1 执行记录，不是新增 Roadmap，也不授权后续批次。它把当前仍存在的欠账与本批已关闭的历史欠账分开，避免把已修复事实冒充为现状。
+
+| item | status | currentBoundary | activationOrEvidence |
+|---|---|---|---|
+| `CATALOG_NO_TRANSACTION_CONVENIENCE_CONSTRUCTOR` | `DEFERRED` | `CatalogOwnerService` 仍保留供测试/直接构造的无事务便捷构造器，且 `transactions == null` 分支仍存在；本轮不改测试台与构造路径。 | 需要另行批准测试构造路径或 owner 事务边界重构；不得由本表直接实施。 |
+| `CATALOG_TRANSITION_TRANSACTION` | `CLOSED_CP18` | `transitionCatalogItemStatuses` 已由 CP-18 补上默认 `REQUIRED` 的 `@Transactional`；`transactions == null` 分支与 item-level `REQUIRES_NEW` 语义按详设保留。 | `CatalogBatchStatusTransitionIntegrationTest` 事务声明断言与受管 runner `r5-tc-1786940645555-23637`。 |
+| `ADVISORY_LOCK_REMAINING_13` | `DEFERRED` | 除 B1 已统一的 receipt/replay 与三处 namespace collision 外，仍有 13 处 advisory-lock 形态未迁入 `AdvisoryLock`；本轮不扩大到未批准的横切统一。 | 需要后续对锁语义、namespace 与 owner 边界作明确设计并单独授权；不得由本表直接实施。 |
 
 ## P3 已确认的 frontend-architecture baseline 欠账（不属于 catalog/inventory P4）
 
@@ -46,7 +58,7 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 
 ## Backend acceptance 未完成项
 
-- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前已有 18 条 IAM、ORG、商业合同和 asset 的真实 fixture、HTTP 请求与业务字段断言；原 196 个 provider 壳、共享 SPI 与 registry 已下线。下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在对应的 `*AcceptanceScenarios.java` 增加真实业务 oracle；DB 操作数只供人工观察，不设预算门。
+- `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：当前已有 28 条 IAM、ORG、商业合同、asset 与 catalog 的真实 fixture、HTTP 请求与业务字段断言；原 196 个 provider 壳、共享 SPI 与 registry 已下线。下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在对应的 `*AcceptanceScenarios.java` 增加真实业务 oracle；DB 操作数只供人工观察，不设预算门。
 
 ## 第二部分整改后续项
 

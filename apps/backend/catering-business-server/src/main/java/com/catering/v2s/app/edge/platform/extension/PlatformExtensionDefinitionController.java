@@ -86,8 +86,6 @@ public final class PlatformExtensionDefinitionController {
 
     private static ExtensionDefinitionService.DraftField field(ExtensionDefinitionUpdateRequestDefinitionsItem value) {
         if (value == null
-                || value.key() == null
-                || value.key().isBlank()
                 || value.label() == null
                 || value.type() == null
                 || value.required() == null

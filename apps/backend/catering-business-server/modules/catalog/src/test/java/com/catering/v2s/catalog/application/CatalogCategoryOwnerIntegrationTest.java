@@ -1916,7 +1916,10 @@ class CatalogCategoryOwnerIntegrationTest {
         temporaryVersion =
                 write("saveOperationsCatalogItem", addSku).path("version").asLong();
 
-        String formalCode = generatedCatalogCode("PROMOTED-FORMAL");
+        // A formal code is business-owned text, not an uppercase technical identifier.
+        // Exercise the whole preflight/execute/readback lifecycle with a value that the
+        // former owner regex would have rejected.
+        String formalCode = "promoted-" + UUID.randomUUID().toString().substring(0, 8);
         ObjectNode preflightRequest = promotionRequest(temporaryCode, temporaryVersion, formalCode);
         JsonNode preflight = writeFull(
                 "preflightOperationsTemporaryCatalogItemPromotion",

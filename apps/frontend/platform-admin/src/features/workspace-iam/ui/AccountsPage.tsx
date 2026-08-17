@@ -386,7 +386,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
           children: (
             <>
               <Typography.Paragraph type="secondary" style={{margin: '0 0 16px'}}>
-                从姓名进入账号详情，再确认状态、凭据或任职动作；所有结果以最新 owner 读回为准。
+                从姓名进入账号详情，再确认状态、凭据或任职操作。
               </Typography.Paragraph>
               {problem && (
                 <Alert

@@ -35,6 +35,9 @@ import {
   copyConfirmationKey,
   copyConfirmationLabel,
   copyConfirmationRows,
+  catalogCopyActionLabel,
+  catalogCopyObjectTypeLabel,
+  catalogCopyScopeLabel,
   decodeLocalCopyCandidatePage,
   decodeLocalCopyPreflight,
   decodeLocalCopyReadback,
@@ -304,7 +307,7 @@ export function LocalCatalogCopyDrawer({
         return;
       }
       if (error instanceof Error && error.message === 'COPY_READBACK_SHAPE_MISSING') {
-        setProblem('复制已提交但 readback 返回不完整，请保留当前预览并重试读取。');
+        setProblem('复制已提交，但结果暂未完整返回。请保留当前页面后重试。');
         return;
       }
       setProblem(feedback.detail);
@@ -467,7 +470,7 @@ function SourceScopeStep({
         type="info"
         showIcon
         title="同一商品库内复制"
-        description="先确认来源与当前目标商品属于同一 owner 范围；不会新建商品，也不会跨 owner 或递归复制。"
+        description="仅在当前商品库内复制；不会新建商品或复制其他商品库内容。"
         {...testId('catalog-local-copy-source-scope')}
       />
       <Descriptions
@@ -479,16 +482,12 @@ function SourceScopeStep({
           {
             key: 'source',
             label: '来源范围',
-            children: sourceScope
-              ? `${sourceScope.ownerType} / ${sourceScope.ownerRef} / ${sourceScope.brandRef}`
-              : '当前商品库（候选接口返回后确认）',
+            children: sourceScope ? catalogCopyScopeLabel(sourceScope.ownerType) : '当前商品库（确认中）',
           },
           {
             key: 'target',
             label: '目标范围',
-            children: targetScope
-              ? `${targetScope.ownerType} / ${targetScope.ownerRef} / ${targetScope.brandRef}`
-              : '当前商品库',
+            children: targetScope ? catalogCopyScopeLabel(targetScope.ownerType) : '当前商品库',
           },
           {
             key: 'target-item',
@@ -682,15 +681,14 @@ function CopyScopeStep({
         ]}
       />
       <Typography.Paragraph type="secondary" style={{marginTop: 16}}>
-        默认只选择基础资料；依赖项会由 catalog owner
-        自动纳入预检。商品编码、owner、来源、生命周期、版本和外部身份不会被复制。
+        默认只复制基础资料；相关内容会在检查时一并处理。商品编码、来源和版本不会被复制。
       </Typography.Paragraph>
       {scopeOptionsError && (
         <Alert
           type="error"
           showIcon
           title="复制范围加载失败"
-          description="未能读取当前契约的复制范围，请重试。"
+          description="未能读取可复制内容，请重试。"
           style={{marginBottom: 12}}
           {...testId('catalog-local-copy-scope-options-error')}
         />
@@ -772,7 +770,7 @@ function BomMappingStep({
             type="warning"
             showIcon
             title="预检已失效"
-            description="服务端拒绝了旧 digest；来源商品、复制范围和上次映射结果已保留，请重新生成预检。"
+            description="来源商品、复制内容或映射已发生变化，请重新生成预检。"
             {...testId('catalog-local-copy-stale')}
           />
         )}
@@ -808,7 +806,7 @@ function BomMappingStep({
         renderRow={renderReferenceMappingRow}
       />
       <LocalCopyGroupedClosureSection
-        title="闭包对象"
+        title="关联内容"
         rows={preflight.closureItems}
         locator="catalog-local-copy-closure-items"
       />
@@ -817,7 +815,7 @@ function BomMappingStep({
           type="error"
           showIcon
           title="存在阻断项"
-          description="不可复制的结构必须先由 owner 解决；当前预检不能进入预览确认。"
+          description="存在无法复制的内容，请调整后重新检查。"
           {...testId('catalog-local-copy-bom-blocked')}
         />
       )}
@@ -886,7 +884,7 @@ function PreviewStep({
         renderRow={renderSkippedRow}
       />
       <LocalCopyGroupedClosureSection
-        title="已跳过的闭包对象"
+        title="已跳过的关联内容"
         rows={skippedClosureItems}
         locator="catalog-local-copy-skipped-closure"
       />
@@ -955,7 +953,7 @@ function PreflightSummary({
       style={{marginBottom: 16}}
       items={[
         {key: 'selected', label: '选择', children: `${preflight.selectedCount}/${preflight.selectedLimit}`},
-        {key: 'closure', label: '闭包', children: `${preflight.closureCount}/${preflight.closureLimit}`},
+        {key: 'closure', label: '关联内容', children: `${preflight.closureCount}/${preflight.closureLimit}`},
         {key: 'blocking', label: '阻断', children: preflight.blockingCount},
         {key: 'confirm', label: '确认项', children: `${unhandledConfirmationCount}/${confirmationCount}`},
       ]}
@@ -1068,7 +1066,7 @@ function LocalCopyGroupedClosureSection({
             key: objectType,
             label: (
               <Space>
-                <Tag>{objectType}</Tag>
+                <Tag>{catalogCopyObjectTypeLabel(objectType)}</Tag>
                 <Typography.Text type="secondary">{group.length} 项</Typography.Text>
               </Space>
             ),
@@ -1091,10 +1089,10 @@ function LocalCopyGroupedClosureSection({
 function renderClosureRow(row: LocalCopyPreflightData['closureItems'][number]) {
   return (
     <Space size={8}>
-      <Tag>{row.objectType}</Tag>
+      <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
       <Typography.Text code>{row.code}</Typography.Text>
       <Typography.Text>{row.name}</Typography.Text>
-      <Tag color={row.action === 'SKIP' ? 'gold' : 'blue'}>{row.action}</Tag>
+      <Tag color={row.action === 'SKIP' ? 'gold' : 'blue'}>{catalogCopyActionLabel(row.action)}</Tag>
     </Space>
   );
 }
@@ -1102,7 +1100,7 @@ function renderClosureRow(row: LocalCopyPreflightData['closureItems'][number]) {
 function renderReferenceMappingRow(row: LocalCopyPreflightData['referenceMappings'][number]) {
   return (
     <Space size={8} wrap>
-      <Tag>{row.objectType}</Tag>
+      <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
       <Typography.Text code>{row.targetCode}</Typography.Text>
       {row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}
       {row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}
@@ -1113,8 +1111,7 @@ function renderReferenceMappingRow(row: LocalCopyPreflightData['referenceMapping
 function renderSkippedRow(row: LocalCopyPreflightData['skipped'][number]) {
   return (
     <Space size={8}>
-      <Tag>{row.section}</Tag>
-      <Tag color="gold">{row.reasonCode}</Tag>
+      <Tag color="gold">未复制</Tag>
     </Space>
   );
 }
@@ -1161,7 +1158,7 @@ function LocalCopyReadbackPanel({readback, onComplete}: {readback: LocalCopyRead
       description={
         <>
           <Typography.Paragraph type="secondary" style={{marginTop: 8}}>
-            catalog owner 已完成版本复核；以下 readback 保留在当前 Drawer 中供核对。点击完成后返回当前目标商品详情。
+            复制已完成，以下结果供核对。点击完成后返回当前商品详情。
           </Typography.Paragraph>
           <Descriptions
             size="small"
@@ -1183,8 +1180,6 @@ function LocalCopyReadbackPanel({readback, onComplete}: {readback: LocalCopyRead
                 label: '引用映射',
                 children: <ReadbackMappings rows={readback.referenceMappings} />,
               },
-              {key: 'targets', label: '目标版本', children: <ReadbackVersions rows={readback.targetVersions} />},
-              {key: 'owners', label: 'owner 回读', children: <ReadbackOwners rows={readback.ownerReadbacks} />},
             ]}
           />
         </>
@@ -1201,16 +1196,14 @@ function LocalCopyReadbackPanel({readback, onComplete}: {readback: LocalCopyRead
 
 function ReadbackRows({rows, locator}: {rows: Array<{objectType: string; code: string}>; locator: string}) {
   return (
-    <span {...testId(locator)}>{rows.length ? rows.map(row => `${row.objectType}/${row.code}`).join('、') : '—'}</span>
+    <span {...testId(locator)}>
+      {rows.length ? rows.map(row => `${catalogCopyObjectTypeLabel(row.objectType)}/${row.code}`).join('、') : '—'}
+    </span>
   );
 }
 
 function SkippedRows({rows}: {rows: LocalCopyReadbackData['skipped']}) {
-  return (
-    <span {...testId('catalog-local-copy-skipped-readback')}>
-      {rows.length ? rows.map(row => `${row.section}/${row.reasonCode}`).join('、') : '—'}
-    </span>
-  );
+  return <span {...testId('catalog-local-copy-skipped-readback')}>{rows.length ? '存在未复制的关联内容' : '—'}</span>;
 }
 
 function ReadbackMappings({rows}: {rows: LocalCopyReadbackData['referenceMappings']}) {
@@ -1221,29 +1214,13 @@ function ReadbackMappings({rows}: {rows: LocalCopyReadbackData['referenceMapping
   );
 }
 
-function ReadbackVersions({rows}: {rows: LocalCopyReadbackData['targetVersions']}) {
-  return (
-    <span {...testId('catalog-local-copy-target-versions')}>
-      {rows.length ? rows.map(row => `v${row.version}`).join('、') : '—'}
-    </span>
-  );
-}
-
 function referenceMappingLabel(row: LocalCopyPreflightData['referenceMappings'][number]) {
   return [
-    row.objectType,
+    catalogCopyObjectTypeLabel(row.objectType),
     row.targetCode,
     row.targetSkuCode && `SKU：${row.targetSkuCode}`,
     row.targetOptionValueCode && `选项：${row.targetOptionValueCode}`,
   ]
     .filter(Boolean)
     .join(' / ');
-}
-
-function ReadbackOwners({rows}: {rows: LocalCopyReadbackData['ownerReadbacks']}) {
-  return (
-    <span {...testId('catalog-local-copy-owner-readbacks')}>
-      {rows.length ? rows.map(row => `${row.owner} / ${row.status} / v${row.version}`).join('、') : '—'}
-    </span>
-  );
 }

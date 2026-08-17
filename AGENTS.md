@@ -28,6 +28,7 @@
 * 使用项目已有依赖解决问题之前，不要随意新增依赖。
 * 在引入新方案前，先检查已有代码、依赖、文档和能力。
 * 避免为了“看起来更优雅”而增加实际复杂度。
+* 后台编码规范唯一正本见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)；前端编码规范唯一正本见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只保留执行入口与边界，不复制两份规范正文。
 
 # 工程决策原则
 * 优先选择长期可维护的方案，而不是只能临时运行的解决方案。
@@ -74,7 +75,7 @@
 
 **日志、诊断与验收（硬约束）**：所有脚本、业务代码与支撑代码必须在实际运行边界具备统一、结构化、脱敏且可关联的必要日志/诊断能力，用于问题追踪、执行阶段和效率判断；禁止以 audit、异常 response、exit code、测试名称或临时输出替代。受管执行必须有阶段、受控 process identity、log path 和 cleanup 结果；测试/动态验证必须实际读取日志，判定 first failure、last known good、broken boundary、business 与 cleanup。无新日志是诊断信号，不得以等待、延长 timeout 或盲目重试掩盖。安全敏感路径不得记录 password/hash、OTP、token、cookie、Authorization、手机号、登录名、原始 IP 或 raw payload。已发现的范围外日志缺口必须在当前工作中补齐，无需另向 Dexter 申请日志授权；仍须遵守 owner、隐私和适用详设。规范原文见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md`。
 
-**后台统一测试能力（当前止损范围）**：唯一机器标识是 `backend-acceptance`。当前已实现并运行 18 条 IAM、ORG、商业合同和 asset 真实场景：在真实 HTTP 与真实容器中，以手写 fixture、请求和非 `response.ok` 的业务断言输出分离的 `CONTRACT`、`BUSINESS` 与仅供人工比较的 DB 调用数；请求观测还必须使用真实 route registry 的 operationId/routeTemplate。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`，并只在对应的 `*AcceptanceScenarios.java` 中扩展，不能把业务断言堆回入口类。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再是测试入口或覆盖依据。PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动分母/精确集合、lane/并行/心跳/work-stealing、calibration 与 correctnessCases 均已退役；后续按需扩充真正需要的 operation，总数不超过 80 条。
+**后台统一测试能力（当前止损范围）**：唯一机器标识是 `backend-acceptance`。当前已实现并运行 28 条 IAM、ORG、商业合同、asset 与 catalog 真实场景：在真实 HTTP 与真实容器中，以手写 fixture、请求和非 `response.ok` 的业务断言输出分离的 `CONTRACT`、`BUSINESS` 与仅供人工比较的 DB 调用数；请求观测还必须使用真实 route registry 的 operationId/routeTemplate。新增业务场景前必须先读主动规范 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md`，并只在对应的 `*AcceptanceScenarios.java` 中扩展，不能把业务断言堆回入口类。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再是测试入口或覆盖依据。PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动分母/精确集合、lane/并行/心跳/work-stealing、calibration 与 correctnessCases 均已退役；后续按需扩充真正需要的 operation，总数不超过 80 条。
 
 ## 协作进度与结束闸门
 

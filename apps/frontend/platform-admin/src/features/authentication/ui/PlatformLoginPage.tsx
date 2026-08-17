@@ -65,10 +65,16 @@ export function PlatformLoginPage({onSession}: {onSession: (session: PlatformLog
       className="auth-login-page"
       style={{display: 'block', minHeight: '100vh'}}
       containerStyle={{
-        width: '100%',
-        maxWidth: '100%',
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width: 'min(calc(100vw - 48px), 502px)',
+        maxWidth: 'calc(100vw - 48px)',
+        maxHeight: 'calc(100vh - 48px)',
         margin: 0,
         padding: 32,
+        overflowY: 'auto',
+        transform: 'translate(-50%, -50%)',
         border: '1px solid var(--platform-admin-color-border)',
         borderRadius: 12,
         background: 'var(--platform-admin-color-bg-container)',

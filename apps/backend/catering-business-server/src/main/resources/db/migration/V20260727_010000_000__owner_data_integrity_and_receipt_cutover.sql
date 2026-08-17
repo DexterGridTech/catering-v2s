@@ -186,32 +186,3 @@ SELECT event.id, event.workspace_uuid, event.group_workspace_key, 'GROUP_WORKSPA
  WHERE event.action='COMMERCIAL_GROUP_INITIALIZED';
 
 DELETE FROM platform_workspace.audit_event WHERE action='COMMERCIAL_GROUP_INITIALIZED';
-
-DO $$
-DECLARE table_name TEXT; row_count BIGINT;
-BEGIN
-    FOREACH table_name IN ARRAY ARRAY[
-        'organization.commercial_group_audit',
-        'platform_iam.platform_audit',
-        'platform_workspace.workspace_audit',
-        'platform_asset.asset_audit',
-        'extension.extension_audit',
-        'organization.organization_audit',
-        'workspace_iam.workspace_audit',
-        'contract.contract_audit'
-    ] LOOP
-        EXECUTE format('SELECT count(*) FROM %s', table_name) INTO row_count;
-        IF row_count <> 0 THEN
-            RAISE EXCEPTION USING ERRCODE='P0001', MESSAGE='R5_LEGACY_AUDIT_NOT_EMPTY', DETAIL=table_name || ':' || row_count;
-        END IF;
-    END LOOP;
-END $$;
-
-DROP TABLE organization.commercial_group_audit;
-DROP TABLE platform_iam.platform_audit;
-DROP TABLE platform_workspace.workspace_audit;
-DROP TABLE platform_asset.asset_audit;
-DROP TABLE extension.extension_audit;
-DROP TABLE organization.organization_audit;
-DROP TABLE workspace_iam.workspace_audit;
-DROP TABLE contract.contract_audit;

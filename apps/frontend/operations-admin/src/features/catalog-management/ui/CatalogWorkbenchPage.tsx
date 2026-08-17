@@ -56,6 +56,7 @@ import type {HeadCompany} from '../../../app/api/generated/operations-edge';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
+import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
@@ -262,7 +263,8 @@ function CatalogWorkbenchPage({
   const generation = useAsyncGenerationGuard();
   const listRequestGeneration = useRef(0);
   const [acceptedPage, setAcceptedPage] = useState<ReturnType<typeof decodeItems>>();
-  const editCatalogCapability = surface === 'brand' ? 'EDIT_HEAD_COMPANY_CATALOG' : 'EDIT_STORE_CATALOG';
+  const editCatalogCapability =
+    surface === 'brand' ? ACTION_CAPABILITIES.EDIT_HEAD_COMPANY_CATALOG : ACTION_CAPABILITIES.EDIT_STORE_CATALOG;
   const canWriteCatalog = (actionCapabilityKeys as readonly string[]).includes(editCatalogCapability);
   useOverlayLock(Boolean(categoryAction || batchAction || detail.isOpen));
   const [createCategory, createCategoryState] = operationsRtk.useCreateOperationsCatalogCategoryMutation();
@@ -459,10 +461,6 @@ function CatalogWorkbenchPage({
       const categoryRef = node?.categoryRef;
       if (categoryAction.mode === 'CREATE') {
         const code = values.code?.trim() ?? '';
-        if (catalogCategoryCodeExists(navigation.tree, code)) {
-          categoryForm.setFields([{name: 'code', errors: ['当前商品库中已存在相同分类编码。']}]);
-          return;
-        }
         const body = {dataNodeRef, code, name: values.name?.trim() ?? '', parentCategoryRef: node?.categoryRef ?? null};
         const idempotencyKey = await createContentIdempotencyKey(
           CATALOG_INVENTORY_OPERATION_IDS.createOperationsCatalogCategory,
@@ -1080,16 +1078,7 @@ function CatalogWorkbenchPage({
             }}
             {...testId('catalog-inventory-dictionary')}
           >
-            商品字典
-          </Button>
-          <Button
-            onClick={() => {
-              setDictionaryKind('PRODUCTION_TAG');
-              setDictionaryOpen(true);
-            }}
-            {...testId('catalog-inventory-production-tags')}
-          >
-            生产标签
+            商品元数据
           </Button>
           {surface === 'store' &&
             canWriteCatalog &&
@@ -1546,15 +1535,7 @@ function CatalogWorkbenchPage({
             </Form.Item>
           )}
           {categoryAction?.mode === 'CREATE' && (
-            <Form.Item
-              label="分类编码"
-              name="code"
-              normalize={value => (typeof value === 'string' ? value.toUpperCase() : value)}
-              rules={[
-                {required: true, message: '请输入分类编码'},
-                {pattern: /^[A-Z0-9][A-Z0-9_-]{1,63}$/, message: '使用 2-64 位大写字母、数字、下划线或连字符'},
-              ]}
-            >
+            <Form.Item label="分类编码" name="code" rules={[{required: true, message: '请输入分类编码'}]}>
               <Input {...testId('catalog-category-code')} />
             </Form.Item>
           )}
@@ -1629,7 +1610,7 @@ function CatalogSkuExpandedRow({
         type="error"
         showIcon
         title="SKU 明细加载失败"
-        description="当前行的 SKU 明细未覆盖列表上下文，请重试。"
+        description="当前商品暂未包含可查看的 SKU 明细，请重试。"
         action={
           <Button size="small" onClick={() => void query.refetch()}>
             重试

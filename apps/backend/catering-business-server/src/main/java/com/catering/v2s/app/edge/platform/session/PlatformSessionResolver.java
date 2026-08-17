@@ -4,6 +4,7 @@ import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 /** The only platform edge component allowed to decode the platform session cookie. */
 @Component
 public final class PlatformSessionResolver {
-    private static final String COOKIE = "V2S_PLATFORM_SESSION";
+    private static final String COOKIE = RuntimeEnvironmentKeys.V2S_PLATFORM_SESSION;
     private final PlatformAuthenticationService sessions;
 
     public PlatformSessionResolver(PlatformAuthenticationService sessions) {

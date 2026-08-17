@@ -6,6 +6,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class StageOperationsCatalogAssetMultipartOperation {
     public static final String OPERATION_ID = "stageOperationsCatalogAsset";
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
-    private static final String TEST_FAULTS_ENV = "V2S_CATALOG_TEST_FAULTS";
+    private static final String TEST_FAULTS_ENV = RuntimeEnvironmentKeys.V2S_CATALOG_TEST_FAULTS;
     private final CommandExecutionContextResolver contexts;
     private final CatalogAssetCommandApi assets;
 

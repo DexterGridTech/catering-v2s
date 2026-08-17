@@ -81,3 +81,11 @@ test("seed executor has one kind/parent model across creation, refs, readback an
   assert.doesNotMatch(executor, /refs\.optionValueRefs/);
   assert.doesNotMatch(executor, /attributeValueRef:\s*dictionaryRef\(refs,\s*"SKU_ATTRIBUTE_VALUE",\s*valueCode\)/);
 });
+
+test("seed sends catalog item codes to the owner unchanged", () => {
+  assert.match(
+    executor,
+    /body: \{dataNodeRef: client\.dataNodeRef, name: source\.name, code: source\.catalogItemCode, shapeKey: source\.shapeKey, attributes: sourceBusinessAttributes\(source\)\}/,
+  );
+  assert.doesNotMatch(executor, /source\.catalogItemCode\.(?:toUpperCase|toLowerCase|replace)\(/);
+});

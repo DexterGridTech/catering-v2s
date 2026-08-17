@@ -135,38 +135,38 @@ body {
   border-top: 1px solid var(--operations-admin-color-border);
 }
 
+/* The scope footer is a shell control, not part of the navigation scroll region. */
+.operations-shell-menu {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .operations-scope-trigger {
   width: 100%;
   height: auto;
-  padding: 10px 8px;
+  padding: 8px;
   text-align: left;
   white-space: normal;
-}
-
-.operations-scope-trigger:hover {
-  background: var(--operations-admin-color-primary-bg) !important;
 }
 
 .operations-scope-trigger-summary {
   display: grid;
   width: 100%;
-  gap: 8px;
+  gap: 4px;
 }
 
 .operations-scope-trigger-line {
   display: grid;
   width: 100%;
-  min-width: 0;
-  gap: 2px;
+  gap: 0;
+  line-height: 20px;
 }
 
-.operations-scope-trigger-type {
-  display: block;
-}
-
+.operations-scope-trigger-type,
 .operations-scope-trigger-value {
-  min-width: 0;
-  overflow-wrap: anywhere;
+  display: block;
 }
 
 .auth-page,

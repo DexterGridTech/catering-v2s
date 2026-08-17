@@ -6,10 +6,10 @@ import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTra
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
+import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {InventoryDetailDrawer} from './InventoryDetailDrawer';
 import {
-  EDIT_STORE_INVENTORY,
   envelopeData,
   hasCapability,
   inventoryAuthorityLabel,
@@ -106,7 +106,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
       {ALL: 0, NEEDS_ATTENTION: 0, LOW: 0, OUT: 0, NEGATIVE: 0, UNKNOWN: 0},
     );
   }, [page?.counts]);
-  const canEdit = hasCapability(actionCapabilityKeys as readonly string[], EDIT_STORE_INVENTORY);
+  const canEdit = hasCapability(actionCapabilityKeys as readonly string[], ACTION_CAPABILITIES.EDIT_STORE_INVENTORY);
   const openDetail = useCallback((targetRef: Uuid) => detail.open(targetRef), [detail]);
   const closeDetail = useCallback(() => {
     detail.close();

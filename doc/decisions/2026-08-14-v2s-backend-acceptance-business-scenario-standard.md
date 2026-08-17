@@ -12,8 +12,8 @@
 ## 1. 当前能力边界
 
 `backend-acceptance` 是后台统一测试的唯一能力。它在真实远端 Testcontainers 中启动真实
-业务应用，通过真实 HTTP 串行执行当前已实现的业务场景。当前场景覆盖 IAM、ORG、商业合同
-和 asset；P3-1 中的 Catalog 组仅在其全部真实场景验证后才计入当前能力。后续按业务价值逐条扩展，
+业务应用，通过真实 HTTP 串行执行当前已实现的业务场景。当前场景覆盖 IAM、ORG、商业合同、asset
+与 Catalog；Catalog 组已完成其全部真实场景验证并计入当前能力。后续按业务价值逐条扩展，
 总数不得超过 80 条。
 
 一次场景结果必须分开表达：
@@ -36,7 +36,7 @@
 该类负责 JUnit/Testcontainers 生命周期、真实 HTTP 上下文、共享 fixture/helper、DB 计数和结果
 写入；不得继续向其中堆积业务 scenario 方法。
 
-业务 scenario 按 owner 业务域放在以下四个已验证类中；P3-1 完成后加入第五个 Catalog 类：
+业务 scenario 按 owner 业务域放在以下五个已验证类中：
 
 - `IamAcceptanceScenarios.java`
 - `OrganizationAcceptanceScenarios.java`

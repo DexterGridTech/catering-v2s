@@ -1,10 +1,5 @@
 package com.catering.v2s.app.edge.problem;
 
-import static com.catering.v2s.organization.application.BusinessEntityCommandReceiptService.*;
-import static com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService.*;
-import static com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService.*;
-import static com.catering.v2s.workspace.iam.application.WorkspaceIamCommandReceiptService.*;
-
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -46,6 +41,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -233,12 +229,12 @@ public final class ContractProblemAdvice {
         WorkspaceAdministrationService.WorkspaceConflictException.class,
         WorkspaceAdministrationService.WorkspaceVersionConflictException.class,
         PlatformAuthenticationService.PlatformAdminVersionConflictException.class,
-        WorkspaceIdempotencyConflictException.class,
-        WorkspaceIamIdempotencyConflictException.class,
+        WorkspaceCommandReceiptService.WorkspaceIdempotencyConflictException.class,
+        WorkspaceIamCommandReceiptService.WorkspaceIamIdempotencyConflictException.class,
         PlatformIdempotencyConflictException.class,
         AssetIdempotencyConflictException.class,
-        OrganizationIdempotencyConflictException.class,
-        BusinessEntityIdempotencyConflictException.class
+        OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException.class,
+        BusinessEntityCommandReceiptService.BusinessEntityIdempotencyConflictException.class
     })
     ResponseEntity<Problem> conflict(RuntimeException exception, HttpServletRequest request) {
         // spotless:off
@@ -259,17 +255,18 @@ public final class ContractProblemAdvice {
                 ? "PLATFORM_COMMON_CONTEXT_STALE"
                 : exception instanceof RoleCapabilityCatalogDriftException
                 ? "WORKSPACE_IAM_ROLE_CAPABILITY_CATALOG_DRIFT"
-                : exception instanceof WorkspaceIdempotencyConflictException
+                : exception instanceof WorkspaceCommandReceiptService.WorkspaceIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-                : exception instanceof WorkspaceIamIdempotencyConflictException
+                : exception instanceof WorkspaceIamCommandReceiptService.WorkspaceIamIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
                 : exception instanceof PlatformIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
                 : exception instanceof AssetIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-                : exception instanceof OrganizationIdempotencyConflictException
+                : exception instanceof OrganizationHierarchyCommandReceiptService
+                        .OrganizationIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
-                : exception instanceof BusinessEntityIdempotencyConflictException
+                : exception instanceof BusinessEntityCommandReceiptService.BusinessEntityIdempotencyConflictException
                 ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
                 : "PLATFORM_COMMON_VERSION_CONFLICT";
         // spotless:on
@@ -602,7 +599,8 @@ public final class ContractProblemAdvice {
         PlatformCommandReceiptService.PlatformReceiptCorruptException.class,
         WorkspaceCommandReceiptService.WorkspaceReceiptCorruptException.class,
         WorkspaceIamCommandReceiptService.WorkspaceIamReceiptCorruptException.class,
-        ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class
+        ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class,
+        DuplicateKeyException.class
     })
     ResponseEntity<Problem> ownerResultUnknown(RuntimeException exception, HttpServletRequest request) {
         return problem(

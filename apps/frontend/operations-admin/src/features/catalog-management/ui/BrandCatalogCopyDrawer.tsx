@@ -34,6 +34,9 @@ import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
   catalogCopyVersionRows,
+  catalogCopyActionLabel,
+  catalogCopyObjectTypeLabel,
+  catalogCopyScopeLabel,
   copyConfirmationLabel,
   copyConfirmationRows,
   decodeBrandCopyReadback,
@@ -264,7 +267,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
               {
                 key: 'source',
                 label: '来源范围',
-                children: scopes.sourceScope ? scopeText(scopes.sourceScope) : '由组织事实确定',
+                children: scopes.sourceScope ? scopeText(scopes.sourceScope) : '当前商品库',
               },
               {
                 key: 'target',
@@ -361,7 +364,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
             column={4}
             items={[
               {key: 'selected', label: '起始商品', children: `${preflight.selectedCount}/${preflight.selectedLimit}`},
-              {key: 'closure', label: '闭包对象', children: `${preflight.closureCount}/${preflight.closureLimit}`},
+              {key: 'closure', label: '关联内容', children: `${preflight.closureCount}/${preflight.closureLimit}`},
               {key: 'blocking', label: '阻断', children: preflight.blockingCount},
               {
                 key: 'confirmations',
@@ -502,8 +505,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
             column={2}
             items={[
               {key: 'selected', label: '起始商品', children: `${preflight.selectedCount}/${preflight.selectedLimit}`},
-              {key: 'closure', label: '闭包对象', children: `${preflight.closureCount}/${preflight.closureLimit}`},
-              {key: 'digest', label: '预检摘要', children: preflight.preflightDigest},
+              {key: 'closure', label: '关联内容', children: `${preflight.closureCount}/${preflight.closureLimit}`},
             ]}
           />
           {!confirmationCountMatches && (
@@ -545,7 +547,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
             type="success"
             showIcon
             title="品牌商品已复制"
-            description="目录、库存定义、BOM、生产提示与引用已按 owner readback 完成处理。"
+            description="目录、库存、配方、制作信息和引用已完成复制。"
             {...testId('catalog-copy-result')}
           />
           <Tabs
@@ -566,11 +568,6 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
                 label: `引用映射 ${readback.referenceMappings.length}`,
                 children: <ReferenceMappingList rows={readback.referenceMappings} />,
               },
-              {
-                key: 'owners',
-                label: 'Owner readback',
-                children: <OwnerReadbackList manifest={manifest} rows={readback.ownerReadbacks} />,
-              },
             ]}
           />
           <Button
@@ -590,7 +587,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose, o
 }
 
 function scopeText(scope: BrandCopyScope) {
-  return `${scope.ownerType} / ${scope.ownerRef} / ${scope.brandRef}`;
+  return catalogCopyScopeLabel(scope.ownerType);
 }
 
 function ClosureItemList({rows}: {rows: CopyPreflight['closureItems']}) {
@@ -601,7 +598,7 @@ function ClosureItemList({rows}: {rows: CopyPreflight['closureItems']}) {
       size="small"
       items={groups.map(([objectType, group]) => ({
         key: objectType,
-        label: `${objectType}（${group.length}）`,
+        label: `${catalogCopyObjectTypeLabel(objectType)}（${group.length}）`,
         children: (
           <List
             size="small"
@@ -611,7 +608,7 @@ function ClosureItemList({rows}: {rows: CopyPreflight['closureItems']}) {
                 <Space size={8}>
                   <Typography.Text code>{row.code}</Typography.Text>
                   <Typography.Text>{row.name}</Typography.Text>
-                  <Tag>{row.action}</Tag>
+                  <Tag>{catalogCopyActionLabel(row.action)}</Tag>
                 </Space>
               </List.Item>
             )}
@@ -644,8 +641,8 @@ function CompatibilityList({
         return (
           <List.Item>
             <Space size={8} wrap>
-              <Tag>{row.objectType}</Tag>
-              <Tag>{row.result}</Tag>
+              <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
+              <Tag>{catalogCopyActionLabel(row.result)}</Tag>
               <Typography.Text>{row.reason || '—'}</Typography.Text>
               {confirmable && (
                 <Checkbox
@@ -673,7 +670,7 @@ function ReferenceMappingList({rows}: {rows: CatalogCopyReferenceMapping[]}) {
       renderItem={row => (
         <List.Item>
           <Space size={8} wrap>
-            <Tag>{row.objectType}</Tag>
+            <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
             <Typography.Text code>{row.targetCode}</Typography.Text>
             {row.targetSkuCode && <Tag>SKU：{row.targetSkuCode}</Tag>}
             {row.targetOptionValueCode && <Tag>选项：{row.targetOptionValueCode}</Tag>}
@@ -703,27 +700,8 @@ function ReadbackRows({rows}: {rows: Array<{objectType: string; code: string}>})
       renderItem={row => (
         <List.Item>
           <Space size={8}>
-            <Tag>{row.objectType}</Tag>
+            <Tag>{catalogCopyObjectTypeLabel(row.objectType)}</Tag>
             <Typography.Text code>{row.code}</Typography.Text>
-          </Space>
-        </List.Item>
-      )}
-    />
-  );
-}
-
-function OwnerReadbackList({manifest, rows}: {manifest?: CatalogManifest; rows: BrandCopyReadback['ownerReadbacks']}) {
-  if (!rows.length) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本类无差异" />;
-  return (
-    <List
-      size="small"
-      dataSource={rows}
-      renderItem={row => (
-        <List.Item>
-          <Space size={8}>
-            <Typography.Text>{row.owner}</Typography.Text>
-            <Tag>{catalogEnumLabel(manifest, 'catalogItemStatus', row.status)}</Tag>
-            <Typography.Text type="secondary">v{row.version}</Typography.Text>
           </Space>
         </List.Item>
       )}

@@ -70,6 +70,15 @@ test('platform-admin owns a separate platform login and group-workspace readback
   );
 });
 
+test('platform sign-in centers the official LoginFormPage card through its public container style', () => {
+  assert.match(authenticationSource, /<LoginFormPage<LoginValue>/);
+  assert.match(authenticationSource, /containerStyle=\{[\s\S]*position: 'fixed'/);
+  assert.match(authenticationSource, /top: '50%'/);
+  assert.match(authenticationSource, /left: '50%'/);
+  assert.match(authenticationSource, /transform: 'translate\(-50%, -50%\)'/);
+  assert.doesNotMatch(authenticationSource, /ant-pro-form-login-page/);
+});
+
 test('platform typed write paths include extension replacement and opaque asset staging', () => {
   assert.match(extensionEditSource, /platformClient\.replaceExtensionDefinition/);
   assert.match(extensionEditSource, /expectedVersion: definition\.revision/);

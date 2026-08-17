@@ -209,7 +209,6 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                       pagination={false}
                       locale={{emptyText: '暂未配置字段'}}
                       columns={[
-                        {title: '字段 key', dataIndex: 'key'},
                         {title: '字段名称', dataIndex: 'label'},
                         {title: '字段类型', render: (_, row) => fieldTypeLabel(row.type)},
                         {title: '是否必填', render: (_, row) => (row.required ? '是' : '否')},

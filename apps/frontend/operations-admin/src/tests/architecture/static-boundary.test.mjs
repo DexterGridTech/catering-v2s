@@ -26,6 +26,138 @@ test('operations-admin owns R5 keyed login and never persists session tokens in 
   assert.doesNotMatch(app + login, /sessionStorage|localStorage/);
 });
 
+test('operations sign-in centers the official LoginFormPage card through its public container style', () => {
+  const login = fs.readFileSync(
+    new URL('../../features/authentication/ui/OperationsLoginPage.tsx', import.meta.url),
+    'utf8',
+  );
+  const layout = fs.readFileSync(
+    new URL('../../features/authentication/ui/loginFormPageLayout.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(login, /operationsSignInFormPageLayout/);
+  assert.match(layout, /export const operationsSignInFormPageLayout/);
+  assert.match(layout, /position: 'fixed'/);
+  assert.match(layout, /top: '50%'/);
+  assert.match(layout, /left: '50%'/);
+  assert.match(layout, /transform: 'translate\(-50%, -50%\)'/);
+  assert.doesNotMatch(layout, /ant-pro-form-login-page/);
+});
+
+test('operations sign-in gives the management console title priority and keeps the workspace as the subtitle', () => {
+  const login = fs.readFileSync(
+    new URL('../../features/authentication/ui/OperationsLoginPage.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(login, /title=\{entryState\.operationsTitle\}/);
+  assert.match(login, /subTitle=\{entryState\.workspaceName\}/);
+  assert.doesNotMatch(login, /title=\{entryState\.workspaceName\}/);
+  assert.doesNotMatch(login, /subTitle=\{entryState\.operationsTitle\}/);
+});
+
+test('operations scope trigger keeps the original compact range summary and preserves its actionable owner-confirmed contents', () => {
+  const selector = fs.readFileSync(
+    new URL('../../features/role-home-bootstrap/ui/DataScopeSelector.tsx', import.meta.url),
+    'utf8',
+  );
+  const styles = fs.readFileSync(new URL('../../styles.css', import.meta.url), 'utf8');
+  assert.match(selector, /operations-scope-trigger-summary/);
+  assert.match(selector, /<Typography\.Text type="secondary" className="operations-scope-trigger-type">/);
+  assert.match(selector, /\{name\}：/);
+  assert.match(selector, /operations-scope-trigger-line/);
+  assert.match(styles, /\.operations-scope-trigger-line \{[\s\S]*display: grid;[\s\S]*line-height: 20px;/);
+  assert.match(
+    styles,
+    /\.operations-scope-trigger-type,[\s\S]*\.operations-scope-trigger-value \{[\s\S]*display: block;/,
+  );
+  assert.doesNotMatch(selector, /operations-scope-trigger-heading|RightOutlined/);
+});
+
+test('operations shell fixes the range footer outside its only scrollable navigation region', () => {
+  const app = fs.readFileSync(new URL('../../app/OperationsApp.tsx', import.meta.url), 'utf8');
+  const styles = fs.readFileSync(new URL('../../styles.css', import.meta.url), 'utf8');
+  assert.match(app, /<Menu[\s\S]*className="operations-shell-menu"/);
+  assert.match(styles, /\.operations-shell-menu \{[\s\S]*min-height: 0;[\s\S]*flex: 1 1 auto;[\s\S]*overflow-y: auto;/);
+  assert.match(styles, /\.operations-scope-selector \{[\s\S]*flex: 0 0 auto;/);
+});
+
+test('operations business surfaces never expose owner internals, raw scope identities, or copy implementation terms', () => {
+  const dictionary = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/CatalogDictionaryDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const item = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/CatalogItemDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const localCopy = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/LocalCatalogCopyDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const brandCopy = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/BrandCatalogCopyDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const inventory = fs.readFileSync(
+    new URL('../../features/inventory-management/ui/InventoryDetailDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(dictionary, /生产履约 owner|商品字典 owner|当前作用域：|quickManage 的当前字段|回填当前字段/);
+  assert.match(dictionary, /创建并选用/);
+  assert.doesNotMatch(
+    item,
+    /商品 owner|typed production profile|其他 typed 字段|lineSign：|字段契约未登记|数据节点上下文/,
+  );
+  assert.doesNotMatch(
+    localCopy + brandCopy,
+    /owner 回读|Owner readback|旧 digest|闭包对象|\$\{(?:sourceScope|targetScope|scope)\.ownerType\}/,
+  );
+  assert.match(localCopy + brandCopy, /关联内容/);
+  assert.doesNotMatch(inventory, /ownerScope\.ownerRef/);
+});
+
+test('catalog metadata modal keeps owner APIs separate while exposing all product-maintenance entities in stable tabs', () => {
+  const dictionary = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/CatalogDictionaryDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const workbench = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/CatalogWorkbenchPage.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    dictionary,
+    /const dictionaryTabs[\s\S]*\{key: 'TAG', label: '商品标签'\}[\s\S]*\{key: 'SALES_UNIT', label: '销售单位'\}[\s\S]*\{key: 'SKU_ATTRIBUTE', label: 'SKU 销售属性'\}[\s\S]*\{key: 'PRODUCTION_TAG', label: '商品处理标签'\}/,
+  );
+  assert.match(dictionary, /<Modal[\s\S]*footer=\{null\}[\s\S]*width=\{1200\}/);
+  assert.doesNotMatch(dictionary, /<Drawer/);
+  assert.doesNotMatch(dictionary, /上移|下移|reorderOperationsCatalogDictionaryEntry/);
+  assert.match(dictionary, /if \(open && !wasOpen\.current\) setKind\(initialKind\);/);
+  assert.match(dictionary, /dictionaryQuery\.currentData\?\.data/);
+  assert.match(dictionary, /productionQuery\.currentData\?\.data/);
+  assert.match(dictionary, /const isSkuAttributeManagement = !quickManage && kind === 'SKU_ATTRIBUTE';/);
+  assert.match(dictionary, /<Splitter[\s\S]*catalog-sku-attribute-manager/);
+  assert.match(dictionary, /rowSelection=\{\{[\s\S]*type: 'radio'/);
+  assert.match(
+    dictionary,
+    /dictionaryKind: 'SKU_ATTRIBUTE_VALUE',[\s\S]*parentEntryRef: wireUuid\(selectedAttributeRef\)/,
+  );
+  assert.match(dictionary, /const \[tagForm\] = Form\.useForm/);
+  assert.match(dictionary, /const \[salesUnitForm\] = Form\.useForm/);
+  assert.match(dictionary, /const \[skuAttributeForm\] = Form\.useForm/);
+  assert.match(dictionary, /const \[productionTagForm\] = Form\.useForm/);
+  assert.match(dictionary, /canWrite && !quickManage && creatingKind && \(\s*<Modal/);
+  assert.match(dictionary, /catalog-dictionary-create-modal/);
+  assert.match(dictionary, /catalog-dictionary-name-edit-modal/);
+  assert.match(dictionary, /catalog-dictionary-status-change-modal/);
+  assert.match(dictionary, /仍被商品或 SKU 使用/);
+  assert.doesNotMatch(dictionary, /\$\{entry\.referenceKind\}:\$\{entry\.referenceRef\}/);
+  assert.doesNotMatch(dictionary, /dictionaryEditingKey|editingCode|editingName/);
+  assert.doesNotMatch(dictionary, /checkCodeAvailability|编码可用|toUpperCase\(|\^\[A-Z0-9\]/);
+  assert.match(workbench, /商品元数据/);
+  assert.doesNotMatch(workbench, /catalog-inventory-production-tags/);
+});
+
 test(
   'operations session selection is generated-wire driven ' +
     'and never derives an unscoped data-node list in the browser',

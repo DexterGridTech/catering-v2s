@@ -13,16 +13,14 @@ class CatalogTemporaryPromotionContractTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void keepsFormalCodeValidationClosedAndStable() {
-        assertDoesNotThrow(() -> CatalogOwnerService.validateCatalogCode("LATTE-FORMAL-001"));
+    void acceptsBusinessDefinedFormalCodesAndRejectsOnlyBlankCode() {
+        assertDoesNotThrow(() -> CatalogOwnerService.validateCatalogCode("latte-formal-001"));
+        assertDoesNotThrow(() -> CatalogOwnerService.validateCatalogCode("拿铁 / 热"));
+        assertDoesNotThrow(() -> CatalogOwnerService.validateCatalogCode("A"));
 
-        CatalogOwnerApi.Problem lowerCase = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.validateCatalogCode("latte-formal-001"));
-        assertEquals("VALIDATION_ERROR", lowerCase.code());
-
-        CatalogOwnerApi.Problem tooShort =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.validateCatalogCode("A"));
-        assertEquals("VALIDATION_ERROR", tooShort.code());
+        CatalogOwnerApi.Problem blank =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.validateCatalogCode("  "));
+        assertEquals("VALIDATION_ERROR", blank.code());
     }
 
     @Test

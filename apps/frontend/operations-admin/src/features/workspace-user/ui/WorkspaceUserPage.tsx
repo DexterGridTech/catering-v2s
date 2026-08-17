@@ -67,7 +67,7 @@ function time(value?: number | null) {
 }
 
 function statusLabel(value: WorkspaceAccountStatus) {
-  return value === 'ENABLED' ? '启用' : '禁用';
+  return value === 'ENABLED' ? '启用' : '停用';
 }
 
 function latestUpdatedAt(user: WorkspaceUser) {
@@ -358,7 +358,7 @@ export function WorkspaceUserPage({
         title: '状态',
         dataIndex: 'status',
         valueType: 'select',
-        valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '禁用'}},
+        valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}},
         fieldProps: {...testId('operations-workspace-user-filter-status'), allowClear: true, placeholder: '全部'},
         render: (_, user) => (
           <Tag color={user.status === 'ENABLED' ? 'success' : 'default'}>{statusLabel(user.status)}</Tag>

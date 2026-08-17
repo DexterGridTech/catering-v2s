@@ -319,10 +319,10 @@ function Shell({
               {...testId('operations-shell-toggle-sider')}
             />
             <Menu
+              className="operations-shell-menu"
               theme="light"
               mode="inline"
               inlineCollapsed={siderCollapsed}
-              style={{flex: 1}}
               defaultOpenKeys={selectedCatalogPage ? [selectedCatalogPage.menuGroupKey] : []}
               selectedKeys={selected ? [selected] : []}
               onClick={({key}) => {
@@ -535,7 +535,7 @@ function WorkspaceRoute() {
     }
   };
   if (!groupWorkspaceKey) return <Navigate to="/operations" replace />;
-  if (!sessionEntryLoaded) return <Alert type="info" title="正在恢复运营上下文" />;
+  if (!sessionEntryLoaded) return <Alert type="info" title="正在恢复登录状态" />;
   const enterSelectedHome = (next: WorkspaceSessionEntry) => {
     setEntryOverride(next);
     const selectedSession = toSession(next);

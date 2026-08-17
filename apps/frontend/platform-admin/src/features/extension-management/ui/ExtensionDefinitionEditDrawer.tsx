@@ -26,7 +26,8 @@ import {PLATFORM_ADMIN_OPERATION_IDS, type ExtensionDefinition} from '../../../a
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 
 type DefinitionField = ExtensionDefinition['definitions'][number];
-type ExtensionEditorFields = {definitions: DefinitionField[]};
+type ExtensionDraftField = Omit<DefinitionField, 'key'> & {key?: string};
+type ExtensionEditorFields = {definitions: ExtensionDraftField[]};
 
 const fieldTypeOptions: Array<{value: DefinitionField['type']; label: string}> = [
   {value: 'TEXT', label: '文本'},
@@ -54,8 +55,8 @@ type RowProps = {
 
 function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragStart, onDrop}: RowProps) {
   const type = Form.useWatch(['definitions', field.name, 'type'], form) as DefinitionField['type'] | undefined;
-  const ownerKey = Form.useWatch(['definitions', field.name, 'key'], form) as string | undefined;
-  const isExisting = existingKeys.has(ownerKey ?? '');
+  const fieldKey = Form.useWatch(['definitions', field.name, 'key'], form) as string | undefined;
+  const isExisting = existingKeys.has(fieldKey ?? '');
   const changeType = (next: DefinitionField['type']) => {
     const optionsPath: ['definitions', number, 'options'] = ['definitions', field.name, 'options'];
     const options = form.getFieldValue(optionsPath) as string[] | undefined;
@@ -97,35 +98,9 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
       }
     >
       <Row gutter={[16, 0]}>
-        <Col xs={24} sm={12} lg={6}>
-          {isExisting ? (
-            <Form.Item label="字段 key">
-              <Space size={8}>
-                <Typography.Text code {...testId(`extension-definition-key-display-${index}`)}>
-                  {ownerKey}
-                </Typography.Text>
-                <Typography.Text type="secondary">已固定</Typography.Text>
-                <Form.Item name={[field.name, 'key']} hidden>
-                  <Input />
-                </Form.Item>
-              </Space>
-            </Form.Item>
-          ) : (
-            <Form.Item
-              label="字段 key"
-              name={[field.name, 'key']}
-              rules={[
-                {required: true, whitespace: true, message: '请填写字段 key'},
-                {
-                  pattern: /^[a-z][a-zA-Z0-9_]{0,79}$/,
-                  message: '字段 key 须以小写字母开头，仅可包含字母、数字和下划线',
-                },
-              ]}
-            >
-              <Input placeholder="例如：groupTier" {...testId(`extension-definition-key-${index}`)} />
-            </Form.Item>
-          )}
-        </Col>
+        <Form.Item name={[field.name, 'key']} hidden>
+          <Input />
+        </Form.Item>
         <Col xs={24} sm={12} lg={6}>
           <Form.Item label="字段名称" name={[field.name, 'label']} rules={[{required: true, whitespace: true}]}>
             <Input {...testId(`extension-definition-label-${index}`)} />
@@ -292,7 +267,7 @@ export function ExtensionDefinitionEditDrawer({
         {
           body: {
             definitions: value.definitions.map((field, index) => ({
-              key: field.key.trim(),
+              ...(field.key?.trim() ? {key: field.key.trim()} : {}),
               label: field.label.trim(),
               type: field.type,
               required: field.required,
@@ -323,7 +298,7 @@ export function ExtensionDefinitionEditDrawer({
   const addField = () => {
     form.setFieldValue('definitions', [
       ...(form.getFieldValue('definitions') ?? []),
-      {key: '', label: '', type: 'TEXT', required: false, status: 'ENABLED', options: []},
+      {label: '', type: 'TEXT', required: false, status: 'ENABLED', options: []},
     ]);
     lifecycle.setDirty(true);
     markBusinessIntentChanged();

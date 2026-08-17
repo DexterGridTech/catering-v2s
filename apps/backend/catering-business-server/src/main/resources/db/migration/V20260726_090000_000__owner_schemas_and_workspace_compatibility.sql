@@ -9,10 +9,9 @@ BEGIN
        AND policyname IN (
            'platform_admin_group_workspace_access',
            'platform_admin_commercial_group_access',
-           'platform_admin_commercial_group_audit_access',
            'platform_admin_commercial_group_idempotency_access');
-    IF policy_count <> 4 THEN
-        RAISE EXCEPTION 'R5_R3_POLICY_PRECONDITION_FAILED: expected 4 policies, got %', policy_count;
+    IF policy_count <> 3 THEN
+        RAISE EXCEPTION 'R5_R3_POLICY_PRECONDITION_FAILED: expected 3 policies, got %', policy_count;
     END IF;
     IF EXISTS (
         SELECT 1 FROM platform_workspace.group_workspace WHERE length(group_workspace_key) > 64
@@ -69,9 +68,6 @@ DROP POLICY platform_admin_group_workspace_access ON platform_workspace.group_wo
 ALTER TABLE organization.commercial_group DISABLE ROW LEVEL SECURITY;
 ALTER TABLE organization.commercial_group NO FORCE ROW LEVEL SECURITY;
 DROP POLICY platform_admin_commercial_group_access ON organization.commercial_group;
-ALTER TABLE organization.commercial_group_audit DISABLE ROW LEVEL SECURITY;
-ALTER TABLE organization.commercial_group_audit NO FORCE ROW LEVEL SECURITY;
-DROP POLICY platform_admin_commercial_group_audit_access ON organization.commercial_group_audit;
 ALTER TABLE organization.commercial_group_idempotency DISABLE ROW LEVEL SECURITY;
 ALTER TABLE organization.commercial_group_idempotency NO FORCE ROW LEVEL SECURITY;
 DROP POLICY platform_admin_commercial_group_idempotency_access ON organization.commercial_group_idempotency;
@@ -99,7 +95,6 @@ CREATE TABLE platform_iam.platform_session (
     created_at_epoch_millis BIGINT NOT NULL, last_seen_at_epoch_millis BIGINT, revoked_at_epoch_millis BIGINT, version BIGINT NOT NULL CHECK (version > 0)
 );
 CREATE TABLE platform_iam.platform_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE platform_iam.platform_audit (id UUID PRIMARY KEY, event_type VARCHAR(96) NOT NULL, subject_ref UUID, created_at_epoch_millis BIGINT NOT NULL, detail_json JSONB NOT NULL);
 
 CREATE TABLE platform_asset.staged_asset (
     asset_ref UUID PRIMARY KEY, usage VARCHAR(64) NOT NULL, workspace_uuid UUID, group_workspace_key VARCHAR(64), storage_key VARCHAR(512) NOT NULL UNIQUE,
@@ -147,23 +142,17 @@ CREATE TABLE contract.store_contract_item (contract_id UUID NOT NULL REFERENCES 
 
 CREATE TABLE platform_iam.platform_credential_reset (id UUID PRIMARY KEY, platform_admin_id UUID NOT NULL REFERENCES platform_iam.platform_admin(id) ON DELETE RESTRICT, generation_key_hash CHAR(64) NOT NULL UNIQUE, status VARCHAR(32) NOT NULL, expires_at_epoch_millis BIGINT NOT NULL, completed_at_epoch_millis BIGINT, version BIGINT NOT NULL);
 CREATE TABLE platform_workspace.workspace_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, workspace_uuid UUID, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE platform_workspace.workspace_audit (id UUID PRIMARY KEY, workspace_uuid UUID NOT NULL, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
 CREATE TABLE platform_asset.asset_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, asset_ref UUID, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE platform_asset.asset_audit (id UUID PRIMARY KEY, asset_ref UUID, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
 CREATE TABLE extension.extension_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, definition_id UUID, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE extension.extension_audit (id UUID PRIMARY KEY, definition_id UUID, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
 CREATE TABLE organization.brand_extension_value (brand_id UUID NOT NULL REFERENCES organization.brand(id) ON DELETE RESTRICT, field_key VARCHAR(64) NOT NULL, value_json JSONB NOT NULL, definition_version BIGINT NOT NULL, PRIMARY KEY (brand_id, field_key));
 CREATE TABLE organization.tenant_extension_value (tenant_id UUID NOT NULL REFERENCES organization.tenant(id) ON DELETE RESTRICT, field_key VARCHAR(64) NOT NULL, value_json JSONB NOT NULL, definition_version BIGINT NOT NULL, PRIMARY KEY (tenant_id, field_key));
 CREATE TABLE organization.head_company_extension_value (head_company_id UUID NOT NULL REFERENCES organization.head_company(id) ON DELETE RESTRICT, field_key VARCHAR(64) NOT NULL, value_json JSONB NOT NULL, definition_version BIGINT NOT NULL, PRIMARY KEY (head_company_id, field_key));
 CREATE TABLE organization.store_extension_value (store_id UUID NOT NULL REFERENCES organization.store(id) ON DELETE RESTRICT, field_key VARCHAR(64) NOT NULL, value_json JSONB NOT NULL, definition_version BIGINT NOT NULL, PRIMARY KEY (store_id, field_key));
 CREATE TABLE organization.organization_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, entity_id UUID, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE organization.organization_audit (id UUID PRIMARY KEY, entity_id UUID, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
 CREATE TABLE workspace_iam.workspace_credential (account_id UUID PRIMARY KEY REFERENCES workspace_iam.workspace_account(id) ON DELETE RESTRICT, password_hash VARCHAR(255) NOT NULL, algorithm VARCHAR(64) NOT NULL, changed_at_epoch_millis BIGINT NOT NULL, failed_attempts INTEGER NOT NULL DEFAULT 0, locked_until_epoch_millis BIGINT, version BIGINT NOT NULL);
 CREATE TABLE workspace_iam.invitation_assignment_intent (invitation_id UUID NOT NULL REFERENCES workspace_iam.invitation(id) ON DELETE RESTRICT, role_id UUID NOT NULL REFERENCES workspace_iam.workspace_role(id) ON DELETE RESTRICT, service_node_type VARCHAR(32) NOT NULL, service_node_id UUID NOT NULL, PRIMARY KEY(invitation_id, role_id, service_node_id));
 CREATE TABLE workspace_iam.otp_grant (id UUID PRIMARY KEY, workspace_uuid UUID NOT NULL, group_workspace_key VARCHAR(64) NOT NULL, purpose VARCHAR(64) NOT NULL, token_hash CHAR(64) NOT NULL UNIQUE, subject_ref UUID, status VARCHAR(32) NOT NULL, expires_at_epoch_millis BIGINT NOT NULL, used_at_epoch_millis BIGINT, attempt_count INTEGER NOT NULL DEFAULT 0, CONSTRAINT fk_otp_workspace FOREIGN KEY(workspace_uuid, group_workspace_key) REFERENCES platform_workspace.group_workspace(workspace_uuid, group_workspace_key));
 CREATE TABLE workspace_iam.password_reset (id UUID PRIMARY KEY, account_id UUID NOT NULL REFERENCES workspace_iam.workspace_account(id) ON DELETE RESTRICT, generation_key_hash CHAR(64) NOT NULL UNIQUE, status VARCHAR(32) NOT NULL, expires_at_epoch_millis BIGINT NOT NULL, completed_at_epoch_millis BIGINT, version BIGINT NOT NULL);
 CREATE TABLE workspace_iam.workspace_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE workspace_iam.workspace_audit (id UUID PRIMARY KEY, account_id UUID, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
 CREATE TABLE contract.store_contract_extension_value (contract_id UUID NOT NULL REFERENCES contract.store_contract(id) ON DELETE RESTRICT, field_key VARCHAR(64) NOT NULL, value_json JSONB NOT NULL, definition_version BIGINT NOT NULL, PRIMARY KEY(contract_id, field_key));
 CREATE TABLE contract.contract_command_receipt (idempotency_key VARCHAR(128) PRIMARY KEY, contract_id UUID, request_hash CHAR(64) NOT NULL, response_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);
-CREATE TABLE contract.contract_audit (id UUID PRIMARY KEY, contract_id UUID, event_type VARCHAR(96) NOT NULL, detail_json JSONB NOT NULL, created_at_epoch_millis BIGINT NOT NULL);

@@ -9,7 +9,7 @@
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "68492c610d54ad0525d31f0863d21866058b4153a2be2208a7c6e974627e0f36"
+      "sha256": "4bb3f560b6b3cf4a57f49050c6c5104a7c853b018e48ea9510e465244311557d"
     },
     "v4Manifest": {
       "path": "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts",
@@ -2948,5 +2948,5 @@
       "detailSections"
     ]
   },
-  "manifestDigest": "76012e0dc4d23f8dc1c7d4aeca7b324ed186ee647ca02638e78f53f73a1e3272"
+  "manifestDigest": "23887b1e738d818d9758db88bb087c6dd1720b8c9b8104f7931e93cf940e11ff"
 }

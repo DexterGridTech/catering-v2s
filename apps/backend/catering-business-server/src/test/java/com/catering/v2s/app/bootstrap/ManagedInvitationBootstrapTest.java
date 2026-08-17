@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
@@ -32,13 +33,20 @@ class ManagedInvitationBootstrapTest {
         Path runtime = Files.createTempDirectory("managed-invitation-runtime");
         Path output = runtime.resolve("results/invitation.json");
         ManagedInvitationBootstrap.Input input = ManagedInvitationBootstrap.Input.from(Map.of(
-                "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-                "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-                "V2S_MANAGED_INVITATION_ROLE_ID", roleId.toString(),
-                "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
-                "V2S_MANAGED_INVITATION_TARGET_REF", targetId.toString(),
-                "V2S_RUNTIME_DIR", runtime.toString(),
-                "V2S_MANAGED_INVITATION_OUTPUT", output.toString()));
+                "V2S_MANAGED_INVITATION_WORKSPACE_KEY",
+                "aurora",
+                "V2S_MANAGED_INVITATION_MOBILE",
+                "13800000001",
+                "V2S_MANAGED_INVITATION_ROLE_ID",
+                roleId.toString(),
+                "V2S_MANAGED_INVITATION_TARGET_TYPE",
+                "GROUP",
+                "V2S_MANAGED_INVITATION_TARGET_REF",
+                targetId.toString(),
+                RuntimeEnvironmentKeys.V2S_RUNTIME_DIR,
+                runtime.toString(),
+                "V2S_MANAGED_INVITATION_OUTPUT",
+                output.toString()));
         when(workspaces.requireEnabled("aurora"))
                 .thenReturn(new WorkspaceAdministrationReadback(
                         workspaceId,
@@ -93,14 +101,20 @@ class ManagedInvitationBootstrapTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ManagedInvitationBootstrap.Input.from(Map.of(
-                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-                        "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-                        "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
-                        "V2S_MANAGED_INVITATION_TARGET_TYPE", "TENANT",
-                        "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
-                        "V2S_RUNTIME_DIR", runtime.toString(),
+                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY",
+                        "aurora",
+                        "V2S_MANAGED_INVITATION_MOBILE",
+                        "13800000001",
+                        "V2S_MANAGED_INVITATION_ROLE_ID",
+                        UUID.randomUUID().toString(),
+                        "V2S_MANAGED_INVITATION_TARGET_TYPE",
+                        "TENANT",
+                        "V2S_MANAGED_INVITATION_TARGET_REF",
+                        UUID.randomUUID().toString(),
+                        RuntimeEnvironmentKeys.V2S_RUNTIME_DIR,
+                        runtime.toString(),
                         "V2S_MANAGED_INVITATION_OUTPUT",
-                                runtime.resolve("results/invitation.json").toString())));
+                        runtime.resolve("results/invitation.json").toString())));
     }
 
     @Test
@@ -113,13 +127,20 @@ class ManagedInvitationBootstrapTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ManagedInvitationBootstrap.Input.from(Map.of(
-                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY", "aurora",
-                        "V2S_MANAGED_INVITATION_MOBILE", "13800000001",
-                        "V2S_MANAGED_INVITATION_ROLE_ID", UUID.randomUUID().toString(),
-                        "V2S_MANAGED_INVITATION_TARGET_TYPE", "GROUP",
-                        "V2S_MANAGED_INVITATION_TARGET_REF", UUID.randomUUID().toString(),
-                        "V2S_RUNTIME_DIR", runtime.toString(),
-                        "V2S_MANAGED_INVITATION_OUTPUT", output.toString())));
+                        "V2S_MANAGED_INVITATION_WORKSPACE_KEY",
+                        "aurora",
+                        "V2S_MANAGED_INVITATION_MOBILE",
+                        "13800000001",
+                        "V2S_MANAGED_INVITATION_ROLE_ID",
+                        UUID.randomUUID().toString(),
+                        "V2S_MANAGED_INVITATION_TARGET_TYPE",
+                        "GROUP",
+                        "V2S_MANAGED_INVITATION_TARGET_REF",
+                        UUID.randomUUID().toString(),
+                        RuntimeEnvironmentKeys.V2S_RUNTIME_DIR,
+                        runtime.toString(),
+                        "V2S_MANAGED_INVITATION_OUTPUT",
+                        output.toString())));
     }
 
     @Test

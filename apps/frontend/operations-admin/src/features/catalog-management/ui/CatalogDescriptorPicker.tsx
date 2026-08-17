@@ -90,7 +90,7 @@ export function CatalogDescriptorPicker({
     }
     if (!context.scope.dataNodeRef) {
       setResult(undefined);
-      setError('缺少数据节点上下文，无法加载候选。');
+      setError('请先选择可查看范围，再加载候选。');
       setLoading(false);
       return () => {
         cancelled = true;
@@ -118,14 +118,7 @@ export function CatalogDescriptorPicker({
   }, [context, effectiveDisabled, field, resolver, source]);
 
   if (!field)
-    return (
-      <Alert
-        type="error"
-        showIcon
-        title={`字段契约未登记：${fieldKey}`}
-        {...testId(`${testIdValue}-descriptor-error`)}
-      />
-    );
+    return <Alert type="error" showIcon title="字段暂不可用" {...testId(`${testIdValue}-descriptor-error`)} />;
 
   const renderedField = (effectiveDisabled || readOnly) && !field.readonly ? {...field, readonly: true} : field;
   const options = visibleDescriptorOptions(result?.options ?? [], value);

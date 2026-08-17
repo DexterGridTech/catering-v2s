@@ -228,20 +228,20 @@ function loadAdminCatalog(base = root) {
   if (!sameSet(pageKeys, manifestPages)) fail("R5_ADMIN_CATALOG_PAGE_SET_DRIFT");
   if (!sameSet(actionKeys, manifestActions) || actionKeys.length !== manifestActions.length) fail("R5_ADMIN_CATALOG_ACTION_SET_DRIFT");
   if (new Set(pageKeys).size !== pageKeys.length || new Set(actionKeys).size !== actionKeys.length) fail("R5_ADMIN_CATALOG_DUPLICATE_KEY");
-  if (shellCopy.length !== 4 || shellCopy.some((node) => node.consumerFace !== "platform-admin")) fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT");
-  if (actionGroups.length !== 5 || navigationGroups.length !== 5) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
+  if (shellCopy.some((node) => node.consumerFace !== "platform-admin")) fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT");
+  if (actionGroups.length !== navigationGroups.length) fail("R5_ADMIN_CATALOG_GROUP_SET_DRIFT");
   const navigationByKey = new Map(navigationGroups.map((node) => [node.key, node]));
   const actionGroupByKey = new Map(actionGroups.map((node) => [node.key, node]));
   const navigationIconKeys = new Set(["WORKBENCH", "ACCESS", "ORGANIZATION", "STORE_OPERATIONS", "CATALOG_SERVICES"]);
-  if (navigationByKey.size !== navigationGroups.length || actionGroupByKey.size !== 5
+  if (navigationByKey.size !== navigationGroups.length || actionGroupByKey.size !== actionGroups.length
     || navigationGroups.some((node) => node.consumerFace !== "operations-admin" || !Number.isInteger(node.navigation?.order) || !navigationIconKeys.has(node.navigation?.iconKey))
     || actionGroups.some((node) => !Number.isInteger(node.actionGroup?.order))) fail("R5_ADMIN_CATALOG_GROUP_INVALID");
   const platformNodes = pages.filter((node) => node.consumerFace === "platform-admin");
   const operationsNodes = pages.filter((node) => node.consumerFace === "operations-admin");
   const roleHomes = operationsNodes.filter((node) => node.page?.kind === "ROLE_HOME");
   const businessPages = operationsNodes.filter((node) => node.page?.kind === "BUSINESS");
-  if (platformNodes.length !== 8 || roleHomes.length !== 5 || businessPages.length !== operationsNodes.length - roleHomes.length || operationsNodes.length !== 20) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
-  if (new Set(roleHomes.map((node) => node.page.roleHomeForNodeType)).size !== 5) fail("R5_ADMIN_CATALOG_ROLE_HOME_INVALID");
+  if (businessPages.length !== operationsNodes.length - roleHomes.length) fail("R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT");
+  if (new Set(roleHomes.map((node) => node.page.roleHomeForNodeType)).size !== roleHomes.length) fail("R5_ADMIN_CATALOG_ROLE_HOME_INVALID");
   const experienceOf = (node) => {
     const experience = node.experience;
     if (!experience || typeof experience.pageDescription !== "string" || !Array.isArray(experience.cascadeLevelLabels) || !Array.isArray(experience.forbiddenAlternatives)) {
@@ -278,9 +278,9 @@ function loadAdminCatalog(base = root) {
   });
   const userManagementActionBindings = catalogActions.filter((action) => action.userManagement).map((action) => ({pageDesignKey:action.pageBindings[0].pageDesignKey, targetOrganizationType:action.userManagement.targetOrganizationType, actionPurpose:action.userManagement.purpose, actionKey:action.actionKey}));
   const bindingKeys = userManagementActionBindings.map((binding) => `${binding.pageDesignKey}:${binding.actionPurpose}`);
-  if (bindingKeys.length !== 10 || new Set(bindingKeys).size !== 10) fail("R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT");
+  if (new Set(bindingKeys).size !== bindingKeys.length) fail("R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT");
   const managedTargetPages = operationsPages.filter((page) => page.userManagementTargetOrganizationType);
-  if (managedTargetPages.length !== 5 || !managedTargetPages.every((page) => ["INVITE", "ROLE_REVOKE"].every((purpose) => bindingKeys.includes(`${page.pageDesignKey}:${purpose}`)))) {
+  if (managedTargetPages.length === 0 || !managedTargetPages.every((page) => ["INVITE", "ROLE_REVOKE"].every((purpose) => bindingKeys.includes(`${page.pageDesignKey}:${purpose}`)))) {
     fail("R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT");
   }
   const userManagementByPage = Object.fromEntries(managedTargetPages.map((page) => {
@@ -679,9 +679,10 @@ function javaMap(entries) {
   const values = Object.entries(entries || {}).sort(([left], [right]) => left.localeCompare(right));
   return values.length === 0 ? "Map.of()" : "Map.of(" + values.flatMap(([key, value]) => [javaString(key), javaCapabilityKey(value)]).join(", ") + ")";
 }
+const javaCapabilityKeyPattern = /^(?:BC-[A-Z0-9-]+|EDIT_[A-Z0-9_]+)$/;
 function javaCapabilityKey(value) {
-  if (typeof value === "string" && value.startsWith("BC-")) {
-    return `WorkspaceAuthorizationCatalog.CapabilityKeys.${value.replaceAll("-", "_")}`;
+  if (typeof value === "string" && javaCapabilityKeyPattern.test(value)) {
+    return `WorkspaceAuthorizationCatalog.CapabilityKeys.${javaConstantName(value)}`;
   }
   return javaString(value);
 }
@@ -898,6 +899,12 @@ function selfTest() {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
     writeOutputs(scratch);
+    const capabilityRequirementCatalogSource = fs.readFileSync(path.join(scratch, targets.workspaceCapabilityRequirementCatalogJava), "utf8");
+    for (const capability of ["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"]) {
+      if (!capabilityRequirementCatalogSource.includes(`WorkspaceAuthorizationCatalog.CapabilityKeys.${capability}`)) {
+        fail("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT_MISSING", capability);
+      }
+    }
     const rootOpenApiPath = "contracts/openapi/edge.openapi.json";
     const rootOpenApiSource = fs.readFileSync(path.join(scratch, rootOpenApiPath), "utf8");
     const rootOpenApi = read(rootOpenApiPath, scratch);
@@ -971,10 +978,30 @@ function selfTest() {
     try { checkOutputs(scratch); fail("R5_ADMIN_CATALOG_ACTION_SET_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_ADMIN_CATALOG_ACTION_SET_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
     const shellCopySource = read(adminCatalogPath, scratch);
-    shellCopySource.nodes = shellCopySource.nodes.filter((node) => node.key !== "PLATFORM-SHELL-LOGOUT");
+    shellCopySource.nodes.find((node) => node.key === "PLATFORM-SHELL-LOGOUT").consumerFace = "operations-admin";
     fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(shellCopySource));
     try { checkOutputs(scratch); fail("R5_ADMIN_CATALOG_SHELL_COPY_SET_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT") throw error; }
     fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
+    const pageGrowthSource = read(adminCatalogPath, scratch);
+    const pageGrowthManifest = read(frontendManifestPath, scratch);
+    const pageGrowthNode = JSON.parse(JSON.stringify(pageGrowthSource.nodes.find((node) => node.key === "PG-ORG-STRUCTURE")));
+    pageGrowthNode.key = "PG-ORG-STRUCTURE-EXTRA";
+    pageGrowthNode.display.label = "组织架构扩展";
+    pageGrowthNode.navigation.order = 160;
+    pageGrowthSource.nodes.push(pageGrowthNode);
+    pageGrowthManifest.pageDesignKeySurfaceCrosswalk.byPageDesignKey[pageGrowthNode.key] = "OPERATIONS-ORG-STRUCTURE";
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(pageGrowthSource));
+    fs.writeFileSync(path.join(scratch, frontendManifestPath), normalized(pageGrowthManifest));
+    try { writeOutputs(scratch); checkOutputs(scratch); } catch (error) { fail("R5_ADMIN_CATALOG_DYNAMIC_PAGE_COUNT_ACCEPTANCE_FAILED", error.code || error.message); }
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
+    fs.writeFileSync(path.join(scratch, frontendManifestPath), fs.readFileSync(path.join(root, frontendManifestPath)));
+    writeOutputs(scratch);
+    const invalidPageKindSource = read(adminCatalogPath, scratch);
+    invalidPageKindSource.nodes.find((node) => node.key === "PG-ORG-STRUCTURE").page.kind = "UNCLASSIFIED";
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(invalidPageKindSource));
+    try { checkOutputs(scratch); fail("R5_ADMIN_CATALOG_PAGE_KIND_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT") throw error; }
+    fs.writeFileSync(path.join(scratch, adminCatalogPath), fs.readFileSync(path.join(root, adminCatalogPath)));
+    writeOutputs(scratch);
     const bindingSource = read(adminCatalogPath, scratch);
     delete bindingSource.nodes.find((node) => node.key === "BC-IAM-GROUP-INVITE").action.userManagement;
     fs.writeFileSync(path.join(scratch, adminCatalogPath), normalized(bindingSource));
@@ -1060,7 +1087,7 @@ function selfTest() {
     bodyRequest.required = false;
     fs.writeFileSync(path.join(scratch, bodyPathFile), normalized(bodyPathDocument));
     try { checkOutputs(scratch); fail("R5_EDGE_REQUEST_REQUIRED_RED_NOT_DETECTED"); } catch (error) { if (error.code !== "R5_EDGE_TS_OPERATION_CONTRACT_MISSING") throw error; }
-    process.stdout.write("R5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
+    process.stdout.write("R5_EDGE_CODEGEN_EDIT_CAPABILITY_CONSTANT=PASS\nR5_EDGE_CODEGEN_SELF_TEST=PASS\nRED=R5_EDGE_ROOT_ROUTE_REGISTRY_DRIFT,R5_EDGE_CODEGEN_OPENAPI_SECURITY_REQUIRED,R5_EDGE_WIRE_UNTYPED_MAP,R5_EDGE_CODEGEN_DRIFT,R5_EDGE_WIRE_MANUAL_FILE,R5_EDGE_TS_GENERATED_DRIFT,R5_EDGE_RTK_ENDPOINT_MISSING,R5_EDGE_RTK_REQUEST_HELPER_MISSING,R5_EDGE_TS_OPERATION_CONTRACT_MISSING,R5_EDGE_TS_UNTYPED_DTO,R5_ADMIN_CATALOG_PAGE_SET_DRIFT,R5_ADMIN_CATALOG_ACTION_SET_DRIFT,R5_ADMIN_CATALOG_SHELL_COPY_SET_DRIFT,R5_ADMIN_CATALOG_PAGE_KIND_SET_DRIFT,R5_ADMIN_CATALOG_USER_MANAGEMENT_BINDING_SET_DRIFT,R5_ADMIN_CATALOG_UX_DRIFT,R5_ADMIN_CATALOG_ACTION_BINDING_DRIFT,R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT,R5_ADMIN_CATALOG_ROLE_HOME_INVALID,R5_ADMIN_CATALOG_ROLE_HOME_WORKSPACE_REQUIREMENT_RED,R5_EDGE_TS_FACE_CATALOG_LEAK,R5_EDGE_TS_PROBLEM_CODE_FACE_DRIFT,R5_EDGE_WIRE_REFERENCE_FRAGMENT_MISSING,R5_EDGE_CODEGEN_OPENAPI_SUCCESS_STATUS_DRIFT,P3_C_PAGE_KEY_REQUEST,R5_EDGE_REQUEST_REQUIRED\n");
   } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
 }
 try {

@@ -1,7 +1,5 @@
 import type {CatalogInventoryEnvelope, Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 
-export const EDIT_STORE_INVENTORY = 'EDIT_STORE_INVENTORY';
-
 export type StockView = 'ALL' | 'NEEDS_ATTENTION' | 'LOW' | 'OUT' | 'NEGATIVE' | 'UNKNOWN';
 
 export type InventoryCounts = Record<StockView, number>;

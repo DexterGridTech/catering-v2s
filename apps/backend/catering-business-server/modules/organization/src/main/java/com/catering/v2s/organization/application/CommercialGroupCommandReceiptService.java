@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -31,7 +32,7 @@ public final class CommercialGroupCommandReceiptService {
             Supplier<CommercialGroupReadback> command) {
         String key = requiredKey(idempotencyKey);
         String requestHash = sha256(canonicalRequest);
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(? || ':' || ?))", workspaceUuid.toString(), key);
+        AdvisoryLock.acquire(jdbc, "commercial-group-receipt", workspaceUuid.toString(), key);
         Receipt existing = jdbc.query(
                 "SELECT request_hash, response_json::text FROM organization.commercial_group_command_receipt WHERE "
                         + "workspace_uuid=? AND idempotency_key=?",

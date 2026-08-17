@@ -135,7 +135,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
     <Card
       title={
         <Typography.Paragraph aria-label={rolesPageTitle} type="secondary" style={{margin: 0}}>
-          为不同任职机构类型配置可使用的功能菜单和可执行的操作；保存与状态变更均由集团空间 owner 最终校验。
+          为不同任职机构类型配置可使用的功能菜单和可执行的操作。
         </Typography.Paragraph>
       }
       extra={

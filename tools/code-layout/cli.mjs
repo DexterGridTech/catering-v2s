@@ -29,6 +29,7 @@ const allowedRepositoryRootDirectories = new Set([
   "build",
   "contracts",
   "doc",
+  "gradle",
   "infra",
   "libraries",
   "node_modules",

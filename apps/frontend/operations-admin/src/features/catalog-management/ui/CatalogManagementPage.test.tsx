@@ -7,7 +7,6 @@ import type {
 } from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef} from '../../../app/routing/model';
-import {canMoveDictionaryRow} from '../model/dictionaryOrdering';
 import {CATALOG_TAB_LABELS, catalogTabLabel} from '../model/catalogTabLabels';
 import {copyScopeTabKey} from './LocalCatalogCopyDrawer';
 import {
@@ -19,7 +18,6 @@ import {
   buildCatalogSkuVoidRequest,
   buildSkuMatrix,
   catalogCategoryCodeExists,
-  catalogDictionaryCodeConflict,
   catalogFilterConflictReason,
   catalogFormValidationIssue,
   catalogPriceLabel,
@@ -345,15 +343,6 @@ describe('catalog management runtime model contracts', () => {
     expect(catalogCategoryCodeExists(tree, 'dessert')).toBe(false);
   });
 
-  it('keeps VOIDED dictionary entries in the same reorderable sequence', () => {
-    const rows = [{status: 'ENABLED'}, {status: 'ENABLED'}, {status: 'VOIDED'}, {status: 'ENABLED'}];
-    expect(canMoveDictionaryRow(rows, 0, 1)).toBe(true);
-    expect(canMoveDictionaryRow(rows, 1, 1)).toBe(true);
-    expect(canMoveDictionaryRow(rows, 3, -1)).toBe(true);
-    expect(canMoveDictionaryRow(rows, 2, -1)).toBe(true);
-    expect(canMoveDictionaryRow(rows, 2, 1)).toBe(true);
-  });
-
   it('decodes the canonical catalog detail envelope and rejects an unwrapped detail', () => {
     const decoded = decodeDetail({
       data: {
@@ -456,16 +445,6 @@ describe('catalog management runtime model contracts', () => {
       data: {entries: [{entryRef: 'tag-ref', name: '口味', status: 'ENABLED'}]},
     } as unknown as CatalogDictionaryView);
     expect(labels).toEqual([{entryRef: 'tag-ref', name: '口味', status: 'ENABLED'}]);
-  });
-
-  it('checks dictionary codes against active owner rows while allowing a released VOIDED code', () => {
-    const rows = [
-      {code: 'LATTE', name: '拿铁', status: 'ENABLED'},
-      {code: 'OLD', name: '旧记录', status: 'VOIDED'},
-    ];
-    expect(catalogDictionaryCodeConflict(rows, ' latte ')).toEqual({name: '拿铁', code: 'LATTE'});
-    expect(catalogDictionaryCodeConflict(rows, 'old')).toBeUndefined();
-    expect(catalogDictionaryCodeConflict(rows, 'new')).toBeUndefined();
   });
 
   it('generates the SKU matrix from enabled values while preserving rows by ref-set', () => {

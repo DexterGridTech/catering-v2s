@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -1175,9 +1176,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     private JsonNode replay(String scope, String key, String operation, JsonNode request) {
+        AdvisoryLock.acquire(jdbc, "production-receipt", scope, key);
         var rows = jdbc.query(
                 "SELECT operation_id,request_hash,response::text FROM fulfillment_production.command_receipt WHERE "
-                        + "data_node_ref=? AND idempotency_key=? FOR UPDATE",
+                        + "data_node_ref=? AND idempotency_key=?",
                 (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
                 scope,
                 key);

@@ -592,7 +592,7 @@ export type ExtensionDefinition = {
 
 export type ExtensionDefinitionUpdateRequest = {
   definitions: Array<{
-  key: string;
+  key?: string;
   label: string;
   type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
   required: boolean;
