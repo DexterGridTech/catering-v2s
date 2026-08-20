@@ -1,15 +1,15 @@
 ---
 id: decisions.r5-full-seed-report-api-db-accounting
-status: PROPOSED_REVIEW_ONLY
+status: active
 layer: routed
 taskKinds: ["design", "implementation", "review", "testing"]
 domains: ["platform", "backend"]
 consumerFaces: ["backend"]
 owners: ["platform", "backend"]
-impacts: ["evidence", "database", "governance", "performance"]
-triggers: ["task-start", "implementation", "review", "testing"]
+impacts: ["evidence", "database", "governance", "owner"]
+triggers: ["task-start", "implementation", "review"]
 assertions: ["SEED_REPORT_PER_RUN", "SEED_API_DB_ACCOUNTING", "SEED_REPORT_CORRELATION", "SEED_REPORT_NO_SECRETS"]
-sourceRefs: ["doc/plans/platform/2026-07-25-v2s-r5-development-agent-execution-blueprint.md#12-seed-stage-blueprint", "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json", "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md", "catering-all-v2/libraries/backend/platform-foundation/src/main/java/com/cateringall/v2/platform/foundation/persistence/CountingJdbcTemplate.java", "catering-all-v2/libraries/backend/platform-foundation/src/main/java/com/cateringall/v2/platform/foundation/persistence/DatabaseOperationTracker.java", "catering-all-v2/libraries/backend/platform-foundation/src/main/java/com/cateringall/v2/platform/foundation/logging/PlatformRequestContextFilter.java", "catering-all-v2/scripts/test/platform-runtime-contracts-performance"]
+sourceRefs: ["project-memory/decisions/r5-full-seed-report-api-db-accounting.md"]
 ---
 # R5 `r5-full` Seed 报告与 API/数据库操作统计
 
@@ -65,8 +65,10 @@ Markdown 报告至少展示结论、Seed profile/run ID、API 调用总数、end
 事件数、每个 endpoint 的 HTTP 与数据库 average/min/max、非 API 阶段，以及业务 PASS/cleanup
 PASS 的边界说明；不得另行计算或持有第二套统计真相。
 
-## 实施前置
+## 固化状态
 
-当前 P6 U11 package 不实施 R5 Seed。后续打开 R5 Seed package 时，必须先把本规则同步进
-R5 development blueprint、`r5-full` fixture contract、Seed runner/receipt schema 和
-focused proof；不能只在最终报告中补一段统计，也不能用 P6 的一次性 L2 fixture 代替。
+当前规则已接入正式 `r5-full` seed 流程：`scripts/dev/seed --profile r5-full` 委托
+`scripts/dev/r5-complete-seed-executor.mjs`，每次运行自动生成同目录的 JSON 机器报告和 Markdown
+可读报告，父报告只链接两个子报告的计量真相，不再由人工拼接或重新汇总。executor focused tests
+覆盖父报告的 endpoint 计量、Catalog 数据计划、缺失子报告可见性和 JSON/Markdown 成对路径；
+`scripts/README.md` 是对外执行入口说明。

@@ -2,10 +2,12 @@ import {ProTable} from '@ant-design/pro-components';
 import {Alert, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
+  createPageQueryIdentity,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useRef, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
@@ -18,6 +20,7 @@ import type {
   PlatformAdminSortKey,
   SortDirection,
 } from '../../../app/api/generated/platform-edge';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {AdministratorCreateDrawer} from './AdministratorCreateDrawer';
 import {AdministratorCredentialDrawer} from './AdministratorCredentialDrawer';
 import {AdministratorDetailDrawer} from './AdministratorDetailDrawer';
@@ -36,11 +39,20 @@ const administratorPageTitle = administratorPage.title;
 /** IA03 platform-admin governance: list -> owner detail -> one independent action surface. */
 export function AdministratorsPage() {
   const refreshSession = usePlatformSessionRefresh();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<AdminFilters>({});
   const [sortKey, setSortKey] = useState<PlatformAdminSortKey>('USER_NAME');
   const [sortDirection, setSortDirection] = useState<SortDirection>('ASC');
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getPlatformAdminPage,
+        filters,
+        sort: {sortKey, sortDirection},
+      }),
+    [filters, sortDirection, sortKey],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
   const detail = useDetailDrawer<PlatformAdminDetail>();
   const detailGeneration = useAsyncGenerationGuard();
@@ -167,7 +179,7 @@ export function AdministratorsPage() {
                 key="reset"
                 onClick={() => {
                   searchConfig.form?.resetFields();
-                  setPage(1);
+                  pagination.setPage(1);
                   setFilters({});
                 }}
                 {...testId('platform-admin-filter-reset')}
@@ -177,14 +189,18 @@ export function AdministratorsPage() {
             ],
           }}
           onSubmit={value => {
-            setPage(1);
+            pagination.setPage(1);
             setFilters({
               userName: value.userName?.trim() || undefined,
               loginName: value.loginName?.trim() || undefined,
               status: value.status,
             });
           }}
-          pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
+          pagination={
+            result
+              ? {current: pagination.page, pageSize: pagination.pageSize, total: result.total, showSizeChanger: true}
+              : false
+          }
           columns={[
             {
               key: 'userName',
@@ -240,10 +256,10 @@ export function AdministratorsPage() {
               search: false,
             },
           ]}
-          onChange={(pagination, _, sorter, extra) => {
+          onChange={(tablePagination, _, sorter, extra) => {
             if (extra.action === 'paginate') {
-              setPage(pagination.current ?? page);
-              setPageSize(pagination.pageSize ?? pageSize);
+              if (tablePagination.pageSize !== pageSize) pagination.setPageSize(tablePagination.pageSize ?? pageSize);
+              else pagination.setPage(tablePagination.current ?? page);
               return;
             }
             if (extra.action !== 'sort') return;
@@ -263,7 +279,7 @@ export function AdministratorsPage() {
                     : 'UPDATED_AT';
             setSortKey(nextSort);
             setSortDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-            setPage(1);
+            pagination.setPage(1);
           }}
         />
       </div>

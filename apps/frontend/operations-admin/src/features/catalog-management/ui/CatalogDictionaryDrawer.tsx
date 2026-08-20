@@ -18,7 +18,13 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import {createContentIdempotencyKey, testId, useDrawerFormLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  createContentIdempotencyKey,
+  CursorPagination,
+  testId,
+  useCursorStack,
+  useDrawerFormLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
@@ -100,6 +106,8 @@ const dictionaryDescriptions: Record<Exclude<DictionaryKind, 'SKU_ATTRIBUTE_VALU
   PRODUCTION_TAG: '描述商品的处理要求，供履约与后厨识别，不代表岗位或设备。',
 };
 
+const DICTIONARY_PAGE_SIZE = 50;
+
 export function CatalogDictionaryDrawer({
   open,
   initialKind = 'TAG',
@@ -129,6 +137,15 @@ export function CatalogDictionaryDrawer({
   const [selectedAttributeRef, setSelectedAttributeRef] = useState<string>();
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const isProduction = kind === 'PRODUCTION_TAG';
+  const dictionaryCursor = useCursorStack({
+    resetKey: `${open}|${kind}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}|${parentEntryRef ?? ''}`,
+  });
+  const attributeValuesCursor = useCursorStack({
+    resetKey: `${open}|${selectedAttributeRef ?? ''}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
+  });
+  const productionCursor = useCursorStack({
+    resetKey: `${open}|production-tags|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
+  });
   const formForKind = useCallback(
     (value: Exclude<DictionaryKind, 'SKU_ATTRIBUTE_VALUE'>) =>
       value === 'TAG'
@@ -177,11 +194,13 @@ export function CatalogDictionaryDrawer({
           query: {
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
             ...(kind === 'SKU_ATTRIBUTE_VALUE' && parentEntryRef ? {parentEntryRef: wireUuid(parentEntryRef)} : {}),
+            ...(dictionaryCursor.cursor ? {cursor: dictionaryCursor.cursor} : {}),
+            pageSize: DICTIONARY_PAGE_SIZE,
           },
           headers,
         },
       ),
-    [headers, kind, parentEntryRef, queryContext.scopeRef],
+    [dictionaryCursor.cursor, headers, kind, parentEntryRef, queryContext.scopeRef],
   );
   const dictionaryQuery = operationsRtk.useGetOperationsCatalogDictionaryQuery(dictionaryRequest, {
     skip: !open || isProduction || missingParentEntry,
@@ -194,11 +213,13 @@ export function CatalogDictionaryDrawer({
           query: {
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
             ...(selectedAttributeRef ? {parentEntryRef: wireUuid(selectedAttributeRef)} : {}),
+            ...(attributeValuesCursor.cursor ? {cursor: attributeValuesCursor.cursor} : {}),
+            pageSize: DICTIONARY_PAGE_SIZE,
           },
           headers,
         },
       ),
-    [headers, queryContext.scopeRef, selectedAttributeRef],
+    [attributeValuesCursor.cursor, headers, queryContext.scopeRef, selectedAttributeRef],
   );
   const attributeValuesQuery = operationsRtk.useGetOperationsCatalogDictionaryQuery(attributeValuesRequest, {
     skip: !open || kind !== 'SKU_ATTRIBUTE' || !selectedAttributeRef,
@@ -207,9 +228,16 @@ export function CatalogDictionaryDrawer({
     () =>
       catalogInventoryRtkRequest.getOperationsProductionTags(
         {},
-        {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers},
+        {
+          query: {
+            dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
+            ...(productionCursor.cursor ? {cursor: productionCursor.cursor} : {}),
+            pageSize: DICTIONARY_PAGE_SIZE,
+          },
+          headers,
+        },
       ),
-    [headers, queryContext.scopeRef],
+    [headers, productionCursor.cursor, queryContext.scopeRef],
   );
   const productionQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionRequest, {
     skip: !open || !isProduction,
@@ -735,6 +763,12 @@ export function CatalogDictionaryDrawer({
                 onRow={row => ({onClick: () => setSelectedAttributeRef(row.entryRef), style: {cursor: 'pointer'}})}
                 {...testId('catalog-sku-attributes-table')}
               />
+              <CursorPagination
+                state={dictionaryCursor}
+                nextCursor={dictionaryData?.cursor}
+                testIdPrefix="catalog-sku-attributes-pagination"
+                style={{marginTop: 12}}
+              />
             </Flex>
           </Splitter.Panel>
           <Splitter.Panel>
@@ -868,6 +902,12 @@ export function CatalogDictionaryDrawer({
                     ]}
                     {...testId('catalog-sku-attribute-values-table')}
                   />
+                  <CursorPagination
+                    state={attributeValuesCursor}
+                    nextCursor={attributeValuesData?.cursor}
+                    testIdPrefix="catalog-sku-attribute-values-pagination"
+                    style={{marginTop: 12}}
+                  />
                 </Flex>
               )}
             </div>
@@ -969,6 +1009,12 @@ export function CatalogDictionaryDrawer({
               },
             ]}
             {...testId('catalog-dictionary-table')}
+          />
+          <CursorPagination
+            state={isProduction ? productionCursor : dictionaryCursor}
+            nextCursor={isProduction ? productionData?.cursor : dictionaryData?.cursor}
+            testIdPrefix={isProduction ? 'catalog-production-tags-pagination' : 'catalog-dictionary-pagination'}
+            style={{marginTop: 12}}
           />
         </Flex>
       )}

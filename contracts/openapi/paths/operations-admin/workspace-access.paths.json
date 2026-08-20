@@ -39,8 +39,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -49,8 +49,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -58,8 +58,8 @@
             }
           },
           {
+            "in": "query",
             "name": "organizationRef",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -67,8 +67,8 @@
             }
           },
           {
+            "in": "query",
             "name": "roleId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -76,16 +76,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationStatus"
             }
           },
           {
+            "in": "query",
             "name": "expiresFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -94,8 +94,8 @@
             }
           },
           {
+            "in": "query",
             "name": "expiresTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -104,8 +104,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -113,8 +113,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -123,8 +123,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -133,16 +133,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -321,8 +321,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -331,8 +331,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -340,8 +340,8 @@
             }
           },
           {
+            "in": "query",
             "name": "organizationRef",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -349,8 +349,8 @@
             }
           },
           {
+            "in": "query",
             "name": "roleId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -358,16 +358,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationStatus"
             }
           },
           {
+            "in": "query",
             "name": "expiresFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -376,8 +376,8 @@
             }
           },
           {
+            "in": "query",
             "name": "expiresTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -386,8 +386,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -395,8 +395,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -405,8 +405,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -415,16 +415,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -603,8 +603,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -613,8 +613,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -622,8 +622,8 @@
             }
           },
           {
+            "in": "query",
             "name": "organizationRef",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -631,8 +631,8 @@
             }
           },
           {
+            "in": "query",
             "name": "roleId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -640,16 +640,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationStatus"
             }
           },
           {
+            "in": "query",
             "name": "expiresFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -658,8 +658,8 @@
             }
           },
           {
+            "in": "query",
             "name": "expiresTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -668,8 +668,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -677,8 +677,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -687,8 +687,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -697,16 +697,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -885,8 +885,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -895,8 +895,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -904,8 +904,8 @@
             }
           },
           {
+            "in": "query",
             "name": "organizationRef",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -913,8 +913,8 @@
             }
           },
           {
+            "in": "query",
             "name": "roleId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -922,16 +922,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationStatus"
             }
           },
           {
+            "in": "query",
             "name": "expiresFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -940,8 +940,8 @@
             }
           },
           {
+            "in": "query",
             "name": "expiresTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -950,8 +950,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -959,8 +959,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -969,8 +969,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -979,16 +979,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -1167,8 +1167,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1177,8 +1177,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -1186,8 +1186,8 @@
             }
           },
           {
+            "in": "query",
             "name": "organizationRef",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -1195,8 +1195,8 @@
             }
           },
           {
+            "in": "query",
             "name": "roleId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -1204,16 +1204,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationStatus"
             }
           },
           {
+            "in": "query",
             "name": "expiresFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1222,8 +1222,8 @@
             }
           },
           {
+            "in": "query",
             "name": "expiresTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1232,8 +1232,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1241,8 +1241,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1251,8 +1251,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1261,16 +1261,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceInvitationSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -1449,8 +1449,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1459,8 +1459,8 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "type": "string",
@@ -1471,8 +1471,8 @@
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": true,
             "schema": {
               "type": "string",
@@ -1483,8 +1483,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -1492,8 +1492,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1501,8 +1501,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1511,8 +1511,8 @@
             }
           },
           {
-            "name": "selectedOrganizationRef",
             "in": "query",
+            "name": "selectedOrganizationRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1521,8 +1521,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1605,8 +1605,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1615,8 +1615,8 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "type": "string",
@@ -1627,8 +1627,8 @@
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": true,
             "schema": {
               "type": "string",
@@ -1639,8 +1639,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -1648,8 +1648,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1657,8 +1657,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1667,8 +1667,8 @@
             }
           },
           {
-            "name": "selectedOrganizationRef",
             "in": "query",
+            "name": "selectedOrganizationRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1677,8 +1677,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1761,8 +1761,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1771,8 +1771,8 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "type": "string",
@@ -1783,8 +1783,8 @@
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": true,
             "schema": {
               "type": "string",
@@ -1795,8 +1795,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -1804,8 +1804,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1813,8 +1813,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1823,8 +1823,8 @@
             }
           },
           {
-            "name": "selectedOrganizationRef",
             "in": "query",
+            "name": "selectedOrganizationRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1833,8 +1833,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1917,8 +1917,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1927,8 +1927,8 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "type": "string",
@@ -1939,8 +1939,8 @@
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": true,
             "schema": {
               "type": "string",
@@ -1951,8 +1951,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -1960,8 +1960,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1969,8 +1969,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -1979,8 +1979,8 @@
             }
           },
           {
-            "name": "selectedOrganizationRef",
             "in": "query",
+            "name": "selectedOrganizationRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -1989,8 +1989,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2073,8 +2073,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -2083,8 +2083,8 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "type": "string",
@@ -2095,8 +2095,8 @@
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": true,
             "schema": {
               "type": "string",
@@ -2107,8 +2107,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -2116,8 +2116,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -2125,8 +2125,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -2135,8 +2135,8 @@
             }
           },
           {
-            "name": "selectedOrganizationRef",
             "in": "query",
+            "name": "selectedOrganizationRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -2145,8 +2145,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3339,8 +3339,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -3349,8 +3349,8 @@
             }
           },
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -3358,8 +3358,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -3367,8 +3367,8 @@
             }
           },
           {
-            "name": "roleId",
             "in": "query",
+            "name": "roleId",
             "required": false,
             "schema": {
               "type": "string",
@@ -3376,16 +3376,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceAccountStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3393,8 +3393,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3403,8 +3403,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3413,16 +3413,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceUserSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -3503,8 +3503,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -3513,8 +3513,8 @@
             }
           },
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -3522,8 +3522,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -3531,8 +3531,8 @@
             }
           },
           {
-            "name": "roleId",
             "in": "query",
+            "name": "roleId",
             "required": false,
             "schema": {
               "type": "string",
@@ -3540,16 +3540,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceAccountStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3557,8 +3557,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3567,8 +3567,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3577,16 +3577,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceUserSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -3667,8 +3667,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -3677,8 +3677,8 @@
             }
           },
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -3686,8 +3686,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -3695,8 +3695,8 @@
             }
           },
           {
-            "name": "roleId",
             "in": "query",
+            "name": "roleId",
             "required": false,
             "schema": {
               "type": "string",
@@ -3704,16 +3704,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceAccountStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3721,8 +3721,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3731,8 +3731,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3741,16 +3741,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceUserSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -3831,8 +3831,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -3841,8 +3841,8 @@
             }
           },
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -3850,8 +3850,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -3859,8 +3859,8 @@
             }
           },
           {
-            "name": "roleId",
             "in": "query",
+            "name": "roleId",
             "required": false,
             "schema": {
               "type": "string",
@@ -3868,16 +3868,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceAccountStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3885,8 +3885,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3895,8 +3895,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3905,16 +3905,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceUserSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -3995,8 +3995,8 @@
             }
           },
           {
-            "name": "scopeRef",
             "in": "query",
+            "name": "scopeRef",
             "required": false,
             "schema": {
               "type": "string",
@@ -4005,8 +4005,8 @@
             }
           },
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -4014,8 +4014,8 @@
             }
           },
           {
-            "name": "mobile",
             "in": "query",
+            "name": "mobile",
             "required": false,
             "schema": {
               "type": "string",
@@ -4023,8 +4023,8 @@
             }
           },
           {
-            "name": "roleId",
             "in": "query",
+            "name": "roleId",
             "required": false,
             "schema": {
               "type": "string",
@@ -4032,16 +4032,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceAccountStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -4049,8 +4049,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -4059,8 +4059,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -4069,16 +4069,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceUserSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"
@@ -4169,8 +4169,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -4263,8 +4263,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -4357,8 +4357,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -4451,8 +4451,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -4545,8 +4545,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",

@@ -34,7 +34,18 @@ Before any implementation-facing design, use the sequence defined by
    `doc/decisions/templates/ui-interaction-design-template.md`, complete its interaction map,
    low-fidelity wireframes, state/boundary table, per-operation reasonableness and face/owner
    matrix, then obtain Dexter's visual review;
-4. only then write implementation-facing design with exact owner/path and verification units;
+3b. for a UI-bearing Journey, also write the IA artifact against
+   `doc/decisions/templates/ia-design-template.md`; the interaction artifact governs what the user
+   sees, the IA governs what is invisible yet decides behavior (who may read, what refetches after a
+   write, how large the collection gets). Invisible dimensions must be written as performable
+   observations, not property descriptions;
+4. only then write implementation-facing design against
+   `doc/decisions/templates/implementation-design-template.md`, with exact owner/path and
+   verification units. Its cross-cutting mechanism table is a fixed row set — fill each row with the
+   exact existing capability, one performable observation, the required shape when only a code
+   precedent exists, and the complete in-batch applicability list. Any fact shared with the IA must
+   match word for word; resolve mismatches before implementation rather than leaving them to be
+   bridged in code;
 5. for every adversarial round, dispatch the fresh independent-subagent blind review using
    `doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md`,
    then perform author-side dialectical intake and request Claude review.

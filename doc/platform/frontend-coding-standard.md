@@ -150,7 +150,7 @@ assert.doesNotMatch(source, /useState\(20\)/, path);  // 不该有的没有
 
 ---
 
-## 3 · 只能靠 review 的六类
+## 3 · 只能靠 review 的几类(靠语义判断,做不成门)
 
 ### 3-A · 同一件事只能有一种写法
 
@@ -319,6 +319,77 @@ return receipt.response();                             // 键同且完全相同 
 > `WorkspaceUserPage.tsx:216` · `ContractInvalidateModal.tsx:13` · 两个登录页 —— **是一族,不是个例**。
 
 **按 §7 的判据,本条没有仓内正例,状态为「未验证」** —— 整改时要**建立**正例,不是照抄任何现有写法。
+
+### 3-H · 浏览器路由只定位页面与会话上下文
+
+**规则**:认证后台的 canonical browser route 可以携带 `groupWorkspaceKey` 以定位工作空间，
+但不得把 project/store/head-company 等数据节点 ref 放进页面路由并让它成为当前 scope 的来源。
+数据节点只能来自已确认的 `WorkspaceScope/queryContext`；API 资源路径可以携带 owner ref，
+但它与浏览器 URL 是两条不同的边界，服务端仍须对 owner ref 做会话节点复核。旧的带 UUID 地址如需迁移，
+只能匹配后重定向到稳定页面路由，不能把 UUID 回填为 scope。
+
+**反例**: `operations-admin` 曾把项目页注册成 `projects/:scopeRef/business-channels`，
+`OperationsApp` 又用 `routeMatch?.scopeRef ?? scopeRefForPage(selected)`。用户把 URL 中的 UUID 改成另一项目后，
+前端会用错误节点构造查询上下文；即使后端 API 仍带 `projectRef/storeRef`，也不能把这种页面 URL 当授权依据。
+
+**最小解**:项目/门店页面固定为 `business-channels/project` 与 `business-channels/store`，
+页面 scope 只读会话上下文；保留 API `/projects/{projectRef}/business-channels`、
+`/stores/{storeRef}/business-channels` 作为 owner 资源路径，由 edge 复核目标节点。
+
+**穷举范围**:新增或修改规则时，至少检查 `apps/frontend/*/src/app/routing` 的页面注册/解析/生成、
+所有 `:scopeRef`/`routeForScope`/`matchRoute` 浏览器路由实现及其调用方；generated API、HTTP controller、
+owner detail URL 中的 ref 只有在被浏览器路由直接当 scope 使用时才命中本条。该条由 operations-admin 两个
+business-channel 路由的真实回归与红突变测试守护；无正则化全仓门，需 review 结合穷举范围判断。
+
+### 3-I · 管理列表首列是业务名称,并且可点进详情(Dexter 2026-08-20 裁定)
+
+**规则**:管理后台列表的第一列必须是**用户认得的业务名称**,并且点击它进入该行的详情面。
+业务编码、状态、时间、UUID 或任何"系统生成中"的占位值都不得占据首列。
+若该实体另有真实业务编码,按 G-05B 单独成列显示,而不是顶替名称列。
+
+**反例**(2026-08-20 Dexter 首次体验时报出):
+`operations-admin` 的经营渠道列表首列是 `channelCode`,而该编码当时尚未生成,
+列里显示"待生成" —— 用户在列表上**既认不出是哪条渠道,也点不进详情**。
+
+**最小解**:首列 `dataIndex` 指向名称字段,并在该列 `render` 内挂打开详情的 onClick;
+编码列排在其后。参照 `apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelList.tsx`
+的「渠道名称」首列 + 「渠道编码」次列形态。
+
+**判别式**:用户扫一眼这一列,能说出"这是哪一条"吗?说不出 ⇒ 它不该在首列。
+
+**穷举范围**:两个 app 下所有管理列表的 `columns` 定义。
+新增或修改列表时逐个检查首列 `dataIndex` 与其 onClick 目标。
+
+**为什么不做成门**:"哪个字段算业务名称"需要语义判断 ——
+机器只能查到首列有没有 onClick,查不出 `channelCode` 不是名称。
+可做的机械部分(首列必须可点)可以进组件测试,语义部分靠 review。
+
+### 3-J · 每个内容 Tab 必须接入 Shell 的统一刷新生命周期(Dexter 2026-08-20 裁定)
+
+**规则**:所有承载业务读模型的内容 Tab，都必须订阅所属管理后台 Shell 提供的统一刷新信号。
+点击 Tab 的“刷新当前页”后，页面中的 RTK 列表、命令式读模型、服务端分页列表和已打开的只读详情
+必须重新读取；不得只让某一类请求失效，也不得只刷新页面标题或局部缓存。刷新不得重置未提交的编辑表单，
+也不得把“视图切换”误当成刷新：只有会改变读模型的内容刷新动作才发布统一信号。
+
+**最小实现**:App 层维护唯一的 `platformContentTabRefreshSignal` 或 `operationsContentTabRefreshSignal`；
+内容 Tab 中的命令式读模型用 foundation 的 `useRefreshVersion` 将信号接入自身 effect，RTK 查询通过既有
+LIST tag 失效链回读。列表、详情和 Drawer 分别声明自己的读边界；不要在每个页面另造刷新按钮或第二套全局事件。
+
+**反例**(2026-08-20 Dexter 体验):门店经营渠道 Tab 有统一刷新按钮，但页面中模板候选和渠道列表分别走
+命令式读请求，刷新只失效了部分列表；外部协作绑定 Tab 还用自定义 Table，搜索、分页、排序和刷新不共享
+同一读模型生命周期。
+
+**判别式**:在当前 Tab 先执行一次可见的新增/启停/绑定变化，再点击“刷新当前页”；所有允许读回的列表、
+详情和状态必须在同一内容 Tab 内呈现最新事实，未提交表单内容不得被覆盖。若某个读模型没有订阅信号或
+没有被统一 RTK LIST tag 覆盖，即不符合本条。
+
+**穷举范围**:两个 App 的内容 Tab 注册页、所有 `platformClient`/`operationsClient` 命令式读请求、所有
+`read*` 查询函数和 `useEffect` 读回列表；排除登录/密码恢复页和用户明确打开的独立编辑 Drawer。检查时同时
+覆盖普通列表、树+详情页、嵌套 Tab、服务端分页表格和已打开详情。
+
+**为什么不做成纯正则门**:是否属于内容 Tab、刷新是否会覆盖脏表单、RTK LIST tag 是否覆盖真实 query
+需要结合生命周期和业务事实判断；可机械检查信号导出、调用点和 focused test，但不能用字符串命中替代
+刷新后的真实读回验证。
 
 ---
 

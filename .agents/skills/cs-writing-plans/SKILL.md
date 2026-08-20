@@ -41,6 +41,22 @@ finite search surface, all same-root siblings, explicit counterexamples, and exa
 the finding set and prevention dispositions. A named file or literal is never the whole denominator
 by default.
 
+The design must be written against `doc/decisions/templates/implementation-design-template.md`. Its
+cross-cutting mechanism table is a fixed row set: fill every row with (1) the exact existing
+capability path or symbol, (2) one performable observation that verifies it, (3) when the repo has
+only a code precedent and no written standard, that precedent's exact path plus which parts the new
+code must match, and (4) the complete in-batch applicability list rather than an example. Rows may
+not be deleted; `N/A` requires a reason. The declaration-transfer-consumption matrix must carry
+mechanism rows (collection shape, authorization enforcement point, cache invalidation, error
+mapping, logging/masking), each stating its concrete value at every layer it passes through.
+
+A UI-bearing design also requires an IA artifact written against
+`doc/decisions/templates/ia-design-template.md`. Dimensions that cannot be verified by opening the
+page — read authorization, what refetches after a write, collection shape and expected scale — must
+be written as performable observations, never as property descriptions. Any fact appearing in both
+the IA and this design must match word for word; a mismatch is a defect to resolve now, never a gap
+left for implementation to bridge.
+
 The resulting design starts with:
 
 ```text

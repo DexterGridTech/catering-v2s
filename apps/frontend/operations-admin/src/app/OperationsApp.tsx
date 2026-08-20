@@ -48,7 +48,12 @@ import {OperationsForcedPasswordChangePage} from '../features/authentication/ui/
 import {RoleContextSelector} from '../features/role-home-bootstrap/ui/RoleContextSelector';
 import {DataScopeSelector} from '../features/role-home-bootstrap/ui/DataScopeSelector';
 import {adminCatalog, operationsPageDesignKeys} from './catalog/generatedAdminCatalog';
-import {operationsPageRegistry, parseOperationsPageDesignKey} from './routing/pageRegistry';
+import {
+  matchOperationsRoute,
+  operationsPageRegistry,
+  parseOperationsPageDesignKey,
+  routeForOperationsPage,
+} from './routing/pageRegistry';
 import type {OperationsPageDesignKey} from './catalog/generatedAdminCatalog';
 import type {OperationsSession as Session} from './state/OperationsSession';
 import {operationsStore} from './state/OperationsStore';
@@ -79,6 +84,8 @@ const menuIconByKey = {
   [operationsPageDesignKeys.PgIamHeadCompanyUsers]: <TeamOutlined />,
   [operationsPageDesignKeys.PgIamStoreUsers]: <TeamOutlined />,
   [operationsPageDesignKeys.PgStoreProfile]: <ShopOutlined />,
+  [operationsPageDesignKeys.PgBusinessChannelProject]: <ShopOutlined />,
+  [operationsPageDesignKeys.PgBusinessChannelStore]: <ShopOutlined />,
   [operationsPageDesignKeys.PgCatalogStoreItems]: <TagsOutlined />,
   [operationsPageDesignKeys.PgInventoryStoreStatus]: <ShopOutlined />,
   [operationsPageDesignKeys.PgCatalogBrandItems]: <TagsOutlined />,
@@ -154,12 +161,37 @@ function Shell({
   }, [accessibleMenuPages, locked]);
   const basePath = `/operations/${encodeURIComponent(session.groupWorkspaceKey)}`;
   const routeSegment = location.pathname.startsWith(`${basePath}/`) ? location.pathname.slice(basePath.length + 1) : '';
-  const selected = accessiblePages.find(({key}) => operationsPageRegistry[key].routeSegment === routeSegment)?.key;
+  const routeMatch = matchOperationsRoute(routeSegment);
+  const selected = routeMatch && accessiblePages.some(({key}) => key === routeMatch.key) ? routeMatch.key : undefined;
+  const scopeRefForPage = useCallback(
+    (pageKey: OperationsPageDesignKey) => {
+      const page = catalogByKey.get(pageKey);
+      return page?.requiredDataNodeType === 'REGION'
+        ? entry.scopeContext?.region?.dataNodeRef
+        : page?.requiredDataNodeType === 'PROJECT'
+          ? entry.scopeContext?.project?.dataNodeRef
+          : page?.requiredDataNodeType === 'STORE'
+            ? entry.scopeContext?.store?.dataNodeRef
+            : page?.requiredDataNodeType === 'HEAD_COMPANY'
+              ? entry.scopeContext?.headCompany?.dataNodeRef
+              : undefined;
+    },
+    [catalogByKey, entry.scopeContext],
+  );
+  const pagePath = useCallback(
+    (pageKey: OperationsPageDesignKey) => `${basePath}/${routeForOperationsPage(pageKey)}`,
+    [basePath],
+  );
+  const needsCanonicalRedirect = Boolean(selected && routeMatch && !routeMatch.canonical);
   useEffect(() => {
-    if ((!routeSegment || !selected) && accessiblePages.length) {
-      void navigate(`${basePath}/${operationsPageRegistry[accessiblePages[0].key].routeSegment}`, {replace: true});
+    if (needsCanonicalRedirect && selected) {
+      void navigate(pagePath(selected), {replace: true});
+      return;
     }
-  }, [accessiblePages, basePath, navigate, routeSegment, selected]);
+    if ((!routeSegment || !selected) && accessiblePages.length) {
+      void navigate(pagePath(accessiblePages[0].key), {replace: true});
+    }
+  }, [accessiblePages, navigate, needsCanonicalRedirect, pagePath, routeSegment, selected]);
   useEffect(() => {
     setBrandLogoBroken(false);
   }, [entry.logoUrl]);
@@ -180,18 +212,13 @@ function Shell({
     if (!selected) return;
     setOpenPages(current => (current.includes(selected) ? current : [...current, selected]));
   }, [selected]);
-  const registration = selected ? operationsPageRegistry[selected] : undefined;
+  const registration = selected
+    ? operationsPageRegistry[selected]
+    : accessiblePages.length
+      ? operationsPageRegistry[accessiblePages[0].key]
+      : undefined;
   const selectedCatalogPage = selected ? catalogByKey.get(selected) : undefined;
-  const selectedScopeRef =
-    selectedCatalogPage?.requiredDataNodeType === 'REGION'
-      ? entry.scopeContext?.region?.dataNodeRef
-      : selectedCatalogPage?.requiredDataNodeType === 'PROJECT'
-        ? entry.scopeContext?.project?.dataNodeRef
-        : selectedCatalogPage?.requiredDataNodeType === 'STORE'
-          ? entry.scopeContext?.store?.dataNodeRef
-          : selectedCatalogPage?.requiredDataNodeType === 'HEAD_COMPANY'
-            ? entry.scopeContext?.headCompany?.dataNodeRef
-            : undefined;
+  const selectedScopeRef = selected ? scopeRefForPage(selected) : undefined;
   const queryContext = useMemo(
     () =>
       contextScopedQueryArgs(
@@ -214,7 +241,7 @@ function Shell({
     setOpenPages(next);
     if (target === selected) {
       const nextKey = next[Math.min(index, next.length - 1)];
-      if (nextKey) void navigate(`${basePath}/${operationsPageRegistry[nextKey].routeSegment}`);
+      if (nextKey) void navigate(pagePath(nextKey));
     }
   };
   const principalMenu: MenuProps = {
@@ -328,7 +355,7 @@ function Shell({
               onClick={({key}) => {
                 if (locked) return;
                 const pageKey = parseOperationsPageDesignKey(key);
-                if (pageKey) void navigate(`${basePath}/${operationsPageRegistry[pageKey].routeSegment}`);
+                if (pageKey) void navigate(pagePath(pageKey));
               }}
               items={menuItems}
               {...testId('operations-shell-menu')}
@@ -373,7 +400,7 @@ function Shell({
               onChange={key => {
                 if (locked) return;
                 const pageKey = parseOperationsPageDesignKey(key);
-                if (pageKey) void navigate(`${basePath}/${operationsPageRegistry[pageKey].routeSegment}`);
+                if (pageKey) void navigate(pagePath(pageKey));
               }}
               onEdit={(key, action) => {
                 if (action !== 'remove') return;
@@ -541,10 +568,9 @@ function WorkspaceRoute() {
     const selectedSession = toSession(next);
     const page = selectedSession?.pageAccessKeys[0];
     if (page)
-      void navigate(
-        `/operations/${encodeURIComponent(next.groupWorkspaceKey)}/${operationsPageRegistry[page].routeSegment}`,
-        {replace: true},
-      );
+      void navigate(`/operations/${encodeURIComponent(next.groupWorkspaceKey)}/${routeForOperationsPage(page)}`, {
+        replace: true,
+      });
   };
   if (entry?.outcome === 'PASSWORD_CHANGE_REQUIRED')
     return (

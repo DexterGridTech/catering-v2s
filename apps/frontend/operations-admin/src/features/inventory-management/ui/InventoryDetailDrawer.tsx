@@ -15,11 +15,11 @@ import {
 import {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
+  CursorPagination,
   NameCodeText,
   testId,
   useCursorStack,
   useOverlayLock,
-  type CursorStackState,
 } from '@catering-v2s/admin-ui-foundation';
 import {skipToken} from '@reduxjs/toolkit/query';
 import {useEffect, useMemo, useRef, useState} from 'react';
@@ -65,38 +65,6 @@ function ZoneProblem({title, onRetry}: {title: string; onRetry: () => void}) {
         </Button>
       }
     />
-  );
-}
-
-function CursorControls({
-  state,
-  hasNext,
-  nextCursor,
-  testIdPrefix,
-}: {
-  state: Pick<CursorStackState, 'page' | 'canPrevious' | 'goToPage'>;
-  hasNext: boolean;
-  nextCursor?: string;
-  testIdPrefix: string;
-}) {
-  return (
-    <Space size={8} style={{display: 'flex', justifyContent: 'flex-end'}} {...testId(testIdPrefix)}>
-      <Button
-        disabled={!state.canPrevious}
-        onClick={() => state.goToPage(state.page - 1)}
-        {...testId(`${testIdPrefix}-previous`)}
-      >
-        上一页
-      </Button>
-      <Typography.Text type="secondary">第 {state.page} 页</Typography.Text>
-      <Button
-        disabled={!hasNext}
-        onClick={() => state.goToPage(state.page + 1, nextCursor)}
-        {...testId(`${testIdPrefix}-next`)}
-      >
-        下一页
-      </Button>
-    </Space>
   );
 }
 
@@ -336,9 +304,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
                 ]}
               />
-              <CursorControls
+              <CursorPagination
                 state={historyCursorState}
-                hasNext={Boolean(historyPage.cursor)}
                 nextCursor={historyPage.cursor}
                 testIdPrefix="inventory-history-pagination"
               />
@@ -379,9 +346,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   {title: '状态', dataIndex: 'status'},
                 ]}
               />
-              <CursorControls
+              <CursorPagination
                 state={referenceCursorState}
-                hasNext={Boolean(referencePage.cursor)}
                 nextCursor={referencePage.cursor}
                 testIdPrefix="inventory-reference-pagination"
               />
@@ -417,9 +383,8 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
                 ]}
               />
-              <CursorControls
+              <CursorPagination
                 state={ledgerCursorState}
-                hasNext={Boolean(ledgerPage.cursor)}
                 nextCursor={ledgerPage.cursor}
                 testIdPrefix="inventory-ledger-pagination"
               />

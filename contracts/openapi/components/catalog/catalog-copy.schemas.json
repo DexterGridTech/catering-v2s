@@ -1627,6 +1627,10 @@
         "cursor": {
           "type": "string",
           "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
         }
       }
     },
@@ -2192,6 +2196,10 @@
         "cursor": {
           "type": "string",
           "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
         }
       }
     },

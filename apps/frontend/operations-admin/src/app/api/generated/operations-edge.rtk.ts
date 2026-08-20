@@ -70,6 +70,22 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    createOperationsBusinessChannel: (pathParameters: FaceOperationContracts["createOperationsBusinessChannel"]["path"], options: FaceOperationOptions<"createOperationsBusinessChannel">): FaceOperationRequest<"createOperationsBusinessChannel"> => ({
+      operationId: "createOperationsBusinessChannel",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createOperationsBusinessChannelTemplate: (pathParameters: FaceOperationContracts["createOperationsBusinessChannelTemplate"]["path"], options: FaceOperationOptions<"createOperationsBusinessChannelTemplate">): FaceOperationRequest<"createOperationsBusinessChannelTemplate"> => ({
+      operationId: "createOperationsBusinessChannelTemplate",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">): FaceOperationRequest<"createOperationsContract"> => ({
       operationId: "createOperationsContract",
       method: "POST",
@@ -126,6 +142,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    createOperationsOwnerBinding: (pathParameters: FaceOperationContracts["createOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"createOperationsOwnerBinding">): FaceOperationRequest<"createOperationsOwnerBinding"> => ({
+      operationId: "createOperationsOwnerBinding",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">): FaceOperationRequest<"createOperationsWorkspaceGroupInvitation"> => ({
       operationId: "createOperationsWorkspaceGroupInvitation",
       method: "POST",
@@ -166,6 +190,30 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    deleteOperationsOwnerBinding: (pathParameters: FaceOperationContracts["deleteOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"deleteOperationsOwnerBinding">): FaceOperationRequest<"deleteOperationsOwnerBinding"> => ({
+      operationId: "deleteOperationsOwnerBinding",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsBusinessChannelDetail: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelDetail"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelDetail">): FaceOperationRequest<"getOperationsBusinessChannelDetail"> => ({
+      operationId: "getOperationsBusinessChannelDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsBusinessChannelTemplates: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelTemplates"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelTemplates">): FaceOperationRequest<"getOperationsBusinessChannelTemplates"> => ({
+      operationId: "getOperationsBusinessChannelTemplates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">): FaceOperationRequest<"getOperationsContract"> => ({
       operationId: "getOperationsContract",
       method: "GET",
@@ -202,6 +250,22 @@ export const operationsAdminRtkRequest = {
       operationId: "getOperationsEntityAuditHistory",
       method: "GET",
       path: "/api/operations/audit-history",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsExternalCapabilityDictionary: (pathParameters: FaceOperationContracts["getOperationsExternalCapabilityDictionary"]["path"], options: FaceOperationOptions<"getOperationsExternalCapabilityDictionary">): FaceOperationRequest<"getOperationsExternalCapabilityDictionary"> => ({
+      operationId: "getOperationsExternalCapabilityDictionary",
+      method: "GET",
+      path: "/api/operations/external-capability-dictionary",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsExternalProviderCandidates: (pathParameters: FaceOperationContracts["getOperationsExternalProviderCandidates"]["path"], options: FaceOperationOptions<"getOperationsExternalProviderCandidates">): FaceOperationRequest<"getOperationsExternalProviderCandidates"> => ({
+      operationId: "getOperationsExternalProviderCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -286,14 +350,6 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
-    getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">): FaceOperationRequest<"getOperationsOrganizationStoreCandidates"> => ({
-      operationId: "getOperationsOrganizationStoreCandidates",
-      method: "GET",
-      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      pathParameters,
-      requiresSession: true,
-      ...options,
-    }),
     getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">): FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition"> => ({
       operationId: "getOperationsOrganizationStoreExtensionDefinition",
       method: "GET",
@@ -322,6 +378,38 @@ export const operationsAdminRtkRequest = {
       operationId: "getOperationsOrganizationTenants",
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOwnerBindingDetail: (pathParameters: FaceOperationContracts["getOperationsOwnerBindingDetail"]["path"], options: FaceOperationOptions<"getOperationsOwnerBindingDetail">): FaceOperationRequest<"getOperationsOwnerBindingDetail"> => ({
+      operationId: "getOperationsOwnerBindingDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectBusinessChannels: (pathParameters: FaceOperationContracts["getOperationsProjectBusinessChannels"]["path"], options: FaceOperationOptions<"getOperationsProjectBusinessChannels">): FaceOperationRequest<"getOperationsProjectBusinessChannels"> => ({
+      operationId: "getOperationsProjectBusinessChannels",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreBusinessChannels: (pathParameters: FaceOperationContracts["getOperationsStoreBusinessChannels"]["path"], options: FaceOperationOptions<"getOperationsStoreBusinessChannels">): FaceOperationRequest<"getOperationsStoreBusinessChannels"> => ({
+      operationId: "getOperationsStoreBusinessChannels",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreBusinessChannelTemplateCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreBusinessChannelTemplateCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreBusinessChannelTemplateCandidates">): FaceOperationRequest<"getOperationsStoreBusinessChannelTemplateCandidates"> => ({
+      operationId: "getOperationsStoreBusinessChannelTemplateCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -646,6 +734,22 @@ export const operationsAdminRtkRequest = {
       requiresSession: false,
       ...options,
     }),
+    transitionOperationsBusinessChannelStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelStatus">): FaceOperationRequest<"transitionOperationsBusinessChannelStatus"> => ({
+      operationId: "transitionOperationsBusinessChannelStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    transitionOperationsBusinessChannelTemplateStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelTemplateStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelTemplateStatus">): FaceOperationRequest<"transitionOperationsBusinessChannelTemplateStatus"> => ({
+      operationId: "transitionOperationsBusinessChannelTemplateStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">): FaceOperationRequest<"transitionOperationsOrganizationBrandStatus"> => ({
       operationId: "transitionOperationsOrganizationBrandStatus",
       method: "POST",
@@ -682,6 +786,22 @@ export const operationsAdminRtkRequest = {
       operationId: "transitionOperationsOrganizationTenantStatus",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsBusinessChannel: (pathParameters: FaceOperationContracts["updateOperationsBusinessChannel"]["path"], options: FaceOperationOptions<"updateOperationsBusinessChannel">): FaceOperationRequest<"updateOperationsBusinessChannel"> => ({
+      operationId: "updateOperationsBusinessChannel",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsBusinessChannelTemplate: (pathParameters: FaceOperationContracts["updateOperationsBusinessChannelTemplate"]["path"], options: FaceOperationOptions<"updateOperationsBusinessChannelTemplate">): FaceOperationRequest<"updateOperationsBusinessChannelTemplate"> => ({
+      operationId: "updateOperationsBusinessChannelTemplate",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -742,6 +862,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    updateOperationsOwnerBinding: (pathParameters: FaceOperationContracts["updateOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"updateOperationsOwnerBinding">): FaceOperationRequest<"updateOperationsOwnerBinding"> => ({
+      operationId: "updateOperationsOwnerBinding",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     verifyOperationsWorkspaceOtp: (pathParameters: FaceOperationContracts["verifyOperationsWorkspaceOtp"]["path"], options: FaceOperationOptions<"verifyOperationsWorkspaceOtp">): FaceOperationRequest<"verifyOperationsWorkspaceOtp"> => ({
       operationId: "verifyOperationsWorkspaceOtp",
       method: "POST",
@@ -789,6 +917,14 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    createOperationsBusinessChannel: build.mutation<FaceOperationContracts["createOperationsBusinessChannel"]["response"], FaceOperationRequest<"createOperationsBusinessChannel">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    createOperationsBusinessChannelTemplate: build.mutation<FaceOperationContracts["createOperationsBusinessChannelTemplate"]["response"], FaceOperationRequest<"createOperationsBusinessChannelTemplate">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     createOperationsContract: build.mutation<FaceOperationContracts["createOperationsContract"]["response"], FaceOperationRequest<"createOperationsContract">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -817,6 +953,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    createOperationsOwnerBinding: build.mutation<FaceOperationContracts["createOperationsOwnerBinding"]["response"], FaceOperationRequest<"createOperationsOwnerBinding">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     createOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"createOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -837,6 +977,18 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    deleteOperationsOwnerBinding: build.mutation<FaceOperationContracts["deleteOperationsOwnerBinding"]["response"], FaceOperationRequest<"deleteOperationsOwnerBinding">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsBusinessChannelDetail: build.query<FaceOperationContracts["getOperationsBusinessChannelDetail"]["response"], FaceOperationRequest<"getOperationsBusinessChannelDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsBusinessChannelTemplates: build.query<FaceOperationContracts["getOperationsBusinessChannelTemplates"]["response"], FaceOperationRequest<"getOperationsBusinessChannelTemplates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getOperationsContract: build.query<FaceOperationContracts["getOperationsContract"]["response"], FaceOperationRequest<"getOperationsContract">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -854,6 +1006,14 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsEntityAuditHistory: build.query<FaceOperationContracts["getOperationsEntityAuditHistory"]["response"], FaceOperationRequest<"getOperationsEntityAuditHistory">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsExternalCapabilityDictionary: build.query<FaceOperationContracts["getOperationsExternalCapabilityDictionary"]["response"], FaceOperationRequest<"getOperationsExternalCapabilityDictionary">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsExternalProviderCandidates: build.query<FaceOperationContracts["getOperationsExternalProviderCandidates"]["response"], FaceOperationRequest<"getOperationsExternalProviderCandidates">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -897,10 +1057,6 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
-    getOperationsOrganizationStoreCandidates: build.query<FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreCandidates">>({
-      query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
-    }),
     getOperationsOrganizationStoreExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -914,6 +1070,22 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationTenants: build.query<FaceOperationContracts["getOperationsOrganizationTenants"]["response"], FaceOperationRequest<"getOperationsOrganizationTenants">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsOwnerBindingDetail: build.query<FaceOperationContracts["getOperationsOwnerBindingDetail"]["response"], FaceOperationRequest<"getOperationsOwnerBindingDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectBusinessChannels: build.query<FaceOperationContracts["getOperationsProjectBusinessChannels"]["response"], FaceOperationRequest<"getOperationsProjectBusinessChannels">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsStoreBusinessChannels: build.query<FaceOperationContracts["getOperationsStoreBusinessChannels"]["response"], FaceOperationRequest<"getOperationsStoreBusinessChannels">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsStoreBusinessChannelTemplateCandidates: build.query<FaceOperationContracts["getOperationsStoreBusinessChannelTemplateCandidates"]["response"], FaceOperationRequest<"getOperationsStoreBusinessChannelTemplateCandidates">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -1077,6 +1249,14 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    transitionOperationsBusinessChannelStatus: build.mutation<FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["response"], FaceOperationRequest<"transitionOperationsBusinessChannelStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    transitionOperationsBusinessChannelTemplateStatus: build.mutation<FaceOperationContracts["transitionOperationsBusinessChannelTemplateStatus"]["response"], FaceOperationRequest<"transitionOperationsBusinessChannelTemplateStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     transitionOperationsOrganizationBrandStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationBrandStatus">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -1094,6 +1274,14 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsOrganizationTenantStatus: build.mutation<FaceOperationContracts["transitionOperationsOrganizationTenantStatus"]["response"], FaceOperationRequest<"transitionOperationsOrganizationTenantStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    updateOperationsBusinessChannel: build.mutation<FaceOperationContracts["updateOperationsBusinessChannel"]["response"], FaceOperationRequest<"updateOperationsBusinessChannel">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    updateOperationsBusinessChannelTemplate: build.mutation<FaceOperationContracts["updateOperationsBusinessChannelTemplate"]["response"], FaceOperationRequest<"updateOperationsBusinessChannelTemplate">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -1122,6 +1310,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     updateOperationsOrganizationTenant: build.mutation<FaceOperationContracts["updateOperationsOrganizationTenant"]["response"], FaceOperationRequest<"updateOperationsOrganizationTenant">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    updateOperationsOwnerBinding: build.mutation<FaceOperationContracts["updateOperationsOwnerBinding"]["response"], FaceOperationRequest<"updateOperationsOwnerBinding">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),

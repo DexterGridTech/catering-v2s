@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
@@ -52,43 +53,108 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         if (!"getOperationsProductionTags".equals(operationId))
             throw new ProductionTagOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "production tag read operation is not registered");
-        return readTags(dataNodeRef, brandRef, requestId);
+        return readTags(dataNodeRef, brandRef, request, requestId);
     }
 
     @Override
-    public JsonNode readTags(String dataNodeRef, String brandRef, String requestId) {
+    public JsonNode readTags(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
+        int pageSize = parsePageSize(request, "pageSize", 20);
+        String queryIdentity = cursorIdentity("production-tags", dataNodeRef, brandRef, Integer.toString(pageSize));
+        OpaqueCollectionCursor.Position cursor;
+        try {
+            cursor = OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
+        } catch (OpaqueCollectionCursor.InvalidCursor failure) {
+            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "cursor is invalid", failure);
+        }
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
-        jdbc.query(
-                "SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis FROM "
-                        + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? "
-                        + "ORDER BY "
-                        + "code LIMIT 100",
+        String cursorPredicate = cursor == null ? "" : " WHERE code > ? OR (code = ? AND tag_ref > ?)";
+        String sql = "WITH matching AS (SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis FROM "
+                + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=?), "
+                + "aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS "
+                + "(SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis "
+                + "FROM matching"
+                + cursorPredicate
+                + " ORDER BY code NULLS LAST, tag_ref LIMIT ?) SELECT p.tag_ref,p.code,p.tag_kind,p.name,"
+                + "p.status,p.version,p.updated_at_epoch_millis,a.total FROM aggregate a LEFT JOIN paged p ON "
+                + "TRUE ORDER BY p.code NULLS LAST,p.tag_ref";
+        List<ProductionTagPageRow> pageRows = jdbc.query(
+                sql,
                 s -> {
                     s.setString(1, dataNodeRef);
                     s.setString(2, brandRef);
-                },
-                r -> {
-                    while (r.next()) {
-                        ObjectNode row = entries.addObject()
-                                .put("tagRef", r.getObject(1, UUID.class).toString())
-                                .put("code", r.getString(2))
-                                .put("tagKind", r.getString(3))
-                                .put("name", r.getString(4))
-                                .put("status", r.getString(5))
-                                .put("ownerType", "DATA_NODE")
-                                .put("ownerRef", dataNodeRef)
-                                .put("brandRef", brandRef)
-                                .put("linkedProductCount", 0)
-                                .put("version", r.getLong(6))
-                                .put("updatedAt", r.getLong(7));
-                        voidAvailability(row);
+                    int index = 3;
+                    if (cursor != null) {
+                        s.setString(index++, cursor.sortKey());
+                        s.setString(index++, cursor.sortKey());
+                        s.setObject(index++, cursor.tieBreaker());
                     }
-                    return null;
-                });
-        data.putNull("cursor").put("total", entries.size()).put("generation", dataNodeRef + ":" + brandRef);
+                    s.setInt(index, pageSize + 1);
+                },
+                (result, row) -> new ProductionTagPageRow(
+                        result.getObject(1, UUID.class),
+                        result.getString(2),
+                        result.getString(3),
+                        result.getString(4),
+                        result.getString(5),
+                        result.getLong(6),
+                        result.getLong(7),
+                        result.getLong(8)));
+        List<ProductionTagPageRow> presentRows =
+                pageRows.stream().filter(row -> row.tagRef() != null).toList();
+        boolean hasNext = presentRows.size() > pageSize;
+        if (hasNext) presentRows = presentRows.subList(0, pageSize);
+        for (ProductionTagPageRow pageRow : presentRows) {
+            ObjectNode row = entries.addObject()
+                    .put("tagRef", pageRow.tagRef().toString())
+                    .put("code", pageRow.code())
+                    .put("tagKind", pageRow.tagKind())
+                    .put("name", pageRow.name())
+                    .put("status", pageRow.status())
+                    .put("ownerType", "DATA_NODE")
+                    .put("ownerRef", dataNodeRef)
+                    .put("brandRef", brandRef)
+                    .put("linkedProductCount", 0)
+                    .put("version", pageRow.version())
+                    .put("updatedAt", pageRow.updatedAt());
+            voidAvailability(row);
+        }
+        long total = pageRows.isEmpty() ? 0 : pageRows.get(0).total();
+        data.put("total", total).put("generation", dataNodeRef + ":" + brandRef);
+        if (hasNext) {
+            ProductionTagPageRow last = presentRows.get(presentRows.size() - 1);
+            data.put("cursor", OpaqueCollectionCursor.encode(queryIdentity, last.code(), last.tagRef()));
+        } else data.putNull("cursor");
         return envelope(requestId, data);
+    }
+
+    private static int parsePageSize(ObjectNode request, String key, int fallback) {
+        JsonNode value = request == null ? null : request.get(key);
+        if (value == null || value.isNull() || value.asText().isBlank()) return fallback;
+        try {
+            int parsed = Integer.parseInt(value.asText());
+            if (parsed < 1 || parsed > 100) throw new NumberFormatException();
+            return parsed;
+        } catch (NumberFormatException failure) {
+            throw new ProductionTagOwnerApi.Problem(
+                    "VALIDATION_ERROR", 422, key + " must be between 1 and 100", failure);
+        }
+    }
+
+    private static String optional(ObjectNode request, String key) {
+        JsonNode value = request == null ? null : request.get(key);
+        if (value == null || value.isNull() || value.asText().isBlank()) return null;
+        return value.asText();
+    }
+
+    private static String cursorIdentity(String operationId, String... parts) {
+        StringBuilder identity = new StringBuilder(operationId);
+        for (String part : parts) {
+            String value = part == null ? "" : part;
+            identity.append('|').append(value.length()).append(':').append(value);
+        }
+        return identity.toString();
     }
 
     @Override
@@ -1449,4 +1515,14 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     private record PlannedTag(TagRow source, UUID targetRef) {}
 
     private record TagRow(UUID ref, String code, String tagKind, String name, String status, long version) {}
+
+    private record ProductionTagPageRow(
+            UUID tagRef,
+            String code,
+            String tagKind,
+            String name,
+            String status,
+            long version,
+            long updatedAt,
+            long total) {}
 }

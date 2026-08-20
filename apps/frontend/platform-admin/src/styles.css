@@ -62,16 +62,16 @@ body {
   padding: 4px;
 }
 
-/* The hierarchy is the only page-level master/detail surface: both panels own the
- * shell's remaining height, while each panel keeps its own scroll boundary. */
-.platform-organization-hierarchy-page {
+/* Master/detail pages share the shell's remaining height; each panel owns its
+ * own scroll boundary. */
+.platform-master-detail-page {
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.platform-organization-hierarchy-layout {
+.platform-master-detail-layout {
   min-height: 0;
   flex: 1 1 auto;
   display: grid;
@@ -79,7 +79,7 @@ body {
   gap: 16px;
 }
 
-.platform-organization-hierarchy-panel {
+.platform-master-detail-panel {
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -87,27 +87,48 @@ body {
   flex-direction: column;
 }
 
-.platform-organization-hierarchy-tree-panel-body,
-.platform-organization-hierarchy-detail-panel-body {
+.platform-master-detail-tree-panel-body,
+.platform-master-detail-detail-panel-body {
   min-height: 0;
   flex: 1 1 auto;
 }
 
-.platform-organization-hierarchy-tree-panel-body {
+.platform-master-detail-tree-panel-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.platform-organization-hierarchy-tree-scroll,
-.platform-organization-hierarchy-detail-panel-body {
+.platform-master-detail-tree-scroll,
+.platform-master-detail-detail-panel-body {
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
 }
 
-.platform-organization-hierarchy-tree-scroll {
+.platform-master-detail-tree-scroll {
   padding-right: 4px;
+}
+
+.platform-master-detail-detail-host {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.platform-master-detail-detail-host > .platform-master-detail-detail-content {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.platform-master-detail-detail-card {
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .brand {

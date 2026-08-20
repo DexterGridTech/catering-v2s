@@ -18,6 +18,15 @@ public interface OrganizationAssignmentCandidateLookup {
     }
 
     /**
+     * Operations invitation candidates are scoped by the already-resolved user-management page. The scope is a
+     * candidate boundary, not an authority grant, and the owner performs filtering, counting, sorting, and paging.
+     */
+    default OperationsInvitationCandidatePage operationsInvitationCandidates(
+            UUID workspaceUuid, String groupWorkspaceKey, OperationsInvitationCandidateQuery query) {
+        throw new UnsupportedOperationException("operations invitation candidates are unavailable");
+    }
+
+    /**
      * Resolves exactly one enabled invitation target for the ROLE candidate branch. The returned display path is not an
      * authority grant and cannot be used by a command.
      */
@@ -56,6 +65,44 @@ public interface OrganizationAssignmentCandidateLookup {
             items = List.copyOf(items);
             if (total < 0 || page < 1 || pageSize < 1 || pageSize > 100)
                 throw new IllegalArgumentException("invalid invitation candidate result");
+        }
+    }
+
+    record OperationsInvitationCandidateQuery(
+            InvitationTargetType targetType,
+            String scopeTargetType,
+            UUID scopeTargetId,
+            String queryText,
+            int page,
+            int pageSize) {
+        public OperationsInvitationCandidateQuery {
+            Objects.requireNonNull(targetType, "targetType");
+            Objects.requireNonNull(scopeTargetType, "scopeTargetType");
+            Objects.requireNonNull(scopeTargetId, "scopeTargetId");
+            if (page < 1 || pageSize < 1 || pageSize > 100) {
+                throw new IllegalArgumentException("invalid operations invitation candidate page");
+            }
+            boolean compatibleScope =
+                    switch (targetType) {
+                        case GROUP -> "GROUP".equals(scopeTargetType);
+                        case REGION -> "REGION".equals(scopeTargetType);
+                        case PROJECT -> "PROJECT".equals(scopeTargetType);
+                        case HEAD_COMPANY -> "GROUP".equals(scopeTargetType) || "HEAD_COMPANY".equals(scopeTargetType);
+                        case STORE -> "STORE".equals(scopeTargetType);
+                    };
+            if (!compatibleScope) throw new IllegalArgumentException("invalid operations invitation candidate scope");
+        }
+
+        public UUID effectiveCandidateScopeId() {
+            return targetType.name().equals(scopeTargetType) ? scopeTargetId : null;
+        }
+    }
+
+    record OperationsInvitationCandidatePage(List<AssignmentCandidate> items, long total, int page, int pageSize) {
+        public OperationsInvitationCandidatePage {
+            items = List.copyOf(items);
+            if (total < 0 || page < 1 || pageSize < 1 || pageSize > 100)
+                throw new IllegalArgumentException("invalid operations invitation candidate result");
         }
     }
 

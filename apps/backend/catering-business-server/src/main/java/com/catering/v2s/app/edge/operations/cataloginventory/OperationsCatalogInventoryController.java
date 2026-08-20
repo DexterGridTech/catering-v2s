@@ -172,7 +172,8 @@ public final class OperationsCatalogInventoryController {
             @RequestParam Map<String, String> query,
             @PathVariable Map<String, String> path) {
         ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
-        return readResponse(application.readProductionTags(read.dataNodeRef(), read.brandRef(), read.requestId()));
+        return readResponse(
+                application.readProductionTags(read.dataNodeRef(), read.brandRef(), read.request(), read.requestId()));
     }
 
     @GetMapping("/copy/local/candidates")

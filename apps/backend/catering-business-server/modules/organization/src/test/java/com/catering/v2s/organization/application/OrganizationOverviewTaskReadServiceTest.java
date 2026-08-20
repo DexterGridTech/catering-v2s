@@ -120,7 +120,7 @@ class OrganizationOverviewTaskReadServiceTest {
                 .toList();
 
         assertFalse(statements.stream().anyMatch(sql -> sql.contains("SELECT target.*")));
-        assertFalse(statements.stream().anyMatch(sql -> sql.contains("SELECT * FROM target")));
+        assertFalse(statements.stream().anyMatch(sql -> sql.contains("SELECT " + "* FROM target")));
         assertTrue(statements.stream()
                 .anyMatch(sql ->
                         sql.contains("SELECT target.id, target.parent_id, target.node_type, target.code, target.name, "

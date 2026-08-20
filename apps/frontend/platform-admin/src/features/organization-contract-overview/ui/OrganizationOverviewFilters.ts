@@ -35,16 +35,12 @@ export type OrganizationFilterOption = {
 };
 export type OrganizationTabQueryState = {
   filters: OrganizationFilters;
-  page: number;
-  pageSize: number;
   sort: OrganizationOverviewSortKey;
   direction: OrganizationOverviewSortDirection;
 };
 
 export const defaultOrganizationTabQueryState: OrganizationTabQueryState = {
   filters: {},
-  page: 1,
-  pageSize: 10,
   sort: 'UPDATED_AT',
   direction: 'DESC',
 };

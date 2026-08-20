@@ -61,14 +61,18 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 
 2026-08-14 起，唯一公共入口是
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。它在真实远端
-Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 28 条手写 fixture/request/business
+Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 60 条手写 fixture/request/business
 assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和只供人工比较的 `DB_OPERATIONS`；结果还明确标记
-`businessMode=REAL`，桩断言不得通过。当前 28 条覆盖 IAM、ORG、商业合同、asset 与 catalog 的权限、隔离、状态
-迁移、字段脱敏与写入回读。原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除，不再作为
+`businessMode=REAL`，桩断言不得通过。当前场景覆盖 IAM、ORG、商业合同、asset、catalog、audit、extension、
+collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱敏、读回和跨域业务规则；本批的绑定查询
+过滤/排序/分页、认证类型空值语义以及项目/门店经营渠道状态规则均由真实 HTTP 场景覆盖。原 196 个 provider 壳、
+共享 SPI 与 scenario registry 已下线删除，不再作为
 测试入口或覆盖依据。`BackendAcceptanceTest.java` 只保留唯一 Testcontainers/HTTP 入口与共享支撑；新增业务断言应按业务域修改
 `apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/IamAcceptanceScenarios.java`、
 `OrganizationAcceptanceScenarios.java`、`CommercialContractAcceptanceScenarios.java`、
-`AssetAcceptanceScenarios.java` 或 `CatalogAcceptanceScenarios.java`，由
+`AssetAcceptanceScenarios.java`、`CatalogAcceptanceScenarios.java`、`AuditAcceptanceScenarios.java`、
+`ExtensionAcceptanceScenarios.java`、`CollaborationAcceptanceScenarios.java` 或
+`BusinessChannelAcceptanceScenarios.java`，由
 `BackendAcceptanceScenarioCatalog` 自动发现。
 
 新增场景必须同时写真实 fixture、真实 HTTP request 和真实业务 oracle；不得只断言 response.ok、
@@ -102,6 +106,14 @@ catalog/inventory 部分 seed。父 receipt 在 `.runtime/r5/seed/complete/`，�
 任一组件的 business、cleanup、同一 managed DEV run 或 readback 不通过，完整 seed 即失败。
 `start/restart` 永不隐式 seed，seed 也不会自动 stop/reset/start；失败的部分体验数据只由下一次
 显式 reset 清理。
+
+每次真实 `r5-full` 执行都由 `scripts/dev/r5-complete-seed-executor.mjs` 自动写出同一 run 目录下的
+`seed-report.json`（机器校验真相）和 `seed-report.md`（可读报告），并在最终 stdout 同时打印
+`REPORT=<.../seed-report.json>` 与 `MARKDOWN=<.../seed-report.md>`。Markdown 会自动展开两个子报告的
+endpoint 分组、API 调用数、HTTP/数据库 average/min/max、关联缺口、非 API 阶段和 Catalog 数据计划；
+不得再手工拼接父报告或把两个子报告的计量重新合并。仅需修复已有 JSON 报告的展示时，可使用
+`node scripts/dev/r5-complete-seed-executor.mjs --render-existing <.../seed-report.json>` 重生成同目录
+Markdown，不会重新执行 seed。
 
 - **DEV**：本机启动 Spring Boot、`platform-admin` 与 `operations-admin` Web；只经受管 tunnel 使用远端非生产 PostgreSQL、对象存储等中间件。start/restart 可 additive Flyway，绝不 seed。
 - **当前受管浏览器 L2**：同样在本机启动 Spring Boot、两个 Web 和 Playwright；远端只承载每 run 隔离的中间件命名空间。runner 必须保留本机 PID/日志、tunnel identity、远端数据库/资产 namespace readback，并分别证明业务结果与两侧 cleanup。

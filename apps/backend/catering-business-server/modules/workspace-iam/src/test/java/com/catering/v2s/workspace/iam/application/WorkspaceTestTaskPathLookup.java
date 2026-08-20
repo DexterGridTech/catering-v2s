@@ -14,6 +14,12 @@ abstract class WorkspaceTestTaskPathLookup implements OrganizationTaskPathLookup
     }
 
     @Override
+    public TaskPath requireTaskPathAllowingDisabledTarget(
+            UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+        throw new UnsupportedOperationException("disabled-target task paths are not used by this test double");
+    }
+
+    @Override
     public Map<TaskPathRef, TaskPath> requireTaskPaths(
             UUID workspaceUuid, String groupWorkspaceKey, List<TaskPathRef> targets) {
         throw new UnsupportedOperationException("batch task paths are not used by this test double");

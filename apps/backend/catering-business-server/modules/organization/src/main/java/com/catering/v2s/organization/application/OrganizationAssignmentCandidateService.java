@@ -75,9 +75,35 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
             throw new IllegalArgumentException("invitation candidate query is required");
         }
         List<CandidateRow> rows = invitationCandidateRows(
-                workspaceUuid, key, query.targetType(), query.queryText(), query.page(), query.pageSize(), null);
+                workspaceUuid, key, query.targetType(), query.queryText(), query.page(), query.pageSize(), null, null);
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         return new PlatformInvitationCandidatePage(
+                rows.stream()
+                        .map(row -> new AssignmentCandidate(row.type().name(), row.id(), row.path()))
+                        .toList(),
+                total,
+                query.page(),
+                query.pageSize());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsInvitationCandidatePage operationsInvitationCandidates(
+            UUID workspaceUuid, String key, OperationsInvitationCandidateQuery query) {
+        if (workspaceUuid == null || key == null || key.isBlank() || query == null) {
+            throw new IllegalArgumentException("operations invitation candidate query is required");
+        }
+        List<CandidateRow> rows = invitationCandidateRows(
+                workspaceUuid,
+                key,
+                query.targetType(),
+                query.queryText(),
+                query.page(),
+                query.pageSize(),
+                null,
+                query.effectiveCandidateScopeId());
+        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
+        return new OperationsInvitationCandidatePage(
                 rows.stream()
                         .map(row -> new AssignmentCandidate(row.type().name(), row.id(), row.path()))
                         .toList(),
@@ -98,7 +124,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
             throw new IllegalArgumentException("enabled invitation target is required");
         }
         List<CandidateRow> rows =
-                invitationCandidateRows(workspaceUuid, key, target.targetType(), null, 1, 1, target.targetId());
+                invitationCandidateRows(workspaceUuid, key, target.targetType(), null, 1, 1, target.targetId(), null);
         if (rows.size() != 1) throw new OrganizationTaskPathService.TaskPathNotFoundException();
         CandidateRow row = rows.getFirst();
         return new EnabledInvitationTarget(new InvitationTargetRef(row.type(), row.id()), row.path());
@@ -111,7 +137,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
             String queryText,
             int page,
             int pageSize,
-            UUID requiredTargetId) {
+            UUID requiredTargetId,
+            UUID candidateScopeId) {
         String pattern = queryText == null || queryText.isBlank()
                 ? null
                 : "%" + queryText.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
@@ -121,6 +148,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     "SELECT commercial_group_uuid, commercial_group_code || ' ' || commercial_group_name, count(*) "
                             + "OVER() FROM organization.commercial_group "
                             + "WHERE group_workspace_key=? AND (?::uuid IS NULL OR commercial_group_uuid=?) "
+                            + "AND (?::uuid IS NULL OR commercial_group_uuid=?) "
                             + "AND (?::text IS NULL OR commercial_group_code ILIKE ? ESCAPE '!' OR "
                             + "commercial_group_name ILIKE ? ESCAPE '!') "
                             + "ORDER BY commercial_group_code LIMIT ? OFFSET ?",
@@ -129,6 +157,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     key,
                     requiredTargetId,
                     requiredTargetId,
+                    candidateScopeId,
+                    candidateScopeId,
                     pattern,
                     pattern,
                     pattern,
@@ -143,6 +173,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     targetType.name(),
                     requiredTargetId,
                     requiredTargetId,
+                    candidateScopeId,
+                    candidateScopeId,
                     pattern,
                     pattern,
                     pattern,
@@ -154,6 +186,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     "SELECT id, code || ' ' || name, count(*) OVER() FROM organization.head_company "
                             + "WHERE workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND (?::uuid IS "
                             + "NULL OR id=?) "
+                            + "AND (?::uuid IS NULL OR id=?) "
                             + "AND (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!') "
                             + "ORDER BY code LIMIT ? OFFSET ?",
                     (row, index) -> new CandidateRow(
@@ -165,6 +198,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     key,
                     requiredTargetId,
                     requiredTargetId,
+                    candidateScopeId,
+                    candidateScopeId,
                     pattern,
                     pattern,
                     pattern,
@@ -181,6 +216,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                     pattern,
                     pattern,
                     pattern,
+                    candidateScopeId,
+                    candidateScopeId,
                     workspaceUuid,
                     key,
                     workspaceUuid,
@@ -194,8 +231,8 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
         return "WITH RECURSIVE candidates AS ("
                 + "SELECT id, parent_id, code, name FROM organization.organization_node "
                 + "WHERE workspace_uuid=? AND group_workspace_key=? AND node_type=? AND status='ENABLED' "
-                + "AND (?::uuid IS NULL OR id=?) AND (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name ILIKE ? "
-                + "ESCAPE '!')"
+                + "AND (?::uuid IS NULL OR id=?) AND (?::uuid IS NULL OR id=?) AND (?::text IS NULL OR code ILIKE ? "
+                + "ESCAPE '!' OR name ILIKE ? ESCAPE '!')"
                 + "), ancestry AS ("
                 + "SELECT candidates.id AS target_id, candidates.id, candidates.parent_id, candidates.code, "
                 + "candidates.name, 0 AS depth FROM candidates "
@@ -216,7 +253,7 @@ public class OrganizationAssignmentCandidateService implements OrganizationAssig
                 + "SELECT store.id, store.project_id, store.code, store.name FROM organization.store store "
                 + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? AND store.status='ENABLED' "
                 + "AND (?::uuid IS NULL OR store.id=?) AND (?::text IS NULL OR store.code ILIKE ? ESCAPE '!' OR "
-                + "store.name ILIKE ? ESCAPE '!')"
+                + "store.name ILIKE ? ESCAPE '!') AND (?::uuid IS NULL OR store.id=?)"
                 + "), ancestry AS ("
                 + "SELECT candidates.id AS target_id, project.id, project.parent_id, project.code, project.name, 0 AS "
                 + "depth FROM candidates "

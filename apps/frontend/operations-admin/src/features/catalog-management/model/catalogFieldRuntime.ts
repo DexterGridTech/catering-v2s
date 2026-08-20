@@ -1,8 +1,16 @@
-import type {DescriptorOption, DescriptorOptionSource, DescriptorTreeNode} from '@catering-v2s/admin-ui-foundation';
+import {
+  collectCursorPages,
+  type DescriptorOption,
+  type DescriptorOptionSource,
+  type DescriptorTreeNode,
+} from '@catering-v2s/admin-ui-foundation';
 import {
   CATALOG_INVENTORY_OPERATION_IDS,
   type CatalogInventoryOperationId,
+  type CatalogDictionaryView,
   type CatalogShapeManifestView,
+  type InventoryTargetPage,
+  type ProductionTagPage,
   type Uuid,
 } from '../../../app/api/generated/catalog-inventory-edge';
 import {catalogInventoryClient} from '../../../app/api/OperationsTransport';
@@ -33,6 +41,7 @@ export type CatalogCandidateOptionResult = {
 };
 type EndpointSource = DescriptorOptionSource & {kind: 'endpoint'; operationId: CatalogOptionOperationId};
 type CandidateExecutor = (source: EndpointSource, context: CatalogFieldRuntimeContext) => Promise<unknown>;
+const CURSOR_OPTION_PAGE_SIZE = 50;
 
 export function assertCatalogOptionBindingSet(manifest: Pick<CatalogShapeManifestView, 'fields'>): void {
   const discovered = new Set(
@@ -118,6 +127,45 @@ export function createCatalogOptionResolver(
 
 export const catalogOptionResolver = createCatalogOptionResolver();
 
+async function collectCatalogCursorResponse<Response, Item>({
+  firstResponse,
+  readPage,
+  getItems,
+  getCursor,
+  getTotal,
+  replace,
+  keyOf,
+}: {
+  firstResponse: Response;
+  readPage: (cursor: string | undefined, pageSize: number) => Promise<Response>;
+  getItems: (response: Response) => readonly Item[];
+  getCursor: (response: Response) => string | null | undefined;
+  getTotal: (response: Response) => number | null | undefined;
+  replace: (response: Response, items: Item[], total: number) => Response;
+  keyOf: (item: Item) => string;
+}): Promise<Response> {
+  const collected = await collectCursorPages({
+    initialPage: {
+      items: getItems(firstResponse),
+      nextCursor: getCursor(firstResponse),
+      total: getTotal(firstResponse),
+      pageSize: CURSOR_OPTION_PAGE_SIZE,
+    },
+    readPage: async (cursor, pageSize) => {
+      const response = await readPage(cursor, pageSize);
+      return {
+        items: getItems(response),
+        nextCursor: getCursor(response),
+        total: getTotal(response),
+        pageSize,
+      };
+    },
+    pageSize: CURSOR_OPTION_PAGE_SIZE,
+    keyOf,
+  });
+  return replace(firstResponse, collected.items, collected.total);
+}
+
 async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFieldRuntimeContext): Promise<unknown> {
   const path = resolveRecord(source.path, context);
   const query = resolveRecord(source.query, context);
@@ -128,32 +176,93 @@ async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFi
         {},
         {query: {dataNodeRef: context.scope.dataNodeRef, viewKey: String(query.viewKey ?? 'ALL')}, headers},
       );
-    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogDictionary:
-      return catalogInventoryClient.getOperationsCatalogDictionary(
-        {dictionaryKind: String(path.dictionaryKind ?? '')},
-        {
-          query: {
-            dataNodeRef: context.scope.dataNodeRef,
-            ...(query.parentEntryRef ? {parentEntryRef: wireUuid(String(query.parentEntryRef))} : {}),
+    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogDictionary: {
+      const readPage = (cursor?: string, pageSize = CURSOR_OPTION_PAGE_SIZE) =>
+        catalogInventoryClient.getOperationsCatalogDictionary(
+          {dictionaryKind: String(path.dictionaryKind ?? '')},
+          {
+            query: {
+              dataNodeRef: context.scope.dataNodeRef,
+              ...(query.parentEntryRef ? {parentEntryRef: wireUuid(String(query.parentEntryRef))} : {}),
+              ...(cursor ? {cursor} : {}),
+              pageSize,
+            },
+            headers,
           },
-          headers,
-        },
-      );
-    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsInventoryTargets:
-      return catalogInventoryClient.getOperationsInventoryTargets(
-        {},
-        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
-      );
+        );
+      const firstResponse = await readPage();
+      return collectCatalogCursorResponse<CatalogDictionaryView, CatalogDictionaryView['data']['entries'][number]>({
+        firstResponse,
+        readPage,
+        getItems: response => response.data.entries,
+        getCursor: response => response.data.cursor,
+        getTotal: response => response.data.total,
+        replace: (response, items, total) => ({
+          ...response,
+          data: {...response.data, entries: items, cursor: '', total},
+        }),
+        keyOf: entry => String(entry.entryRef),
+      });
+    }
+    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsInventoryTargets: {
+      const readPage = (cursor?: string, pageSize = CURSOR_OPTION_PAGE_SIZE) =>
+        catalogInventoryClient.getOperationsInventoryTargets(
+          {},
+          {
+            query: {
+              dataNodeRef: context.scope.dataNodeRef,
+              ...(cursor ? {cursor} : {}),
+              pageSize,
+            },
+            headers,
+          },
+        );
+      const firstResponse = await readPage();
+      return collectCatalogCursorResponse<InventoryTargetPage, InventoryTargetPage['data']['items'][number]>({
+        firstResponse,
+        readPage,
+        getItems: response => response.data.items,
+        getCursor: response => response.data.cursor,
+        getTotal: response => response.data.total,
+        replace: (response, items, total) => ({
+          ...response,
+          data: {...response.data, items, cursor: '', total},
+        }),
+        keyOf: item => String(item.targetRef),
+      });
+    }
     case CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogItem:
       return catalogInventoryClient.getOperationsCatalogItem(
         {itemCode: String(path.itemCode ?? '')},
         {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
       );
-    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsProductionTags:
-      return catalogInventoryClient.getOperationsProductionTags(
-        {},
-        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
-      );
+    case CATALOG_INVENTORY_OPERATION_IDS.getOperationsProductionTags: {
+      const readPage = (cursor?: string, pageSize = CURSOR_OPTION_PAGE_SIZE) =>
+        catalogInventoryClient.getOperationsProductionTags(
+          {},
+          {
+            query: {
+              dataNodeRef: context.scope.dataNodeRef,
+              ...(cursor ? {cursor} : {}),
+              pageSize,
+            },
+            headers,
+          },
+        );
+      const firstResponse = await readPage();
+      return collectCatalogCursorResponse<ProductionTagPage, ProductionTagPage['data']['entries'][number]>({
+        firstResponse,
+        readPage,
+        getItems: response => response.data.entries,
+        getCursor: response => response.data.cursor,
+        getTotal: response => response.data.total,
+        replace: (response, items, total) => ({
+          ...response,
+          data: {...response.data, entries: items, cursor: '', total},
+        }),
+        keyOf: tag => String(tag.tagRef),
+      });
+    }
     default:
       return assertNeverCatalogOperation(source.operationId);
   }

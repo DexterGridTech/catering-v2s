@@ -18,11 +18,20 @@ import {adminListState} from './list/adminListState';
 import {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from './presentation/nameCode';
 import {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
 import {EllipsisTooltip} from './presentation/EllipsisTooltip';
+import {ValidityStatus} from './presentation/validityStatus';
 import {wireUuid} from './http/wireUuid';
 import {MOBILE_PATTERN} from './validation/mobilePattern';
-import {mergeCursorCandidateItems} from './list/useCursorCandidates';
+import {collectCursorPages, mergeCursorCandidateItems} from './list/useCursorCandidates';
 import {updateCursorStack} from './list/useCursorStack';
+import {CursorPagination} from './list/cursorPagination';
 import {createContentIdempotencyKey, digestFileContent} from './behavior/contentIdempotencyKey';
+import {
+  createCursorQueryIdentity,
+  createPageQueryIdentity,
+  isCurrentQueryIdentity,
+  normalizePage,
+  normalizePageSize,
+} from './list/usePageQuery';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
   it('accepts only actual UUID values at generated-wire boundaries', () => {
@@ -75,6 +84,20 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     expect(updateCursorStack(['', 'cursor-2'], 3, 'cursor-3')).toEqual(['', 'cursor-2', 'cursor-3']);
   });
 
+  it('renders sequential cursor controls without exposing arbitrary page jumps', () => {
+    const markup = renderToStaticMarkup(
+      createElement(CursorPagination, {
+        state: {page: 2, canPrevious: true, goToPage: () => undefined},
+        nextCursor: 'cursor-3',
+        testIdPrefix: 'cursor-surface-pagination',
+      }),
+    );
+    expect(markup).toContain('上一页');
+    expect(markup).toContain('第 2 页');
+    expect(markup).toContain('下一页');
+    expect(markup).toContain('data-testid="cursor-surface-pagination"');
+  });
+
   it('accumulates candidate pages without duplicate options', () => {
     const keyOf = (item: {id: string}) => item.id;
     expect(mergeCursorCandidateItems([{id: 'a'}, {id: 'b'}], [{id: 'b'}, {id: 'c'}], keyOf)).toEqual([
@@ -82,6 +105,88 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
       {id: 'b'},
       {id: 'c'},
     ]);
+  });
+
+  it('collects cursor pages to completion, deduplicates rows, and preserves the full total', async () => {
+    const calls: Array<{cursor?: string; pageSize: number}> = [];
+    const pages = new Map<string | undefined, {items: Array<{id: string}>; cursor?: string; total: number}>([
+      [undefined, {items: [{id: 'a'}, {id: 'b'}], cursor: 'next-2', total: 3}],
+      ['next-2', {items: [{id: 'b'}, {id: 'c'}], total: 3}],
+    ]);
+    await expect(
+      collectCursorPages<{id: string}>({
+        pageSize: 2,
+        keyOf: item => item.id,
+        readPage: async (cursor, requestedPageSize) => {
+          calls.push({cursor, pageSize: requestedPageSize});
+          const page = pages.get(cursor);
+          if (!page) throw new Error('missing test page');
+          return {items: page.items, nextCursor: page.cursor, total: page.total};
+        },
+      }),
+    ).resolves.toEqual({
+      items: [{id: 'a'}, {id: 'b'}, {id: 'c'}],
+      total: 3,
+      pageSize: 2,
+      pageCount: 2,
+    });
+    expect(calls).toEqual([
+      {cursor: undefined, pageSize: 2},
+      {cursor: 'next-2', pageSize: 2},
+    ]);
+  });
+
+  it('fails closed when a cursor endpoint returns a continuation loop', async () => {
+    await expect(
+      collectCursorPages<string>({
+        keyOf: item => item,
+        readPage: async cursor => ({items: [cursor ?? 'first'], nextCursor: cursor ?? 'loop', total: 2}),
+      }),
+    ).rejects.toThrow('CURSOR_PAGE_LOOP');
+  });
+
+  it('builds a page identity from operation, scope, filters, sort, page, and page size', () => {
+    const first = createPageQueryIdentity({
+      operationId: 'getWorkspaceAccounts',
+      scope: {workspace: 'workspace-a'},
+      filters: {name: 'a', status: 'ACTIVE'},
+      sort: [{field: 'name', order: 'ascend'}],
+      page: 2,
+      pageSize: 10,
+    });
+    const sameValuesDifferentObjectOrder = createPageQueryIdentity({
+      operationId: 'getWorkspaceAccounts',
+      scope: {workspace: 'workspace-a'},
+      filters: {status: 'ACTIVE', name: 'a'},
+      sort: [{field: 'name', order: 'ascend'}],
+      page: 2,
+      pageSize: 10,
+    });
+    expect(first).toBe(sameValuesDifferentObjectOrder);
+    expect(first).not.toBe(createPageQueryIdentity({...JSON.parse(first), page: 1}));
+  });
+
+  it('resets page navigation when page size changes or a query identity changes', () => {
+    expect(normalizePage(0)).toBe(1);
+    expect(normalizePage(2.9)).toBe(2);
+    expect(normalizePageSize(0)).toBe(1);
+    const first = createPageQueryIdentity({operationId: 'list', scope: 'a', page: 3, pageSize: 20});
+    const second = createPageQueryIdentity({operationId: 'list', scope: 'a', page: 1, pageSize: 50});
+    expect(first).not.toBe(second);
+  });
+
+  it('keeps cursor identity separate from arbitrary page identity', () => {
+    const cursor = createCursorQueryIdentity({operationId: 'list', scope: 'a', cursor: 'opaque-2', pageSize: 20});
+    const page = createPageQueryIdentity({operationId: 'list', scope: 'a', page: 2, pageSize: 20});
+    expect(cursor).not.toBe(page);
+    expect(cursor).toContain('"mode":"cursor"');
+  });
+
+  it('rejects an old response after a newer query identity becomes current', () => {
+    const oldQuery = createPageQueryIdentity({operationId: 'list', scope: 'a', page: 1, pageSize: 10});
+    const newQuery = createPageQueryIdentity({operationId: 'list', scope: 'b', page: 1, pageSize: 10});
+    expect(isCurrentQueryIdentity(oldQuery, newQuery)).toBe(false);
+    expect(isCurrentQueryIdentity(newQuery, newQuery)).toBe(true);
   });
 
   it('renders a business name and code in the shared 名称(编码) form without inventing missing values', () => {
@@ -112,6 +217,17 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
       '东区(EAST) / 河畔项目(RIVER) / 河畔茶里店(S-OP)',
     );
     expect(formatCodeNamePath('无编码路径')).toBe('无编码路径');
+  });
+
+  it('renders contract validity with the shared dot-and-text vocabulary', () => {
+    const valid = renderToStaticMarkup(createElement(ValidityStatus, {status: 'VALID'}));
+    const invalid = renderToStaticMarkup(createElement(ValidityStatus, {status: 'INVALID'}));
+    const missing = renderToStaticMarkup(createElement(ValidityStatus, {status: undefined}));
+    expect(valid).toContain('ant-badge-status-processing');
+    expect(valid).toContain('有效');
+    expect(invalid).toContain('ant-badge-status-default');
+    expect(invalid).toContain('已失效');
+    expect(missing).toContain('—');
   });
 
   it('keeps complete human-readable text attached to an authored truncation boundary', () => {

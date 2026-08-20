@@ -69,6 +69,8 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:catalog"))
     implementation(project(":apps:backend:catering-business-server:modules:inventory"))
     implementation(project(":apps:backend:catering-business-server:modules:fulfillment-production"))
+    implementation(project(":apps:backend:catering-business-server:modules:collaboration"))
+    implementation(project(":apps:backend:catering-business-server:modules:business-channel"))
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-web")

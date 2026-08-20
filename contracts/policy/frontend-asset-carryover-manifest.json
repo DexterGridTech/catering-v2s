@@ -21,31 +21,76 @@
       "enumeration": "find both app src roots -type f with suffix .ts or .tsx; sort by repo-relative path; aggregate bytes are '<path>\\t<sha256>\\n'",
       "allTsTsx": {"count": 180, "sha256": "a9c6b190854bfb4fb5c70ded6664095d483e48a68a49e82d9406cec3650c8a3f"},
       "runtime": {"count": 135, "sha256": "95f2d8b9bd020e6b1c61c129d742f180d41a0da4685f30cd6ebbc842badaa8a6"},
-      "handwrittenRuntime": {"count": 133, "sha256": "64d4165885cf5ef2acc6c52ee51c450ca15c5d7472afd10b771aa864982f637a"},
-      "generatedWire": {"count": 2, "sha256": "01e000c6dfececd9fb6597b5d8b2ab7c7379e233daea38207946c8a09e482326", "disposition": "NOT_CARRIED_REGENERATE"},
-      "tests": {"count": 45, "sha256": "3ad17002b617ead141f274a1a3d77e3c7e98982187bb1b91de4285a5af836408", "disposition": "REFERENCE_ONLY_REWRITE_FOR_V2S_EVIDENCE"},
+      "handwrittenRuntime": {
+        "count": 133,
+        "sha256": "64d4165885cf5ef2acc6c52ee51c450ca15c5d7472afd10b771aa864982f637a"
+      },
+      "generatedWire": {
+        "count": 2,
+        "sha256": "01e000c6dfececd9fb6597b5d8b2ab7c7379e233daea38207946c8a09e482326",
+        "disposition": "NOT_CARRIED_REGENERATE"
+      },
+      "tests": {
+        "count": 45,
+        "sha256": "3ad17002b617ead141f274a1a3d77e3c7e98982187bb1b91de4285a5af836408",
+        "disposition": "REFERENCE_ONLY_REWRITE_FOR_V2S_EVIDENCE"
+      },
       "ownership": "feature/** belongs to the matching surface; app shell/routing/state/layout/theme/feedback/forms/automation belongs to APP_SHARED_ADAPT; generated wire and generated catalogs follow their explicit dispositions; tests are reference evidence, not copied proof",
       "unclassifiedRuntimeFilesAllowed": 0
     },
     "appScaffoldInventory": {
       "enumeration": "vite.config.ts and playwright.config.ts under both Heritage admin app roots; these four files are outside the 180-file src denominator",
       "files": [
-        {"path": "apps/frontend/platform-admin/vite.config.ts", "sha256": "60a644552ef59b43185263ebc275ca6fe3187603da649fd8ac946f79a4f31569", "disposition": "ADAPT_APP_SCAFFOLD"},
-        {"path": "apps/frontend/platform-admin/playwright.config.ts", "sha256": "d507b5fa2563fbab669ef6947f67199d60fec4cd33e13c147ea8a59d294b09a6", "disposition": "ADAPT_APP_SCAFFOLD"},
-        {"path": "apps/frontend/operations-admin/vite.config.ts", "sha256": "ffc94fe0e4f28ccfc06962c1f3727915715475b0ea8742b297858d52b045911b", "disposition": "ADAPT_APP_SCAFFOLD"},
-        {"path": "apps/frontend/operations-admin/playwright.config.ts", "sha256": "f1ac61a75b6cf854a57f9c701201dd2791eb8ec0af4a95d098bae4a5c322ee57", "disposition": "ADAPT_APP_SCAFFOLD"}
+        {
+          "path": "apps/frontend/platform-admin/vite.config.ts",
+          "sha256": "60a644552ef59b43185263ebc275ca6fe3187603da649fd8ac946f79a4f31569",
+          "disposition": "ADAPT_APP_SCAFFOLD"
+        },
+        {
+          "path": "apps/frontend/platform-admin/playwright.config.ts",
+          "sha256": "d507b5fa2563fbab669ef6947f67199d60fec4cd33e13c147ea8a59d294b09a6",
+          "disposition": "ADAPT_APP_SCAFFOLD"
+        },
+        {
+          "path": "apps/frontend/operations-admin/vite.config.ts",
+          "sha256": "ffc94fe0e4f28ccfc06962c1f3727915715475b0ea8742b297858d52b045911b",
+          "disposition": "ADAPT_APP_SCAFFOLD"
+        },
+        {
+          "path": "apps/frontend/operations-admin/playwright.config.ts",
+          "sha256": "f1ac61a75b6cf854a57f9c701201dd2791eb8ec0af4a95d098bae4a5c322ee57",
+          "disposition": "ADAPT_APP_SCAFFOLD"
+        }
       ],
       "count": 4,
       "runtimeOrBuildFallback": "FORBIDDEN"
     },
     "generatedCatalog": {
       "heritageFiles": [
-        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts", "sha256": "078036274dccce8aeb78a772ec82dd764fdd1e36bb1955d8d604f13b10299dd5"},
-        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedPresentationCatalog.ts", "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"},
-        {"path": "apps/frontend/platform-admin/src/app/catalog/generatedProblemSemantics.ts", "sha256": "bd7d3bb8f7113f72758e3386a45688a17e43d7a647e2a37f48400d1d7343cf02"},
-        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts", "sha256": "a6d5e747c4f06db8965995a13f3e9c91f30f37a21c60763554ffa3c333a6ab3c"},
-        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedPresentationCatalog.ts", "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"},
-        {"path": "apps/frontend/operations-admin/src/app/catalog/generatedProblemSemantics.ts", "sha256": "4101bf26b18c99789d3cb246481a50f12aa2b45f7a2aeada44a805c186ebec86"}
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "sha256": "078036274dccce8aeb78a772ec82dd764fdd1e36bb1955d8d604f13b10299dd5"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedPresentationCatalog.ts",
+          "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"
+        },
+        {
+          "path": "apps/frontend/platform-admin/src/app/catalog/generatedProblemSemantics.ts",
+          "sha256": "bd7d3bb8f7113f72758e3386a45688a17e43d7a647e2a37f48400d1d7343cf02"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedAdminCatalog.ts",
+          "sha256": "a6d5e747c4f06db8965995a13f3e9c91f30f37a21c60763554ffa3c333a6ab3c"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedPresentationCatalog.ts",
+          "sha256": "93c4a2b5fe525c20dcbd9c3b8a1f9ed342dee7373d40c0ad484f5260938ad7a9"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/catalog/generatedProblemSemantics.ts",
+          "sha256": "4101bf26b18c99789d3cb246481a50f12aa2b45f7a2aeada44a805c186ebec86"
+        }
       ],
       "disposition": "NOT_CARRIED_REGENERATE",
       "v2sSources": [
@@ -67,19 +112,47 @@
         "sha256": "a6d5e747c4f06db8965995a13f3e9c91f30f37a21c60763554ffa3c333a6ab3c"
       },
       "activeKeys": [
-        "BC-ORG-GROUP-EDIT", "BC-ORG-GROUP-STATUS",
-        "BC-ORG-REGION-CREATE", "BC-ORG-REGION-EDIT", "BC-ORG-REGION-STATUS",
-        "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-EDIT", "BC-ORG-PROJECT-STATUS",
-        "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-EDIT", "BC-ORG-BRAND-STATUS",
-        "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-EDIT", "BC-ORG-TENANT-STATUS",
-        "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-EDIT", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-HEAD-COMPANY-BRAND",
-        "BC-ORG-STORE-CREATE", "BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS",
-        "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-STORE-ROLE-REVOKE",
-        "BC-IAM-GROUP-INVITE", "BC-IAM-REGION-INVITE", "BC-IAM-PROJECT-INVITE", "BC-IAM-HEAD-COMPANY-INVITE", "BC-IAM-STORE-INVITE",
-        "BC-CONTRACT-CREATE", "BC-CONTRACT-EDIT", "BC-CONTRACT-INVALIDATE",
-        "EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"
+        "BC-ORG-GROUP-EDIT",
+        "BC-ORG-GROUP-STATUS",
+        "BC-ORG-REGION-CREATE",
+        "BC-ORG-REGION-EDIT",
+        "BC-ORG-REGION-STATUS",
+        "BC-ORG-PROJECT-CREATE",
+        "BC-ORG-PROJECT-EDIT",
+        "BC-ORG-PROJECT-STATUS",
+        "BC-ORG-BRAND-CREATE",
+        "BC-ORG-BRAND-EDIT",
+        "BC-ORG-BRAND-STATUS",
+        "BC-ORG-TENANT-CREATE",
+        "BC-ORG-TENANT-EDIT",
+        "BC-ORG-TENANT-STATUS",
+        "BC-ORG-HEAD-COMPANY-CREATE",
+        "BC-ORG-HEAD-COMPANY-EDIT",
+        "BC-ORG-HEAD-COMPANY-STATUS",
+        "BC-ORG-HEAD-COMPANY-BRAND",
+        "BC-ORG-STORE-CREATE",
+        "BC-ORG-STORE-EDIT",
+        "BC-ORG-STORE-STATUS",
+        "BC-IAM-GROUP-ROLE-REVOKE",
+        "BC-IAM-REGION-ROLE-REVOKE",
+        "BC-IAM-PROJECT-ROLE-REVOKE",
+        "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+        "BC-IAM-STORE-ROLE-REVOKE",
+        "BC-IAM-GROUP-INVITE",
+        "BC-IAM-REGION-INVITE",
+        "BC-IAM-PROJECT-INVITE",
+        "BC-IAM-HEAD-COMPANY-INVITE",
+        "BC-IAM-STORE-INVITE",
+        "BC-CONTRACT-CREATE",
+        "BC-CONTRACT-EDIT",
+        "BC-CONTRACT-INVALIDATE",
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG",
+        "EDIT_STORE_INVENTORY",
+        "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+        "BC-BUSINESS-CHANNEL-STORE-EDIT"
       ],
-      "count": 37,
+      "count": 39,
       "rule": "page access grants read entry; only these action keys grant mutations, and neither set implies the other"
     },
     "drawerLifecycleAdaptation": {
@@ -107,40 +180,196 @@
     ]
   },
   "foundationConsumptionBySurface": {
-    "PLATFORM-AUTH": {"v2Consumed": [], "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]},
-    "PLATFORM-WORKSPACES": {"v2Consumed": ["useDetailDrawer", "overlayLock"], "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "contextScopedQueryArgs", "testId"]},
-    "PLATFORM-ADMIN-USERS": {"v2Consumed": ["useDetailDrawer", "overlayLock"], "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "PLATFORM-WORKSPACE-OVERVIEW": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "useDetailDrawer", "testId"]},
-    "PLATFORM-ORGANIZATION-OVERVIEW": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]},
-    "PLATFORM-CONTRACT-OVERVIEW": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]},
-    "PLATFORM-ROLES": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "PLATFORM-WORKSPACE-ACCOUNTS": {"v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "PLATFORM-EXTENSION-FIELDS": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "PLATFORM-PASSWORD": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-AUTH": {"v2Consumed": [], "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]},
+    "PLATFORM-AUTH": {
+      "v2Consumed": [],
+      "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]
+    },
+    "PLATFORM-WORKSPACES": {
+      "v2Consumed": ["useDetailDrawer", "overlayLock"],
+      "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "contextScopedQueryArgs", "testId"]
+    },
+    "PLATFORM-ADMIN-USERS": {
+      "v2Consumed": ["useDetailDrawer", "overlayLock"],
+      "r5Required": ["useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
+    "PLATFORM-WORKSPACE-OVERVIEW": {
+      "v2Consumed": [],
+      "r5Required": ["contextScopedQueryArgs", "useDetailDrawer", "testId"]
+    },
+    "PLATFORM-ORGANIZATION-OVERVIEW": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]
+    },
+    "PLATFORM-CONTRACT-OVERVIEW": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock", "contextScopedQueryArgs", "testId"]
+    },
+    "PLATFORM-ROLES": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
+    "PLATFORM-WORKSPACE-ACCOUNTS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "useDetailDrawer", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
+    "PLATFORM-EXTENSION-FIELDS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
+    "PLATFORM-PASSWORD": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
+    "OPERATIONS-AUTH": {
+      "v2Consumed": [],
+      "r5Required": ["platformHttpProtocol", "observedBaseQuery", "overlayLock", "testId"]
+    },
     "PUBLIC-INVITATION": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
     "PUBLIC-ACCESS-RECOVERY": {"v2Consumed": [], "r5Required": ["overlayLock", "platformHttpProtocol", "testId"]},
-    "OPERATIONS-SHELL": {"v2Consumed": ["contextScopedQueryArgs", "overlayLock"], "r5Required": ["contextScopedQueryArgs", "overlayLock", "observedBaseQuery", "testId"]},
-    "OPERATIONS-ORG-STRUCTURE": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-BUSINESS-ENTITIES": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-STORES": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-CONTRACTS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-USERS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-STORE-PROFILE": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "testId"]},
-    "OPERATIONS-CATALOG-STORE-ITEMS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-INVENTORY-STORE-STATUS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock", "testId"]},
-    "OPERATIONS-CATALOG-BRAND-ITEMS": {"v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "useDrawerFormLifecycle", "overlayLock", "testId"]},
-    "OPERATIONS-PASSWORD": {"v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"], "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]},
+    "OPERATIONS-SHELL": {
+      "v2Consumed": ["contextScopedQueryArgs", "overlayLock"],
+      "r5Required": ["contextScopedQueryArgs", "overlayLock", "observedBaseQuery", "testId"]
+    },
+    "OPERATIONS-ORG-STRUCTURE": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-BUSINESS-ENTITIES": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-STORES": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-CONTRACTS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-USERS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-STORE-PROFILE": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer"],
+      "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "testId"]
+    },
+    "OPERATIONS-CATALOG-STORE-ITEMS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-INVENTORY-STORE-STATUS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock", "testId"]
+    },
+    "OPERATIONS-CATALOG-BRAND-ITEMS": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "contextScopedQueryArgs", "useDetailDrawer", "overlayLock"],
+      "r5Required": [
+        "adminDrawerSurfaceProps",
+        "contextScopedQueryArgs",
+        "useDetailDrawer",
+        "useDrawerFormLifecycle",
+        "overlayLock",
+        "testId"
+      ]
+    },
+    "OPERATIONS-PASSWORD": {
+      "v2Consumed": ["adminDrawerSurfaceProps", "overlayLock"],
+      "r5Required": ["adminDrawerSurfaceProps", "useDrawerFormLifecycle", "overlayLock", "testId"]
+    },
     "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"v2Consumed": [], "r5Required": ["contextScopedQueryArgs", "testId"]}
   },
   "notCarriedAssets": [
-    {"symbol": "useCheckOperationsPageEntryGuardMutation", "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsContextShell.tsx", "sourceSha256": "ac41148c6a40d0abde90611e6c06a718738634dd5f9dcdab170b1667dc257be6", "reason": "UX navigation cannot become authorization proof", "replacedBy": "owner-confirmed session navigation plus authorization on every task endpoint"},
-    {"symbol": "getWorkspaceRoleCandidates", "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts", "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6", "reason": "unused duplicate catalog endpoint", "replacedBy": "getWorkspaceRoles read model catalog"},
-    {"symbol": "logoBindGrant", "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceFormDrawer.tsx", "sourceSha256": "445800766f658d74954d608f0f213748a20fbff039b2b36927b6796d5db9204f", "reason": "client must not carry owner bind capability", "replacedBy": "logoAssetRef and REQUIRED owner claim"},
-    {"symbol": "transient-404-logo-retry", "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceLogoImage.tsx", "sourceSha256": "7043170f302f77dffd73902a09b061a1d54aca4a59fc3031cfa733649e6c6357", "reason": "same-deployable owner result is immediately readable", "replacedBy": "direct public asset content read"},
-    {"symbol": "direct-assignment-add-edit", "sourcePath": "apps/frontend/operations-admin/src/features/user-management/ui/UserManagementPage.tsx", "sourceSha256": "c811961086741b0da5a53f8a38dcc4ef7d7df9a3589be466bb95ea58e7f44265", "reason": "new assignment is invitation-only", "replacedBy": "invitation create/accept chain; existing assignment may only be revoked"},
-    {"symbol": "heritage-generated-platform-wire", "sourcePath": "apps/frontend/platform-admin/src/app/api/generated/platformEdgeApi.ts", "sourceSha256": "7e0200272b1f95fe216e3ecf7000579682087d0f1ace20ef6bd20789c4077c8b", "reason": "wire must match v2s edge", "replacedBy": "regenerate platform-admin slice"},
-    {"symbol": "heritage-generated-operations-wire", "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts", "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6", "reason": "wire must match v2s edge", "replacedBy": "regenerate operations-admin and public slices"}
+    {
+      "symbol": "useCheckOperationsPageEntryGuardMutation",
+      "sourcePath": "apps/frontend/operations-admin/src/features/work-context/ui/OperationsContextShell.tsx",
+      "sourceSha256": "ac41148c6a40d0abde90611e6c06a718738634dd5f9dcdab170b1667dc257be6",
+      "reason": "UX navigation cannot become authorization proof",
+      "replacedBy": "owner-confirmed session navigation plus authorization on every task endpoint"
+    },
+    {
+      "symbol": "getWorkspaceRoleCandidates",
+      "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts",
+      "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6",
+      "reason": "unused duplicate catalog endpoint",
+      "replacedBy": "getWorkspaceRoles read model catalog"
+    },
+    {
+      "symbol": "logoBindGrant",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceFormDrawer.tsx",
+      "sourceSha256": "445800766f658d74954d608f0f213748a20fbff039b2b36927b6796d5db9204f",
+      "reason": "client must not carry owner bind capability",
+      "replacedBy": "logoAssetRef and REQUIRED owner claim"
+    },
+    {
+      "symbol": "transient-404-logo-retry",
+      "sourcePath": "apps/frontend/platform-admin/src/features/workspace-management/ui/WorkspaceLogoImage.tsx",
+      "sourceSha256": "7043170f302f77dffd73902a09b061a1d54aca4a59fc3031cfa733649e6c6357",
+      "reason": "same-deployable owner result is immediately readable",
+      "replacedBy": "direct public asset content read"
+    },
+    {
+      "symbol": "direct-assignment-add-edit",
+      "sourcePath": "apps/frontend/operations-admin/src/features/user-management/ui/UserManagementPage.tsx",
+      "sourceSha256": "c811961086741b0da5a53f8a38dcc4ef7d7df9a3589be466bb95ea58e7f44265",
+      "reason": "new assignment is invitation-only",
+      "replacedBy": "invitation create/accept chain; existing assignment may only be revoked"
+    },
+    {
+      "symbol": "heritage-generated-platform-wire",
+      "sourcePath": "apps/frontend/platform-admin/src/app/api/generated/platformEdgeApi.ts",
+      "sourceSha256": "7e0200272b1f95fe216e3ecf7000579682087d0f1ace20ef6bd20789c4077c8b",
+      "reason": "wire must match v2s edge",
+      "replacedBy": "regenerate platform-admin slice"
+    },
+    {
+      "symbol": "heritage-generated-operations-wire",
+      "sourcePath": "apps/frontend/operations-admin/src/app/api/generated/operationsEdgeApi.ts",
+      "sourceSha256": "8de6cd210505fbbab2d3b1d49533302bb216fad21898135463882011da7e40f6",
+      "reason": "wire must match v2s edge",
+      "replacedBy": "regenerate operations-admin and public slices"
+    }
   ],
   "browserRoutePolicy": {
     "operationsBrowserRoutes": "all authenticated operations routes carry /operations/:groupWorkspaceKey; this is a browser context locator, never authorization",
@@ -163,7 +392,10 @@
     "PLATFORM-ORGANIZATION-OVERVIEW": {"required": ["组织概览"], "forbidden": ["组织诊断", "商户"]},
     "PLATFORM-CONTRACT-OVERVIEW": {"required": ["合同概览", "货号名称"], "forbidden": ["合同诊断", "仅货号"]},
     "PLATFORM-ROLES": {"required": ["页面准入", "可执行动作"], "forbidden": ["页面即权限", "候选角色接口"]},
-    "PLATFORM-WORKSPACE-ACCOUNTS": {"required": ["账号详情", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
+    "PLATFORM-WORKSPACE-ACCOUNTS": {
+      "required": ["账号详情", "撤销任职"],
+      "forbidden": ["直接新增任职", "直接编辑任职"]
+    },
     "PLATFORM-EXTENSION-FIELDS": {"required": ["扩展字段"], "forbidden": ["商业集团扩展值", "项目扩展值"]},
     "PLATFORM-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
     "OPERATIONS-AUTH": {"required": ["登录运营后台"], "forbidden": ["当前身份", "查看范围"]},
@@ -176,9 +408,18 @@
     "OPERATIONS-CONTRACTS": {"required": ["合同", "货号名称"], "forbidden": ["仅货号", "停用门店不可签约", "分期编码"]},
     "OPERATIONS-USERS": {"required": ["邀请成员", "撤销任职"], "forbidden": ["直接新增任职", "直接编辑任职"]},
     "OPERATIONS-STORE-PROFILE": {"required": ["门店资料", "合同"], "forbidden": ["编辑门店", "编辑合同", "已停业"]},
-    "OPERATIONS-CATALOG-STORE-ITEMS": {"required": ["门店商品管理", "商品字典", "商品处理标签"], "forbidden": ["菜单与渠道", "批量导入"]},
-    "OPERATIONS-INVENTORY-STORE-STATUS": {"required": ["门店库存管理", "库存变化", "库存对象"], "forbidden": ["库存现状导出", "销售消耗趋势"]},
-    "OPERATIONS-CATALOG-BRAND-ITEMS": {"required": ["品牌商品管理", "品牌切换", "复制预检"], "forbidden": ["门店余额", "门店流水"]},
+    "OPERATIONS-CATALOG-STORE-ITEMS": {
+      "required": ["门店商品管理", "商品字典", "商品处理标签"],
+      "forbidden": ["菜单与渠道", "批量导入"]
+    },
+    "OPERATIONS-INVENTORY-STORE-STATUS": {
+      "required": ["门店库存管理", "库存变化", "库存对象"],
+      "forbidden": ["库存现状导出", "销售消耗趋势"]
+    },
+    "OPERATIONS-CATALOG-BRAND-ITEMS": {
+      "required": ["品牌商品管理", "品牌切换", "复制预检"],
+      "forbidden": ["门店余额", "门店流水"]
+    },
     "OPERATIONS-PASSWORD": {"required": ["修改密码", "当前密码"], "forbidden": ["修改他人密码", "显示明文"]},
     "OPERATIONS-FIVE-HOME-BOOTSTRAPS": {"required": ["当前角色"], "forbidden": ["经营指标", "新建业务", "诊断"]}
   },
@@ -192,6 +433,7 @@
       "PLATFORM-ROLES": "PLATFORM-ROLES",
       "PLATFORM-WORKSPACE-ACCOUNTS": "PLATFORM-WORKSPACE-ACCOUNTS",
       "PLATFORM-EXTENSION-FIELDS": "PLATFORM-EXTENSION-FIELDS",
+      "PLATFORM-EXTERNAL-COLLABORATION": "PLATFORM-EXTERNAL-COLLABORATION",
       "PG-ORG-STRUCTURE": "OPERATIONS-ORG-STRUCTURE",
       "PG-ORG-BRAND": "OPERATIONS-BUSINESS-ENTITIES",
       "PG-ORG-TENANT": "OPERATIONS-BUSINESS-ENTITIES",
@@ -204,6 +446,8 @@
       "PG-IAM-HEAD-COMPANY-USERS": "OPERATIONS-USERS",
       "PG-IAM-STORE-USERS": "OPERATIONS-USERS",
       "PG-STORE-PROFILE": "OPERATIONS-STORE-PROFILE",
+      "PG-BUSINESS-CHANNEL-PROJECT": "OPERATIONS-BUSINESS-CHANNEL-PROJECT",
+      "PG-BUSINESS-CHANNEL-STORE": "OPERATIONS-BUSINESS-CHANNEL-STORE",
       "PG-CATALOG-STORE-ITEMS": "OPERATIONS-CATALOG-STORE-ITEMS",
       "PG-INVENTORY-STORE-STATUS": "OPERATIONS-INVENTORY-STORE-STATUS",
       "PG-CATALOG-BRAND-ITEMS": "OPERATIONS-CATALOG-BRAND-ITEMS",
@@ -226,12 +470,24 @@
       "OPERATIONS-BUSINESS-ENTITIES": ["PG-ORG-BRAND", "PG-ORG-TENANT", "PG-ORG-HEAD-COMPANY"],
       "OPERATIONS-STORES": ["PG-ORG-STORE-MANAGE"],
       "OPERATIONS-CONTRACTS": ["PG-CONTRACT-STORE-MANAGE"],
-      "OPERATIONS-USERS": ["PG-IAM-GROUP-USERS", "PG-IAM-REGION-USERS", "PG-IAM-PROJECT-USERS", "PG-IAM-HEAD-COMPANY-USERS", "PG-IAM-STORE-USERS"],
+      "OPERATIONS-USERS": [
+        "PG-IAM-GROUP-USERS",
+        "PG-IAM-REGION-USERS",
+        "PG-IAM-PROJECT-USERS",
+        "PG-IAM-HEAD-COMPANY-USERS",
+        "PG-IAM-STORE-USERS"
+      ],
       "OPERATIONS-STORE-PROFILE": ["PG-STORE-PROFILE"],
       "OPERATIONS-CATALOG-STORE-ITEMS": ["PG-CATALOG-STORE-ITEMS"],
       "OPERATIONS-INVENTORY-STORE-STATUS": ["PG-INVENTORY-STORE-STATUS"],
       "OPERATIONS-CATALOG-BRAND-ITEMS": ["PG-CATALOG-BRAND-ITEMS"],
-      "OPERATIONS-FIVE-HOME-BOOTSTRAPS": ["HOME-GROUP", "HOME-REGION", "HOME-PROJECT", "HOME-HEAD-COMPANY", "HOME-STORE"]
+      "OPERATIONS-FIVE-HOME-BOOTSTRAPS": [
+        "HOME-GROUP",
+        "HOME-REGION",
+        "HOME-PROJECT",
+        "HOME-HEAD-COMPANY",
+        "HOME-STORE"
+      ]
     },
     "nonCatalogSurfaces": {
       "PLATFORM-AUTH": "authentication route outside admin page catalog",
@@ -471,10 +727,22 @@
       "sourcePath": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx",
       "sourceSha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9",
       "sourceFiles": [
-        {"path": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx", "sha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9"},
-        {"path": "apps/frontend/operations-admin/src/app/routing/router.tsx", "sha256": "de71fbe603f865170a5e8c3eff8ddd63319bc18c08918bd14b6f3f5d7e33481e"},
-        {"path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.ts", "sha256": "cc4a57b85ef84fe9eb6ec71a6cdc1fbd3776915dac26866e26ed72312a9464fd"},
-        {"path": "apps/frontend/operations-admin/src/app/routing/approvedPageDesignKeys.ts", "sha256": "4f3272519ee95185bbe6aa8c8db9898d5ec04abe4417c85b25c648037ed26398"}
+        {
+          "path": "apps/frontend/operations-admin/src/app/OperationsAdminSeed.tsx",
+          "sha256": "535e7b1d7c1550f45491a3f49a96af0399d71d1450a83caf0a908028c9d93cb9"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/routing/router.tsx",
+          "sha256": "de71fbe603f865170a5e8c3eff8ddd63319bc18c08918bd14b6f3f5d7e33481e"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/routing/pageRegistry.ts",
+          "sha256": "cc4a57b85ef84fe9eb6ec71a6cdc1fbd3776915dac26866e26ed72312a9464fd"
+        },
+        {
+          "path": "apps/frontend/operations-admin/src/app/routing/approvedPageDesignKeys.ts",
+          "sha256": "4f3272519ee95185bbe6aa8c8db9898d5ec04abe4417c85b25c648037ed26398"
+        }
       ],
       "targetPath": "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/RoleHomeBootstrapPage.tsx",
       "route": "/operations/:groupWorkspaceKey/home/{group|region|project|head-company|store}",

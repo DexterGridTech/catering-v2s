@@ -3,11 +3,14 @@ import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
   contextScopedQueryArgs,
+  createPageQueryIdentity,
   EllipsisTooltip,
   NameCodeText,
+  ValidityStatus,
   testId,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
@@ -16,6 +19,7 @@ import type {
   StoreContractSortDirection,
   StoreContractSortKey,
 } from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
@@ -44,8 +48,6 @@ const contractPageTitle = contractPage?.pageTitle;
 if (!contractPageTitle) throw new Error('ADMIN_CATALOG_CONTRACT_PAGE_MISSING');
 
 export function ContractManagementPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<ContractFilters>({});
   const [tenantSearch, setTenantSearch] = useState('');
   const [sort, setSort] = useState<StoreContractSortKey>('UPDATED_AT');
@@ -56,6 +58,22 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   const detail = useDetailDrawer<StoreContract>();
   useOverlayLock(detail.isOpen || createOpen || Boolean(editing) || Boolean(invalidating));
   const projectId = queryContext.scopeRef;
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsContracts,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: queryContext.scopeRef,
+        },
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, queryContext, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
 
   const query = useMemo(() => {
     const {tenantId, ...restFilters} = filters;
@@ -155,7 +173,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
         title: '状态',
         dataIndex: 'status',
         search: false,
-        valueEnum: {VALID: {text: '有效', status: 'Success'}, INVALID: {text: '已失效', status: 'Default'}},
+        render: (_value, row) => <ValidityStatus status={row.status} />,
       },
       {
         title: '更新时间',
@@ -287,7 +305,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
               onClick={() => {
                 searchConfig.form?.resetFields();
                 setFilters({});
-                setPage(1);
+                pagination.setPage(1);
                 setTenantSearch('');
               }}
               {...testId('operations-contract-filter-reset')}
@@ -307,7 +325,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
             dateFrom: dateRange?.[0],
             dateTo: dateRange?.[1],
           });
-          setPage(1);
+          pagination.setPage(1);
         }}
         toolBarRender={() =>
           canCreate
@@ -325,10 +343,10 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
             : []
         }
         pagination={{current: page, pageSize, total: list.currentData?.metadata.total ?? 0, showSizeChanger: true}}
-        onChange={(pagination, _, sorter, extra) => {
+        onChange={(tablePagination, _, sorter, extra) => {
           if (extra.action === 'paginate') {
-            setPage(pagination.current ?? page);
-            setPageSize(pagination.pageSize ?? pageSize);
+            pagination.setPage(tablePagination.current ?? page);
+            pagination.setPageSize(tablePagination.pageSize ?? pageSize);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -346,7 +364,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
                 : 'UPDATED_AT';
           setSort(nextSort);
           setDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-          setPage(1);
+          pagination.setPage(1);
         }}
         {...testId('operations-contract-page')}
       />

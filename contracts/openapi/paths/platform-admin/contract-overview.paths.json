@@ -39,8 +39,8 @@
             }
           },
           {
+            "in": "query",
             "name": "storeId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -48,8 +48,8 @@
             }
           },
           {
+            "in": "query",
             "name": "contractNo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -57,8 +57,8 @@
             }
           },
           {
+            "in": "query",
             "name": "phaseName",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -66,8 +66,8 @@
             }
           },
           {
-            "name": "tenantId",
             "in": "query",
+            "name": "tenantId",
             "required": false,
             "schema": {
               "type": "string",
@@ -75,8 +75,8 @@
             }
           },
           {
-            "name": "itemCode",
             "in": "query",
+            "name": "itemCode",
             "required": false,
             "schema": {
               "type": "string",
@@ -84,32 +84,32 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractStatus"
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractSortDirection"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -117,8 +117,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -285,27 +285,28 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationCandidateQuerySubjectType"
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": false,
             "schema": {
               "type": "string",
               "enum": [
-                "CONTRACT_LIST"
+                "CONTRACT_LIST",
+                "EXTERNAL_BINDING"
               ]
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -313,8 +314,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -322,8 +323,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -332,8 +333,8 @@
             }
           },
           {
-            "name": "selectedId",
             "in": "query",
+            "name": "selectedId",
             "required": false,
             "schema": {
               "type": "string",
@@ -341,8 +342,8 @@
             }
           },
           {
-            "name": "projectId",
             "in": "query",
+            "name": "projectId",
             "required": false,
             "schema": {
               "type": "string",

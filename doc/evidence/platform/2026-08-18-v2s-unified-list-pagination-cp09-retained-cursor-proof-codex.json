@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "kind": "unified-list-pagination-cp09-retained-cursor-proof",
+  "status": "CONFIRMED_STATIC_NO_ACTION",
+  "evidenceLevel": "STATIC_SOURCE_AND_FOCUSED_EVIDENCE",
+  "recall": [
+    "doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md#CP-09",
+    "project-memory/practices/read-model-granularity.md",
+    "project-memory/practices/set-interaction-not-n-times-single.md",
+    "doc/review/platform/2026-08-18-v2s-query-granularity-implementation-review-round2-claude.md#QG-12"
+  ],
+  "members": {
+    "catalog": {
+      "operationId": "getOperationsCatalogItems",
+      "ownerSource": "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java",
+      "method": "items",
+      "observed": {
+        "methodDefinitions": 1,
+        "offsetLimitPlaceholders": 3,
+        "scopePredicates": 1,
+        "cursorWriteSites": 8
+      },
+      "retainedInvariants": [
+        "scope and brand predicates are applied in the filtered SQL CTE",
+        "SQL performs aggregate count and offset/limit paging",
+        "page continuation is emitted only when the extra row proves another page"
+      ],
+      "decision": "NO_ACTION_ALREADY_COMPLIANT"
+    },
+    "inventory": [
+      {
+        "operationId": "getOperationsInventoryTargetBusinessHistory",
+        "ownerMethod": "history",
+        "observed": {
+          "methodDefinitions": 1,
+          "limitOffsetPlaceholders": 1,
+          "countOverOccurrencesInOwner": 1,
+          "targetOrScopePredicate": "target_ref=?"
+        },
+        "decision": "NO_ACTION_ALREADY_COMPLIANT"
+      },
+      {
+        "operationId": "getOperationsInventoryTargetConsumptionReferences",
+        "ownerMethod": "references",
+        "observed": {
+          "methodDefinitions": 1,
+          "limitOffsetPlaceholders": 1,
+          "countOverOccurrencesInOwner": 1,
+          "scopeBrandPredicateOccurrences": 2,
+          "jsonbPathPrefilterOccurrences": 1,
+          "exactTargetPredicateOccurrences": 1
+        },
+        "retainedInvariants": [
+          "scope and brand are filtered before JSONB expansion",
+          "jsonb_path_exists is only a base-row prefilter",
+          "exact targetRef/componentTargetRef matching remains in SQL",
+          "pagination and total are retained"
+        ],
+        "decision": "NO_ACTION_ALREADY_COMPLIANT"
+      },
+      {
+        "operationId": "getOperationsInventoryTargetLedger",
+        "ownerMethod": "ledger",
+        "observed": {
+          "methodDefinitions": 1,
+          "limitOffsetPlaceholders": 1,
+          "countOverOccurrencesInOwner": 1,
+          "targetOrScopePredicate": "target_ref=?"
+        },
+        "decision": "NO_ACTION_ALREADY_COMPLIANT"
+      },
+      {
+        "operationId": "getOperationsInventoryTargets",
+        "ownerMethod": "targets",
+        "observed": {
+          "methodDefinitions": 1,
+          "limitOffsetPlaceholders": 1
+        },
+        "retainedInvariants": [
+          "owner-side scope filtering and count/page metadata remain in SQL"
+        ],
+        "decision": "NO_ACTION_ALREADY_COMPLIANT"
+      }
+    ]
+  },
+  "frontendConsumers": {
+    "catalogWorkbench": {
+      "source": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchPage.tsx",
+      "cursorStackOccurrences": 2,
+      "decision": "RETAIN_CURSOR_SURFACE"
+    },
+    "inventoryManagement": {
+      "source": "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+      "cursorStackOccurrences": 2,
+      "decision": "RETAIN_CURSOR_SURFACE"
+    },
+    "inventoryDetail": {
+      "source": "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx",
+      "cursorStackOccurrences": 4,
+      "decision": "RETAIN_CURSOR_SURFACE"
+    }
+  },
+  "negativeProof": {
+    "referenceReadbacksRemovedByPriorQGWork": true,
+    "qg12AcceptanceScenarioPresent": true,
+    "qg12AcceptanceScenario": "inventory-consumption-reference-isolation",
+    "scope": "No production change in CP-09; this artifact records the retained boundary and prevents CP-10/CP-11 from rewriting it."
+  }
+}

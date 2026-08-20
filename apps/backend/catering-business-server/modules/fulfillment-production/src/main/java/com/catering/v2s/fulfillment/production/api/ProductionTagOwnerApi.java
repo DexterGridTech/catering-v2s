@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface ProductionTagOwnerApi {
     JsonNode read(String operationId, String dataNodeRef, String brandRef, ObjectNode request, String requestId);
 
-    JsonNode readTags(String dataNodeRef, String brandRef, String requestId);
+    JsonNode readTags(String dataNodeRef, String brandRef, ObjectNode request, String requestId);
 
     List<ProductionTagReferenceReadback> readTagReferencesByRefs(
             String dataNodeRef, String brandRef, List<UUID> tagRefs, String requestId);

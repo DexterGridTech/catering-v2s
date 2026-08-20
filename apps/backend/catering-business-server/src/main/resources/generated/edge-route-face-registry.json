@@ -5,10 +5,10 @@
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
   "closure": {
-    "operations": 154,
+    "operations": 181,
     "faceCounts": {
-      "platform-admin": 50,
-      "operations-admin": 92,
+      "platform-admin": 61,
+      "operations-admin": 108,
       "public": 12
     }
   },
@@ -131,6 +131,24 @@
       "owner": "workspace-iam"
     },
     {
+      "operationId": "createOperationsBusinessChannel",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "createOperationsBusinessChannelTemplate",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
       "operationId": "createOperationsContract",
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
@@ -192,6 +210,15 @@
         "operations-admin"
       ],
       "owner": "organization"
+    },
+    {
+      "operationId": "createOperationsOwnerBinding",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "createOperationsWorkspaceGroupInvitation",
@@ -257,6 +284,15 @@
       "owner": "platform-workspace"
     },
     {
+      "operationId": "createPlatformOwnerBinding",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
       "operationId": "createWorkspaceInvitation",
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
@@ -273,6 +309,24 @@
         "platform-admin"
       ],
       "owner": "workspace-iam"
+    },
+    {
+      "operationId": "deleteOperationsOwnerBinding",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "deletePlatformOwnerBinding",
+      "method": "DELETE",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "getCurrentPlatformSession",
@@ -300,6 +354,24 @@
         "platform-admin"
       ],
       "owner": "extension"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsContract",
@@ -345,6 +417,24 @@
         "operations-admin"
       ],
       "owner": "platform-workspace"
+    },
+    {
+      "operationId": "getOperationsExternalCapabilityDictionary",
+      "method": "GET",
+      "path": "/api/operations/external-capability-dictionary",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getOperationsExternalProviderCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "getOperationsFixedStoreContracts",
@@ -437,15 +527,6 @@
       "owner": "organization"
     },
     {
-      "operationId": "getOperationsOrganizationStoreCandidates",
-      "method": "GET",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      "consumerFaces": [
-        "operations-admin"
-      ],
-      "owner": "organization"
-    },
-    {
       "operationId": "getOperationsOrganizationStoreExtensionDefinition",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
@@ -480,6 +561,42 @@
         "operations-admin"
       ],
       "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsOwnerBindingDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getOperationsProjectBusinessChannels",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannels",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsStoreProfile",
@@ -734,6 +851,33 @@
       "owner": "platform-workspace"
     },
     {
+      "operationId": "getPlatformExternalCapabilityDictionary",
+      "method": "GET",
+      "path": "/api/platform/external-capability-dictionary",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getPlatformExternalCollaborationTree",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getPlatformExternalSystemDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
       "operationId": "getPlatformGroupWorkspaceDetail",
       "method": "GET",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
@@ -777,6 +921,33 @@
         "platform-admin"
       ],
       "owner": "organization"
+    },
+    {
+      "operationId": "getPlatformOwnerBindingDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getPlatformProviderProfileBindings",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
+      "operationId": "getPlatformProviderProfileDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "getPublicAssetContent",
@@ -1184,6 +1355,24 @@
       "owner": "platform-iam"
     },
     {
+      "operationId": "transitionOperationsBusinessChannelStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "transitionOperationsBusinessChannelTemplateStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
       "operationId": "transitionOperationsOrganizationBrandStatus",
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
@@ -1238,6 +1427,15 @@
       "owner": "platform-iam"
     },
     {
+      "operationId": "transitionPlatformExternalSystemStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
       "operationId": "transitionPlatformGroupWorkspaceStatus",
       "method": "POST",
       "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
@@ -1245,6 +1443,15 @@
         "platform-admin"
       ],
       "owner": "platform-workspace"
+    },
+    {
+      "operationId": "transitionPlatformProviderProfileStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "transitionWorkspaceAccountStatus",
@@ -1263,6 +1470,24 @@
         "platform-admin"
       ],
       "owner": "workspace-iam"
+    },
+    {
+      "operationId": "updateOperationsBusinessChannel",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "updateOperationsBusinessChannelTemplate",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
     },
     {
       "operationId": "updateOperationsCommercialGroup",
@@ -1328,6 +1553,15 @@
       "owner": "organization"
     },
     {
+      "operationId": "updateOperationsOwnerBinding",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "collaboration"
+    },
+    {
       "operationId": "updatePlatformAdminProfile",
       "method": "PATCH",
       "path": "/api/platform/admin-users/{platformAdminId}/profile",
@@ -1344,6 +1578,15 @@
         "platform-admin"
       ],
       "owner": "platform-workspace"
+    },
+    {
+      "operationId": "updatePlatformOwnerBinding",
+      "method": "PATCH",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "consumerFaces": [
+        "platform-admin"
+      ],
+      "owner": "collaboration"
     },
     {
       "operationId": "updateWorkspaceRole",

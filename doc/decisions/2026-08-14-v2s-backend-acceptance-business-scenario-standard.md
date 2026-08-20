@@ -36,13 +36,17 @@
 该类负责 JUnit/Testcontainers 生命周期、真实 HTTP 上下文、共享 fixture/helper、DB 计数和结果
 写入；不得继续向其中堆积业务 scenario 方法。
 
-业务 scenario 按 owner 业务域放在以下五个已验证类中：
+业务 scenario 按 owner 业务域放在以下当前 catalog 已登记的 domain group 中：
 
 - `IamAcceptanceScenarios.java`
 - `OrganizationAcceptanceScenarios.java`
 - `CommercialContractAcceptanceScenarios.java`
 - `AssetAcceptanceScenarios.java`
 - `CatalogAcceptanceScenarios.java`
+- `AuditAcceptanceScenarios.java`
+- `ExtensionAcceptanceScenarios.java`
+- `CollaborationAcceptanceScenarios.java`（本批新增）
+- `BusinessChannelAcceptanceScenarios.java`（本批新增）
 
 `BackendAcceptanceScenarioCatalog` 显式持有已验证的 domain group，通过 `@AcceptanceScenario`
 发现方法并按稳定 ID 排序。新增 scenario 必须放入正确的 domain group，使用唯一的
@@ -74,7 +78,7 @@ oracle 保留在对应 domain group，防止业务知识重新集中化。
 
 1. 动手前重读当前业务需求/分析、适用详设、命中的项目记忆、本规范和 owning production
    source；先确认要证明的业务事实与反例边界。
-2. 在四个 domain group 中选择正确文件，新增 `@AcceptanceScenario` 方法及真实 fixture、
+2. 在当前 catalog 已登记的 domain group 中选择正确文件，新增 `@AcceptanceScenario` 方法及真实 fixture、
    request、business assertions；不要在入口类新增业务测试方法。
 3. 先运行单条聚焦验证：
 

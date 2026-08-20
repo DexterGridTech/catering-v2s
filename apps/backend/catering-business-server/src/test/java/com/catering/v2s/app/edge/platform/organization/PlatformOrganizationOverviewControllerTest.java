@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -16,6 +17,48 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class PlatformOrganizationOverviewControllerTest {
+    @Test
+    void externalBindingCandidatesUseThePlatformOrganizationOwnerRead() {
+        PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);
+        PlatformSessionResolver.PlatformReadSessionFacts readFacts = mock(PlatformSessionResolver.PlatformReadSessionFacts.class);
+        PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace = mock(PlatformSessionResolver.EnabledSelectedWorkspaceFact.class);
+        WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
+        StoreCandidateTaskReadService candidates = mock(StoreCandidateTaskReadService.class);
+        EdgeRequestContext request = mock(EdgeRequestContext.class);
+        UUID workspaceId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        when(sessions.requireRead(request)).thenReturn(readFacts);
+        when(readFacts.requireEnabledSelectedWorkspace(workspaces, "organization-test")).thenReturn(workspace);
+        when(workspace.workspaceUuid()).thenReturn(workspaceId);
+        when(candidates.platformExternalBindingCandidatePage(any(), any(), any()))
+                .thenReturn(new StoreCandidateTaskReadService.CandidatePage(
+                        new StoreCandidateTaskReadService.CandidateQueryMetadata(
+                                "COMMERCIAL_GROUP", null, 1, 20, 1L, null),
+                        List.of(new StoreCandidateTaskReadService.Candidate(candidateId, "CG-01", "集团", null))));
+        PlatformOrganizationOverviewController controller = new PlatformOrganizationOverviewController(
+                sessions,
+                workspaces,
+                mock(OrganizationOverviewTaskReadService.class),
+                candidates,
+                mock(ExtensionDefinitionService.class));
+
+        var result = controller.candidatePage(
+                request, "organization-test", "COMMERCIAL_GROUP", "EXTERNAL_BINDING", null, 1, 20, null, null);
+
+        assertEquals(candidateId.toString(), result.items().getFirst().id().toString());
+        verify(candidates)
+                .platformExternalBindingCandidatePage(
+                        workspaceId,
+                        "organization-test",
+                        new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
+                                StoreCandidateTaskReadService.PlatformContractCandidateSubject.COMMERCIAL_GROUP,
+                                null,
+                                1,
+                                20,
+                                null,
+                                null));
+    }
+
     @Test
     void pageUsesTheNamedPlatformOverviewTaskReader() {
         PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);

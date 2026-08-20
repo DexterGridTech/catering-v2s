@@ -1,6 +1,12 @@
 import {Alert, Button, Tag} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {adminListState, contextScopedQueryArgs, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminListState,
+  contextScopedQueryArgs,
+  createPageQueryIdentity,
+  testId,
+  usePageQuery,
+} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -65,8 +71,6 @@ const actionLabel = new Map(adminCatalog.actions.map(action => [action.actionKey
 export function BusinessEntityManagementPage({pageDesignKey, queryContext, actionCapabilityKeys}: Props) {
   const config = configByKey[pageDesignKey];
   const [filters, setFilters] = useState<Filters>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<BusinessEntitySortKey>('NAME');
   const [direction, setDirection] = useState<BusinessEntitySortDirection>('ASC');
   const [creating, setCreating] = useState(false);
@@ -74,6 +78,22 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
   const [editing, setEditing] = useState<BusinessEntity>();
   const [transitioning, setTransitioning] = useState<BusinessEntity>();
   const [authorizing, setAuthorizing] = useState<HeadCompany>();
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: `getOperationsOrganization${config.kind}`,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: queryContext.scopeRef,
+        },
+        filters,
+        sort: {sort, direction},
+      }),
+    [config.kind, direction, filters, queryContext, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const query = useMemo(
     () =>
       contextScopedQueryArgs(
@@ -231,7 +251,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
               onClick={() => {
                 searchConfig.form?.resetFields();
                 setFilters({});
-                setPage(1);
+                pagination.setPage(1);
               }}
               {...testId(`operations-business-entity-filter-reset-${config.kind.toLowerCase()}`)}
             >
@@ -247,7 +267,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
             unifiedSocialCreditCode: value.unifiedSocialCreditCode?.trim() || undefined,
             status: value.status,
           });
-          setPage(1);
+          pagination.setPage(1);
         }}
         options={false}
         columns={columns}
@@ -272,11 +292,11 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
               ]
             : []
         }
-        pagination={{current: page, pageSize, total: result?.metadata.total ?? 0}}
-        onChange={(pagination, _, sorter, extra) => {
+        pagination={{current: page, pageSize, total: result?.metadata.total ?? 0, showSizeChanger: true}}
+        onChange={(tablePagination, _, sorter, extra) => {
           if (extra.action === 'paginate') {
-            setPage(pagination.current ?? page);
-            setPageSize(pagination.pageSize ?? pageSize);
+            pagination.setPage(tablePagination.current ?? page);
+            pagination.setPageSize(tablePagination.pageSize ?? pageSize);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -290,7 +310,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
             current?.columnKey === 'name' ? 'NAME' : current?.columnKey === 'code' ? 'CODE' : 'UPDATED_AT';
           setSort(nextSort);
           setDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-          setPage(1);
+          pagination.setPage(1);
         }}
         {...testId(`operations-business-entity-${config.kind.toLowerCase()}-page`)}
       />

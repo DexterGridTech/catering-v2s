@@ -1,0 +1,51 @@
+{
+  "status": "CONTROLLED_BLOCKED_BEFORE_ACCEPTANCE",
+  "scope": "CP-14",
+  "reviewCycleId": "UNIFIED_LIST_PAGINATION_IMPLEMENTATION_2026-08-18",
+  "checkedAt": "2026-08-18",
+  "entrypoint": "scripts/test/backend-acceptance",
+  "preflight": {
+    "command": "scripts/env/check-runtime-resource-budget .runtime",
+    "exitCode": 1,
+    "liveManagedProcesses": 4,
+    "managedRssMb": 61,
+    "status": "FAIL",
+    "failure": "MANAGED_RESOURCE_BUDGET_EXCEEDED"
+  },
+  "ownedManifest": {
+    "path": ".runtime/r5/run-manifest.json",
+    "runId": "rm1-seed-d43a43a7-5038-4584-9c83-2b6dbbb3b480",
+    "processes": [
+      "remote-dev-tunnels",
+      "business-server",
+      "platform-admin",
+      "operations-admin"
+    ]
+  },
+  "latestAcceptanceAttempt": {
+    "path": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1787039391910-81059/run-manifest.json",
+    "runId": "r5-tc-1787039391910-81059",
+    "startedAt": "2026-08-18T07:49:51.910Z",
+    "sourceSync": "FAIL",
+    "testExecution": "NOT_RUN",
+    "cleanup": "FAIL",
+    "firstFailure": "LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED"
+  },
+  "interpretation": {
+    "businessVerdict": "UNVERIFIED_REQUIRES_EVIDENCE",
+    "reason": "The managed runner rejected the run before source sync; no current-code CONTRACT/BUSINESS/cleanup result exists.",
+    "forbiddenSubstitutes": [
+      "module Gradle test",
+      "old managed run",
+      "scripts/verify --validate-only",
+      "response.ok",
+      "local Docker/Testcontainers"
+    ],
+    "nextSafeAction": "Release the existing manifest-owned DEV process tree through an authorized managed operation, then run the public backend-acceptance entrypoint once.",
+    "notDone": [
+      "Do not kill by port or command name.",
+      "Do not retry while the preflight remains non-zero.",
+      "Do not claim BUSINESS or cleanup PASS."
+    ]
+  }
+}

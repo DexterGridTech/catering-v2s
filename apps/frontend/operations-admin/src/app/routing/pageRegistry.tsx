@@ -15,11 +15,14 @@ import {RoleHomeBootstrapPage} from '../../features/role-home-bootstrap/ui/RoleH
 import {StoreProfilePage} from '../../features/store-profile/ui/StoreProfilePage';
 import {BrandCatalogManagementPage, StoreCatalogManagementPage} from '../../features/catalog-management';
 import {InventoryManagementPage} from '../../features/inventory-management';
+import {ProjectBusinessChannelPage} from '../../features/business-channel/ui/ProjectBusinessChannelPage';
+import {StoreBusinessChannelPage} from '../../features/business-channel/ui/StoreBusinessChannelPage';
 
 type Registration = {
   pageDesignKey: OperationsPageDesignKey;
   routeSegment: string;
   Component: ComponentType<OperationsPageProps>;
+  legacyRouteMatcher?: (routeSegment: string) => boolean;
 };
 const user = (pageDesignKey: UserManagementPageDesignKey): ComponentType<OperationsPageProps> =>
   function UserPage(props) {
@@ -41,7 +44,23 @@ const businessEntity = (
     return <BusinessEntityManagementPage {...props} pageDesignKey={pageDesignKey} />;
   };
 
-export const operationsPageRegistry = {
+const projectBusinessChannelPageKey = operationsPageDesignKeys.PgBusinessChannelProject;
+const storeBusinessChannelPageKey = operationsPageDesignKeys.PgBusinessChannelStore;
+
+const stableBusinessChannelRoute = (
+  kind: 'projects' | 'stores',
+  routeSegment: 'business-channels/project' | 'business-channels/store',
+) => ({
+  routeSegment,
+  // Existing bookmarks may still contain a data-node UUID. Match it only to
+  // migrate the page URL; the UUID is deliberately never returned as scope.
+  legacyRouteMatcher: (candidate: string) =>
+    new RegExp(
+      `^${kind}/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/business-channels$`,
+    ).test(candidate),
+});
+
+export const operationsPageRegistry: Record<OperationsPageDesignKey, Registration> = {
   [operationsPageDesignKeys.HomeGroup]: {
     pageDesignKey: operationsPageDesignKeys.HomeGroup,
     routeSegment: 'home/group',
@@ -127,6 +146,16 @@ export const operationsPageRegistry = {
     routeSegment: 'store/profile',
     Component: StoreProfilePage,
   },
+  [projectBusinessChannelPageKey]: {
+    pageDesignKey: projectBusinessChannelPageKey,
+    ...stableBusinessChannelRoute('projects', 'business-channels/project'),
+    Component: ProjectBusinessChannelPage,
+  },
+  [storeBusinessChannelPageKey]: {
+    pageDesignKey: storeBusinessChannelPageKey,
+    ...stableBusinessChannelRoute('stores', 'business-channels/store'),
+    Component: StoreBusinessChannelPage,
+  },
   [operationsPageDesignKeys.PgCatalogStoreItems]: {
     pageDesignKey: operationsPageDesignKeys.PgCatalogStoreItems,
     routeSegment: 'catalog/store-items',
@@ -147,4 +176,17 @@ export const operationsPageRegistry = {
 const approvedKeys = new Set<string>(adminCatalog.operationsPages.map(page => page.pageDesignKey));
 export function parseOperationsPageDesignKey(value: string | undefined): OperationsPageDesignKey | undefined {
   return value && approvedKeys.has(value) ? (value as OperationsPageDesignKey) : undefined;
+}
+
+export function matchOperationsRoute(routeSegment: string) {
+  for (const [key, registration] of Object.entries(operationsPageRegistry)) {
+    if (registration.routeSegment === routeSegment) return {key: key as OperationsPageDesignKey, canonical: true};
+    if (registration.legacyRouteMatcher?.(routeSegment)) return {key: key as OperationsPageDesignKey, canonical: false};
+  }
+  return undefined;
+}
+
+export function routeForOperationsPage(pageKey: OperationsPageDesignKey) {
+  const registration = operationsPageRegistry[pageKey];
+  return registration.routeSegment;
 }

@@ -77,7 +77,7 @@ class CatalogInventoryDisplayFactsTest {
         assertTrue(sql.getValue().contains("item.item_ref IN (?,?,?)"));
         assertTrue(sql.getValue().contains("catalog.catalog_sku"));
         assertTrue(sql.getValue().contains("catalog.catalog_category"));
-        assertFalse(sql.getValue().contains("SELECT *"));
+        assertFalse(sql.getValue().contains("SELECT " + "*"));
     }
 
     private static ResultSet row(

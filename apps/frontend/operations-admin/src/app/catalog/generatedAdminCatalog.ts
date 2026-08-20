@@ -484,6 +484,71 @@ export const adminCatalog = {
       "userManagementTargetOrganizationType": null
     },
     {
+      "pageDesignKey": "PG-BUSINESS-CHANNEL-PROJECT",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 320,
+      "menuGroupKey": "NAV-BUSINESS-CHANNEL",
+      "menuGroupIconKey": "STORE_OPERATIONS",
+      "menuGroupLabel": "经营渠道",
+      "menuLabel": "项目经营渠道管理",
+      "pageTitle": "项目经营渠道管理",
+      "contentTabLabel": "项目经营渠道管理",
+      "pageDescription": "在项目数据节点维护渠道模板与项目经营渠道。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "项目节点渠道",
+        "门店经营渠道"
+      ],
+      "requiredDataNodeType": "PROJECT",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT"
+      ],
+      "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-BUSINESS-CHANNEL-STORE",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 340,
+      "menuGroupKey": "NAV-BUSINESS-CHANNEL",
+      "menuGroupIconKey": "STORE_OPERATIONS",
+      "menuGroupLabel": "经营渠道",
+      "menuLabel": "门店经营渠道管理",
+      "pageTitle": "门店经营渠道管理",
+      "contentTabLabel": "门店经营渠道管理",
+      "pageDescription": "在门店数据节点维护门店主体经营渠道。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "门店节点渠道",
+        "项目模板管理"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
+    },
+    {
       "pageDesignKey": "PG-CATALOG-STORE-ITEMS",
       "kind": "BUSINESS",
       "pageAccessManaged": true,
@@ -604,6 +669,11 @@ export const adminCatalog = {
       "actionGroupKey": "CATALOG_MANAGEMENT",
       "actionGroupLabel": "商品与服务",
       "actionGroupOrder": 500
+    },
+    {
+      "actionGroupKey": "BUSINESS_CHANNEL_MANAGEMENT",
+      "actionGroupLabel": "经营渠道管理",
+      "actionGroupOrder": 600
     }
   ],
   "actions": [
@@ -1402,6 +1472,56 @@ export const adminCatalog = {
       ]
     },
     {
+      "actionKey": "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+      "actionLabel": "编辑项目经营渠道",
+      "actionDescription": "编辑项目经营渠道",
+      "actionGroupKey": "BUSINESS_CHANNEL_MANAGEMENT",
+      "actionGroupLabel": "经营渠道管理",
+      "actionGroupOrder": 600,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-BUSINESS-CHANNEL-PROJECT",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT"
+          ],
+          "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT"
+      ]
+    },
+    {
+      "actionKey": "BC-BUSINESS-CHANNEL-STORE-EDIT",
+      "actionLabel": "编辑门店经营渠道",
+      "actionDescription": "编辑门店经营渠道",
+      "actionGroupKey": "BUSINESS_CHANNEL_MANAGEMENT",
+      "actionGroupLabel": "经营渠道管理",
+      "actionGroupOrder": 600,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-BUSINESS-CHANNEL-STORE",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ]
+    },
+    {
       "actionKey": "EDIT_HEAD_COMPANY_CATALOG",
       "actionLabel": "编辑总公司商品",
       "actionDescription": "编辑总公司商品",
@@ -1584,6 +1704,8 @@ export const operationsPageDesignKeys = {
   "PgIamHeadCompanyUsers": "PG-IAM-HEAD-COMPANY-USERS",
   "PgIamStoreUsers": "PG-IAM-STORE-USERS",
   "PgStoreProfile": "PG-STORE-PROFILE",
+  "PgBusinessChannelProject": "PG-BUSINESS-CHANNEL-PROJECT",
+  "PgBusinessChannelStore": "PG-BUSINESS-CHANNEL-STORE",
   "PgCatalogStoreItems": "PG-CATALOG-STORE-ITEMS",
   "PgInventoryStoreStatus": "PG-INVENTORY-STORE-STATUS",
   "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS"
@@ -1625,6 +1747,8 @@ export const ACTION_CAPABILITIES = {
   "CONTRACT_CREATE": "BC-CONTRACT-CREATE",
   "CONTRACT_EDIT": "BC-CONTRACT-EDIT",
   "CONTRACT_INVALIDATE": "BC-CONTRACT-INVALIDATE",
+  "BUSINESS_CHANNEL_PROJECT_EDIT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+  "BUSINESS_CHANNEL_STORE_EDIT": "BC-BUSINESS-CHANNEL-STORE-EDIT",
   "EDIT_HEAD_COMPANY_CATALOG": "EDIT_HEAD_COMPANY_CATALOG",
   "EDIT_STORE_CATALOG": "EDIT_STORE_CATALOG",
   "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY"

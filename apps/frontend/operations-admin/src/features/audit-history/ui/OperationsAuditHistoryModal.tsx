@@ -1,8 +1,9 @@
 import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Space, Spin, Table, Typography} from 'antd';
-import {testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {createPageQueryIdentity, testId, useOverlayLock, usePageQuery} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 
 type AuditEntityType = Parameters<
@@ -90,29 +91,48 @@ export function OperationsAuditHistoryModal({
   groupWorkspaceKey: string;
   onClose: () => void;
 }) {
-  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
   const [lastSuccessful, setLastSuccessful] = useState<{page: number; data: AuditHistoryPage}>();
+  const targetType = target?.entityType;
+  const targetId = target?.entityId;
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsEntityAuditHistory,
+        scope: {groupWorkspaceKey, targetType, targetId},
+      }),
+    [groupWorkspaceKey, targetId, targetType],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
   useOverlayLock(open);
 
   useEffect(() => {
     if (!open) {
-      setPage(1);
+      pagination.reset();
       setSelectedId(undefined);
       setLastSuccessful(undefined);
+      return;
     }
-  }, [open, target?.entityId, target?.entityType]);
-  const targetType = target?.entityType;
-  const targetId = target?.entityId;
+    setSelectedId(undefined);
+    setLastSuccessful(undefined);
+  }, [groupWorkspaceKey, open, pagination.reset, targetId, targetType]);
   const request = useMemo(
     () =>
       targetType && targetId
         ? operationsAdminRtkRequest.getOperationsEntityAuditHistory(
             {},
-            {query: {groupWorkspaceKey, entityType: targetType, entityId: targetId, page, pageSize: 10}},
+            {
+              query: {
+                groupWorkspaceKey,
+                entityType: targetType,
+                entityId: targetId,
+                page: pagination.page,
+                pageSize: pagination.pageSize,
+              },
+            },
           )
         : undefined,
-    [groupWorkspaceKey, page, targetId, targetType],
+    [groupWorkspaceKey, pagination.page, pagination.pageSize, targetId, targetType],
   );
   const query = operationsRtk.useGetOperationsEntityAuditHistoryQuery(request!, {skip: !open || !request});
   const problem = query.error ? operationsProblemOf(query.error) : undefined;
@@ -219,11 +239,14 @@ export function OperationsAuditHistoryModal({
               )}
             />
             <Pagination
-              current={visibleData.page}
-              pageSize={visibleData.pageSize}
+              current={pagination.page}
+              pageSize={pagination.pageSize}
               total={visibleData.total}
-              showSizeChanger={false}
-              onChange={setPage}
+              showSizeChanger
+              onChange={(nextPage, nextPageSize) => {
+                if (nextPageSize !== pagination.pageSize) pagination.setPageSize(nextPageSize);
+                else pagination.setPage(nextPage);
+              }}
               style={{marginTop: 12}}
               {...testId('operations-audit-history-pagination')}
             />

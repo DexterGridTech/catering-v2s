@@ -40,8 +40,8 @@
             }
           },
           {
-            "name": "name",
             "in": "query",
+            "name": "name",
             "required": false,
             "schema": {
               "type": "string",
@@ -49,24 +49,24 @@
             }
           },
           {
-            "name": "organizationType",
             "in": "query",
+            "name": "organizationType",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/ServiceNodeType"
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceRoleStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -74,8 +74,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -84,16 +84,16 @@
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/workspace-iam/workspace-access.schemas.json#/components/schemas/WorkspaceRoleSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"

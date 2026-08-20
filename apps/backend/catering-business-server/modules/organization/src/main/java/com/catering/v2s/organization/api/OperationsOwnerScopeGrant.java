@@ -17,7 +17,32 @@ public record OperationsOwnerScopeGrant(
         UUID targetId,
         String assignmentNodeType,
         UUID assignmentNodeId,
-        List<UUID> targetAncestorIds) {
+        List<UUID> targetAncestorIds,
+        long expectedContextVersion) {
+    /** Existing owner callers predate request-context optimistic concurrency. */
+    public OperationsOwnerScopeGrant(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String requirementId,
+            String capabilityKey,
+            String targetType,
+            UUID targetId,
+            String assignmentNodeType,
+            UUID assignmentNodeId,
+            List<UUID> targetAncestorIds) {
+        this(
+                workspaceUuid,
+                groupWorkspaceKey,
+                requirementId,
+                capabilityKey,
+                targetType,
+                targetId,
+                assignmentNodeType,
+                assignmentNodeId,
+                targetAncestorIds,
+                -1L);
+    }
+
     public OperationsOwnerScopeGrant {
         targetAncestorIds = List.copyOf(targetAncestorIds);
     }
@@ -56,5 +81,10 @@ public record OperationsOwnerScopeGrant(
             String expectedCapabilityKey) {
         return matchesCapability(workspaceUuid, groupWorkspaceKey, targetType, targetId, expectedCapabilityKey)
                 && Objects.equals(this.requirementId, expectedRequirementId);
+    }
+
+    /** New context-bound commands must carry a real server-resolved context version. */
+    public boolean matchesExpectedContextVersion(long contextVersion) {
+        return expectedContextVersion >= 0 && expectedContextVersion == contextVersion;
     }
 }

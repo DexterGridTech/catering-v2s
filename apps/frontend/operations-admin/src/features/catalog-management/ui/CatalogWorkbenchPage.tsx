@@ -34,9 +34,11 @@ import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
   createContentIdempotencyKey,
+  CursorPagination,
   NameCodeText,
   testId,
   useAsyncGenerationGuard,
+  useCursorCandidates,
   useCursorStack,
   useDetailDrawer,
   useOverlayLock,
@@ -92,6 +94,7 @@ type TreeSelection = {kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'UNCATEGORIZED'; re
 type CatalogFilters = {keyword?: string; status?: string; source?: string};
 type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS' | 'ARCHIVE';
 type CatalogBatchRowResult = CatalogBatchResult & {code: string};
+type TagDictionaryEntry = ReturnType<typeof decodeCatalogDictionaryLabels>[number];
 type CategoryAction = {
   mode: 'CREATE' | 'RENAME' | 'REPARENT' | 'MOVE_UP' | 'MOVE_DOWN' | 'DELETE';
   node?: CatalogNavigation['tree'][number];
@@ -294,6 +297,11 @@ function CatalogWorkbenchPage({
   }, [brands, surface]);
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const scopeReady = Boolean(queryContext.scopeRef) && (surface === 'store' || Boolean(brandRef));
+  const tagDictionaryState = useCursorCandidates<TagDictionaryEntry>({
+    resetKey: `${queryContext.scopeRef ?? ''}:${brandRef ?? ''}`,
+    pageSize: 50,
+    keyOf: entry => entry.entryRef,
+  });
   const contextRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogWorkbenchContext(
@@ -322,9 +330,16 @@ function CatalogWorkbenchPage({
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogDictionary(
         {dictionaryKind: 'TAG'},
-        {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers},
+        {
+          query: {
+            dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
+            ...(tagDictionaryState.cursor ? {cursor: tagDictionaryState.cursor} : {}),
+            pageSize: tagDictionaryState.pageSize,
+          },
+          headers,
+        },
       ),
-    [headers, queryContext.scopeRef],
+    [headers, queryContext.scopeRef, tagDictionaryState.cursor, tagDictionaryState.pageSize],
   );
   const listQuery = useMemo(
     () =>
@@ -364,14 +379,19 @@ function CatalogWorkbenchPage({
   const context = decodeWorkbenchContext(contextQuery.currentData);
   const navigation = decodeNavigation(navigationQuery.currentData);
   const manifest = manifestQuery.currentData?.data;
-  const tagDictionaryEntries = useMemo(
-    () => decodeCatalogDictionaryLabels(tagDictionaryQuery.currentData),
-    [tagDictionaryQuery.currentData],
-  );
+  const tagDictionaryPage = tagDictionaryQuery.currentData?.data;
+  useEffect(() => {
+    if (!tagDictionaryPage || !tagDictionaryQuery.currentData) return;
+    tagDictionaryState.acceptPage(decodeCatalogDictionaryLabels(tagDictionaryQuery.currentData), {
+      pageSize: tagDictionaryState.pageSize,
+      total: tagDictionaryPage.total,
+      nextCursor: tagDictionaryPage.cursor,
+    });
+  }, [tagDictionaryPage, tagDictionaryQuery.currentData, tagDictionaryState.acceptPage, tagDictionaryState.pageSize]);
+  const tagDictionaryEntries = tagDictionaryState.items;
   const tagLabels = useMemo(
-    () =>
-      new Map(decodeCatalogDictionaryLabels(tagDictionaryQuery.currentData).map(entry => [entry.entryRef, entry.name])),
-    [tagDictionaryQuery.currentData],
+    () => new Map(tagDictionaryEntries.map(entry => [entry.entryRef, entry.name])),
+    [tagDictionaryEntries],
   );
   useEffect(() => {
     listRequestGeneration.current = generation.begin();
@@ -1273,26 +1293,12 @@ function CatalogWorkbenchPage({
             }}
             {...testId('catalog-inventory-item-table')}
           />
-          <Space
-            style={{display: 'flex', justifyContent: 'flex-end', marginTop: 12}}
-            {...testId('catalog-inventory-item-pagination')}
-          >
-            <Button
-              disabled={!canPrevious}
-              onClick={() => goToPage(cursorPage - 1)}
-              {...testId('catalog-inventory-item-page-previous')}
-            >
-              上一页
-            </Button>
-            <Typography.Text type="secondary">第 {cursorPage} 页</Typography.Text>
-            <Button
-              disabled={!page.cursor}
-              onClick={() => goToPage(cursorPage + 1, page.cursor)}
-              {...testId('catalog-inventory-item-page-next')}
-            >
-              下一页
-            </Button>
-          </Space>
+          <CursorPagination
+            state={{page: cursorPage, canPrevious, goToPage}}
+            nextCursor={page.cursor}
+            testIdPrefix="catalog-inventory-item-pagination"
+            style={{marginTop: 12}}
+          />
         </div>
       </div>
       <Modal
@@ -1348,6 +1354,8 @@ function CatalogWorkbenchPage({
               allowClear
               value={batchTagRefs}
               options={tagOptions}
+              loading={tagDictionaryQuery.isLoading || tagDictionaryQuery.isFetching}
+              onPopupScroll={event => tagDictionaryState.onPopupScroll(event, tagDictionaryQuery.isFetching)}
               onChange={setBatchTagRefs}
               placeholder="请选择标签"
               {...testId('catalog-inventory-batch-tag')}

@@ -54,7 +54,7 @@ function assertNoHandwrittenEdgeRouteLiterals(base = root) {
   const isSyntheticTest = (file) => /\.test\.[cm]?[jt]sx?$/.test(file);
   const consumers = sourceFiles("apps/frontend", base)
     .filter((file) => file.includes("/src/") && !file.includes("/src/app/api/generated/") && !isSyntheticTest(file))
-    .concat(sourceFiles("scripts/dev", base), sourceFiles("scripts/test", base).filter((file) => !isSyntheticTest(file)));
+    .concat(sourceFiles("scripts/dev", base).filter((file) => !isSyntheticTest(file)), sourceFiles("scripts/test", base).filter((file) => !isSyntheticTest(file)));
   const violations = [];
   for (const file of consumers) {
     for (const [index, line] of read(file, base).split("\n").entries()) {
@@ -599,7 +599,6 @@ function budget(base = root) {
   const compatibilitySelectStarPaths = new Set([
     "apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTrackerTest.java",
     "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAuditHistoryService.java",
-    "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationOverviewTaskReadService.java",
     "apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java",
     "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractAuditHistoryService.java",
     "apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java",

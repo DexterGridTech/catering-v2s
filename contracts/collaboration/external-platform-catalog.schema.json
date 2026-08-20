@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catering-v2s.local/contracts/collaboration/external-platform-catalog.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "externalSystems", "providerProfiles"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "externalSystems": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/externalSystem" } },
+    "providerProfiles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/providerProfile" } }
+  },
+  "$defs": {
+    "capabilityClass": {
+      "type": "string",
+      "enum": ["MASTER_DATA_SYNC", "MEMBER_BENEFIT", "GROUP_BUY", "TAKEAWAY", "INVENTORY_SYNC", "TAKEAWAY_DELIVERY", "ORDER_SYNC"]
+    },
+    "nodeType": {
+      "type": "string",
+      "enum": ["COMMERCIAL_GROUP", "REGION", "PROJECT", "HEAD_COMPANY", "STORE"]
+    },
+    "optionSourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["enum", "endpoint", "local"] },
+        "enumKind": { "type": "string", "minLength": 1 },
+        "operationId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attributeDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldKey", "label", "helpText", "controlKind", "optionSourceRef"],
+      "properties": {
+        "fieldKey": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "helpText": { "type": "string", "minLength": 1 },
+        "controlKind": { "type": "string", "enum": ["readonlySummary", "readonlyPreview"] },
+        "optionSourceRef": { "$ref": "#/$defs/optionSourceRef" }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilityClass", "displayName", "attributeValues", "attributeValueLabels"],
+      "properties": {
+        "capabilityClass": { "$ref": "#/$defs/capabilityClass" },
+        "displayName": { "type": "string", "minLength": 1 },
+        "attributeValues": { "type": "object", "additionalProperties": true },
+        "attributeValueLabels": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "externalSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["externalSystemCode", "displayName", "catalogStatus", "catalogStatusDisplayName", "attributeDictionary", "capabilities"],
+      "properties": {
+        "externalSystemCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "displayName": { "type": "string", "minLength": 1 },
+        "catalogStatus": { "type": "string", "enum": ["PLANNED", "AVAILABLE"] },
+        "catalogStatusDisplayName": { "type": "string", "minLength": 1 },
+        "attributeDictionary": { "type": "array", "items": { "$ref": "#/$defs/attributeDescriptor" } },
+        "capabilities": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/capability" } }
+      }
+    },
+    "providerProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerCode", "displayName", "externalSystemCode", "businessScope", "businessScopeDisplayNames", "bindableNodeTypes", "bindableNodeTypeDisplayNames", "authenticationKind", "authenticationKindDisplayName", "unbindKind", "unbindKindDisplayName", "catalogStatus", "catalogStatusDisplayName"],
+      "properties": {
+        "providerCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "displayName": { "type": "string", "minLength": 1 },
+        "externalSystemCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "businessScope": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/capabilityClass" } },
+        "businessScopeDisplayNames": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "bindableNodeTypes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nodeType" } },
+        "bindableNodeTypeDisplayNames": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "authenticationKind": { "type": "string", "enum": ["EXTERNAL_GRANT", "INTERNAL_MAPPING", "NO_MAPPING"] },
+        "authenticationKindDisplayName": { "type": "string", "minLength": 1 },
+        "unbindKind": { "type": "string", "enum": ["LOCAL_ONLY", "REQUIRES_ADAPTER_UNBIND"] },
+        "unbindKindDisplayName": { "type": "string", "minLength": 1 },
+        "catalogStatus": { "type": "string", "enum": ["PLANNED", "AVAILABLE"] },
+        "catalogStatusDisplayName": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

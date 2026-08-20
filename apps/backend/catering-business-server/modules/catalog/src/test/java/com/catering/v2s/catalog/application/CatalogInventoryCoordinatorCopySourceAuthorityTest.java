@@ -324,6 +324,7 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .readTags(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(com.fasterxml.jackson.databind.node.ObjectNode.class),
                         org.mockito.ArgumentMatchers.anyString());
     }
 

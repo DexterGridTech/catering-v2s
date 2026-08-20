@@ -85,6 +85,30 @@ r2AcceptanceDecision: doc/decisions/2026-07-24-v2s-r2-acceptance.md
 
 ## 0. Roadmap 身份与当前状态
 
+> ## ⚠️ 本文件职责已收窄为「授权记录」(2026-08-19,Dexter 授权 Claude 处置)
+>
+> **已删除的字段**:`LAST_CLOSED_STEP` / `CURRENT_STEP` / `CURRENT_STATUS` /
+> `CURRENT_ACTIVITY` / `CURRENT_NEXT_ACTION`(原权威块)。
+>
+> **删除原因**:它们最后更新于 2026-08-11,此后完成的批次(查询粒度整改、统一列表分页、
+> 外部协作规格)一条未记;更严重的是 `CURRENT_NEXT_ACTION` 当时指挥的两件事 ——
+> 「创建 exact-surface static implementation package」与「从 196 source inventory 开始」——
+> **均已于 2026-08-13 被 Dexter 退役**(见 `AGENTS.md` 的 compliance-control 退役条款,
+> 以及「原 196 个 provider 壳、共享 SPI 与 scenario registry 已下线删除」)。
+> 一个必须每会话先读、却指向已拆除机制的状态字段,**比没有状态字段更坏** ——
+> 它让每个会话在开头卡住并要求裁决。
+>
+> **为什么不是「更新它」**:该字段每批都变,8 天无人更新已证明该维护不会发生;
+> 且它只在「agent 自行决定下一步」时才有用,而本仓一贯是 Dexter 直接派活 ——
+> 它服务的是一个不存在的场景。依 `AGENTS.md`「优先删除过时代码,而不是增加兼容层」。
+>
+> **保留的字段**:`R*_AUTHORIZED` 一族与 `V2S_*` 就绪标志 ——
+> 它们记录 Dexter 的裁定,不随批次腐烂,且别处不记。
+>
+> **「当前在做什么」的真相源**:Dexter 在会话中的直接指派。
+> 本文件**不再**承担进度跟踪;欠账登记见 `HANDOFF.md`。
+> ⚠️ 文中历史迁移示例块内出现的 `CURRENT_*` 是**过程记录**,不是活状态,不得据以执行。
+
 ```text
 ROADMAP_ID=v2s-w0-w4-execution
 ROADMAP_PROGRAM=V2S_W0_W4_EXECUTION
@@ -92,11 +116,7 @@ ROADMAP_KIND=SUCCESSOR_EXECUTION
 ROADMAP_OWNER=self
 ROADMAP_REVIEWED=true
 R0_STATUS=GO
-LAST_CLOSED_STEP=RM1-P6-2-STATIC
-CURRENT_STEP=BACKEND_PERFORMANCE_FINAL_CLOSURE
-CURRENT_STATUS=BACKEND_PERFORMANCE_FINAL_CLOSURE_IMPLEMENTATION_HANDOFF_READY
-CURRENT_ACTIVITY=BACKEND-PERFORMANCE-FINAL-DESIGN-20260810 已经 Claude POST_REMEDIATION GO；新会话须以独立 static implementation package 串行实施 BPF-U01..BPF-U06，完成静态 196-row reconciliation 后再按受管顺序进行 Testcontainers、local managed L2、reset、DEV、r5-full seed comparison，最后做一次 IMPLEMENTATION review；RM1-P6-3 暂停但不关闭
-CURRENT_NEXT_ACTION=打开新的 backend-performance implementation 会话，先读取 doc/review/platform/2026-08-11-v2s-backend-performance-final-optimization-implementation-handoff-codex.md，创建 exact-surface static implementation package，并从 BPF-U01 的 87 idempotency/45 readback/45 ORIGIN-JOIN 决策和 196 source inventory 开始；不得在 static reconciliation 前启动动态环境
+ROADMAP_SCOPE=AUTHORIZATION_ONLY
 R1_STATUS=GO
 R2_STATUS=GO
 TARGET_STATUS=V2S_HANDOFF_READY
@@ -126,6 +146,8 @@ R5_DESIGN_STATUS=COMPLIANCE_REMEDIATION_DESIGN_ACCEPTED
 R5_IMPLEMENTATION_AUTHORIZED=true
 R5_RUNTIME_AUTHORIZED=true
 R5_SEED_RESET_AUTHORIZED=true
+R5_EXTERNAL_COLLABORATION_DESIGN_AUTHORIZED=true
+R5_EXTERNAL_COLLABORATION_IMPLEMENTATION_AUTHORIZED=true
 V2S_WRITE_AUTHORITY=true
 V2S_SESSION_ENTRY_READY=true
 V2S_FOUNDATION_READY=true
@@ -364,6 +386,17 @@ remainingFindings=NONE
 ```
 
 ## 7. 会话切换闸门
+
+> ⚠️ **本节是已完成的一次性迁移记录(all-v2 → v2s),不是待执行动作。**
+> R0/R1/R2 均为 `GO` 且 `CLOSED`,`V2S_SESSION_ENTRY_READY=true` —— 迁移早已结束。
+> 节内出现的 `CURRENT_STEP` / `LAST_CLOSED_STEP` 等是**当时的示例值**,
+> **不是活状态,不得据以执行**。
+>
+> **本节保留的唯一理由**:`### 7.1` 与 `### 7.2` 两个标题是
+> `operations.roadmap-control-transfer` 与 `kernel.heritage-change` 两条项目记忆的 **anchor**
+> (共 6 条 assertionSource 挂在其上,anchor 必须整行存在,否则 project-memory 构建失败)。
+> 若将来要删本节,须同时改这两条记忆的 anchor 与正文,不能单独删。
+
 
 **Dexter 可以在第2步 R1 完成后、第3步 R2 开始时，在与 all-v2 同级的 `catering-v2s` 仓库根开启新的 Codex/Claude 会话。**
 

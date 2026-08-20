@@ -2,15 +2,19 @@ import {ProTable} from '@ant-design/pro-components';
 import {Alert, Avatar, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
+  createPageQueryIdentity,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
-import {useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {
   platformClient,
+  platformContentTabRefreshSignal,
   platformProblemOf,
   platformRtk,
   type PlatformApiProblem,
@@ -23,6 +27,7 @@ import type {
   GroupWorkspaceStatus,
   SortDirection,
 } from '../../../app/api/generated/platform-edge';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {CommercialGroupInitializationDrawer} from './CommercialGroupInitializationDrawer';
 import {WorkspaceCreateDrawer} from './WorkspaceCreateDrawer';
 import {WorkspaceDetailDrawer} from './WorkspaceDetailDrawer';
@@ -51,10 +56,19 @@ function operationsLoginUrl(groupWorkspaceKey: string) {
 /** IA02: the management list identifies a workspace; every business action starts from owner detail. */
 export function WorkspaceManagementPage() {
   const [filters, setFilters] = useState<Filters>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sortKey, setSortKey] = useState<GroupWorkspaceSortKey>('UPDATED_AT');
   const [sortDirection, setSortDirection] = useState<SortDirection>('DESC');
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.listPlatformGroupWorkspaces,
+        filters,
+        sort: {sortKey, sortDirection},
+      }),
+    [filters, sortDirection, sortKey],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
   const [createOpen, setCreateOpen] = useState(false);
   const detail = useDetailDrawer<GroupWorkspaceDetail>();
@@ -70,6 +84,7 @@ export function WorkspaceManagementPage() {
   }>();
   const pendingActionRef = useRef<typeof pendingAction>(undefined);
   pendingActionRef.current = pendingAction;
+  const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   useOverlayLock(
     detail.isOpen ||
       createOpen ||
@@ -91,27 +106,34 @@ export function WorkspaceManagementPage() {
   const [loadDetail] = platformRtk.useLazyGetPlatformGroupWorkspaceDetailQuery();
   const problem = error ? platformProblemOf(error) : commandProblem;
 
-  const openDetail = (row: Workspace) => {
-    const request = detailGeneration.begin();
-    setProblem(undefined);
-    detail.openLoading();
-    void loadDetail(
-      platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: row.groupWorkspaceKey}, {}),
-    )
-      .unwrap()
-      .then(next => {
-        if (detailGeneration.isCurrent(request)) detail.open(next);
-      })
-      .catch(next => {
-        if (detailGeneration.isCurrent(request)) {
-          detail.finishLoading();
-          setProblem(platformProblemOf(next));
-        }
-      });
-  };
+  const openDetail = useCallback(
+    (row: Workspace) => {
+      const request = detailGeneration.begin();
+      setProblem(undefined);
+      detail.openLoading();
+      void loadDetail(
+        platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: row.groupWorkspaceKey}, {}),
+      )
+        .unwrap()
+        .then(next => {
+          if (detailGeneration.isCurrent(request)) detail.open(next);
+        })
+        .catch(next => {
+          if (detailGeneration.isCurrent(request)) {
+            detail.finishLoading();
+            setProblem(platformProblemOf(next));
+          }
+        });
+    },
+    [detail, detailGeneration, loadDetail],
+  );
+  useEffect(() => {
+    if (contentTabRefreshVersion === 0 || !detail.isOpen || !detail.target) return;
+    openDetail(detail.target);
+  }, [contentTabRefreshVersion, detail.isOpen, detail.target, openDetail]);
   const submitFilters = (next: Filters) => {
     setFilters(next);
-    setPage(1);
+    pagination.setPage(1);
   };
   const openAction = (action: 'edit' | 'status' | 'initialize') => {
     if (!detail.target) return;
@@ -210,7 +232,7 @@ export function WorkspaceManagementPage() {
                 onClick={() => {
                   searchConfig.form?.resetFields();
                   setFilters({});
-                  setPage(1);
+                  pagination.setPage(1);
                 }}
                 {...testId('platform-workspace-filter-reset')}
               >
@@ -226,7 +248,11 @@ export function WorkspaceManagementPage() {
               status: value.status,
             })
           }
-          pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
+          pagination={
+            result
+              ? {current: pagination.page, pageSize: pagination.pageSize, total: result.total, showSizeChanger: true}
+              : false
+          }
           columns={[
             {
               title: '集团空间名称',
@@ -299,10 +325,10 @@ export function WorkspaceManagementPage() {
             },
             {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
           ]}
-          onChange={(pagination, _, sorter, extra) => {
+          onChange={(tablePagination, _, sorter, extra) => {
             if (extra.action === 'paginate') {
-              setPage(pagination.current ?? page);
-              setPageSize(pagination.pageSize ?? pageSize);
+              if (tablePagination.pageSize !== pageSize) pagination.setPageSize(tablePagination.pageSize ?? pageSize);
+              else pagination.setPage(tablePagination.current ?? page);
               return;
             }
             if (extra.action !== 'sort') return;
@@ -320,7 +346,7 @@ export function WorkspaceManagementPage() {
                   : 'UPDATED_AT';
             setSortKey(nextKey);
             setSortDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-            setPage(1);
+            pagination.setPage(1);
           }}
         />
       </div>

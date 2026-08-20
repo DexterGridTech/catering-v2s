@@ -440,6 +440,15 @@
               "type": "string",
               "description": "cursor"
             }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
+            }
           }
         ]
       }
@@ -513,6 +522,15 @@
             "schema": {
               "type": "string",
               "description": "cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "page size"
             }
           }
         ]

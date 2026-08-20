@@ -1,0 +1,492 @@
+{
+  "components": {
+    "schemas": {
+      "BusinessChannelTemplateCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "projectRef",
+          "templateName",
+          "templateCode",
+          "accessKind",
+          "operatorKind",
+          "orderKind"
+        ],
+        "properties": {
+          "projectRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "templateName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "templateCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "accessKind": {
+            "type": "string",
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL"
+            ]
+          },
+          "operatorKind": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "STORE"
+            ]
+          },
+          "orderKind": {
+            "type": "string",
+            "enum": [
+              "DINE_IN",
+              "TAKEAWAY",
+              "GROUP_BUY"
+            ]
+          },
+          "dineInForm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "POS",
+              "QR",
+              "KIOSK",
+              null
+            ]
+          },
+          "providerCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BusinessChannelTemplateUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "templateName",
+          "expectedVersion"
+        ],
+        "properties": {
+          "templateName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelTemplateStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelTemplateView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "templateRef",
+          "projectRef",
+          "templateName",
+          "accessKind",
+          "accessKindDisplayName",
+          "operatorKind",
+          "operatorKindDisplayName",
+          "orderKind",
+          "orderKindDisplayName",
+          "dineInFormDisplayName",
+          "status",
+          "statusDisplayName",
+          "version"
+        ],
+        "properties": {
+          "templateRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "templateName": {
+            "type": "string"
+          },
+          "templateCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "accessKind": {
+            "type": "string"
+          },
+          "accessKindDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operatorKind": {
+            "type": "string"
+          },
+          "operatorKindDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "orderKind": {
+            "type": "string"
+          },
+          "orderKindDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dineInForm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dineInFormDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "providerCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "statusDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelTemplateSortKey": {
+        "type": "string",
+        "enum": [
+          "TEMPLATE_NAME",
+          "TEMPLATE_CODE",
+          "ACCESS_KIND",
+          "OPERATOR_KIND",
+          "ORDER_KIND",
+          "STATUS"
+        ]
+      },
+      "BusinessChannelTemplatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelTemplateView"
+            }
+          }
+        }
+      },
+      "BusinessChannelTemplateCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelTemplateView"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "templateRef",
+          "ownerNodeType",
+          "ownerNodeRef",
+          "channelCode",
+          "channelName"
+        ],
+        "properties": {
+          "templateRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerNodeType": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "STORE"
+            ]
+          },
+          "ownerNodeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channelCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "channelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bindingRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "BusinessChannelUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "channelName",
+          "expectedVersion"
+        ],
+        "properties": {
+          "channelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bindingRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "EFFECTIVE",
+              "DISABLED"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "channelRef",
+          "templateRef",
+          "ownerNodeType",
+          "ownerNodeTypeDisplayName",
+          "ownerNodeRef",
+          "channelName",
+          "status",
+          "statusDisplayName",
+          "stopReasons",
+          "stopReasonDisplayNames",
+          "version"
+        ],
+        "properties": {
+          "channelRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "templateRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerNodeType": {
+            "type": "string"
+          },
+          "ownerNodeTypeDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ownerNodeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channelCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "channelName": {
+            "type": "string"
+          },
+          "bindingRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "EFFECTIVE",
+              "DISABLED"
+            ]
+          },
+          "statusDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stopReasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CASCADE_TEMPLATE",
+                "CASCADE_EXTERNAL",
+                "MANUAL"
+              ]
+            }
+          },
+          "stopReasonDisplayNames": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "BusinessChannelSortKey": {
+        "type": "string",
+        "enum": [
+          "CHANNEL_NAME",
+          "CHANNEL_CODE",
+          "TEMPLATE_NAME",
+          "STATUS",
+          "BINDING_STATUS"
+        ]
+      },
+      "BusinessChannelPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessChannelView"
+            }
+          }
+        }
+      },
+      "ExternalProviderCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "../collaboration/collaboration.schemas.json#/components/schemas/ProviderProfileView"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,16 @@
 # v2s 经营渠道与外部平台协作 · 需求规格说明书
 
+> # ⛔ 本文件已作废(SUPERSEDED)
+> - **作废日期**:2026-08-18 · **裁定人**:Dexter
+> - **继任文件**:`doc/review/platform/2026-08-18-v2s-external-platform-collaboration-and-business-channel-requirements-claude.md`
+> - **原始材料**:`doc/review/platform/2026-08-18-v2s-external-platform-capability-and-binding-decoupling-source-claude.md`
+> - **作废原因**:外部平台六类分类学改为**能力分类**(七类、非互斥、平台一对多);
+>   三层结构由渠道专用改为**通用外部协作层**;经营渠道模板由**预置七条目录**改为**项目自建四维级联**;
+>   R-1「同项目同模板至多一条渠道」被推翻。
+> - **本文正文一律不再修改,仅作历史追溯。** 任何设计、实施或评审**不得**再引用本文结论。
+>   本文与继任文件冲突时,以继任文件为准。
+
+
 ## 0. 文档信息
 
 | 项 | 内容 |
@@ -161,7 +172,7 @@ v2s 已具备组织(**三层组织树** 商业集团→大区→项目,加业务
 门店运营(项目管理员可代管)|渠道存在;门店存在且**属于渠道所在项目**|创建绑定 → 门店渠道名(默认=门店名)→ 渠道有 ProviderConfig 时选择其一 → 外部填 `externalShopId`、选模式(默认按 kind/模板)→ 启用|**异常A**:渠道 `DRAFT` → 绑定只能存 DRAFT;渠道 `PAUSED`/`DISABLED` → **拒绝新建**(FR-CH-06);**异常B**:外部绑定缺 `externalShopId` → 不能启用;**异常C**:`(channel, externalShopId)` 已被**非 DISABLED** 绑定占用 → 拒绝;**异常D**:门店不属于渠道所在项目 → 拒绝|门店可被发布菜单、来源可解释(G2/G3)。
 
 **UC-04 一店多经营点**
-门店运营|同 UC-03|同店同渠道再建绑定,各自门店渠道名与排序|异常分支「渠道规则限单条」本期 `NOT_APPLICABLE`(七模板无一限单),不入 §13 分母|发布与来源精确到档口(G3)。
+门店运营|同 UC-03|同店同渠道再建绑定,各自门店渠道名|异常分支「渠道规则限单条」本期 `NOT_APPLICABLE`(七模板无一限单),不入 §13 分母|发布与来源精确到档口(G3)。
 
 **UC-05 改门店渠道名**
 门店运营|绑定存在|改 `storeChannelName` → 生效于新订单与新打印|无异常分支|历史读冻结快照不变(G3)。
@@ -195,7 +206,7 @@ v2s 已具备组织(**三层组织树** 商业集团→大区→项目,加业务
 
 - **FR-CH-01** 管理页同时展示:已开通渠道、系统已支持未开通模板(外部含「连接器未部署」标注)。
 - **FR-CH-02** 从模板开通;`channelCode`/`channelName` 取模板默认;`channelKind` 冻结;`(projectRef, channelCode)` 与 `(projectRef, templateRef)` 唯一。
-- **FR-CH-03** 可改名、改排序;不得改 `channelCode`/`channelKind`/`templateRef`/`projectRef`。
+- **FR-CH-03** 可改名;不得改 `channelCode`/`channelKind`/`templateRef`/`projectRef`。
 - **FR-CH-04** 状态机见 §10.6;每次转移记录操作者与时间。
 - **FR-CH-05** **任何进入 `ENABLED` 的转移**(DRAFT→/PAUSED→/DISABLED→)前置:外部渠道要求能力目录该对手方 `status=AVAILABLE` **且** `supportedCapabilities` 含 `ORDER`;不满足 fail-closed 拒绝(稳定错误码+人话)。
 - **FR-CH-06** 渠道 `PAUSED`/`DISABLED` 阻止的「新业务」定义为:**新增绑定、向该渠道下绑定的新菜单发布、新订单来源产生**;不级联改写既有绑定状态,不回改历史快照。
@@ -310,7 +321,6 @@ erDiagram
 | `businessLineCode` | 编码 | 可选 | 拼好饭=`PINHAOFAN` |
 | `defaultChannelCode`/`defaultChannelName` | 编码/名称 | ✓ | 开通默认 |
 | `defaultMenuCollaborationMode` | 枚举 | 仅外部 | 新绑定模式默认;**内部绑定的模式恒由 kind 锁定,不取自模板** |
-| `displayOrder` | 整数 | ✓ | 排序 |
 
 ### 10.3 对接能力目录(checked-in JSON)
 
@@ -327,7 +337,6 @@ erDiagram
 | `channelCode` | 编码·项目内唯一 | ✓ | 默认自模板 | 创建后不可变 | 来源/对账稳定码 |
 | `channelName` | 名称 | ✓ | 默认自模板 | 可改 | 展示名;历史读快照 |
 | `status` | 枚举→10.6 | ✓ | 项目管理员 | 状态机 | 项目级开放状态 |
-| `displayOrder` | 整数 | ✓ | 项目管理员 | 可改 | 排序 |
 | `createdAt`/`statusChangedAt` | 时间戳 | ✓ | 系统 | — | 审计从简 |
 
 读投影(不存储):`channelClass`/`orderRole`/`menuCollaborationOptions`/`providerConfigPolicy`/`bindingRequiredFields`/`entryTypes`/`externalSystemCode`。
@@ -370,7 +379,6 @@ erDiagram
 | `externalShopId` | 编码 | 外部✓ | 门店运营 | 可改 | 外部店铺坐标;唯一性见 FR-BD-02 |
 | `authorizationRef` | opaque | — | 适配器回填 | 本期恒空 | **门店级授权摘要预留**(§4.3 授权粒度注记) |
 | `status` | 枚举→10.6 | ✓ | 运营 | 状态机 | 门店级启用状态 |
-| `displayOrder` | 整数 | 可选 | 运营 | 可改 | 同店多绑定排序 |
 | `boundAt`/`statusChangedAt`/`modeChangedAt` | 时间戳 | ✓ | 系统 | — | 审计从简 |
 
 ### 10.6 状态机(channel 与 binding 同形;ProviderConfig 无独立状态机)

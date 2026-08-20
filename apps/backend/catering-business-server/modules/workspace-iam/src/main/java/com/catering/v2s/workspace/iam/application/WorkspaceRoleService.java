@@ -359,19 +359,6 @@ public class WorkspaceRoleService {
                 () -> transitionStatus(workspaceUuid, groupWorkspaceKey, roleId, status, expectedVersion, actor));
     }
 
-    @Transactional(readOnly = true)
-    public List<WorkspaceRoleReadback> list(UUID workspaceUuid, String groupWorkspaceKey) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, name, description, service_node_type, status, "
-                        + "version, created_at_epoch_millis, updated_at_epoch_millis, page_access_keys, "
-                        + "capability_keys "
-                        + "FROM workspace_iam.workspace_role WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY "
-                        + "name",
-                (row, index) -> readback(row),
-                workspaceUuid,
-                groupWorkspaceKey);
-    }
-
     /** Owner-bounded platform role search; the edge never materializes or slices this list. */
     @Transactional(readOnly = true)
     public Page page(

@@ -1,5 +1,11 @@
 import {Alert, Button, Descriptions, Drawer, Space, Typography} from 'antd';
-import {adminDrawerSurfaceProps, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminDrawerSurfaceProps,
+  NameCodeText,
+  testId,
+  useOverlayLock,
+  ValidityStatus,
+} from '@catering-v2s/admin-ui-foundation';
 import type {ContractOverviewItem} from '../../../app/api/generated/platform-edge';
 
 export function ContractOverviewDetailDrawer({
@@ -60,7 +66,7 @@ export function ContractOverviewDetailDrawer({
           column={1}
           items={[
             {key: 'contractNo', label: '合同编号', children: item.contractRef.code},
-            {key: 'status', label: '状态', children: item.status === 'VALID' ? '生效中' : '已失效'},
+            {key: 'status', label: '状态', children: <ValidityStatus status={item.status} />},
             {
               key: 'project',
               label: '项目',

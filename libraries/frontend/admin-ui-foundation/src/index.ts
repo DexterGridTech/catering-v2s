@@ -17,17 +17,23 @@ export {testId} from './automation/testId';
 export {OverlayLockProvider, useDirtyFormLock, useOverlayLock, useShellInteractionLock} from './overlay/overlayLock';
 export {useDetailDrawer} from './list/useDetailDrawer';
 export type {
+  CollectedCursorPages,
+  CollectCursorPagesOptions,
+  CursorPage,
   CursorCandidatePageMetadata,
   CursorCandidatesOptions,
   CursorCandidatesState,
 } from './list/useCursorCandidates';
 export {
+  collectCursorPages,
   mergeCursorCandidateItems,
   normalizeCursorCandidateQuery,
   useCursorCandidates,
 } from './list/useCursorCandidates';
 export type {CursorStackOptions, CursorStackState} from './list/useCursorStack';
 export {updateCursorStack, useCursorStack} from './list/useCursorStack';
+export type {CursorPaginationProps} from './list/cursorPagination';
+export {CursorPagination} from './list/cursorPagination';
 export {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
@@ -37,6 +43,15 @@ export {
 export {contextScopedQueryArgs} from './list/contextScopedQueryArgs';
 export type {ContextScopedQueryContext} from './list/contextScopedQueryArgs';
 export {adminListState} from './list/adminListState';
+export type {CursorQueryIdentityInput, PageQueryIdentityInput, PageQueryState} from './list/usePageQuery';
+export {
+  createCursorQueryIdentity,
+  createPageQueryIdentity,
+  isCurrentQueryIdentity,
+  normalizePage,
+  normalizePageSize,
+  usePageQuery,
+} from './list/usePageQuery';
 export type {FrontendLogEvent, FrontendLogInput, FrontendLogLevel, SafeLogger} from './observability';
 export {createBeaconLogSink, createObservedBaseQuery, createSafeLogger} from './observability';
 export {platformHttpProtocol} from './http/platformHttpProtocol';
@@ -49,6 +64,7 @@ export {formatCodeNamePath, formatNameCode, NameCodePathText, NameCodeText} from
 export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
 export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
+export {ValidityStatus} from './presentation/validityStatus';
 export type {InvitationPageLinkSource} from './presentation/activeInvitationPageUrl';
 export {
   assertDescriptorSlotBindingSet,

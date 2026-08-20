@@ -23,7 +23,6 @@ import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
-import com.catering.v2s.organization.application.StoreCandidateTaskReadService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -41,46 +40,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     private static final String KEY = "operations-store-scope-test";
     private static final String IDEMPOTENCY_KEY = "operations-store-scope-idempotency";
     private static final ObjectMapper JSON = new ObjectMapper();
-
-    @Test
-    void candidatesUseTheRetainedSelectedProjectAndCascadeFiltersToOwner() {
-        Fixture fixture = fixture();
-        UUID projectId = selectedProjectId(fixture);
-        UUID brandId = UUID.randomUUID();
-        UUID tenantId = UUID.randomUUID();
-        StoreCandidateTaskReadService.Page page = new StoreCandidateTaskReadService.Page(
-                KEY,
-                new StoreCandidateTaskReadService.DataScope("PROJECT", projectId, "集团 / 项目"),
-                List.of(new StoreCandidateTaskReadService.Candidate(projectId, "PRJ-01", "项目一", null)),
-                List.of(new StoreCandidateTaskReadService.Candidate(brandId, "BR-01", "品牌一", null)),
-                List.of(new StoreCandidateTaskReadService.Candidate(tenantId, "TEN-01", "经营主体一", null)),
-                List.of());
-        selectedProject(fixture, projectId);
-        when(fixture.storeCandidates.operationsStoreCandidates(
-                        fixture.workspaceId,
-                        KEY,
-                        fixture.session.currentAssignmentId(),
-                        projectId,
-                        projectId,
-                        brandId,
-                        tenantId))
-                .thenReturn(page);
-
-        var result = fixture.controller.candidates(
-                fixture.request, KEY, fixture.session.contextVersion(), brandId, tenantId);
-
-        assertEquals(page, result);
-        verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
-        verify(fixture.storeCandidates)
-                .operationsStoreCandidates(
-                        fixture.workspaceId,
-                        KEY,
-                        fixture.session.currentAssignmentId(),
-                        projectId,
-                        projectId,
-                        brandId,
-                        tenantId);
-    }
 
     @Test
     void listUsesRetainedSelectedProjectWithoutAClientProjectFilter() {
@@ -460,33 +419,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         grant));
     }
 
-    @Test
-    void candidatesRejectMissingAssignmentBeforeOwnerRead() {
-        UUID workspaceId = UUID.randomUUID();
-        WorkspaceSessionReadback session = new WorkspaceSessionReadback(
-                UUID.randomUUID(),
-                workspaceId,
-                KEY,
-                UUID.randomUUID(),
-                null,
-                WorkspaceSessionEntryReadback.ScopeContext.empty(),
-                9L,
-                5L,
-                Set.of(),
-                Set.of(),
-                "Operations tester");
-        Fixture fixture = fixture(session);
-        when(fixture.user.resolveSelectedProjectScope(fixture.session, null))
-                .thenThrow(new WorkspaceAuthenticationService.SessionInvalidException());
-
-        assertThrows(
-                WorkspaceAuthenticationService.SessionInvalidException.class,
-                () -> fixture.controller.candidates(
-                        fixture.request, KEY, fixture.session.contextVersion(), null, null));
-
-        verifyNoInteractions(fixture.storeCandidates);
-    }
-
     private static Fixture fixture() {
         UUID workspaceId = UUID.randomUUID();
         UUID accountId = UUID.randomUUID();
@@ -529,19 +461,12 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         when(commandFacts.sessionReadback()).thenReturn(session);
         when(authentication.commandAuthorizationFacts("operations-session")).thenReturn(commandFacts);
         BusinessEntityService entities = mock(BusinessEntityService.class);
-        StoreCandidateTaskReadService storeCandidates = mock(StoreCandidateTaskReadService.class);
         OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);
         ContractTaskReadService contracts = mock(ContractTaskReadService.class);
         WorkspaceUserService user = mock(WorkspaceUserService.class);
         WorkspaceCapabilityScopeResolver capabilityScopes = mock(WorkspaceCapabilityScopeResolver.class);
         OperationsStoreManagementController controller = new OperationsStoreManagementController(
-                new OperationsSessionResolver(authentication),
-                entities,
-                storeCandidates,
-                overview,
-                contracts,
-                user,
-                capabilityScopes);
+                new OperationsSessionResolver(authentication), entities, overview, contracts, user, capabilityScopes);
         EdgeRequestContext request = new EdgeRequestContext(
                 "test-rate-limit-fingerprint",
                 "test-correlation",
@@ -554,7 +479,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         return new Fixture(
                 controller,
                 entities,
-                storeCandidates,
                 overview,
                 contracts,
                 user,
@@ -568,7 +492,6 @@ class OperationsStoreManagementControllerCandidateScopeTest {
     private record Fixture(
             OperationsStoreManagementController controller,
             BusinessEntityService entities,
-            StoreCandidateTaskReadService storeCandidates,
             OrganizationOverviewTaskReadService overview,
             ContractTaskReadService contracts,
             WorkspaceUserService user,

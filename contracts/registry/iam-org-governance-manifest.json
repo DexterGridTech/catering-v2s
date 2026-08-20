@@ -213,6 +213,20 @@
       "requiredInOwnerCommand": true,
       "transactionRequirement": "REQUIRED",
       "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "ownerModule": "collaboration",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "ownerModule": "business-channel",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
     }
   ],
   "typedProblemMappings": [
@@ -289,6 +303,20 @@
     {
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "ownerModule": "workspace-iam",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "collaboration",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "business-channel",
       "typedProblemOnly": true,
       "noTestCodeInResponse": true,
       "unmappedExceptionFails": true
@@ -2809,6 +2837,169 @@
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_REISSUE_PLATFORM_WORKSPACE_INVITATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_PLATFORM_EXTERNAL_SYSTEM_STATUS",
+      "operationIdentity": {"operationId": "transitionPlatformExternalSystemStatus", "method": "POST", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status", "consumerFace": "platform-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PLATFORM_EXTERNAL_STATUS_CAS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_PLATFORM_PROVIDER_PROFILE_STATUS",
+      "operationIdentity": {"operationId": "transitionPlatformProviderProfileStatus", "method": "POST", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status", "consumerFace": "platform-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PLATFORM_PROVIDER_STATUS_CAS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_PLATFORM_OWNER_BINDING",
+      "operationIdentity": {"operationId": "createPlatformOwnerBinding", "method": "POST", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings", "consumerFace": "platform-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PLATFORM_BINDING_POLICY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_PLATFORM_OWNER_BINDING",
+      "operationIdentity": {"operationId": "updatePlatformOwnerBinding", "method": "PATCH", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}", "consumerFace": "platform-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PLATFORM_BINDING_POLICY",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_DELETE_PLATFORM_OWNER_BINDING",
+      "operationIdentity": {"operationId": "deletePlatformOwnerBinding", "method": "DELETE", "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}", "consumerFace": "platform-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PLATFORM_BINDING_UNBIND",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE",
+      "operationIdentity": {"operationId": "createOperationsOwnerBinding", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding", "consumerFace": "operations-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
+      "operationIdentity": {"operationId": "updateOperationsOwnerBinding", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding", "consumerFace": "operations-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE",
+      "operationIdentity": {"operationId": "deleteOperationsOwnerBinding", "method": "DELETE", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding", "consumerFace": "operations-admin", "ownerModule": "collaboration"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "collaboration",
+      "ownerRecheckId": "OWNER_RECHECK_COLLABORATION",
+      "typedProblemMappingId": "PROBLEM_COLLABORATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
+      "operationIdentity": {"operationId": "createOperationsBusinessChannelTemplate", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_TEMPLATE_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE",
+      "operationIdentity": {"operationId": "updateOperationsBusinessChannelTemplate", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_TEMPLATE_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_TEMPLATE_STATUS",
+      "operationIdentity": {"operationId": "transitionOperationsBusinessChannelTemplateStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_TEMPLATE_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL",
+      "operationIdentity": {"operationId": "createOperationsBusinessChannel", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL",
+      "operationIdentity": {"operationId": "updateOperationsBusinessChannel", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS",
+      "operationIdentity": {"operationId": "transitionOperationsBusinessChannelStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}", "consumerFace": "operations-admin", "ownerModule": "business-channel"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"PROJECT": "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "STORE": "BC-BUSINESS-CHANNEL-STORE-EDIT"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "business-channel",
+      "ownerRecheckId": "OWNER_RECHECK_BUSINESS_CHANNEL",
+      "typedProblemMappingId": "PROBLEM_BUSINESS_CHANNEL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_OPERATIONS_CHANNEL_GRANT",
       "noClientDerivedAuthorization": true
     }
   ]

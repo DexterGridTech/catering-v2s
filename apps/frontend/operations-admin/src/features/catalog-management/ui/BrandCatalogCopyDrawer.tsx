@@ -20,13 +20,14 @@ import {
   createContentIdempotencyKey,
   NameCodeText,
   testId,
+  useCursorCandidates,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
-import type {CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
+import type {BrandCopyCandidatePage, CatalogInventoryEnvelope} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
@@ -38,7 +39,6 @@ import {
   copyConfirmationRows,
   decodeBrandCopyReadback,
   decodeBrandCopyScopes,
-  decodeCandidates,
   decodePreflight,
   partitionBrandCopyCompatibilityResults,
   type BrandCopyReadback,
@@ -58,6 +58,12 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
+  const candidateState = useCursorCandidates<BrandCopyCandidatePage['data']['items'][number]>({
+    queryText: keyword,
+    resetKey: `${open}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
+    pageSize: 50,
+    keyOf: item => item.code,
+  });
   const [preflight, setPreflight] = useState<CopyPreflight>();
   const [preflightStale, setPreflightStale] = useState(false);
   const [readback, setReadback] = useState<BrandCopyReadback>();
@@ -83,18 +89,21 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
         {
           query: {
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
-            ...(keyword.trim() ? {keyword: keyword.trim()} : {}),
+            ...(candidateState.debouncedQueryText ? {keyword: candidateState.debouncedQueryText} : {}),
+            ...(candidateState.cursor ? {cursor: candidateState.cursor} : {}),
+            pageSize: candidateState.pageSize,
           },
           headers,
         },
       ),
-    [headers, keyword, queryContext.scopeRef],
+    [candidateState.cursor, candidateState.debouncedQueryText, candidateState.pageSize, headers, queryContext.scopeRef],
   );
   const candidatesQuery = operationsRtk.useGetOperationsBrandCatalogCopyCandidatesQuery(candidatesRequest, {
     skip: !open,
   });
-  const candidates = decodeCandidates(candidatesQuery.data);
-  const scopes = decodeBrandCopyScopes(candidatesQuery.data);
+  const candidatePage = candidatesQuery.currentData?.data;
+  const candidates = candidateState.items;
+  const scopes = decodeBrandCopyScopes(candidatesQuery.currentData);
   const [preflightCopy, preflightState] = operationsRtk.usePreflightOperationsBrandCatalogCopyMutation();
   const [executeCopy, executeState] = operationsRtk.useExecuteOperationsBrandCatalogCopyMutation();
   const lifecycle = useDrawerFormLifecycle({
@@ -106,6 +115,14 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
     dirtyGuardTestIds: {confirm: testId('catalog-copy-dirty-discard'), cancel: testId('catalog-copy-dirty-continue')},
     diagnosticOperationId: 'brand-catalog-copy',
   });
+  useEffect(() => {
+    if (!candidatePage) return;
+    candidateState.acceptPage(candidatePage.items, {
+      pageSize: candidateState.pageSize,
+      total: candidatePage.total,
+      nextCursor: candidatePage.cursor,
+    });
+  }, [candidatePage, candidateState.acceptPage, candidateState.pageSize]);
   const compatibilityBuckets = partitionBrandCopyCompatibilityResults(preflight?.compatibilityResults ?? []);
   const confirmationRows = useMemo(
     () => copyConfirmationRows(preflight?.compatibilityResults ?? []),
@@ -278,7 +295,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             style={{marginTop: 16}}
             {...testId('catalog-brand-copy-source-keyword')}
           />
-          {candidatesQuery.isLoading ? (
+          {candidatesQuery.isLoading && !candidates.length ? (
             <Skeleton active />
           ) : candidates.length ? (
             <Checkbox.Group
@@ -303,6 +320,16 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
             </Checkbox.Group>
           ) : (
             <Empty description="当前品牌没有可复制商品" />
+          )}
+          {candidates.length > 0 && candidateState.nextCursor && (
+            <Button
+              type="link"
+              loading={candidatesQuery.isFetching}
+              onClick={() => candidateState.loadNext(candidatesQuery.isFetching)}
+              {...testId('catalog-brand-copy-candidates-next')}
+            >
+              加载更多
+            </Button>
           )}
           <Space style={{marginTop: 16}}>
             <Button onClick={lifecycle.requestClose}>取消</Button>

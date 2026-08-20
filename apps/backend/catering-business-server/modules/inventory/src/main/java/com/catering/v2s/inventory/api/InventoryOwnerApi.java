@@ -176,15 +176,6 @@ public interface InventoryOwnerApi {
 
     record InventoryRecentChangeReadback(long occurredAt, String changeType, BigDecimal quantity, String source) {}
 
-    record InventoryLedgerEntryReadback(
-            UUID entryRef,
-            String source,
-            String reasonCode,
-            BigDecimal beforeQuantity,
-            BigDecimal changeQuantity,
-            BigDecimal afterQuantity,
-            long occurredAt) {}
-
     record InventoryDiagnosticsAvailabilityReadback(boolean canRead, String reason) {}
 
     /** Coordinated copy command; inventory owns balance/ledger reset and BOM facts. */

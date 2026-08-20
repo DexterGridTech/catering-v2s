@@ -21,6 +21,7 @@ import {
   createContentIdempotencyKey,
   NameCodeText,
   testId,
+  useCursorCandidates,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
@@ -93,6 +94,12 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
   const [step, setStep] = useState<WizardStep>('source-scope');
   const [selectedSourceItemCode, setSelectedSourceItemCode] = useState<string>();
   const [sourceKeyword, setSourceKeyword] = useState('');
+  const candidateState = useCursorCandidates<LocalCopyCandidatePage['data']['items'][number]>({
+    queryText: sourceKeyword,
+    resetKey: `${open}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}|${targetItemCode}|${targetShapeKey ?? ''}`,
+    pageSize: 50,
+    keyOf: item => item.code,
+  });
   const [selectedSections, setSelectedSections] = useState<LocalCopyScope[]>(DEFAULT_LOCAL_COPY_SCOPES);
   const [preflight, setPreflight] = useState<LocalCopyPreflightData>();
   const [readback, setReadback] = useState<LocalCopyReadbackData>();
@@ -129,23 +136,40 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
   });
   const manifest = manifestQuery.currentData?.data;
   const candidateRequest = useMemo(() => {
-    const query: Record<string, string> = {dataNodeRef: queryContext.scopeRef ?? ''};
-    const keyword = sourceKeyword.trim();
-    if (keyword) query.keyword = keyword;
+    const query: Record<string, string | number> = {
+      dataNodeRef: queryContext.scopeRef ?? '',
+      pageSize: candidateState.pageSize,
+    };
+    if (candidateState.debouncedQueryText) query.keyword = candidateState.debouncedQueryText;
+    if (candidateState.cursor) query.cursor = candidateState.cursor;
     return catalogInventoryRtkRequest.getOperationsLocalCatalogCopyCandidates({}, {query, headers});
-  }, [headers, queryContext.scopeRef, sourceKeyword]);
+  }, [
+    candidateState.cursor,
+    candidateState.debouncedQueryText,
+    candidateState.pageSize,
+    headers,
+    queryContext.scopeRef,
+  ]);
   const candidatesQuery = operationsRtk.useGetOperationsLocalCatalogCopyCandidatesQuery(candidateRequest, {
     skip: !open,
   });
-  const candidatePage = decodeLocalCopyCandidatePage(candidatesQuery.data);
+  const candidatePage = decodeLocalCopyCandidatePage(candidatesQuery.currentData);
+  useEffect(() => {
+    if (!candidatePage) return;
+    candidateState.acceptPage(candidatePage.items, {
+      pageSize: candidateState.pageSize,
+      total: candidatePage.total,
+      nextCursor: candidatePage.cursor,
+    });
+  }, [candidatePage, candidateState.acceptPage, candidateState.pageSize]);
   const candidates = useMemo(
     () =>
-      (candidatePage?.items ?? []).filter(
+      candidateState.items.filter(
         item => item.code !== targetItemCode && (!targetShapeKey || item.shapeKey === targetShapeKey),
       ),
-    [candidatePage?.items, targetItemCode, targetShapeKey],
+    [candidateState.items, targetItemCode, targetShapeKey],
   );
-  const selectedSourceShapeKey = candidatePage?.items.find(item => item.code === selectedSourceItemCode)?.shapeKey;
+  const selectedSourceShapeKey = candidateState.items.find(item => item.code === selectedSourceItemCode)?.shapeKey;
   const localCopyScopeOptions = useMemo(() => {
     const labels = new Map(catalogEnumOptions(manifest, 'catalogSection').map(option => [option.value, option.label]));
     return LOCAL_COPY_SCOPE_VALUES.flatMap(value => {
@@ -314,7 +338,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
     }
   };
 
-  const candidateLoading = candidatesQuery.isLoading || (candidatesQuery.isFetching && !candidatePage);
+  const candidateLoading = candidatesQuery.isLoading || (candidatesQuery.isFetching && !candidateState.items.length);
   const stepIndex = LOCAL_COPY_STEPS.findIndex(({key}) => key === step);
   const sourceScope = candidatePage?.sourceScope;
   const targetScope = candidatePage?.targetScope;
@@ -364,7 +388,10 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
           sourceKeyword={sourceKeyword}
           candidateLoading={candidateLoading}
           candidateError={candidatesQuery.isError}
+          hasNext={Boolean(candidateState.nextCursor)}
+          nextLoading={candidatesQuery.isFetching}
           onRetry={() => void candidatesQuery.refetch()}
+          onNextPage={() => candidateState.loadNext(candidatesQuery.isFetching)}
           onKeywordChange={value => {
             setSourceKeyword(value);
             setSelectedSourceItemCode(undefined);
@@ -504,11 +531,14 @@ function SourceItemStep({
   sourceKeyword,
   candidateLoading,
   candidateError,
+  hasNext,
+  nextLoading,
   onRetry,
   onKeywordChange,
   onSelect,
   onBack,
   onNext,
+  onNextPage,
 }: {
   manifest?: CatalogManifest;
   targetItemCode: string;
@@ -517,11 +547,14 @@ function SourceItemStep({
   sourceKeyword: string;
   candidateLoading: boolean;
   candidateError: boolean;
+  hasNext: boolean;
+  nextLoading: boolean;
   onRetry: () => void;
   onKeywordChange: (value: string) => void;
   onSelect: (code: string) => void;
   onBack: () => void;
   onNext: () => void;
+  onNextPage: () => void;
 }) {
   return (
     <>
@@ -582,6 +615,16 @@ function SourceItemStep({
             </List.Item>
           )}
         />
+      )}
+      {!candidateLoading && !candidateError && hasNext && (
+        <Button
+          type="link"
+          loading={nextLoading}
+          onClick={onNextPage}
+          {...testId('catalog-local-copy-candidates-next')}
+        >
+          加载更多
+        </Button>
       )}
       <Space wrap style={{marginTop: 16}}>
         <Button onClick={onBack}>返回范围</Button>

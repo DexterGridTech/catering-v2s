@@ -1,0 +1,38 @@
+{
+  "artifact": "UNIFIED_LIST_PAGINATION_ACCEPTANCE_SCENARIO_DESIGN",
+  "status": "DESIGNED_AND_RECONCILED_AFTER_CONTRACT_CHANGE",
+  "source": "doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md#5.1",
+  "contractReconciliation": [
+    {
+      "component": "PublicInvitationView",
+      "sourceOfTruth": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json#componentOverrides.PublicInvitationView",
+      "reason": "The v2s owner-controlled nextStep field is an existing public invitation journey field; materialize and codegen must carry it instead of relying on stale generated output.",
+      "existingBusinessProof": ["iam.public-invitation-view", "iam.public-invitation-lifecycle"]
+    },
+    {
+      "component": "ExtensionDefinitionUpdateRequest",
+      "sourceOfTruth": "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json#componentOverrides.ExtensionDefinitionUpdateRequest",
+      "reason": "Draft field keys are optional because the extension owner assigns stable keys; the complete aggregate and CAS acceptance scenario remains the pagination boundary proof.",
+      "focusedProof": "apps/backend/catering-business-server/modules/extension/src/test/java/com/catering/v2s/extension/application/ExtensionDefinitionServiceTest.java"
+    }
+  ],
+  "requirements": {
+    "fixture": "non-empty, run-scoped, and larger than one page where the operation is paged",
+    "request": "real route identity, HTTP request, scope, filters and pagination state",
+    "businessOracle": "business field/result assertions, not response.ok alone",
+    "runtimeVerdicts": ["CONTRACT", "BUSINESS", "cleanup", "businessMode=REAL"]
+  },
+  "scenarios": [
+    {"id":"pagination.catalog-dictionary-real-cursor","owner":"catalog","covers":["U02"],"fixture":"dictionary entries exceed one page plus other scope, VOIDED and filtered entries","request":"first page, continuous next cursor, wrong-scope cursor","oracle":"second page, end cursor, complete total, no duplicate/omission, scope isolation, filtered total"},
+    {"id":"pagination.production-tags-real-cursor","owner":"fulfillment-production","covers":["U09"],"fixture":"production tags exceed one page plus another owner scope","request":"small pageSize, continuous cursor; the current U09 contract has no keyword parameter","oracle":"owner consumes cursor/pageSize, complete total, no duplicate/omission, scope isolation"},
+    {"id":"pagination.local-copy-candidates-real-cursor","owner":"catalog","covers":["U08"],"fixture":"local copy candidates exceed one page plus keyword and scope distractors","request":"keyword, pageSize, continuous cursor","oracle":"target scope/keyword, second page/end, complete total"},
+    {"id":"pagination.brand-copy-candidates-real-cursor","owner":"catalog","covers":["U01"],"fixture":"brand copy candidates exceed one page plus brand/target scope distractors","request":"keyword, pageSize, continuous cursor","oracle":"brand scope, keyword, cursor, complete total, no leakage"},
+    {"id":"pagination.workspace-user-candidates-db-page","owner":"workspace-iam","covers":["C03-C09","WorkspaceUser full-list families"],"fixture":"visible and enabledRoles each exceed one page and include unauthorized facts","request":"filter, page/pageSize, scope","oracle":"database-side visibility/role filtering, boundary/total/filter, selected item never replaces page member"},
+    {"id":"pagination.contract-page-owner-boundary","owner":"contract","covers":["P01","P03","P19","C01"],"fixture":"contract lists exceed one page plus scope/status distractors","request":"page/pageSize/filter/sort","oracle":"owner count/page/scope closure and total not derived from current page"},
+    {"id":"pagination.organization-page-owner-boundary","owner":"organization","covers":["P04-P07","P21","C02","C08"],"fixture":"brands, head companies, stores and tenants exceed one page plus unauthorized/cross-scope data","request":"page/pageSize/filter/sort","oracle":"DB filtering, count, stable ordering and page boundaries"},
+    {"id":"pagination.workspace-iam-page-owner-boundary","owner":"workspace-iam","covers":["P08-P17","P22-P24","C03-C07","C09"],"fixture":"invitations, users, roles and accounts exceed one page plus unauthorized data","request":"page/pageSize/filter/sort across independent query identities","oracle":"scope/permission/page/count and no tab/query state reuse"},
+    {"id":"pagination.platform-page-owner-boundary","owner":"platform","covers":["P02","P18","P20","P25"],"fixture":"platform admins, group workspaces and both audit histories exceed one page plus external/entity distractors","request":"page/pageSize/filter/sort and audit Modal pageSize","oracle":"platform boundary, audit entity isolation, total, stable ordering and page boundaries"},
+    {"id":"pagination.extension-host-catalog-closed-set","owner":"extension","covers":["B01"],"fixture":"fixed host type set plus unknown-type negative fixture","request":"groupWorkspaceKey","oracle":"exact MANAGEMENT_HOST_TYPES set, unknown type rejected, 8 not treated as database row count"},
+    {"id":"pagination.extension-definition-aggregate-closure","owner":"extension","covers":["B03-B07"],"fixture":"each host has at least two fields plus options, revision and replace fixture","request":"detail read, complete replace, stale revision","oracle":"complete definition set read once for editor; revision/CAS/atomic replace retained; no list pagination or duplicate read"}
+  ]
+}

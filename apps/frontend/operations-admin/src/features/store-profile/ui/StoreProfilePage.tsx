@@ -2,9 +2,12 @@ import {Alert, Button, Card, Descriptions, Spin, Table, Tabs} from 'antd';
 import {
   adminListState,
   contextScopedQueryArgs,
+  createPageQueryIdentity,
   NameCodeText,
   testId,
+  ValidityStatus,
   useDetailDrawer,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
@@ -15,6 +18,7 @@ import type {
   StoreContract,
   StoreContractViewState,
 } from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -51,10 +55,23 @@ function queryIssue(error: unknown, fallback: string) {
 /** Store-role profile: all facts, contract state and pagination remain owner reads. */
 export function StoreProfilePage({queryContext}: OperationsPageProps) {
   const [state, setState] = useState<StoreContractViewState>('CURRENT');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const detail = useDetailDrawer<StoreContract>();
   const scopeReady = Boolean(queryContext.scopeRef);
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsFixedStoreContracts,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: queryContext.scopeRef,
+          state,
+        },
+      }),
+    [queryContext, state],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const path = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey}), [queryContext.groupWorkspaceKey]);
   const profileRequest = useMemo(
     () =>
@@ -205,7 +222,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
                 activeKey={state}
                 onChange={next => {
                   setState(next as StoreContractViewState);
-                  setPage(1);
+                  pagination.setPage(1);
                 }}
                 items={contractViewTabs.map(view => ({
                   key: view.key,
@@ -238,8 +255,8 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
                           total: contracts.currentData?.metadata.total ?? 0,
                           showSizeChanger: true,
                           onChange: (nextPage, nextPageSize) => {
-                            setPage(nextPage);
-                            setPageSize(nextPageSize);
+                            pagination.setPage(nextPage);
+                            pagination.setPageSize(nextPageSize);
                           },
                         }}
                         columns={[
@@ -270,7 +287,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
                           {
                             title: '状态',
                             dataIndex: 'status',
-                            render: value => (value === 'VALID' ? '有效' : '已作废'),
+                            render: (_value, contract) => <ValidityStatus status={contract.status} />,
                           },
                         ]}
                         {...testId(`operations-store-profile-contract-${view.key.toLowerCase()}`)}

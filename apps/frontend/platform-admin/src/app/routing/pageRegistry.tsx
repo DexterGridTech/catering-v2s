@@ -7,8 +7,10 @@ import {RolesPage} from '../../features/workspace-iam/ui/RolesPage';
 import {AccountsPage} from '../../features/workspace-iam/ui/AccountsPage';
 import {PlatformReadPage} from '../../features/organization-contract-overview/ui/PlatformReadPage';
 import {ExtensionsPage} from '../../features/extension-management/ui/ExtensionsPage';
+import {ExternalCollaborationPage} from '../../features/external-collaboration/ui/ExternalCollaborationPage';
 
 type RouteRegistration = {path: string; element: ReactNode};
+const externalCollaborationPageKey = platformPageDesignKeys.PlatformExternalCollaboration;
 const routeByPageDesignKey = {
   [platformPageDesignKeys.PlatformWorkspaces]: {path: '/platform/workspaces', element: <WorkspaceManagementPage />},
   [platformPageDesignKeys.PlatformAdminUsers]: {path: '/platform/admin-users', element: <AdministratorsPage />},
@@ -27,6 +29,7 @@ const routeByPageDesignKey = {
   [platformPageDesignKeys.PlatformRoles]: {path: '/platform/roles', element: <RolesPage />},
   [platformPageDesignKeys.PlatformWorkspaceAccounts]: {path: '/platform/workspace-accounts', element: <AccountsPage />},
   [platformPageDesignKeys.PlatformExtensionFields]: {path: '/platform/extension-fields', element: <ExtensionsPage />},
+  [externalCollaborationPageKey]: {path: '/platform/external-collaboration', element: <ExternalCollaborationPage />},
 } satisfies Record<PlatformPageDesignKey, RouteRegistration>;
 
 const platformPagesInCatalogOrder = adminCatalog.platformPages

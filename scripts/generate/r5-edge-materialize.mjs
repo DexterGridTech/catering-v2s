@@ -185,7 +185,7 @@ function authorizationRequirements(manifest) {
 function operationDocument(operation, catalog, requirements, pathFile) {
   const parameters = [
     ...(operation.pathParameters || []).map((name) => ({ name, in: "path", required: true, schema: applyUuidReferenceFormat({ type: "string", minLength: 1, maxLength: 128 }, name) })),
-    ...(operation.queryParameters || []).map((parameter) => ({ ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
+    ...(operation.queryParameters || []).map((parameter) => ({ in: "query", ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
     ...(operation.headerParameters || []).map((parameter) => ({ ...clone(parameter), schema: applyUuidReferenceFormat(convertSymbolRefs(parameter.schema), parameter.name) })),
   ];
   if (operation.idempotency.header === "REQUIRED_16_128") parameters.push({ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string", minLength: 16, maxLength: 128 } });

@@ -51,6 +51,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "createOperationsBusinessChannel",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "createOperationsBusinessChannelTemplate",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
     "operationId": "createOperationsContract",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts",
@@ -100,6 +114,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "createOperationsOwnerBinding",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "createOperationsWorkspaceGroupInvitation",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations",
@@ -135,6 +156,27 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "deleteOperationsOwnerBinding",
+    "method": "DELETE",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsBusinessChannelDetail",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsBusinessChannelTemplates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
     "operationId": "getOperationsContract",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}",
@@ -167,6 +209,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "GET",
     "path": "/api/operations/audit-history",
     "owner": "platform-workspace",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsExternalCapabilityDictionary",
+    "method": "GET",
+    "path": "/api/operations/external-capability-dictionary",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsExternalProviderCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
+    "owner": "collaboration",
     "requiresSession": true
   },
   {
@@ -240,13 +296,6 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
-    "operationId": "getOperationsOrganizationStoreCandidates",
-    "method": "GET",
-    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-    "owner": "organization",
-    "requiresSession": true
-  },
-  {
     "operationId": "getOperationsOrganizationStoreExtensionDefinition",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
@@ -272,6 +321,34 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
     "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsOwnerBindingDetail",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectBusinessChannels",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsStoreBusinessChannels",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
+    "owner": "business-channel",
     "requiresSession": true
   },
   {
@@ -555,6 +632,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": false
   },
   {
+    "operationId": "transitionOperationsBusinessChannelStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "transitionOperationsBusinessChannelTemplateStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
     "operationId": "transitionOperationsOrganizationBrandStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands/{brandId}/status",
@@ -587,6 +678,20 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
     "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "updateOperationsBusinessChannel",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+    "owner": "business-channel",
+    "requiresSession": true
+  },
+  {
+    "operationId": "updateOperationsBusinessChannelTemplate",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
+    "owner": "business-channel",
     "requiresSession": true
   },
   {
@@ -639,6 +744,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "updateOperationsOwnerBinding",
+    "method": "PATCH",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "verifyOperationsWorkspaceOtp",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/otp/verify",
@@ -655,6 +767,8 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "cancelOperationsWorkspaceRegionInvitation": "cancelOperationsWorkspaceRegionInvitation",
   "cancelOperationsWorkspaceStoreInvitation": "cancelOperationsWorkspaceStoreInvitation",
   "changeCurrentWorkspacePassword": "changeCurrentWorkspacePassword",
+  "createOperationsBusinessChannel": "createOperationsBusinessChannel",
+  "createOperationsBusinessChannelTemplate": "createOperationsBusinessChannelTemplate",
   "createOperationsContract": "createOperationsContract",
   "createOperationsOrganizationBrand": "createOperationsOrganizationBrand",
   "createOperationsOrganizationHeadCompany": "createOperationsOrganizationHeadCompany",
@@ -662,16 +776,22 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "createOperationsOrganizationRegion": "createOperationsOrganizationRegion",
   "createOperationsOrganizationStore": "createOperationsOrganizationStore",
   "createOperationsOrganizationTenant": "createOperationsOrganizationTenant",
+  "createOperationsOwnerBinding": "createOperationsOwnerBinding",
   "createOperationsWorkspaceGroupInvitation": "createOperationsWorkspaceGroupInvitation",
   "createOperationsWorkspaceHeadCompanyInvitation": "createOperationsWorkspaceHeadCompanyInvitation",
   "createOperationsWorkspaceProjectInvitation": "createOperationsWorkspaceProjectInvitation",
   "createOperationsWorkspaceRegionInvitation": "createOperationsWorkspaceRegionInvitation",
   "createOperationsWorkspaceStoreInvitation": "createOperationsWorkspaceStoreInvitation",
+  "deleteOperationsOwnerBinding": "deleteOperationsOwnerBinding",
+  "getOperationsBusinessChannelDetail": "getOperationsBusinessChannelDetail",
+  "getOperationsBusinessChannelTemplates": "getOperationsBusinessChannelTemplates",
   "getOperationsContract": "getOperationsContract",
   "getOperationsContractCandidates": "getOperationsContractCandidates",
   "getOperationsContractExtensionDefinition": "getOperationsContractExtensionDefinition",
   "getOperationsContracts": "getOperationsContracts",
   "getOperationsEntityAuditHistory": "getOperationsEntityAuditHistory",
+  "getOperationsExternalCapabilityDictionary": "getOperationsExternalCapabilityDictionary",
+  "getOperationsExternalProviderCandidates": "getOperationsExternalProviderCandidates",
   "getOperationsFixedStoreContracts": "getOperationsFixedStoreContracts",
   "getOperationsOrganizationBrand": "getOperationsOrganizationBrand",
   "getOperationsOrganizationBrands": "getOperationsOrganizationBrands",
@@ -682,11 +802,14 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsOrganizationHierarchy": "getOperationsOrganizationHierarchy",
   "getOperationsOrganizationHierarchyExtensionDefinition": "getOperationsOrganizationHierarchyExtensionDefinition",
   "getOperationsOrganizationStore": "getOperationsOrganizationStore",
-  "getOperationsOrganizationStoreCandidates": "getOperationsOrganizationStoreCandidates",
   "getOperationsOrganizationStoreExtensionDefinition": "getOperationsOrganizationStoreExtensionDefinition",
   "getOperationsOrganizationStores": "getOperationsOrganizationStores",
   "getOperationsOrganizationTenant": "getOperationsOrganizationTenant",
   "getOperationsOrganizationTenants": "getOperationsOrganizationTenants",
+  "getOperationsOwnerBindingDetail": "getOperationsOwnerBindingDetail",
+  "getOperationsProjectBusinessChannels": "getOperationsProjectBusinessChannels",
+  "getOperationsStoreBusinessChannels": "getOperationsStoreBusinessChannels",
+  "getOperationsStoreBusinessChannelTemplateCandidates": "getOperationsStoreBusinessChannelTemplateCandidates",
   "getOperationsStoreProfile": "getOperationsStoreProfile",
   "getOperationsWorkspaceGroupInvitationCandidates": "getOperationsWorkspaceGroupInvitationCandidates",
   "getOperationsWorkspaceGroupInvitations": "getOperationsWorkspaceGroupInvitations",
@@ -727,11 +850,15 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "selectOperationsWorkspaceSessionContext": "selectOperationsWorkspaceSessionContext",
   "selectOperationsWorkspaceSessionDataNode": "selectOperationsWorkspaceSessionDataNode",
   "sendOperationsWorkspaceOtp": "sendOperationsWorkspaceOtp",
+  "transitionOperationsBusinessChannelStatus": "transitionOperationsBusinessChannelStatus",
+  "transitionOperationsBusinessChannelTemplateStatus": "transitionOperationsBusinessChannelTemplateStatus",
   "transitionOperationsOrganizationBrandStatus": "transitionOperationsOrganizationBrandStatus",
   "transitionOperationsOrganizationHeadCompanyStatus": "transitionOperationsOrganizationHeadCompanyStatus",
   "transitionOperationsOrganizationNodeStatus": "transitionOperationsOrganizationNodeStatus",
   "transitionOperationsOrganizationStoreStatus": "transitionOperationsOrganizationStoreStatus",
   "transitionOperationsOrganizationTenantStatus": "transitionOperationsOrganizationTenantStatus",
+  "updateOperationsBusinessChannel": "updateOperationsBusinessChannel",
+  "updateOperationsBusinessChannelTemplate": "updateOperationsBusinessChannelTemplate",
   "updateOperationsCommercialGroup": "updateOperationsCommercialGroup",
   "updateOperationsContract": "updateOperationsContract",
   "updateOperationsOrganizationBrand": "updateOperationsOrganizationBrand",
@@ -739,10 +866,16 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "updateOperationsOrganizationNode": "updateOperationsOrganizationNode",
   "updateOperationsOrganizationStore": "updateOperationsOrganizationStore",
   "updateOperationsOrganizationTenant": "updateOperationsOrganizationTenant",
+  "updateOperationsOwnerBinding": "updateOperationsOwnerBinding",
   "verifyOperationsWorkspaceOtp": "verifyOperationsWorkspaceOtp"
 } as const;
 
 export const EDGE_PROBLEM_CODES = [
+  "ADAPTER_UNBIND_REQUIRED",
+  "AUTHORIZATION_REQUIRED",
+  "BINDING_EDIT_NOT_ALLOWED",
+  "BINDING_NOT_EFFECTIVE",
+  "BUSINESS_SCOPE_EXCEEDED",
   "CONTRACT_ALREADY_INVALID",
   "CONTRACT_DATE_RANGE_INVALID",
   "CONTRACT_ITEM_CODE_DUPLICATE",
@@ -750,6 +883,14 @@ export const EDGE_PROBLEM_CODES = [
   "CONTRACT_NUMBER_CONFLICT",
   "CONTRACT_REFERENCE_UNRESOLVED",
   "CONTRACT_VERSION_CONFLICT",
+  "DELETE_NOT_ALLOWED",
+  "DINE_IN_FORM_MISMATCH",
+  "DINE_IN_MUST_BE_INTERNAL",
+  "DISABLED_OBJECT_NOT_EDITABLE",
+  "DUPLICATE_CODE",
+  "EXTERNAL_OWNER_ID_MISMATCH",
+  "IMMUTABLE_FIELD",
+  "ORDER_KIND_MISMATCH",
   "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT",
   "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT",
   "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_CONFLICT",
@@ -784,6 +925,8 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_COMMON_RESULT_UNKNOWN",
   "PLATFORM_COMMON_VALIDATION_FAILED",
   "PLATFORM_COMMON_VERSION_CONFLICT",
+  "PROVIDER_NOT_ENABLED",
+  "VERSION_CONFLICT",
   "WORKSPACE_IAM_ACCOUNT_DISABLED",
   "WORKSPACE_IAM_CREDENTIAL_LOCKED",
   "WORKSPACE_IAM_INVALID_CREDENTIALS",
@@ -870,6 +1013,100 @@ export type BrandUpdateRequest = (BrandCreateRequest) & ({
   expectedVersion: number;
 });
 
+export type BusinessChannelCreateRequest = {
+  templateRef: string & { readonly __uuid: "Uuid" };
+  ownerNodeType: "PROJECT" | "STORE";
+  ownerNodeRef: string & { readonly __uuid: "Uuid" };
+  channelCode: string;
+  channelName: string;
+  bindingRef?: string & { readonly __uuid: "Uuid" } | null;
+};
+
+export type BusinessChannelPage = {
+  items: Array<BusinessChannelView>;
+};
+
+export type BusinessChannelSortKey = "CHANNEL_NAME" | "CHANNEL_CODE" | "TEMPLATE_NAME" | "STATUS" | "BINDING_STATUS";
+
+export type BusinessChannelStatusRequest = {
+  status: "DRAFT" | "EFFECTIVE" | "DISABLED";
+  expectedVersion: number;
+};
+
+export type BusinessChannelTemplateCandidatePage = {
+  items: Array<BusinessChannelTemplateView>;
+  nextCursor: string | null;
+  total: number;
+};
+
+export type BusinessChannelTemplateCreateRequest = {
+  projectRef: string & { readonly __uuid: "Uuid" };
+  templateName: string;
+  templateCode: string;
+  accessKind: "INTERNAL" | "EXTERNAL";
+  operatorKind: "PROJECT" | "STORE";
+  orderKind: "DINE_IN" | "TAKEAWAY" | "GROUP_BUY";
+  dineInForm?: "POS" | "QR" | "KIOSK" | null | null;
+  providerCode?: string | null;
+};
+
+export type BusinessChannelTemplatePage = {
+  items: Array<BusinessChannelTemplateView>;
+};
+
+export type BusinessChannelTemplateSortKey = "TEMPLATE_NAME" | "TEMPLATE_CODE" | "ACCESS_KIND" | "OPERATOR_KIND" | "ORDER_KIND" | "STATUS";
+
+export type BusinessChannelTemplateStatusRequest = {
+  status: "ENABLED" | "DISABLED";
+  expectedVersion: number;
+};
+
+export type BusinessChannelTemplateUpdateRequest = {
+  templateName: string;
+  expectedVersion: number;
+};
+
+export type BusinessChannelTemplateView = {
+  templateRef: string & { readonly __uuid: "Uuid" };
+  projectRef: string & { readonly __uuid: "Uuid" };
+  templateName: string;
+  templateCode?: string | null;
+  accessKind: string;
+  accessKindDisplayName: string;
+  operatorKind: string;
+  operatorKindDisplayName: string;
+  orderKind: string;
+  orderKindDisplayName: string;
+  dineInForm?: string | null;
+  dineInFormDisplayName: string | null;
+  providerCode?: string | null;
+  status: "ENABLED" | "DISABLED";
+  statusDisplayName: string;
+  version: number;
+};
+
+export type BusinessChannelUpdateRequest = {
+  channelName: string;
+  bindingRef?: string & { readonly __uuid: "Uuid" } | null;
+  expectedVersion: number;
+};
+
+export type BusinessChannelView = {
+  channelRef: string & { readonly __uuid: "Uuid" };
+  templateRef: string & { readonly __uuid: "Uuid" };
+  ownerNodeType: string;
+  ownerNodeTypeDisplayName: string;
+  ownerNodeRef: string & { readonly __uuid: "Uuid" };
+  channelCode?: string | null;
+  channelName: string;
+  bindingRef?: string & { readonly __uuid: "Uuid" } | null;
+  status: "DRAFT" | "EFFECTIVE" | "DISABLED";
+  statusDisplayName: string;
+  stopReasons: Array<"CASCADE_TEMPLATE" | "CASCADE_EXTERNAL" | "MANUAL">;
+  stopReasonDisplayNames: Array<string>;
+  version: number;
+};
+
 export type BusinessEntitySortDirection = "ASC" | "DESC";
 
 export type BusinessEntitySortKey = "NAME" | "CODE" | "UPDATED_AT";
@@ -879,6 +1116,11 @@ export type BusinessEntityStatus = "ENABLED" | "DISABLED";
 export type BusinessEntityStatusRequest = {
   targetStatus: BusinessEntityStatus;
   expectedVersion: number;
+};
+
+export type CapabilityDictionary = {
+  externalSystems: Array<ExternalSystemView>;
+  providerProfiles: Array<ProviderProfileView>;
 };
 
 export type CommercialGroupRoot = {
@@ -920,6 +1162,38 @@ export type ExtensionDefinition = {
 };
 
 export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
+
+export type ExternalCapability = {
+  capabilityClass: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC";
+  displayName: string;
+  attributeValueLabels: Record<string, string>;
+  attributeValues: Record<string, JsonValue>;
+};
+
+export type ExternalCapabilityAttributeDescriptor = {
+  fieldKey: string;
+  label: string;
+  helpText: string;
+  controlKind: "readonlySummary" | "readonlyPreview";
+  optionSourceRef: Record<string, JsonValue>;
+};
+
+export type ExternalProviderCandidatePage = {
+  items: Array<ProviderProfileView>;
+  nextCursor: string | null;
+  total: number;
+};
+
+export type ExternalSystemView = {
+  externalSystemCode: string;
+  displayName: string;
+  catalogStatus: "PLANNED" | "AVAILABLE";
+  catalogStatusDisplayName: string;
+  attributeDictionary: Array<ExternalCapabilityAttributeDescriptor>;
+  capabilities: Array<ExternalCapability>;
+  enablementStatus: "ENABLED" | "DISABLED";
+  version: number;
+};
 
 export type GroupWorkspaceStatus = "ENABLED" | "DISABLED";
 
@@ -999,7 +1273,7 @@ export type OrganizationCandidatePageMetadata = {
   selectedId: (string & { readonly __uuid: "Uuid" }) | null;
 };
 
-export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
+export type OrganizationCandidateQuerySubjectType = "COMMERCIAL_GROUP" | "REGION" | "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
 
 export type OrganizationHierarchySnapshot = {
   groupWorkspaceKey: string;
@@ -1095,39 +1369,6 @@ export type OrganizationStore = {
   contractDerivedStatus: "OPERATING" | "PREPARING" | "NOT_OPERATING";
 };
 
-export type OrganizationStoreCandidatePage = {
-  groupWorkspaceKey: string;
-  dataScope: {
-  nodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  nodeRef: string & { readonly __uuid: "Uuid" };
-  nodeName: string;
-};
-  projects: Array<{
-  id: string;
-  code: string;
-  name: string;
-  path?: (string) | null;
-}>;
-  brands: Array<{
-  id: string;
-  code: string;
-  name: string;
-  path?: (string) | null;
-}>;
-  tenants: Array<{
-  id: string;
-  code: string;
-  name: string;
-  path?: (string) | null;
-}>;
-  headCompanies: Array<{
-  id: string;
-  code: string;
-  name: string;
-  path?: (string) | null;
-}>;
-};
-
 export type OrganizationStoreCreateRequest = {
   brandId: string;
   tenantId: string;
@@ -1175,6 +1416,41 @@ export type OrganizationStoreUpdateRequest = {
   expectedVersion: number;
 };
 
+export type OwnerBindingCreateRequest = {
+  providerCode: string;
+  capabilityClass?: string | null;
+  nodeType: string;
+  nodeRef: string & { readonly __uuid: "Uuid" };
+  bindingDisplayName?: string | null;
+  externalOwnerId?: string | null;
+};
+
+export type OwnerBindingUpdateRequest = {
+  bindingDisplayName: string | null;
+  externalOwnerId?: string | null;
+  expectedVersion: number;
+};
+
+export type OwnerBindingView = {
+  bindingRef: string & { readonly __uuid: "Uuid" };
+  providerCode: string;
+  providerDisplayName: string;
+  capabilityClass?: string | null;
+  capabilityClassDisplayName: string | null;
+  businessScopeDisplayNames: Array<string>;
+  nodeType: string;
+  nodeTypeDisplayName: string;
+  nodeRef: string & { readonly __uuid: "Uuid" };
+  nodeDisplayPath?: string | null;
+  bindingDisplayName?: string | null;
+  externalOwnerId?: string | null;
+  boundAt: number;
+  statusChangedAt: number;
+  status: "PENDING_AUTHORIZATION" | "EFFECTIVE" | "INVALID" | "DELETED";
+  statusDisplayName: string;
+  version: number;
+};
+
 export type Problem = {
   type: string;
   title: string;
@@ -1183,6 +1459,25 @@ export type Problem = {
   instance?: (string) | null;
   errorCode: EdgeProblemCode;
   correlationId: string;
+};
+
+export type ProviderProfileView = {
+  providerCode: string;
+  displayName: string;
+  externalSystemCode: string;
+  externalSystemDisplayName: string;
+  businessScope: Array<string>;
+  businessScopeDisplayNames: Array<string>;
+  bindableNodeTypes: Array<string>;
+  bindableNodeTypeDisplayNames: Array<string>;
+  authenticationKind: "EXTERNAL_GRANT" | "INTERNAL_MAPPING" | "NO_MAPPING";
+  authenticationKindDisplayName: string;
+  unbindKind: "LOCAL_ONLY" | "REQUIRES_ADAPTER_UNBIND";
+  unbindKindDisplayName: string;
+  catalogStatus: "PLANNED" | "AVAILABLE";
+  catalogStatusDisplayName: string;
+  enablementStatus: "ENABLED" | "DISABLED";
+  version: number;
 };
 
 export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
@@ -1739,6 +2034,36 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "createOperationsBusinessChannel": {
+    request: BusinessChannelCreateRequest;
+    response: BusinessChannelView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsBusinessChannelTemplate": {
+    request: BusinessChannelTemplateCreateRequest;
+    response: BusinessChannelTemplateView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "createOperationsContract": {
     request: StoreContractCreateRequest;
     response: StoreContract;
@@ -1845,6 +2170,22 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "createOperationsOwnerBinding": {
+    request: OwnerBindingCreateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "createOperationsWorkspaceGroupInvitation": {
     request: WorkspaceOperationsInvitationCreateRequest;
     response: WorkspaceInvitation;
@@ -1919,6 +2260,53 @@ export type FaceOperationContracts = {
     "Idempotency-Key": string;
   };
     headersRequired: true;
+  };
+  "deleteOperationsOwnerBinding": {
+    request: OwnerBindingUpdateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "getOperationsBusinessChannelDetail": {
+    request: NoBody;
+    response: BusinessChannelView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsBusinessChannelTemplates": {
+    request: NoBody;
+    response: BusinessChannelTemplatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    projectRef?: string & { readonly __uuid: "Uuid" };
+    sortKey?: BusinessChannelTemplateSortKey;
+    sortDirection?: SortDirection;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
   };
   "getOperationsContract": {
     request: NoBody;
@@ -2011,6 +2399,34 @@ export type FaceOperationContracts = {
     pageSize?: number;
   };
     queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsExternalCapabilityDictionary": {
+    request: NoBody;
+    response: CapabilityDictionary;
+    requestRequired: false;
+    requiresSession: true;
+    path: Record<string, never>;
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsExternalProviderCandidates": {
+    request: NoBody;
+    response: ExternalProviderCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    capabilityClass?: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC";
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -2195,23 +2611,6 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
-  "getOperationsOrganizationStoreCandidates": {
-    request: NoBody;
-    response: OrganizationStoreCandidatePage;
-    requestRequired: false;
-    requiresSession: true;
-    path: {
-    groupWorkspaceKey: string;
-  };
-    query: {
-    expectedContextVersion: number;
-    brandId?: string;
-    tenantId?: string;
-  };
-    queryRequired: true;
-    headers: Record<string, never>;
-    headersRequired: false;
-  };
   "getOperationsOrganizationStoreExtensionDefinition": {
     request: NoBody;
     response: ExtensionDefinition;
@@ -2286,6 +2685,74 @@ export type FaceOperationContracts = {
     pageSize?: number;
   };
     queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsOwnerBindingDetail": {
+    request: NoBody;
+    response: OwnerBindingView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectBusinessChannels": {
+    request: NoBody;
+    response: BusinessChannelPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    sortKey?: BusinessChannelSortKey;
+    sortDirection?: SortDirection;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreBusinessChannels": {
+    request: NoBody;
+    response: BusinessChannelPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    sortKey?: BusinessChannelSortKey;
+    sortDirection?: SortDirection;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreBusinessChannelTemplateCandidates": {
+    request: NoBody;
+    response: BusinessChannelTemplateCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    projectRef?: string & { readonly __uuid: "Uuid" };
+    storeRef?: string & { readonly __uuid: "Uuid" };
+    sortKey?: BusinessChannelTemplateSortKey;
+    sortDirection?: SortDirection;
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -3038,6 +3505,38 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "transitionOperationsBusinessChannelStatus": {
+    request: BusinessChannelStatusRequest;
+    response: BusinessChannelView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionOperationsBusinessChannelTemplateStatus": {
+    request: BusinessChannelTemplateStatusRequest;
+    response: BusinessChannelTemplateView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    templateRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "transitionOperationsOrganizationBrandStatus": {
     request: BusinessEntityStatusRequest;
     response: Brand;
@@ -3110,6 +3609,38 @@ export type FaceOperationContracts = {
     path: {
     groupWorkspaceKey: string;
     tenantId: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsBusinessChannel": {
+    request: BusinessChannelUpdateRequest;
+    response: BusinessChannelView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updateOperationsBusinessChannelTemplate": {
+    request: BusinessChannelTemplateUpdateRequest;
+    response: BusinessChannelTemplateView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    templateRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -3229,6 +3760,22 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "updateOperationsOwnerBinding": {
+    request: OwnerBindingUpdateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    channelRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "verifyOperationsWorkspaceOtp": {
     request: WorkspaceOtpVerifyRequest;
     response: WorkspaceSessionEntry;
@@ -3323,6 +3870,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    createOperationsBusinessChannel: (pathParameters: FaceOperationContracts["createOperationsBusinessChannel"]["path"], options: FaceOperationOptions<"createOperationsBusinessChannel">) => execute({
+      operationId: "createOperationsBusinessChannel",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createOperationsBusinessChannelTemplate: (pathParameters: FaceOperationContracts["createOperationsBusinessChannelTemplate"]["path"], options: FaceOperationOptions<"createOperationsBusinessChannelTemplate">) => execute({
+      operationId: "createOperationsBusinessChannelTemplate",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createOperationsContract: (pathParameters: FaceOperationContracts["createOperationsContract"]["path"], options: FaceOperationOptions<"createOperationsContract">) => execute({
       operationId: "createOperationsContract",
       method: "POST",
@@ -3379,6 +3942,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    createOperationsOwnerBinding: (pathParameters: FaceOperationContracts["createOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"createOperationsOwnerBinding">) => execute({
+      operationId: "createOperationsOwnerBinding",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createOperationsWorkspaceGroupInvitation: (pathParameters: FaceOperationContracts["createOperationsWorkspaceGroupInvitation"]["path"], options: FaceOperationOptions<"createOperationsWorkspaceGroupInvitation">) => execute({
       operationId: "createOperationsWorkspaceGroupInvitation",
       method: "POST",
@@ -3419,6 +3990,30 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    deleteOperationsOwnerBinding: (pathParameters: FaceOperationContracts["deleteOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"deleteOperationsOwnerBinding">) => execute({
+      operationId: "deleteOperationsOwnerBinding",
+      method: "DELETE",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsBusinessChannelDetail: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelDetail"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelDetail">) => execute({
+      operationId: "getOperationsBusinessChannelDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsBusinessChannelTemplates: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelTemplates"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelTemplates">) => execute({
+      operationId: "getOperationsBusinessChannelTemplates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsContract: (pathParameters: FaceOperationContracts["getOperationsContract"]["path"], options: FaceOperationOptions<"getOperationsContract">) => execute({
       operationId: "getOperationsContract",
       method: "GET",
@@ -3455,6 +4050,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "getOperationsEntityAuditHistory",
       method: "GET",
       path: "/api/operations/audit-history",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsExternalCapabilityDictionary: (pathParameters: FaceOperationContracts["getOperationsExternalCapabilityDictionary"]["path"], options: FaceOperationOptions<"getOperationsExternalCapabilityDictionary">) => execute({
+      operationId: "getOperationsExternalCapabilityDictionary",
+      method: "GET",
+      path: "/api/operations/external-capability-dictionary",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsExternalProviderCandidates: (pathParameters: FaceOperationContracts["getOperationsExternalProviderCandidates"]["path"], options: FaceOperationOptions<"getOperationsExternalProviderCandidates">) => execute({
+      operationId: "getOperationsExternalProviderCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -3539,14 +4150,6 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
-    getOperationsOrganizationStoreCandidates: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreCandidates"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreCandidates">) => execute({
-      operationId: "getOperationsOrganizationStoreCandidates",
-      method: "GET",
-      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      pathParameters,
-      requiresSession: true,
-      ...options,
-    }),
     getOperationsOrganizationStoreExtensionDefinition: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreExtensionDefinition">) => execute({
       operationId: "getOperationsOrganizationStoreExtensionDefinition",
       method: "GET",
@@ -3575,6 +4178,38 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "getOperationsOrganizationTenants",
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsOwnerBindingDetail: (pathParameters: FaceOperationContracts["getOperationsOwnerBindingDetail"]["path"], options: FaceOperationOptions<"getOperationsOwnerBindingDetail">) => execute({
+      operationId: "getOperationsOwnerBindingDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectBusinessChannels: (pathParameters: FaceOperationContracts["getOperationsProjectBusinessChannels"]["path"], options: FaceOperationOptions<"getOperationsProjectBusinessChannels">) => execute({
+      operationId: "getOperationsProjectBusinessChannels",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreBusinessChannels: (pathParameters: FaceOperationContracts["getOperationsStoreBusinessChannels"]["path"], options: FaceOperationOptions<"getOperationsStoreBusinessChannels">) => execute({
+      operationId: "getOperationsStoreBusinessChannels",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreBusinessChannelTemplateCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreBusinessChannelTemplateCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreBusinessChannelTemplateCandidates">) => execute({
+      operationId: "getOperationsStoreBusinessChannelTemplateCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -3899,6 +4534,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: false,
       ...options,
     }),
+    transitionOperationsBusinessChannelStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelStatus">) => execute({
+      operationId: "transitionOperationsBusinessChannelStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    transitionOperationsBusinessChannelTemplateStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelTemplateStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelTemplateStatus">) => execute({
+      operationId: "transitionOperationsBusinessChannelTemplateStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     transitionOperationsOrganizationBrandStatus: (pathParameters: FaceOperationContracts["transitionOperationsOrganizationBrandStatus"]["path"], options: FaceOperationOptions<"transitionOperationsOrganizationBrandStatus">) => execute({
       operationId: "transitionOperationsOrganizationBrandStatus",
       method: "POST",
@@ -3935,6 +4586,22 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "transitionOperationsOrganizationTenantStatus",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsBusinessChannel: (pathParameters: FaceOperationContracts["updateOperationsBusinessChannel"]["path"], options: FaceOperationOptions<"updateOperationsBusinessChannel">) => execute({
+      operationId: "updateOperationsBusinessChannel",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsBusinessChannelTemplate: (pathParameters: FaceOperationContracts["updateOperationsBusinessChannelTemplate"]["path"], options: FaceOperationOptions<"updateOperationsBusinessChannelTemplate">) => execute({
+      operationId: "updateOperationsBusinessChannelTemplate",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -3991,6 +4658,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "updateOperationsOrganizationTenant",
       method: "PATCH",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updateOperationsOwnerBinding: (pathParameters: FaceOperationContracts["updateOperationsOwnerBinding"]["path"], options: FaceOperationOptions<"updateOperationsOwnerBinding">) => execute({
+      operationId: "updateOperationsOwnerBinding",
+      method: "PATCH",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
       pathParameters,
       requiresSession: true,
       ...options,

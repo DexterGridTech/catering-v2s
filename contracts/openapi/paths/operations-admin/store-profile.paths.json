@@ -39,8 +39,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -123,8 +123,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -133,16 +133,16 @@
             }
           },
           {
-            "name": "state",
             "in": "query",
+            "name": "state",
             "required": true,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractViewState"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -150,8 +150,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",

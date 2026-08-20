@@ -130,6 +130,42 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
     "transitionOperationsOrganizationNodeStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/hierarchy/{nodeId}/status|operations-admin",
     {REGION: "BC-ORG-REGION-STATUS", PROJECT: "BC-ORG-PROJECT-STATUS"},
   ],
+  [
+    "createOperationsOwnerBinding|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
+  [
+    "updateOperationsOwnerBinding|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
+  [
+    "deleteOperationsOwnerBinding|DELETE|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
+  [
+    "createOperationsBusinessChannelTemplate|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT"},
+  ],
+  [
+    "updateOperationsBusinessChannelTemplate|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT"},
+  ],
+  [
+    "transitionOperationsBusinessChannelTemplateStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT"},
+  ],
+  [
+    "createOperationsBusinessChannel|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
+  [
+    "updateOperationsBusinessChannel|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
+  [
+    "transitionOperationsBusinessChannelStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}|operations-admin",
+    {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
+  ],
 ]);
 const R24_OPERATION_REQUIREMENTS = new Map([
   [
@@ -425,9 +461,14 @@ function operationIdentity(row) {
 }
 
 function capabilityRequirementId(operationId) {
-  return operationId === "updateOperationsOrganizationNode"
+  const explicit = {
+    createOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE",
+    updateOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE",
+    deleteOperationsOwnerBinding: "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE",
+  }[operationId];
+  return explicit || (operationId === "updateOperationsOrganizationNode"
     ? "ORG_NODE_EDIT"
-    : `REQ_${operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").toUpperCase()}`;
+    : `REQ_${operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").toUpperCase()}`);
 }
 
 function catalogInventoryRequirementId(operationId) {

@@ -23,8 +23,11 @@ sourceRefs: ["AGENTS.md","doc/decisions/2026-08-11-v2s-routine-runtime-command-c
   HTTP 耗时 average/min/max、logical database operation 次数 average/min/max 与数据库累计
   耗时 average/min/max。统计沿用 `CountingJdbcTemplate` + `DatabaseOperationTracker` 的
   request-local 口径；报告必须与 backend request-completed event 通过 correlation/request id
-  关联，缺失/断关联或敏感字段泄漏均 FAIL。该报告是 Seed evidence，不替代 business/cleanup
-  PASS；DEV bootstrap SQL 单独记 stage receipt，不伪装成 API endpoint。
+  关联，缺失/断关联或敏感字段泄漏均 FAIL。正式流程自动在同一 run 目录生成
+  `seed-report.json`（机器真相）与 `seed-report.md`（可读投影），并从 seed executor stdout
+  同时输出 `REPORT` 和 `MARKDOWN` 路径；父报告只链接两个子报告的计量真相，不允许人工拼接或
+  二次汇总。该报告是 Seed evidence，不替代 business/cleanup PASS；DEV bootstrap SQL 单独记
+  stage receipt，不伪装成 API endpoint。
 - `LOCAL_EXECUTION_REMOTE_MIDDLEWARE`: DEV 的执行面固定在本机：Spring Boot、platform-admin 与 operations-admin Web 在本机运行；数据库、对象存储等非生产中间件可经受管 tunnel 位于远端。不得因远端中间件而把应用或浏览器 runner 迁到远端。
 - `CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP`: 当前受管浏览器 L2 与 DEV 共享本机执行面，但不是持久 DEV 的副本；每 run 使用隔离远端数据库/资产命名空间，记录本机受控 PID/日志与 tunnel identity，business 与本机/远端 cleanup 分开判定。
 - `UAT_ALL_REMOTE_EXECUTION`: 只有后续获得单独授权的 UAT 才允许应用和浏览器执行面全量远端部署/运行；本机 DEV/L2 不得冒充 UAT。

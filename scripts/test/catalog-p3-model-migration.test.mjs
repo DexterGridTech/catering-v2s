@@ -93,7 +93,8 @@ test('dictionary and production-tag codes are reusable only after VOIDED while l
 
 test('only the stock BOM partial index without a matching production predicate is retired', () => {
   assert.match(deadIndexMigration, /DROP INDEX inventory\.ix_stock_bom_option_value;/);
-  assert.match(normalizedProductionTagOwner, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\? ORDER BY code/);
+  assert.match(normalizedProductionTagOwner, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\?/);
+  assert.match(normalizedProductionTagOwner, /ORDER BY code NULLS LAST,\s*tag_ref LIMIT \?/);
   assert.match(normalizedPlatformAuthentication, /FROM platform_iam\.platform_password_recovery_flow WHERE token_hash=\? FOR UPDATE/);
   assert.doesNotMatch(inventoryOwner, /stock_bom[\s\S]{0,240}option_value_code\s+IS\s+NOT\s+NULL/);
 });

@@ -204,8 +204,8 @@ public class CatalogInventoryCoordinator {
         return primaryRead(() -> inventory.readTargetDiagnostics(targetRef, requestId));
     }
 
-    public JsonNode readProductionTags(String dataNodeRef, String brandRef, String requestId) {
-        return primaryRead(() -> production.readTags(dataNodeRef, brandRef, requestId));
+    public JsonNode readProductionTags(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
+        return primaryRead(() -> production.readTags(dataNodeRef, brandRef, request, requestId));
     }
 
     /**
@@ -261,8 +261,9 @@ public class CatalogInventoryCoordinator {
                 parseLocalCopyJson(catalog.preflightLocalCopy(context, current).canonicalJson());
         CopyReferencePlan plan = copyReferencePlan(catalogPreflight);
         OwnerPreflight owners = preflightLocalInventory(context, current, plan);
-        String combined = combinedDigest(
-                preflightData(catalogPreflight).path("preflightDigest").asText(), owners.inventoryDigest(), "");
+        String catalogDigest =
+                preflightData(catalogPreflight).path("preflightDigest").asText();
+        String combined = combinedDigest(catalogDigest, owners.inventoryDigest(), "");
         if (!combined.equals(submittedDigest))
             throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, "复制预检已失效，请重新预检");
         JsonNode mergedPreflight = mergeCopyPreflight(catalogPreflight, owners, combined);
@@ -277,7 +278,7 @@ public class CatalogInventoryCoordinator {
                         command.sourceItemCode(),
                         command.targetItemCode(),
                         command.selectedSections(),
-                        preflightData(catalogPreflight).path("preflightDigest").asText(),
+                        catalogDigest,
                         command.expectedSourceVersion(),
                         command.expectedTargetVersion(),
                         canonicalReferencePlan(plan),

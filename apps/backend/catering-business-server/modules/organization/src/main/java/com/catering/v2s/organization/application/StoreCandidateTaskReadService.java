@@ -6,7 +6,6 @@ import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,71 +24,6 @@ public class StoreCandidateTaskReadService {
         this.jdbc = jdbc;
         this.assignmentScopes = assignmentScopes;
         this.taskPaths = taskPaths;
-    }
-
-    @Transactional(readOnly = true)
-    public Page candidates(
-            UUID workspaceUuid,
-            String key,
-            UUID assignmentId,
-            UUID visibleNodeId,
-            UUID projectId,
-            UUID brandId,
-            UUID tenantId) {
-        List<Candidate> brands = jdbc.query(
-                "SELECT id, code, name FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + "status='ENABLED' AND (CAST(? AS uuid) IS NULL OR id=?) ORDER BY code",
-                (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                workspaceUuid,
-                key,
-                brandId,
-                brandId);
-        List<Candidate> tenants = projectId != null && brandId != null
-                ? jdbc.query(
-                        "SELECT id, code, name FROM organization.tenant WHERE workspace_uuid=? AND "
-                                + "group_workspace_key=? AND status='ENABLED' ORDER BY code",
-                        (row, index) ->
-                                new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                        workspaceUuid,
-                        key)
-                : List.of();
-        List<Candidate> heads = brandId != null && tenantId != null
-                ? jdbc.query(
-                        "SELECT h.id, h.code, h.name FROM organization.head_company h WHERE h.workspace_uuid=? AND "
-                                + "h.group_workspace_key=? AND h.status='ENABLED' AND EXISTS (SELECT 1 FROM "
-                                + "organization.head_company_brand_authorization a WHERE a.head_company_id=h.id AND "
-                                + "a.brand_id=?) ORDER BY h.code",
-                        (row, index) ->
-                                new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                        workspaceUuid,
-                        key,
-                        brandId)
-                : List.of();
-        OrganizationTaskPathLookup.TaskPath visibleScope =
-                scopedVisibleScope(workspaceUuid, key, assignmentId, visibleNodeId);
-        List<Candidate> projects = visibleScope == null ? List.of() : visibleProjects(workspaceUuid, key, visibleScope);
-        if (projectId != null
-                && !projects.isEmpty()
-                && projects.stream().noneMatch(candidate -> projectId.equals(candidate.id()))) projects = List.of();
-        DataScope dataScope = visibleScope == null
-                ? new DataScope(null, null, null)
-                : new DataScope(visibleScope.targetType(), visibleScope.targetId(), visibleScope.displayPath());
-        return new Page(key, dataScope, projects, brands, tenants, heads);
-    }
-
-    /** Explicit operations-admin store-editor boundary; commands never call this task reader. */
-    @Transactional(readOnly = true)
-    public Page operationsStoreCandidates(
-            UUID workspaceUuid,
-            String key,
-            UUID assignmentId,
-            UUID visibleNodeId,
-            UUID projectId,
-            UUID brandId,
-            UUID tenantId) {
-        return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> candidates(workspaceUuid, key, assignmentId, visibleNodeId, projectId, brandId, tenantId));
     }
 
     /** Unified owner-backed candidate protocol for cross-entity selectors. */
@@ -146,104 +80,57 @@ public class StoreCandidateTaskReadService {
         int safePage = Math.max(1, page == null ? 1 : page);
         int safeSize = Math.min(100, Math.max(1, pageSize == null ? 20 : pageSize));
         String normalizedQuery = queryText == null || queryText.isBlank() ? null : queryText.trim();
-        List<Candidate> all = "CONTRACT_LIST".equals(candidateUsage)
-                ? contractListCandidates(workspaceUuid, key, subjectType, projectId)
-                : defaultCandidates(
+        CandidateSql source = "CONTRACT_LIST".equals(candidateUsage)
+                ? contractListCandidateSql(workspaceUuid, key, subjectType, projectId)
+                : defaultCandidateSql(
                         workspaceUuid, key, assignmentId, visibleNodeId, subjectType, projectId, brandId, tenantId);
-        all = all.stream()
-                .filter(candidate -> normalizedQuery == null
-                        || candidate.code().toLowerCase().contains(normalizedQuery.toLowerCase())
-                        || candidate.name().toLowerCase().contains(normalizedQuery.toLowerCase()))
-                .sorted(java.util.Comparator.comparing(Candidate::code).thenComparing(Candidate::id))
-                .toList();
-        if (selectedId != null && all.stream().noneMatch(candidate -> selectedId.equals(candidate.id())))
-            throw new BusinessEntityService.OrganizationNotFoundException();
-        List<Candidate> slice = new java.util.ArrayList<>(pageSlice(all, safePage, safeSize));
-        if (selectedId != null && slice.stream().noneMatch(candidate -> selectedId.equals(candidate.id()))) {
-            Candidate selected = all.stream()
-                    .filter(candidate -> selectedId.equals(candidate.id()))
-                    .findFirst()
-                    .orElseThrow(BusinessEntityService.OrganizationNotFoundException::new);
-            if (slice.size() == safeSize) slice.set(safeSize - 1, selected);
-            else slice.add(selected);
-        }
+        if (source == null) return emptyCandidatePage(subjectType, normalizedQuery, safePage, safeSize, selectedId);
+        CandidateQueryResult result = queryCandidatePage(source, normalizedQuery, safePage, safeSize, selectedId);
         return new CandidatePage(
-                new CandidateQueryMetadata(subjectType, normalizedQuery, safePage, safeSize, all.size(), selectedId),
-                List.copyOf(slice));
+                new CandidateQueryMetadata(
+                        subjectType, normalizedQuery, safePage, safeSize, result.total(), selectedId),
+                result.items());
     }
 
     /** Platform contract selector: one bounded organization projection, never a generic edge query bus. */
     @Transactional(readOnly = true)
     public CandidatePage platformContractCandidatePage(
             UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
+        validatePlatformCandidateRequest(workspaceUuid, key, query);
+        return platformCandidatePage(workspaceUuid, key, query, platformContractCandidateSql(workspaceUuid, key, query));
+    }
+
+    /** Platform external-binding selector: the same organization owner read, bounded by bindable node type. */
+    @Transactional(readOnly = true)
+    public CandidatePage platformExternalBindingCandidatePage(
+            UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
+        validatePlatformCandidateRequest(workspaceUuid, key, query);
+        return platformCandidatePage(
+                workspaceUuid, key, query, platformExternalBindingCandidateSql(workspaceUuid, key, query));
+    }
+
+    private static void validatePlatformCandidateRequest(
+            UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
         if (workspaceUuid == null || key == null || key.isBlank() || query == null)
             throw new BusinessEntityService.OrganizationNotFoundException();
-        String pattern = query.queryText() == null || query.queryText().isBlank()
-                ? null
-                : "%"
-                        + query.queryText()
-                                .trim()
-                                .replace("!", "!!")
-                                .replace("%", "!%")
-                                .replace("_", "!_") + "%";
-        long offset = (long) (query.page() - 1) * query.pageSize();
-        List<PlatformCandidateRow> rows = ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> jdbc.query(
-                        platformContractCandidateSql(),
-                        (row, index) -> new PlatformCandidateRow(
-                                row.getObject("id", UUID.class),
-                                row.getString("code"),
-                                row.getString("name"),
-                                row.getLong("total"),
-                                row.getLong("page_rank"),
-                                row.getBoolean("selected")),
-                        query.subjectType().name(),
-                        workspaceUuid,
-                        key,
-                        query.projectId(),
-                        query.projectId(),
-                        query.subjectType().name(),
-                        workspaceUuid,
-                        key,
-                        query.projectId(),
-                        query.projectId(),
-                        pattern,
-                        pattern,
-                        pattern,
-                        query.selectedId(),
-                        offset,
-                        offset + query.pageSize(),
-                        query.selectedId(),
-                        query.selectedId()));
-        if (query.selectedId() != null && rows.stream().noneMatch(PlatformCandidateRow::selected))
+    }
+
+    private CandidatePage platformCandidatePage(
+            UUID workspaceUuid, String key, PlatformContractCandidateQuery query, CandidateSql source) {
+        if (workspaceUuid == null || key == null || key.isBlank() || query == null)
             throw new BusinessEntityService.OrganizationNotFoundException();
-        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
-        List<PlatformCandidateRow> paged = rows.stream()
-                .filter(row -> row.pageRank() > offset && row.pageRank() <= offset + query.pageSize())
-                .toList();
-        List<Candidate> items = new java.util.ArrayList<>(paged.stream()
-                .map(row -> new Candidate(row.id(), row.code(), row.name(), null))
-                .toList());
-        if (query.selectedId() != null
-                && items.stream().noneMatch(item -> query.selectedId().equals(item.id()))) {
-            PlatformCandidateRow selected = rows.stream()
-                    .filter(PlatformCandidateRow::selected)
-                    .findFirst()
-                    .orElseThrow(BusinessEntityService.OrganizationNotFoundException::new);
-            Candidate value = new Candidate(selected.id(), selected.code(), selected.name(), null);
-            if (items.size() == query.pageSize()) items.set(query.pageSize() - 1, value);
-            else items.add(value);
-        }
+        CandidateQueryResult result = ReadBudgetComponent.measure(
+                ReadBudgetComponent.Component.PRIMARY_QUERY,
+                () -> queryCandidatePage(source, query.queryText(), query.page(), query.pageSize(), query.selectedId()));
         return new CandidatePage(
                 new CandidateQueryMetadata(
                         query.subjectType().name(),
                         query.queryText(),
                         query.page(),
                         query.pageSize(),
-                        total,
+                        result.total(),
                         query.selectedId()),
-                List.copyOf(items));
+                result.items());
     }
 
     /** Explicit operations-admin relation-selector boundary; keeps the bounded selector protocol owner-local. */
@@ -280,7 +167,7 @@ public class StoreCandidateTaskReadService {
                         tenantId));
     }
 
-    private List<Candidate> defaultCandidates(
+    private CandidateSql defaultCandidateSql(
             UUID workspaceUuid,
             String key,
             UUID assignmentId,
@@ -290,27 +177,33 @@ public class StoreCandidateTaskReadService {
             UUID brandId,
             UUID tenantId) {
         return switch (subjectType) {
-            case ServiceNodeTypes.PROJECT -> requiredVisibleProjects(workspaceUuid, key, assignmentId, visibleNodeId);
-            case "BRAND" -> queryCandidates(
+            case ServiceNodeTypes.PROJECT -> {
+                OrganizationTaskPathLookup.TaskPath scope =
+                        scopedVisibleScope(workspaceUuid, key, assignmentId, visibleNodeId);
+                if (scope == null) throw new BusinessEntityService.OrganizationNotFoundException();
+                SqlPart projects = visibleProjectIdsSql(workspaceUuid, key, scope);
+                yield new CandidateSql(
+                        "SELECT n.id, n.code, n.name FROM organization.organization_node n WHERE n.id IN ("
+                                + projects.sql()
+                                + ")",
+                        projects.arguments());
+            }
+            case "BRAND" -> new CandidateSql(
                     "SELECT id, code, name FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? "
                             + "AND status='ENABLED'",
-                    workspaceUuid,
-                    key);
+                    List.of(workspaceUuid, key));
             case "TENANT" -> projectId == null || brandId == null
-                    ? List.of()
-                    : queryCandidates(
+                    ? null
+                    : new CandidateSql(
                             "SELECT DISTINCT t.id, t.code, t.name FROM organization.tenant t JOIN organization.store s "
                                     + "ON s.tenant_id=t.id AND s.workspace_uuid=t.workspace_uuid AND "
                                     + "s.group_workspace_key=t.group_workspace_key WHERE t.workspace_uuid=? AND "
                                     + "t.group_workspace_key=? AND t.status='ENABLED' AND s.status='ENABLED' AND "
                                     + "s.project_id=? AND s.brand_id=?",
-                            workspaceUuid,
-                            key,
-                            projectId,
-                            brandId);
+                            List.of(workspaceUuid, key, projectId, brandId));
             case BusinessEntityTypes.HEAD_COMPANY -> brandId == null || tenantId == null
-                    ? List.of()
-                    : queryCandidates(
+                    ? null
+                    : new CandidateSql(
                             "SELECT DISTINCT h.id, h.code, h.name FROM organization.head_company h JOIN "
                                     + "organization.store s ON s.head_company_id=h.id AND "
                                     + "s.workspace_uuid=h.workspace_uuid AND "
@@ -318,74 +211,204 @@ public class StoreCandidateTaskReadService {
                                     + "WHERE h.workspace_uuid=? AND h.group_workspace_key=? AND h.status='ENABLED' AND "
                                     + "s.status='ENABLED' AND s.brand_id=? AND s.tenant_id=? AND EXISTS (SELECT 1 FROM "
                                     + "organization.head_company_brand_authorization a WHERE a.head_company_id=h.id "
-                                    + "AND "
-                                    + "a.brand_id=?)",
-                            workspaceUuid,
-                            key,
-                            brandId,
-                            tenantId,
-                            brandId);
-            case ServiceNodeTypes.STORE -> visibleStoreCandidates(
-                    workspaceUuid, key, assignmentId, visibleNodeId, projectId);
+                                    + "AND a.brand_id=?)",
+                            List.of(workspaceUuid, key, brandId, tenantId, brandId));
+            case ServiceNodeTypes.STORE -> {
+                OrganizationTaskPathLookup.TaskPath scope =
+                        scopedVisibleScope(workspaceUuid, key, assignmentId, visibleNodeId);
+                if (scope == null) throw new BusinessEntityService.OrganizationNotFoundException();
+                SqlPart projects = visibleProjectIdsSql(workspaceUuid, key, scope);
+                yield new CandidateSql(
+                        "SELECT s.id, s.code, s.name FROM organization.store s WHERE s.workspace_uuid=? AND "
+                                + "s.group_workspace_key=? AND s.status='ENABLED' AND s.project_id IN ("
+                                + projects.sql()
+                                + ")",
+                        concat(List.of(workspaceUuid, key), projects.arguments()));
+            }
             default -> throw new BusinessEntityService.OrganizationNotFoundException();
         };
     }
 
-    private List<Candidate> contractListCandidates(UUID workspaceUuid, String key, String subjectType, UUID projectId) {
+    private CandidateSql contractListCandidateSql(UUID workspaceUuid, String key, String subjectType, UUID projectId) {
         return switch (subjectType) {
-            case ServiceNodeTypes.STORE -> queryCandidates(
+            case ServiceNodeTypes.STORE -> new CandidateSql(
                     "SELECT id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? "
                             + "AND (CAST(? AS uuid) IS NULL OR project_id=?)",
-                    workspaceUuid,
-                    key,
-                    projectId,
-                    projectId);
-            case "TENANT" -> queryCandidates(
+                    List.of(workspaceUuid, key, projectId, projectId));
+            case "TENANT" -> new CandidateSql(
                     "SELECT DISTINCT t.id, t.code, t.name FROM organization.tenant t JOIN organization.store s ON "
                             + "s.tenant_id=t.id AND s.workspace_uuid=t.workspace_uuid AND "
                             + "s.group_workspace_key=t.group_workspace_key WHERE t.workspace_uuid=? AND "
                             + "t.group_workspace_key=? AND (CAST(? AS uuid) IS NULL OR s.project_id=?)",
-                    workspaceUuid,
-                    key,
-                    projectId,
-                    projectId);
+                    List.of(workspaceUuid, key, projectId, projectId));
             default -> throw new BusinessEntityService.OrganizationNotFoundException();
         };
     }
 
-    private static String platformContractCandidateSql() {
-        return "WITH candidates AS ("
-                + "SELECT store.id, store.code, store.name FROM organization.store store WHERE ?='STORE' AND "
-                + "store.workspace_uuid=? AND store.group_workspace_key=? AND (?::uuid IS NULL OR "
-                + "store.project_id=?) "
-                + "UNION ALL SELECT DISTINCT tenant.id, tenant.code, tenant.name FROM organization.tenant tenant JOIN "
-                + "organization.store store ON store.tenant_id=tenant.id AND "
-                + "store.workspace_uuid=tenant.workspace_uuid AND "
-                + "store.group_workspace_key=tenant.group_workspace_key WHERE ?='TENANT' AND "
-                + "tenant.workspace_uuid=? AND tenant.group_workspace_key=? AND (?::uuid IS NULL OR "
-                + "store.project_id=?)"
-                + "), filtered AS (SELECT * FROM candidates WHERE (?::text IS NULL OR code ILIKE ? ESCAPE '!' OR name "
-                + "ILIKE ? ESCAPE '!')), ranked AS ("
-                + "SELECT id, code, name, count(*) OVER() AS total, row_number() OVER(ORDER BY code, id) AS page_rank, "
-                + "id=?::uuid AS selected FROM filtered"
-                + ") SELECT id, code, name, total, page_rank, selected FROM ranked WHERE page_rank>? AND page_rank<=? "
-                + "OR (?::uuid IS NOT NULL AND id=?) ORDER BY page_rank";
+    private CandidateQueryResult queryCandidatePage(
+            CandidateSql source, String queryText, int page, int pageSize, UUID selectedId) {
+        long offset = (long) (page - 1) * pageSize;
+        List<Object> arguments = new java.util.ArrayList<>(source.arguments());
+        String pattern = queryPattern(queryText);
+        arguments.add(pattern);
+        arguments.add(pattern);
+        arguments.add(pattern);
+        arguments.add(selectedId);
+        arguments.add(offset);
+        arguments.add(offset + pageSize);
+        List<CandidateQueryRow> rows = jdbc.query(
+                "WITH candidates AS ("
+                        + source.sql()
+                        + "), filtered AS (SELECT id, code, name FROM candidates WHERE CAST(? AS text) IS NULL OR "
+                        + "code ILIKE ? ESCAPE '!' OR name ILIKE ? ESCAPE '!'), summary AS (SELECT count(*) AS total, "
+                        + "COALESCE(bool_or(id=CAST(? AS uuid)), false) AS selected_exists FROM filtered), ranked AS ("
+                        + "SELECT id, code, name, row_number() OVER(ORDER BY code, id) AS page_rank FROM filtered), "
+                        + "paged AS (SELECT * FROM ranked WHERE page_rank>? AND page_rank<=?) SELECT paged.id, "
+                        + "paged.code, paged.name, summary.total, paged.page_rank, "
+                        + "summary.selected_exists FROM summary "
+                        + "LEFT JOIN paged ON TRUE ORDER BY paged.page_rank",
+                (row, index) -> new CandidateQueryRow(
+                        row.getObject("id", UUID.class),
+                        row.getString("code"),
+                        row.getString("name"),
+                        row.getLong("total"),
+                        row.getLong("page_rank"),
+                        row.getBoolean("selected_exists")),
+                arguments.toArray());
+        CandidateQueryRow summary = rows.isEmpty() ? null : rows.getFirst();
+        if (selectedId != null && (summary == null || !summary.selectedExists()))
+            throw new BusinessEntityService.OrganizationNotFoundException();
+        long total = summary == null ? 0L : summary.total();
+        List<Candidate> items = rows.stream()
+                .filter(row -> row.id() != null)
+                .map(row -> new Candidate(row.id(), row.code(), row.name(), null))
+                .toList();
+        return new CandidateQueryResult(total, List.copyOf(items));
     }
 
-    private List<Candidate> queryCandidates(String sql, Object... arguments) {
-        return jdbc.query(
-                sql + " ORDER BY code",
-                (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                arguments);
+    private static CandidatePage emptyCandidatePage(
+            String subjectType, String queryText, int page, int pageSize, UUID selectedId) {
+        return new CandidatePage(
+                new CandidateQueryMetadata(subjectType, queryText, page, pageSize, 0L, selectedId), List.of());
     }
 
-    private static <T> List<T> pageSlice(List<T> values, int page, int pageSize) {
-        int from = Math.min(values.size(), (page - 1) * pageSize);
-        int to = Math.min(values.size(), from + pageSize);
-        return values.subList(from, to);
+    private static String queryPattern(String queryText) {
+        if (queryText == null || queryText.isBlank()) return null;
+        return "%" + queryText.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    }
+
+    private static SqlPart visibleProjectIdsSql(
+            UUID workspaceUuid, String key, OrganizationTaskPathLookup.TaskPath scope) {
+        return switch (scope.targetType()) {
+            case ServiceNodeTypes.GROUP -> new SqlPart(
+                    "SELECT n.id FROM organization.organization_node n WHERE n.workspace_uuid=? AND "
+                            + "n.group_workspace_key=? AND n.node_type='PROJECT' AND n.status='ENABLED'",
+                    List.of(workspaceUuid, key));
+            case ServiceNodeTypes.REGION -> new SqlPart(
+                    "SELECT n.id FROM organization.organization_node n WHERE n.workspace_uuid=? AND "
+                            + "n.group_workspace_key=? AND n.node_type='PROJECT' AND n.status='ENABLED' AND n.id IN ("
+                            + "WITH RECURSIVE descendants(id) AS (SELECT id FROM organization.organization_node WHERE "
+                            + "id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' "
+                            + "UNION ALL SELECT "
+                            + "child.id FROM organization.organization_node child JOIN descendants parent ON "
+                            + "child.parent_id=parent.id WHERE child.workspace_uuid=? "
+                            + "AND child.group_workspace_key=? AND "
+                            + "child.status='ENABLED') SELECT id FROM descendants)",
+                    List.of(workspaceUuid, key, scope.targetId(), workspaceUuid, key, workspaceUuid, key));
+            case ServiceNodeTypes.PROJECT -> new SqlPart(
+                    "SELECT n.id FROM organization.organization_node n WHERE n.workspace_uuid=? AND "
+                            + "n.group_workspace_key=? AND n.node_type='PROJECT' AND n.status='ENABLED' AND n.id=?",
+                    List.of(workspaceUuid, key, scope.targetId()));
+            case ServiceNodeTypes.STORE -> new SqlPart(
+                    "SELECT n.id FROM organization.organization_node n WHERE n.workspace_uuid=? AND "
+                            + "n.group_workspace_key=? AND n.node_type='PROJECT' AND n.status='ENABLED' AND n.id=("
+                            + "SELECT project_id FROM organization.store WHERE id=? AND workspace_uuid=? AND "
+                            + "group_workspace_key=? AND status='ENABLED')",
+                    List.of(workspaceUuid, key, scope.targetId(), workspaceUuid, key));
+            case BusinessEntityTypes.HEAD_COMPANY -> new SqlPart(
+                    "SELECT n.id FROM organization.organization_node n WHERE n.workspace_uuid=? AND "
+                            + "n.group_workspace_key=? AND n.node_type='PROJECT' AND n.status='ENABLED' AND n.id IN ("
+                            + "SELECT DISTINCT project_id FROM organization.store WHERE workspace_uuid=? AND "
+                            + "group_workspace_key=? AND head_company_id=? AND status='ENABLED')",
+                    List.of(workspaceUuid, key, workspaceUuid, key, scope.targetId()));
+            default -> throw new BusinessEntityService.OrganizationNotFoundException();
+        };
+    }
+
+    private static List<Object> concat(List<Object> first, List<Object> second) {
+        List<Object> result = new java.util.ArrayList<>(first.size() + second.size());
+        result.addAll(first);
+        result.addAll(second);
+        return List.copyOf(result);
+    }
+
+    private static CandidateSql platformContractCandidateSql(
+            UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
+        String subjectType = query.subjectType().name();
+        return new CandidateSql(
+                "SELECT store.id, store.code, store.name FROM organization.store store WHERE ?='STORE' AND "
+                        + "store.workspace_uuid=? AND store.group_workspace_key=? AND (?::uuid IS NULL OR "
+                        + "store.project_id=?) UNION ALL SELECT DISTINCT tenant.id, tenant.code, tenant.name FROM "
+                        + "organization.tenant tenant JOIN organization.store store ON store.tenant_id=tenant.id AND "
+                        + "store.workspace_uuid=tenant.workspace_uuid AND store.group_workspace_key=tenant.group_workspace_key "
+                        + "WHERE ?='TENANT' AND tenant.workspace_uuid=? AND tenant.group_workspace_key=? AND "
+                        + "(?::uuid IS NULL OR store.project_id=?)",
+                nullableArguments(
+                        subjectType,
+                        workspaceUuid,
+                        key,
+                        query.projectId(),
+                        query.projectId(),
+                        subjectType,
+                        workspaceUuid,
+                        key,
+                        query.projectId(),
+                        query.projectId()));
+    }
+
+    private static CandidateSql platformExternalBindingCandidateSql(
+            UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
+        return switch (query.subjectType()) {
+            case COMMERCIAL_GROUP -> new CandidateSql(
+                    "SELECT commercial_group.commercial_group_uuid AS id, "
+                            + "commercial_group.commercial_group_code AS code, "
+                            + "commercial_group.commercial_group_name AS name "
+                            + "FROM organization.commercial_group commercial_group "
+                            + "JOIN platform_workspace.group_workspace group_workspace "
+                            + "ON group_workspace.id=commercial_group.group_workspace_id "
+                            + "WHERE group_workspace.workspace_uuid=? AND group_workspace.group_workspace_key=? "
+                            + "AND commercial_group.group_workspace_key=?",
+                    List.of(workspaceUuid, key, key));
+            case REGION, PROJECT -> new CandidateSql(
+                    "SELECT node.id, node.code, node.name FROM organization.organization_node node "
+                            + "WHERE node.workspace_uuid=? AND node.group_workspace_key=? AND node.node_type=? "
+                            + "AND node.status='ENABLED'",
+                    List.of(workspaceUuid, key, query.subjectType().name()));
+            case HEAD_COMPANY -> new CandidateSql(
+                    "SELECT head_company.id, head_company.code, head_company.name "
+                            + "FROM organization.head_company head_company "
+                            + "WHERE head_company.workspace_uuid=? AND head_company.group_workspace_key=? "
+                            + "AND head_company.status='ENABLED'",
+                    List.of(workspaceUuid, key));
+            case STORE -> new CandidateSql(
+                    "SELECT store.id, store.code, store.name FROM organization.store store "
+                            + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? AND store.status='ENABLED' "
+                            + "AND (CAST(? AS uuid) IS NULL OR store.project_id=?)",
+                    nullableArguments(workspaceUuid, key, query.projectId(), query.projectId()));
+            default -> throw new BusinessEntityService.OrganizationNotFoundException();
+        };
+    }
+
+    private static List<Object> nullableArguments(Object... values) {
+        return java.util.Arrays.asList(values);
     }
 
     public enum PlatformContractCandidateSubject {
+        COMMERCIAL_GROUP,
+        REGION,
+        PROJECT,
+        BRAND,
+        HEAD_COMPANY,
         STORE,
         TENANT
     }
@@ -402,9 +425,6 @@ public class StoreCandidateTaskReadService {
                 throw new IllegalArgumentException("invalid platform contract candidate query");
         }
     }
-
-    private record PlatformCandidateRow(
-            UUID id, String code, String name, long total, long pageRank, boolean selected) {}
 
     private OrganizationTaskPathLookup.TaskPath visibleScope(
             UUID workspaceUuid,
@@ -449,79 +469,31 @@ public class StoreCandidateTaskReadService {
         }
     }
 
-    private List<Candidate> requiredVisibleProjects(
-            UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId) {
-        OrganizationTaskPathLookup.TaskPath visibleScope =
-                scopedVisibleScope(workspaceUuid, key, assignmentId, visibleNodeId);
-        if (visibleScope == null) throw new BusinessEntityService.OrganizationNotFoundException();
-        return visibleProjects(workspaceUuid, key, visibleScope);
-    }
-
-    private List<Candidate> visibleStoreCandidates(
-            UUID workspaceUuid, String key, UUID assignmentId, UUID visibleNodeId, UUID projectId) {
-        if (projectId == null
-                || requiredVisibleProjects(workspaceUuid, key, assignmentId, visibleNodeId).stream()
-                        .noneMatch(project -> projectId.equals(project.id()))) return List.of();
-        return queryCandidates(
-                "SELECT id, code, name FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + "status='ENABLED' AND project_id=?",
-                workspaceUuid,
-                key,
-                projectId);
-    }
-
-    private List<Candidate> visibleProjects(
-            UUID workspaceUuid, String key, OrganizationTaskPathLookup.TaskPath visibleScope) {
-        if (ServiceNodeTypes.STORE.equals(visibleScope.targetType())) {
-            return jdbc.query(
-                    "SELECT n.id, n.code, n.name FROM organization.store s JOIN organization.organization_node n ON "
-                            + "n.id=s.project_id WHERE s.workspace_uuid=? AND s.group_workspace_key=? AND s.id=? AND "
-                            + "n.node_type='PROJECT' AND n.status='ENABLED'",
-                    (row, index) ->
-                            new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                    workspaceUuid,
-                    key,
-                    visibleScope.targetId());
+    private record SqlPart(String sql, List<Object> arguments) {
+        private SqlPart {
+            arguments = List.copyOf(arguments);
         }
-        List<Candidate> allProjects = jdbc.query(
-                "SELECT id, code, name FROM organization.organization_node WHERE workspace_uuid=? AND "
-                        + "group_workspace_key=? AND node_type='PROJECT' AND status='ENABLED' ORDER BY code",
-                (row, index) -> new Candidate(row.getObject(1, UUID.class), row.getString(2), row.getString(3), null),
-                workspaceUuid,
-                key);
-        Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> paths =
-                taskPaths.requireTaskPaths(
-                        workspaceUuid,
-                        key,
-                        allProjects.stream()
-                                .map(project -> new OrganizationTaskPathLookup.TaskPathRef(
-                                        ServiceNodeTypes.PROJECT, project.id()))
-                                .toList());
-        return allProjects.stream()
-                .filter(project -> {
-                    OrganizationTaskPathLookup.TaskPath path = paths.get(
-                            new OrganizationTaskPathLookup.TaskPathRef(ServiceNodeTypes.PROJECT, project.id()));
-                    return path != null
-                            && taskPaths.isScopeAllowed(
-                                    workspaceUuid, key, visibleScope.targetType(), visibleScope.targetId(), path);
-                })
-                .toList();
     }
 
-    public record Page(
-            String groupWorkspaceKey,
-            DataScope dataScope,
-            List<Candidate> projects,
-            List<Candidate> brands,
-            List<Candidate> tenants,
-            List<Candidate> headCompanies) {}
+    private record CandidateSql(String sql, List<Object> arguments) {
+        private CandidateSql {
+            arguments = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(arguments));
+        }
+    }
+
+    private record CandidateQueryRow(
+            UUID id, String code, String name, long total, long pageRank, boolean selectedExists) {}
+
+    private record CandidateQueryResult(long total, List<Candidate> items) {
+        private CandidateQueryResult {
+            items = List.copyOf(items);
+        }
+    }
 
     public record CandidatePage(CandidateQueryMetadata metadata, List<Candidate> items) {}
 
     public record CandidateQueryMetadata(
             String subjectType, String queryText, int page, int pageSize, long total, UUID selectedId) {}
-
-    public record DataScope(String nodeType, UUID nodeRef, String nodeName) {}
 
     public record Candidate(UUID id, String code, String name, String path) {}
 }

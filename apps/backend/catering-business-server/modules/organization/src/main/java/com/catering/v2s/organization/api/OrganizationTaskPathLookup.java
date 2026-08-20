@@ -18,6 +18,13 @@ public interface OrganizationTaskPathLookup {
             UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId);
 
     /**
+     * Resolves a task path for the explicitly supported case where the target Store may be disabled. The production
+     * implementation keeps organization ancestors enabled-only; this is not a general disabled-tree authority path.
+     */
+    TaskPath requireTaskPathAllowingDisabledTarget(
+            UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId);
+
+    /**
      * One organization-owner command judgment: resolve the persisted target path and decide whether the
      * already-authenticated assignment may act on it. Production implementations must keep both facts in one owner
      * transaction; test doubles must implement the owner API they use.
@@ -33,6 +40,20 @@ public interface OrganizationTaskPathLookup {
         TaskPath taskPath = statusTransition
                 ? requireStatusTransitionTaskPath(workspaceUuid, groupWorkspaceKey, targetType, targetId)
                 : requireTaskPath(workspaceUuid, groupWorkspaceKey, targetType, targetId);
+        return new CommandTaskPathFacts(
+                taskPath, isScopeAllowed(workspaceUuid, groupWorkspaceKey, assignmentType, assignmentId, taskPath));
+    }
+
+    /** One owner judgment for a command whose explicitly supported target may be disabled. */
+    default CommandTaskPathFacts commandTaskPathFactsAllowingDisabledTarget(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String assignmentType,
+            UUID assignmentId,
+            String targetType,
+            UUID targetId) {
+        TaskPath taskPath = requireTaskPathAllowingDisabledTarget(
+                workspaceUuid, groupWorkspaceKey, targetType, targetId);
         return new CommandTaskPathFacts(
                 taskPath, isScopeAllowed(workspaceUuid, groupWorkspaceKey, assignmentType, assignmentId, taskPath));
     }

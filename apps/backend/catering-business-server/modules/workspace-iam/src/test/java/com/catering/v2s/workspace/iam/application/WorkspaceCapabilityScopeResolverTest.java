@@ -182,6 +182,52 @@ class WorkspaceCapabilityScopeResolverTest {
         assertEquals(target, result.firstOwnerQueryPredicate().resourceId());
     }
 
+    @Test
+    void disabledStoreBusinessTargetUsesItsNarrowLookupAndRejectsOtherTargetTypes() {
+        UUID target = UUID.randomUUID();
+        String requirement = "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL";
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(requirement, "STORE")
+                .orElseThrow();
+        WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) ->
+                new WorkspaceAssignmentScopeLookup.AssignmentScope("STORE", assignmentNode);
+        OrganizationTaskPathLookup taskPaths = new WorkspaceTestTaskPathLookup() {
+            @Override
+            public TaskPath requireTaskPath(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                throw new AssertionError("disabled Store command must not use enabled-only lookup");
+            }
+
+            @Override
+            public TaskPath requireTaskPathAllowingDisabledTarget(
+                    UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId) {
+                return new TaskPath(targetType, targetId, List.of(assignmentNode, targetId), "disabled Store");
+            }
+
+            @Override
+            public boolean isScopeAllowed(
+                    UUID workspaceUuid, String groupWorkspaceKey, String scopeType, UUID scopeId, TaskPath path) {
+                return "STORE".equals(scopeType)
+                        && assignmentNode.equals(scopeId)
+                        && path.ancestorIds().contains(scopeId);
+            }
+        };
+        WorkspaceCapabilityScopeResolver resolver = new WorkspaceCapabilityScopeResolver(assignments, taskPaths);
+
+        var allowed = resolver.resolveIncludingDisabledStoreTarget(
+                session(Set.of(capability)),
+                requirement,
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("STORE", target));
+        var denied = resolver.resolveIncludingDisabledStoreTarget(
+                session(Set.of(capability)),
+                requirement,
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", target));
+
+        assertEquals(WorkspaceCapabilityScopeResolver.Decision.ALLOW, allowed.decision());
+        assertEquals(target, allowed.firstOwnerQueryPredicate().resourceId());
+        assertEquals(WorkspaceCapabilityScopeResolver.Decision.DENY, denied.decision());
+        assertNull(denied.firstOwnerQueryPredicate());
+    }
+
     private WorkspaceCapabilityScopeResolver resolver(String assignmentType, boolean allowed) {
         WorkspaceAssignmentScopeLookup assignments = (workspaceUuid, groupWorkspaceKey, currentAssignmentId) -> {
             assertEquals(workspace, workspaceUuid);

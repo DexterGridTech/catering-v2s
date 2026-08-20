@@ -236,6 +236,227 @@ final class IamAcceptanceScenarios {
                 "BUSINESS: foreign workspace response has no session grants");
     }
 
+    @AcceptanceScenario(
+            id = "pagination.workspace-user-candidates-db-page",
+            module = "IAM",
+            operation = "getWorkspaceInvitationCandidates")
+    void operationsInvitationCandidatesPage(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("GROUP", Set.of("PG-IAM-HEAD-COMPANY-USERS"), Set.of());
+        List<UUID> expectedIds = host.createHeadCompanyCandidates(fixture, 23);
+        List<UUID> expectedRoleIds = host.createEnabledRoles(fixture, "HEAD_COMPANY", 23);
+        BackendAcceptanceTest.Fixture foreign = host.fixture("GROUP", Set.of("PG-IAM-HEAD-COMPANY-USERS"), Set.of());
+        List<UUID> foreignCandidateIds = host.createHeadCompanyCandidates(foreign, 3);
+        List<UUID> foreignRoleIds = host.createEnabledRoles(foreign, "HEAD_COMPANY", 3);
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platformSession = host.platformLogin(context);
+        String prefix = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
+                + "/invitation-candidates"
+                + "?targetOrganizationType=HEAD_COMPANY&subjectType=ORGANIZATION&candidateUsage=LIST_FILTER"
+                + "&pageSize=10&page=";
+
+        List<UUID> actualIds = new java.util.ArrayList<>();
+        for (int page = 1; page <= 3; page++) {
+            BackendAcceptanceTest.Response response = context.get(
+                    BackendAcceptanceTest.PLATFORM_WORKSPACE_INVITATION_CANDIDATES,
+                    prefix + page,
+                    platformSession.cookie(),
+                    Set.of(200));
+            JsonNode body = response.json();
+            JsonNode metadata = body.path("metadata");
+            assertEquals("ORGANIZATION", metadata.path("subjectType").asText(), "BUSINESS: subject is preserved");
+            assertEquals(page, metadata.path("page").asInt(), "BUSINESS: page identity is preserved");
+            assertEquals(10, metadata.path("pageSize").asInt(), "BUSINESS: page size is preserved");
+            assertEquals(23, metadata.path("total").asInt(), "BUSINESS: total is the complete filtered count");
+            JsonNode organizations = body.path("organizations");
+            assertEquals(page < 3 ? 10 : 3, organizations.size(), "BUSINESS: page boundary is owner-enforced");
+            for (JsonNode organization : organizations) {
+                UUID id = UUID.fromString(organization.path("organizationRef").asText());
+                assertTrue(expectedIds.contains(id), "BUSINESS: current workspace candidate is returned");
+                assertFalse(foreignCandidateIds.contains(id), "BUSINESS: foreign workspace candidate is hidden");
+                assertTrue(actualIds.add(id), "BUSINESS: pages do not repeat a candidate");
+            }
+        }
+        assertEquals(expectedIds.size(), actualIds.size(), "BUSINESS: pages cover the complete candidate set");
+        assertEquals(
+                Set.copyOf(expectedIds),
+                Set.copyOf(actualIds),
+                "BUSINESS: page traversal neither omits nor adds a candidate");
+
+        List<UUID> actualRoleIds = new java.util.ArrayList<>();
+        String rolePrefix = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
+                + "/invitation-candidates"
+                + "?targetOrganizationType=HEAD_COMPANY&subjectType=ROLE&candidateUsage=LIST_FILTER&pageSize=10&page=";
+        for (int page = 1; page <= 3; page++) {
+            BackendAcceptanceTest.Response response = context.get(
+                    BackendAcceptanceTest.PLATFORM_WORKSPACE_INVITATION_CANDIDATES,
+                    rolePrefix + page,
+                    platformSession.cookie(),
+                    Set.of(200));
+            JsonNode body = response.json();
+            assertEquals("ROLE", body.path("metadata").path("subjectType").asText());
+            assertEquals(23, body.path("metadata").path("total").asInt());
+            JsonNode roles = body.path("roles");
+            assertEquals(page < 3 ? 10 : 3, roles.size(), "BUSINESS: role page boundary is owner-enforced");
+            for (JsonNode role : roles) {
+                UUID id = UUID.fromString(role.path("id").asText());
+                assertTrue(expectedRoleIds.contains(id), "BUSINESS: enabled role belongs to requested workspace");
+                assertFalse(foreignRoleIds.contains(id), "BUSINESS: foreign workspace role is hidden");
+                assertTrue(actualRoleIds.add(id), "BUSINESS: role pages do not repeat an item");
+            }
+        }
+        assertEquals(
+                Set.copyOf(expectedRoleIds),
+                Set.copyOf(actualRoleIds),
+                "BUSINESS: role pages cover the complete database-filtered set");
+    }
+
+    @AcceptanceScenario(
+            id = "pagination.workspace-iam-page-owner-boundary",
+            module = "IAM",
+            operation = "workspaceIamPageOwnerBoundary")
+    void workspaceIamPageOwnerBoundary(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("GROUP", Set.of("PG-IAM-STORE-USERS"), Set.of());
+        List<BackendAcceptanceTest.Fixture> groupMembers = new java.util.ArrayList<>();
+        for (int index = 0; index < 11; index++) {
+            BackendAcceptanceTest.Fixture groupMember = host.groupUserFixture(fixture, Set.of());
+            host.completeInvitation(context, groupMember);
+            groupMembers.add(groupMember);
+        }
+        BackendAcceptanceTest.Fixture scoped = host.siblingStoreFixture(fixture, Set.of());
+        host.completeInvitation(context, scoped);
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operationsSession = host.login(context, fixture);
+        String operationsRoot = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey();
+        int expectedGroupTotal = groupMembers.size() + 1;
+        int expectedWorkspaceTotal = groupMembers.size() + 2;
+
+        collectTwoPages(
+                context,
+                OPERATIONS_WORKSPACE_GROUP_USER,
+                operationsRoot + "/user-management/group/user?pageSize=10&expectedContextVersion="
+                        + operationsSession.contextVersion() + "&sort=LOGIN_NAME&direction=ASC&page=",
+                operationsSession.cookie(),
+                "accountId",
+                expectedGroupTotal,
+                "BUSINESS: group user pages are filtered and counted by workspace-iam");
+        collectTwoPages(
+                context,
+                OPERATIONS_WORKSPACE_GROUP_INVITATIONS,
+                operationsRoot + "/user-management/group/invitations?pageSize=10&expectedContextVersion="
+                        + operationsSession.contextVersion() + "&sort=CREATED_AT&direction=ASC&page=",
+                operationsSession.cookie(),
+                "id",
+                expectedGroupTotal,
+                "BUSINESS: group invitation pages are filtered and counted by workspace-iam");
+
+        BackendAcceptanceTest.Response selectedStore = context.post(
+                OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
+                operationsRoot + "/session/data-node",
+                operationsSession.cookie(),
+                Map.of(
+                        "dataNodeRef", scoped.storeId(),
+                        "dataNodeType", "STORE",
+                        "requiredContextVersion", operationsSession.contextVersion()),
+                Map.of("Idempotency-Key", "acceptance-iam-store-scope-selection"),
+                Set.of(200));
+        BackendAcceptanceTest.Session storeSession = new BackendAcceptanceTest.Session(
+                operationsSession.cookie(),
+                selectedStore.json(),
+                selectedStore.json().path("contextVersion").asLong());
+        assertEquals(
+                scoped.storeId().toString(),
+                storeSession
+                        .entry()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
+                "BUSINESS: session data-node selection establishes the requested store scope");
+
+        BackendAcceptanceTest.Response scopedUsers = context.get(
+                OPERATIONS_WORKSPACE_STORE_USER,
+                operationsRoot + "/user-management/store/user?scopeRef=" + scoped.storeId()
+                        + "&page=1&pageSize=10&expectedContextVersion=" + storeSession.contextVersion()
+                        + "&sort=LOGIN_NAME&direction=ASC",
+                storeSession.cookie(),
+                Set.of(200));
+        assertEquals(1, scopedUsers.json().path("total").asInt(), "BUSINESS: exact store scope has one account");
+        assertEquals(
+                1,
+                scopedUsers.json().path("items").size(),
+                "BUSINESS: exact store scope does not inherit the group page");
+        assertEquals(
+                scoped.loginName(),
+                scopedUsers.json().path("items").get(0).path("loginName").asText(),
+                "BUSINESS: exact store scope identifies its own account");
+
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platformSession = host.platformLogin(context);
+        String platformRoot = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey();
+        collectTwoPages(
+                context,
+                PLATFORM_WORKSPACE_ACCOUNTS,
+                platformRoot + "/accounts?pageSize=10&sort=LOGIN_NAME&direction=ASC&page=",
+                platformSession.cookie(),
+                "id",
+                expectedWorkspaceTotal,
+                "BUSINESS: platform account pages expose the complete workspace set");
+        collectTwoPages(
+                context,
+                PLATFORM_WORKSPACE_INVITATIONS,
+                platformRoot + "/invitations?pageSize=10&sort=CREATED_AT&direction=ASC&page=",
+                platformSession.cookie(),
+                "id",
+                expectedWorkspaceTotal,
+                "BUSINESS: platform invitation pages expose the complete workspace set");
+        collectTwoPages(
+                context,
+                PLATFORM_WORKSPACE_ROLES,
+                platformRoot + "/roles?pageSize=10&sort=NAME&direction=ASC&page=",
+                platformSession.cookie(),
+                "id",
+                expectedWorkspaceTotal,
+                "BUSINESS: platform role pages expose the complete workspace set");
+
+        BackendAcceptanceTest.Fixture foreign = host.fixture("GROUP", Set.of());
+        BackendAcceptanceTest.Response foreignAccounts = context.get(
+                PLATFORM_WORKSPACE_ACCOUNTS,
+                "/api/platform/group-workspaces/" + foreign.groupWorkspaceKey()
+                        + "/accounts?page=1&pageSize=10&sort=LOGIN_NAME&direction=ASC",
+                platformSession.cookie(),
+                Set.of(200));
+        assertEquals(
+                0,
+                foreignAccounts.json().path("total").asInt(),
+                "BUSINESS: a different workspace has no visible accounts in the current fixture");
+    }
+
+    private static List<String> collectTwoPages(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.RouteIdentity route,
+            String urlPrefix,
+            String cookie,
+            String itemIdField,
+            int expectedTotal,
+            String message)
+            throws Exception {
+        List<String> ids = new java.util.ArrayList<>();
+        for (int page = 1; page <= 2; page++) {
+            BackendAcceptanceTest.Response response = context.get(route, urlPrefix + page, cookie, Set.of(200));
+            JsonNode body = response.json();
+            assertEquals(page, body.path("page").asInt(), message + ": page identity");
+            assertEquals(10, body.path("pageSize").asInt(), message + ": page size");
+            assertEquals(expectedTotal, body.path("total").asInt(), message + ": total is not current page length");
+            JsonNode items = body.path("items");
+            assertEquals(page == 1 ? 10 : expectedTotal - 10, items.size(), message + ": page boundary");
+            for (JsonNode item : items) {
+                assertTrue(ids.add(item.path(itemIdField).asText()), message + ": pages do not repeat items");
+            }
+        }
+        assertEquals(expectedTotal, ids.size(), message + ": pages cover the complete filtered set");
+        return List.copyOf(ids);
+    }
+
     @AcceptanceScenario(id = "iam.capability-denial-is-no-write", module = "IAM", operation = "capabilityDenial")
     void capabilityDenialIsNoWrite(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         BackendAcceptanceTest.Fixture fixture = host.fixture("PROJECT", Set.of());

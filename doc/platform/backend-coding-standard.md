@@ -168,6 +168,24 @@
 
 **实例**:S-06(是删除不是重构)· S-04 · S-05
 
+### 2-G · 浏览器 URL 不构成 API owner 授权
+
+**规则**:API 资源路径可以携带 `projectRef`、`storeRef` 等 owner ref 来选择业务聚合，
+但 edge 必须从已认证会话解析允许的数据节点，并在每个读写入口复核 path/body 中的 owner ref。
+浏览器页面 URL 只定位工作空间与页面，不能成为服务端授权输入，也不能因为前端已校验而省略 edge 复核。
+
+**反例**:项目/门店经营渠道页把节点 UUID 放进浏览器 URL；若 controller 只调用
+`requireWorkspaceRead` 后直接执行 `/projects/{projectRef}/business-channels` 或
+`/stores/{storeRef}/business-channels`，用户改 URL 即可把另一节点 ref 传入查询，形成跨节点读取入口。
+
+**最小解**:保留 API 的资源路径和生成契约；在 controller 统一走
+`resolveSelectedProjectScope`、`requireScopedStore`、owner aggregate readback 等服务端复核，
+并为项目列表、门店列表、渠道详情、绑定详情分别保留跨节点拒绝测试。前端稳定路由修复不能替代后端授权。
+
+**反例边界**:这条不要求把 API 的 owner ref 从契约中删除，也不要求把所有资源 URL 改成无 ID 的形式；
+它只禁止把 browser URL、query context 或 body 的客户端 ref 直接当作授权结论。读取真实 owner 事实后再把其 ref
+交给 capability/grant 或 owner command，是可接受的实现。
+
 ---
 
 ## 3 · 执行顺序(有依赖,不能乱排)

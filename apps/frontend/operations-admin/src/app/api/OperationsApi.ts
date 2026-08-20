@@ -31,6 +31,8 @@ const logger = createSafeLogger({
 const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 export const operationsRefreshSignal = createRefreshSignal();
+/** Shell-level content refresh; imperative read models subscribe without remounting the tab. */
+export const operationsContentTabRefreshSignal = createRefreshSignal();
 
 export function recordOperationsRenderError(_error: Error) {
   logger.error({event: 'frontend.render.failed', phase: 'render', outcome: 'ERROR', errorCode: 'UI_RENDER_ERROR'});

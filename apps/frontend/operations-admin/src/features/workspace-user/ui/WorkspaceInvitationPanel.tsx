@@ -4,11 +4,13 @@ import {
   activeInvitationPageUrl,
   adminListState,
   contextScopedQueryArgs,
+  createPageQueryIdentity,
   EllipsisTooltip,
   NameCodePathText,
   testId,
   useCursorCandidates,
   useDetailDrawer,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import type {Dayjs} from 'dayjs';
 import {useEffect, useMemo, useState} from 'react';
@@ -85,8 +87,6 @@ export function WorkspaceInvitationPanel({
   actionCapabilityKeys,
 }: OperationsPageProps & {pageDesignKey: UserManagementPageDesignKey}) {
   const userManagement = userManagementFor(pageDesignKey);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<WorkspaceInvitationSortKey>('CREATED_AT');
   const [direction, setDirection] = useState<SortDirection>('DESC');
   const [filters, setFilters] = useState<AppliedFilters>({});
@@ -97,6 +97,25 @@ export function WorkspaceInvitationPanel({
   const detail = useDetailDrawer<WorkspaceInvitation>();
   const canInvite = actionCapabilityKeys.includes(userManagement.inviteActionKey);
   const targetType = userManagement.targetOrganizationType;
+  const targetOperationPart =
+    targetType === 'HEAD_COMPANY' ? 'HeadCompany' : `${targetType[0]}${targetType.slice(1).toLowerCase()}`;
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: `getOperationsWorkspace${targetOperationPart}Invitations`,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: queryContext.scopeRef,
+          targetType,
+        },
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, queryContext, sort, targetOperationPart, targetType],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const path = useMemo(() => ({groupWorkspaceKey: queryContext.groupWorkspaceKey}), [queryContext.groupWorkspaceKey]);
   const invitationOptions = useMemo(
     () => ({
@@ -393,7 +412,7 @@ export function WorkspaceInvitationPanel({
               key="reset"
               onClick={() => {
                 searchConfig.form?.resetFields();
-                setPage(1);
+                pagination.setPage(1);
                 setFilters({});
               }}
               {...testId('operations-workspace-invitation-query-reset')}
@@ -403,7 +422,7 @@ export function WorkspaceInvitationPanel({
           ],
         }}
         onSubmit={values => {
-          setPage(1);
+          pagination.setPage(1);
           setFilters(toAppliedFilters(values));
         }}
         options={false}
@@ -416,10 +435,10 @@ export function WorkspaceInvitationPanel({
         })}
         dataSource={result?.items ?? []}
         columns={columns}
-        onChange={(pagination, _, nextSorter, extra) => {
+        onChange={(tablePagination, _, nextSorter, extra) => {
           if (extra.action === 'paginate') {
-            setPage(pagination.current ?? page);
-            setPageSize(pagination.pageSize ?? pageSize);
+            pagination.setPage(tablePagination.current ?? page);
+            pagination.setPageSize(tablePagination.pageSize ?? pageSize);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -431,7 +450,7 @@ export function WorkspaceInvitationPanel({
           }
           setSort(sorter.columnKey === 'expiresAt' ? 'EXPIRES_AT' : 'CREATED_AT');
           setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
-          setPage(1);
+          pagination.setPage(1);
         }}
         toolBarRender={() =>
           canInvite

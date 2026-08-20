@@ -312,8 +312,8 @@
         ],
         "parameters": [
           {
-            "name": "name",
             "in": "query",
+            "name": "name",
             "required": false,
             "schema": {
               "type": "string",
@@ -321,8 +321,8 @@
             }
           },
           {
-            "name": "groupWorkspaceKey",
             "in": "query",
+            "name": "groupWorkspaceKey",
             "required": false,
             "schema": {
               "type": "string",
@@ -330,8 +330,8 @@
             }
           },
           {
-            "name": "operationsTitle",
             "in": "query",
+            "name": "operationsTitle",
             "required": false,
             "schema": {
               "type": "string",
@@ -339,16 +339,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -356,8 +356,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -366,16 +366,16 @@
             }
           },
           {
-            "name": "sortKey",
             "in": "query",
+            "name": "sortKey",
             "required": false,
             "schema": {
               "$ref": "../../components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceSortKey"
             }
           },
           {
-            "name": "sortDirection",
             "in": "query",
+            "name": "sortDirection",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"

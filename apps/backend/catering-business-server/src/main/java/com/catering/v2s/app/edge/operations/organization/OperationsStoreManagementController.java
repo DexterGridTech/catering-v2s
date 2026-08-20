@@ -22,7 +22,6 @@ import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
-import com.catering.v2s.organization.application.StoreCandidateTaskReadService;
 import com.catering.v2s.organization.application.operations.CreateOperationsOrganizationStoreOperation;
 import com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationStoreStatusOperation;
 import com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationStoreOperation;
@@ -53,7 +52,6 @@ import tools.jackson.databind.JsonNode;
 public final class OperationsStoreManagementController {
     private final OperationsSessionResolver sessions;
     private final BusinessEntityService entities;
-    private final StoreCandidateTaskReadService storeCandidates;
     private final OrganizationOverviewTaskReadService overview;
     private final ContractTaskReadService contracts;
     private final WorkspaceUserService user;
@@ -67,7 +65,6 @@ public final class OperationsStoreManagementController {
     public OperationsStoreManagementController(
             OperationsSessionResolver sessions,
             BusinessEntityService entities,
-            StoreCandidateTaskReadService storeCandidates,
             OrganizationOverviewTaskReadService overview,
             ContractTaskReadService contracts,
             WorkspaceUserService user,
@@ -75,7 +72,6 @@ public final class OperationsStoreManagementController {
         this(
                 sessions,
                 entities,
-                storeCandidates,
                 overview,
                 contracts,
                 user,
@@ -94,7 +90,6 @@ public final class OperationsStoreManagementController {
     public OperationsStoreManagementController(
             OperationsSessionResolver sessions,
             BusinessEntityService entities,
-            StoreCandidateTaskReadService storeCandidates,
             OrganizationOverviewTaskReadService overview,
             ContractTaskReadService contracts,
             WorkspaceUserService user,
@@ -106,7 +101,6 @@ public final class OperationsStoreManagementController {
             BackendPerformanceM1CommandExecutionBindings m1Bindings) {
         this.sessions = sessions;
         this.entities = entities;
-        this.storeCandidates = storeCandidates;
         this.overview = overview;
         this.contracts = contracts;
         this.user = user;
@@ -210,25 +204,6 @@ public final class OperationsStoreManagementController {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         OrganizationOverviewTaskReadService.Item current = scopedReadStore(session, groupWorkspaceKey, storeId);
         return store(session, groupWorkspaceKey, current);
-    }
-
-    @GetMapping("/candidates")
-    StoreCandidateTaskReadService.Page candidates(
-            EdgeRequestContext request,
-            @PathVariable String groupWorkspaceKey,
-            @RequestParam long expectedContextVersion,
-            @RequestParam(required = false) UUID brandId,
-            @RequestParam(required = false) UUID tenantId) {
-        var session = context(request, groupWorkspaceKey, expectedContextVersion);
-        UUID projectId = user.resolveSelectedProjectScope(session, null).targetId();
-        return storeCandidates.operationsStoreCandidates(
-                session.workspaceUuid(),
-                groupWorkspaceKey,
-                session.currentAssignmentId(),
-                projectId,
-                projectId,
-                brandId,
-                tenantId);
     }
 
     @PatchMapping("/{storeId}")

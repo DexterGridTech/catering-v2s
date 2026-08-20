@@ -71,6 +71,18 @@
       }
     },
     {
+      "key": "NAV-BUSINESS-CHANNEL",
+      "kind": "NAVIGATION_GROUP",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "经营渠道"
+      },
+      "navigation": {
+        "order": 600,
+        "iconKey": "STORE_OPERATIONS"
+      }
+    },
+    {
       "key": "ORGANIZATION_MANAGEMENT",
       "kind": "ACTION_GROUP",
       "display": {
@@ -118,6 +130,16 @@
       },
       "actionGroup": {
         "order": 500
+      }
+    },
+    {
+      "key": "BUSINESS_CHANNEL_MANAGEMENT",
+      "kind": "ACTION_GROUP",
+      "display": {
+        "label": "经营渠道管理"
+      },
+      "actionGroup": {
+        "order": 600
       }
     },
     {
@@ -273,6 +295,22 @@
       }
     },
     {
+      "key": "PLATFORM-EXTERNAL-COLLABORATION",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "外部系统接入配置"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "REQUIRED",
+      "navigation": {
+        "order": 90,
+        "iconKey": "EXTENSION"
+      }
+    },
+    {
       "key": "HOME-GROUP",
       "kind": "PAGE",
       "consumerFace": "operations-admin",
@@ -293,10 +331,7 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "节点首页",
-          "集团工作节点"
-        ]
+        "forbiddenAlternatives": ["节点首页", "集团工作节点"]
       }
     },
     {
@@ -320,10 +355,7 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "节点首页",
-          "大区工作节点"
-        ]
+        "forbiddenAlternatives": ["节点首页", "大区工作节点"]
       }
     },
     {
@@ -347,10 +379,7 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "节点首页",
-          "项目工作节点"
-        ]
+        "forbiddenAlternatives": ["节点首页", "项目工作节点"]
       }
     },
     {
@@ -374,10 +403,7 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "节点首页",
-          "总公司工作节点"
-        ]
+        "forbiddenAlternatives": ["节点首页", "总公司工作节点"]
       }
     },
     {
@@ -401,10 +427,7 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "节点首页",
-          "门店工作节点"
-        ]
+        "forbiddenAlternatives": ["节点首页", "门店工作节点"]
       }
     },
     {
@@ -427,18 +450,11 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "组织节点",
-          "组织树权限"
-        ]
+        "forbiddenAlternatives": ["组织节点", "组织树权限"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "requiredDataNodeType": "NONE"
       }
     },
@@ -462,17 +478,11 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "品牌节点",
-          "品牌权限"
-        ]
+        "forbiddenAlternatives": ["品牌节点", "品牌权限"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "requiredDataNodeType": "NONE"
       }
     },
@@ -496,17 +506,11 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "租户节点",
-          "租户权限"
-        ]
+        "forbiddenAlternatives": ["租户节点", "租户权限"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "requiredDataNodeType": "NONE"
       }
     },
@@ -530,17 +534,11 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "总公司节点",
-          "总公司权限"
-        ]
+        "forbiddenAlternatives": ["总公司节点", "总公司权限"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "requiredDataNodeType": "NONE"
       }
     },
@@ -563,23 +561,12 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区",
-          "项目",
-          "门店"
-        ],
-        "forbiddenAlternatives": [
-          "门店节点",
-          "门店范围"
-        ]
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["门店节点", "门店范围"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "requiredDataNodeType": "PROJECT"
       }
     },
@@ -602,23 +589,12 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区",
-          "项目",
-          "门店"
-        ],
-        "forbiddenAlternatives": [
-          "合同节点",
-          "合同范围"
-        ]
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["合同节点", "合同范围"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "requiredDataNodeType": "PROJECT"
       }
     },
@@ -642,16 +618,11 @@
         "noDataNodePrompt": null,
         "noCandidatePrompt": null,
         "cascadeLevelLabels": [],
-        "forbiddenAlternatives": [
-          "集团成员管理",
-          "集团节点用户"
-        ]
+        "forbiddenAlternatives": ["集团成员管理", "集团节点用户"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "requiredDataNodeType": "NONE",
         "userManagementTargetOrganizationType": "GROUP"
       }
@@ -675,20 +646,12 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区"
-        ],
-        "forbiddenAlternatives": [
-          "大区成员管理",
-          "大区节点用户"
-        ]
+        "cascadeLevelLabels": ["大区"],
+        "forbiddenAlternatives": ["大区成员管理", "大区节点用户"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "requiredDataNodeType": "REGION",
         "userManagementTargetOrganizationType": "REGION"
       }
@@ -712,23 +675,12 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区",
-          "项目"
-        ],
-        "forbiddenAlternatives": [
-          "项目成员管理",
-          "门店用户管理",
-          "项目节点用户"
-        ]
+        "cascadeLevelLabels": ["大区", "项目"],
+        "forbiddenAlternatives": ["项目成员管理", "门店用户管理", "项目节点用户"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "requiredDataNodeType": "PROJECT",
         "userManagementTargetOrganizationType": "PROJECT"
       }
@@ -753,17 +705,11 @@
         "noDataNodePrompt": "请选择总公司",
         "noCandidatePrompt": "当前运营角色没有可选择的总公司",
         "cascadeLevelLabels": ["总公司"],
-        "forbiddenAlternatives": [
-          "总公司成员管理",
-          "总公司节点用户"
-        ]
+        "forbiddenAlternatives": ["总公司成员管理", "总公司节点用户"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "requiredDataNodeType": "HEAD_COMPANY",
         "userManagementTargetOrganizationType": "HEAD_COMPANY"
       }
@@ -787,24 +733,12 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区",
-          "项目",
-          "门店"
-        ],
-        "forbiddenAlternatives": [
-          "门店成员管理",
-          "门店节点用户"
-        ]
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["门店成员管理", "门店节点用户"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT",
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "requiredDataNodeType": "STORE",
         "userManagementTargetOrganizationType": "STORE"
       }
@@ -828,21 +762,68 @@
         "dataNodeCascaderLabel": "可视数据节点",
         "noDataNodePrompt": "请选择可视数据节点",
         "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
-        "cascadeLevelLabels": [
-          "大区",
-          "项目",
-          "门店"
-        ],
-        "forbiddenAlternatives": [
-          "门店档案节点",
-          "门店配置"
-        ]
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["门店档案节点", "门店配置"]
       },
       "pageAccess": {
         "pageAccessManaged": true,
-        "grantableRoleNodeTypes": [
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["STORE"],
+        "requiredDataNodeType": "STORE"
+      }
+    },
+    {
+      "key": "PG-BUSINESS-CHANNEL-PROJECT",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "项目经营渠道管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-BUSINESS-CHANNEL",
+        "order": 320
+      },
+      "experience": {
+        "pageDescription": "在项目数据节点维护渠道模板与项目经营渠道。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["项目节点渠道", "门店经营渠道"]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
+        "requiredDataNodeType": "PROJECT"
+      }
+    },
+    {
+      "key": "PG-BUSINESS-CHANNEL-STORE",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店经营渠道管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-BUSINESS-CHANNEL",
+        "order": 340
+      },
+      "experience": {
+        "pageDescription": "在门店数据节点维护门店主体经营渠道。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["门店节点渠道", "项目模板管理"]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "requiredDataNodeType": "STORE"
       }
     },
@@ -919,9 +900,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "GROUP_VISIBLE"
       }
     },
@@ -935,9 +914,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "GROUP_VISIBLE"
       }
     },
@@ -951,9 +928,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "GROUP_VISIBLE"
       }
     },
@@ -967,10 +942,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "scopeApplicability": "VISIBLE_REGION"
       }
     },
@@ -984,10 +956,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "scopeApplicability": "VISIBLE_REGION"
       }
     },
@@ -1001,10 +970,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "scopeApplicability": "VISIBLE_REGION"
       }
     },
@@ -1018,11 +984,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "VISIBLE_PROJECT"
       }
     },
@@ -1036,11 +998,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-STRUCTURE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "VISIBLE_PROJECT"
       }
     },
@@ -1054,9 +1012,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-BRAND",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1070,9 +1026,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-BRAND",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1086,9 +1040,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-BRAND",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1102,9 +1054,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-TENANT",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1118,9 +1068,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-TENANT",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1134,9 +1082,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-TENANT",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1150,10 +1096,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1167,10 +1110,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1184,10 +1124,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1201,10 +1138,7 @@
       "action": {
         "groupKey": "ORGANIZATION_MANAGEMENT",
         "targetPageKey": "PG-ORG-HEAD-COMPANY",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "NONE"
       }
     },
@@ -1218,11 +1152,7 @@
       "action": {
         "groupKey": "STORE_MANAGEMENT",
         "targetPageKey": "PG-ORG-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
     },
@@ -1236,11 +1166,7 @@
       "action": {
         "groupKey": "STORE_MANAGEMENT",
         "targetPageKey": "PG-ORG-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
     },
@@ -1254,11 +1180,7 @@
       "action": {
         "groupKey": "STORE_MANAGEMENT",
         "targetPageKey": "PG-ORG-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
     },
@@ -1272,9 +1194,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-GROUP-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE",
         "userManagement": {
           "targetOrganizationType": "GROUP",
@@ -1292,10 +1212,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-REGION-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "scopeApplicability": "SELECTED_REGION_SCOPE",
         "userManagement": {
           "targetOrganizationType": "REGION",
@@ -1313,11 +1230,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-PROJECT-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE",
         "userManagement": {
           "targetOrganizationType": "PROJECT",
@@ -1335,10 +1248,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-HEAD-COMPANY-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "HEAD_COMPANY_TARGET",
         "userManagement": {
           "targetOrganizationType": "HEAD_COMPANY",
@@ -1356,12 +1266,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-STORE-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT",
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE",
         "userManagement": {
           "targetOrganizationType": "STORE",
@@ -1379,9 +1284,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-GROUP-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP"
-        ],
+        "grantableRoleNodeTypes": ["GROUP"],
         "scopeApplicability": "NONE",
         "userManagement": {
           "targetOrganizationType": "GROUP",
@@ -1399,10 +1302,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-REGION-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION"],
         "scopeApplicability": "SELECTED_REGION_SCOPE",
         "userManagement": {
           "targetOrganizationType": "REGION",
@@ -1420,11 +1320,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-PROJECT-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE",
         "userManagement": {
           "targetOrganizationType": "PROJECT",
@@ -1442,10 +1338,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-HEAD-COMPANY-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "HEAD_COMPANY_TARGET",
         "userManagement": {
           "targetOrganizationType": "HEAD_COMPANY",
@@ -1463,12 +1356,7 @@
       "action": {
         "groupKey": "USER_MANAGEMENT",
         "targetPageKey": "PG-IAM-STORE-USERS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT",
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE",
         "userManagement": {
           "targetOrganizationType": "STORE",
@@ -1486,11 +1374,7 @@
       "action": {
         "groupKey": "STORE_CONTRACT_MANAGEMENT",
         "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
     },
@@ -1504,11 +1388,7 @@
       "action": {
         "groupKey": "STORE_CONTRACT_MANAGEMENT",
         "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
     },
@@ -1522,12 +1402,36 @@
       "action": {
         "groupKey": "STORE_CONTRACT_MANAGEMENT",
         "targetPageKey": "PG-CONTRACT-STORE-MANAGE",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑项目经营渠道"
+      },
+      "action": {
+        "groupKey": "BUSINESS_CHANNEL_MANAGEMENT",
+        "targetPageKey": "PG-BUSINESS-CHANNEL-PROJECT",
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT"],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
+    },
+    {
+      "key": "BC-BUSINESS-CHANNEL-STORE-EDIT",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店经营渠道"
+      },
+      "action": {
+        "groupKey": "BUSINESS_CHANNEL_MANAGEMENT",
+        "targetPageKey": "PG-BUSINESS-CHANNEL-STORE",
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
+        "scopeApplicability": "SELECTED_STORE_SCOPE"
       }
     },
     {
@@ -1540,10 +1444,7 @@
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-CATALOG-BRAND-ITEMS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "HEAD_COMPANY"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "HEAD_COMPANY"],
         "scopeApplicability": "SELECTED_HEAD_COMPANY_SCOPE"
       }
     },
@@ -1557,12 +1458,7 @@
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-CATALOG-STORE-ITEMS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT",
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE"
       }
     },
@@ -1576,12 +1472,7 @@
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-INVENTORY-STORE-STATUS",
-        "grantableRoleNodeTypes": [
-          "GROUP",
-          "REGION",
-          "PROJECT",
-          "STORE"
-        ],
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE"
       }
     }

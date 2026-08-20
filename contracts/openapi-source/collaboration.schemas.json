@@ -1,0 +1,565 @@
+{
+  "components": {
+    "schemas": {
+      "ExternalCapability": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capabilityClass",
+          "displayName",
+          "attributeValueLabels",
+          "attributeValues"
+        ],
+        "properties": {
+          "capabilityClass": {
+            "type": "string",
+            "enum": [
+              "MASTER_DATA_SYNC",
+              "MEMBER_BENEFIT",
+              "GROUP_BUY",
+              "TAKEAWAY",
+              "INVENTORY_SYNC",
+              "TAKEAWAY_DELIVERY",
+              "ORDER_SYNC"
+            ]
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attributeValueLabels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "attributeValues": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Capability values are JSON facts; descriptor metadata remains separate."
+          }
+        }
+      },
+      "ExternalCapabilityAttributeDescriptor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fieldKey",
+          "label",
+          "helpText",
+          "controlKind",
+          "optionSourceRef"
+        ],
+        "properties": {
+          "fieldKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "helpText": {
+            "type": "string"
+          },
+          "controlKind": {
+            "type": "string",
+            "enum": [
+              "readonlySummary",
+              "readonlyPreview"
+            ]
+          },
+          "optionSourceRef": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ExternalSystemView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "externalSystemCode",
+          "displayName",
+          "catalogStatus",
+          "catalogStatusDisplayName",
+          "attributeDictionary",
+          "capabilities",
+          "enablementStatus",
+          "version"
+        ],
+        "properties": {
+          "externalSystemCode": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "catalogStatus": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "AVAILABLE"
+            ]
+          },
+          "catalogStatusDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attributeDictionary": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalCapabilityAttributeDescriptor"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalCapability"
+            }
+          },
+          "enablementStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProviderProfileView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "providerCode",
+          "displayName",
+          "externalSystemCode",
+          "externalSystemDisplayName",
+          "businessScope",
+          "businessScopeDisplayNames",
+          "bindableNodeTypes",
+          "bindableNodeTypeDisplayNames",
+          "authenticationKind",
+          "authenticationKindDisplayName",
+          "unbindKind",
+          "unbindKindDisplayName",
+          "catalogStatus",
+          "catalogStatusDisplayName",
+          "enablementStatus",
+          "version"
+        ],
+        "properties": {
+          "providerCode": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "externalSystemCode": {
+            "type": "string"
+          },
+          "externalSystemDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "businessScope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "businessScopeDisplayNames": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "bindableNodeTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bindableNodeTypeDisplayNames": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "authenticationKind": {
+            "type": "string",
+            "enum": [
+              "EXTERNAL_GRANT",
+              "INTERNAL_MAPPING",
+              "NO_MAPPING"
+            ]
+          },
+          "authenticationKindDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unbindKind": {
+            "type": "string",
+            "enum": [
+              "LOCAL_ONLY",
+              "REQUIRES_ADAPTER_UNBIND"
+            ]
+          },
+          "unbindKindDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "catalogStatus": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "AVAILABLE"
+            ]
+          },
+          "catalogStatusDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "enablementStatus": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ExternalCollaborationTree": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "externalSystems",
+          "providerProfiles"
+        ],
+        "properties": {
+          "externalSystems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalSystemView"
+            }
+          },
+          "providerProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderProfileView"
+            }
+          }
+        }
+      },
+      "ExternalSystemStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProviderProfileStatusRequest": {
+        "$ref": "#/components/schemas/ExternalSystemStatusRequest"
+      },
+      "OwnerBindingCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "providerCode",
+          "nodeType",
+          "nodeRef"
+        ],
+        "properties": {
+          "providerCode": {
+            "type": "string"
+          },
+          "capabilityClass": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nodeType": {
+            "type": "string"
+          },
+          "nodeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bindingDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalOwnerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OwnerBindingUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bindingDisplayName",
+          "expectedVersion"
+        ],
+        "properties": {
+          "bindingDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalOwnerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OwnerBindingView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bindingRef",
+          "providerCode",
+          "providerDisplayName",
+          "capabilityClassDisplayName",
+          "businessScopeDisplayNames",
+          "nodeType",
+          "nodeTypeDisplayName",
+          "nodeRef",
+          "boundAt",
+          "statusChangedAt",
+          "status",
+          "statusDisplayName",
+          "version"
+        ],
+        "properties": {
+          "bindingRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerCode": {
+            "type": "string"
+          },
+          "providerDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capabilityClass": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "capabilityClassDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "businessScopeDisplayNames": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "nodeType": {
+            "type": "string"
+          },
+          "nodeTypeDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nodeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nodeDisplayPath": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bindingDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalOwnerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "boundAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statusChangedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_AUTHORIZATION",
+              "EFFECTIVE",
+              "INVALID",
+              "DELETED"
+            ]
+          },
+          "statusDisplayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OwnerBindingPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata",
+          "items"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bindingName",
+              "nodeQueryText",
+              "sortKey",
+              "sortDirection",
+              "page",
+              "pageSize",
+              "total"
+            ],
+            "properties": {
+              "bindingName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              },
+              "nodeQueryText": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              },
+              "sortKey": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "BINDING_NAME",
+                  "NODE",
+                  "BUSINESS",
+                  "EXTERNAL_OWNER_ID",
+                  "STATUS",
+                  null
+                ]
+              },
+              "sortDirection": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "ASC",
+                  "DESC",
+                  null
+                ]
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerBindingView"
+            }
+          }
+        }
+      },
+      "CapabilityDictionary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "externalSystems",
+          "providerProfiles"
+        ],
+        "properties": {
+          "externalSystems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalSystemView"
+            }
+          },
+          "providerProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderProfileView"
+            }
+          }
+        }
+      }
+    }
+  }
+}

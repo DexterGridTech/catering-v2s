@@ -4,6 +4,7 @@ import {
   adminDrawerSurfaceProps,
   NameCodeText,
   testId,
+  ValidityStatus,
   useDetailDrawer,
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
@@ -116,7 +117,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
                 label: '起止日期',
                 children: `${selected.effectiveFrom} 至 ${selected.effectiveTo ?? '长期'}`,
               },
-              {key: 'status', label: '状态', children: selected.status === 'VALID' ? '有效' : '已作废'},
+              {key: 'status', label: '状态', children: <ValidityStatus status={selected.status} />},
               {key: 'note', label: '备注', children: selected.note ?? '—'},
               {key: 'updatedAt', label: '更新时间', children: new Date(selected.updatedAt).toLocaleString('zh-CN')},
               ...extensionItems,

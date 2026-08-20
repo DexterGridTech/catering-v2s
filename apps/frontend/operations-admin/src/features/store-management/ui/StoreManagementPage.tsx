@@ -3,10 +3,12 @@ import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
   contextScopedQueryArgs,
+  createPageQueryIdentity,
   NameCodeText,
   testId,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
@@ -16,6 +18,7 @@ import type {
   OrganizationStoreSortKey,
   OrganizationStoreStatus,
 } from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
@@ -33,8 +36,6 @@ const storePageTitle = page?.pageTitle;
 if (!storePageTitle) throw new Error('ADMIN_CATALOG_STORE_PAGE_MISSING');
 
 export function StoreManagementPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
-  const [current, setCurrent] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<StoreFilters>({});
   const [sort, setSort] = useState<OrganizationStoreSortKey>('UPDATED_AT');
   const [direction, setDirection] = useState<OrganizationStoreSortDirection>('DESC');
@@ -47,13 +48,29 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
   useOverlayLock(Boolean(statusTarget));
   const context = contextScopedQueryArgs({}, queryContext);
   const scopeReady = Boolean(queryContext.scopeRef);
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.getOperationsOrganizationStores,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: queryContext.scopeRef,
+        },
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, queryContext, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const listRequest = useMemo(
     () =>
       operationsAdminRtkRequest.getOperationsOrganizationStores(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {query: {...context, ...filters, sort, direction, page: current, pageSize}},
+        {query: {...context, ...filters, sort, direction, page: pagination.page, pageSize: pagination.pageSize}},
       ),
-    [context, current, direction, filters, pageSize, queryContext.groupWorkspaceKey, sort],
+    [context, direction, filters, pagination.page, pagination.pageSize, queryContext.groupWorkspaceKey, sort],
   );
   const list = operationsRtk.useGetOperationsOrganizationStoresQuery(listRequest, {skip: !scopeReady});
   const openDetail = useCallback(
@@ -140,7 +157,7 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
               onClick={() => {
                 searchConfig.form?.resetFields();
                 setFilters({});
-                setCurrent(1);
+                pagination.setPage(1);
               }}
               {...testId('operations-store-filter-reset')}
             >
@@ -154,7 +171,7 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
             code: value.code?.trim() || undefined,
             status: value.status,
           });
-          setCurrent(1);
+          pagination.setPage(1);
         }}
         options={false}
         {...adminListState({
@@ -179,11 +196,11 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
               ]
             : []
         }
-        pagination={{current, pageSize, total: list.currentData?.metadata.total ?? 0, showSizeChanger: true}}
-        onChange={(pagination, _, sorter, extra) => {
+        pagination={{current: page, pageSize, total: list.currentData?.metadata.total ?? 0, showSizeChanger: true}}
+        onChange={(tablePagination, _, sorter, extra) => {
           if (extra.action === 'paginate') {
-            setCurrent(pagination.current ?? current);
-            setPageSize(pagination.pageSize ?? pageSize);
+            pagination.setPage(tablePagination.current ?? page);
+            pagination.setPageSize(tablePagination.pageSize ?? pageSize);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -197,7 +214,7 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
             currentSorter?.columnKey === 'name' ? 'NAME' : currentSorter?.columnKey === 'code' ? 'CODE' : 'UPDATED_AT';
           setSort(nextSort);
           setDirection(currentSorter.order === 'ascend' ? 'ASC' : 'DESC');
-          setCurrent(1);
+          pagination.setPage(1);
         }}
         {...testId('operations-store-table')}
       />

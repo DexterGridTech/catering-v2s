@@ -4,9 +4,11 @@ import {
   adminListState,
   contextScopedQueryArgs,
   createContentIdempotencyKey,
+  createPageQueryIdentity,
   testId,
   useCursorCandidates,
   useDetailDrawer,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ApiFailure, operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -121,8 +123,6 @@ export function WorkspaceUserPage({
   const userManagement = userManagementFor(pageDesignKey);
   const targetType = userManagement.targetOrganizationType;
   const canRevoke = actionCapabilityKeys.includes(userManagement.roleRevokeActionKey);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<WorkspaceUserSortKey>('LOGIN_NAME');
   const [direction, setDirection] = useState<SortDirection>('ASC');
   const [filters, setFilters] = useState<UserFilters>({});
@@ -138,6 +138,25 @@ export function WorkspaceUserPage({
   // GROUP is the sole aggregate page.  A head-company page is a selected,
   // exact data-node context just like region/project/store pages.
   const requestScopeRef = targetType === 'GROUP' ? undefined : queryContext.scopeRef;
+  const targetOperationPart =
+    targetType === 'HEAD_COMPANY' ? 'HeadCompany' : `${targetType[0]}${targetType.slice(1).toLowerCase()}`;
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: `getOperationsWorkspace${targetOperationPart}User`,
+        scope: {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          expectedContextVersion: queryContext.expectedContextVersion,
+          scopeRef: requestScopeRef,
+          targetType,
+        },
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, queryContext, requestScopeRef, sort, targetOperationPart, targetType],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
 
   const scopedQuery = useMemo(() => {
     const scoped = contextScopedQueryArgs(
@@ -381,7 +400,7 @@ export function WorkspaceUserPage({
 
   function submitFilters(next: UserFilters) {
     setFilters(next);
-    setPage(1);
+    pagination.setPage(1);
   }
 
   async function confirmRevoke() {
@@ -427,7 +446,7 @@ export function WorkspaceUserPage({
               onClick={() => {
                 searchConfig.form?.resetFields();
                 setFilters({});
-                setPage(1);
+                pagination.setPage(1);
               }}
               {...testId('operations-workspace-user-filter-reset')}
             >
@@ -453,10 +472,10 @@ export function WorkspaceUserPage({
         })}
         dataSource={result?.items ?? []}
         columns={columns}
-        onChange={(pagination, _, nextSorter, extra) => {
+        onChange={(tablePagination, _, nextSorter, extra) => {
           if (extra.action === 'paginate') {
-            setPage(pagination.current ?? page);
-            setPageSize(pagination.pageSize ?? pageSize);
+            pagination.setPage(tablePagination.current ?? page);
+            pagination.setPageSize(tablePagination.pageSize ?? pageSize);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -468,7 +487,7 @@ export function WorkspaceUserPage({
           }
           setSort(sorter.columnKey === 'displayName' ? 'DISPLAY_NAME' : 'LOGIN_NAME');
           setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
-          setPage(1);
+          pagination.setPage(1);
         }}
         pagination={{
           current: page,

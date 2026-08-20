@@ -8,6 +8,7 @@ import {
 import {
   abortPlatformRequests,
   platformApi,
+  platformContentTabRefreshSignal,
   platformRefreshSignal,
   registerPlatformUnauthorizedRecovery,
 } from './PlatformApi';
@@ -80,6 +81,7 @@ export function clearPlatformTransportState() {
 /** Refreshes active page queries without remounting their filters or pagination state. */
 export function refreshPlatformCurrentPage() {
   platformStore.dispatch(platformApi.util.invalidateTags([{type: 'wire', id: 'LIST'}]));
+  platformContentTabRefreshSignal.publish();
 }
 
 export function registerPlatformSessionRecovery(recovery: () => void | Promise<void>) {
@@ -89,7 +91,7 @@ export function registerPlatformSessionRecovery(recovery: () => void | Promise<v
 /** The app shell observes render failures through the transport boundary. */
 export {recordPlatformRenderError} from './PlatformApi';
 
-export {platformRefreshSignal};
+export {platformContentTabRefreshSignal, platformRefreshSignal};
 /** Feature-facing generated RTK hooks stay behind the app transport boundary. */
 export const platformRtk = platformApi;
 

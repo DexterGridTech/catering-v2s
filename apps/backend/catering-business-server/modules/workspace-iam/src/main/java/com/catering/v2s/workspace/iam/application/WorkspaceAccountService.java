@@ -69,18 +69,6 @@ public class WorkspaceAccountService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkspaceAccountReadback> list(UUID workspaceUuid, String key) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, "
-                        + "display_name, status, version FROM workspace_iam.workspace_account WHERE workspace_uuid=? "
-                        + "AND "
-                        + "group_workspace_key=? ORDER BY login_name_normalized",
-                (row, index) -> readback(row),
-                workspaceUuid,
-                key);
-    }
-
-    @Transactional(readOnly = true)
     public WorkspaceAccountReadback require(UUID workspaceUuid, String key, UUID accountId) {
         return jdbc.query(
                 "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, login_name_normalized, "

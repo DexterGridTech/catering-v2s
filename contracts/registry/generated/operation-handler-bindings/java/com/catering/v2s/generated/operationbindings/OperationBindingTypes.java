@@ -40,7 +40,18 @@ public final class OperationBindingTypes {
     public record BrandCreateRequest() {}
     public record BrandPage() {}
     public record BrandUpdateRequest() {}
+    public record BusinessChannelCreateRequest() {}
+    public record BusinessChannelPage() {}
+    public record BusinessChannelStatusRequest() {}
+    public record BusinessChannelTemplateCreateRequest() {}
+    public record BusinessChannelTemplatePage() {}
+    public record BusinessChannelTemplateStatusRequest() {}
+    public record BusinessChannelTemplateUpdateRequest() {}
+    public record BusinessChannelTemplateView() {}
+    public record BusinessChannelUpdateRequest() {}
+    public record BusinessChannelView() {}
     public record BusinessEntityStatusRequest() {}
+    public record CapabilityDictionary() {}
     public record CatalogAssetReleaseReadback() {}
     public record CatalogAssetReleaseRequest() {}
     public record CatalogAssetStageRequest() {}
@@ -82,6 +93,10 @@ public final class OperationBindingTypes {
     public record ExtensionDefinition() {}
     public record ExtensionDefinitionUpdateRequest() {}
     public record ExtensionEntityCatalogPage() {}
+    public record ExternalCollaborationTree() {}
+    public record ExternalProviderCandidatePage() {}
+    public record ExternalSystemStatusRequest() {}
+    public record ExternalSystemView() {}
     public record GroupWorkspaceCreateRequest() {}
     public record GroupWorkspaceCreateResult() {}
     public record GroupWorkspaceDetail() {}
@@ -140,11 +155,14 @@ public final class OperationBindingTypes {
     public record OrganizationOverviewPage() {}
     public record OrganizationProjectCreateRequest() {}
     public record OrganizationStore() {}
-    public record OrganizationStoreCandidatePage() {}
     public record OrganizationStoreCreateRequest() {}
     public record OrganizationStorePage() {}
     public record OrganizationStoreStatusRequest() {}
     public record OrganizationStoreUpdateRequest() {}
+    public record OwnerBindingCreateRequest() {}
+    public record OwnerBindingPage() {}
+    public record OwnerBindingUpdateRequest() {}
+    public record OwnerBindingView() {}
     public record PlatformAdminCreateRequest() {}
     public record PlatformAdminCredentialResetRequest() {}
     public record PlatformAdminDetail() {}
@@ -174,6 +192,7 @@ public final class OperationBindingTypes {
     public record ProductionTagReadback() {}
     public record ProductionTagTransitionRequest() {}
     public record ProductionTagUpdateRequest() {}
+    public record ProviderProfileView() {}
     public record PublicAssetReference() {}
     public record PublicInvitationAcceptIntent() {}
     public record PublicInvitationCompletion() {}

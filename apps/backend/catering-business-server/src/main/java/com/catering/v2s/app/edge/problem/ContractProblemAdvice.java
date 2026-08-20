@@ -3,7 +3,9 @@ package com.catering.v2s.app.edge.problem;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticRequestState;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
+import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.contract.application.ContractCommandReceiptService;
 import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
@@ -126,6 +128,26 @@ public final class ContractProblemAdvice {
             }
             default -> "商品、生产标签或库存操作不满足 owner 约束";
         };
+    }
+
+    @ExceptionHandler(CollaborationCommandApi.Problem.class)
+    ResponseEntity<Problem> collaborationProblem(
+            CollaborationCommandApi.Problem exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.valueOf(exception.status()),
+                exception.code(),
+                "collaboration owner rejected request",
+                request);
+    }
+
+    @ExceptionHandler(BusinessChannelCommandApi.Problem.class)
+    ResponseEntity<Problem> businessChannelProblem(
+            BusinessChannelCommandApi.Problem exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.valueOf(exception.status()),
+                exception.code(),
+                "business-channel owner rejected request",
+                request);
     }
 
     @ExceptionHandler(PlatformAssetService.AssetOwnerScopeForbiddenException.class)

@@ -2,21 +2,26 @@ import {ProTable} from '@ant-design/pro-components';
 import {Alert, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
+  createPageQueryIdentity,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {
   type SortDirection,
   type WorkspaceRole,
   type WorkspaceRoleSortKey,
 } from '../../../app/api/generated/platform-edge';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {
   platformClient,
+  platformContentTabRefreshSignal,
   platformProblemOf,
   platformRtk,
   type PlatformApiProblem,
@@ -37,8 +42,6 @@ export function RolesPage() {
 }
 
 function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<WorkspaceRoleSortKey>('NAME');
   const [direction, setDirection] = useState<SortDirection>('ASC');
   const [filters, setFilters] = useState<{
@@ -46,6 +49,18 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
     organizationType?: WorkspaceRole['serviceNodeType'];
     status?: WorkspaceRole['status'];
   }>({});
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getWorkspaceRoles,
+        scope: {groupWorkspaceKey},
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, groupWorkspaceKey, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<WorkspaceRole>();
   const [statusRole, setStatusRole] = useState<WorkspaceRole>();
@@ -57,6 +72,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
   const pendingActionRef = useRef<typeof pendingAction>(undefined);
   pendingActionRef.current = pendingAction;
   const detailGeneration = useAsyncGenerationGuard();
+  const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   useOverlayLock(detail.isOpen || createOpen || Boolean(editing) || Boolean(statusRole) || Boolean(auditTarget));
   const listRequest = useMemo(
     () =>
@@ -89,6 +105,11 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
     detailGeneration.invalidate();
     detail.close();
   }, [detail, detailGeneration]);
+
+  useEffect(() => {
+    if (contentTabRefreshVersion === 0 || !detail.isOpen || !detail.target?.id) return;
+    void loadDetail(detail.target.id);
+  }, [contentTabRefreshVersion, detail.isOpen, detail.target?.id, loadDetail]);
   const submitStatus = async (idempotencyKey: string) => {
     if (!statusRole) return;
     const role = statusRole;
@@ -177,7 +198,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
                 onClick={() => {
                   searchConfig.form?.resetFields();
                   setFilters({});
-                  setPage(1);
+                  pagination.setPage(1);
                 }}
                 {...testId('workspace-role-filter-reset')}
               >
@@ -186,14 +207,18 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
             ],
           }}
           onSubmit={value => {
-            setPage(1);
+            pagination.setPage(1);
             setFilters({
               name: value.name?.trim() || undefined,
               organizationType: value.organizationType,
               status: value.status,
             });
           }}
-          pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
+          pagination={
+            result
+              ? {current: pagination.page, pageSize: pagination.pageSize, total: result.total, showSizeChanger: true}
+              : false
+          }
           columns={[
             {
               key: 'name',
@@ -243,10 +268,10 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
               search: false,
             },
           ]}
-          onChange={(pagination, _, sorter, extra) => {
+          onChange={(tablePagination, _, sorter, extra) => {
             if (extra.action === 'paginate') {
-              setPage(pagination.current ?? page);
-              setPageSize(pagination.pageSize ?? pageSize);
+              if (tablePagination.pageSize !== pageSize) pagination.setPageSize(tablePagination.pageSize ?? pageSize);
+              else pagination.setPage(tablePagination.current ?? page);
               return;
             }
             if (extra.action !== 'sort') return;
@@ -258,7 +283,7 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
             }
             setSort(current?.columnKey === 'name' ? 'NAME' : 'UPDATED_AT');
             setDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-            setPage(1);
+            pagination.setPage(1);
           }}
         />
       </div>

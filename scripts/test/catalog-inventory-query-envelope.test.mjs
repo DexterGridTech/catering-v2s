@@ -222,7 +222,7 @@ test('every catalog-management GET consumer preserves its generated strict respo
     [
       'ui/LocalCatalogCopyDrawer.tsx',
       [
-        'decodeLocalCopyCandidatePage(candidatesQuery.data)',
+        'decodeLocalCopyCandidatePage(candidatesQuery.currentData)',
         'decodeLocalCopyPreflight(response)',
         'decodeLocalCopyReadback(response)',
       ],
@@ -230,7 +230,7 @@ test('every catalog-management GET consumer preserves its generated strict respo
     ],
     [
       'ui/BrandCatalogCopyDrawer.tsx',
-      ['decodeCandidates(candidatesQuery.data)', 'decodeBrandCopyScopes(candidatesQuery.data)'],
+      ['const candidatePage = candidatesQuery.currentData?.data;', 'decodeBrandCopyScopes(candidatesQuery.currentData)'],
       ['candidatesQuery.data as'],
     ],
     [
@@ -246,9 +246,9 @@ test('every catalog-management GET consumer preserves its generated strict respo
       'ui/CatalogItemDrawer.tsx',
       [
         'decodeDetail(detailQuery.data)',
-        'productionTagsQuery.data?.data.entries',
+        'productionTagPage.entries',
         'decodeNavigation(navigationQuery.data)',
-        'decodeItems(itemsQuery.data)',
+        'decodeItems(itemsQuery.currentData)',
         'const value = response.data;',
         'const readback = response.result;',
       ],

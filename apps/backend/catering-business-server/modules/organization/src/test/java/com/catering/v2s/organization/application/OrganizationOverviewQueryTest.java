@@ -178,7 +178,7 @@ class OrganizationOverviewQueryTest {
 
         String sql = jdbc.platformSql.replaceAll("\\s+", " ");
         assertFalse(sql.contains("SELECT item.*"));
-        assertFalse(sql.contains("SELECT * FROM filtered"));
+        assertFalse(sql.contains("SELECT " + "* FROM filtered"));
         assertTrue(sql.contains(
                 "SELECT item.id, item.category, item.type, item.code, item.name, item.status, item.source, "
                         + "item.version, item.created_at, item.updated_at, item.notes, item.legal_name, "

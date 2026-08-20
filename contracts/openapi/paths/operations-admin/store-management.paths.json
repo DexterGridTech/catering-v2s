@@ -40,8 +40,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -50,8 +50,8 @@
             }
           },
           {
-            "name": "name",
             "in": "query",
+            "name": "name",
             "required": false,
             "schema": {
               "type": "string",
@@ -59,8 +59,8 @@
             }
           },
           {
-            "name": "code",
             "in": "query",
+            "name": "code",
             "required": false,
             "schema": {
               "type": "string",
@@ -68,32 +68,32 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationStoreStatus"
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationStoreSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationStoreSortDirection"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -101,8 +101,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -291,8 +291,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -301,16 +301,16 @@
             }
           },
           {
-            "name": "subjectType",
             "in": "query",
+            "name": "subjectType",
             "required": true,
             "schema": {
               "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationCandidateQuerySubjectType"
             }
           },
           {
-            "name": "candidateUsage",
             "in": "query",
+            "name": "candidateUsage",
             "required": false,
             "schema": {
               "type": "string",
@@ -321,8 +321,8 @@
             }
           },
           {
-            "name": "queryText",
             "in": "query",
+            "name": "queryText",
             "required": false,
             "schema": {
               "type": "string",
@@ -330,8 +330,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -340,8 +340,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -351,8 +351,8 @@
             }
           },
           {
+            "in": "query",
             "name": "selectedId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -360,8 +360,8 @@
             }
           },
           {
+            "in": "query",
             "name": "projectId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -369,8 +369,8 @@
             }
           },
           {
+            "in": "query",
             "name": "brandId",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -378,8 +378,8 @@
             }
           },
           {
-            "name": "tenantId",
             "in": "query",
+            "name": "tenantId",
             "required": false,
             "schema": {
               "type": "string",
@@ -394,111 +394,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationCandidatePage"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "401": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "403": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "404": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "409": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "429": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          },
-          "500": {
-            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
-          }
-        }
-      }
-    },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates": {
-      "get": {
-        "operationId": "getOperationsOrganizationStoreCandidates",
-        "tags": [
-          "organization"
-        ],
-        "x-consumer-faces": [
-          "operations-admin"
-        ],
-        "x-owner-module": "organization",
-        "x-scenario-ids": [
-          "D02-S04",
-          "D01-S07O"
-        ],
-        "x-page-key": "OPERATIONS-STORE-MANAGEMENT",
-        "x-idempotency-policy": "FORBIDDEN",
-        "x-error-codes": [
-          "PLATFORM_COMMON_ACCESS_DENIED",
-          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
-          "PLATFORM_COMMON_CONTEXT_STALE",
-          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
-          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
-        ],
-        "security": [
-          {
-            "operationsSessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "groupWorkspaceKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
-          },
-          {
-            "name": "expectedContextVersion",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "brandId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "tenantId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Owner readback",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "../../components/organization/store.schemas.json#/components/schemas/OrganizationStoreCandidatePage"
                 }
               }
             }
@@ -567,8 +462,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -662,8 +557,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",

@@ -329,9 +329,6 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates": {
       "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1candidates"
     },
-    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates": {
-      "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1candidates"
-    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition": {
       "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1extension-definition"
     },
@@ -397,6 +394,66 @@
     },
     "/api/public/operations-workspaces/{groupWorkspaceKey}/password-recovery/complete": {
       "$ref": "./paths/public/access-recovery.paths.json#/paths/~1api~1public~1operations-workspaces~1{groupWorkspaceKey}~1password-recovery~1complete"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1external-collaboration"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1external-systems~1{externalSystemCode}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1external-systems~1{externalSystemCode}~1status"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}~1status"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1provider-profiles~1{providerCode}~1owner-bindings"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings~1{bindingRef}"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1owner-bindings"
+    },
+    "/api/platform/external-capability-dictionary": {
+      "$ref": "./paths/platform-admin/external-collaboration.paths.json#/paths/~1api~1platform~1external-capability-dictionary"
+    },
+    "/api/operations/external-capability-dictionary": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1external-capability-dictionary"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1external-provider-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}~1owner-binding"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-templates~1{templateRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channel-template-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}": {
+      "$ref": "./paths/operations-admin/business-channel.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1business-channels~1{channelRef}"
     }
   },
   "components": {
@@ -695,9 +752,6 @@
       "OrganizationCandidateQuerySubjectType": {
         "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationCandidateQuerySubjectType"
       },
-      "OrganizationStoreCandidatePage": {
-        "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationStoreCandidatePage"
-      },
       "OrganizationStoreCreateRequest": {
         "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationStoreCreateRequest"
       },
@@ -937,6 +991,78 @@
       },
       "NoContent": {
         "$ref": "./components/common/empty.schemas.json#/components/schemas/NoContent"
+      },
+      "ExternalCapability": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalCapability"
+      },
+      "ExternalCapabilityAttributeDescriptor": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalCapabilityAttributeDescriptor"
+      },
+      "ExternalSystemView": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalSystemView"
+      },
+      "ProviderProfileView": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ProviderProfileView"
+      },
+      "ExternalCollaborationTree": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalCollaborationTree"
+      },
+      "ExternalSystemStatusRequest": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ExternalSystemStatusRequest"
+      },
+      "ProviderProfileStatusRequest": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/ProviderProfileStatusRequest"
+      },
+      "OwnerBindingCreateRequest": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingCreateRequest"
+      },
+      "OwnerBindingUpdateRequest": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingUpdateRequest"
+      },
+      "OwnerBindingView": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingView"
+      },
+      "OwnerBindingPage": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingPage"
+      },
+      "CapabilityDictionary": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/CapabilityDictionary"
+      },
+      "BusinessChannelTemplateCreateRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCreateRequest"
+      },
+      "BusinessChannelTemplateUpdateRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateUpdateRequest"
+      },
+      "BusinessChannelTemplateStatusRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateStatusRequest"
+      },
+      "BusinessChannelTemplateView": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateView"
+      },
+      "BusinessChannelTemplatePage": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplatePage"
+      },
+      "BusinessChannelTemplateCandidatePage": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelTemplateCandidatePage"
+      },
+      "BusinessChannelCreateRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelCreateRequest"
+      },
+      "BusinessChannelUpdateRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelUpdateRequest"
+      },
+      "BusinessChannelStatusRequest": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelStatusRequest"
+      },
+      "BusinessChannelView": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelView"
+      },
+      "BusinessChannelPage": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/BusinessChannelPage"
+      },
+      "ExternalProviderCandidatePage": {
+        "$ref": "./components/business-channel/business-channel.schemas.json#/components/schemas/ExternalProviderCandidatePage"
       },
       "EpochMillis": {
         "$ref": "./components/common/time.schemas.json#/components/schemas/EpochMillis"

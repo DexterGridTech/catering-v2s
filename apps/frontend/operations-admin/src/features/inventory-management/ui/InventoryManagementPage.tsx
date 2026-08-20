@@ -1,6 +1,13 @@
 import {Alert, Button, Select, Segmented, Space, Typography} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
-import {adminListState, NameCodeText, testId, useCursorStack, useDetailDrawer} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminListState,
+  CursorPagination,
+  NameCodeText,
+  testId,
+  useCursorStack,
+  useDetailDrawer,
+} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
@@ -350,23 +357,11 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
           pagination={false}
           {...testId('inventory-target-table')}
         />
-        <Space style={{display: 'flex', justifyContent: 'flex-end'}} {...testId('inventory-target-pagination')}>
-          <Button
-            disabled={!canPrevious}
-            onClick={() => goToPage(cursorPage - 1)}
-            {...testId('inventory-target-page-previous')}
-          >
-            上一页
-          </Button>
-          <Typography.Text type="secondary">第 {cursorPage} 页</Typography.Text>
-          <Button
-            disabled={!page?.cursor}
-            onClick={() => goToPage(cursorPage + 1, page?.cursor)}
-            {...testId('inventory-target-page-next')}
-          >
-            下一页
-          </Button>
-        </Space>
+        <CursorPagination
+          state={{page: cursorPage, canPrevious, goToPage}}
+          nextCursor={page?.cursor}
+          testIdPrefix="inventory-target-pagination"
+        />
       </Space>
       <InventoryDetailDrawer
         targetRef={detail.isOpen ? detail.target : undefined}

@@ -40,8 +40,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -50,8 +50,8 @@
             }
           },
           {
-            "name": "name",
             "in": "query",
+            "name": "name",
             "required": false,
             "schema": {
               "type": "string",
@@ -59,8 +59,8 @@
             }
           },
           {
-            "name": "code",
             "in": "query",
+            "name": "code",
             "required": false,
             "schema": {
               "type": "string",
@@ -68,8 +68,8 @@
             }
           },
           {
-            "name": "legalName",
             "in": "query",
+            "name": "legalName",
             "required": false,
             "schema": {
               "type": "string",
@@ -77,8 +77,8 @@
             }
           },
           {
-            "name": "unifiedSocialCreditCode",
             "in": "query",
+            "name": "unifiedSocialCreditCode",
             "required": false,
             "schema": {
               "type": "string",
@@ -86,32 +86,32 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/business-entity.schemas.json#/components/schemas/BusinessEntityStatus"
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/business-entity.schemas.json#/components/schemas/BusinessEntitySortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/organization/business-entity.schemas.json#/components/schemas/BusinessEntitySortDirection"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -119,8 +119,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -313,8 +313,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",

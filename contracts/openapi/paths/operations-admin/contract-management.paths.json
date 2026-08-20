@@ -39,8 +39,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -49,8 +49,8 @@
             }
           },
           {
-            "name": "storeId",
             "in": "query",
+            "name": "storeId",
             "required": false,
             "schema": {
               "type": "string",
@@ -58,8 +58,8 @@
             }
           },
           {
+            "in": "query",
             "name": "contractNo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -67,8 +67,8 @@
             }
           },
           {
+            "in": "query",
             "name": "phaseName",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -76,8 +76,8 @@
             }
           },
           {
-            "name": "tenantId",
             "in": "query",
+            "name": "tenantId",
             "required": false,
             "schema": {
               "type": "string",
@@ -85,8 +85,8 @@
             }
           },
           {
-            "name": "itemCode",
             "in": "query",
+            "name": "itemCode",
             "required": false,
             "schema": {
               "type": "string",
@@ -94,8 +94,8 @@
             }
           },
           {
+            "in": "query",
             "name": "dateFrom",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -103,8 +103,8 @@
             }
           },
           {
+            "in": "query",
             "name": "dateTo",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string",
@@ -112,32 +112,32 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractStatus"
             }
           },
           {
-            "name": "sort",
             "in": "query",
+            "name": "sort",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractSortKey"
             }
           },
           {
-            "name": "direction",
             "in": "query",
+            "name": "direction",
             "required": false,
             "schema": {
               "$ref": "../../components/contract/contract.schemas.json#/components/schemas/StoreContractSortDirection"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -145,8 +145,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -333,8 +333,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -418,8 +418,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",
@@ -428,8 +428,8 @@
             }
           },
           {
-            "name": "storeSearch",
             "in": "query",
+            "name": "storeSearch",
             "required": false,
             "schema": {
               "type": "string",
@@ -437,8 +437,8 @@
             }
           },
           {
-            "name": "selectedStoreId",
             "in": "query",
+            "name": "selectedStoreId",
             "required": false,
             "schema": {
               "type": "string",
@@ -447,8 +447,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -456,8 +456,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -550,8 +550,8 @@
             }
           },
           {
-            "name": "expectedContextVersion",
             "in": "query",
+            "name": "expectedContextVersion",
             "required": true,
             "schema": {
               "type": "integer",

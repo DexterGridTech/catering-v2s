@@ -3,7 +3,7 @@
 `catering-v2s` 是 successor execution 仓，不是 `catering-all-v2` 的状态副本。任何会话都必须从本仓根开始，并按以下顺序恢复上下文：
 
 1. 读取本文件与 `PLATFORM-BLUEPRINT.md`；
-2. 读取 `doc/platform/README.md`，再从 `doc/platform/roadmap-program-registry.json` 选择显式 `programId`，只读取该程序 Roadmap 的 `CURRENT_*`；
+2. 读取 `doc/platform/README.md`，再从 `doc/platform/roadmap-program-registry.json` 选择显式 `programId`，读取该程序 Roadmap 的**授权字段**(`R*_AUTHORIZED` 与 `V2S_*` 就绪标志)。⚠️ Roadmap 的职责已于 2026-08-19 收窄为**授权记录**，`CURRENT_STEP`/`CURRENT_NEXT_ACTION` 等状态字段已删除；「当前在做什么」的真相源是 Dexter 在会话中的直接指派，不得从 Roadmap 推断；
 3. 读取 `project-memory/index.md` 的全部 kernel，再用 `scripts/memory/query` 按六维路由读取全部命中原文；
 4. 读取 `scripts/README.md` 和当前步骤明确引用的 decision、plan、contract 与 evidence；
 5. 只有当前 Roadmap 的显式授权可以开始对应步骤。

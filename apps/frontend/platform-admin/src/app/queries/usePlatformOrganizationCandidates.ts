@@ -2,11 +2,14 @@ import {useEffect, useMemo} from 'react';
 import {useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {platformAdminRtkRequest} from '../api/generated/platform-edge.rtk';
 import {platformRtk} from '../api/PlatformTransport';
-import type {OrganizationCandidateQuerySubjectType} from '../api/generated/platform-edge';
+import type {
+  OrganizationCandidatePageItemsItem,
+  OrganizationCandidateQuerySubjectType,
+} from '../api/generated/platform-edge';
 import {wireUuid} from '../api/wireUuid';
 
 const PAGE_SIZE = 50;
-type PlatformOrganizationCandidate = {id: string; name: string; code: string};
+type PlatformOrganizationCandidate = OrganizationCandidatePageItemsItem;
 
 /** Platform-administrator relation selectors use the same organization owner candidate semantics as operations. */
 export function usePlatformOrganizationCandidates({
@@ -30,17 +33,18 @@ export function usePlatformOrganizationCandidates({
     pageSize: PAGE_SIZE,
     keyOf: item => item.id,
   });
+  const {acceptPage, debouncedQueryText, items, page, pageSize, total} = candidates;
   const query = useMemo(
     () => ({
       subjectType,
-      candidateUsage: 'CONTRACT_LIST' as const,
-      queryText: candidates.debouncedQueryText,
-      page: candidates.page,
+      candidateUsage: 'EXTERNAL_BINDING' as const,
+      queryText: debouncedQueryText,
+      page,
       pageSize: PAGE_SIZE,
       ...(selectedId ? {selectedId: wireUuid(selectedId)} : {}),
       ...(projectId ? {projectId: wireUuid(projectId)} : {}),
     }),
-    [candidates.debouncedQueryText, candidates.page, projectId, selectedId, subjectType],
+    [debouncedQueryText, page, projectId, selectedId, subjectType],
   );
   const request = useMemo(
     () => platformAdminRtkRequest.getPlatformOrganizationCandidates({groupWorkspaceKey}, {query}),
@@ -50,16 +54,16 @@ export function usePlatformOrganizationCandidates({
   useEffect(() => {
     const data = result.data;
     if (!data) return;
-    candidates.acceptPage(data.items, data.metadata);
-  }, [candidates.acceptPage, candidates.page, result.data]);
+    acceptPage(data.items, data.metadata);
+  }, [acceptPage, page, result.data]);
   const onPopupScroll = (event: Parameters<typeof candidates.onPopupScroll>[0]) =>
     candidates.onPopupScroll(event, result.isFetching);
   return {
     ...result,
-    items: candidates.items,
-    total: candidates.total,
-    page: candidates.page,
-    pageSize: candidates.pageSize,
+    items,
+    total,
+    page,
+    pageSize,
     onPopupScroll,
   };
 }

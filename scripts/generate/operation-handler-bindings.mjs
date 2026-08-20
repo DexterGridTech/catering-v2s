@@ -17,11 +17,11 @@ const OUTPUT_ROOT = "contracts/registry/generated/operation-handler-bindings";
 const JAVA_OUTPUT_ROOT = `${OUTPUT_ROOT}/java`;
 const JAVA_PACKAGE_ROOT = "com.catering.v2s.generated.operationbindings";
 const EXPECTED_COUNTS = Object.freeze({
-  operations: 197,
-  reads: 83,
-  commands: 114,
-  operationsAdminCommands: 76,
-  platformAdminCommands: 29,
+  operations: 224,
+  reads: 96,
+  commands: 128,
+  operationsAdminCommands: 85,
+  platformAdminCommands: 34,
   publicCommands: 9,
 });
 const CONTEXT_KINDS = new Set([
@@ -53,6 +53,8 @@ const OWNER_NAMESPACES = Object.freeze({
   "platform-asset": "platform.asset",
   asset: "platform.asset",
   inventory: "inventory",
+  collaboration: "collaboration",
+  "business-channel": "business.channel",
 });
 // Only the app-owned operation adapters physically moved during the split-package
 // repair use application.operations.  Owner reads/protocols in the same namespace
@@ -113,6 +115,15 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "revokeOperationsWorkspaceProjectUserAssignment",
   "revokeOperationsWorkspaceRegionUserAssignment",
   "revokeOperationsWorkspaceStoreUserAssignment",
+  "createOperationsOwnerBinding",
+  "updateOperationsOwnerBinding",
+  "deleteOperationsOwnerBinding",
+  "createOperationsBusinessChannelTemplate",
+  "updateOperationsBusinessChannelTemplate",
+  "transitionOperationsBusinessChannelTemplateStatus",
+  "createOperationsBusinessChannel",
+  "updateOperationsBusinessChannel",
+  "transitionOperationsBusinessChannelStatus",
 ]);
 const COPY_ROLE_BY_OPERATION = Object.freeze({
   getOperationsLocalCatalogCopyCandidates: "COPY_SOURCE",
@@ -283,7 +294,7 @@ function routeOperations(root) {
   const ids = operations.map(({ operationId }) => operationId);
   if (new Set(ids).size !== ids.length) fail("BP_U02_ROUTE_OPERATION_DUPLICATE", ids.find((id, index) => ids.indexOf(id) !== index));
   const registryCounts = Object.fromEntries(Object.keys(ROUTE_REGISTRIES).map((registry) => [registry, operations.filter((operation) => operation.routeRegistry === registry).length]));
-  if (registryCounts["catalog-inventory"] !== 43 || registryCounts["edge-face"] !== 154) {
+  if (registryCounts["catalog-inventory"] !== 43 || registryCounts["edge-face"] !== 181) {
     fail("BP_U02_ROUTE_REGISTRY_COUNT_DRIFT", JSON.stringify(registryCounts));
   }
   return operations;

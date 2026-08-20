@@ -7,7 +7,7 @@ process.stdin.on("end", () => {
     "ENTRY_1=AGENTS.md",
     "ENTRY_2=PLATFORM-BLUEPRINT.md",
     "ENTRY_3=doc/platform/roadmap-program-registry.json",
-    "ENTRY_4=selected Roadmap CURRENT_*",
+    "ENTRY_4=selected Roadmap 授权字段",
     "ENTRY_5=project-memory/index.md",
     "ENTRY_6=scripts/README.md",
     ""

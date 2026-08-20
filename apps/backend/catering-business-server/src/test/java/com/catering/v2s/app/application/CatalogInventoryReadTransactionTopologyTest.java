@@ -104,7 +104,7 @@ class CatalogInventoryReadTransactionTopologyTest {
                 .thenAnswer(noTransaction("inventory.readTargetLedger", emptyEnvelope));
         when(inventory.readTargetDiagnostics(anyString(), anyString()))
                 .thenAnswer(noTransaction("inventory.readTargetDiagnostics", emptyEnvelope));
-        when(production.readTags(anyString(), anyString(), anyString()))
+        when(production.readTags(anyString(), anyString(), any(ObjectNode.class), anyString()))
                 .thenAnswer(noTransaction("production.readTags", envelope(dataWithArray("entries"))));
 
         CatalogInventoryCoordinator target = new CatalogInventoryCoordinator(
@@ -133,7 +133,7 @@ class CatalogInventoryReadTransactionTopologyTest {
         coordinator.readCatalogItems(DATA_NODE, BRAND, request, REQUEST_ID, STORE);
         coordinator.readCatalogItem(DATA_NODE, BRAND, "ITEM-001", request, REQUEST_ID);
         coordinator.readCatalogDictionary(DATA_NODE, BRAND, "SHAPE", request, REQUEST_ID);
-        coordinator.readProductionTags(DATA_NODE, BRAND, REQUEST_ID);
+        coordinator.readProductionTags(DATA_NODE, BRAND, request, REQUEST_ID);
         coordinator.readLocalCatalogCopyCandidates(DATA_NODE, BRAND, request, REQUEST_ID);
         coordinator.readBrandCatalogCopyCandidates(DATA_NODE, BRAND, request, REQUEST_ID);
         coordinator.readInventoryTargets(DATA_NODE, BRAND, request, REQUEST_ID, STORE);
@@ -254,7 +254,13 @@ class CatalogInventoryReadTransactionTopologyTest {
                 ObjectNode.class,
                 String.class,
                 String.class);
-        assertNoTransaction(ProductionTagOwnerService.class, "readTags", String.class, String.class, String.class);
+        assertNoTransaction(
+                ProductionTagOwnerService.class,
+                "readTags",
+                String.class,
+                String.class,
+                ObjectNode.class,
+                String.class);
         assertNoTransaction(
                 BusinessEntityService.class,
                 "resolveCatalogCopySource",

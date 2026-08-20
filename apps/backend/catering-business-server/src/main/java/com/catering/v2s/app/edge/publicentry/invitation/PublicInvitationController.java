@@ -128,9 +128,9 @@ public final class PublicInvitationController {
                 value.roleNames(),
                 value.maskedMobile(),
                 invitationStatus(value.status()),
-                value.nextStep(),
                 value.expiresAt(),
                 workspace.name(),
+                value.nextStep(),
                 logoUrl(workspace.logoAssetRef()));
     }
 

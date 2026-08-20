@@ -65,6 +65,7 @@ test("seed executor has one kind/parent model across creation, refs, readback an
   assert.match(executor, /skuVariantDimensionsFor\(entities\.skus/);
   assert.match(executor, /const skuAttributeValues = new Map\(\)/);
   assert.match(executor, /await materializeDictionary\("ORDER_OPTION_VALUE"/);
+  assert.match(executor, /"getOperationsCatalogDictionary".*?pageSize: 100/s);
   assert.match(executor, /parentEntryRef: entry\.parentEntryRef/);
   assert.match(executor, /SEED_SKU_ATTRIBUTE_VALUE_PARENT_READBACK_INVALID/);
   assert.match(executor, /SEED_ORDER_OPTION_VALUE_PARENT_READBACK_INVALID/);

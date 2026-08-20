@@ -27,8 +27,8 @@
         ],
         "parameters": [
           {
-            "name": "groupWorkspaceKey",
             "in": "query",
+            "name": "groupWorkspaceKey",
             "required": true,
             "schema": {
               "type": "string",
@@ -37,8 +37,8 @@
             }
           },
           {
-            "name": "entityType",
             "in": "query",
+            "name": "entityType",
             "required": true,
             "schema": {
               "type": "string",
@@ -56,8 +56,8 @@
             }
           },
           {
-            "name": "entityId",
             "in": "query",
+            "name": "entityId",
             "required": true,
             "schema": {
               "type": "string",
@@ -66,8 +66,8 @@
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -75,8 +75,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",

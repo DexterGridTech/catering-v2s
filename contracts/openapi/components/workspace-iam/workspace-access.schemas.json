@@ -403,10 +403,10 @@
           "roleNames",
           "maskedMobile",
           "status",
-          "nextStep",
           "expiresAt",
           "workspaceName",
-          "operationsTitle"
+          "operationsTitle",
+          "nextStep"
         ],
         "properties": {
           "invitationId": {
@@ -456,6 +456,14 @@
           "status": {
             "$ref": "#/components/schemas/WorkspaceInvitationStatus"
           },
+          "expiresAt": {
+            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
+          },
+          "workspaceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
           "nextStep": {
             "type": "string",
             "enum": [
@@ -464,14 +472,6 @@
               "FINALIZE",
               "TERMINAL"
             ]
-          },
-          "expiresAt": {
-            "$ref": "../common/time.schemas.json#/components/schemas/EpochMillis"
-          },
-          "workspaceName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
           },
           "logoUrl": {
             "type": "string",

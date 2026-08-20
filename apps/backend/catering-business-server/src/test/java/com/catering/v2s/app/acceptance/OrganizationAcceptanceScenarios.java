@@ -4,10 +4,12 @@ import static com.catering.v2s.app.acceptance.BackendAcceptanceTest.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 final class OrganizationAcceptanceScenarios {
@@ -15,6 +17,60 @@ final class OrganizationAcceptanceScenarios {
 
     OrganizationAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
+    }
+
+    @AcceptanceScenario(
+            id = "org.commercial-group-workspace-initialization",
+            module = "ORG",
+            operation = "initializeCommercialGroup")
+    void commercialGroupWorkspaceInitialization(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.WorkspaceFixture workspace = host.workspaceOnly();
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session session = host.platformLogin(context);
+        String idempotencyKey = "acceptance-commercial-group-" + java.util.UUID.randomUUID();
+        BackendAcceptanceTest.Response initialized = context.post(
+                PLATFORM_COMMERCIAL_GROUP_INITIALIZE,
+                "/api/platform/group-workspaces/" + workspace.groupWorkspaceKey() + "/commercial-group",
+                session.cookie(),
+                Map.of(
+                        "groupCode",
+                        "ACCEPTANCE-GROUP",
+                        "groupName",
+                        "Acceptance Commercial Group",
+                        "idempotencyKey",
+                        idempotencyKey,
+                        "extensionValues",
+                        Map.of()),
+                Map.of("Idempotency-Key", idempotencyKey),
+                Set.of(201));
+        assertEquals(
+                workspace.groupWorkspaceKey(),
+                initialized.json().path("groupWorkspaceKey").asText(),
+                "BUSINESS: initialization writes the requested workspace identity");
+        assertEquals(
+                "ACCEPTANCE-GROUP",
+                initialized.json().path("groupCode").asText(),
+                "BUSINESS: initialization returns the commercial-group code from the owner");
+        assertFalse(
+                initialized.json().path("id").asText().isBlank(),
+                "BUSINESS: initialization returns the newly established commercial-group identity");
+
+        BackendAcceptanceTest.Response detail = context.get(
+                PLATFORM_GROUP_WORKSPACE_DETAIL,
+                "/api/platform/group-workspaces/" + workspace.groupWorkspaceKey(),
+                session.cookie(),
+                Set.of(200));
+        JsonNode commercialGroup = detail.json().path("commercialGroup");
+        assertTrue(
+                commercialGroup.path("initialized").asBoolean(false),
+                "BUSINESS: the workspace projection reports commercial-group initialization");
+        assertEquals(
+                "Acceptance Commercial Group",
+                commercialGroup.path("root").path("groupName").asText(),
+                "BUSINESS: detail readback uses the persisted commercial-group name");
+        assertTrue(
+                commercialGroup.path("root").path("extensionValues").isObject(),
+                "BUSINESS: detail readback returns the extension projection even when no definition is configured");
     }
 
     @AcceptanceScenario(id = "org.project-state-and-readback", module = "ORG", operation = "organizationProjectState")
@@ -406,5 +462,202 @@ final class OrganizationAcceptanceScenarios {
                 afterRemove.json().path("authorizedBrands").isArray()
                         && afterRemove.json().path("authorizedBrands").isEmpty(),
                 "BUSINESS: removing authorization takes effect without stale detail state");
+    }
+
+    @AcceptanceScenario(
+            id = "pagination.organization-page-owner-boundary",
+            module = "ORG",
+            operation = "organizationPageOwnerBoundary")
+    void organizationPageOwnerBoundary(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("PROJECT", Set.of());
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        BackendAcceptanceTest.Fixture foreign = host.fixture("PROJECT", Set.of());
+
+        Set<UUID> brandIds = union(Set.of(fixture.brandId()), Set.copyOf(host.createBrandCandidates(fixture, 19)));
+        Set<UUID> tenantIds = union(Set.of(fixture.tenantId()), Set.copyOf(host.createTenantCandidates(fixture, 19)));
+        Set<UUID> headCompanyIds = Set.copyOf(host.createHeadCompanyCandidates(fixture, 20));
+        Set<UUID> storeIds = union(Set.of(fixture.storeId()), Set.copyOf(host.createStoreCandidates(fixture, 19)));
+        String prefix = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey();
+        String contextQuery = "?expectedContextVersion=" + operations.contextVersion();
+
+        JsonNode brandsPageOne = context.get(
+                        OPERATIONS_ORGANIZATION_BRANDS,
+                        prefix + "/organization/brands" + contextQuery + "&page=1&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        JsonNode brandsPageTwo = context.get(
+                        OPERATIONS_ORGANIZATION_BRANDS,
+                        prefix + "/organization/brands" + contextQuery + "&page=2&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        assertPagePair(brandsPageOne, brandsPageTwo, brandIds, "brands");
+        assertFalse(ids(brandsPageOne).contains(foreign.brandId()), "BUSINESS: foreign workspace brand is not visible");
+
+        JsonNode tenantsPageOne = context.get(
+                        OPERATIONS_ORGANIZATION_TENANTS,
+                        prefix + "/organization/tenants" + contextQuery + "&page=1&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        JsonNode tenantsPageTwo = context.get(
+                        OPERATIONS_ORGANIZATION_TENANTS,
+                        prefix + "/organization/tenants" + contextQuery + "&page=2&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        assertPagePair(tenantsPageOne, tenantsPageTwo, tenantIds, "tenants");
+        assertFalse(
+                ids(tenantsPageOne).contains(foreign.tenantId()), "BUSINESS: foreign workspace tenant is not visible");
+
+        JsonNode headCompaniesPageOne = context.get(
+                        OPERATIONS_ORGANIZATION_HEAD_COMPANIES,
+                        prefix + "/organization/head-companies" + contextQuery
+                                + "&page=1&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        JsonNode headCompaniesPageTwo = context.get(
+                        OPERATIONS_ORGANIZATION_HEAD_COMPANIES,
+                        prefix + "/organization/head-companies" + contextQuery
+                                + "&page=2&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        assertPagePair(headCompaniesPageOne, headCompaniesPageTwo, headCompanyIds, "head companies");
+
+        JsonNode storesPageOne = context.get(
+                        OPERATIONS_ORGANIZATION_STORES,
+                        prefix + "/organization/stores" + contextQuery + "&page=1&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        JsonNode storesPageTwo = context.get(
+                        OPERATIONS_ORGANIZATION_STORES,
+                        prefix + "/organization/stores" + contextQuery + "&page=2&pageSize=10&sort=CODE&direction=ASC",
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        assertPagePair(storesPageOne, storesPageTwo, storeIds, "stores");
+
+        UUID selectedBrand = ids(brandsPageTwo).iterator().next();
+        JsonNode operationCandidates = context.get(
+                        OPERATIONS_ORGANIZATION_CANDIDATES,
+                        prefix + "/organization/candidates?expectedContextVersion=" + operations.contextVersion()
+                                + "&subjectType=BRAND&queryText=Acceptance&page=1&pageSize=10&selectedId="
+                                + selectedBrand,
+                        operations.cookie(),
+                        Set.of(200))
+                .json();
+        assertEquals(
+                brandIds.size(),
+                operationCandidates.path("metadata").path("total").asInt());
+        assertEquals(10, operationCandidates.path("items").size());
+        assertFalse(
+                ids(operationCandidates).contains(selectedBrand),
+                "BUSINESS: selected candidate does not replace page member");
+        assertEquals(
+                selectedBrand.toString(),
+                operationCandidates.path("metadata").path("selectedId").asText());
+
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        String platformPrefix = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey();
+        Set<UUID> allBusinessEntities = union(union(brandIds, tenantIds), headCompanyIds);
+        List<JsonNode> overviewPages = new ArrayList<>();
+        int overviewPageCount = (allBusinessEntities.size() + 9) / 10;
+        for (int page = 1; page <= overviewPageCount; page++) {
+            overviewPages.add(context.get(
+                            PLATFORM_ORGANIZATION_OVERVIEW,
+                            platformPrefix
+                                    + "/organization-overview?category=BUSINESS_ENTITY&sort=CODE&direction=ASC"
+                                    + "&page=" + page + "&pageSize=10",
+                            platform.cookie(),
+                            Set.of(200))
+                    .json());
+        }
+        assertPageTraversal(overviewPages, allBusinessEntities, "platform business entities");
+        assertTrue(
+                overviewPages.stream().noneMatch(page -> ids(page).contains(foreign.brandId())),
+                "BUSINESS: platform overview excludes foreign workspace");
+
+        UUID selectedStore = ids(storesPageTwo).iterator().next();
+        JsonNode platformCandidates = context.get(
+                        PLATFORM_ORGANIZATION_CANDIDATES,
+                        platformPrefix
+                                + "/organization-overview/candidates?subjectType=STORE&candidateUsage=CONTRACT_LIST"
+                                + "&page=1&pageSize=10&selectedId="
+                                + selectedStore
+                                + "&projectId="
+                                + fixture.projectId(),
+                        platform.cookie(),
+                        Set.of(200))
+                .json();
+        assertEquals(
+                storeIds.size(),
+                platformCandidates.path("metadata").path("total").asInt());
+        assertEquals(10, platformCandidates.path("items").size());
+        assertFalse(
+                ids(platformCandidates).contains(selectedStore),
+                "BUSINESS: platform selected candidate does not replace page member");
+        assertEquals(
+                selectedStore.toString(),
+                platformCandidates.path("metadata").path("selectedId").asText());
+    }
+
+    private static void assertPagePair(JsonNode first, JsonNode second, Set<UUID> expected, String label) {
+        assertEquals(
+                expected.size(),
+                first.path("metadata").path("total").asInt(),
+                "CONTRACT: " + label + " total is full match count");
+        assertEquals(
+                expected.size(),
+                second.path("metadata").path("total").asInt(),
+                "CONTRACT: " + label + " total is stable across pages");
+        Set<UUID> actual = union(ids(first), ids(second));
+        int rowCount = first.path("items").size() + second.path("items").size();
+        assertEquals(rowCount, actual.size(), "BUSINESS: " + label + " pages do not repeat rows");
+        assertEquals(expected, actual, "BUSINESS: " + label + " pages contain the complete matching set");
+        assertEquals(
+                Math.min(10, expected.size()),
+                first.path("items").size(),
+                "BUSINESS: " + label + " first page is bounded");
+        assertEquals(
+                Math.max(0, expected.size() - 10),
+                second.path("items").size(),
+                "BUSINESS: " + label + " second page reaches the remainder");
+    }
+
+    private static void assertPageTraversal(List<JsonNode> pages, Set<UUID> expected, String label) {
+        assertFalse(pages.isEmpty(), "BUSINESS: " + label + " returns at least one page");
+        Set<UUID> actual = new java.util.LinkedHashSet<>();
+        for (int index = 0; index < pages.size(); index++) {
+            JsonNode page = pages.get(index);
+            assertEquals(
+                    expected.size(),
+                    page.path("metadata").path("total").asInt(),
+                    "CONTRACT: " + label + " total is full match count on every page");
+            int expectedRows = index == pages.size() - 1 ? expected.size() - (pages.size() - 1) * 10 : 10;
+            assertEquals(expectedRows, page.path("items").size(), "BUSINESS: " + label + " page boundary");
+            for (UUID id : ids(page)) {
+                assertTrue(actual.add(id), "BUSINESS: " + label + " pages do not repeat rows");
+            }
+        }
+        assertEquals(expected, Set.copyOf(actual), "BUSINESS: " + label + " pages cover the complete matching set");
+    }
+
+    private static Set<UUID> ids(JsonNode page) {
+        Set<UUID> result = new java.util.LinkedHashSet<>();
+        page.path("items")
+                .forEach(item -> result.add(UUID.fromString(item.path("id").asText())));
+        return Set.copyOf(result);
+    }
+
+    private static Set<UUID> union(Set<UUID> first, Set<UUID> second) {
+        Set<UUID> result = new java.util.LinkedHashSet<>(first);
+        result.addAll(second);
+        return Set.copyOf(result);
     }
 }

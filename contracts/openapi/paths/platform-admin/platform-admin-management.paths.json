@@ -29,8 +29,8 @@
         ],
         "parameters": [
           {
-            "name": "userName",
             "in": "query",
+            "name": "userName",
             "required": false,
             "schema": {
               "type": "string",
@@ -38,8 +38,8 @@
             }
           },
           {
-            "name": "loginName",
             "in": "query",
+            "name": "loginName",
             "required": false,
             "schema": {
               "type": "string",
@@ -47,16 +47,16 @@
             }
           },
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "required": false,
             "schema": {
               "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminStatus"
             }
           },
           {
-            "name": "page",
             "in": "query",
+            "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -64,8 +64,8 @@
             }
           },
           {
-            "name": "pageSize",
             "in": "query",
+            "name": "pageSize",
             "required": false,
             "schema": {
               "type": "integer",
@@ -74,16 +74,16 @@
             }
           },
           {
-            "name": "sortKey",
             "in": "query",
+            "name": "sortKey",
             "required": false,
             "schema": {
               "$ref": "../../components/platform-iam/platform-identity.schemas.json#/components/schemas/PlatformAdminSortKey"
             }
           },
           {
-            "name": "sortDirection",
             "in": "query",
+            "name": "sortDirection",
             "required": false,
             "schema": {
               "$ref": "../../components/common/enum.schemas.json#/components/schemas/SortDirection"

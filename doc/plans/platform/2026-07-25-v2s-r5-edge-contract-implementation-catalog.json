@@ -82,14 +82,22 @@
     {
       "path": "contracts/openapi/components/problem.schemas.json",
       "sha256": "4d9970ac873bb26dce9c5aacb6e9de91a92a6074e11548a20f5e0dd714e5c2fb"
+    },
+    {
+      "path": "contracts/openapi-source/collaboration.schemas.json",
+      "sha256": "22e981b96401d4edc2049483594bf95d41a0c20c704343c4033a1524b1a843d7"
+    },
+    {
+      "path": "contracts/openapi-source/business-channel.schemas.json",
+      "sha256": "bc32e1c9c589e9c0ed68d1a0ad1e42d3f6f7951d7ffc648aae58e2e3f0242543"
     }
   ],
   "denominator": {
     "scenarios": 33,
-    "operations": 154,
+    "operations": 181,
     "faces": {
-      "platform-admin": 50,
-      "operations-admin": 92,
+      "platform-admin": 61,
+      "operations-admin": 108,
       "public": 12
     },
     "owners": [
@@ -99,6 +107,8 @@
       "platform-asset",
       "platform-iam",
       "platform-workspace",
+      "collaboration",
+      "business-channel",
       "workspace-iam"
     ]
   },
@@ -109,7 +119,7 @@
     "errors": "closed error set plus RFC7807 transport fields",
     "uiBinding": "pageKey and focusedTestId are mandatory trace anchors",
     "idempotency": "per-operation value overrides method-wide inference",
-    "placement": "every operationId must resolve exactly once through doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json@7c9fd056e57bcd6a8976e2798fa47a35f9b2f19b4411344eac0f6696d2a57570",
+    "placement": "every operationId must resolve exactly once through doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json@607aab79aae126fc68b54f5418e768387e3b2a355eb8ad8cd7d224c68011cc3d",
     "errorsDisposition": "doc/plans/platform/2026-07-26-v2s-r5-error-code-disposition-catalog.json@00f4fcf29511f6a2c823d43b17311b4903c544244065f0a2677b279fb12d9c5d",
     "organizationOverviewSourceDecision": "doc/decisions/2026-07-26-v2s-r5-whole-scope-design-final-acceptance.md@06ef5e0d9d366384f535d19d5023d88c882f683f4197b6a3ec63a366d577e95f",
     "contentType": "success and error media types are resolved per operation by the placement catalog; JSON success is application/json, binary uses source media type, no-content is NONE, errors use application/problem+json",
@@ -509,6 +519,82 @@
     ],
     "removeOperationsOrganizationHeadCompanyBrandAuthorization": [
       "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE"
+    ],
+    "transitionPlatformExternalSystemStatus": [
+      "PROVIDER_NOT_ENABLED",
+      "VERSION_CONFLICT"
+    ],
+    "transitionPlatformProviderProfileStatus": [
+      "PROVIDER_NOT_ENABLED",
+      "VERSION_CONFLICT"
+    ],
+    "createPlatformOwnerBinding": [
+      "AUTHORIZATION_REQUIRED",
+      "EXTERNAL_OWNER_ID_MISMATCH",
+      "NODE_TYPE_NOT_BINDABLE"
+    ],
+    "updatePlatformOwnerBinding": [
+      "BINDING_EDIT_NOT_ALLOWED",
+      "EXTERNAL_OWNER_ID_MISMATCH",
+      "IMMUTABLE_FIELD",
+      "VERSION_CONFLICT"
+    ],
+    "deletePlatformOwnerBinding": [
+      "ADAPTER_UNBIND_REQUIRED",
+      "DELETE_NOT_ALLOWED",
+      "VERSION_CONFLICT"
+    ],
+    "createOperationsOwnerBinding": [
+      "AUTHORIZATION_REQUIRED",
+      "BINDING_EDIT_NOT_ALLOWED",
+      "EXTERNAL_OWNER_ID_MISMATCH"
+    ],
+    "updateOperationsOwnerBinding": [
+      "AUTHORIZATION_REQUIRED",
+      "BINDING_EDIT_NOT_ALLOWED",
+      "EXTERNAL_OWNER_ID_MISMATCH",
+      "VERSION_CONFLICT"
+    ],
+    "deleteOperationsOwnerBinding": [
+      "ADAPTER_UNBIND_REQUIRED",
+      "AUTHORIZATION_REQUIRED",
+      "DELETE_NOT_ALLOWED",
+      "VERSION_CONFLICT"
+    ],
+    "createOperationsBusinessChannelTemplate": [
+        "BUSINESS_SCOPE_EXCEEDED",
+        "DINE_IN_FORM_MISMATCH",
+        "DINE_IN_MUST_BE_INTERNAL",
+        "DUPLICATE_CODE",
+        "PROVIDER_NOT_ENABLED",
+      "VERSION_CONFLICT"
+    ],
+    "updateOperationsBusinessChannelTemplate": [
+      "DISABLED_OBJECT_NOT_EDITABLE",
+      "IMMUTABLE_FIELD",
+      "VERSION_CONFLICT"
+    ],
+    "transitionOperationsBusinessChannelTemplateStatus": [
+      "DISABLED_OBJECT_NOT_EDITABLE",
+      "VERSION_CONFLICT"
+    ],
+    "createOperationsBusinessChannel": [
+        "BINDING_NOT_EFFECTIVE",
+        "DINE_IN_FORM_MISMATCH",
+        "DINE_IN_MUST_BE_INTERNAL",
+        "DUPLICATE_CODE",
+        "ORDER_KIND_MISMATCH",
+      "PROVIDER_NOT_ENABLED",
+      "VERSION_CONFLICT"
+    ],
+    "updateOperationsBusinessChannel": [
+      "DISABLED_OBJECT_NOT_EDITABLE",
+      "IMMUTABLE_FIELD",
+      "VERSION_CONFLICT"
+    ],
+    "transitionOperationsBusinessChannelStatus": [
+      "DISABLED_OBJECT_NOT_EDITABLE",
+      "VERSION_CONFLICT"
     ]
   },
   "operationErrorSelectionRules": {
@@ -1382,7 +1468,8 @@
           "schema": {
             "type": "string",
             "enum": [
-              "CONTRACT_LIST"
+              "CONTRACT_LIST",
+              "EXTERNAL_BINDING"
             ]
           }
         },
@@ -6612,65 +6699,6 @@
       "focusedTestId": "edge.getOperationsOrganizationCandidates"
     },
     {
-      "operationId": "getOperationsOrganizationStoreCandidates",
-      "method": "GET",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      "face": "operations-admin",
-      "owner": "organization",
-      "scenarioIds": [
-        "D02-S04",
-        "D01-S07O"
-      ],
-      "pageKey": "OPERATIONS-STORE-MANAGEMENT",
-      "disposition": "ADAPT_V2_SEMANTICS",
-      "security": "OPERATIONS_SESSION_COOKIE",
-      "pathParameters": [
-        "groupWorkspaceKey"
-      ],
-      "queryParameters": [
-        {
-          "name": "expectedContextVersion",
-          "in": "query",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          }
-        },
-        {
-          "name": "brandId",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          }
-        },
-        {
-          "name": "tenantId",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          }
-        }
-      ],
-      "requestSchema": "NoBody",
-      "responseSchema": "OrganizationStoreCandidatePage",
-      "successStatus": "200",
-      "idempotency": {
-        "header": "FORBIDDEN",
-        "replay": "NOT_APPLICABLE"
-      },
-      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
-      "errorSetRef": "AUTHZ_READ",
-      "focusedTestId": "edge.getOperationsOrganizationStoreCandidates"
-    },
-    {
       "operationId": "getOperationsOrganizationStoreExtensionDefinition",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/extension-definition",
@@ -7907,6 +7935,594 @@
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "OPERATIONS_RECOVERY_COMPLETE",
       "focusedTestId": "edge.completeOperationsPasswordRecovery"
+    },
+    {
+      "operationId": "getPlatformExternalCollaborationTree",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "ExternalCollaborationTree",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformExternalCollaborationTree"
+    },
+    {
+      "operationId": "getPlatformExternalSystemDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "externalSystemCode"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "ExternalSystemView",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformExternalSystemDetail"
+    },
+    {
+      "operationId": "getPlatformProviderProfileDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "ProviderProfileView",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformProviderProfileDetail"
+    },
+    {
+      "operationId": "transitionPlatformExternalSystemStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "externalSystemCode"],
+      "queryParameters": [],
+      "requestSchema": "ExternalSystemStatusRequest",
+      "responseSchema": "ExternalSystemView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.transitionPlatformExternalSystemStatus"
+    },
+    {
+      "operationId": "transitionPlatformProviderProfileStatus",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "queryParameters": [],
+      "requestSchema": "ProviderProfileStatusRequest",
+      "responseSchema": "ProviderProfileView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.transitionPlatformProviderProfileStatus"
+    },
+    {
+      "operationId": "getPlatformProviderProfileBindings",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "providerCode"],
+      "queryParameters": [
+        {"name": "bindingName", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120, "description": "Case-insensitive substring matched server-side against the binding display name."}},
+        {"name": "nodeQueryText", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120, "description": "Case-insensitive substring matched server-side against the business node display name, path, or node reference."}},
+        {"name": "sortKey", "in": "query", "required": false, "schema": {"type": "string", "enum": ["BINDING_NAME", "NODE", "BUSINESS", "EXTERNAL_OWNER_ID", "STATUS"]}},
+        {"name": "sortDirection", "in": "query", "required": false, "schema": {"type": "string", "enum": ["ASC", "DESC"], "default": "ASC"}},
+        {"name": "page", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1}},
+        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "OwnerBindingPage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformProviderProfileBindings"
+    },
+    {
+      "operationId": "getPlatformOwnerBindingDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformOwnerBindingDetail"
+    },
+    {
+      "operationId": "updatePlatformOwnerBinding",
+      "method": "PATCH",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingUpdateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updatePlatformOwnerBinding"
+    },
+    {
+      "operationId": "deletePlatformOwnerBinding",
+      "method": "DELETE",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "bindingRef"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingUpdateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.deletePlatformOwnerBinding"
+    },
+    {
+      "operationId": "createPlatformOwnerBinding",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingCreateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createPlatformOwnerBinding"
+    },
+    {
+      "operationId": "getPlatformExternalCapabilityDictionary",
+      "method": "GET",
+      "path": "/api/platform/external-capability-dictionary",
+      "face": "platform-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "CapabilityDictionary",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformExternalCapabilityDictionary"
+    },
+    {
+      "operationId": "getOperationsExternalCapabilityDictionary",
+      "method": "GET",
+      "path": "/api/operations/external-capability-dictionary",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "CapabilityDictionary",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsExternalCapabilityDictionary"
+    },
+    {
+      "operationId": "getOperationsExternalProviderCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [
+        {"name": "capabilityClass", "in": "query", "required": false, "schema": {"type": "string", "enum": ["MASTER_DATA_SYNC", "MEMBER_BENEFIT", "GROUP_BUY", "TAKEAWAY", "INVENTORY_SYNC", "TAKEAWAY_DELIVERY", "ORDER_SYNC"]}},
+        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "description": "cursor"}},
+        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "ExternalProviderCandidatePage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsExternalProviderCandidates"
+    },
+    {
+      "operationId": "getOperationsOwnerBindingDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsOwnerBindingDetail"
+    },
+    {
+      "operationId": "createOperationsOwnerBinding",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingCreateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsOwnerBinding"
+    },
+    {
+      "operationId": "updateOperationsOwnerBinding",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingUpdateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updateOperationsOwnerBinding"
+    },
+    {
+      "operationId": "deleteOperationsOwnerBinding",
+      "method": "DELETE",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      "face": "operations-admin",
+      "owner": "collaboration",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "OwnerBindingUpdateRequest",
+      "responseSchema": "OwnerBindingView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.deleteOperationsOwnerBinding"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelTemplates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [
+        {"name": "projectRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
+        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelTemplateSortKey"}},
+        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelTemplatePage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsBusinessChannelTemplates"
+    },
+    {
+      "operationId": "createOperationsBusinessChannelTemplate",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelTemplateCreateRequest",
+      "responseSchema": "BusinessChannelTemplateView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsBusinessChannelTemplate"
+    },
+    {
+      "operationId": "updateOperationsBusinessChannelTemplate",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "templateRef"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelTemplateUpdateRequest",
+      "responseSchema": "BusinessChannelTemplateView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updateOperationsBusinessChannelTemplate"
+    },
+    {
+      "operationId": "transitionOperationsBusinessChannelTemplateStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates/{templateRef}/status",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "templateRef"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelTemplateStatusRequest",
+      "responseSchema": "BusinessChannelTemplateView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.transitionOperationsBusinessChannelTemplateStatus"
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-template-candidates",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [
+        {"name": "projectRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
+        {"name": "storeRef", "in": "query", "required": false, "schema": {"type": "string", "format": "uuid"}},
+        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelTemplateSortKey"}},
+        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}},
+        {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "description": "cursor"}},
+        {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelTemplateCandidatePage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreBusinessChannelTemplateCandidates"
+    },
+    {
+      "operationId": "getOperationsProjectBusinessChannels",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "projectRef"],
+      "queryParameters": [
+        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelSortKey"}},
+        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelPage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectBusinessChannels"
+    },
+    {
+      "operationId": "getOperationsStoreBusinessChannels",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "storeRef"],
+      "queryParameters": [
+        {"name": "sortKey", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/BusinessChannelSortKey"}},
+        {"name": "sortDirection", "in": "query", "required": false, "schema": {"$ref": "#/components/schemas/SortDirection"}}
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelPage",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsStoreBusinessChannels"
+    },
+    {
+      "operationId": "createOperationsBusinessChannel",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelCreateRequest",
+      "responseSchema": "BusinessChannelView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsBusinessChannel"
+    },
+    {
+      "operationId": "getOperationsBusinessChannelDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "BusinessChannelView",
+      "successStatus": "200",
+      "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"},
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsBusinessChannelDetail"
+    },
+    {
+      "operationId": "updateOperationsBusinessChannel",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelUpdateRequest",
+      "responseSchema": "BusinessChannelView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.updateOperationsBusinessChannel"
+    },
+    {
+      "operationId": "transitionOperationsBusinessChannelStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
+      "face": "operations-admin",
+      "owner": "business-channel",
+      "scenarioIds": ["R5-EXTERNAL-COLLABORATION"],
+      "pageKey": "OPERATIONS-BUSINESS-CHANNEL",
+      "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": ["groupWorkspaceKey", "channelRef"],
+      "queryParameters": [],
+      "requestSchema": "BusinessChannelStatusRequest",
+      "responseSchema": "BusinessChannelView",
+      "successStatus": "200",
+      "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"},
+      "expectedVersion": "REQUIRED",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.transitionOperationsBusinessChannelStatus"
     }
   ],
   "scenarioOperationCrosswalk": [
@@ -8320,16 +8936,6 @@
           "negativeProofRef": "edge.createOperationsOrganizationStore.negative"
         },
         {
-          "stepId": "D01-S07O-OP-20",
-          "operationId": "getOperationsOrganizationStoreCandidates",
-          "face": "operations-admin",
-          "owner": "organization",
-          "pageKey": "OPERATIONS-STORE-MANAGEMENT",
-          "disposition": "ADAPT_V2_SEMANTICS",
-          "positiveProofRef": "edge.getOperationsOrganizationStoreCandidates.positive",
-          "negativeProofRef": "edge.getOperationsOrganizationStoreCandidates.negative"
-        },
-        {
           "stepId": "D01-S07O-OP-21",
           "operationId": "getOperationsOrganizationStoreExtensionDefinition",
           "face": "operations-admin",
@@ -8698,16 +9304,6 @@
           "disposition": "ADAPT_V2_SEMANTICS",
           "positiveProofRef": "edge.createOperationsOrganizationStore.positive",
           "negativeProofRef": "edge.createOperationsOrganizationStore.negative"
-        },
-        {
-          "stepId": "D02-S04-OP-03",
-          "operationId": "getOperationsOrganizationStoreCandidates",
-          "face": "operations-admin",
-          "owner": "organization",
-          "pageKey": "OPERATIONS-STORE-MANAGEMENT",
-          "disposition": "ADAPT_V2_SEMANTICS",
-          "positiveProofRef": "edge.getOperationsOrganizationStoreCandidates.positive",
-          "negativeProofRef": "edge.getOperationsOrganizationStoreCandidates.negative"
         },
         {
           "stepId": "D02-S04-OP-04",
@@ -9605,12 +10201,46 @@
         }
       ],
       "candidateDispositions": []
+    },
+    {
+      "scenarioId": "R5-EXTERNAL-COLLABORATION",
+      "orderedSteps": [
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-01", "operationId": "getPlatformExternalCollaborationTree", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalCollaborationTree.positive", "negativeProofRef": "edge.getPlatformExternalCollaborationTree.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-02", "operationId": "getPlatformExternalSystemDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalSystemDetail.positive", "negativeProofRef": "edge.getPlatformExternalSystemDetail.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-03", "operationId": "getPlatformProviderProfileDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformProviderProfileDetail.positive", "negativeProofRef": "edge.getPlatformProviderProfileDetail.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-04", "operationId": "transitionPlatformExternalSystemStatus", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionPlatformExternalSystemStatus.positive", "negativeProofRef": "edge.transitionPlatformExternalSystemStatus.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-05", "operationId": "transitionPlatformProviderProfileStatus", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionPlatformProviderProfileStatus.positive", "negativeProofRef": "edge.transitionPlatformProviderProfileStatus.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-06", "operationId": "getPlatformProviderProfileBindings", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformProviderProfileBindings.positive", "negativeProofRef": "edge.getPlatformProviderProfileBindings.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-07", "operationId": "getPlatformOwnerBindingDetail", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformOwnerBindingDetail.positive", "negativeProofRef": "edge.getPlatformOwnerBindingDetail.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-08", "operationId": "updatePlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updatePlatformOwnerBinding.positive", "negativeProofRef": "edge.updatePlatformOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-09", "operationId": "deletePlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.deletePlatformOwnerBinding.positive", "negativeProofRef": "edge.deletePlatformOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-10", "operationId": "createPlatformOwnerBinding", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createPlatformOwnerBinding.positive", "negativeProofRef": "edge.createPlatformOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-11", "operationId": "getPlatformExternalCapabilityDictionary", "face": "platform-admin", "owner": "collaboration", "pageKey": "PLATFORM-EXTERNAL-COLLABORATION", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getPlatformExternalCapabilityDictionary.positive", "negativeProofRef": "edge.getPlatformExternalCapabilityDictionary.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-12", "operationId": "getOperationsExternalCapabilityDictionary", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsExternalCapabilityDictionary.positive", "negativeProofRef": "edge.getOperationsExternalCapabilityDictionary.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-13", "operationId": "getOperationsExternalProviderCandidates", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsExternalProviderCandidates.positive", "negativeProofRef": "edge.getOperationsExternalProviderCandidates.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-14", "operationId": "getOperationsOwnerBindingDetail", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsOwnerBindingDetail.positive", "negativeProofRef": "edge.getOperationsOwnerBindingDetail.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-15", "operationId": "createOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsOwnerBinding.positive", "negativeProofRef": "edge.createOperationsOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-16", "operationId": "updateOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsOwnerBinding.positive", "negativeProofRef": "edge.updateOperationsOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-17", "operationId": "deleteOperationsOwnerBinding", "face": "operations-admin", "owner": "collaboration", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.deleteOperationsOwnerBinding.positive", "negativeProofRef": "edge.deleteOperationsOwnerBinding.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-18", "operationId": "getOperationsBusinessChannelTemplates", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsBusinessChannelTemplates.positive", "negativeProofRef": "edge.getOperationsBusinessChannelTemplates.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-19", "operationId": "createOperationsBusinessChannelTemplate", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsBusinessChannelTemplate.positive", "negativeProofRef": "edge.createOperationsBusinessChannelTemplate.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-20", "operationId": "updateOperationsBusinessChannelTemplate", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsBusinessChannelTemplate.positive", "negativeProofRef": "edge.updateOperationsBusinessChannelTemplate.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-21", "operationId": "transitionOperationsBusinessChannelTemplateStatus", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.positive", "negativeProofRef": "edge.transitionOperationsBusinessChannelTemplateStatus.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-22", "operationId": "getOperationsStoreBusinessChannelTemplateCandidates", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.positive", "negativeProofRef": "edge.getOperationsStoreBusinessChannelTemplateCandidates.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-23", "operationId": "getOperationsProjectBusinessChannels", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsProjectBusinessChannels.positive", "negativeProofRef": "edge.getOperationsProjectBusinessChannels.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-24", "operationId": "getOperationsStoreBusinessChannels", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsStoreBusinessChannels.positive", "negativeProofRef": "edge.getOperationsStoreBusinessChannels.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-25", "operationId": "createOperationsBusinessChannel", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.createOperationsBusinessChannel.positive", "negativeProofRef": "edge.createOperationsBusinessChannel.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-26", "operationId": "getOperationsBusinessChannelDetail", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.getOperationsBusinessChannelDetail.positive", "negativeProofRef": "edge.getOperationsBusinessChannelDetail.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-27", "operationId": "updateOperationsBusinessChannel", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.updateOperationsBusinessChannel.positive", "negativeProofRef": "edge.updateOperationsBusinessChannel.negative"},
+        {"stepId": "R5-EXTERNAL-COLLABORATION-OP-28", "operationId": "transitionOperationsBusinessChannelStatus", "face": "operations-admin", "owner": "business-channel", "pageKey": "OPERATIONS-BUSINESS-CHANNEL", "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION", "positiveProofRef": "edge.transitionOperationsBusinessChannelStatus.positive", "negativeProofRef": "edge.transitionOperationsBusinessChannelStatus.negative"}
+      ],
+      "candidateDispositions": []
     }
   ],
   "crosswalkInvariants": {
     "scenarioRows": 33,
-    "operationRows": 111,
-    "scenarioOperationRows": 109,
+    "operationRows": 139,
+    "scenarioOperationRows": 137,
     "forwardEquality": "every non-exempt operations[*].scenarioIds pair appears exactly once in scenarioOperationCrosswalk[*].orderedSteps; acceptedNonScenarioOperations are the only two operations without scenarioIds and must each name exactly one accepted Journey and interaction proof",
     "reverseEquality": "every orderedSteps operationId exists in operations and names the same face, owner and disposition; pageKey equals the operation canonicalPageKey unless the operation is listed in sharedOperationPageKeyExceptions, where each per-step consumer pageKey must be one of the exact allowed bindings",
     "candidateClosure": "deletedCandidates and addedOperations equal the union of candidateDispositions",
@@ -10043,15 +10673,14 @@
     "OrganizationCandidateQuerySubjectType": {
       "type": "string",
       "enum": [
+        "COMMERCIAL_GROUP",
+        "REGION",
         "PROJECT",
         "BRAND",
         "TENANT",
         "HEAD_COMPANY",
         "STORE"
       ]
-    },
-    "OrganizationStoreCandidatePage": {
-      "ref": "OrganizationStoreCandidatePage"
     },
     "OrganizationStoreCreateRequest": {
       "ref": "OrganizationStoreCreateRequest"
@@ -11694,11 +12323,83 @@
     },
     "WorkspaceRoleStatus": {
       "ref": "WorkspaceRoleStatus"
+    },
+    "ExternalCapability": {
+      "ref": "ExternalCapability"
+    },
+    "ExternalCapabilityAttributeDescriptor": {
+      "ref": "ExternalCapabilityAttributeDescriptor"
+    },
+    "ExternalSystemView": {
+      "ref": "ExternalSystemView"
+    },
+    "ProviderProfileView": {
+      "ref": "ProviderProfileView"
+    },
+    "ExternalCollaborationTree": {
+      "ref": "ExternalCollaborationTree"
+    },
+    "ExternalSystemStatusRequest": {
+      "ref": "ExternalSystemStatusRequest"
+    },
+    "ProviderProfileStatusRequest": {
+      "ref": "ProviderProfileStatusRequest"
+    },
+    "OwnerBindingCreateRequest": {
+      "ref": "OwnerBindingCreateRequest"
+    },
+    "OwnerBindingUpdateRequest": {
+      "ref": "OwnerBindingUpdateRequest"
+    },
+    "OwnerBindingView": {
+      "ref": "OwnerBindingView"
+    },
+    "OwnerBindingPage": {
+      "ref": "OwnerBindingPage"
+    },
+    "CapabilityDictionary": {
+      "ref": "CapabilityDictionary"
+    },
+    "BusinessChannelTemplateCreateRequest": {
+      "ref": "BusinessChannelTemplateCreateRequest"
+    },
+    "BusinessChannelTemplateUpdateRequest": {
+      "ref": "BusinessChannelTemplateUpdateRequest"
+    },
+    "BusinessChannelTemplateStatusRequest": {
+      "ref": "BusinessChannelTemplateStatusRequest"
+    },
+    "BusinessChannelTemplateView": {
+      "ref": "BusinessChannelTemplateView"
+    },
+    "BusinessChannelTemplatePage": {
+      "ref": "BusinessChannelTemplatePage"
+    },
+    "BusinessChannelTemplateCandidatePage": {
+      "ref": "BusinessChannelTemplateCandidatePage"
+    },
+    "BusinessChannelCreateRequest": {
+      "ref": "BusinessChannelCreateRequest"
+    },
+    "BusinessChannelUpdateRequest": {
+      "ref": "BusinessChannelUpdateRequest"
+    },
+    "BusinessChannelStatusRequest": {
+      "ref": "BusinessChannelStatusRequest"
+    },
+    "BusinessChannelView": {
+      "ref": "BusinessChannelView"
+    },
+    "BusinessChannelPage": {
+      "ref": "BusinessChannelPage"
+    },
+    "ExternalProviderCandidatePage": {
+      "ref": "ExternalProviderCandidatePage"
     }
   },
   "componentReferenceClosure": {
-    "baselineCount": 165,
-    "operationDirectReferenceCount": 137,
+    "baselineCount": 192,
+    "operationDirectReferenceCount": 147,
     "directReferencesMissingFromBaseline": [],
     "supportingOnly": [
       "ExtensionEntityType",
@@ -11720,6 +12421,157 @@
     "rule": "U01 emits direct/supporting/unreachable classification after resolving nested refs; any unclassified baseline component or unreachable component without NOT_CARRIED fails"
   },
   "componentOverrides": {
+    "OwnerBindingPage": {
+      "removeProperties": [
+        "nextCursor",
+        "total"
+      ],
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "queryText",
+            "page",
+            "pageSize",
+            "total"
+          ],
+          "properties": {
+            "queryText": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 120
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "total": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OwnerBindingView"
+          }
+        }
+      }
+    },
+    "BusinessChannelTemplatePage": {
+      "removeProperties": [
+        "nextCursor",
+        "total"
+      ],
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BusinessChannelTemplateView"
+          }
+        }
+      }
+    },
+    "BusinessChannelPage": {
+      "removeProperties": [
+        "nextCursor",
+        "total"
+      ],
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BusinessChannelView"
+          }
+        }
+      }
+    },
+    "ExtensionDefinitionUpdateRequest": {
+      "properties": {
+        "definitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "type",
+              "required",
+              "options"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-z][a-zA-Z0-9_]*$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "TEXT",
+                  "NUMBER",
+                  "DATE",
+                  "BOOLEAN",
+                  "SELECT"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 120
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ENABLED",
+                  "DISABLED"
+                ]
+              },
+              "displayOrder": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "displaySuffix": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20
+              }
+            }
+          }
+        }
+      }
+    },
     "globalRenames": {
       "workspaceKey": "groupWorkspaceKey",
       "startDate": "effectiveFrom",
@@ -12345,7 +13197,8 @@
     "PublicInvitationView": {
       "requiredAdditions": [
         "workspaceName",
-        "operationsTitle"
+        "operationsTitle",
+        "nextStep"
       ],
       "properties": {
         "workspaceName": {
@@ -12357,6 +13210,15 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 120
+        },
+        "nextStep": {
+          "type": "string",
+          "enum": [
+            "ACCEPT",
+            "VERIFY_MOBILE",
+            "FINALIZE",
+            "TERMINAL"
+          ]
         },
         "logoUrl": {
           "type": "string",
@@ -12679,11 +13541,11 @@
   "projectionState": {
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
-    "sourceOperationCount": 121,
-    "operationCount": 154,
+    "sourceOperationCount": 149,
+    "operationCount": 181,
     "faceCounts": {
-      "platform-admin": 50,
-      "operations-admin": 92,
+      "platform-admin": 61,
+      "operations-admin": 108,
       "public": 12
     }
   }

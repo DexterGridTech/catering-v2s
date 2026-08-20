@@ -24,6 +24,7 @@ import {isOperationsProblemCode, operationsProblemFeedback, type ProblemFeedback
 import {
   abortOperationsRequests,
   operationsApi,
+  operationsContentTabRefreshSignal,
   operationsRefreshSignal,
   registerOperationsUnauthorizedRecovery,
 } from './OperationsApi';
@@ -115,7 +116,13 @@ export function clearOperationsTransportState() {
 
 /** Refreshes active page queries without remounting their filters or pagination state. */
 export function refreshOperationsCurrentPage() {
-  operationsStore.dispatch(operationsApi.util.invalidateTags([{type: 'wire', id: 'LIST'}]));
+  operationsStore.dispatch(
+    operationsApi.util.invalidateTags([
+      {type: 'wire', id: 'LIST'},
+      {type: 'catalogInventory', id: 'LIST'},
+    ]),
+  );
+  operationsContentTabRefreshSignal.publish();
 }
 
 export function registerOperationsSessionRecovery(recovery: () => void | Promise<void>) {
@@ -125,7 +132,7 @@ export function registerOperationsSessionRecovery(recovery: () => void | Promise
 /** The app shell observes render failures through the transport boundary. */
 export {recordOperationsRenderError} from './OperationsApi';
 
-export {operationsRefreshSignal};
+export {operationsContentTabRefreshSignal, operationsRefreshSignal};
 /** Feature-facing generated RTK hooks stay behind the app transport boundary. */
 export const operationsRtk = operationsApi;
 

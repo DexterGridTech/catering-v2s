@@ -2,18 +2,22 @@ import {ProTable, type ProColumns, type ProFormInstance} from '@ant-design/pro-c
 import {Alert, Button, Space, Tabs, Tag, Typography} from 'antd';
 import {
   adminListState,
+  createPageQueryIdentity,
   NameCodePathText,
   testId,
   useAsyncGenerationGuard,
   useCursorCandidates,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {
   platformClient,
+  platformContentTabRefreshSignal,
   platformProblemOf,
   platformRtk,
   type PlatformApiProblem,
@@ -26,6 +30,7 @@ import type {
   WorkspaceInvitationCandidatePage,
   WorkspacePlatformAccountSortKey,
 } from '../../../app/api/generated/platform-edge';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {WorkspaceAccountActionModal} from './WorkspaceAccountActionModal';
 import {WorkspaceAccountDetailDrawer, type WorkspaceAccountAction} from './WorkspaceAccountDetailDrawer';
@@ -57,11 +62,21 @@ export function AccountsPage() {
 }
 
 function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<WorkspacePlatformAccountSortKey>('LOGIN_NAME');
   const [direction, setDirection] = useState<SortDirection>('ASC');
   const [filters, setFilters] = useState<AccountFilters>({});
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getWorkspaceAccounts,
+        scope: {groupWorkspaceKey},
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, groupWorkspaceKey, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const [organizationType, setOrganizationType] = useState<ServiceNodeType>();
   const [organizationQuery, setOrganizationQuery] = useState('');
   const [roleCandidateQuery, setRoleCandidateQuery] = useState('');
@@ -76,6 +91,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   const pendingActionRef = useRef<typeof pendingAction>(undefined);
   pendingActionRef.current = pendingAction;
   const detailGeneration = useAsyncGenerationGuard();
+  const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   useOverlayLock(detail.isOpen || action !== undefined || Boolean(auditTarget));
   const organizationCandidateState = useCursorCandidates<WorkspaceInvitationCandidatePage['organizations'][number]>({
     queryText: organizationQuery,
@@ -89,6 +105,16 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     pageSize: 50,
     keyOf: role => role.id,
   });
+  const {
+    acceptPage: acceptOrganizationCandidatePage,
+    items: organizationCandidateItems,
+    onPopupScroll: onOrganizationCandidatePopupScroll,
+  } = organizationCandidateState;
+  const {
+    acceptPage: acceptRoleCandidatePage,
+    items: roleCandidateItems,
+    onPopupScroll: onRoleCandidatePopupScroll,
+  } = roleCandidateState;
   const listRequest = useMemo(() => {
     const {roleId, organizationRef, ...restFilters} = filters;
     return platformAdminRtkRequest.getWorkspaceAccounts(
@@ -160,14 +186,11 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   const roleCandidatePage = roleCandidates.data as WorkspaceInvitationCandidatePage | undefined;
   useEffect(() => {
     if (organizationCandidatePage)
-      organizationCandidateState.acceptPage(
-        organizationCandidatePage.organizations,
-        organizationCandidatePage.metadata,
-      );
-  }, [organizationCandidatePage, organizationCandidateState.acceptPage]);
+      acceptOrganizationCandidatePage(organizationCandidatePage.organizations, organizationCandidatePage.metadata);
+  }, [acceptOrganizationCandidatePage, organizationCandidatePage]);
   useEffect(() => {
-    if (roleCandidatePage) roleCandidateState.acceptPage(roleCandidatePage.roles, roleCandidatePage.metadata);
-  }, [roleCandidatePage, roleCandidateState.acceptPage]);
+    if (roleCandidatePage) acceptRoleCandidatePage(roleCandidatePage.roles, roleCandidatePage.metadata);
+  }, [acceptRoleCandidatePage, roleCandidatePage]);
   const problem = error ? platformProblemOf(error) : commandProblem;
 
   const loadDetail = useCallback(
@@ -191,6 +214,11 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     detailGeneration.invalidate();
     detail.close();
   }, [detail, detailGeneration]);
+
+  useEffect(() => {
+    if (contentTabRefreshVersion === 0 || !detail.isOpen || !detail.target?.id) return;
+    void loadDetail(detail.target.id);
+  }, [contentTabRefreshVersion, detail.isOpen, detail.target?.id, loadDetail]);
 
   const closeActionAndRefresh = useCallback(
     async (accountId: string) => {
@@ -257,10 +285,10 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     emptyText: '暂无账号',
     testIdPrefix: 'workspace-account-list',
   });
-  const candidateOptions = organizationCandidateState.items
+  const candidateOptions = organizationCandidateItems
     .filter(candidate => candidate.serviceNodeType === organizationType)
     .map(candidate => ({value: candidate.organizationRef, label: <NameCodePathText value={candidate.path} />}));
-  const roleOptions = roleCandidateState.items.map(role => ({value: role.id, label: role.name}));
+  const roleOptions = roleCandidateItems.map(role => ({value: role.id, label: role.name}));
   const columns = useMemo<ProColumns<WorkspaceAccount>[]>(
     () => [
       {
@@ -318,8 +346,8 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
         valueType: 'select',
         fieldProps: {
           showSearch: {filterOption: false, onSearch: setOrganizationQuery},
-          onPopupScroll: (event: Parameters<typeof organizationCandidateState.onPopupScroll>[0]) =>
-            organizationCandidateState.onPopupScroll(event, organizationCandidates.isFetching),
+          onPopupScroll: (event: Parameters<typeof onOrganizationCandidatePopupScroll>[0]) =>
+            onOrganizationCandidatePopupScroll(event, organizationCandidates.isFetching),
           disabled: !organizationType,
           options: candidateOptions,
           loading: organizationCandidates.isFetching,
@@ -335,8 +363,8 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
         valueType: 'select',
         fieldProps: {
           showSearch: {filterOption: false, onSearch: setRoleCandidateQuery},
-          onPopupScroll: (event: Parameters<typeof roleCandidateState.onPopupScroll>[0]) =>
-            roleCandidateState.onPopupScroll(event, roleCandidates.isFetching),
+          onPopupScroll: (event: Parameters<typeof onRoleCandidatePopupScroll>[0]) =>
+            onRoleCandidatePopupScroll(event, roleCandidates.isFetching),
           disabled: !organizationType,
           options: roleOptions,
           loading: roleCandidates.isFetching,
@@ -369,6 +397,8 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     [
       candidateOptions,
       loadDetail,
+      onOrganizationCandidatePopupScroll,
+      onRoleCandidatePopupScroll,
       organizationCandidates.isFetching,
       organizationType,
       roleCandidates.isFetching,
@@ -421,7 +451,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
                         onClick={() => {
                           searchConfig.form?.resetFields();
                           setFilters({});
-                          setPage(1);
+                          pagination.setPage(1);
                           setOrganizationType(undefined);
                           setOrganizationQuery('');
                           setRoleCandidateQuery('');
@@ -433,10 +463,19 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
                     ],
                   }}
                   options={false}
-                  pagination={result ? {current: result.page, pageSize: result.pageSize, total: result.total} : false}
+                  pagination={
+                    result
+                      ? {
+                          current: pagination.page,
+                          pageSize: pagination.pageSize,
+                          total: result.total,
+                          showSizeChanger: true,
+                        }
+                      : false
+                  }
                   columns={columns}
                   onSubmit={values => {
-                    setPage(1);
+                    pagination.setPage(1);
                     setFilters({
                       userName: text(values.displayName),
                       mobile: text(values.mobile),
@@ -448,15 +487,16 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
                     });
                   }}
                   onReset={() => {
-                    setPage(1);
+                    pagination.setPage(1);
                     setFilters({});
                     setOrganizationType(undefined);
                     setOrganizationQuery('');
                   }}
-                  onChange={(pagination, _, nextSorter, extra) => {
+                  onChange={(tablePagination, _, nextSorter, extra) => {
                     if (extra.action === 'paginate') {
-                      setPage(pagination.current ?? page);
-                      setPageSize(pagination.pageSize ?? pageSize);
+                      if (tablePagination.pageSize !== pageSize)
+                        pagination.setPageSize(tablePagination.pageSize ?? pageSize);
+                      else pagination.setPage(tablePagination.current ?? page);
                       return;
                     }
                     if (extra.action !== 'sort') return;
@@ -476,7 +516,7 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
                             : 'LOGIN_NAME',
                     );
                     setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
-                    setPage(1);
+                    pagination.setPage(1);
                   }}
                 />
               </div>

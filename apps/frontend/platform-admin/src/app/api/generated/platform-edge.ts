@@ -37,6 +37,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "createPlatformOwnerBinding",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "createWorkspaceInvitation",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations",
@@ -48,6 +55,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
     "owner": "workspace-iam",
+    "requiresSession": true
+  },
+  {
+    "operationId": "deletePlatformOwnerBinding",
+    "method": "DELETE",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+    "owner": "collaboration",
     "requiresSession": true
   },
   {
@@ -107,6 +121,27 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getPlatformExternalCapabilityDictionary",
+    "method": "GET",
+    "path": "/api/platform/external-capability-dictionary",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformExternalCollaborationTree",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformExternalSystemDetail",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "getPlatformGroupWorkspaceDetail",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}",
@@ -139,6 +174,27 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
     "owner": "organization",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformOwnerBindingDetail",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformProviderProfileBindings",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformProviderProfileDetail",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}",
+    "owner": "collaboration",
     "requiresSession": true
   },
   {
@@ -296,10 +352,24 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "transitionPlatformExternalSystemStatus",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "transitionPlatformGroupWorkspaceStatus",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
     "owner": "platform-workspace",
+    "requiresSession": true
+  },
+  {
+    "operationId": "transitionPlatformProviderProfileStatus",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status",
+    "owner": "collaboration",
     "requiresSession": true
   },
   {
@@ -331,6 +401,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "updatePlatformOwnerBinding",
+    "method": "PATCH",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+    "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
     "operationId": "updateWorkspaceRole",
     "method": "PATCH",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/roles/{roleId}",
@@ -359,8 +436,10 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "completePlatformPasswordRecovery": "completePlatformPasswordRecovery",
   "createPlatformAdmin": "createPlatformAdmin",
   "createPlatformGroupWorkspace": "createPlatformGroupWorkspace",
+  "createPlatformOwnerBinding": "createPlatformOwnerBinding",
   "createWorkspaceInvitation": "createWorkspaceInvitation",
   "createWorkspaceRole": "createWorkspaceRole",
+  "deletePlatformOwnerBinding": "deletePlatformOwnerBinding",
   "getCurrentPlatformSession": "getCurrentPlatformSession",
   "getExtensionDefinition": "getExtensionDefinition",
   "getExtensionEntityCatalog": "getExtensionEntityCatalog",
@@ -369,11 +448,17 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "getPlatformContractOverviewDetail": "getPlatformContractOverviewDetail",
   "getPlatformContractOverviewPage": "getPlatformContractOverviewPage",
   "getPlatformEntityAuditHistory": "getPlatformEntityAuditHistory",
+  "getPlatformExternalCapabilityDictionary": "getPlatformExternalCapabilityDictionary",
+  "getPlatformExternalCollaborationTree": "getPlatformExternalCollaborationTree",
+  "getPlatformExternalSystemDetail": "getPlatformExternalSystemDetail",
   "getPlatformGroupWorkspaceDetail": "getPlatformGroupWorkspaceDetail",
   "getPlatformOrganizationCandidates": "getPlatformOrganizationCandidates",
   "getPlatformOrganizationHierarchyTree": "getPlatformOrganizationHierarchyTree",
   "getPlatformOrganizationOverviewDetail": "getPlatformOrganizationOverviewDetail",
   "getPlatformOrganizationOverviewPage": "getPlatformOrganizationOverviewPage",
+  "getPlatformOwnerBindingDetail": "getPlatformOwnerBindingDetail",
+  "getPlatformProviderProfileBindings": "getPlatformProviderProfileBindings",
+  "getPlatformProviderProfileDetail": "getPlatformProviderProfileDetail",
   "getWorkspaceAccount": "getWorkspaceAccount",
   "getWorkspaceAccounts": "getWorkspaceAccounts",
   "getWorkspaceInvitation": "getWorkspaceInvitation",
@@ -396,23 +481,33 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "stagePlatformAsset": "stagePlatformAsset",
   "startPlatformPasswordRecovery": "startPlatformPasswordRecovery",
   "transitionPlatformAdminStatus": "transitionPlatformAdminStatus",
+  "transitionPlatformExternalSystemStatus": "transitionPlatformExternalSystemStatus",
   "transitionPlatformGroupWorkspaceStatus": "transitionPlatformGroupWorkspaceStatus",
+  "transitionPlatformProviderProfileStatus": "transitionPlatformProviderProfileStatus",
   "transitionWorkspaceAccountStatus": "transitionWorkspaceAccountStatus",
   "transitionWorkspaceRoleStatus": "transitionWorkspaceRoleStatus",
   "updatePlatformAdminProfile": "updatePlatformAdminProfile",
   "updatePlatformGroupWorkspaceDisplay": "updatePlatformGroupWorkspaceDisplay",
+  "updatePlatformOwnerBinding": "updatePlatformOwnerBinding",
   "updateWorkspaceRole": "updateWorkspaceRole",
   "verifyPlatformLoginOtp": "verifyPlatformLoginOtp",
   "verifyPlatformPasswordRecoveryOtp": "verifyPlatformPasswordRecoveryOtp"
 } as const;
 
 export const EDGE_PROBLEM_CODES = [
+  "ADAPTER_UNBIND_REQUIRED",
+  "AUTHORIZATION_REQUIRED",
+  "BINDING_EDIT_NOT_ALLOWED",
   "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+  "DELETE_NOT_ALLOWED",
   "EXTENSION_DEFINITION_INVALID",
   "EXTENSION_DEFINITION_VERSION_CONFLICT",
+  "EXTERNAL_OWNER_ID_MISMATCH",
   "GROUP_WORKSPACE_NOT_FOUND",
   "IDEMPOTENCY_CONFLICT",
+  "IMMUTABLE_FIELD",
   "INVALID_EDGE_CONTEXT",
+  "NODE_TYPE_NOT_BINDABLE",
   "PLATFORM_ASSET_BIND_CONFLICT",
   "PLATFORM_COMMON_ACCESS_DENIED",
   "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
@@ -434,8 +529,10 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_WORKSPACE_KEY_CONFLICT",
   "PLATFORM_WORKSPACE_NAME_CONFLICT",
   "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID",
+  "PROVIDER_NOT_ENABLED",
   "UNKNOWN_SUBMISSION_RESULT",
   "VALIDATION_FAILED",
+  "VERSION_CONFLICT",
   "WORKSPACE_IAM_ACCOUNT_STATUS_TRANSITION_INVALID",
   "WORKSPACE_IAM_ACCOUNT_VERSION_CONFLICT",
   "WORKSPACE_IAM_ASSIGNMENT_NOT_ACTIVE",
@@ -483,6 +580,11 @@ export type AuditHistoryPage = {
 export type AuditTarget = {
   entityType: string;
   entityId: string;
+};
+
+export type CapabilityDictionary = {
+  externalSystems: Array<ExternalSystemView>;
+  providerProfiles: Array<ProviderProfileView>;
 };
 
 export type CommercialGroupInitializeRequest = {
@@ -615,6 +717,42 @@ export type ExtensionEntityCatalogPage = {
 
 export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
 
+export type ExternalCapability = {
+  capabilityClass: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC";
+  displayName: string;
+  attributeValueLabels: Record<string, string>;
+  attributeValues: Record<string, JsonValue>;
+};
+
+export type ExternalCapabilityAttributeDescriptor = {
+  fieldKey: string;
+  label: string;
+  helpText: string;
+  controlKind: "readonlySummary" | "readonlyPreview";
+  optionSourceRef: Record<string, JsonValue>;
+};
+
+export type ExternalCollaborationTree = {
+  externalSystems: Array<ExternalSystemView>;
+  providerProfiles: Array<ProviderProfileView>;
+};
+
+export type ExternalSystemStatusRequest = {
+  status: "ENABLED" | "DISABLED";
+  expectedVersion: number;
+};
+
+export type ExternalSystemView = {
+  externalSystemCode: string;
+  displayName: string;
+  catalogStatus: "PLANNED" | "AVAILABLE";
+  catalogStatusDisplayName: string;
+  attributeDictionary: Array<ExternalCapabilityAttributeDescriptor>;
+  capabilities: Array<ExternalCapability>;
+  enablementStatus: "ENABLED" | "DISABLED";
+  version: number;
+};
+
 export type GroupWorkspaceCreateRequest = {
   groupWorkspaceKey: string;
   name: string;
@@ -738,7 +876,7 @@ export type OrganizationCandidatePageMetadata = {
   selectedId: (string & { readonly __uuid: "Uuid" }) | null;
 };
 
-export type OrganizationCandidateQuerySubjectType = "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
+export type OrganizationCandidateQuerySubjectType = "COMMERCIAL_GROUP" | "REGION" | "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
 
 export type OrganizationHierarchyTree = {
   groupCode: string;
@@ -847,6 +985,54 @@ export type OrganizationOverviewSource = "MANUAL" | "SYSTEM";
 export type OrganizationOverviewStatus = "ENABLED" | "DISABLED";
 
 export type OrganizationOverviewType = "GROUP" | "REGION" | "PROJECT" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE";
+
+export type OwnerBindingCreateRequest = {
+  providerCode: string;
+  capabilityClass?: string | null;
+  nodeType: string;
+  nodeRef: string & { readonly __uuid: "Uuid" };
+  bindingDisplayName?: string | null;
+  externalOwnerId?: string | null;
+};
+
+export type OwnerBindingPage = {
+  metadata: {
+  bindingName: string | null;
+  nodeQueryText: string | null;
+  sortKey: "BINDING_NAME" | "NODE" | "BUSINESS" | "EXTERNAL_OWNER_ID" | "STATUS" | null | null;
+  sortDirection: "ASC" | "DESC" | null | null;
+  page: number;
+  pageSize: number;
+  total: number;
+};
+  items: Array<OwnerBindingView>;
+};
+
+export type OwnerBindingUpdateRequest = {
+  bindingDisplayName: string | null;
+  externalOwnerId?: string | null;
+  expectedVersion: number;
+};
+
+export type OwnerBindingView = {
+  bindingRef: string & { readonly __uuid: "Uuid" };
+  providerCode: string;
+  providerDisplayName: string;
+  capabilityClass?: string | null;
+  capabilityClassDisplayName: string | null;
+  businessScopeDisplayNames: Array<string>;
+  nodeType: string;
+  nodeTypeDisplayName: string;
+  nodeRef: string & { readonly __uuid: "Uuid" };
+  nodeDisplayPath?: string | null;
+  bindingDisplayName?: string | null;
+  externalOwnerId?: string | null;
+  boundAt: number;
+  statusChangedAt: number;
+  status: "PENDING_AUTHORIZATION" | "EFFECTIVE" | "INVALID" | "DELETED";
+  statusDisplayName: string;
+  version: number;
+};
 
 export type PlatformAdminCreateRequest = {
   loginName: string;
@@ -1036,6 +1222,27 @@ export type Problem = {
   instance?: (string) | null;
   errorCode: EdgeProblemCode;
   correlationId: string;
+};
+
+export type ProviderProfileStatusRequest = ExternalSystemStatusRequest;
+
+export type ProviderProfileView = {
+  providerCode: string;
+  displayName: string;
+  externalSystemCode: string;
+  externalSystemDisplayName: string;
+  businessScope: Array<string>;
+  businessScopeDisplayNames: Array<string>;
+  bindableNodeTypes: Array<string>;
+  bindableNodeTypeDisplayNames: Array<string>;
+  authenticationKind: "EXTERNAL_GRANT" | "INTERNAL_MAPPING" | "NO_MAPPING";
+  authenticationKindDisplayName: string;
+  unbindKind: "LOCAL_ONLY" | "REQUIRES_ADAPTER_UNBIND";
+  unbindKindDisplayName: string;
+  catalogStatus: "PLANNED" | "AVAILABLE";
+  catalogStatusDisplayName: string;
+  enablementStatus: "ENABLED" | "DISABLED";
+  version: number;
 };
 
 export type ServiceNodeType = "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
@@ -1296,6 +1503,21 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "createPlatformOwnerBinding": {
+    request: OwnerBindingCreateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "createWorkspaceInvitation": {
     request: WorkspaceInvitationCreateRequest;
     response: PlatformWorkspaceInvitation;
@@ -1318,6 +1540,22 @@ export type FaceOperationContracts = {
     requiresSession: true;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "deletePlatformOwnerBinding": {
+    request: OwnerBindingUpdateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    bindingRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -1451,6 +1689,44 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
+  "getPlatformExternalCapabilityDictionary": {
+    request: NoBody;
+    response: CapabilityDictionary;
+    requestRequired: false;
+    requiresSession: true;
+    path: Record<string, never>;
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformExternalCollaborationTree": {
+    request: NoBody;
+    response: ExternalCollaborationTree;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformExternalSystemDetail": {
+    request: NoBody;
+    response: ExternalSystemView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    externalSystemCode: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "getPlatformGroupWorkspaceDetail": {
     request: NoBody;
     response: GroupWorkspaceDetail;
@@ -1474,7 +1750,7 @@ export type FaceOperationContracts = {
   };
     query: {
     subjectType: OrganizationCandidateQuerySubjectType;
-    candidateUsage?: "CONTRACT_LIST";
+    candidateUsage?: "CONTRACT_LIST" | "EXTERNAL_BINDING";
     queryText?: string;
     page?: number;
     pageSize?: number;
@@ -1540,6 +1816,55 @@ export type FaceOperationContracts = {
     pageSize?: number;
   };
     queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformOwnerBindingDetail": {
+    request: NoBody;
+    response: OwnerBindingView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    bindingRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformProviderProfileBindings": {
+    request: NoBody;
+    response: OwnerBindingPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    providerCode: string;
+  };
+    query: {
+    bindingName?: string;
+    nodeQueryText?: string;
+    sortKey?: "BINDING_NAME" | "NODE" | "BUSINESS" | "EXTERNAL_OWNER_ID" | "STATUS";
+    sortDirection?: "ASC" | "DESC";
+    page?: number;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformProviderProfileDetail": {
+    request: NoBody;
+    response: ProviderProfileView;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    providerCode: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -1900,6 +2225,22 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "transitionPlatformExternalSystemStatus": {
+    request: ExternalSystemStatusRequest;
+    response: ExternalSystemView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    externalSystemCode: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "transitionPlatformGroupWorkspaceStatus": {
     request: GroupWorkspaceStatusTransitionRequest;
     response: GroupWorkspaceDetail;
@@ -1907,6 +2248,22 @@ export type FaceOperationContracts = {
     requiresSession: true;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "transitionPlatformProviderProfileStatus": {
+    request: ProviderProfileStatusRequest;
+    response: ProviderProfileView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    providerCode: string;
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -1969,6 +2326,22 @@ export type FaceOperationContracts = {
     requiresSession: true;
     path: {
     groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "updatePlatformOwnerBinding": {
+    request: OwnerBindingUpdateRequest;
+    response: OwnerBindingView;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    bindingRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -2082,6 +2455,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    createPlatformOwnerBinding: (pathParameters: FaceOperationContracts["createPlatformOwnerBinding"]["path"], options: FaceOperationOptions<"createPlatformOwnerBinding">) => execute({
+      operationId: "createPlatformOwnerBinding",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     createWorkspaceInvitation: (pathParameters: FaceOperationContracts["createWorkspaceInvitation"]["path"], options: FaceOperationOptions<"createWorkspaceInvitation">) => execute({
       operationId: "createWorkspaceInvitation",
       method: "POST",
@@ -2094,6 +2475,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "createWorkspaceRole",
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/roles",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    deletePlatformOwnerBinding: (pathParameters: FaceOperationContracts["deletePlatformOwnerBinding"]["path"], options: FaceOperationOptions<"deletePlatformOwnerBinding">) => execute({
+      operationId: "deletePlatformOwnerBinding",
+      method: "DELETE",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -2162,6 +2551,30 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    getPlatformExternalCapabilityDictionary: (pathParameters: FaceOperationContracts["getPlatformExternalCapabilityDictionary"]["path"], options: FaceOperationOptions<"getPlatformExternalCapabilityDictionary">) => execute({
+      operationId: "getPlatformExternalCapabilityDictionary",
+      method: "GET",
+      path: "/api/platform/external-capability-dictionary",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformExternalCollaborationTree: (pathParameters: FaceOperationContracts["getPlatformExternalCollaborationTree"]["path"], options: FaceOperationOptions<"getPlatformExternalCollaborationTree">) => execute({
+      operationId: "getPlatformExternalCollaborationTree",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/external-collaboration",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformExternalSystemDetail: (pathParameters: FaceOperationContracts["getPlatformExternalSystemDetail"]["path"], options: FaceOperationOptions<"getPlatformExternalSystemDetail">) => execute({
+      operationId: "getPlatformExternalSystemDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getPlatformGroupWorkspaceDetail: (pathParameters: FaceOperationContracts["getPlatformGroupWorkspaceDetail"]["path"], options: FaceOperationOptions<"getPlatformGroupWorkspaceDetail">) => execute({
       operationId: "getPlatformGroupWorkspaceDetail",
       method: "GET",
@@ -2198,6 +2611,30 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "getPlatformOrganizationOverviewPage",
       method: "GET",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformOwnerBindingDetail: (pathParameters: FaceOperationContracts["getPlatformOwnerBindingDetail"]["path"], options: FaceOperationOptions<"getPlatformOwnerBindingDetail">) => execute({
+      operationId: "getPlatformOwnerBindingDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformProviderProfileBindings: (pathParameters: FaceOperationContracts["getPlatformProviderProfileBindings"]["path"], options: FaceOperationOptions<"getPlatformProviderProfileBindings">) => execute({
+      operationId: "getPlatformProviderProfileBindings",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/owner-bindings",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformProviderProfileDetail: (pathParameters: FaceOperationContracts["getPlatformProviderProfileDetail"]["path"], options: FaceOperationOptions<"getPlatformProviderProfileDetail">) => execute({
+      operationId: "getPlatformProviderProfileDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -2378,10 +2815,26 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    transitionPlatformExternalSystemStatus: (pathParameters: FaceOperationContracts["transitionPlatformExternalSystemStatus"]["path"], options: FaceOperationOptions<"transitionPlatformExternalSystemStatus">) => execute({
+      operationId: "transitionPlatformExternalSystemStatus",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/external-systems/{externalSystemCode}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     transitionPlatformGroupWorkspaceStatus: (pathParameters: FaceOperationContracts["transitionPlatformGroupWorkspaceStatus"]["path"], options: FaceOperationOptions<"transitionPlatformGroupWorkspaceStatus">) => execute({
       operationId: "transitionPlatformGroupWorkspaceStatus",
       method: "POST",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    transitionPlatformProviderProfileStatus: (pathParameters: FaceOperationContracts["transitionPlatformProviderProfileStatus"]["path"], options: FaceOperationOptions<"transitionPlatformProviderProfileStatus">) => execute({
+      operationId: "transitionPlatformProviderProfileStatus",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/provider-profiles/{providerCode}/status",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -2414,6 +2867,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "updatePlatformGroupWorkspaceDisplay",
       method: "PATCH",
       path: "/api/platform/group-workspaces/{groupWorkspaceKey}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    updatePlatformOwnerBinding: (pathParameters: FaceOperationContracts["updatePlatformOwnerBinding"]["path"], options: FaceOperationOptions<"updatePlatformOwnerBinding">) => execute({
+      operationId: "updatePlatformOwnerBinding",
+      method: "PATCH",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/owner-bindings/{bindingRef}",
       pathParameters,
       requiresSession: true,
       ...options,

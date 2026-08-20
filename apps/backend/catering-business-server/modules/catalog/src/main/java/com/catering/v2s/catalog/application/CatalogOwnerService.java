@@ -11,6 +11,7 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
@@ -1752,13 +1753,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         CatalogInventoryCoordinator.validateCompatibilityDispositions(
                 localCompatibilityResults(scope, brandRef, plan), request.path("compatibilityDispositions"));
         if (requiredLong(request, "expectedSourceVersion", -1) != source.version()) {
-            {
-                throw new CatalogOwnerApi.Problem(
-                        ("STALE_COPY_PREFLIGHT"),
-                        (409),
-                        /* format-wrap */
-                        ("复制来源事实已变化，请重新预检"));
-            }
+            String staleReason = "复制来源事实已变化，请重新预检";
+            throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, staleReason);
         }
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             JsonNode replay = replay(scope, idempotencyKey.trim(), operationId, receiptRequest(request, brandRef));
@@ -1768,14 +1764,13 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
             long expectedSource = requiredLong(request, "expectedSourceVersion", -1);
             long expectedTarget = requiredLong(request, "expectedTargetVersion", -1);
-            if (expectedSource != source.version()
-                    || expectedTarget != target.version()
-                    || !required(request, "preflightDigest").equals(digest)) {
-                throw new CatalogOwnerApi.Problem(
-                        ("STALE_COPY_PREFLIGHT"),
-                        (409),
-                        /* format-wrap */
-                        ("复制预检已失效，请重新预检"));
+            boolean sourceVersionMatches = expectedSource == source.version();
+            boolean targetVersionMatches = expectedTarget == target.version();
+            String submittedDigest = required(request, "preflightDigest");
+            boolean digestMatches = submittedDigest.equals(digest);
+            if (!sourceVersionMatches || !targetVersionMatches || !digestMatches) {
+                String staleReason = "复制预检已失效，请重新预检";
+                throw new CatalogOwnerApi.Problem("STALE_COPY_PREFLIGHT", 409, staleReason);
             }
             if (compatibility.blocking())
                 throw new CatalogOwnerApi.Problem(compatibility.problemCode(), 422, compatibility.reason());
@@ -2739,7 +2734,17 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         ("VALIDATION_ERROR"), (422), ("parentEntryRef 仅适用于 SKU_ATTRIBUTE_VALUE"));
             }
         }
-        DictionaryListing listing = loadDictionaryListing(dataNodeRef, brandRef, kind, parentEntryRef);
+        int pageSize = parsePageSize(request, "pageSize", 20);
+        String queryIdentity = cursorIdentity(
+                "dictionary",
+                dataNodeRef,
+                brandRef,
+                kind,
+                parentEntryRef == null ? null : parentEntryRef.toString(),
+                Integer.toString(pageSize));
+        OpaqueCollectionCursor.Position cursor = decodeCollectionCursor(request, queryIdentity);
+        DictionaryListing listing =
+                loadDictionaryListing(dataNodeRef, brandRef, kind, parentEntryRef, cursor, pageSize, queryIdentity);
         DictionaryReferenceSnapshot references =
                 dictionaryReferenceSnapshot(dataNodeRef, brandRef, kind, listing.entryRefs());
         for (DictionaryEntryRow row : listing.entries()) {
@@ -2763,7 +2768,9 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 blocking.addObject().put("referenceKind", "CATALOG_ITEM").put("referenceRef", entryRef);
             voidAvailability.putArray("dependentFacts");
         }
-        data.putNull("cursor").put("total", entries.size()).put("generation", listing.generation());
+        data.put("total", listing.total()).put("generation", listing.generation());
+        if (listing.cursor() == null) data.putNull("cursor");
+        else data.put("cursor", listing.cursor());
         return envelope(requestId, data);
     }
 
@@ -2783,37 +2790,76 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         if (brandCopy) data.put("copySourceAvailable", true);
         ArrayNode entries = data.putArray("items");
         String keyword = optional(request, "keyword");
-        List<ItemRow> rows = jdbc.query(
-                "SELECT item_ref, code, name, short_name, shape_key, status, attributes::text, sections::text, "
-                        + "version, updated_at_epoch_millis, source_scope_ref FROM catalog.catalog_item WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' AND (?::text IS NULL OR (name || "
-                        + "chr(1) "
-                        + "|| COALESCE(short_name, '') || chr(1) || code) ILIKE '%' || ? || '%') ORDER BY code LIMIT "
-                        + "100",
-                (result, row) -> new ItemRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getString(5),
-                        result.getString(6),
-                        result.getString(7),
-                        result.getString(8),
-                        result.getLong(9),
-                        result.getLong(10),
-                        result.getString(11)),
-                sourceDataNodeRef,
-                brandRef,
-                keyword,
-                keyword);
-        rows.forEach(row -> entries.addObject()
+        int pageSize = parsePageSize(request, "pageSize", 20);
+        String queryIdentity =
+                cursorIdentity(operationId, sourceDataNodeRef, brandRef, keyword, Integer.toString(pageSize));
+        OpaqueCollectionCursor.Position cursor = decodeCollectionCursor(request, queryIdentity);
+        String cursorPredicate = cursor == null ? "" : " WHERE code > ? OR (code = ? AND item_ref > ?)";
+        String sql = "WITH matching AS (SELECT item_ref, code, name, short_name, shape_key, status, attributes::text, "
+                + "sections::text, version, updated_at_epoch_millis, source_scope_ref FROM "
+                + "catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' AND "
+                + "(?::text IS NULL OR (name || chr(1) || COALESCE(short_name, '') || chr(1) || code) "
+                + "ILIKE '%' || ? || '%')), aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS "
+                + "(SELECT item_ref,code,name,short_name,shape_key,status,attributes,sections,version,"
+                + "updated_at_epoch_millis,source_scope_ref FROM matching"
+                + cursorPredicate
+                + " ORDER BY code NULLS LAST, item_ref LIMIT ?) SELECT "
+                + "p.item_ref,p.code,p.name,p.short_name,p.shape_key,p.status,p.attributes,p.sections,"
+                + "p.version,p.updated_at_epoch_millis,p.source_scope_ref,a.total FROM aggregate a LEFT JOIN "
+                + "paged p ON "
+                + "TRUE ORDER BY p.code NULLS LAST,p.item_ref";
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(sourceDataNodeRef);
+        arguments.add(brandRef);
+        arguments.add(keyword);
+        arguments.add(keyword);
+        if (cursor != null) {
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.tieBreaker());
+        }
+        arguments.add(pageSize + 1);
+        List<CopyPageRow> pageRows = jdbc.query(
+                sql,
+                (result, row) -> {
+                    UUID itemRef = result.getObject(1, UUID.class);
+                    ItemRow item = itemRef == null
+                            ? null
+                            : new ItemRow(
+                                    itemRef,
+                                    result.getString(2),
+                                    result.getString(3),
+                                    result.getString(4),
+                                    result.getString(5),
+                                    result.getString(6),
+                                    result.getString(7),
+                                    result.getString(8),
+                                    result.getLong(9),
+                                    result.getLong(10),
+                                    result.getString(11));
+                    return new CopyPageRow(item, result.getLong(12));
+                },
+                arguments.toArray());
+        List<CopyPageRow> presentRows =
+                pageRows.stream().filter(row -> row.item() != null).toList();
+        boolean hasNext = presentRows.size() > pageSize;
+        if (hasNext) presentRows = presentRows.subList(0, pageSize);
+        presentRows.stream().map(CopyPageRow::item).forEach(row -> entries.addObject()
                 .put("code", row.code())
                 .put("name", row.name())
                 .put("shapeKey", row.shapeKey())
                 .put("status", row.status())
                 .put("compatibilityHint", "REVIEW_REQUIRED")
                 .put("version", row.version()));
-        data.putNull("cursor").put("total", entries.size()).put("generation", generation(dataNodeRef, brandRef));
+        long total = pageRows.isEmpty() ? 0 : pageRows.get(0).total();
+        data.put("total", total).put("generation", generation(dataNodeRef, brandRef));
+        if (hasNext) {
+            CopyPageRow last = presentRows.get(presentRows.size() - 1);
+            data.put(
+                    "cursor",
+                    OpaqueCollectionCursor.encode(
+                            queryIdentity, last.item().code(), last.item().ref()));
+        } else data.putNull("cursor");
         return envelope(requestId, data);
     }
 
@@ -5102,19 +5148,43 @@ public class CatalogOwnerService implements CatalogOwnerApi {
      * Resolves all entries plus the generation in one catalog.dictionary_entry statement. The synthetic empty row makes
      * an empty dictionary a single statement rather than a list query followed by a generation query.
      */
-    private DictionaryListing loadDictionaryListing(String scope, String brand, String kind, UUID parentEntryRef) {
+    private DictionaryListing loadDictionaryListing(
+            String scope,
+            String brand,
+            String kind,
+            UUID parentEntryRef,
+            OpaqueCollectionCursor.Position cursor,
+            int pageSize,
+            String queryIdentity) {
+        String cursorPredicate = cursor == null ? "" : " WHERE code > ? OR (code = ? AND entry_ref > ?)";
+        String sql = "WITH matching AS (SELECT entry_ref,code,name,status,parent_entry_ref,version,"
+                + "updated_at_epoch_millis FROM catalog.dictionary_entry WHERE data_node_ref=? "
+                + "AND brand_ref=? AND dictionary_kind=? AND "
+                + "(?::uuid IS NULL OR parent_entry_ref=?)), "
+                + "aggregate AS (SELECT COUNT(*) AS total, COALESCE(MAX(version),0) AS "
+                + "generation FROM matching), "
+                + "paged AS (SELECT entry_ref,code,name,status,parent_entry_ref,version,"
+                + "updated_at_epoch_millis FROM matching"
+                + cursorPredicate
+                + " ORDER BY code NULLS LAST, entry_ref LIMIT ?) "
+                + "SELECT p.entry_ref,p.code,p.name,p.status,p.parent_entry_ref,p.version,"
+                + "p.updated_at_epoch_millis,"
+                + "a.total,a.generation FROM aggregate a LEFT JOIN paged p ON TRUE ORDER BY p.code NULLS LAST,"
+                + "p.entry_ref";
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(scope);
+        arguments.add(brand);
+        arguments.add(kind);
+        arguments.add(parentEntryRef);
+        arguments.add(parentEntryRef);
+        if (cursor != null) {
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.sortKey());
+            arguments.add(cursor.tieBreaker());
+        }
+        arguments.add(pageSize + 1);
         List<DictionaryListingRow> rows = jdbc.query(
-                "WITH matching AS (SELECT "
-                        + "entry_ref,code,name,status,parent_entry_ref,version,updated_at_epoch_millis,display_order "
-                        + "FROM "
-                        + "catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND "
-                        + "(?::uuid IS NULL OR parent_entry_ref=?)), generation AS (SELECT COALESCE(MAX(version),0) AS "
-                        + "value FROM matching) SELECT "
-                        + "matching.entry_ref,matching.code,matching.name,matching.status,matching.parent_entry_ref,mat"
-                        + "chin"
-                        + "g.version,matching.updated_at_epoch_millis,generation.value FROM generation LEFT JOIN "
-                        + "matching "
-                        + "ON TRUE ORDER BY matching.display_order NULLS LAST,matching.code NULLS LAST",
+                sql,
                 (result, index) -> new DictionaryListingRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
@@ -5123,14 +5193,16 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         result.getObject(5, UUID.class),
                         result.getLong(6),
                         result.getLong(7),
-                        result.getLong(8)),
-                scope,
-                brand,
-                kind,
-                parentEntryRef,
-                parentEntryRef);
+                        result.getLong(8),
+                        result.getLong(9)),
+                arguments.toArray());
         long generation = rows.isEmpty() ? 0L : rows.get(0).generation();
-        List<DictionaryEntryRow> entries = rows.stream()
+        long total = rows.isEmpty() ? 0L : rows.get(0).total();
+        List<DictionaryListingRow> presentRows =
+                rows.stream().filter(row -> row.entryRef() != null).toList();
+        boolean hasNext = presentRows.size() > pageSize;
+        if (hasNext) presentRows = presentRows.subList(0, pageSize);
+        List<DictionaryEntryRow> entries = presentRows.stream()
                 .filter(row -> row.entryRef() != null)
                 .map(row -> new DictionaryEntryRow(
                         row.entryRef(),
@@ -5141,7 +5213,12 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         row.version(),
                         row.updatedAt()))
                 .toList();
-        return new DictionaryListing(entries, generation);
+        String nextCursor = null;
+        if (hasNext) {
+            DictionaryListingRow last = presentRows.get(presentRows.size() - 1);
+            nextCursor = OpaqueCollectionCursor.encode(queryIdentity, last.code(), last.entryRef());
+        }
+        return new DictionaryListing(entries, generation, total, nextCursor);
     }
 
     private List<DictionaryRow> lockDictionaryEntriesForReorder(String scope, String brand, String kind) {
@@ -6287,6 +6364,23 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         } catch (NumberFormatException ex) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be between 1 and 100", ex);
         }
+    }
+
+    private static OpaqueCollectionCursor.Position decodeCollectionCursor(ObjectNode request, String queryIdentity) {
+        try {
+            return OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
+        } catch (OpaqueCollectionCursor.InvalidCursor failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "cursor is invalid", failure);
+        }
+    }
+
+    private static String cursorIdentity(String operationId, String... parts) {
+        StringBuilder identity = new StringBuilder(operationId);
+        for (String part : parts) {
+            String value = part == null ? "" : part;
+            identity.append('|').append(value.length()).append(':').append(value);
+        }
+        return identity.toString();
     }
 
     private static long parseCursor(ObjectNode request, String key) {
@@ -7447,6 +7541,8 @@ public class CatalogOwnerService implements CatalogOwnerApi {
 
     private record PageItemRow(ItemRow item, long total) {}
 
+    private record CopyPageRow(ItemRow item, long total) {}
+
     private record CategoryRow(
             UUID ref,
             String code,
@@ -7512,9 +7608,10 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             UUID parentEntryRef,
             long version,
             long updatedAt,
+            long total,
             long generation) {}
 
-    private record DictionaryListing(List<DictionaryEntryRow> entries, long generation) {
+    private record DictionaryListing(List<DictionaryEntryRow> entries, long generation, long total, String cursor) {
         List<UUID> entryRefs() {
             return entries.stream().map(DictionaryEntryRow::entryRef).toList();
         }

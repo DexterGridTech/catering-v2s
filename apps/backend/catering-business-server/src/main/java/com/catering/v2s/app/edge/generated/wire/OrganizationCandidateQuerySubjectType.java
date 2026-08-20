@@ -2,6 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public enum OrganizationCandidateQuerySubjectType {
+    COMMERCIAL_GROUP,
+    REGION,
     PROJECT,
     BRAND,
     TENANT,

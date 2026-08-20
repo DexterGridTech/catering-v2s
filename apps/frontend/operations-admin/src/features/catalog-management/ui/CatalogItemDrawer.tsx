@@ -32,10 +32,20 @@ import {
   digestFileContent,
   NameCodeText,
   testId,
+  useCursorCandidates,
   useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import type {DescriptorTreeNode} from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type UIEvent,
+} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {
@@ -358,24 +368,48 @@ export function CatalogItemDrawer({
   const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !itemCode});
   const manifest = manifestQuery.currentData?.data;
   const mediaLimits = useMemo(() => decodeCatalogMediaLimits(manifest), [manifest]);
+  const productionTagCandidates = useCursorCandidates<ProductionTagOption>({
+    resetKey: `${itemCode ?? ''}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
+    pageSize: 50,
+    keyOf: tag => tag.tagRef,
+  });
   const productionTagsRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsProductionTags(
         {},
-        {query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? '')}, headers},
+        {
+          query: {
+            dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
+            ...(productionTagCandidates.cursor ? {cursor: productionTagCandidates.cursor} : {}),
+            pageSize: productionTagCandidates.pageSize,
+          },
+          headers,
+        },
       ),
-    [headers, queryContext.scopeRef],
+    [headers, productionTagCandidates.cursor, productionTagCandidates.pageSize, queryContext.scopeRef],
   );
   const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {
     skip: !itemCode || !canWriteCatalog,
   });
-  const availableProductionTags: ProductionTagOption[] = (productionTagsQuery.data?.data.entries ?? []).map(entry => ({
-    tagRef: entry.tagRef,
-    code: entry.code,
-    name: entry.name,
-    owner: 'fulfillment-production',
-    status: entry.status,
-  }));
+  const productionTagPage = productionTagsQuery.currentData?.data;
+  useEffect(() => {
+    if (!productionTagPage) return;
+    productionTagCandidates.acceptPage(
+      productionTagPage.entries.map(entry => ({
+        tagRef: entry.tagRef,
+        code: entry.code,
+        name: entry.name,
+        owner: 'fulfillment-production',
+        status: entry.status,
+      })),
+      {
+        pageSize: productionTagCandidates.pageSize,
+        total: productionTagPage.total,
+        nextCursor: productionTagPage.cursor,
+      },
+    );
+  }, [productionTagCandidates.acceptPage, productionTagCandidates.pageSize, productionTagPage]);
+  const availableProductionTags = productionTagCandidates.items;
   const [save] = operationsRtk.useSaveOperationsCatalogItemMutation();
   const [stageAsset] = operationsRtk.useStageOperationsCatalogAssetMutation();
   const [releaseAsset] = operationsRtk.useReleaseOperationsCatalogStagedAssetMutation();
@@ -1412,6 +1446,10 @@ export function CatalogItemDrawer({
               onRemoveSkuMedia={removeSkuMedia}
               onRemoveSkuStagedMedia={removeSkuStagedMedia}
               availableProductionTags={availableProductionTags}
+              productionTagsLoading={productionTagsQuery.isLoading || productionTagsQuery.isFetching}
+              onProductionTagsPopupScroll={event =>
+                productionTagCandidates.onPopupScroll(event, productionTagsQuery.isFetching)
+              }
               selectedProductionTagRefs={selectedProductionTagRefs}
               selectedProductionTags={selectedProductionTags}
               onProductionTagsChange={next => {
@@ -1945,6 +1983,8 @@ function CatalogTabContent({
   onRemoveSkuMedia,
   onRemoveSkuStagedMedia,
   availableProductionTags,
+  productionTagsLoading,
+  onProductionTagsPopupScroll,
   selectedProductionTagRefs,
   selectedProductionTags,
   onProductionTagsChange,
@@ -2004,6 +2044,8 @@ function CatalogTabContent({
   onRemoveSkuMedia: (skuIndex: number, assetRef: string) => Promise<void>;
   onRemoveSkuStagedMedia: (id: string) => void;
   availableProductionTags: ProductionTagOption[];
+  productionTagsLoading: boolean;
+  onProductionTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
   selectedProductionTagRefs: string[];
   selectedProductionTags: ProductionTagOption[];
   onProductionTagsChange: (next: string[]) => void;
@@ -2486,9 +2528,11 @@ function CatalogTabContent({
               mode="multiple"
               value={selectedProductionTagRefs}
               options={options}
+              loading={productionTagsLoading}
               disabled={denied('productionTagRefs')}
               placeholder={catalogFieldLabel(manifest, 'productionTagRefs')}
               onChange={onProductionTagsChange}
+              onPopupScroll={onProductionTagsPopupScroll}
               style={{width: '100%'}}
               {...testId('catalog-production-tag-field')}
             />
@@ -4360,7 +4404,12 @@ function CompositeCandidatePicker({
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [categoryRef, setCategoryRef] = useState<string>();
-  const [cursor, setCursor] = useState('');
+  const candidateState = useCursorCandidates<ReturnType<typeof decodeItems>['items'][number]>({
+    queryText: keyword,
+    resetKey: `${open}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}|${categoryRef ?? ''}`,
+    pageSize: 20,
+    keyOf: item => item.itemRef,
+  });
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const navigationRequest = useMemo(
     () =>
@@ -4377,26 +4426,40 @@ function CompositeCandidatePicker({
         {
           query: {
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
-            ...(keyword.trim() ? {keyword: keyword.trim()} : {}),
+            ...(candidateState.debouncedQueryText ? {keyword: candidateState.debouncedQueryText} : {}),
             ...(categoryRef ? {categoryRef: wireUuid(categoryRef), includeSubCategories: true} : {}),
-            ...(cursor ? {cursor} : {}),
-            pageSize: 20,
+            ...(candidateState.cursor ? {cursor: candidateState.cursor} : {}),
+            pageSize: candidateState.pageSize,
           },
           headers,
         },
       ),
-    [categoryRef, cursor, headers, keyword, queryContext.scopeRef],
+    [
+      candidateState.cursor,
+      candidateState.debouncedQueryText,
+      candidateState.pageSize,
+      categoryRef,
+      headers,
+      queryContext.scopeRef,
+    ],
   );
   const navigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !open});
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
   const navigation = decodeNavigation(navigationQuery.data);
-  const page = decodeItems(itemsQuery.data);
+  const page = decodeItems(itemsQuery.currentData);
+  useEffect(() => {
+    if (!itemsQuery.currentData) return;
+    candidateState.acceptPage(page.items, {
+      pageSize: candidateState.pageSize,
+      total: page.total,
+      nextCursor: page.cursor,
+    });
+  }, [candidateState.acceptPage, candidateState.pageSize, itemsQuery.currentData, page.cursor, page.items, page.total]);
   const treeData = useMemo(() => buildCategoryTree(navigation.tree), [navigation.tree]);
   useEffect(() => {
     if (!open) {
       setKeyword('');
       setCategoryRef(undefined);
-      setCursor('');
     }
   }, [open]);
   return (
@@ -4427,7 +4490,6 @@ function CompositeCandidatePicker({
                   selectedKeys={categoryRef ? [categoryRef] : []}
                   onSelect={keys => {
                     setCategoryRef(String(keys[0] ?? ''));
-                    setCursor('');
                   }}
                 />
               ) : (
@@ -4443,9 +4505,7 @@ function CompositeCandidatePicker({
                 allowClear
                 onChange={event => {
                   setKeyword(event.target.value);
-                  setCursor('');
                 }}
-                onSearch={() => setCursor('')}
                 {...testId(`${testIdValue}-search`)}
               />
               {itemsQuery.isError && (
@@ -4463,8 +4523,8 @@ function CompositeCandidatePicker({
                 />
               )}
               <List
-                loading={itemsQuery.isLoading || itemsQuery.isFetching}
-                dataSource={page.items.filter(item => item.code !== currentItemCode)}
+                loading={itemsQuery.isLoading || (itemsQuery.isFetching && !candidateState.items.length)}
+                dataSource={candidateState.items.filter(item => item.code !== currentItemCode)}
                 locale={{emptyText: '暂无可引用商品'}}
                 renderItem={item => (
                   <List.Item
@@ -4493,9 +4553,9 @@ function CompositeCandidatePicker({
                   </List.Item>
                 )}
               />
-              {page.cursor && (
+              {candidateState.nextCursor && (
                 <Button
-                  onClick={() => setCursor(page.cursor)}
+                  onClick={() => candidateState.loadNext(itemsQuery.isFetching)}
                   loading={itemsQuery.isFetching}
                   {...testId(`${testIdValue}-next`)}
                 >

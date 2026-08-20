@@ -545,7 +545,7 @@ async function execute() {
       const materializeDictionary = async (kind, entries) => {
         const codes = entries.map((entry) => entry.code);
         for (const entry of entries) await request(`${client.scopeType}-${kind}-${entry.code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code: entry.code, name: dictionaryLabel(kind, entry.code), parentEntryRef: entry.parentEntryRef}});
-        const dictionary = await request(`${client.scopeType}-${kind}-readback`, "getOperationsCatalogDictionary", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
+        const dictionary = await request(`${client.scopeType}-${kind}-readback`, "getOperationsCatalogDictionary", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef, pageSize: 100}});
         for (const row of (dictionary.json?.data ?? dictionary.json)?.entries || []) {
           if (codes.includes(row.code) && row.name !== dictionaryLabel(kind, row.code)) fail(`SEED_DICTIONARY_LABEL_READBACK_INVALID:${kind}:${row.code}`);
           refs.dictionaryRefs.set(dictionaryRefKey(kind, row.code), requiredUuid(row.entryRef, `${kind}:${row.code}:readback`));

@@ -1,7 +1,8 @@
 import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Space, Spin, Table, Typography} from 'antd';
-import {testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {createPageQueryIdentity, testId, useOverlayLock, usePageQuery} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/platform-edge';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
 
@@ -73,26 +74,47 @@ export function PlatformAuditHistoryModal({
   groupWorkspaceKey?: string;
   onClose: () => void;
 }) {
-  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string>();
   const [lastSuccessful, setLastSuccessful] = useState<AuditHistoryPage>();
+  const targetType = target?.entityType;
+  const targetId = target?.entityId;
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getPlatformEntityAuditHistory,
+        scope: {groupWorkspaceKey, targetType, targetId},
+      }),
+    [groupWorkspaceKey, targetId, targetType],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
   useOverlayLock(open);
   useEffect(() => {
     if (!open) {
-      setPage(1);
+      pagination.reset();
       setSelectedId(undefined);
       setLastSuccessful(undefined);
+      return;
     }
-  }, [open, target?.entityId, target?.entityType]);
+    setSelectedId(undefined);
+    setLastSuccessful(undefined);
+  }, [groupWorkspaceKey, open, pagination.reset, targetId, targetType]);
   const request = useMemo(
     () =>
-      target
+      targetType && targetId
         ? platformAdminRtkRequest.getPlatformEntityAuditHistory(
             {},
-            {query: {groupWorkspaceKey, entityType: target.entityType, entityId: target.entityId, page, pageSize: 10}},
+            {
+              query: {
+                groupWorkspaceKey,
+                entityType: targetType,
+                entityId: targetId,
+                page: pagination.page,
+                pageSize: pagination.pageSize,
+              },
+            },
           )
         : undefined,
-    [groupWorkspaceKey, page, target],
+    [groupWorkspaceKey, pagination.page, pagination.pageSize, targetId, targetType],
   );
   const query = platformRtk.useGetPlatformEntityAuditHistoryQuery(request!, {skip: !open || !request});
   const problem = query.error ? platformProblemOf(query.error) : undefined;
@@ -190,11 +212,14 @@ export function PlatformAuditHistoryModal({
               )}
             />
             <Pagination
-              current={visibleData.page}
-              pageSize={visibleData.pageSize}
+              current={pagination.page}
+              pageSize={pagination.pageSize}
               total={visibleData.total}
-              showSizeChanger={false}
-              onChange={setPage}
+              showSizeChanger
+              onChange={(nextPage, nextPageSize) => {
+                if (nextPageSize !== pagination.pageSize) pagination.setPageSize(nextPageSize);
+                else pagination.setPage(nextPage);
+              }}
               style={{marginTop: 12}}
               {...testId('platform-audit-history-pagination')}
             />

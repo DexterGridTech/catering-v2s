@@ -3,12 +3,15 @@
   "kind": "project-memory-index",
   "entries": [
     {
-      "id": "kernel.workspace-roadmap",
-      "path": "project-memory/kernel/01-workspace-and-roadmap.md",
-      "layer": "kernel",
+      "id": "decisions.confirmed-business-language-corpus",
+      "path": "project-memory/decisions/confirmed-business-language-corpus.md",
+      "layer": "routed",
       "route": {
         "taskKinds": [
-          "all"
+          "design",
+          "implementation",
+          "review",
+          "testing"
         ],
         "domains": [
           "all"
@@ -23,86 +26,177 @@
           "all"
         ],
         "triggers": [
-          "all"
+          "task-start",
+          "implementation",
+          "review"
         ]
       },
       "assertions": [
-        "PROGRAM_SCOPED_CURRENT_ONLY",
-        "R1_ONLY",
-        "GIT_BY_DEXTER",
-        "NO_R2_W1"
+        "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+        "BUSINESS_CORPUS_READ_POLICY"
       ],
       "assertionSources": [
         {
-          "assertionKey": "PROGRAM_SCOPED_CURRENT_ONLY",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 0. Roadmap 身份与当前状态"
+          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 已接受集合与内容基准"
         },
         {
-          "assertionKey": "R1_ONLY",
-          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
-          "anchor": "# catering-v2s Roadmap R1 实施授权"
-        },
-        {
-          "assertionKey": "GIT_BY_DEXTER",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 2. 不可突破的全程红线"
-        },
-        {
-          "assertionKey": "NO_R2_W1",
-          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
-          "anchor": "# catering-v2s Roadmap R1 实施授权"
+          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 使用纪律"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+      ]
+    },
+    {
+      "id": "decisions.deterministic-context-only",
+      "path": "project-memory/decisions/deterministic-context-only.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "memory-recall",
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "memory",
+          "session",
+          "architecture",
+          "transaction",
+          "database",
+          "contract",
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "session-start",
+          "task-start",
+          "implementation",
+          "review",
+          "status-question"
+        ]
+      },
+      "assertions": [
+        "NO_PROVIDER",
+        "NO_DAEMON",
+        "PROMPT_RECOMMENDS_ONLY",
+        "MACHINE_OR_REVIEW_DESTINATION",
+        "PHASE_DUE_FAILS",
+        "CLAUDE_ENTRY_INTENTIONAL",
+        "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "NO_PROVIDER",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "NO_DAEMON",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "PROMPT_RECOMMENDS_ONLY",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        },
+        {
+          "assertionKey": "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY",
+          "path": "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
+          "anchor": "# evidence / package / hash-chain 控制面退役 · 执行清单"
+        },
+        {
+          "assertionKey": "MACHINE_OR_REVIEW_DESTINATION",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 8. R2：Fresh v2s-rooted 会话验收与 W0 正式关闭"
+        },
+        {
+          "assertionKey": "PHASE_DUE_FAILS",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 10. R4：W2——机器门、scripts/verify 与 red fixtures"
+        },
+        {
+          "assertionKey": "CLAUDE_ENTRY_INTENTIONAL",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
         "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ]
     },
     {
-      "id": "kernel.service-owner",
-      "path": "project-memory/kernel/02-service-shape-and-owner.md",
-      "layer": "kernel",
+      "id": "decisions.distributed-topology-is-not-current",
+      "path": "project-memory/decisions/distributed-topology-is-not-current.md",
+      "layer": "routed",
       "route": {
         "taskKinds": [
-          "all"
+          "design",
+          "implementation",
+          "review"
         ],
         "domains": [
-          "all"
+          "backend",
+          "platform"
         ],
         "consumerFaces": [
-          "all"
+          "backend"
         ],
         "owners": [
-          "all"
+          "backend",
+          "platform"
         ],
         "impacts": [
-          "all"
+          "architecture",
+          "transaction"
         ],
         "triggers": [
-          "all"
+          "implementation",
+          "review"
         ]
       },
       "assertions": [
-        "ONE_BUSINESS_DEPLOYABLE",
-        "MODULE_OWNER_SOVEREIGNTY",
-        "COORDINATOR_NO_ASSET"
+        "NO_MQ_OUTBOX_TDP",
+        "NO_INTERNAL_OPENAPI_CLIENT",
+        "NO_DISTRIBUTED_DEFAULTS"
       ],
       "assertionSources": [
         {
-          "assertionKey": "ONE_BUSINESS_DEPLOYABLE",
+          "assertionKey": "NO_MQ_OUTBOX_TDP",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
           "anchor": "### 3.1 部署拓扑"
         },
         {
-          "assertionKey": "MODULE_OWNER_SOVEREIGNTY",
+          "assertionKey": "NO_INTERNAL_OPENAPI_CLIENT",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
           "anchor": "### 3.2 领域与模块边界"
         },
         {
-          "assertionKey": "COORDINATOR_NO_ASSET",
+          "assertionKey": "NO_DISTRIBUTED_DEFAULTS",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.3 跨模块原子写"
+          "anchor": "### 3.11 真实进程边界与触发制"
         }
       ],
       "sourceRefs": [
@@ -110,66 +204,283 @@
       ]
     },
     {
-      "id": "kernel.transaction-data",
-      "path": "project-memory/kernel/03-transaction-data-and-dependencies.md",
-      "layer": "kernel",
+      "id": "decisions.http-crud-efficiency-design-redlines",
+      "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+      "layer": "routed",
       "route": {
         "taskKinds": [
-          "all"
+          "design",
+          "implementation",
+          "review",
+          "testing"
         ],
         "domains": [
-          "all"
+          "backend",
+          "contract",
+          "platform",
+          "admin-ui"
         ],
         "consumerFaces": [
           "all"
         ],
         "owners": [
-          "all"
+          "backend",
+          "platform",
+          "contract",
+          "frontend-platform",
+          "product"
         ],
         "impacts": [
-          "all"
+          "architecture",
+          "database",
+          "contract",
+          "evidence"
         ],
         "triggers": [
-          "all"
+          "task-start",
+          "implementation",
+          "review"
         ]
       },
       "assertions": [
-        "ONE_DB_MULTI_SCHEMA",
-        "ONE_FLYWAY_HISTORY",
-        "COMMAND_REQUIRED_TRANSACTION",
-        "TASK_READ_JOIN",
-        "NO_NORMAL_POLLING"
+        "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
+        "SET_BASED_COLLECTION_READS",
+        "OWNER_LOCAL_EFFICIENCY_REPAIR",
+        "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY",
+        "COMMAND_CORRECTNESS_COST_PRESERVED",
+        "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
+        "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
+        "CONTRACT_ROUTE_CLOSURE",
+        "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
+        "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
+        "EXECUTION_EVIDENCE_TAXONOMY",
+        "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
+        "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
+        "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
+        "BACKEND_FORMATTING_GATE_SCOPE"
       ],
       "assertionSources": [
         {
-          "assertionKey": "ONE_DB_MULTI_SCHEMA",
-          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.7 单库、多 schema 与完整性"
+          "assertionKey": "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "# 1. 决策与目标"
         },
         {
-          "assertionKey": "ONE_FLYWAY_HISTORY",
-          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.7 单库、多 schema 与完整性"
+          "assertionKey": "SET_BASED_COLLECTION_READS",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## HTTP CRUD 效率设计红线"
         },
         {
-          "assertionKey": "COMMAND_REQUIRED_TRANSACTION",
-          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.3 跨模块原子写"
+          "assertionKey": "OWNER_LOCAL_EFFICIENCY_REPAIR",
+          "path": "PLATFORM-BLUEPRINT.md",
+          "anchor": "## HTTP CRUD 效率设计红线"
         },
         {
-          "assertionKey": "TASK_READ_JOIN",
-          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.5 任务型读取"
+          "assertionKey": "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY",
+          "path": "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md",
+          "anchor": "## Decided owner-boundary pattern"
         },
         {
-          "assertionKey": "NO_NORMAL_POLLING",
+          "assertionKey": "COMMAND_CORRECTNESS_COST_PRESERVED",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "# 6. 明确不做"
+        },
+        {
+          "assertionKey": "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
           "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "## Part G. 跨域同步的前端补偿清单——v2s 一律不再做"
+          "anchor": "### B.6 性能"
+        },
+        {
+          "assertionKey": "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 3.3 两层指标"
+        },
+        {
+          "assertionKey": "CONTRACT_ROUTE_CLOSURE",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 3.1 契约分母（第一交付单元）"
+        },
+        {
+          "assertionKey": "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
+          "anchor": "## Dexter-authorized generated edge route consumer closure"
+        },
+        {
+          "assertionKey": "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 5.1 受管执行分类与敏感数据流"
+        },
+        {
+          "assertionKey": "EXECUTION_EVIDENCE_TAXONOMY",
+          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+          "anchor": "## 5.1 受管执行分类与敏感数据流"
+        },
+        {
+          "assertionKey": "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### 1-H · 分层命名与 split package"
+        },
+        {
+          "assertionKey": "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
+          "path": "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
+          "anchor": "## Contract and test matrix"
+        },
+        {
+          "assertionKey": "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
+          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
+          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
+        },
+        {
+          "assertionKey": "BACKEND_FORMATTING_GATE_SCOPE",
+          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
+          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+        "PLATFORM-BLUEPRINT.md",
+        "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md",
+        "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
+        "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
+        "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/platform/backend-coding-standard.md",
+        "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"
+      ]
+    },
+    {
+      "id": "decisions.independent-subagent-adversarial-review",
+      "path": "project-memory/decisions/independent-subagent-adversarial-review.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "governance",
+          "evidence",
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "task-start",
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "INDEPENDENT_SUBAGENT_REQUIRED",
+        "BLIND_REVIEW_FIRST",
+        "AUTHOR_INTAKE_ONLY",
+        "SUBAGENT_INPUT_CHECKLIST_REQUIRED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INDEPENDENT_SUBAGENT_REQUIRED",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "BLIND_REVIEW_FIRST",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "AUTHOR_INTAKE_ONLY",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "SUBAGENT_INPUT_CHECKLIST_REQUIRED",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 2. 独立、盲审与最小输入"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+      ]
+    },
+    {
+      "id": "decisions.r5-full-seed-report-api-db-accounting",
+      "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "backend"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "platform",
+          "backend"
+        ],
+        "impacts": [
+          "evidence",
+          "database",
+          "governance",
+          "owner"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "SEED_REPORT_PER_RUN",
+        "SEED_API_DB_ACCOUNTING",
+        "SEED_REPORT_CORRELATION",
+        "SEED_REPORT_NO_SECRETS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "SEED_REPORT_PER_RUN",
+          "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+          "anchor": "## 规则"
+        },
+        {
+          "assertionKey": "SEED_API_DB_ACCOUNTING",
+          "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+          "anchor": "## 规则"
+        },
+        {
+          "assertionKey": "SEED_REPORT_CORRELATION",
+          "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+          "anchor": "## 规则"
+        },
+        {
+          "assertionKey": "SEED_REPORT_NO_SECRETS",
+          "path": "project-memory/decisions/r5-full-seed-report-api-db-accounting.md",
+          "anchor": "## 规则"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/decisions/r5-full-seed-report-api-db-accounting.md"
       ]
     },
     {
@@ -402,369 +713,397 @@
       ]
     },
     {
-      "id": "decisions.deterministic-context-only",
-      "path": "project-memory/decisions/deterministic-context-only.md",
-      "layer": "routed",
+      "id": "kernel.service-owner",
+      "path": "project-memory/kernel/02-service-shape-and-owner.md",
+      "layer": "kernel",
       "route": {
         "taskKinds": [
-          "memory-recall",
-          "design",
-          "implementation",
-          "review",
-          "testing"
+          "all"
         ],
         "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
+          "all"
         ],
         "consumerFaces": [
           "all"
         ],
         "owners": [
-          "platform",
-          "backend",
-          "product"
-        ],
-        "impacts": [
-          "memory",
-          "session",
-          "architecture",
-          "transaction",
-          "database",
-          "contract",
-          "evidence",
-          "governance"
-        ],
-        "triggers": [
-          "session-start",
-          "task-start",
-          "implementation",
-          "review",
-          "status-question"
-        ]
-      },
-      "assertions": [
-        "NO_PROVIDER",
-        "NO_DAEMON",
-        "PROMPT_RECOMMENDS_ONLY",
-        "MACHINE_OR_REVIEW_DESTINATION",
-        "PHASE_DUE_FAILS",
-        "CLAUDE_ENTRY_INTENTIONAL",
-        "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "NO_PROVIDER",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
-        },
-        {
-          "assertionKey": "NO_DAEMON",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
-        },
-        {
-          "assertionKey": "PROMPT_RECOMMENDS_ONLY",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
-        },
-        {
-          "assertionKey": "RETIRED_COMPLIANCE_CONTROL_TRACEABILITY",
-          "path": "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
-          "anchor": "# evidence / package / hash-chain 控制面退役 · 执行清单"
-        },
-        {
-          "assertionKey": "MACHINE_OR_REVIEW_DESTINATION",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 8. R2：Fresh v2s-rooted 会话验收与 W0 正式关闭"
-        },
-        {
-          "assertionKey": "PHASE_DUE_FAILS",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "## 10. R4：W2——机器门、scripts/verify 与 red fixtures"
-        },
-        {
-          "assertionKey": "CLAUDE_ENTRY_INTENTIONAL",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.7 AI-first 底座迁移(v2s 仓内开会话的前提)"
-        }
-      ],
-      "sourceRefs": [
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-        "doc/review/platform/2026-08-13-v2s-compliance-control-retirement-decision-claude.md",
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
-      ]
-    },
-    {
-      "id": "decisions.independent-subagent-adversarial-review",
-      "path": "project-memory/decisions/independent-subagent-adversarial-review.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
-        ],
-        "consumerFaces": [
           "all"
         ],
-        "owners": [
-          "platform",
-          "backend",
-          "product"
-        ],
         "impacts": [
-          "governance",
-          "evidence",
-          "architecture",
-          "contract",
-          "database"
-        ],
-        "triggers": [
-          "task-start",
-          "review",
-          "implementation"
-        ]
-      },
-      "assertions": [
-        "INDEPENDENT_SUBAGENT_REQUIRED",
-        "BLIND_REVIEW_FIRST",
-        "AUTHOR_INTAKE_ONLY",
-        "SUBAGENT_INPUT_CHECKLIST_REQUIRED"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "INDEPENDENT_SUBAGENT_REQUIRED",
-          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 2. 独立、盲审与最小输入"
-        },
-        {
-          "assertionKey": "BLIND_REVIEW_FIRST",
-          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 2. 独立、盲审与最小输入"
-        },
-        {
-          "assertionKey": "AUTHOR_INTAKE_ONLY",
-          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 2. 独立、盲审与最小输入"
-        },
-        {
-          "assertionKey": "SUBAGENT_INPUT_CHECKLIST_REQUIRED",
-          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 2. 独立、盲审与最小输入"
-        }
-      ],
-      "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
-      ]
-    },
-    {
-      "id": "decisions.http-crud-efficiency-design-redlines",
-      "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "backend",
-          "contract",
-          "platform",
-          "admin-ui"
-        ],
-        "consumerFaces": [
           "all"
         ],
-        "owners": [
-          "backend",
-          "platform",
-          "contract",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "architecture",
-          "database",
-          "contract",
-          "evidence"
-        ],
         "triggers": [
-          "task-start",
-          "implementation",
-          "review"
+          "all"
         ]
       },
       "assertions": [
-        "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
-        "SET_BASED_COLLECTION_READS",
-        "OWNER_LOCAL_EFFICIENCY_REPAIR",
-        "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY",
-        "COMMAND_CORRECTNESS_COST_PRESERVED",
-        "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
-        "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
-        "CONTRACT_ROUTE_CLOSURE",
-        "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
-        "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
-        "EXECUTION_EVIDENCE_TAXONOMY",
-        "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
-        "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
-        "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
-        "BACKEND_FORMATTING_GATE_SCOPE"
+        "ONE_BUSINESS_DEPLOYABLE",
+        "MODULE_OWNER_SOVEREIGNTY",
+        "COORDINATOR_NO_ASSET"
       ],
       "assertionSources": [
         {
-          "assertionKey": "HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "# 1. 决策与目标"
-        },
-        {
-          "assertionKey": "SET_BASED_COLLECTION_READS",
-          "path": "PLATFORM-BLUEPRINT.md",
-          "anchor": "## HTTP CRUD 效率设计红线"
-        },
-        {
-          "assertionKey": "OWNER_LOCAL_EFFICIENCY_REPAIR",
-          "path": "PLATFORM-BLUEPRINT.md",
-          "anchor": "## HTTP CRUD 效率设计红线"
-        },
-        {
-          "assertionKey": "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY",
-          "path": "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md",
-          "anchor": "## Decided owner-boundary pattern"
-        },
-        {
-          "assertionKey": "COMMAND_CORRECTNESS_COST_PRESERVED",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "# 6. 明确不做"
-        },
-        {
-          "assertionKey": "TASK_READ_BUDGET_REQUIRES_EXPLANATION",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### B.6 性能"
-        },
-        {
-          "assertionKey": "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "## 3.3 两层指标"
-        },
-        {
-          "assertionKey": "CONTRACT_ROUTE_CLOSURE",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "## 3.1 契约分母（第一交付单元）"
-        },
-        {
-          "assertionKey": "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
-          "anchor": "## Dexter-authorized generated edge route consumer closure"
-        },
-        {
-          "assertionKey": "DIAGNOSTIC_SECRET_FLOW_EXPLICIT",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "## 5.1 受管执行分类与敏感数据流"
-        },
-        {
-          "assertionKey": "EXECUTION_EVIDENCE_TAXONOMY",
-          "path": "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-          "anchor": "## 5.1 受管执行分类与敏感数据流"
-        },
-        {
-          "assertionKey": "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
-          "path": "doc/platform/backend-coding-standard.md",
-          "anchor": "### 1-H · 分层命名与 split package"
-        },
-        {
-          "assertionKey": "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
-          "path": "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
-          "anchor": "## Contract and test matrix"
-        },
-        {
-          "assertionKey": "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
-          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
-          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
-        },
-        {
-          "assertionKey": "BACKEND_FORMATTING_GATE_SCOPE",
-          "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
-          "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
-        }
-      ],
-      "sourceRefs": [
-        "PLATFORM-BLUEPRINT.md",
-        "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md",
-        "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md",
-        "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
-        "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-        "doc/platform/backend-coding-standard.md",
-        "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"
-      ]
-    },
-    {
-      "id": "decisions.distributed-topology-is-not-current",
-      "path": "project-memory/decisions/distributed-topology-is-not-current.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review"
-        ],
-        "domains": [
-          "backend",
-          "platform"
-        ],
-        "consumerFaces": [
-          "backend"
-        ],
-        "owners": [
-          "backend",
-          "platform"
-        ],
-        "impacts": [
-          "architecture",
-          "transaction"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "NO_MQ_OUTBOX_TDP",
-        "NO_INTERNAL_OPENAPI_CLIENT",
-        "NO_DISTRIBUTED_DEFAULTS"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "NO_MQ_OUTBOX_TDP",
+          "assertionKey": "ONE_BUSINESS_DEPLOYABLE",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
           "anchor": "### 3.1 部署拓扑"
         },
         {
-          "assertionKey": "NO_INTERNAL_OPENAPI_CLIENT",
+          "assertionKey": "MODULE_OWNER_SOVEREIGNTY",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
           "anchor": "### 3.2 领域与模块边界"
         },
         {
-          "assertionKey": "NO_DISTRIBUTED_DEFAULTS",
+          "assertionKey": "COORDINATOR_NO_ASSET",
           "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
-          "anchor": "### 3.11 真实进程边界与触发制"
+          "anchor": "### 3.3 跨模块原子写"
         }
       ],
       "sourceRefs": [
         "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md"
+      ]
+    },
+    {
+      "id": "kernel.transaction-data",
+      "path": "project-memory/kernel/03-transaction-data-and-dependencies.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "ONE_DB_MULTI_SCHEMA",
+        "ONE_FLYWAY_HISTORY",
+        "COMMAND_REQUIRED_TRANSACTION",
+        "TASK_READ_JOIN",
+        "NO_NORMAL_POLLING"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ONE_DB_MULTI_SCHEMA",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.7 单库、多 schema 与完整性"
+        },
+        {
+          "assertionKey": "ONE_FLYWAY_HISTORY",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.7 单库、多 schema 与完整性"
+        },
+        {
+          "assertionKey": "COMMAND_REQUIRED_TRANSACTION",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.3 跨模块原子写"
+        },
+        {
+          "assertionKey": "TASK_READ_JOIN",
+          "path": "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+          "anchor": "### 3.5 任务型读取"
+        },
+        {
+          "assertionKey": "NO_NORMAL_POLLING",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "## Part G. 跨域同步的前端补偿清单——v2s 一律不再做"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-single-deployable-modular-monolith-service-shape.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
+      ]
+    },
+    {
+      "id": "kernel.workspace-roadmap",
+      "path": "project-memory/kernel/01-workspace-and-roadmap.md",
+      "layer": "kernel",
+      "route": {
+        "taskKinds": [
+          "all"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "all"
+        ]
+      },
+      "assertions": [
+        "PROGRAM_SCOPED_CURRENT_ONLY",
+        "R1_ONLY",
+        "GIT_BY_DEXTER",
+        "NO_R2_W1"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PROGRAM_SCOPED_CURRENT_ONLY",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 0. Roadmap 身份与当前状态"
+        },
+        {
+          "assertionKey": "R1_ONLY",
+          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+          "anchor": "# catering-v2s Roadmap R1 实施授权"
+        },
+        {
+          "assertionKey": "GIT_BY_DEXTER",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "## 2. 不可突破的全程红线"
+        },
+        {
+          "assertionKey": "NO_R2_W1",
+          "path": "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+          "anchor": "# catering-v2s Roadmap R1 实施授权"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-r1-authorization.md",
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+      ]
+    },
+    {
+      "id": "operations.backend-acceptance",
+      "path": "project-memory/operations/backend-acceptance.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "backend-acceptance",
+          "design",
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "contract",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "database",
+          "contract",
+          "evidence",
+          "runtime",
+          "cleanup",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure",
+          "runtime"
+        ]
+      },
+      "assertions": [
+        "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
+        "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
+        "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
+        "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前真实业务能力）"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前真实业务能力）"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
+          "path": "scripts/README.md",
+          "anchor": "### Backend acceptance（当前真实业务能力）"
+        },
+        {
+          "assertionKey": "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD",
+          "path": "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
+          "anchor": "## 3. 每条真实业务场景必须写什么"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
+        "scripts/README.md"
+      ]
+    },
+    {
+      "id": "operations.backend-coding-standard",
+      "path": "project-memory/operations/backend-coding-standard.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "design"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BACKEND_STANDARD_SINGLE_SOURCE",
+        "BACKEND_STANDARD_POINTERS_ONLY",
+        "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BACKEND_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "# 后台编码规范 · 唯一权威"
+        },
+        {
+          "assertionKey": "BACKEND_STANDARD_POINTERS_ONLY",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "## 5 · 维护约定"
+        },
+        {
+          "assertionKey": "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "## 5 · 维护约定"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/backend-coding-standard.md"
+      ]
+    },
+    {
+      "id": "operations.business-corpus-adoption-and-read-policy",
+      "path": "project-memory/operations/business-corpus-adoption-and-read-policy.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
+        "BUSINESS_CORPUS_READ_POLICY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 裁决"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 使用纪律"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+      ]
+    },
+    {
+      "id": "operations.business-corpus-parked-domain-intake",
+      "path": "project-memory/operations/business-corpus-parked-domain-intake.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "all"
+        ],
+        "triggers": [
+          "task-start",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
+        "BUSINESS_CORPUS_G01_G12_ACCEPTED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 后续 grill"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+          "anchor": "## 已接受集合与内容基准"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
       ]
     },
     {
@@ -822,100 +1161,6 @@
       "sourceRefs": [
         "CLAUDE.md",
         "doc/platform/claude-review-handoff-template.md"
-      ]
-    },
-    {
-      "id": "operations.verification-governance",
-      "path": "project-memory/operations/verification-governance.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "testing",
-          "review"
-        ],
-        "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "platform",
-          "backend",
-          "contract",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "evidence",
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "runtime"
-        ]
-      },
-      "assertions": [
-        "MACHINE_GATES_MECHANICAL_ONLY",
-        "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
-        "DEXTER_OWNS_INTENT_AND_SEVERITY",
-        "GATE_ADMISSION_THREE_QUESTIONS",
-        "PRODUCTION_RED_MUTATION_REQUIRED",
-        "SMALL_BATCH_FREEZE_REVIEW",
-        "VERIFY_MINUTE_BUDGET",
-        "UI_INTERACTION_CONFORMANCE_BEFORE_L2"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "MACHINE_GATES_MECHANICAL_ONLY",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "### 2.1 机器门只作机械判定"
-        },
-        {
-          "assertionKey": "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "### 2.2 语义质量靠独立对抗审查"
-        },
-        {
-          "assertionKey": "DEXTER_OWNS_INTENT_AND_SEVERITY",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "### 2.3 意图与取舍归 Dexter"
-        },
-        {
-          "assertionKey": "GATE_ADMISSION_THREE_QUESTIONS",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "## 3. 建门三问"
-        },
-        {
-          "assertionKey": "PRODUCTION_RED_MUTATION_REQUIRED",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "## 4. 假绿优先治理"
-        },
-        {
-          "assertionKey": "SMALL_BATCH_FREEZE_REVIEW",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "## 5. 小批量与独立性"
-        },
-        {
-          "assertionKey": "VERIFY_MINUTE_BUDGET",
-          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
-          "anchor": "## 6. 效率红线"
-        },
-        {
-          "assertionKey": "UI_INTERACTION_CONFORMANCE_BEFORE_L2",
-          "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
-          "anchor": "### 3.2 UI 实施与 L2 前的交互符合性准入"
-        }
-      ],
-      "sourceRefs": [
-        "doc/decisions/2026-07-24-v2s-verification-governance.md",
-        "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md"
       ]
     },
     {
@@ -1014,70 +1259,68 @@
       ]
     },
     {
-      "id": "operations.roadmap-control-transfer",
-      "path": "project-memory/operations/roadmap-control-transfer.md",
+      "id": "operations.frontend-coding-standard",
+      "path": "project-memory/operations/frontend-coding-standard.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
+          "implementation",
           "review",
-          "memory-recall"
+          "design"
         ],
         "domains": [
           "platform"
         ],
         "consumerFaces": [
-          "all"
+          "platform-admin",
+          "operations-admin"
         ],
         "owners": [
-          "product",
           "platform"
         ],
         "impacts": [
-          "roadmap",
-          "governance",
-          "heritage"
+          "governance"
         ],
         "triggers": [
-          "session-start",
-          "status-question",
-          "cutover"
+          "implementation",
+          "review"
         ]
       },
       "assertions": [
-        "PREPARED_IS_NOT_ACTIVE",
-        "ONE_STATE_OWNER",
-        "SOURCE_NO_POST_PASS_WRITE"
+        "FRONTEND_STANDARD_SINGLE_SOURCE",
+        "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
+        "FRONTEND_GATE_PROHIBITION_ONLY"
       ],
       "assertionSources": [
         {
-          "assertionKey": "PREPARED_IS_NOT_ACTIVE",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
+          "assertionKey": "FRONTEND_STANDARD_SINGLE_SOURCE",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "# 前端编码规范 · 唯一权威"
         },
         {
-          "assertionKey": "ONE_STATE_OWNER",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
+          "assertionKey": "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "## 7 · 维护约定"
         },
         {
-          "assertionKey": "SOURCE_NO_POST_PASS_WRITE",
-          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
-          "anchor": "### 7.1 Roadmap 控制面移交协议"
+          "assertionKey": "FRONTEND_GATE_PROHIBITION_ONLY",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "### 1-0 · 门只写禁止句"
         }
       ],
       "sourceRefs": [
-        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
+        "doc/platform/frontend-coding-standard.md"
       ]
     },
     {
-      "id": "pitfalls.log-first-failure-retry",
-      "path": "project-memory/pitfalls/log-first-failure-retry.md",
+      "id": "operations.implementation-source-reread-discipline",
+      "path": "project-memory/operations/implementation-source-reread-discipline.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
-          "diagnostics",
-          "testing",
-          "runtime-management"
+          "implementation",
+          "review",
+          "testing"
         ],
         "domains": [
           "platform",
@@ -1090,141 +1333,33 @@
         ],
         "owners": [
           "platform",
-          "backend"
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
         ],
         "impacts": [
+          "governance",
           "evidence",
-          "runtime",
-          "cleanup"
+          "architecture"
         ],
         "triggers": [
-          "failure",
-          "runtime"
-        ]
-      },
-      "assertions": [
-        "READ_FIRST_FAILURE_LOG",
-        "SECOND_RETRY_REQUIRES_DIAGNOSIS",
-        "NO_TIMEOUT_OR_POLLING_PSEUDOFIX"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "READ_FIRST_FAILURE_LOG",
-          "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
-          "anchor": "# 长期约束"
-        },
-        {
-          "assertionKey": "SECOND_RETRY_REQUIRES_DIAGNOSIS",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.8 日志与诊断"
-        },
-        {
-          "assertionKey": "NO_TIMEOUT_OR_POLLING_PSEUDOFIX",
-          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
-          "anchor": "### D.8 日志与诊断"
-        }
-      ],
-      "sourceRefs": [
-        "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
-        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
-      ]
-    },
-    {
-      "id": "decisions.confirmed-business-language-corpus",
-      "path": "project-memory/decisions/confirmed-business-language-corpus.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "all"
-        ],
-        "triggers": [
-          "task-start",
           "implementation",
           "review"
         ]
       },
       "assertions": [
-        "BUSINESS_CORPUS_G01_G12_ACCEPTED",
-        "BUSINESS_CORPUS_READ_POLICY"
+        "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE"
       ],
       "assertionSources": [
         {
-          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 已接受集合与内容基准"
-        },
-        {
-          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 使用纪律"
+          "assertionKey": "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 5. 2026-07-30 逐点实施与复核纪律"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
-      ]
-    },
-    {
-      "id": "operations.business-corpus-adoption-and-read-policy",
-      "path": "project-memory/operations/business-corpus-adoption-and-read-policy.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "all"
-        ],
-        "triggers": [
-          "task-start",
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
-        "BUSINESS_CORPUS_READ_POLICY"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "BUSINESS_CORPUS_MEMORY_PROMOTION_AUTHORIZED",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 裁决"
-        },
-        {
-          "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 使用纪律"
-        }
-      ],
-      "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
       ]
     },
     {
@@ -1427,99 +1562,59 @@
       ]
     },
     {
-      "id": "operations.business-corpus-parked-domain-intake",
-      "path": "project-memory/operations/business-corpus-parked-domain-intake.md",
+      "id": "operations.roadmap-control-transfer",
+      "path": "project-memory/operations/roadmap-control-transfer.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
-          "design",
-          "review"
+          "review",
+          "memory-recall"
         ],
         "domains": [
-          "all"
+          "platform"
         ],
         "consumerFaces": [
           "all"
         ],
         "owners": [
-          "all"
+          "product",
+          "platform"
         ],
         "impacts": [
-          "all"
+          "roadmap",
+          "governance",
+          "heritage"
         ],
         "triggers": [
-          "task-start",
-          "review"
+          "session-start",
+          "status-question",
+          "cutover"
         ]
       },
       "assertions": [
-        "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
-        "BUSINESS_CORPUS_G01_G12_ACCEPTED"
+        "PREPARED_IS_NOT_ACTIVE",
+        "ONE_STATE_OWNER",
+        "SOURCE_NO_POST_PASS_WRITE"
       ],
       "assertionSources": [
         {
-          "assertionKey": "BUSINESS_CORPUS_GRILL_ONLY_BY_DEXTER_PROGRESS",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 后续 grill"
+          "assertionKey": "PREPARED_IS_NOT_ACTIVE",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
         },
         {
-          "assertionKey": "BUSINESS_CORPUS_G01_G12_ACCEPTED",
-          "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
-          "anchor": "## 已接受集合与内容基准"
-        }
-      ],
-      "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
-      ]
-    },
-    {
-      "id": "operations.implementation-source-reread-discipline",
-      "path": "project-memory/operations/implementation-source-reread-discipline.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "platform",
-          "backend",
-          "contract",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "governance",
-          "evidence",
-          "architecture"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE"
-      ],
-      "assertionSources": [
+          "assertionKey": "ONE_STATE_OWNER",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
+        },
         {
-          "assertionKey": "BOUNDED_PREPARATION_FOR_CURRENT_CHANGE",
-          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
-          "anchor": "## 5. 2026-07-30 逐点实施与复核纪律"
+          "assertionKey": "SOURCE_NO_POST_PASS_WRITE",
+          "path": "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md",
+          "anchor": "### 7.1 Roadmap 控制面移交协议"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+        "doc/roadmaps/platform/2026-07-24-v2s-execution-roadmap.md"
       ]
     },
     {
@@ -1601,19 +1696,438 @@
       ]
     },
     {
-      "id": "operations.backend-acceptance",
-      "path": "project-memory/operations/backend-acceptance.md",
+      "id": "operations.verification-governance",
+      "path": "project-memory/operations/verification-governance.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
-          "backend-acceptance",
           "design",
           "implementation",
           "testing",
           "review"
         ],
         "domains": [
+          "platform",
           "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "contract",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "runtime"
+        ]
+      },
+      "assertions": [
+        "MACHINE_GATES_MECHANICAL_ONLY",
+        "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
+        "DEXTER_OWNS_INTENT_AND_SEVERITY",
+        "GATE_ADMISSION_THREE_QUESTIONS",
+        "PRODUCTION_RED_MUTATION_REQUIRED",
+        "SMALL_BATCH_FREEZE_REVIEW",
+        "VERIFY_MINUTE_BUDGET",
+        "UI_INTERACTION_CONFORMANCE_BEFORE_L2"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "MACHINE_GATES_MECHANICAL_ONLY",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.1 机器门只作机械判定"
+        },
+        {
+          "assertionKey": "SEMANTIC_QUALITY_INDEPENDENT_REVIEW",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.2 语义质量靠独立对抗审查"
+        },
+        {
+          "assertionKey": "DEXTER_OWNS_INTENT_AND_SEVERITY",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "### 2.3 意图与取舍归 Dexter"
+        },
+        {
+          "assertionKey": "GATE_ADMISSION_THREE_QUESTIONS",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 3. 建门三问"
+        },
+        {
+          "assertionKey": "PRODUCTION_RED_MUTATION_REQUIRED",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 4. 假绿优先治理"
+        },
+        {
+          "assertionKey": "SMALL_BATCH_FREEZE_REVIEW",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 5. 小批量与独立性"
+        },
+        {
+          "assertionKey": "VERIFY_MINUTE_BUDGET",
+          "path": "doc/decisions/2026-07-24-v2s-verification-governance.md",
+          "anchor": "## 6. 效率红线"
+        },
+        {
+          "assertionKey": "UI_INTERACTION_CONFORMANCE_BEFORE_L2",
+          "path": "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md",
+          "anchor": "### 3.2 UI 实施与 L2 前的交互符合性准入"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-07-24-v2s-verification-governance.md",
+        "doc/decisions/2026-07-25-v2s-design-governance-batch-1.md"
+      ]
+    },
+    {
+      "id": "pitfalls.after-state-not-checked-against-other-gates",
+      "path": "project-memory/pitfalls/after-state-not-checked-against-other-gates.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "AFTER_STATE_MUST_CLEAR_ALL_GATES"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "AFTER_STATE_MUST_CLEAR_ALL_GATES",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-E · AFTER 状态必须先过一遍既有的门"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.browser-route-data-scope-drift",
+      "path": "project-memory/pitfalls/browser-route-data-scope-drift.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend",
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "frontend-platform",
+          "platform"
+        ],
+        "impacts": [
+          "architecture",
+          "owner",
+          "session",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "BROWSER_ROUTE_NOT_DATA_SCOPE",
+        "BROWSER_ROUTE_NOT_AUTHORITY"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BROWSER_ROUTE_NOT_AUTHORITY",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### 2-G · 浏览器 URL 不构成 API owner 授权"
+        },
+        {
+          "assertionKey": "BROWSER_ROUTE_NOT_DATA_SCOPE",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "### 3-H · 浏览器路由只定位页面与会话上下文"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/backend-coding-standard.md",
+        "doc/platform/frontend-coding-standard.md"
+      ]
+    },
+    {
+      "id": "pitfalls.catalog-code-rule-invention",
+      "path": "project-memory/pitfalls/catalog-code-rule-invention.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "backend",
+          "contract"
+        ],
+        "consumerFaces": [
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform",
+          "backend",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
+        "OWNER_SUBMIT_UNIQUENESS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
+          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
+          "anchor": "## 交互约束"
+        },
+        {
+          "assertionKey": "OWNER_SUBMIT_UNIQUENESS",
+          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
+          "anchor": "## 交互约束"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md"
+      ]
+    },
+    {
+      "id": "pitfalls.check-repo-before-authoring",
+      "path": "project-memory/pitfalls/check-repo-before-authoring.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance",
+          "memory"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "CHECK_EXISTING_BEFORE_AUTHORING",
+        "RECHECK_AT_IMPLEMENTATION_TIME"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CHECK_EXISTING_BEFORE_AUTHORING",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
+        },
+        {
+          "assertionKey": "RECHECK_AT_IMPLEMENTATION_TIME",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.claim-versus-behavior",
+      "path": "project-memory/pitfalls/claim-versus-behavior.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "implementation",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "CLAIM_IS_NOT_BEHAVIOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CLAIM_IS_NOT_BEHAVIOR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "## 4 · 声称 ≠ 行为"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.count-without-member-list",
+      "path": "project-memory/pitfalls/count-without-member-list.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation",
+          "testing"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "INVENTORY_MUST_PERSIST_MEMBER_LIST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INVENTORY_MUST_PERSIST_MEMBER_LIST",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.denominator-inherited-not-built",
+      "path": "project-memory/pitfalls/denominator-inherited-not-built.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "DENOMINATOR_MUST_BE_SELF_BUILT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "DENOMINATOR_MUST_BE_SELF_BUILT",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.designing-from-conversation-not-system",
+      "path": "project-memory/pitfalls/designing-from-conversation-not-system.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
           "contract",
           "platform"
         ],
@@ -1621,58 +2135,236 @@
           "all"
         ],
         "owners": [
-          "backend",
-          "contract",
-          "platform",
-          "product"
+          "all"
         ],
         "impacts": [
-          "database",
-          "contract",
-          "evidence",
-          "runtime",
-          "cleanup",
-          "governance"
+          "architecture"
         ],
         "triggers": [
           "task-start",
           "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.green-by-existence-check",
+      "path": "project-memory/pitfalls/green-by-existence-check.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "evidence",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
           "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "EXISTENCE_IS_NOT_EXECUTION",
+        "EMPTY_GLOB_MUST_FAIL"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EXISTENCE_IS_NOT_EXECUTION",
+          "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
+          "anchor": "## 3. C3 · 绿了是真的好"
+        },
+        {
+          "assertionKey": "EMPTY_GLOB_MUST_FAIL",
+          "path": "scripts/test/test-health-entry-runner.mjs",
+          "anchor": "  const broadNodeGlob = ['**', '/*.test.mjs'].join('');"
+        }
+      ],
+      "sourceRefs": [
+        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
+        "scripts/test/test-health-entry-runner.mjs"
+      ]
+    },
+    {
+      "id": "pitfalls.invisible-dimension-drifts-at-implementation",
+      "path": "project-memory/pitfalls/invisible-dimension-drifts-at-implementation.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "INVISIBLE_DIMENSION_NEEDS_PERFORMABLE_OBSERVATION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "INVISIBLE_DIMENSION_NEEDS_PERFORMABLE_OBSERVATION",
+          "path": "doc/decisions/templates/ia-design-template.md",
+          "anchor": "### 2.2 不可见维度 —— **必须写成一个能做的观察**"
+        },
+        {
+          "assertionKey": "INVISIBLE_DIMENSION_NEEDS_PERFORMABLE_OBSERVATION",
+          "path": "doc/decisions/templates/implementation-design-template.md",
+          "anchor": "## 3 · 横切机制对照表(主结构 · 逐实现步骤填三列)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/templates/ia-design-template.md",
+        "doc/decisions/templates/implementation-design-template.md"
+      ]
+    },
+    {
+      "id": "pitfalls.line-number-as-anchor",
+      "path": "project-memory/pitfalls/line-number-as-anchor.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "design"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "LOCATE_BY_ANCHOR_NOT_LINE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-A · 定位用锚点,不用行号"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.log-first-failure-retry",
+      "path": "project-memory/pitfalls/log-first-failure-retry.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "diagnostics",
+          "testing",
+          "runtime-management"
+        ],
+        "domains": [
+          "platform",
+          "backend",
+          "contract",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "backend"
+        ],
+        "impacts": [
+          "evidence",
+          "runtime",
+          "cleanup"
+        ],
+        "triggers": [
           "failure",
           "runtime"
         ]
       },
       "assertions": [
-        "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
-        "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
-        "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
-        "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD"
+        "READ_FIRST_FAILURE_LOG",
+        "SECOND_RETRY_REQUIRES_DIAGNOSIS",
+        "NO_TIMEOUT_OR_POLLING_PSEUDOFIX"
       ],
       "assertionSources": [
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_REAL_SCENARIOS",
-          "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前真实业务能力）"
+          "assertionKey": "READ_FIRST_FAILURE_LOG",
+          "path": "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
+          "anchor": "# 长期约束"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_LEGACY_PROVIDER_ASSETS_RETIRED",
-          "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前真实业务能力）"
+          "assertionKey": "SECOND_RETRY_REQUIRES_DIAGNOSIS",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
         },
         {
-          "assertionKey": "BACKEND_ACCEPTANCE_OLD_CONTROLS_RETIRED",
-          "path": "scripts/README.md",
-          "anchor": "### Backend acceptance（当前真实业务能力）"
-        },
-        {
-          "assertionKey": "BACKEND_ACCEPTANCE_SCENARIO_EXTENSION_STANDARD",
-          "path": "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
-          "anchor": "## 3. 每条真实业务场景必须写什么"
+          "assertionKey": "NO_TIMEOUT_OR_POLLING_PSEUDOFIX",
+          "path": "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+          "anchor": "### D.8 日志与诊断"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md",
-        "scripts/README.md"
+        "doc/heritage/frozen/catering-all-v2/project-memory/decisions/logging-and-debugging-foundation-standard.md",
+        "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md"
       ]
     },
     {
@@ -1792,169 +2484,6 @@
       ]
     },
     {
-      "id": "pitfalls.green-by-existence-check",
-      "path": "project-memory/pitfalls/green-by-existence-check.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "implementation",
-          "testing",
-          "review"
-        ],
-        "domains": [
-          "platform",
-          "backend",
-          "contract",
-          "admin-ui"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "platform",
-          "backend",
-          "frontend-platform"
-        ],
-        "impacts": [
-          "evidence",
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "assertions": [
-        "EXISTENCE_IS_NOT_EXECUTION",
-        "EMPTY_GLOB_MUST_FAIL"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "EXISTENCE_IS_NOT_EXECUTION",
-          "path": "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-          "anchor": "## 3. C3 · 绿了是真的好"
-        },
-        {
-          "assertionKey": "EMPTY_GLOB_MUST_FAIL",
-          "path": "scripts/test/test-health-entry-runner.mjs",
-          "anchor": "  const broadNodeGlob = ['**', '/*.test.mjs'].join('');"
-        }
-      ],
-      "sourceRefs": [
-        "doc/review/platform/2026-08-11-v2s-test-delivery-and-process-remediation-requirements-claude.md",
-        "scripts/test/test-health-entry-runner.mjs"
-      ]
-    },
-    {
-      "id": "operations.backend-coding-standard",
-      "path": "project-memory/operations/backend-coding-standard.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "implementation",
-          "review",
-          "design"
-        ],
-        "domains": [
-          "platform"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "platform"
-        ],
-        "impacts": [
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "BACKEND_STANDARD_SINGLE_SOURCE",
-        "BACKEND_STANDARD_POINTERS_ONLY",
-        "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "BACKEND_STANDARD_SINGLE_SOURCE",
-          "path": "doc/platform/backend-coding-standard.md",
-          "anchor": "# 后台编码规范 · 唯一权威"
-        },
-        {
-          "assertionKey": "BACKEND_STANDARD_POINTERS_ONLY",
-          "path": "doc/platform/backend-coding-standard.md",
-          "anchor": "## 5 · 维护约定"
-        },
-        {
-          "assertionKey": "BACKEND_STANDARD_RULES_CARRY_COUNTEREXAMPLE",
-          "path": "doc/platform/backend-coding-standard.md",
-          "anchor": "## 5 · 维护约定"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/backend-coding-standard.md"
-      ]
-    },
-    {
-      "id": "operations.frontend-coding-standard",
-      "path": "project-memory/operations/frontend-coding-standard.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "implementation",
-          "review",
-          "design"
-        ],
-        "domains": [
-          "platform"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "platform"
-        ],
-        "impacts": [
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "FRONTEND_STANDARD_SINGLE_SOURCE",
-        "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
-        "FRONTEND_GATE_PROHIBITION_ONLY"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "FRONTEND_STANDARD_SINGLE_SOURCE",
-          "path": "doc/platform/frontend-coding-standard.md",
-          "anchor": "# 前端编码规范 · 唯一权威"
-        },
-        {
-          "assertionKey": "FRONTEND_STANDARD_RULES_CARRY_REPO_EXEMPLAR",
-          "path": "doc/platform/frontend-coding-standard.md",
-          "anchor": "## 7 · 维护约定"
-        },
-        {
-          "assertionKey": "FRONTEND_GATE_PROHIBITION_ONLY",
-          "path": "doc/platform/frontend-coding-standard.md",
-          "anchor": "### 1-0 · 门只写禁止句"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/frontend-coding-standard.md"
-      ]
-    },
-    {
       "id": "pitfalls.negative-universal-claim",
       "path": "project-memory/pitfalls/negative-universal-claim.md",
       "layer": "routed",
@@ -1990,177 +2519,6 @@
           "assertionKey": "NEGATIVE_CLAIM_REQUIRES_EXHAUSTION",
           "path": "doc/platform/foundation-charter.md",
           "anchor": "### 3-B · 否定式全称命题必须穷举后才能写"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "pitfalls.line-number-as-anchor",
-      "path": "project-memory/pitfalls/line-number-as-anchor.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "implementation",
-          "design"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "failure"
-        ]
-      },
-      "assertions": [
-        "LOCATE_BY_ANCHOR_NOT_LINE"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "LOCATE_BY_ANCHOR_NOT_LINE",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 5-A · 定位用锚点,不用行号"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "pitfalls.denominator-inherited-not-built",
-      "path": "project-memory/pitfalls/denominator-inherited-not-built.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "review",
-          "design"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "evidence"
-        ],
-        "triggers": [
-          "review",
-          "implementation"
-        ]
-      },
-      "assertions": [
-        "DENOMINATOR_MUST_BE_SELF_BUILT"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "DENOMINATOR_MUST_BE_SELF_BUILT",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "pitfalls.check-repo-before-authoring",
-      "path": "project-memory/pitfalls/check-repo-before-authoring.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "review",
-          "implementation"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "governance",
-          "memory"
-        ],
-        "triggers": [
-          "task-start",
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "CHECK_EXISTING_BEFORE_AUTHORING",
-        "RECHECK_AT_IMPLEMENTATION_TIME"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "CHECK_EXISTING_BEFORE_AUTHORING",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
-        },
-        {
-          "assertionKey": "RECHECK_AT_IMPLEMENTATION_TIME",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 7-D · 动手写新规则、新方案、新裁决之前,先查仓内五处"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "pitfalls.claim-versus-behavior",
-      "path": "project-memory/pitfalls/claim-versus-behavior.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "review",
-          "implementation",
-          "testing"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "evidence"
-        ],
-        "triggers": [
-          "review",
-          "implementation",
-          "failure"
-        ]
-      },
-      "assertions": [
-        "CLAIM_IS_NOT_BEHAVIOR"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "CLAIM_IS_NOT_BEHAVIOR",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "## 4 · 声称 ≠ 行为"
         }
       ],
       "sourceRefs": [
@@ -2205,6 +2563,484 @@
           "assertionKey": "UI_TASK_NOT_INFERRED_FROM_OWNER",
           "path": "doc/platform/foundation-charter.md",
           "anchor": "### 8-C · 不得从现有接口、表结构或旧页面反推用户任务"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.repo-rule-cited-against-dexter",
+      "path": "project-memory/pitfalls/repo-rule-cited-against-dexter.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review",
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance",
+          "session"
+        ],
+        "triggers": [
+          "review",
+          "implementation",
+          "status-question"
+        ]
+      },
+      "assertions": [
+        "REPO_RULES_GOVERN_UNATTENDED_EXECUTION"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REPO_RULES_GOVERN_UNATTENDED_EXECUTION",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 8-A · 谁定什么"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "pitfalls.review-checked-existence-not-rendering",
+      "path": "project-memory/pitfalls/review-checked-existence-not-rendering.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture"
+        ],
+        "triggers": [
+          "review"
+        ]
+      },
+      "assertions": [
+        "REVIEW_MUST_RECONCILE_USER_VISIBLE_FACTS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REVIEW_MUST_RECONCILE_USER_VISIBLE_FACTS",
+          "path": "doc/platform/review-standard.md",
+          "anchor": "### 动作 1-A · 从代码提取用户可见事实(代码已存在时)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/review-standard.md"
+      ]
+    },
+    {
+      "id": "practices.atomic-group-expected-error",
+      "path": "project-memory/practices/atomic-group-expected-error.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 5-C · 会同时坏的东西必须声明为原子组"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.backend-capability-lookup",
+      "path": "project-memory/practices/backend-capability-lookup.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "platform",
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "owner"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.cache-invalidation-granularity",
+      "path": "project-memory/practices/cache-invalidation-granularity.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "frontend-platform",
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.collection-boundary-modes",
+      "path": "project-memory/practices/collection-boundary-modes.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "COLLECTION_BOUNDARY_MODE_DECLARED_FIRST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "COLLECTION_BOUNDARY_MODE_DECLARED_FIRST",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-J · 每个集合先定形态,四种形态各有固定义务"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.cross-boundary-string-agreement",
+      "path": "project-memory/practices/cross-boundary-string-agreement.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "contract",
+          "backend",
+          "admin-ui"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "contract",
+          "backend",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "BARE_STRING_CLASSIFIED_BY_AGREEMENT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BARE_STRING_CLASSIFIED_BY_AGREEMENT",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 3-D · 跨界字面量按「谁必须达成一致」分类"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.decided-undecided-marking",
+      "path": "project-memory/practices/decided-undecided-marking.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "governance"
+        ],
+        "triggers": [
+          "review",
+          "implementation"
+        ]
+      },
+      "assertions": [
+        "DOC_STATE_IS_THREE_VALUED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "DOC_STATE_IS_THREE_VALUED",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 7-A · 每一条只能是两种状态"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.failure-condition-names-the-wrong-shape",
+      "path": "project-memory/practices/failure-condition-names-the-wrong-shape.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE",
+          "path": "doc/platform/implementation-task-template.md",
+          "anchor": "## 实施派活话术 · 正本(逐字复制以下代码块)"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/implementation-task-template.md"
+      ]
+    },
+    {
+      "id": "practices.frontend-capability-lookup",
+      "path": "project-memory/practices/frontend-capability-lookup.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EXISTING_CAPABILITY_BEFORE_DESCRIBING_BEHAVIOR",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.gate-four-pieces",
+      "path": "project-memory/practices/gate-four-pieces.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "testing",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "all"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "evidence"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "GATE_REQUIRES_FOUR_PIECES"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "GATE_REQUIRES_FOUR_PIECES",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 6-A · 每道门四件套,缺一不算门"
         }
       ],
       "sourceRefs": [
@@ -2261,172 +3097,6 @@
       ]
     },
     {
-      "id": "practices.gate-four-pieces",
-      "path": "project-memory/practices/gate-four-pieces.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "testing",
-          "implementation",
-          "review"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "evidence"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "assertions": [
-        "GATE_REQUIRES_FOUR_PIECES"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "GATE_REQUIRES_FOUR_PIECES",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 6-A · 每道门四件套,缺一不算门"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "practices.atomic-group-expected-error",
-      "path": "project-memory/practices/atomic-group-expected-error.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "governance"
-        ],
-        "triggers": [
-          "implementation"
-        ]
-      },
-      "assertions": [
-        "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "ATOMIC_GROUP_DECLARES_EXPECTED_ERROR",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 5-C · 会同时坏的东西必须声明为原子组"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "practices.decided-undecided-marking",
-      "path": "project-memory/practices/decided-undecided-marking.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "review"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "governance"
-        ],
-        "triggers": [
-          "review",
-          "implementation"
-        ]
-      },
-      "assertions": [
-        "DOC_STATE_IS_THREE_VALUED"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "DOC_STATE_IS_THREE_VALUED",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 7-A · 每一条只能是两种状态"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "practices.cross-boundary-string-agreement",
-      "path": "project-memory/practices/cross-boundary-string-agreement.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review"
-        ],
-        "domains": [
-          "contract",
-          "backend",
-          "admin-ui"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "contract",
-          "backend",
-          "frontend-platform"
-        ],
-        "impacts": [
-          "contract"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "BARE_STRING_CLASSIFIED_BY_AGREEMENT"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "BARE_STRING_CLASSIFIED_BY_AGREEMENT",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 3-D · 跨界字面量按「谁必须达成一致」分类"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
       "id": "practices.metadata-classified-by-attachment",
       "path": "project-memory/practices/metadata-classified-by-attachment.md",
       "layer": "routed",
@@ -2472,96 +3142,45 @@
       ]
     },
     {
-      "id": "pitfalls.catalog-code-rule-invention",
-      "path": "project-memory/pitfalls/catalog-code-rule-invention.md",
+      "id": "practices.ordering-only-for-consumer-facing",
+      "path": "project-memory/practices/ordering-only-for-consumer-facing.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
+          "design",
           "implementation",
-          "review",
-          "testing"
+          "review"
         ],
         "domains": [
-          "platform",
-          "admin-ui",
           "backend",
-          "contract"
+          "admin-ui",
+          "contract",
+          "platform"
         ],
         "consumerFaces": [
-          "operations-admin"
+          "all"
         ],
         "owners": [
-          "frontend-platform",
-          "backend",
-          "product"
+          "all"
         ],
         "impacts": [
           "architecture",
           "contract"
         ],
         "triggers": [
+          "task-start",
           "implementation",
-          "review",
-          "failure"
+          "review"
         ]
       },
       "assertions": [
-        "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
-        "OWNER_SUBMIT_UNIQUENESS"
+        "ORDERING_ONLY_FOR_CONSUMER_FACING"
       ],
       "assertionSources": [
         {
-          "assertionKey": "CODE_RULE_REQUIRES_BUSINESS_SOURCE",
-          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
-          "anchor": "## 交互约束"
-        },
-        {
-          "assertionKey": "OWNER_SUBMIT_UNIQUENESS",
-          "path": "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md",
-          "anchor": "## 交互约束"
-        }
-      ],
-      "sourceRefs": [
-        "doc/decisions/2026-08-17-v2s-catalog-metadata-central-modal.md"
-      ]
-    },
-    {
-      "id": "pitfalls.repo-rule-cited-against-dexter",
-      "path": "project-memory/pitfalls/repo-rule-cited-against-dexter.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "review",
-          "design",
-          "implementation"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "governance",
-          "session"
-        ],
-        "triggers": [
-          "review",
-          "implementation",
-          "status-question"
-        ]
-      },
-      "assertions": [
-        "REPO_RULES_GOVERN_UNATTENDED_EXECUTION"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "REPO_RULES_GOVERN_UNATTENDED_EXECUTION",
+          "assertionKey": "ORDERING_ONLY_FOR_CONSUMER_FACING",
           "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 8-A · 谁定什么"
+          "anchor": "### 1-I · 排序只给面向消费者的展示内容"
         }
       ],
       "sourceRefs": [
@@ -2569,50 +3188,8 @@
       ]
     },
     {
-      "id": "pitfalls.count-without-member-list",
-      "path": "project-memory/pitfalls/count-without-member-list.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "review",
-          "design",
-          "implementation",
-          "testing"
-        ],
-        "domains": [
-          "all"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "evidence"
-        ],
-        "triggers": [
-          "review",
-          "implementation"
-        ]
-      },
-      "assertions": [
-        "INVENTORY_MUST_PERSIST_MEMBER_LIST"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "INVENTORY_MUST_PERSIST_MEMBER_LIST",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 3-A · 结论之前先建立分母,分母必须自建不得继承"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "pitfalls.after-state-not-checked-against-other-gates",
-      "path": "project-memory/pitfalls/after-state-not-checked-against-other-gates.md",
+      "id": "practices.preflight-execute-failure-parity",
+      "path": "project-memory/practices/preflight-execute-failure-parity.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
@@ -2621,16 +3198,20 @@
           "review"
         ],
         "domains": [
-          "all"
+          "backend",
+          "contract",
+          "platform"
         ],
         "consumerFaces": [
-          "all"
+          "backend"
         ],
         "owners": [
-          "all"
+          "backend"
         ],
         "impacts": [
-          "governance"
+          "architecture",
+          "contract",
+          "database"
         ],
         "triggers": [
           "implementation",
@@ -2638,17 +3219,17 @@
         ]
       },
       "assertions": [
-        "AFTER_STATE_MUST_CLEAR_ALL_GATES"
+        "PREFLIGHT_EXECUTE_FAILURE_PARITY"
       ],
       "assertionSources": [
         {
-          "assertionKey": "AFTER_STATE_MUST_CLEAR_ALL_GATES",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 5-E · AFTER 状态必须先过一遍既有的门"
+          "assertionKey": "PREFLIGHT_EXECUTE_FAILURE_PARITY",
+          "path": "project-memory/practices/preflight-execute-failure-parity.md",
+          "anchor": "## 规则"
         }
       ],
       "sourceRefs": [
-        "doc/platform/foundation-charter.md"
+        "project-memory/practices/preflight-execute-failure-parity.md"
       ]
     },
     {
@@ -2688,6 +3269,49 @@
       "assertionSources": [
         {
           "assertionKey": "READ_MODEL_BY_TASK_FACT_CLOSURE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.reuse-projection-within-request",
+      "path": "project-memory/practices/reuse-projection-within-request.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "backend"
+        ],
+        "owners": [
+          "backend"
+        ],
+        "impacts": [
+          "architecture",
+          "database"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST",
           "path": "doc/platform/foundation-charter.md",
           "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
         }
@@ -2742,182 +3366,247 @@
       ]
     },
     {
-      "id": "practices.cache-invalidation-granularity",
-      "path": "project-memory/practices/cache-invalidation-granularity.md",
+      "id": "practices.business-channel-list-scope-and-validity-display",
+      "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
           "design",
           "implementation",
-          "review"
+          "review",
+          "testing"
         ],
         "domains": [
+          "platform",
           "admin-ui",
-          "contract",
-          "platform"
+          "contract"
         ],
         "consumerFaces": [
-          "all"
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
+        "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
+        "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 1. 门店候选模板是受业务条件约束的投影"
+        },
+        {
+          "assertionKey": "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 2. 模板失效会使既有渠道失效，但不删除历史事实"
+        },
+        {
+          "assertionKey": "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 3. 合同有效性只表达 VALID/INVALID 合同事实"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/business-channel-list-scope-and-validity-display.md"
+      ]
+    },
+    {
+      "id": "practices.content-tab-unified-refresh-lifecycle",
+      "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "backend"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
         ],
         "owners": [
           "frontend-platform",
-          "contract"
+          "platform",
+          "product"
         ],
         "impacts": [
           "architecture",
-          "contract"
+          "contract",
+          "governance"
         ],
         "triggers": [
           "implementation",
-          "review"
+          "review",
+          "failure"
         ]
       },
       "assertions": [
-        "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL"
+        "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
+        "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS"
       ],
       "assertionSources": [
         {
-          "assertionKey": "CACHE_TAG_EQUALS_AFFECTED_READ_MODEL",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+          "assertionKey": "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
+          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+          "anchor": "## 1. 规则"
+        },
+        {
+          "assertionKey": "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS",
+          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+          "anchor": "## 2. 交互边界"
         }
       ],
       "sourceRefs": [
-        "doc/platform/foundation-charter.md"
+        "project-memory/practices/content-tab-unified-refresh-lifecycle.md"
       ]
     },
     {
-      "id": "practices.reuse-projection-within-request",
-      "path": "project-memory/practices/reuse-projection-within-request.md",
+      "id": "practices.external-collaboration-readback-display-and-detail-surface",
+      "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
           "design",
           "implementation",
-          "review"
+          "review",
+          "testing"
         ],
         "domains": [
-          "backend",
-          "platform"
-        ],
-        "consumerFaces": [
-          "backend"
-        ],
-        "owners": [
-          "backend"
-        ],
-        "impacts": [
-          "architecture",
-          "database"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "REUSE_SCOPED_PROJECTION_WITHIN_REQUEST",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "practices.failure-condition-names-the-wrong-shape",
-      "path": "project-memory/practices/failure-condition-names-the-wrong-shape.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review"
-        ],
-        "domains": [
-          "backend",
+          "platform",
           "admin-ui",
           "contract",
-          "platform"
+          "backend"
         ],
         "consumerFaces": [
-          "all"
+          "platform-admin",
+          "operations-admin"
         ],
         "owners": [
-          "all"
+          "platform",
+          "frontend-platform",
+          "product"
         ],
         "impacts": [
-          "architecture",
           "contract",
-          "database"
+          "architecture",
+          "governance"
         ],
         "triggers": [
           "implementation",
-          "review"
+          "review",
+          "failure"
         ]
       },
       "assertions": [
-        "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE"
+        "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
+        "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
+        "DETAIL_ACTIONS_USE_HEADER_EXTRA"
       ],
       "assertionSources": [
         {
-          "assertionKey": "FAILURE_CONDITION_NAMES_PROHIBITED_WRONG_SHAPE",
-          "path": "doc/platform/implementation-task-template.md",
-          "anchor": "## 正本(逐字复制以下代码块)"
+          "assertionKey": "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 1. 读回事实必须能直接被用户理解"
+        },
+        {
+          "assertionKey": "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 2. 新建绑定是业务准入，不是权限替代"
+        },
+        {
+          "assertionKey": "DETAIL_ACTIONS_USE_HEADER_EXTRA",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 3. 列表与详情面"
         }
       ],
       "sourceRefs": [
-        "doc/platform/implementation-task-template.md"
+        "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md"
       ]
     },
     {
-      "id": "practices.preflight-execute-failure-parity",
-      "path": "project-memory/practices/preflight-execute-failure-parity.md",
+      "id": "practices.backend-acceptance-route-fixture-oracle-integrity",
+      "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
       "layer": "routed",
       "route": {
         "taskKinds": [
           "design",
           "implementation",
-          "review"
+          "review",
+          "testing"
         ],
         "domains": [
           "backend",
           "contract",
+          "admin-ui",
           "platform"
         ],
         "consumerFaces": [
-          "backend"
+          "all"
         ],
         "owners": [
-          "backend"
+          "backend",
+          "contract",
+          "frontend-platform"
         ],
         "impacts": [
           "architecture",
           "contract",
-          "database"
+          "evidence"
         ],
         "triggers": [
+          "task-start",
           "implementation",
-          "review"
+          "review",
+          "failure"
         ]
       },
       "assertions": [
-        "PREFLIGHT_EXECUTE_FAILURE_PARITY"
+        "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
+        "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
+        "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA"
       ],
       "assertionSources": [
         {
-          "assertionKey": "PREFLIGHT_EXECUTE_FAILURE_PARITY",
-          "path": "project-memory/practices/preflight-execute-failure-parity.md",
-          "anchor": "## 规则"
+          "assertionKey": "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 1. HTTP 200 不等于命中了目标业务资源"
+        },
+        {
+          "assertionKey": "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 2. 夹具必须先到达被验证的规则"
+        },
+        {
+          "assertionKey": "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 3. 业务断言不能把传输元数据当作数据泄漏"
         }
       ],
       "sourceRefs": [
-        "project-memory/practices/preflight-execute-failure-parity.md"
+        "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md"
       ]
     }
   ]

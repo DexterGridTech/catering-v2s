@@ -20,6 +20,7 @@ import {
   MOBILE_PATTERN,
   activeInvitationPageUrl,
   adminDrawerSurfaceProps,
+  createPageQueryIdentity,
   NameCodePathText,
   testId,
   useAsyncGenerationGuard,
@@ -27,10 +28,18 @@ import {
   useDetailDrawer,
   useDrawerFormLifecycle,
   useOverlayLock,
+  usePageQuery,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
-import {platformClient, platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
+import {
+  platformClient,
+  platformContentTabRefreshSignal,
+  platformProblemOf,
+  platformRtk,
+} from '../../../app/api/PlatformTransport';
 import type {
   PlatformWorkspaceInvitation,
   PlatformWorkspaceInvitationPage,
@@ -89,11 +98,21 @@ function operationsInvitationUrl(invitationPageUrl: string | null | undefined) {
 }
 
 export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState<WorkspaceInvitationSortKey>('CREATED_AT');
   const [direction, setDirection] = useState<SortDirection>('DESC');
   const [filters, setFilters] = useState<InvitationFilters>({});
+  const queryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getWorkspaceInvitations,
+        scope: {groupWorkspaceKey},
+        filters,
+        sort: {sort, direction},
+      }),
+    [direction, filters, groupWorkspaceKey, sort],
+  );
+  const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
+  const {page, pageSize} = pagination;
   const [filterTargetType, setFilterTargetType] = useState<ServiceNodeType>();
   const [filterOrganizationQuery, setFilterOrganizationQuery] = useState('');
   const [filterRoleQuery, setFilterRoleQuery] = useState('');
@@ -103,6 +122,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   const [detailProblem, setDetailProblem] = useState<string>();
   const detail = useDetailDrawer<PlatformWorkspaceInvitation>();
   const detailGeneration = useAsyncGenerationGuard();
+  const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   useOverlayLock(createOpen || detail.isOpen || Boolean(auditTarget));
   const request = useMemo(() => {
     const {targetOrganizationRef, roleId, ...restFilters} = filters;
@@ -145,6 +165,10 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
     detailGeneration.invalidate();
     detail.close();
   }, [detail, detailGeneration]);
+  useEffect(() => {
+    if (contentTabRefreshVersion === 0 || !detail.isOpen || !detail.target?.id) return;
+    void loadDetail(detail.target.id);
+  }, [contentTabRefreshVersion, detail.isOpen, detail.target?.id, loadDetail]);
   const filterOrganizationState = useCursorCandidates<CandidateOption>({
     queryText: filterOrganizationQuery,
     resetKey: `${filterTargetType ?? ''}|${groupWorkspaceKey}|ORGANIZATION`,
@@ -206,20 +230,24 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
   const filterRolePage = filterRoleCandidates.data as WorkspaceInvitationCandidatePage | undefined;
   const filterOrganizationOptions = filterOrganizationState.items;
   const filterRoleOptions = filterRoleState.items;
+  const {acceptPage: acceptFilterOrganizationPage} = filterOrganizationState;
+  const {acceptPage: acceptFilterRolePage} = filterRoleState;
+  const {onPopupScroll: onFilterOrganizationPopupScroll} = filterOrganizationState;
+  const {onPopupScroll: onFilterRolePopupScroll} = filterRoleState;
   useEffect(() => {
     if (filterOrganizationPage && filterTargetType)
-      filterOrganizationState.acceptPage(
+      acceptFilterOrganizationPage(
         candidateOptions(filterOrganizationPage, filterTargetType),
         filterOrganizationPage.metadata,
       );
-  }, [filterOrganizationPage, filterOrganizationState.acceptPage, filterTargetType]);
+  }, [acceptFilterOrganizationPage, filterOrganizationPage, filterTargetType]);
   useEffect(() => {
     if (filterRolePage)
-      filterRoleState.acceptPage(
+      acceptFilterRolePage(
         (filterRolePage.roles ?? []).map(role => ({value: role.id, label: role.name})),
         filterRolePage.metadata,
       );
-  }, [filterRolePage, filterRoleState.acceptPage]);
+  }, [acceptFilterRolePage, filterRolePage]);
   const columns = useMemo<ProColumns<PlatformWorkspaceInvitation>[]>(
     () => [
       {
@@ -273,8 +301,8 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
         valueType: 'select',
         fieldProps: {
           showSearch: {filterOption: false, onSearch: setFilterOrganizationQuery},
-          onPopupScroll: (event: Parameters<typeof filterOrganizationState.onPopupScroll>[0]) =>
-            filterOrganizationState.onPopupScroll(event, filterOrganizationCandidates.isFetching),
+          onPopupScroll: (event: Parameters<typeof onFilterOrganizationPopupScroll>[0]) =>
+            onFilterOrganizationPopupScroll(event, filterOrganizationCandidates.isFetching),
           disabled: !filterTargetType,
           options: filterOrganizationOptions,
           loading: filterOrganizationCandidates.isFetching,
@@ -290,8 +318,8 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
         valueType: 'select',
         fieldProps: {
           showSearch: {filterOption: false, onSearch: setFilterRoleQuery},
-          onPopupScroll: (event: Parameters<typeof filterRoleState.onPopupScroll>[0]) =>
-            filterRoleState.onPopupScroll(event, filterRoleCandidates.isFetching),
+          onPopupScroll: (event: Parameters<typeof onFilterRolePopupScroll>[0]) =>
+            onFilterRolePopupScroll(event, filterRoleCandidates.isFetching),
           disabled: !filterTargetType,
           options: filterRoleOptions,
           loading: filterRoleCandidates.isFetching,
@@ -351,6 +379,8 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
     [
       filterOrganizationCandidates.isFetching,
       filterOrganizationOptions,
+      onFilterOrganizationPopupScroll,
+      onFilterRolePopupScroll,
       filterRoleCandidates.isFetching,
       filterRoleOptions,
       filterTargetType,
@@ -403,7 +433,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
               key="reset"
               onClick={() => {
                 searchConfig.form?.resetFields();
-                setPage(1);
+                pagination.setPage(1);
                 setFilters({});
                 setFilterTargetType(undefined);
                 setFilterOrganizationQuery('');
@@ -416,7 +446,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
           ],
         }}
         onSubmit={values => {
-          setPage(1);
+          pagination.setPage(1);
           setFilters({
             mobile: text(values.mobile),
             targetOrganizationType: values.targetOrganizationType,
@@ -426,17 +456,22 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
           });
         }}
         onReset={() => {
-          setPage(1);
+          pagination.setPage(1);
           setFilters({});
           setFilterTargetType(undefined);
           setFilterOrganizationQuery('');
           setFilterRoleQuery('');
         }}
-        pagination={{current: page, pageSize, total: result?.total ?? 0, showSizeChanger: true}}
-        onChange={(pagination, _, sorterValue, extra) => {
+        pagination={{
+          current: pagination.page,
+          pageSize: pagination.pageSize,
+          total: result?.total ?? 0,
+          showSizeChanger: true,
+        }}
+        onChange={(tablePagination, _, sorterValue, extra) => {
           if (extra.action === 'paginate') {
-            setPage(pagination.current ?? page);
-            setPageSize(pagination.pageSize ?? pageSize);
+            if (tablePagination.pageSize !== pageSize) pagination.setPageSize(tablePagination.pageSize ?? pageSize);
+            else pagination.setPage(tablePagination.current ?? page);
             return;
           }
           if (extra.action !== 'sort') return;
@@ -448,7 +483,7 @@ export function PlatformInvitationPanel({groupWorkspaceKey}: {groupWorkspaceKey:
           }
           setSort(sorter.columnKey === 'expiresAt' ? 'EXPIRES_AT' : 'CREATED_AT');
           setDirection(sorter.order === 'ascend' ? 'ASC' : 'DESC');
-          setPage(1);
+          pagination.setPage(1);
         }}
         locale={{emptyText: '当前集团空间暂无邀请'}}
         {...testId('platform-invitation-table')}
@@ -713,17 +748,19 @@ function PlatformInvitationCreateDrawer({
   }, [form, lifecycle, open]);
   const organizationPage = organizationQueryResult.data as WorkspaceInvitationCandidatePage | undefined;
   const rolePage = roleQueryResult.data as WorkspaceInvitationCandidatePage | undefined;
+  const {acceptPage: acceptOrganizationPage} = organizationState;
+  const {acceptPage: acceptRolePage} = roleState;
   useEffect(() => {
     if (organizationPage && targetType)
-      organizationState.acceptPage(candidateOptions(organizationPage, targetType), organizationPage.metadata);
-  }, [organizationPage, organizationState.acceptPage, targetType]);
+      acceptOrganizationPage(candidateOptions(organizationPage, targetType), organizationPage.metadata);
+  }, [acceptOrganizationPage, organizationPage, targetType]);
   useEffect(() => {
     if (rolePage)
-      roleState.acceptPage(
+      acceptRolePage(
         (rolePage.roles ?? []).map(role => ({value: role.id, label: role.name})),
         rolePage.metadata,
       );
-  }, [rolePage, roleState.acceptPage]);
+  }, [acceptRolePage, rolePage]);
   const create = async (value: InvitationForm) => {
     if (!value.targetType || !value.targetOrganizationRef || !value.roleIds?.length || lifecycle.submitting) return;
     lifecycle.setSubmitting(true);

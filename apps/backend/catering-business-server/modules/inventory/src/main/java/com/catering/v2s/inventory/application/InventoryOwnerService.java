@@ -562,22 +562,6 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         result.getLong(3), result.getString(1), result.getBigDecimal(2), result.getString(1)));
     }
 
-    private List<InventoryLedgerEntryReadback> ledgerReadbacks(UUID targetRef) {
-        return jdbc.query(
-                "SELECT entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis "
-                        + "FROM inventory.stock_ledger WHERE target_ref=? ORDER BY occurred_at_epoch_millis DESC "
-                        + "LIMIT 100",
-                statement -> statement.setObject(1, targetRef),
-                (result, rowNumber) -> new InventoryLedgerEntryReadback(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(6) == null ? "" : result.getString(6),
-                        result.getBigDecimal(4),
-                        result.getBigDecimal(3),
-                        result.getBigDecimal(5),
-                        result.getLong(7)));
-    }
-
     private JsonNode writeCore(
             String operationId,
             String dataNodeRef,
@@ -2963,20 +2947,6 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         if (hasNext) entries.remove(entries.size() - 1);
         data.put("total", total[0]);
         if (hasNext) data.put("cursor", Long.toString(offset + pageSize));
-        else data.putNull("cursor");
-        return data;
-    }
-
-    private ObjectNode pageEntries(ArrayNode all, ObjectNode request) {
-        long offset = parseCursor(request, "cursor");
-        int pageSize = parsePageSize(request, "pageSize", 20);
-        int from = (int) Math.min(offset, all.size());
-        int to = Math.min(all.size(), from + pageSize);
-        ArrayNode page = mapper.createArrayNode();
-        for (int index = from; index < to; index++) page.add(all.get(index));
-        ObjectNode data = mapper.createObjectNode().set("entries", page);
-        data.put("total", all.size());
-        if (to < all.size()) data.put("cursor", Integer.toString(to));
         else data.putNull("cursor");
         return data;
     }

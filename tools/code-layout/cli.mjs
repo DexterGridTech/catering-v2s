@@ -15,7 +15,7 @@ const forbiddenAppRoots = new Set([
 ]);
 const backendAppRoot = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app";
 const allowedBackendAppChildren = new Set(["bootstrap", "configuration", "edge"]);
-const contractRoots = new Set(["openapi", "catalog", "protocol", "policy", "registry"]);
+const contractRoots = new Set(["openapi", "openapi-source", "collaboration", "catalog", "protocol", "policy", "registry"]);
 const allowedRepositoryRootDirectories = new Set([
   ".agents",
   ".claude",

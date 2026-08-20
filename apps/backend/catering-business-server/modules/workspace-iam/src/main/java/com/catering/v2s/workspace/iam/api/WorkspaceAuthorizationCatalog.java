@@ -25,6 +25,8 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String PG_IAM_HEAD_COMPANY_USERS = "PG-IAM-HEAD-COMPANY-USERS";
         public static final String PG_IAM_STORE_USERS = "PG-IAM-STORE-USERS";
         public static final String PG_STORE_PROFILE = "PG-STORE-PROFILE";
+        public static final String PG_BUSINESS_CHANNEL_PROJECT = "PG-BUSINESS-CHANNEL-PROJECT";
+        public static final String PG_BUSINESS_CHANNEL_STORE = "PG-BUSINESS-CHANNEL-STORE";
         public static final String PG_CATALOG_STORE_ITEMS = "PG-CATALOG-STORE-ITEMS";
         public static final String PG_INVENTORY_STORE_STATUS = "PG-INVENTORY-STORE-STATUS";
         public static final String PG_CATALOG_BRAND_ITEMS = "PG-CATALOG-BRAND-ITEMS";
@@ -65,6 +67,8 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String BC_CONTRACT_CREATE = "BC-CONTRACT-CREATE";
         public static final String BC_CONTRACT_EDIT = "BC-CONTRACT-EDIT";
         public static final String BC_CONTRACT_INVALIDATE = "BC-CONTRACT-INVALIDATE";
+        public static final String BC_BUSINESS_CHANNEL_PROJECT_EDIT = "BC-BUSINESS-CHANNEL-PROJECT-EDIT";
+        public static final String BC_BUSINESS_CHANNEL_STORE_EDIT = "BC-BUSINESS-CHANNEL-STORE-EDIT";
         public static final String EDIT_HEAD_COMPANY_CATALOG = "EDIT_HEAD_COMPANY_CATALOG";
         public static final String EDIT_STORE_CATALOG = "EDIT_STORE_CATALOG";
         public static final String EDIT_STORE_INVENTORY = "EDIT_STORE_INVENTORY";
@@ -104,6 +108,8 @@ public final class WorkspaceAuthorizationCatalog {
             capability("BC-CONTRACT-CREATE", "新建门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
             capability("BC-CONTRACT-EDIT", "编辑门店合同", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
             capability("BC-CONTRACT-INVALIDATE", "设置门店合同失效", "STORE_CONTRACT_MANAGEMENT", "门店合同管理", 400, List.of("GROUP", "REGION", "PROJECT"), "PG-CONTRACT-STORE-MANAGE", "SELECTED_PROJECT_SCOPE"),
+            capability("BC-BUSINESS-CHANNEL-PROJECT-EDIT", "编辑项目经营渠道", "BUSINESS_CHANNEL_MANAGEMENT", "经营渠道管理", 600, List.of("GROUP", "REGION", "PROJECT"), "PG-BUSINESS-CHANNEL-PROJECT", "SELECTED_PROJECT_SCOPE"),
+            capability("BC-BUSINESS-CHANNEL-STORE-EDIT", "编辑门店经营渠道", "BUSINESS_CHANNEL_MANAGEMENT", "经营渠道管理", 600, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-BUSINESS-CHANNEL-STORE", "SELECTED_STORE_SCOPE"),
             capability("EDIT_HEAD_COMPANY_CATALOG", "编辑总公司商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "HEAD_COMPANY"), "PG-CATALOG-BRAND-ITEMS", "SELECTED_HEAD_COMPANY_SCOPE"),
             capability("EDIT_STORE_CATALOG", "编辑门店商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-CATALOG-STORE-ITEMS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE")); }
@@ -125,6 +131,8 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-IAM-HEAD-COMPANY-USERS", "总公司用户管理", "用户与权限", 230, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), "HEAD_COMPANY", true),
             page("PG-IAM-STORE-USERS", "门店用户管理", "用户与权限", 240, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), "STORE", true),
             page("PG-STORE-PROFILE", "门店资料", "门店经营", 300, "STORE", List.of("STORE"), null, true),
+            page("PG-BUSINESS-CHANNEL-PROJECT", "项目经营渠道管理", "经营渠道", 320, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), null, true),
+            page("PG-BUSINESS-CHANNEL-STORE", "门店经营渠道管理", "经营渠道", 340, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-STORE-ITEMS", "门店商品管理", "商品与服务", 510, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-INVENTORY-STORE-STATUS", "门店库存管理", "商品与服务", 520, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true)); }

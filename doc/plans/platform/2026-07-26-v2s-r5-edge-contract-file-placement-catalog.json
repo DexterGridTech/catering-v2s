@@ -48,7 +48,9 @@
     "OPERATIONS-CONTRACT-MANAGEMENT": "contract-management",
     "PUBLIC-INVITATION-ACCEPTANCE": "invitation-acceptance",
     "PUBLIC-ACCESS-RECOVERY": "access-recovery",
-    "PLATFORM-WORKSPACE-OVERVIEW": "group-workspace-management"
+    "PLATFORM-WORKSPACE-OVERVIEW": "group-workspace-management",
+    "PLATFORM-EXTERNAL-COLLABORATION": "external-collaboration",
+    "OPERATIONS-BUSINESS-CHANNEL": "business-channel"
   },
   "operationOverrides": {
     "initializeCommercialGroup": {
@@ -70,6 +72,8 @@
   },
   "componentFamilyRules": [
     {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
+    {"match": "^(ExternalCapability.*|ExternalSystem.*|ProviderProfile.*|ExternalCollaborationTree|OwnerBinding.*|CapabilityDictionary)$", "family": "collaboration"},
+    {"match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$", "family": "business-channel"},
     {"match": "^(GroupWorkspace)", "family": "group-workspace"},
     {"match": "^(CommercialGroup)", "family": "commercial-group"},
     {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
@@ -85,6 +89,8 @@
   ],
   "familyToOwner": {
     "common": "common",
+    "collaboration": "collaboration",
+    "business-channel": "business-channel",
     "group-workspace": "platform-workspace",
     "commercial-group": "organization",
     "asset": "platform-asset",
@@ -143,19 +149,19 @@
     ]
   },
   "closure": {
-    "sourceOperationCount": 104,
-    "plannedAdditionalOperationCount": 17,
-    "expectedResolvedOperationCount": 154,
+    "sourceOperationCount": 149,
+    "plannedAdditionalOperationCount": 32,
+    "expectedResolvedOperationCount": 181,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 165,
-    "expectedResolvedComponentCount": 164,
+    "sourceComponentCount": 192,
+    "expectedResolvedComponentCount": 191,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
-      "platform-admin": 50,
-    "operations-admin": 92,
+      "platform-admin": 61,
+      "operations-admin": 108,
       "public": 12
     }
   }

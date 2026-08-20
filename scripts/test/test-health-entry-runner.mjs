@@ -23,6 +23,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/backend-acceptance-structure.test.mjs',
   'scripts/test/catalog-inventory-reference-path-matrix.test.mjs',
   'scripts/test/catalog-inventory-query-envelope.test.mjs',
+  'scripts/test/catalog-inventory-rtk-tag-generation.test.mjs',
   'scripts/test/catalog-p3-model-migration.test.mjs',
   'scripts/test/catalog-inventory-seed-identity.test.mjs',
   'scripts/test/frontend-idempotency-boundary.test.mjs',
@@ -97,7 +98,7 @@ export function selfTest(repositoryRoot = root) {
   }
   const source = fs.readFileSync(path.join(repositoryRoot, 'scripts/test/test-health-entry-runner.mjs'), 'utf8');
   assertSelfTest(
-    explicitScriptTestRoots.every(relative => source.includes(`"${relative}"`)),
+    explicitScriptTestRoots.every(relative => source.includes(`'${relative}'`) || source.includes(`"${relative}"`)),
     'EXPLICIT_ROOTS',
   );
   const broadNodeGlob = ['**', '/*.test.mjs'].join('');

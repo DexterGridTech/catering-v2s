@@ -4,6 +4,7 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceCapabilityRequirementCatalog;
@@ -40,7 +41,7 @@ public class WorkspaceCapabilityScopeResolver {
 
     public ScopeResolution resolve(
             WorkspaceSessionReadback session, String requirementId, ServerResolvedResource target) {
-        return resolve(session, requirementId, target, false);
+        return resolve(session, requirementId, target, TargetPathPolicy.ENABLED_ONLY);
     }
 
     /**
@@ -50,7 +51,17 @@ public class WorkspaceCapabilityScopeResolver {
      */
     public ScopeResolution resolveStatusTransition(
             WorkspaceSessionReadback session, String requirementId, ServerResolvedResource target) {
-        return resolve(session, requirementId, target, true);
+        return resolve(session, requirementId, target, TargetPathPolicy.STATUS_TRANSITION);
+    }
+
+    /**
+     * Resolves the narrow business-channel case where the explicitly targeted Store may be disabled. It deliberately
+     * rejects every other target type so this cannot become a general disabled-scope escape hatch.
+     */
+    public ScopeResolution resolveIncludingDisabledStoreTarget(
+            WorkspaceSessionReadback session, String requirementId, ServerResolvedResource target) {
+        if (target == null || !ServiceNodeTypes.STORE.equals(target.resourceType())) return ScopeResolution.deny();
+        return resolve(session, requirementId, target, TargetPathPolicy.DISABLED_STORE_TARGET);
     }
 
     /**
@@ -77,7 +88,7 @@ public class WorkspaceCapabilityScopeResolver {
             WorkspaceSessionReadback session,
             String requirementId,
             ServerResolvedResource target,
-            boolean statusTransitionTarget) {
+            TargetPathPolicy targetPathPolicy) {
         var requirement =
                 WorkspaceCapabilityRequirementCatalog.requirement(requirementId).orElse(null);
         if (requirement == null
@@ -88,7 +99,7 @@ public class WorkspaceCapabilityScopeResolver {
         String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
                         requirement.requirementId(), target.resourceType())
                 .orElse(null);
-        return resolveWithCapability(session, requirementId, capability, target, statusTransitionTarget);
+        return resolveWithCapability(session, requirementId, capability, target, targetPathPolicy);
     }
 
     private ScopeResolution resolveWithCapability(
@@ -96,7 +107,7 @@ public class WorkspaceCapabilityScopeResolver {
             String requirementId,
             String capability,
             ServerResolvedResource target,
-            boolean statusTransitionTarget) {
+            TargetPathPolicy targetPathPolicy) {
         try (var scopeSection = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SCOPE)) {
             if (session == null
                     || session.currentAssignmentId() == null
@@ -118,14 +129,31 @@ public class WorkspaceCapabilityScopeResolver {
             }
             OrganizationTaskPathLookup.CommandTaskPathFacts pathFacts;
             try {
-                pathFacts = taskPaths.commandTaskPathFacts(
-                        session.workspaceUuid(),
-                        session.groupWorkspaceKey(),
-                        assignment.serviceNodeType(),
-                        assignment.serviceNodeId(),
-                        target.resourceType(),
-                        target.resourceId(),
-                        statusTransitionTarget);
+                pathFacts = switch (targetPathPolicy) {
+                    case ENABLED_ONLY -> taskPaths.commandTaskPathFacts(
+                            session.workspaceUuid(),
+                            session.groupWorkspaceKey(),
+                            assignment.serviceNodeType(),
+                            assignment.serviceNodeId(),
+                            target.resourceType(),
+                            target.resourceId(),
+                            false);
+                    case STATUS_TRANSITION -> taskPaths.commandTaskPathFacts(
+                            session.workspaceUuid(),
+                            session.groupWorkspaceKey(),
+                            assignment.serviceNodeType(),
+                            assignment.serviceNodeId(),
+                            target.resourceType(),
+                            target.resourceId(),
+                            true);
+                    case DISABLED_STORE_TARGET -> taskPaths.commandTaskPathFactsAllowingDisabledTarget(
+                            session.workspaceUuid(),
+                            session.groupWorkspaceKey(),
+                            assignment.serviceNodeType(),
+                            assignment.serviceNodeId(),
+                            target.resourceType(),
+                            target.resourceId());
+                };
             } catch (RuntimeException ignored) {
                 return ScopeResolution.deny();
             }
@@ -148,10 +176,17 @@ public class WorkspaceCapabilityScopeResolver {
                             target.resourceId(),
                             assignment.serviceNodeType(),
                             assignment.serviceNodeId(),
-                            taskPath.ancestorIds()));
+                            taskPath.ancestorIds(),
+                            session.contextVersion()));
         } finally {
             DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.SCOPE_RESOLVED);
         }
+    }
+
+    private enum TargetPathPolicy {
+        ENABLED_ONLY,
+        STATUS_TRANSITION,
+        DISABLED_STORE_TARGET
     }
 
     /**
@@ -230,7 +265,27 @@ public class WorkspaceCapabilityScopeResolver {
             UUID resourceId,
             String assignmentNodeType,
             UUID assignmentNodeId,
-            java.util.List<UUID> targetAncestorIds) {}
+            java.util.List<UUID> targetAncestorIds,
+            long expectedContextVersion) {
+        public FirstOwnerQueryPredicate(
+                UUID workspaceUuid,
+                String groupWorkspaceKey,
+                String resourceType,
+                UUID resourceId,
+                String assignmentNodeType,
+                UUID assignmentNodeId,
+                java.util.List<UUID> targetAncestorIds) {
+            this(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    resourceType,
+                    resourceId,
+                    assignmentNodeType,
+                    assignmentNodeId,
+                    targetAncestorIds,
+                    -1L);
+        }
+    }
 
     public enum Decision {
         ALLOW,
@@ -252,7 +307,8 @@ public class WorkspaceCapabilityScopeResolver {
                     firstOwnerQueryPredicate.resourceId(),
                     firstOwnerQueryPredicate.assignmentNodeType(),
                     firstOwnerQueryPredicate.assignmentNodeId(),
-                    firstOwnerQueryPredicate.targetAncestorIds());
+                    firstOwnerQueryPredicate.targetAncestorIds(),
+                    firstOwnerQueryPredicate.expectedContextVersion());
         }
 
         static ScopeResolution allow(String capabilityKey, FirstOwnerQueryPredicate predicate) {

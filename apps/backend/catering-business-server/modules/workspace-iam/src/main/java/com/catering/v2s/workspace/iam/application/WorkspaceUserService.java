@@ -6,6 +6,7 @@ import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
+import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
@@ -209,28 +210,26 @@ public class WorkspaceUserService {
         String normalizedQuery = blankToNull(safe.queryText());
         return switch (safe.subjectType()) {
             case "ORGANIZATION" -> {
-                List<CandidateOrganization> visible =
-                        candidates
-                                .listEnabled(safe.workspaceUuid(), safe.groupWorkspaceKey(), safe.targetType())
-                                .stream()
-                                .map(value -> new CandidateOrganization(
-                                        value.serviceNodeType(), value.organizationRef(), value.path()))
-                                .filter(value -> scope == null
-                                        || isTargetWithinScope(
-                                                safe.workspaceUuid(),
-                                                safe.groupWorkspaceKey(),
-                                                scope,
-                                                value.serviceNodeType(),
-                                                value.organizationRef()))
-                                .filter(value -> contains(value.path(), normalizedQuery))
-                                .sorted(java.util.Comparator.comparing(CandidateOrganization::path)
-                                        .thenComparing(
-                                                value -> value.organizationRef().toString()))
-                                .toList();
+                if (safe.operationsSession() == null) throw new TaskScopeDeniedException();
+                if (scope == null) throw new TaskScopeDeniedException();
+                var result = candidates.operationsInvitationCandidates(
+                        safe.workspaceUuid(),
+                        safe.groupWorkspaceKey(),
+                        new OrganizationAssignmentCandidateLookup.OperationsInvitationCandidateQuery(
+                                candidateTargetType(safe.targetType()),
+                                scope.targetType(),
+                                scope.targetId(),
+                                normalizedQuery,
+                                safePage,
+                                safeSize));
+                List<CandidateOrganization> visible = result.items().stream()
+                        .map(value -> new CandidateOrganization(
+                                value.serviceNodeType(), value.organizationRef(), value.path()))
+                        .toList();
                 yield new CandidatePage(
                         new CandidateQueryMetadata(
-                                "ORGANIZATION", normalizedQuery, safePage, safeSize, visible.size(), null),
-                        pageSlice(visible, safePage, safeSize),
+                                "ORGANIZATION", normalizedQuery, safePage, safeSize, result.total(), null),
+                        visible,
                         List.of());
             }
             case "ROLE" -> {
@@ -255,24 +254,26 @@ public class WorkspaceUserService {
                                     "ROLE", normalizedQuery, safePage, safeSize, 0, safe.selectedOrganizationRef()),
                             List.of(),
                             List.of());
-                List<WorkspaceRoleReadback> enabledRoles =
-                        roles.list(safe.workspaceUuid(), safe.groupWorkspaceKey()).stream()
-                                .filter(role -> "ENABLED".equals(role.status())
-                                        && safe.targetType().equals(role.serviceNodeType()))
-                                .filter(role -> contains(role.name(), normalizedQuery))
-                                .sorted(java.util.Comparator.comparing(WorkspaceRoleReadback::name)
-                                        .thenComparing(WorkspaceRoleReadback::id))
-                                .toList();
+                WorkspaceRoleService.Page enabledRoles = roles.page(
+                        safe.workspaceUuid(),
+                        safe.groupWorkspaceKey(),
+                        normalizedQuery,
+                        safe.targetType(),
+                        "ENABLED",
+                        safePage,
+                        safeSize,
+                        "NAME",
+                        "ASC");
                 yield new CandidatePage(
                         new CandidateQueryMetadata(
                                 "ROLE",
                                 normalizedQuery,
                                 safePage,
                                 safeSize,
-                                enabledRoles.size(),
+                                enabledRoles.total(),
                                 safe.selectedOrganizationRef()),
                         List.of(),
-                        pageSlice(enabledRoles, safePage, safeSize));
+                        enabledRoles.items());
             }
             default -> throw new IllegalArgumentException("unsupported invitation candidate subject type");
         };
@@ -705,21 +706,8 @@ public class WorkspaceUserService {
                 value.serviceNodeId());
     }
 
-    private static boolean contains(String value, String query) {
-        return query == null
-                || (value != null
-                        && value.toLowerCase(java.util.Locale.ROOT).contains(query.toLowerCase(java.util.Locale.ROOT)));
-    }
-
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private static <T> List<T> pageSlice(List<T> values, int page, int pageSize) {
-        if (values.isEmpty()) return List.of();
-        int fromIndex = Math.min(values.size(), Math.max(0, (page - 1) * pageSize));
-        int toIndex = Math.min(values.size(), fromIndex + pageSize);
-        return fromIndex >= toIndex ? List.of() : List.copyOf(values.subList(fromIndex, toIndex));
     }
 
     private static String placeholders(int count) {
@@ -746,8 +734,24 @@ public class WorkspaceUserService {
     }
 
     private boolean isEnabledTarget(UUID workspaceUuid, String key, String targetType, UUID targetId) {
-        return candidates.listEnabled(workspaceUuid, key, targetType).stream()
-                .anyMatch(value -> targetId.equals(value.organizationRef()));
+        try {
+            candidates.requireEnabledInvitationTarget(
+                    workspaceUuid,
+                    key,
+                    new OrganizationAssignmentCandidateLookup.InvitationTargetRef(
+                            candidateTargetType(targetType), targetId));
+            return true;
+        } catch (OrganizationTaskPathService.TaskPathNotFoundException exception) {
+            return false;
+        }
+    }
+
+    private static OrganizationAssignmentCandidateLookup.InvitationTargetType candidateTargetType(String targetType) {
+        try {
+            return OrganizationAssignmentCandidateLookup.InvitationTargetType.valueOf(targetType);
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("unsupported invitation candidate target type", exception);
+        }
     }
 
     private String path(UUID workspaceUuid, String key, String nodeType, UUID id) {

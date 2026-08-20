@@ -114,19 +114,25 @@ public final class PlatformOrganizationOverviewController {
             @RequestParam(required = false) UUID selectedId,
             @RequestParam(required = false) UUID projectId) {
         var readFacts = sessions.requireRead(request);
-        if (!"CONTRACT_LIST".equals(candidateUsage))
+        if (!"CONTRACT_LIST".equals(candidateUsage) && !"EXTERNAL_BINDING".equals(candidateUsage))
             throw new InvalidEdgeRequestException("invalid platform organization candidate usage");
+        StoreCandidateTaskReadService.PlatformContractCandidateSubject subject;
+        try {
+            subject = StoreCandidateTaskReadService.PlatformContractCandidateSubject.valueOf(subjectType);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidEdgeRequestException("invalid platform organization candidate subject");
+        }
+        if ("EXTERNAL_BINDING".equals(candidateUsage) && !isExternalBindingSubject(subject))
+            throw new InvalidEdgeRequestException("invalid external binding candidate subject");
+        if ("CONTRACT_LIST".equals(candidateUsage) && subject != StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE
+                && subject != StoreCandidateTaskReadService.PlatformContractCandidateSubject.TENANT)
+            throw new InvalidEdgeRequestException("invalid contract candidate subject");
         var workspace = readFacts.requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
-        var value = candidates.platformContractCandidatePage(
-                workspace.workspaceUuid(),
-                groupWorkspaceKey,
-                new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
-                        StoreCandidateTaskReadService.PlatformContractCandidateSubject.valueOf(subjectType),
-                        queryText,
-                        page == null ? 1 : page,
-                        pageSize == null ? 20 : pageSize,
-                        selectedId,
-                        projectId));
+        var query = new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
+                subject, queryText, page == null ? 1 : page, pageSize == null ? 20 : pageSize, selectedId, projectId);
+        var value = "EXTERNAL_BINDING".equals(candidateUsage)
+                ? candidates.platformExternalBindingCandidatePage(workspace.workspaceUuid(), groupWorkspaceKey, query)
+                : candidates.platformContractCandidatePage(workspace.workspaceUuid(), groupWorkspaceKey, query);
         return new OrganizationCandidatePage(
                 new OrganizationCandidatePageMetadata(
                         OrganizationCandidateQuerySubjectType.valueOf(
@@ -139,6 +145,14 @@ public final class PlatformOrganizationOverviewController {
                 value.items().stream()
                         .map(item -> new OrganizationCandidatePageItemsItem(item.id(), item.code(), item.name()))
                         .toList());
+    }
+
+    private static boolean isExternalBindingSubject(
+            StoreCandidateTaskReadService.PlatformContractCandidateSubject subject) {
+        return switch (subject) {
+            case COMMERCIAL_GROUP, REGION, PROJECT, HEAD_COMPANY, STORE -> true;
+            default -> false;
+        };
     }
 
     @GetMapping("/hierarchy")

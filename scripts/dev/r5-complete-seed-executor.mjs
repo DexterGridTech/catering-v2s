@@ -10,10 +10,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {renderSeedReportMarkdown} from "../test/seed-report.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
 export const COMPLETE_SEED_STAGE_IDS = Object.freeze(["owner-command", "catalog-inventory"]);
+
+export function completeSeedMarkdownPath(reportPath) {
+  return String(reportPath).replace(/\.json$/i, ".md");
+}
 
 function failure(code) {
   const error = new Error(code);
@@ -114,22 +119,132 @@ function resultPath(output, key) {
   return match?.[1] ?? null;
 }
 
-function writeCompositeReport(file, report) {
-  atomicWrite(file, `${JSON.stringify(report, null, 2)}\n`);
-  const markdown = [
+function markdownTable(headers, rows) {
+  const separator = headers.map(() => "---");
+  return [
+    `| ${headers.join(" | ")} |`,
+    `| ${separator.join(" | ")} |`,
+    ...rows.map((row) => `| ${row.map((value) => escapeMarkdown(value)).join(" | ")} |`),
+  ].join("\n");
+}
+
+function formatNumber(value) {
+  return Number.isFinite(value) ? Number(value).toFixed(2).replace(/\.00$/, "") : "-";
+}
+
+function escapeMarkdown(value) {
+  return String(value ?? "-").replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+function displayPath(file) {
+  const relative = path.relative(root, file);
+  return relative && !relative.startsWith("..") ? relative : file;
+}
+
+function loadComponentReports(report) {
+  return (report.components ?? []).map((component) => {
+    if (!component.reportPath) return {component, error: "COMPLETE_SEED_COMPONENT_REPORT_PATH_MISSING"};
+    try {
+      const childReport = readJson(component.reportPath, "COMPLETE_SEED_COMPONENT_REPORT");
+      if (childReport.managedDevRunId !== report.managedDevRunId) {
+        return {component, error: "COMPLETE_SEED_COMPONENT_MANAGED_RUN_MISMATCH"};
+      }
+      return {component, report: childReport};
+    } catch (error) {
+      return {component, error: error.code ?? compact(error.message)};
+    }
+  });
+}
+
+function componentReportMarkdown(component, childReport) {
+  // The child report remains the only metric authority.  This is a heading
+  // and presentation adjustment only; no metric is recomputed here.
+  return renderSeedReportMarkdown({...childReport, cleanupStatus: component.cleanup ?? childReport.cleanupStatus})
+    .replace(/^# Seed 报告\s*/u, "")
+    .replace(/^## /gmu, "#### ")
+    .trim();
+}
+
+export function renderCompleteSeedMarkdown(report, componentDetails = loadComponentReports(report)) {
+  const componentRows = componentDetails.map(({component, report: childReport, error}) => [
+    component.id,
+    component.business ?? childReport?.businessStatus ?? childReport?.status ?? "-",
+    component.cleanup ?? childReport?.cleanupStatus ?? "-",
+    Number.isFinite(component.durationMs) ? `${formatNumber(component.durationMs)} ms` : "-",
+    childReport?.completeness?.apiCallCount ?? "-",
+    childReport?.completeness?.endpointGroupCount ?? "-",
+    childReport ? `${childReport.completeness?.unmatchedHttpEvents?.length ?? 0}/${childReport.completeness?.unmatchedDatabaseEvents?.length ?? 0}` : `详报不可用：${error}`,
+  ]);
+  const fixtureRows = componentDetails
+    .filter(({report: childReport}) => childReport && (childReport.sourceItems !== undefined || childReport.createdItems !== undefined || childReport.mediaAssets !== undefined))
+    .map(({component, report: childReport}) => [
+      component.id,
+      childReport.sourceItems ?? "-",
+      childReport.createdItems ?? "-",
+      Array.isArray(childReport.excludedItems) ? childReport.excludedItems.length : "-",
+      childReport.mediaAssets ?? "-",
+      childReport.planDigest ?? "-",
+    ]);
+  const startedAt = new Date(report.startedAt).getTime();
+  const finishedAt = new Date(report.finishedAt).getTime();
+  const durationMs = Number.isFinite(startedAt) && Number.isFinite(finishedAt) ? Math.max(0, finishedAt - startedAt) : null;
+  const lines = [
     "# 完整 DEV Seed 报告",
     "",
-    `- 结论：${report.business}`,
-    `- Cleanup：${report.cleanup}`,
-    `- Managed DEV Run ID：${report.managedDevRunId}`,
-    `- 完整 Seed Run ID：${report.runId}`,
-    `- 组件：${report.components.map((component) => `${component.id}=${component.business}`).join("；") || "无"}`,
-    `- 首败：${report.firstFailure ?? "无"}`,
+    "> 这是完整 `r5-full` seed 的可读投影；机器校验真相是同目录 `seed-report.json`，接口/数据库计量真相保留在两个子报告中。",
     "",
-    "本报告只汇总两个子阶段的 receipt；各 owner/API 计量仍由各自子报告提供。",
+    `## 结论：${report.business}`,
     "",
-  ].join("\n");
-  atomicWrite(file.replace(/\.json$/, ".md"), markdown);
+    `- Seed profile：\`${escapeMarkdown(report.profile)}\``,
+    `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
+    `- 完整 Seed Run ID：\`${escapeMarkdown(report.runId)}\``,
+    `- Business：\`${escapeMarkdown(report.business)}\``,
+    `- Cleanup：\`${escapeMarkdown(report.cleanup)}\``,
+    `- 开始：${escapeMarkdown(report.startedAt)}`,
+    `- 结束：${escapeMarkdown(report.finishedAt)}`,
+    `- 父流程耗时：${formatNumber(durationMs)} ms`,
+    `- 首败：${escapeMarkdown(report.firstFailure ?? "无")}`,
+    "",
+    "## 子阶段总览",
+    "",
+    "API 调用数、endpoint 分组数和关联性直接来自各子报告；父报告不重新计算或合并第二套 API/数据库统计。最后一列为“未关联 HTTP / 未关联数据库”事件数。",
+    "",
+    markdownTable(["阶段", "Business", "Cleanup", "阶段耗时", "API 调用", "Endpoint 分组", "关联缺口"], componentRows.length ? componentRows : [["无", "-", "-", "-", "-", "-", "-"]]),
+    "",
+    "## Catalog / Inventory 数据计划",
+    "",
+    fixtureRows.length
+      ? markdownTable(["阶段", "来源项", "创建项", "排除项", "媒体", "Plan digest"], fixtureRows)
+      : "当前父 receipt 中没有可读的数据计划字段。",
+    "",
+    "## 子阶段详细计量",
+    "",
+    "以下两节逐字复用子报告的 endpoint 表和非 API 阶段，不把两个阶段压成无法追溯的总数。重点耗时接口可直接在各表的 HTTP/DB average/min/max 列定位。",
+    "",
+  ];
+  for (const {component, report: childReport, error} of componentDetails) {
+    lines.push(`### ${escapeMarkdown(component.id)}`, "");
+    lines.push(`- 子报告 JSON：\`${escapeMarkdown(component.reportPath ? displayPath(component.reportPath) : "未提供")}\``);
+    if (error) {
+      lines.push(`- 详细计量：不可用（${escapeMarkdown(error)}）`, "");
+      continue;
+    }
+    lines.push("", componentReportMarkdown(component, childReport), "");
+  }
+  lines.push(
+    "## 证据边界",
+    "",
+    "- `Business=PASS` 与 `Cleanup=PASS*` 是本次 seed 的受管执行结果，不替代浏览器 L2、UAT 或完整业务验收。",
+    "- API 请求与 backend request-completed event 已按 managed DEV run、correlation id、request id 关联；未关联事件在各子报告总览中单独列出。",
+    "- 报告只展示 route、operation、计数和耗时，不展示 SQL、bind value、raw payload、密码、token、cookie、Authorization 或账号敏感信息。",
+    "",
+  );
+  return `${lines.join("\n")}\n`;
+}
+
+function writeCompositeReport(file, report) {
+  atomicWrite(file, `${JSON.stringify(report, null, 2)}\n`);
+  atomicWrite(completeSeedMarkdownPath(file), renderCompleteSeedMarkdown(report));
 }
 
 function dryRun() {
@@ -208,11 +323,32 @@ async function execute() {
     phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", destructiveCleanupOwner: "r5-reset", persistentSeedProcess: false, resetRequiredBeforeRerun: true});
   }
   finish();
-  process.stdout.write(`R5_COMPLETE_SEED=${business}; CLEANUP=${cleanup}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}; FIRST_FAILURE=${firstFailure ?? "NONE"}\n`);
+  process.stdout.write(`R5_COMPLETE_SEED=${business}; CLEANUP=${cleanup}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}; MARKDOWN=${completeSeedMarkdownPath(reportPath)}; FIRST_FAILURE=${firstFailure ?? "NONE"}\n`);
   if (business !== "PASS") process.exitCode = 2;
 }
 
+function renderExistingReport(reportPath) {
+  const absoluteReportPath = path.resolve(reportPath);
+  const report = readJson(absoluteReportPath, "COMPLETE_SEED_REPORT");
+  const markdownPath = completeSeedMarkdownPath(absoluteReportPath);
+  atomicWrite(markdownPath, renderCompleteSeedMarkdown(report));
+  process.stdout.write(`R5_COMPLETE_SEED_REPORT_RENDER=PASS; REPORT=${absoluteReportPath}; MARKDOWN=${markdownPath}\n`);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
-  if (process.argv.includes("--dry-run")) dryRun();
+  const renderIndex = process.argv.indexOf("--render-existing");
+  if (renderIndex >= 0) {
+    const reportPath = process.argv[renderIndex + 1];
+    if (!reportPath) {
+      process.stderr.write("R5_COMPLETE_SEED_REPORT_RENDER=REFUSED; REASON=REPORT_PATH_REQUIRED\n");
+      process.exitCode = 2;
+    } else {
+      try { renderExistingReport(reportPath); }
+      catch (error) {
+        process.stderr.write(`R5_COMPLETE_SEED_REPORT_RENDER=REFUSED; REASON=${error.code ?? compact(error.message)}\n`);
+        process.exitCode = 2;
+      }
+    }
+  } else if (process.argv.includes("--dry-run")) dryRun();
   else execute().catch((error) => { process.stderr.write(`R5_COMPLETE_SEED=REFUSED; REASON=${error.code ?? compact(error.message)}\n`); process.exitCode = 2; });
 }

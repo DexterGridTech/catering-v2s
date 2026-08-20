@@ -37,7 +37,7 @@
 review 文件仍须遵循 `doc/platform/claude-review-handoff-template.md` 并在交付前通过 `scripts/check/claude-review-handoff --file <review-request>`。任一项缺失时，只能报告“评审材料未就绪”，不得声称“已交给 Claude”。本要求的 routed memory anchor 是 `project-memory/operations/claude-review-handoff-standard.md`。
 
 先完整读取 `AGENTS.md`、`PLATFORM-BLUEPRINT.md`，再从
-`doc/platform/roadmap-program-registry.json` 解析显式程序的 current Roadmap。
+`doc/platform/roadmap-program-registry.json` 解析显式程序的 Roadmap，读其**授权字段**。⚠️ Roadmap 已收窄为授权记录，不再有 `CURRENT_STEP`/`CURRENT_NEXT_ACTION`；当前任务以 Dexter 会话指派为准。
 
 Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 review。评审必须：
 

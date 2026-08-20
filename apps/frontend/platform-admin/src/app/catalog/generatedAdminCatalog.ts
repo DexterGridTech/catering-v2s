@@ -56,6 +56,13 @@ export const adminCatalog = {
       "iconKey": "EXTENSION",
       "menuOrder": 80,
       "workspaceRequirement": "REQUIRED"
+    },
+    {
+      "pageDesignKey": "PLATFORM-EXTERNAL-COLLABORATION",
+      "title": "外部系统接入配置",
+      "iconKey": "EXTENSION",
+      "menuOrder": 90,
+      "workspaceRequirement": "REQUIRED"
     }
   ],
   "platformShellCopy": {
@@ -73,7 +80,8 @@ export const platformPageDesignKeys = {
   "PlatformContractOverview": "PLATFORM-CONTRACT-OVERVIEW",
   "PlatformRoles": "PLATFORM-ROLES",
   "PlatformWorkspaceAccounts": "PLATFORM-WORKSPACE-ACCOUNTS",
-  "PlatformExtensionFields": "PLATFORM-EXTENSION-FIELDS"
+  "PlatformExtensionFields": "PLATFORM-EXTENSION-FIELDS",
+  "PlatformExternalCollaboration": "PLATFORM-EXTERNAL-COLLABORATION"
 } as const;
 export const platformShellCopyKeys = {
   "PlatformShellBrand": "PLATFORM-SHELL-BRAND",

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "organization",
-  "operationCount": 39,
-  "readCount": 19,
+  "operationCount": 38,
+  "readCount": 18,
   "commandCount": 20,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
@@ -264,22 +264,6 @@
       "copyRole": "NONE",
       "commandBoundary": "NOT_APPLICABLE",
       "dispatchMethod": "getOperationsOrganizationStore"
-    },
-    {
-      "operationId": "getOperationsOrganizationStoreCandidates",
-      "method": "GET",
-      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/candidates",
-      "face": "operations-admin",
-      "mode": "READ",
-      "adapter": "com.catering.v2s.organization.application.GetOperationsOrganizationStoreCandidatesOperation",
-      "wireRequest": "NoBody",
-      "wireResponse": "OrganizationStoreCandidatePage",
-      "contextKind": "READ_CONTEXT",
-      "transactionMode": "OUTSIDE_TRANSACTION",
-      "copyRole": "NONE",
-      "commandBoundary": "NOT_APPLICABLE",
-      "dispatchMethod": "getOperationsOrganizationStoreCandidates"
     },
     {
       "operationId": "getOperationsOrganizationStoreExtensionDefinition",

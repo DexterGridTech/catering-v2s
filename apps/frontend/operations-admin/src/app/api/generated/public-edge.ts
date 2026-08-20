@@ -240,9 +240,9 @@ export type PublicInvitationView = {
   roleNames: Array<string>;
   maskedMobile: string;
   status: WorkspaceInvitationStatus;
-  nextStep: "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
   expiresAt: EpochMillis;
   workspaceName: string;
+  nextStep: "ACCEPT" | "VERIFY_MOBILE" | "FINALIZE" | "TERMINAL";
   logoUrl?: (string) | null;
 };
 

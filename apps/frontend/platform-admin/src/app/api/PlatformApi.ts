@@ -19,6 +19,8 @@ const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 /** Successful generated commands publish here; read models remain app-owned subscribers. */
 export const platformRefreshSignal = createRefreshSignal();
+/** Shell-level content refresh; imperative read models subscribe without remounting the tab. */
+export const platformContentTabRefreshSignal = createRefreshSignal();
 
 export function recordPlatformRenderError(_error: Error) {
   logger.error({event: 'frontend.render.failed', phase: 'render', outcome: 'ERROR', errorCode: 'UI_RENDER_ERROR'});

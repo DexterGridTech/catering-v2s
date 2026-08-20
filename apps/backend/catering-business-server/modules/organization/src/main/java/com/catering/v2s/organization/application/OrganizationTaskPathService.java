@@ -51,7 +51,20 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
         TaskPathRef target = new TaskPathRef(targetType, targetId);
         TaskPath taskPath =
-                resolveTaskPaths(workspaceUuid, key, List.of(target), true).get(target);
+                resolveTaskPaths(workspaceUuid, key, List.of(target), true, true).get(target);
+        if (taskPath == null) throw new TaskPathNotFoundException();
+        return taskPath;
+    }
+
+    /** A disabled Store may remain a business-channel target, but its organization ancestors remain enabled-only. */
+    @Override
+    @Transactional(readOnly = true)
+    public TaskPath requireTaskPathAllowingDisabledTarget(
+            UUID workspaceUuid, String key, String targetType, UUID targetId) {
+        if (!ServiceNodeTypes.STORE.equals(targetType)) throw new TaskPathNotFoundException();
+        TaskPathRef target = new TaskPathRef(targetType, targetId);
+        TaskPath taskPath =
+                resolveTaskPaths(workspaceUuid, key, List.of(target), true, false).get(target);
         if (taskPath == null) throw new TaskPathNotFoundException();
         return taskPath;
     }
@@ -60,7 +73,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     @Override
     @Transactional(readOnly = true)
     public Map<TaskPathRef, TaskPath> requireTaskPaths(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
-        return resolveTaskPaths(workspaceUuid, key, targets, false);
+        return resolveTaskPaths(workspaceUuid, key, targets, false, false);
     }
 
     @Override
@@ -106,7 +119,11 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
      * authority, candidate, and session decisions.
      */
     private Map<TaskPathRef, TaskPath> resolveTaskPaths(
-            UUID workspaceUuid, String key, List<TaskPathRef> targets, boolean includeDisabledFacts) {
+            UUID workspaceUuid,
+            String key,
+            List<TaskPathRef> targets,
+            boolean includeDisabledEntityFacts,
+            boolean includeDisabledNodeFacts) {
         if (workspaceUuid == null || key == null || targets == null) throw new TaskPathNotFoundException();
         LinkedHashSet<TaskPathRef> requested = validatedTargets(targets);
         if (requested.isEmpty()) return Map.of();
@@ -114,18 +131,18 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         LinkedHashMap<TaskPathRef, TaskPath> result = new LinkedHashMap<>();
 
         Set<UUID> storeIds = idsFor(requested, ServiceNodeTypes.STORE);
-        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, includeDisabledFacts);
+        Map<UUID, Store> stores = stores(workspaceUuid, key, storeIds, includeDisabledEntityFacts);
         if (stores.size() != storeIds.size()) throw new TaskPathNotFoundException();
 
         Set<UUID> headCompanyIds = idsFor(requested, ServiceNodeTypes.HEAD_COMPANY);
-        Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds, includeDisabledFacts);
+        Map<UUID, Entity> headCompanies = headCompanies(workspaceUuid, key, headCompanyIds, includeDisabledEntityFacts);
         if (headCompanies.size() != headCompanyIds.size()) throw new TaskPathNotFoundException();
 
         Set<UUID> nodeIds = new LinkedHashSet<>();
         nodeIds.addAll(idsFor(requested, ServiceNodeTypes.REGION));
         nodeIds.addAll(idsFor(requested, ServiceNodeTypes.PROJECT));
         stores.values().forEach(store -> nodeIds.add(store.projectId()));
-        Map<UUID, NodePath> nodes = nodePaths(workspaceUuid, key, groupId, nodeIds, includeDisabledFacts);
+        Map<UUID, NodePath> nodes = nodePaths(workspaceUuid, key, groupId, nodeIds, includeDisabledNodeFacts);
 
         for (TaskPathRef target : requested) {
             switch (target.targetType()) {

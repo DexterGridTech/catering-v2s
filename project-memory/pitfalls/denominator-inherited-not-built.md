@@ -29,3 +29,16 @@ sourceRefs: ["doc/platform/foundation-charter.md"]
 ```
 
 - **判别式**:这一节写完,能回答「**一共有多少**」吗?答不上来 ⇒ 结论不能下。
+
+## OpenAPI 根文件与 paths 分片的收集边界
+
+- **失败模式**：把 `contracts/openapi/paths` 分片目录当成 OpenAPI 响应形状的完整入口，
+  用它计算根级数组或列表候选，随后把漏掉的 catalog-inventory operation 当成“不存在”。
+- **根因**：catalog-inventory 的响应 schema 需要从自己的合并根文件解引用；只遍历 paths 分片
+  不能解析该根文件中的本地 schema 关系，机械候选因此出现假阴性。
+- **适用边界**：任何跨 OpenAPI root、path shard、外部 `$ref` 的分母盘点。它只纠正收集边界，
+  不自动把根级数组判为分页，也不替代数据流与业务形态判断。
+- **最小解**：先枚举全部相关根文件，再递归解引用 path item 与 schema 的外部/本地 `$ref`，
+  用 operationId 去重后保存完整成员清单、扫描口径和反向差集；paths 分片只能作为交叉校验。
+- **反例**：只扫 paths 目录得到“catalog-inventory 没有根级数组”的结论；应改为同时扫描
+  `edge.openapi.json` 与 `catalog-inventory.openapi.json` 后再取交。

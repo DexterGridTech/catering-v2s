@@ -4,15 +4,19 @@ import {
   adminHierarchyCollator,
   adminListState,
   contextScopedQueryArgs,
+  createPageQueryIdentity,
   NameCodeText,
   testId,
+  ValidityStatus,
   useAsyncGenerationGuard,
   useDetailDrawer,
   useOverlayLock,
+  usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
+import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
 import {platformProblemOf, platformRtk, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import type {
   ContractOverviewItem,
@@ -56,8 +60,7 @@ const organizationTabs: OrganizationTab[] = [
   {key: 'HEAD_COMPANY', label: '总公司', category: 'BUSINESS_ENTITY', type: 'HEAD_COMPANY'},
   {key: 'STORE', label: '门店', category: 'STORE', type: 'STORE'},
 ];
-const statusLabel = (value: string) =>
-  value === 'ENABLED' ? '已启用' : value === 'DISABLED' ? '已停用' : value === 'VALID' ? '生效中' : '已失效';
+const statusLabel = (value: string) => (value === 'ENABLED' ? '已启用' : value === 'DISABLED' ? '已停用' : '—');
 export function PlatformReadPage({kind}: {kind: 'organization' | 'contracts'}) {
   return (
     <WorkspaceScope>
@@ -158,8 +161,6 @@ function PlatformReadForWorkspace({
   const [contractFilters, setContractFilters] = useState<ContractFilters>({});
   const [contractStoreSearch, setContractStoreSearch] = useState('');
   const [contractTenantSearch, setContractTenantSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [contractSort, setContractSort] = useState<StoreContractSortKey>('UPDATED_AT');
   const [contractDirection, setContractDirection] = useState<StoreContractSortDirection>('DESC');
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
@@ -176,6 +177,34 @@ function PlatformReadForWorkspace({
   const legalEntityTab = tab.category === 'BUSINESS_ENTITY' && (tab.type === 'TENANT' || tab.type === 'HEAD_COMPANY');
   const organizationTabState = organizationTabStates[tab.key] ?? defaultOrganizationTabQueryState;
   const context = useMemo(() => contextScopedQueryArgs({}, {groupWorkspaceKey}), [groupWorkspaceKey]);
+  const organizationQueryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getPlatformOrganizationOverviewPage,
+        scope: {groupWorkspaceKey: context.groupWorkspaceKey, tab: tab.key},
+        filters: organizationTabState.filters,
+        sort: {sort: organizationTabState.sort, direction: organizationTabState.direction},
+      }),
+    [
+      context.groupWorkspaceKey,
+      organizationTabState.direction,
+      organizationTabState.filters,
+      organizationTabState.sort,
+      tab.key,
+    ],
+  );
+  const organizationPagination = usePageQuery({queryIdentity: organizationQueryIdentity, initialPageSize: 10});
+  const contractQueryIdentity = useMemo(
+    () =>
+      createPageQueryIdentity({
+        operationId: PLATFORM_ADMIN_OPERATION_IDS.getPlatformContractOverviewPage,
+        scope: {groupWorkspaceKey: context.groupWorkspaceKey},
+        filters: contractFilters,
+        sort: {sort: contractSort, direction: contractDirection},
+      }),
+    [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort],
+  );
+  const contractPagination = usePageQuery({queryIdentity: contractQueryIdentity, initialPageSize: 10});
   const workspaceDetailRequest = useMemo(
     () => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}),
     [context.groupWorkspaceKey],
@@ -188,14 +217,20 @@ function PlatformReadForWorkspace({
           query: organizationOverviewQuery(
             tab,
             organizationTabState.filters,
-            organizationTabState.page,
-            organizationTabState.pageSize,
+            organizationPagination.page,
+            organizationPagination.pageSize,
             organizationTabState.sort,
             organizationTabState.direction,
           ),
         },
       ),
-    [context.groupWorkspaceKey, organizationTabState, tab],
+    [
+      context.groupWorkspaceKey,
+      organizationPagination.page,
+      organizationPagination.pageSize,
+      organizationTabState,
+      tab,
+    ],
   );
   const contractRequest = useMemo(() => {
     const {storeId, tenantId, ...restFilters} = contractFilters;
@@ -208,12 +243,19 @@ function PlatformReadForWorkspace({
           ...(tenantId ? {tenantId: wireUuid(tenantId)} : {}),
           sort: contractSort,
           direction: contractDirection,
-          page,
-          pageSize,
+          page: contractPagination.page,
+          pageSize: contractPagination.pageSize,
         },
       },
     );
-  }, [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort, page, pageSize]);
+  }, [
+    context.groupWorkspaceKey,
+    contractDirection,
+    contractFilters,
+    contractPagination.page,
+    contractPagination.pageSize,
+    contractSort,
+  ]);
   const treeRequest = useMemo(
     () =>
       platformAdminRtkRequest.getPlatformOrganizationHierarchyTree({groupWorkspaceKey: context.groupWorkspaceKey}, {}),
@@ -403,22 +445,20 @@ function PlatformReadForWorkspace({
     setOrganizationTabStates(current => updateOrganizationTabQueryState(current, key, patch));
   };
   const submitOrganizationFilters = (next: OrganizationFilters) => {
-    updateOrganizationTabState(tab.key, {filters: filtersForOrganizationTab(tab, next), page: 1});
+    updateOrganizationTabState(tab.key, {filters: filtersForOrganizationTab(tab, next)});
   };
   const resetOrganizationFilters = () => {
-    updateOrganizationTabState(tab.key, {filters: {}, page: 1});
+    updateOrganizationTabState(tab.key, {filters: {}});
   };
   const submitContractFilters = (next: ContractFilters) => {
     setContractFilters(next);
-    setPage(1);
   };
   const resetContractFilters = () => {
     setContractFilters({});
-    setPage(1);
   };
   const hierarchyPage = kind === 'organization' && tab.category === 'HIERARCHY';
   return (
-    <div className={hierarchyPage ? 'platform-organization-hierarchy-page' : undefined}>
+    <div className={hierarchyPage ? 'platform-master-detail-page' : undefined}>
       {problem && (
         <Alert
           type="error"
@@ -438,7 +478,7 @@ function PlatformReadForWorkspace({
         />
       )}
       {hierarchyPage && (
-        <div className="platform-organization-hierarchy-layout">
+        <div className="platform-master-detail-layout">
           {hierarchyLoading ? (
             <Spin description={<span {...testId('platform-organization-hierarchy-loading')}>正在加载</span>} />
           ) : problem ? null : !workspaceIsInitialized ? (
@@ -451,8 +491,8 @@ function PlatformReadForWorkspace({
             <Empty description={<span {...testId('platform-organization-hierarchy-empty')}>暂无组织架构</span>} />
           ) : (
             <Card
-              className="platform-organization-hierarchy-panel platform-organization-hierarchy-tree-panel"
-              classNames={{body: 'platform-organization-hierarchy-tree-panel-body'}}
+              className="platform-master-detail-panel platform-master-detail-tree-panel"
+              classNames={{body: 'platform-master-detail-tree-panel-body'}}
               size="small"
               title="组织架构"
             >
@@ -463,7 +503,7 @@ function PlatformReadForWorkspace({
                 onChange={event => setHierarchySearch(event.target.value)}
                 {...testId('platform-organization-hierarchy-search')}
               />
-              <div className="platform-organization-hierarchy-tree-scroll">
+              <div className="platform-master-detail-tree-scroll">
                 {hierarchyTreeData.length ? (
                   <Tree
                     showLine
@@ -489,8 +529,8 @@ function PlatformReadForWorkspace({
             </Card>
           )}
           <Card
-            className="platform-organization-hierarchy-panel platform-organization-hierarchy-detail-panel"
-            classNames={{body: 'platform-organization-hierarchy-detail-panel-body'}}
+            className="platform-master-detail-panel platform-master-detail-detail-panel"
+            classNames={{body: 'platform-master-detail-detail-panel-body'}}
             size="small"
             title="组织详情"
           >
@@ -593,18 +633,18 @@ function PlatformReadForWorkspace({
             pagination={
               organizationPage
                 ? {
-                    current: organizationPage.metadata.page,
-                    pageSize: organizationPage.metadata.pageSize,
+                    current: organizationPagination.page,
+                    pageSize: organizationPagination.pageSize,
                     total: organizationPage.metadata.total,
+                    showSizeChanger: true,
                   }
                 : false
             }
             onChange={(pagination, _, sorter, extra) => {
               if (extra.action === 'paginate') {
-                updateOrganizationTabState(tab.key, {
-                  page: pagination.current ?? organizationTabState.page,
-                  pageSize: pagination.pageSize ?? organizationTabState.pageSize,
-                });
+                if (pagination.pageSize !== organizationPagination.pageSize)
+                  organizationPagination.setPageSize(pagination.pageSize ?? organizationPagination.pageSize);
+                else organizationPagination.setPage(pagination.current ?? organizationPagination.page);
                 return;
               }
               if (extra.action !== 'sort') return;
@@ -618,7 +658,6 @@ function PlatformReadForWorkspace({
               updateOrganizationTabState(tab.key, {
                 sort: nextSort,
                 direction: current.order === 'ascend' ? 'ASC' : 'DESC',
-                page: 1,
               });
             }}
             columns={[
@@ -856,16 +895,18 @@ function PlatformReadForWorkspace({
             pagination={
               contractPage
                 ? {
-                    current: contractPage.metadata.page,
-                    pageSize: contractPage.metadata.pageSize,
+                    current: contractPagination.page,
+                    pageSize: contractPagination.pageSize,
                     total: contractPage.metadata.total,
+                    showSizeChanger: true,
                   }
                 : false
             }
             onChange={(pagination, _, sorter, extra) => {
               if (extra.action === 'paginate') {
-                setPage(pagination.current ?? page);
-                setPageSize(pagination.pageSize ?? pageSize);
+                if (pagination.pageSize !== contractPagination.pageSize)
+                  contractPagination.setPageSize(pagination.pageSize ?? contractPagination.pageSize);
+                else contractPagination.setPage(pagination.current ?? contractPagination.page);
                 return;
               }
               if (extra.action !== 'sort') return;
@@ -883,7 +924,6 @@ function PlatformReadForWorkspace({
                     : 'UPDATED_AT';
               setContractSort(nextSort);
               setContractDirection(current.order === 'ascend' ? 'ASC' : 'DESC');
-              setPage(1);
             }}
             columns={[
               {
@@ -1000,9 +1040,9 @@ function PlatformReadForWorkspace({
                 title: '状态',
                 dataIndex: 'status',
                 valueType: 'select',
-                valueEnum: {VALID: {text: '生效中'}, INVALID: {text: '已失效'}},
+                valueEnum: {VALID: {text: '有效'}, INVALID: {text: '已失效'}},
                 fieldProps: {...testId('platform-contract-filter-status'), allowClear: true, placeholder: '全部'},
-                render: (_, row) => statusLabel(row.status),
+                render: (_, row) => <ValidityStatus status={row.status} />,
               },
               {
                 key: 'updatedAt',
