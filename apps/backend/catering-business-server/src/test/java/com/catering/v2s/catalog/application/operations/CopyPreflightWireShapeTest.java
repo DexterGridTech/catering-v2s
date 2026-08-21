@@ -38,6 +38,21 @@ class CopyPreflightWireShapeTest {
     }
 
     @Test
+    void closureEdgesRejectNonUuidReferencesBeforeWireMapping() throws Exception {
+        ObjectNode data = validData();
+        data.putArray("closureEdges")
+                .addObject()
+                .put("fromRef", "CATALOG_UNIT")
+                .put("toRef", "unit-code-or-ref")
+                .put("referenceKind", "CATALOG_UNIT");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> CopyPreflightWireShape.contractEnvelope(
+                        mapper, mapper.writeValueAsString(data), "request-opaque"));
+    }
+
+    @Test
     void missingRequiredCopyFieldFailsClosedBeforeWireMapping() throws Exception {
         ObjectNode data = validData();
         data.remove("referenceMappings");

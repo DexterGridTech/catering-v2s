@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const read = path => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const readRoot = path => readFileSync(new URL(`../../../../../../${path}`, import.meta.url), 'utf8');
+const appSource = (app, path) => readRoot(['apps', 'frontend', app, 'src', ...path.split('/')].join('/'));
 
 const projectPage = read('features/business-channel/ui/ProjectBusinessChannelPage.tsx');
 const storePage = read('features/business-channel/ui/StoreBusinessChannelPage.tsx');
@@ -12,21 +13,23 @@ const queries = read('features/business-channel/application/queries.ts');
 const businessChannelPaths = JSON.parse(
   readRoot('contracts/openapi/paths/operations-admin/business-channel.paths.json'),
 );
-const platformReadPage = readRoot(
-  'apps/frontend/platform-admin/src/features/organization-contract-overview/ui/PlatformReadPage.tsx',
+const platformReadPage = appSource('platform-admin', 'features/organization-contract-overview/ui/PlatformReadPage.tsx');
+const operationsContractPage = appSource(
+  'operations-admin',
+  'features/contract-management/ui/ContractManagementPage.tsx',
 );
-const operationsContractPage = readRoot(
-  'apps/frontend/operations-admin/src/features/contract-management/ui/ContractManagementPage.tsx',
+const operationsContractDetail = appSource(
+  'operations-admin',
+  'features/contract-management/ui/ContractDetailDrawer.tsx',
 );
-const operationsContractDetail = readRoot(
-  'apps/frontend/operations-admin/src/features/contract-management/ui/ContractDetailDrawer.tsx',
+const storeProfilePage = appSource('operations-admin', 'features/store-profile/ui/StoreProfilePage.tsx');
+const storeContractDetail = appSource(
+  'operations-admin',
+  'features/store-profile/ui/FixedStoreContractDetailDrawer.tsx',
 );
-const storeProfilePage = readRoot('apps/frontend/operations-admin/src/features/store-profile/ui/StoreProfilePage.tsx');
-const storeContractDetail = readRoot(
-  'apps/frontend/operations-admin/src/features/store-profile/ui/FixedStoreContractDetailDrawer.tsx',
-);
-const platformContractDetail = readRoot(
-  'apps/frontend/platform-admin/src/features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx',
+const platformContractDetail = appSource(
+  'platform-admin',
+  'features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx',
 );
 const businessChannelOwner = readRoot(
   'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/BusinessChannelOwnerService.java',

@@ -1,10 +1,10 @@
 package com.catering.v2s.app.edge.platform.organization;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -20,15 +20,18 @@ class PlatformOrganizationOverviewControllerTest {
     @Test
     void externalBindingCandidatesUseThePlatformOrganizationOwnerRead() {
         PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);
-        PlatformSessionResolver.PlatformReadSessionFacts readFacts = mock(PlatformSessionResolver.PlatformReadSessionFacts.class);
-        PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace = mock(PlatformSessionResolver.EnabledSelectedWorkspaceFact.class);
+        PlatformSessionResolver.PlatformReadSessionFacts readFacts =
+                mock(PlatformSessionResolver.PlatformReadSessionFacts.class);
+        PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace =
+                mock(PlatformSessionResolver.EnabledSelectedWorkspaceFact.class);
         WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
         StoreCandidateTaskReadService candidates = mock(StoreCandidateTaskReadService.class);
         EdgeRequestContext request = mock(EdgeRequestContext.class);
         UUID workspaceId = UUID.randomUUID();
         UUID candidateId = UUID.randomUUID();
         when(sessions.requireRead(request)).thenReturn(readFacts);
-        when(readFacts.requireEnabledSelectedWorkspace(workspaces, "organization-test")).thenReturn(workspace);
+        when(readFacts.requireEnabledSelectedWorkspace(workspaces, "organization-test"))
+                .thenReturn(workspace);
         when(workspace.workspaceUuid()).thenReturn(workspaceId);
         when(candidates.platformExternalBindingCandidatePage(any(), any(), any()))
                 .thenReturn(new StoreCandidateTaskReadService.CandidatePage(

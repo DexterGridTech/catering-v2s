@@ -211,8 +211,8 @@
   ],
   "fields": [
     {
-      "fieldKey": "categoryRefs",
-      "dataPath": "categoryRefs[]",
+      "fieldKey": "categoryRef",
+      "dataPath": "categoryRef",
       "label": "分类",
       "controlKind": "treeSelect",
       "tabKey": "basic",
@@ -241,6 +241,65 @@
         "valueField": "categoryRef",
         "labelField": "name",
         "parentField": "parentCategoryRef",
+        "disabledWhen": null
+      }
+    },
+    {
+      "fieldKey": "attributeAssignments",
+      "dataPath": "attributeAssignments[]",
+      "label": "商品属性",
+      "controlKind": "detailTable",
+      "tabKey": "attributes",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL",
+        "COMPOSITE",
+        "SERVICE",
+        "BENEFIT_SHELL"
+      ],
+      "helpText": "从商品属性库选择属性后，为当前商品填写内容。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "listOperationsCatalogAttributeDefinitions",
+        "path": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.definitions",
+        "valueField": "definitionRef",
+        "labelField": "name",
+        "disabledWhen": null
+      }
+    },
+    {
+      "fieldKey": "orderOptionConfigs",
+      "dataPath": "orderOptionConfigs[]",
+      "label": "点单选项",
+      "controlKind": "orderOptionsWorkbench",
+      "tabKey": "order-options",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED"
+      ],
+      "helpText": "从点单选项库选择选项后，设置当前商品的点单规则。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "listOperationsCatalogOrderOptionDefinitions",
+        "path": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          }
+        },
+        "headers": {},
+        "itemsPath": "data.definitions",
+        "valueField": "definitionRef",
+        "labelField": "name",
         "disabledWhen": null
       }
     },
@@ -366,8 +425,8 @@
       "helpText": "选择当前商品点单选项页签中已有的选项值。",
       "optionSourceRef": {
         "kind": "local",
-        "sectionPath": "orderOptions",
-        "valueField": "attributeValueRef",
+        "sectionPath": "orderOptionConfigs",
+        "valueField": "definitionValueRef",
         "labelField": "name"
       }
     },
@@ -463,10 +522,10 @@
       }
     },
     {
-      "fieldKey": "salesUnitRefs",
-      "dataPath": "salesUnitRefs[]",
+      "fieldKey": "salesUnitRef",
+      "dataPath": "salesUnitRef",
       "label": "销售单位",
-      "controlKind": "multiSelect",
+      "controlKind": "select",
       "tabKey": "basic",
       "admittedShapes": [
         "STANDARD_SALE_COUNTED",
@@ -477,24 +536,73 @@
         "SERVICE",
         "BENEFIT_SHELL"
       ],
-      "helpText": "选择商品可使用的销售单位。",
+      "helpText": "为商品选择一个对外销售时使用的计量单位。",
       "optionSourceRef": {
         "kind": "endpoint",
-        "operationId": "getOperationsCatalogDictionary",
-        "path": {
-          "dictionaryKind": "SALES_UNIT"
-        },
+        "operationId": "listOperationsCatalogUnits",
+        "path": {},
         "query": {
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
-          }
+          },
+          "includeInactive": false
         },
         "headers": {},
-        "itemsPath": "data.entries",
-        "valueField": "entryRef",
-        "labelField": "name",
+        "itemsPath": "data.units",
+        "valueField": "unitRef",
+        "labelParts": [
+          "name",
+          "code"
+        ],
         "disabledWhen": "status<>\"ENABLED\""
       }
+    },
+    {
+      "fieldKey": "baseMeasureUnitRef",
+      "dataPath": "baseMeasureUnitRef",
+      "label": "基础计量单位",
+      "controlKind": "select",
+      "tabKey": "basic",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED",
+        "MATERIAL",
+        "COMPOSITE",
+        "SERVICE",
+        "BENEFIT_SHELL"
+      ],
+      "helpText": "为商品选择一个用于库存消耗和配方用量的基础单位。",
+      "optionSourceRef": {
+        "kind": "endpoint",
+        "operationId": "listOperationsCatalogUnits",
+        "path": {},
+        "query": {
+          "dataNodeRef": {
+            "context": "scope.dataNodeRef"
+          },
+          "includeInactive": false
+        },
+        "headers": {},
+        "itemsPath": "data.units",
+        "valueField": "unitRef",
+        "labelParts": [
+          "name",
+          "code"
+        ],
+        "disabledWhen": "status<>\"ENABLED\""
+      }
+    },
+    {
+      "fieldKey": "skuUnitOverrides",
+      "dataPath": "skus[].unitOverrides",
+      "label": "SKU 单位覆盖",
+      "controlKind": "detailTable",
+      "tabKey": "sku-specifications-pricing",
+      "admittedShapes": [
+        "SKU_VARIANT_SALE_COUNTED"
+      ],
+      "helpText": "SKU 可单独指定销售单位或基础计量单位；留空时沿用商品设置。"
     }
   ],
   "shapes": [
@@ -920,18 +1028,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -956,7 +1052,29 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "orderOptionConfigs",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1000,7 +1118,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1079,18 +1208,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1115,7 +1232,18 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1181,7 +1309,29 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "skuUnitOverrides",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1260,18 +1410,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1296,7 +1434,29 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "orderOptionConfigs",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1340,7 +1500,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1419,18 +1590,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1455,7 +1614,18 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1488,7 +1658,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1567,18 +1748,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1603,7 +1772,18 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1636,7 +1816,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1715,18 +1906,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1751,7 +1930,18 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1773,7 +1963,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1852,18 +2053,6 @@
         }
       },
       {
-        "field": "attributes",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "valueType": "free-map"
-      },
-      {
         "field": "images",
         "visible": true,
         "required": false,
@@ -1888,7 +2077,18 @@
         "quickManage": "production-tag-owner"
       },
       {
-        "field": "categoryRefs",
+        "field": "categoryRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "attributeAssignments",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1910,7 +2110,18 @@
         }
       },
       {
-        "field": "salesUnitRefs",
+        "field": "salesUnitRef",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "baseMeasureUnitRef",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1943,12 +2154,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2017,12 +2229,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2089,12 +2302,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2162,12 +2376,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2229,12 +2444,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2295,12 +2511,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2358,12 +2575,13 @@
           ],
           "layout": "GROUP_DETAIL_PREVIEW",
           "owner": "catalog",
-          "source": "sections.orderOptions",
+          "source": "sections.catalogDraft.orderOptionConfigs",
           "semantics": [
-            "groupRules",
-            "valueRules",
-            "pricingEffects",
-            "productionEffects"
+            "definitionReference",
+            "selectionRule",
+            "defaultValue",
+            "extraPrice",
+            "materialQuantity"
           ]
         },
         "composite-content": {
@@ -2420,7 +2638,8 @@
     },
     "optionValue": {
       "owner": "catalog",
-      "parentField": "optionGroupCode",
+      "parentField": "orderOptionConfigs[].definitionRef",
+      "valueField": "orderOptionConfigs[].values[].definitionValueRef",
       "bomAllowedModes": [
         "NONE",
         "BOM"
@@ -2761,7 +2980,10 @@
     "InventoryWriteReadback",
     "StagedCatalogAsset",
     "CatalogAssetReleaseReadback",
-    "CatalogShapeManifestView"
+    "CatalogShapeManifestView",
+    "CatalogAttributeDefinitionList",
+    "CatalogOrderOptionDefinitionList",
+    "CatalogUnitList"
   ],
   "readModelRequirements": {
     "CatalogWorkbenchContext": [
@@ -2772,6 +2994,7 @@
     "CatalogNavigationView": [
       "allCount",
       "tree",
+      "tags",
       "smartViews",
       "shapeCounts",
       "uncategorizedCount",
@@ -2790,7 +3013,6 @@
       "references",
       "inventoryBom",
       "productionTags",
-      "orderOptions",
       "compositeGroups",
       "governance",
       "actionAvailability",
@@ -2851,6 +3073,7 @@
       "objectVersions",
       "referenceMappings",
       "closureEdges",
+      "skipped",
       "mappingPreview",
       "referenceRewritePreview",
       "compatibilityResults",
@@ -2944,7 +3167,18 @@
       "typeEffects",
       "saveSections",
       "detailSections"
+    ],
+    "CatalogAttributeDefinitionList": [
+      "definitions"
+    ],
+    "CatalogOrderOptionDefinitionList": [
+      "definitions"
+    ],
+    "CatalogUnitList": [
+      "revision",
+      "requestId",
+      "data"
     ]
   },
-  "manifestDigest": "10e504f81f5e55b41fb8071f1c3d149aee9175c67722537628aca2742b97fee7"
+  "manifestDigest": "1405b9246cd202bfc8d16da69ad894a41929746d711f8a61e31904e4cd884806"
 }

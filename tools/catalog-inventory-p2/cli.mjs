@@ -24,13 +24,28 @@ const l2Scenarios = readJson("contracts/policy/catalog-inventory-l2-scenarios.js
 const copyPolicy = readJson("contracts/policy/catalog-inventory-copy-policy.json");
 const routes = readJson("apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json");
 const manifest = readJson("contracts/catalog/catalog-item-editor-manifest.json");
+const CATALOG_LIBRARY_OPERATION_IDS = new Set([
+  "listOperationsCatalogAttributeDefinitions",
+  "createOperationsCatalogAttributeDefinition",
+  "updateOperationsCatalogAttributeDefinition",
+  "deleteOperationsCatalogAttributeDefinition",
+  "listOperationsCatalogOrderOptionDefinitions",
+  "createOperationsCatalogOrderOptionDefinition",
+  "updateOperationsCatalogOrderOptionDefinition",
+  "deleteOperationsCatalogOrderOptionDefinition",
+  "listOperationsCatalogUnits",
+  "createOperationsCatalogUnit",
+  "updateOperationsCatalogUnit",
+  "disableOperationsCatalogUnit",
+  "deleteOperationsCatalogUnit",
+]);
 
 function hasTypedCatalogCopySourcePolicy(source) {
-  const boundary = source.match(/public JsonNode copy\(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey\) \{[\s\S]*?private JsonNode executeCopy\(/)?.[0];
+  const boundary = source.match(/public JsonNode copy\s*\(\s*WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey\)\s*\{[\s\S]*?private JsonNode executeCopy\(/)?.[0];
   return Boolean(boundary)
     && boundary.includes("scope.copySourcePolicy()")
     && boundary.includes("copySourceDataNodeRef(scope)")
-    && boundary.includes("public JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request)")
+    && /public JsonNode preflightCopy\s*\(\s*WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request\)/.test(boundary)
     && !boundary.includes('required(request, "sourceDataNodeRef")')
     && !boundary.includes('operationId.contains("Brand")');
 }
@@ -42,11 +57,14 @@ function runChecks() {
   check(source?.designPath && source?.designSha256, "P1_DESIGN_BINDING_MISSING");
   if (source?.designPath && source?.designSha256) check(sha256(readText(source.designPath)) === source.designSha256, "P1_DESIGN_SHA_DRIFT");
 
-  const operationIds = operationDesign.operations.map((operation) => operation.operationId);
+  const legacyOperationIds = operationDesign.operations.map((operation) => operation.operationId);
+  const libraryOperationIds = edge.operations.filter((operation) => !legacyOperationIds.includes(operation.operationId)).map((operation) => operation.operationId);
   const routeIds = routes.operations.map((operation) => operation.operationId);
-  check(operationIds.length === 43 && new Set(operationIds).size === 43, `OPERATION_DESIGN_COUNT:${operationIds.length}`);
-  check(routeIds.length === 43 && new Set(routeIds).size === 43, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
-  check(setEqual(operationIds, routeIds), "OPERATION_ROUTE_EXACT_SET_DRIFT");
+  check(legacyOperationIds.length === 43 && new Set(legacyOperationIds).size === 43, `OPERATION_DESIGN_COUNT:${legacyOperationIds.length}`);
+  check(setEqual(libraryOperationIds, [...CATALOG_LIBRARY_OPERATION_IDS]), "LIBRARY_OPERATION_EXACT_SET_DRIFT");
+  check(routeIds.length === 56 && new Set(routeIds).size === 56, `ROUTE_REGISTRY_COUNT:${routeIds.length}`);
+  check(edge.operations.length === 56 && setEqual(edge.operations.map((operation) => operation.operationId), [...legacyOperationIds, ...libraryOperationIds]), "EDGE_OPERATION_EXACT_SET_DRIFT");
+  check(setEqual([...legacyOperationIds, ...libraryOperationIds], routeIds), "OPERATION_ROUTE_EXACT_SET_DRIFT");
   check(routes.operations.every((operation) => operation.consumerFaces?.length === 1 && operation.consumerFaces[0] === "operations-admin"), "ROUTE_FACE_DRIFT");
   const controller = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/cataloginventory/OperationsCatalogInventoryController.java");
   const application = readText("apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java");
@@ -71,7 +89,7 @@ function runChecks() {
   check(application.includes("preflightLocalInventory") && application.includes("preflightBrandOwners") && application.includes("combinedDigest"), "COOWNER_COPY_PREFLIGHT_MISSING");
   check(fs.existsSync(path.join(root, "apps/backend/catering-business-server/modules/catalog/src/test/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinatorCopySourceAuthorityTest.java")), "COPY_SOURCE_AUTHORITY_FOCUSED_TEST_MISSING");
   check(!application.includes("_resolvedCatalogCopySource") && !controller.includes("_resolvedCatalogCopySource"), "DEAD_COPY_SOURCE_MARKER_REMAINS");
-  const productionTransition = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/TransitionOperationsProductionTagStatusOperation.java");
+  const productionTransition = readText("apps/backend/catering-business-server/src/main/java/com/catering/v2s/fulfillment/production/application/operations/TransitionOperationsProductionTagStatusOperation.java");
   check(productionTransition.includes("catalog.productionTagReferenced") && productionTransition.includes("REFERENCE_BLOCKS_VOID"), "PRODUCTION_REFERENCE_VOID_GUARD_MISSING");
   check(application.includes("enrichCatalogItems") && application.includes("enrichInventoryTarget"), "TASK_READ_ENRICHMENT_MISSING");
   check(controller.includes("Idempotency-Key is required"), "IDEMPOTENCY_HEADER_REQUIRED_GATE_MISSING");
@@ -81,7 +99,7 @@ function runChecks() {
     && catalogOwner.includes("CatalogOwnerTypes.STATUSES") && catalogOwner.includes("\"VOIDED\""), "RUNTIME_VOCABULARY_NOT_BOUND_TO_GENERATED_MANIFEST");
   const inventoryOwner = readText("apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java");
   const productionOwner = readText("apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java");
-  check(catalogOwner.includes("STALE_COPY_PREFLIGHT") && catalogOwner.includes("rewriteReferences") && catalogOwner.includes("CONSUMPTION_UNIT_INCOMPATIBLE"), "COPY_PREFLIGHT_GUARDS_MISSING");
+  check(catalogOwner.includes("STALE_COPY_PREFLIGHT") && catalogOwner.includes("rewriteReferences") && catalogOwner.includes("CATALOG_COPY_UNIT_CONFLICT"), "COPY_PREFLIGHT_GUARDS_MISSING");
   check(catalogOwner.includes("closureGraph") && catalogOwner.includes("typedReferences") && catalogOwner.includes("INSERT INTO catalog.catalog_category") && catalogOwner.includes("INSERT INTO catalog.dictionary_entry"), "CATALOG_TYPED_CLOSURE_MISSING");
   check(catalogOwner.includes("skuStructureFingerprint") && catalogOwner.includes("SKU 结构指纹不一致"), "SKU_STRUCTURE_COMPATIBILITY_MISSING");
   check(catalogOwner.includes("OWNER_REFERENCE_LEAK") && catalogOwner.includes("assertNoOwnerReferenceLeak") && catalogOwner.includes("verifyTargetNoOwnerReferenceLeak"), "OWNER_REFERENCE_LEAK_ASSERTION_MISSING");
@@ -101,7 +119,7 @@ function runChecks() {
   check(advice.includes("MaxUploadSizeExceededException") && advice.includes('"VALIDATION_ERROR"'), "ASSET_MULTIPART_LIMIT_PROBLEM_MAPPING_MISSING");
   check(appConfig.includes("max-file-size: 5MB") && appConfig.includes("max-request-size: 6MB"), "ASSET_MULTIPART_LIMIT_CONFIG_MISSING");
   check(mediaPolicy.uploadLimits?.maxFileSizeBytes === 5 * 1024 * 1024 && mediaPolicy.uploadLimits?.maxRequestSizeBytes === 6 * 1024 * 1024, "ASSET_MEDIA_POLICY_LIMITS_MISSING");
-  const dictionaryKinds = ["TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE"];
+  const dictionaryKinds = ["TAG", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"];
   check(Array.isArray(copyPolicy.dictionaryKinds) && setEqual(copyPolicy.dictionaryKinds, dictionaryKinds), "DICTIONARY_KIND_POLICY_DRIFT");
   const runtimeCopyPolicy = readText("apps/backend/catering-business-server/modules/catalog/src/main/resources/catalog-inventory-copy-policy.json");
   check(dictionaryKinds.every((kind) => runtimeCopyPolicy.includes(`"${kind}"`)), "DICTIONARY_KIND_RUNTIME_POLICY_MISSING");
@@ -157,7 +175,7 @@ function runChecks() {
     process.stderr.write(failures.map((failure) => `FAIL:${failure}`).join("\n") + "\n");
     process.exitCode = 1;
   } else {
-    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=43\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
+    process.stdout.write(`CATALOG_INVENTORY_P2_STATIC=PASS\nOPERATIONS=56\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\n`);
   }
 }
 
@@ -223,7 +241,7 @@ function selfTest() {
   else process.stdout.write("CATALOG_INVENTORY_P2_STATIC_SELF_TEST=PASS\nRED_API_CASE_DENOMINATOR=PASS\nRED_L2_CASE_DENOMINATOR=PASS\nRED_MUTATION=STRUCTURAL_AND_DRIFT_ONLY\n");
 }
 
-function operationIdsForSelfTest() { return operationDesign.operations.length; }
+function operationIdsForSelfTest() { return routes.operations.length; }
 function setEqual(left, right) { return left.length === right.length && new Set(left).size === new Set(right).size && left.every((value) => right.includes(value)); }
 function listFiles(directory) { if (!fs.existsSync(directory)) return []; return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? listFiles(path.join(directory, entry.name)) : [path.join(directory, entry.name)]); }
 

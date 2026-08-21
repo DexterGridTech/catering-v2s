@@ -19,7 +19,7 @@ export function OrganizationStatusModal({
       title={target ? `确认${target.status === 'ENABLED' ? '停用' : '启用'}“${target.name}”？` : '确认状态操作'}
       open={Boolean(target)}
       onCancel={submitting ? undefined : onCancel}
-      mask={{closable: !submitting}}
+      maskClosable={!submitting}
       keyboard={!submitting}
       destroyOnHidden
       footer={[

@@ -28,10 +28,9 @@ class CollaborationBindingPolicyTest {
 
     @Test
     void platformCreateRejectsExternalGrantWhileSharedCreatePolicyRemainsAvailableToOperations() {
-        CollaborationCommandApi.Problem problem =
-                assertThrows(
-                        CollaborationCommandApi.Problem.class,
-                        () -> CollaborationBindingPolicy.validatePlatformCreate(EXTERNAL));
+        CollaborationCommandApi.Problem problem = assertThrows(
+                CollaborationCommandApi.Problem.class,
+                () -> CollaborationBindingPolicy.validatePlatformCreate(EXTERNAL));
 
         assertEquals("BINDING_EDIT_NOT_ALLOWED", problem.code());
         assertEquals(403, problem.status());

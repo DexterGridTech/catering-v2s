@@ -38,7 +38,8 @@ final class BusinessChannelWireMapper {
     }
 
     static BusinessChannelTemplatePage templatePage(BusinessChannelReadback.TemplatePage value) {
-        return new BusinessChannelTemplatePage(value.items().stream().map(BusinessChannelWireMapper::template).toList());
+        return new BusinessChannelTemplatePage(
+                value.items().stream().map(BusinessChannelWireMapper::template).toList());
     }
 
     static BusinessChannelTemplateCandidatePage templateCandidatePage(BusinessChannelReadback.TemplatePage value) {
@@ -58,6 +59,8 @@ final class BusinessChannelWireMapper {
                 text(value.channelCode()),
                 value.channelName(),
                 value.bindingRef(),
+                value.bindingStatus(),
+                bindingStatusDisplayName(value.bindingStatus()),
                 value.status(),
                 statusDisplayName(value.status()),
                 value.stopReasons(),
@@ -66,7 +69,8 @@ final class BusinessChannelWireMapper {
     }
 
     static BusinessChannelPage channelPage(BusinessChannelReadback.ChannelPage value) {
-        return new BusinessChannelPage(value.items().stream().map(BusinessChannelWireMapper::channel).toList());
+        return new BusinessChannelPage(
+                value.items().stream().map(BusinessChannelWireMapper::channel).toList());
     }
 
     private static UUID uuid(String value, String field) {
@@ -123,6 +127,15 @@ final class BusinessChannelWireMapper {
             case "DISABLED" -> "已停用";
             case "DRAFT" -> "草稿";
             case "EFFECTIVE" -> "已生效";
+            default -> "未知";
+        };
+    }
+
+    private static String bindingStatusDisplayName(String value) {
+        return switch (value) {
+            case "NOT_REQUIRED" -> "—";
+            case "UNBOUND" -> "未绑定";
+            case "BOUND" -> "已绑定";
             default -> "未知";
         };
     }

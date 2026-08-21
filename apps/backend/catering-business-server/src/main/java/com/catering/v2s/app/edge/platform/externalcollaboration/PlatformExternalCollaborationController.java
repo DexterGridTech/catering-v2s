@@ -13,7 +13,6 @@ import com.catering.v2s.app.edge.generated.wire.ProviderProfileView;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
-import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
@@ -126,8 +125,7 @@ public final class PlatformExternalCollaborationController {
             EdgeRequestContext request, @PathVariable String groupWorkspaceKey, @PathVariable UUID bindingRef) {
         var workspace = workspace(request, groupWorkspaceKey);
         return binding(
-                workspace,
-                bindings.readBinding(workspace.workspaceUuid(), workspace.groupWorkspaceKey(), bindingRef));
+                workspace, bindings.readBinding(workspace.workspaceUuid(), workspace.groupWorkspaceKey(), bindingRef));
     }
 
     @GetMapping("/external-capability-dictionary")
@@ -286,16 +284,14 @@ public final class PlatformExternalCollaborationController {
     }
 
     private OwnerBindingView binding(
-            PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace,
-            CollaborationReadback.OwnerBinding value) {
+            PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace, CollaborationReadback.OwnerBinding value) {
         return binding(workspace.workspaceUuid(), workspace.groupWorkspaceKey(), value);
     }
 
     private OwnerBindingView binding(
             UUID workspaceUuid, String groupWorkspaceKey, CollaborationReadback.OwnerBinding value) {
         return ExternalCollaborationWireMapper.binding(
-                value,
-                displayPath(displayPaths(workspaceUuid, groupWorkspaceKey, List.of(value)), value));
+                value, displayPath(displayPaths(workspaceUuid, groupWorkspaceKey, List.of(value)), value));
     }
 
     private Map<OrganizationTaskPathLookup.TaskPathRef, OrganizationTaskPathLookup.TaskPath> displayPaths(
@@ -313,8 +309,7 @@ public final class PlatformExternalCollaborationController {
         }
         return refs.isEmpty()
                 ? Map.of()
-                : taskPaths.describePersistedTaskPaths(
-                        workspaceUuid, groupWorkspaceKey, List.copyOf(refs));
+                : taskPaths.describePersistedTaskPaths(workspaceUuid, groupWorkspaceKey, List.copyOf(refs));
     }
 
     private static String displayPath(
@@ -362,5 +357,4 @@ public final class PlatformExternalCollaborationController {
         if (value < 1) throw new InvalidEdgeRequestException("page must be at least 1");
         return value;
     }
-
 }

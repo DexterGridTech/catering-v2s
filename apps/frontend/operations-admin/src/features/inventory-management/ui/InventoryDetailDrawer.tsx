@@ -1,17 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Collapse,
-  Descriptions,
-  Drawer,
-  Empty,
-  Skeleton,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from 'antd';
+import {Alert, Button, Card, Collapse, Descriptions, Drawer, Empty, Skeleton, Space, Table, Tag} from 'antd';
 import {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
@@ -20,10 +7,11 @@ import {
   testId,
   useCursorStack,
   useOverlayLock,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {skipToken} from '@reduxjs/toolkit/query';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
@@ -36,6 +24,7 @@ import {
 import {
   envelopeData,
   inventoryAuthorityLabel,
+  inventoryUnitLabel,
   shouldRequestInventoryDiagnostics,
   type CursorPage,
   type InventoryCurrentView,
@@ -76,6 +65,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   const ledgerCursorState = useCursorStack({resetKey: targetRef ?? ''});
   const actionTriggerRef = useRef<HTMLElement | null>(null);
   const open = Boolean(targetRef);
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   useOverlayLock(open);
   useEffect(() => {
     setExpandedZones(['current']);
@@ -83,6 +73,10 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
     actionTriggerRef.current = null;
   }, [targetRef]);
   const zoneLoaded = (zone: InventoryZone) => (zone === 'current' ? open : open && expandedZones.includes(zone));
+  const historyLoaded = zoneLoaded('history');
+  const referencesLoaded = zoneLoaded('references');
+  const ledgerLoaded = zoneLoaded('ledger');
+  const diagnosticsLoaded = zoneLoaded('diagnostics');
   const path = targetRef ? {targetRef: wireUuid(targetRef)} : undefined;
   const historyCursor = historyCursorState.cursor ?? '';
   const referenceCursor = referenceCursorState.cursor ?? '';
@@ -120,8 +114,35 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
   );
   const diagnostics = operationsRtk.useGetOperationsInventoryTargetDiagnosticsQuery(
     path ? catalogInventoryRtkRequest.getOperationsInventoryTargetDiagnostics(path) : skipToken,
-    {skip: !shouldRequestInventoryDiagnostics(zoneLoaded('diagnostics'))},
+    {skip: !shouldRequestInventoryDiagnostics(diagnosticsLoaded)},
   );
+  const refetchCurrent = current.refetch;
+  const refetchHistory = history.refetch;
+  const refetchReferences = references.refetch;
+  const refetchLedger = ledger.refetch;
+  const refetchDiagnostics = diagnostics.refetch;
+  useEffect(() => {
+    if (!open || contentTabRefreshVersion === 0) return;
+    // Re-read only the zones already open. Pagination cursors and action-modal
+    // form state remain untouched, so a content refresh cannot discard edits.
+    void refetchCurrent();
+    if (historyLoaded) void refetchHistory();
+    if (referencesLoaded) void refetchReferences();
+    if (ledgerLoaded) void refetchLedger();
+    if (diagnosticsLoaded) void refetchDiagnostics();
+  }, [
+    contentTabRefreshVersion,
+    diagnosticsLoaded,
+    historyLoaded,
+    ledgerLoaded,
+    open,
+    refetchCurrent,
+    refetchDiagnostics,
+    refetchHistory,
+    refetchLedger,
+    refetchReferences,
+    referencesLoaded,
+  ]);
   const currentView = envelopeData<InventoryCurrentView>(current.currentData);
   const historyPage = envelopeData<CursorPage<InventoryHistoryEntry>>(history.currentData);
   const referencePage = envelopeData<CursorPage<InventoryReference>>(references.currentData);
@@ -194,7 +215,13 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 {
                   key: 'balance',
                   label: '当前库存',
-                  children: currentView ? `${currentView.balance} ${currentView.target.consumptionUnit}` : '—',
+                  children: currentView ? (
+                    <>
+                      {currentView.balance} {inventoryUnitLabel(currentView.target.consumptionUnitSnapshot)}
+                    </>
+                  ) : (
+                    '—'
+                  ),
                 },
                 {
                   key: 'state',
@@ -228,9 +255,14 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 {
                   key: 'counting',
                   label: '盘点单位',
-                  children: currentView?.target.countingUnit
-                    ? `${currentView.target.countingUnit}（${currentView.target.conversionSummary ?? '—'}）`
-                    : '未配置',
+                  children: currentView?.target.countingUnitSnapshot ? (
+                    <>
+                      {inventoryUnitLabel(currentView.target.countingUnitSnapshot)}（
+                      {currentView.target.conversionSummary ?? '—'}）
+                    </>
+                  ) : (
+                    '未配置'
+                  ),
                 },
               ]}
             />
@@ -341,7 +373,14 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                     title: '来源层级',
                     render: (_, row) => (row.ownerScope ? inventoryReferenceScopeLabel(row.ownerScope.ownerType) : '—'),
                   },
-                  {title: '每份消耗', render: (_, row) => `${row.quantity} ${row.unit}`},
+                  {
+                    title: '每份消耗',
+                    render: (_, row) => (
+                      <>
+                        {row.quantity} {inventoryUnitLabel(row.consumptionUnitSnapshot)}
+                      </>
+                    ),
+                  },
                   {title: '时机', dataIndex: 'timing'},
                   {title: '状态', dataIndex: 'status'},
                 ]}
@@ -443,6 +482,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
         onClose={close}
         destroyOnHidden
         maskClosable={!action}
+        keyboard={!action}
         {...adminWideDrawerSurfaceProps}
         {...testId('inventory-target-drawer')}
         extra={

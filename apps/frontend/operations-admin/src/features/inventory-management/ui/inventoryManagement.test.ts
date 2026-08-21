@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {inventoryActionResetKey} from './InventoryActionModal';
+import {inventoryActionResetKey, truncateTowardZero} from './InventoryActionModal';
 import {envelopeData, inventoryAuthorityLabel, shouldRequestInventoryDiagnostics} from './inventoryManagementModel';
 
 describe('inventory management runtime model contracts', () => {
@@ -19,6 +19,12 @@ describe('inventory management runtime model contracts', () => {
     expect(inventoryActionResetKey('COUNT', 'target-1')).toBe(inventoryActionResetKey('COUNT', 'target-1'));
     expect(inventoryActionResetKey('COUNT', 'target-1')).not.toBe(inventoryActionResetKey('COUNT', 'target-2'));
     expect(inventoryActionResetKey('COUNT', 'target-1')).not.toBe(inventoryActionResetKey('INCREASE', 'target-1'));
+  });
+
+  it('truncates decimal input without a binary-float multiplication boundary', () => {
+    expect(truncateTowardZero(0.29, 2)).toBe(0.29);
+    expect(truncateTowardZero(-0.299, 2)).toBe(-0.29);
+    expect(truncateTowardZero(1.999, 2)).toBe(1.99);
   });
 
   it('renders the inventory source from the authority fact', () => {

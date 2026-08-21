@@ -143,15 +143,15 @@ export function BusinessChannelList({
       },
       {
         title: '绑定状态',
-        dataIndex: 'bindingRef',
+        dataIndex: 'bindingStatus',
         key: 'bindingStatus',
         sorter: true,
         sortOrder: sort.sortKey === 'BINDING_STATUS' ? proSortOrder(sort.sortDirection) : undefined,
         render: (_value: unknown, row: BusinessChannelView) =>
-          row.status === 'DRAFT' && (row.stopReasons?.length ?? 0) > 0 ? (
-            <Tag color="warning">{row.stopReasonDisplayNames?.join('、') || '—'}</Tag>
+          row.bindingStatus === 'NOT_REQUIRED' ? (
+            '—'
           ) : (
-            <Tag color={row.bindingRef ? 'green' : 'default'}>{row.bindingRef ? '已绑定' : '未绑定'}</Tag>
+            <Tag color={row.bindingStatus === 'BOUND' ? 'green' : 'default'}>{row.bindingStatusDisplayName || '—'}</Tag>
           ),
       },
     ],

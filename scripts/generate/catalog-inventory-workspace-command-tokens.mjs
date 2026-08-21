@@ -16,10 +16,11 @@ const opacityPaths = [
   "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogAuthorizationScope.java",
   "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/WorkspaceExecutionContext.java",
 ];
-const commandPackageRoot = "apps/backend/catering-business-server";
+const commandPackageRoot = "apps/backend/catering-business-server/modules/execution-context/src/main/java";
 const allowedCommandPackageFiles = new Set([
   ...opacityPaths,
   "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/WorkspaceCommandOperationToken.java",
+  "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/CatalogTargetCapability.java",
   outputPath,
   "apps/backend/catering-business-server/modules/execution-context/src/main/java/com/catering/v2s/platform/command/WorkspaceCommandContextMint.java",
 ]);
@@ -69,7 +70,7 @@ function validateTokenRow(row, operation, copySourcePolicies) {
 function tokens(bindings = json(bindingPath).operations, contract = json(contractPath).operations, copySourcePolicies = copySourcePolicyByOperation) {
   const contractById = new Map(contract.map((operation) => [operation.operationId, operation]));
   const rows = bindings.filter((row) => row.routeRegistry === "catalog-inventory" && row.mode === "COMMAND" && row.contextKind === "WORKSPACE_EXECUTION_CONTEXT");
-  if (rows.length !== 27) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
+  if (rows.length !== 37) fail(`BP_U03_RUNTIME_TOKEN_EXACT_SET:${rows.length}`);
   const ids = new Set();
   const tokenRows = rows.map((row) => {
     if (ids.has(row.operationId)) fail(`BP_U03_RUNTIME_TOKEN_DUPLICATE:${row.operationId}`);
@@ -89,15 +90,19 @@ function tokens(bindings = json(bindingPath).operations, contract = json(contrac
 }
 
 const javaList = (values) => `List.of(${values.map((value) => `\"${value}\"`).join(", ")})`;
-const javaMap = (value) => `Map.ofEntries(${Object.entries(value).map(([key, entry]) => `Map.entry(\"${key}\", \"${entry}\")`).join(", ")})`;
+const javaMap = (value) => {
+  const entries = Object.entries(value).map(([key, entry]) => `Map.entry(\"${key}\", \"${entry}\")`);
+  if (entries.length === 1) return `Map.ofEntries(${entries[0]})`;
+  return `Map.ofEntries(\n                            ${entries.join(",\n                            ")})`;
+};
 const constant = (operationId) => operationId.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
 
 function generatedSource(rows = tokens()) {
   const bindingDigest = sha256(read(bindingPath));
   const contractDigest = sha256(read(contractPath));
-  const declarations = rows.map((row) => `    public static final WorkspaceCommandOperationToken ${constant(row.operationId)} = new WorkspaceCommandOperationToken(\n        \"${row.operationId}\", \"${row.owner}\", \"${row.requirementId}\", ${javaList(row.allowedDataNodeTypes)}, ${javaMap(row.capabilityByDataNodeType)}, \"${row.copyRole}\", WorkspaceCommandOperationToken.CopySourcePolicy.${row.copySourcePolicy}\n    );`).join("\n\n");
-  const all = rows.map((row) => constant(row.operationId)).join(", ");
-  return `package com.catering.v2s.platform.command;\n\nimport java.util.List;\nimport java.util.Map;\n\n/** Generated from ${bindingPath} (${bindingDigest}) and ${contractPath} (${contractDigest}). */\npublic final class CatalogInventoryWorkspaceCommandTokens {\n    private CatalogInventoryWorkspaceCommandTokens() { }\n\n${declarations}\n\n    public static List<WorkspaceCommandOperationToken> all() {\n        return List.of(${all});\n    }\n}\n`;
+  const declarations = rows.map((row) => `    public static final WorkspaceCommandOperationToken ${constant(row.operationId)} =\n            new WorkspaceCommandOperationToken(\n                    \"${row.operationId}\",\n                    \"${row.owner}\",\n                    \"${row.requirementId}\",\n                    ${javaList(row.allowedDataNodeTypes)},\n                    ${javaMap(row.capabilityByDataNodeType)},\n                    \"${row.copyRole}\",\n                    WorkspaceCommandOperationToken.CopySourcePolicy.${row.copySourcePolicy});`).join("\n\n");
+  const all = rows.map((row) => constant(row.operationId)).join(",\n                ");
+  return `package com.catering.v2s.platform.command;\n\nimport java.util.List;\nimport java.util.Map;\n\n/**\n * Generated command tokens. Binding source: ${bindingPath} Binding digest:\n * ${bindingDigest} Contract source:\n * ${contractPath} Contract digest:\n * ${contractDigest}\n */\npublic final class CatalogInventoryWorkspaceCommandTokens {\n    private CatalogInventoryWorkspaceCommandTokens() {}\n\n${declarations}\n\n    public static List<WorkspaceCommandOperationToken> all() {\n        return List.of(\n                ${all});\n    }\n}\n`;
 }
 
 
@@ -128,9 +133,9 @@ function validateCommandPackageSet(packageFiles = commandPackageFiles()) {
 
 function validateOpaqueContextTypes(sources = opacityPaths.map((sourcePath) => read(sourcePath).toString("utf8")), packageFiles = commandPackageFiles()) {
   const [grant, scope, context] = sources;
-  if (!grant.includes("public abstract sealed class OwnerGrant permits WorkspaceCommandContextMint.ResolvedOwnerGrant") || !grant.includes("    OwnerGrant() { }")
-    || !scope.includes("public abstract sealed class CatalogAuthorizationScope permits WorkspaceCommandContextMint.ResolvedCatalogAuthorizationScope") || !scope.includes("    CatalogAuthorizationScope() { }")
-    || !context.includes("public abstract sealed class WorkspaceExecutionContext") || !context.includes("WorkspaceCommandContextMint.ResolvedWorkspaceExecutionContext") || !context.includes("    WorkspaceExecutionContext() { }")
+  if (!/public\s+abstract\s+sealed\s+class\s+OwnerGrant\s+permits\s+WorkspaceCommandContextMint\.ResolvedOwnerGrant\b/.test(grant) || !/\bOwnerGrant\s*\(\s*\)\s*\{\s*\}/.test(grant)
+    || !/public\s+abstract\s+sealed\s+class\s+CatalogAuthorizationScope\s+permits\s+WorkspaceCommandContextMint\.ResolvedCatalogAuthorizationScope\b/.test(scope) || !/\bCatalogAuthorizationScope\s*\(\s*\)\s*\{\s*\}/.test(scope)
+    || !/public\s+abstract\s+sealed\s+class\s+WorkspaceExecutionContext\b/.test(context) || !/permits\s+WorkspaceCommandContextMint\.ResolvedWorkspaceExecutionContext\b/.test(context) || !/\bWorkspaceExecutionContext\s*\(\s*\)\s*\{\s*\}/.test(context)
     || sources.some((source) => /public\s+interface\s+(OwnerGrant|CatalogAuthorizationScope|WorkspaceExecutionContext)\b/.test(source))) {
     fail("BP_U03_CONTEXT_OPACITY_DRIFT");
   }
@@ -169,14 +174,14 @@ function check() {
   validateOpaqueContextTypes();
   verifyContextForgeryDoesNotCompile();
   console.log("BP_U03_RUNTIME_TOKEN_CHECK=PASS");
-  console.log("TOKENS=27");
+  console.log("TOKENS=37");
   console.log("CONTEXT_FORGERY_NEGATIVE=PASS");
 }
 function selfTest() {
   const rows = tokens();
   const copy = structuredClone(rows); copy.pop();
-  if (copy.length !== 26) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
-  try { if (copy.length !== 27) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET"); } catch (error) { if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error; }
+  if (copy.length !== 36) fail("BP_U03_RUNTIME_TOKEN_RED_FIXTURE_INVALID");
+  try { if (copy.length !== 37) fail("BP_U03_RUNTIME_TOKEN_EXACT_SET"); } catch (error) { if (error.message !== "BP_U03_RUNTIME_TOKEN_EXACT_SET") throw error; }
   const alteredBindings = structuredClone(json(bindingPath).operations);
   const copyTarget = alteredBindings.find((row) => row.operationId === "executeOperationsBrandCatalogCopy");
   copyTarget.copyRole = "NONE";
@@ -195,7 +200,7 @@ function selfTest() {
     if (error.message !== "BP_U03_RUNTIME_TOKEN_CONTRACT_DRIFT:executeOperationsBrandCatalogCopy") throw error;
   }
   const opacity = opacityPaths.map((sourcePath) => read(sourcePath).toString("utf8"));
-  opacity[0] = opacity[0].replace("public abstract sealed class OwnerGrant permits WorkspaceCommandContextMint.ResolvedOwnerGrant", "public interface OwnerGrant");
+  opacity[0] = opacity[0].replace(/public\s+abstract\s+sealed\s+class\s+OwnerGrant\s+permits\s+WorkspaceCommandContextMint\.ResolvedOwnerGrant/, "public interface OwnerGrant");
   try {
     validateOpaqueContextTypes(opacity);
     fail("BP_U03_CONTEXT_OPACITY_MUTATION_ACCEPTED");

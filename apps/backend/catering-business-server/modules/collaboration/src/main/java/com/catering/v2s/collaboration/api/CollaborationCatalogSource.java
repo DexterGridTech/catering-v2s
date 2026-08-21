@@ -49,7 +49,10 @@ public interface CollaborationCatalogSource {
     }
 
     record CapabilityDefinition(
-            String capabilityClass, String displayName, JsonNode attributeValues, Map<String, String> attributeValueLabels) {
+            String capabilityClass,
+            String displayName,
+            JsonNode attributeValues,
+            Map<String, String> attributeValueLabels) {
         public CapabilityDefinition {
             capabilityClass = required(capabilityClass, "capabilityClass");
             displayName = required(displayName, "displayName");
@@ -77,9 +80,11 @@ public interface CollaborationCatalogSource {
             displayName = required(displayName, "displayName");
             externalSystemCode = required(externalSystemCode, "externalSystemCode");
             businessScope = List.copyOf(businessScope == null ? List.of() : businessScope);
-            businessScopeDisplayNames = List.copyOf(businessScopeDisplayNames == null ? List.of() : businessScopeDisplayNames);
+            businessScopeDisplayNames =
+                    List.copyOf(businessScopeDisplayNames == null ? List.of() : businessScopeDisplayNames);
             bindableNodeTypes = List.copyOf(bindableNodeTypes == null ? List.of() : bindableNodeTypes);
-            bindableNodeTypeDisplayNames = List.copyOf(bindableNodeTypeDisplayNames == null ? List.of() : bindableNodeTypeDisplayNames);
+            bindableNodeTypeDisplayNames =
+                    List.copyOf(bindableNodeTypeDisplayNames == null ? List.of() : bindableNodeTypeDisplayNames);
             authenticationKind = required(authenticationKind, "authenticationKind");
             authenticationKindDisplayName = required(authenticationKindDisplayName, "authenticationKindDisplayName");
             unbindKind = required(unbindKind, "unbindKind");

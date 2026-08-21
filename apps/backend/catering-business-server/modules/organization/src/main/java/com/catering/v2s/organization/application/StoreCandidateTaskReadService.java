@@ -97,7 +97,8 @@ public class StoreCandidateTaskReadService {
     public CandidatePage platformContractCandidatePage(
             UUID workspaceUuid, String key, PlatformContractCandidateQuery query) {
         validatePlatformCandidateRequest(workspaceUuid, key, query);
-        return platformCandidatePage(workspaceUuid, key, query, platformContractCandidateSql(workspaceUuid, key, query));
+        return platformCandidatePage(
+                workspaceUuid, key, query, platformContractCandidateSql(workspaceUuid, key, query));
     }
 
     /** Platform external-binding selector: the same organization owner read, bounded by bindable node type. */
@@ -121,7 +122,8 @@ public class StoreCandidateTaskReadService {
             throw new BusinessEntityService.OrganizationNotFoundException();
         CandidateQueryResult result = ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> queryCandidatePage(source, query.queryText(), query.page(), query.pageSize(), query.selectedId()));
+                () -> queryCandidatePage(
+                        source, query.queryText(), query.page(), query.pageSize(), query.selectedId()));
         return new CandidatePage(
                 new CandidateQueryMetadata(
                         query.subjectType().name(),
@@ -350,7 +352,8 @@ public class StoreCandidateTaskReadService {
                         + "store.workspace_uuid=? AND store.group_workspace_key=? AND (?::uuid IS NULL OR "
                         + "store.project_id=?) UNION ALL SELECT DISTINCT tenant.id, tenant.code, tenant.name FROM "
                         + "organization.tenant tenant JOIN organization.store store ON store.tenant_id=tenant.id AND "
-                        + "store.workspace_uuid=tenant.workspace_uuid AND store.group_workspace_key=tenant.group_workspace_key "
+                        + "store.workspace_uuid=tenant.workspace_uuid AND store.group_workspace_key=tenant.group_wo"
+                        + "rkspace_key "
                         + "WHERE ?='TENANT' AND tenant.workspace_uuid=? AND tenant.group_workspace_key=? AND "
                         + "(?::uuid IS NULL OR store.project_id=?)",
                 nullableArguments(

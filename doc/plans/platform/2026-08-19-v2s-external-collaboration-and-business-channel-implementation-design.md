@@ -56,6 +56,7 @@ DEXTER_WIREFRAME_REVIEW=ACCEPTED_TEXTUAL_DESCRIPTION
 - `templateCode` 在同一集团空间、同一项目内唯一；`channelCode` 在同一集团空间内唯一。owner 负责业务判重，数据库部分唯一索引负责并发兜底，冲突统一返回 `DUPLICATE_CODE`。
 - 旧数据允许编码为空，读列表和详情时显示 `—`，不得伪造“待生成”。新建请求不允许空编码。
 - 内部接入渠道不依赖 binding，创建后直接为 `EFFECTIVE`；外部接入只有有效 binding 才能为 `EFFECTIVE`，否则保持 `DRAFT`。内部渠道详情不显示外部授权回填占位。对历史上“内部 + 无绑定 + 无停用原因 + DRAFT”的遗留行由一次性 Flyway repair 提升为 `EFFECTIVE`；其它停用/级联事实不被覆盖。
+- 渠道读回必须由 business-channel owner 投影 `bindingStatus`：`INTERNAL` 且无 binding 为 `NOT_REQUIRED`（界面显示 `—`），外部且无 binding 为 `UNBOUND`（显示“未绑定”），存在 binding 为 `BOUND`（显示“已绑定”）；前端不得用可空 `bindingRef` 反推该语义。该字段同时作为 `BINDING_STATUS` 排序的事实来源。
 - 页面列表顺序固定为“渠道名称、渠道编码、来源模板、状态、绑定状态”；渠道名称进入只读详情 Drawer，编辑使用独立表单 Drawer。
 
 ## 1. CP 总览

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, createProjectScopeSelector, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateFormalSeedStaticInputs, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -28,6 +28,35 @@ const code = (expected) => (error) => error instanceof FormalSeedFailure && erro
 test('formal seed refuses a fixture that does not explicitly map every invitation state', () => {
   assert.throws(() => resolveInvitationCreationPlan({...fixture, executionPlan: {}}), code('SEED_INVITATION_PLAN_REQUIRED'));
   assert.throws(() => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.slice(1)}}), code('SEED_INVITATION_PLAN_SET_INVALID'));
+});
+
+test('formal seed uses the declared logo bytes and rejects unsafe asset fixture paths', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const asset = actual.stableFixtures.assets.find((entry) => entry.key === 'asset-aurora');
+  assert.equal(asset?.contentFixture, 'fixtures/assets/runxin-commercial-logo.png');
+  const bytes = readSeedAssetFixtureBytes(asset);
+  assert.ok(bytes.length > 1_000);
+  assert.throws(() => readSeedAssetFixtureBytes({contentFixture: '../wx.png'}), code('SEED_ASSET_FIXTURE_PATH_INVALID'));
+  assert.throws(() => readSeedAssetFixtureBytes({contentFixture: 'fixtures/assets/not-found.png'}), code('SEED_ASSET_FIXTURE_MISSING'));
+});
+
+test('formal seed models the Runxin workspace, eight regions, and three named projects', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const workspace = actual.stableFixtures.groupWorkspaces.find((entry) => entry.key === 'gw-aurora');
+  const organization = actual.stableFixtures.organization;
+  assert.deepEqual({name: workspace?.name, operationsTitle: workspace?.operationsTitle}, {name: '润欣商业', operationsTitle: '华润万象生活餐饮运营平台'});
+  assert.deepEqual(organization.commercialGroups.find((entry) => entry.key === 'cg-aurora') && {name: organization.commercialGroups.find((entry) => entry.key === 'cg-aurora').name, code: organization.commercialGroups.find((entry) => entry.key === 'cg-aurora').code}, {name: '华润万象生活', code: '0'});
+  assert.deepEqual(organization.regions.map(({name, code}) => ({name, code})), [
+    {name: '东北大区', code: '001'}, {name: '华北大区', code: '002'}, {name: '西北大区', code: '003'}, {name: '西南大区', code: '004'},
+    {name: '华中大区', code: '005'}, {name: '华东大区', code: '006'}, {name: '华南大区', code: '007'}, {name: '总部直管', code: '008'},
+  ]);
+  assert.deepEqual(organization.projects.map(({name, code, parent}) => ({name, code, parent})), [
+    {name: '太原万象城', code: '00201', parent: 'region-east'},
+    {name: '北京清河万象汇', code: '00202', parent: 'region-east'},
+    {name: '长沙万象城', code: '00501', parent: 'region-west'},
+  ]);
 });
 
 test('formal seed maps only a role to a node of the same owner type and preserves completed/reissued facts', () => {

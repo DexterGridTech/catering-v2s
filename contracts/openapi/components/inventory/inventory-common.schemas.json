@@ -92,16 +92,92 @@
                     ],
                     "description": "design-bound field"
                   },
-                  "consumptionUnit": {
-                    "type": "string",
-                    "description": "design-bound field"
+                  "consumptionUnitSnapshot": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ],
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
+                    }
                   },
-                  "countingUnit": {
+                  "countingUnitSnapshot": {
                     "type": [
-                      "string",
+                      "object",
                       "null"
                     ],
-                    "description": "design-bound field"
+                    "additionalProperties": false,
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
+                    },
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ]
                   },
                   "conversionSummary": {
                     "type": [
@@ -192,8 +268,8 @@
                   "skuName",
                   "categoryName",
                   "materialRole",
-                  "consumptionUnit",
-                  "countingUnit",
+                  "consumptionUnitSnapshot",
+                  "countingUnitSnapshot",
                   "conversionSummary",
                   "balance",
                   "stockState",
@@ -350,16 +426,92 @@
               ],
               "description": "design-bound field"
             },
-            "consumptionUnit": {
-              "type": "string",
-              "description": "design-bound field"
+            "consumptionUnitSnapshot": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "unitRef",
+                "code",
+                "name",
+                "unitDimension",
+                "precision"
+              ],
+              "properties": {
+                "unitRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "unit definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "unit code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "unit name"
+                },
+                "unitDimension": {
+                  "type": "string",
+                  "enum": [
+                    "COUNT",
+                    "WEIGHT",
+                    "VOLUME",
+                    "SERVICE_DURATION",
+                    "PACKAGE"
+                  ],
+                  "description": "unit category"
+                },
+                "precision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "decimal places; zero means whole numbers"
+                }
+              }
             },
-            "countingUnit": {
+            "countingUnitSnapshot": {
               "type": [
-                "string",
+                "object",
                 "null"
               ],
-              "description": "design-bound field"
+              "additionalProperties": false,
+              "properties": {
+                "unitRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "unit definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "unit code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "unit name"
+                },
+                "unitDimension": {
+                  "type": "string",
+                  "enum": [
+                    "COUNT",
+                    "WEIGHT",
+                    "VOLUME",
+                    "SERVICE_DURATION",
+                    "PACKAGE"
+                  ],
+                  "description": "unit category"
+                },
+                "precision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "decimal places; zero means whole numbers"
+                }
+              },
+              "required": [
+                "unitRef",
+                "code",
+                "name",
+                "unitDimension",
+                "precision"
+              ]
             },
             "conversionSummary": {
               "type": [
@@ -386,8 +538,8 @@
             "productShape",
             "skuCode",
             "skuName",
-            "consumptionUnit",
-            "countingUnit",
+            "consumptionUnitSnapshot",
+            "countingUnitSnapshot",
             "conversionSummary",
             "authorityType"
           ]
@@ -414,9 +566,50 @@
               "description": "design-bound field",
               "format": "decimal"
             },
-            "countingUnit": {
-              "type": "string",
-              "description": "design-bound field"
+            "countingUnitSnapshot": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "unitRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "unit definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "unit code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "unit name"
+                },
+                "unitDimension": {
+                  "type": "string",
+                  "enum": [
+                    "COUNT",
+                    "WEIGHT",
+                    "VOLUME",
+                    "SERVICE_DURATION",
+                    "PACKAGE"
+                  ],
+                  "description": "unit category"
+                },
+                "precision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "decimal places; zero means whole numbers"
+                }
+              },
+              "required": [
+                "unitRef",
+                "code",
+                "name",
+                "unitDimension",
+                "precision"
+              ]
             },
             "conversionFactor": {
               "type": "string",
@@ -427,7 +620,7 @@
           "required": [
             "allowNegative",
             "lowStockThreshold",
-            "countingUnit",
+            "countingUnitSnapshot",
             "conversionFactor"
           ]
         },

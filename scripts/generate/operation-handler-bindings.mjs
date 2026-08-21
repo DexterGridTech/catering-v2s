@@ -17,10 +17,10 @@ const OUTPUT_ROOT = "contracts/registry/generated/operation-handler-bindings";
 const JAVA_OUTPUT_ROOT = `${OUTPUT_ROOT}/java`;
 const JAVA_PACKAGE_ROOT = "com.catering.v2s.generated.operationbindings";
 const EXPECTED_COUNTS = Object.freeze({
-  operations: 224,
-  reads: 96,
-  commands: 128,
-  operationsAdminCommands: 85,
+  operations: 237,
+  reads: 99,
+  commands: 138,
+  operationsAdminCommands: 95,
   platformAdminCommands: 34,
   publicCommands: 9,
 });
@@ -62,10 +62,14 @@ const OWNER_NAMESPACES = Object.freeze({
 // rewrite those adapters to classes that do not exist.
 const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "batchTransitionOperationsCatalogItemStatus",
+  "createOperationsCatalogAttributeDefinition",
+  "createOperationsCatalogOrderOptionDefinition",
   "createOperationsCatalogCategory",
   "createOperationsCatalogDictionaryEntry",
   "createOperationsCatalogItem",
   "deleteOperationsCatalogCategory",
+  "deleteOperationsCatalogAttributeDefinition",
+  "deleteOperationsCatalogOrderOptionDefinition",
   "executeOperationsBrandCatalogCopy",
   "executeOperationsLocalCatalogCopy",
   "executeOperationsTemporaryCatalogItemPromotion",
@@ -78,6 +82,12 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "transitionOperationsCatalogDictionaryEntryStatus",
   "transitionOperationsCatalogItemStatus",
   "updateOperationsCatalogCategory",
+  "updateOperationsCatalogAttributeDefinition",
+  "updateOperationsCatalogOrderOptionDefinition",
+  "createOperationsCatalogUnit",
+  "updateOperationsCatalogUnit",
+  "disableOperationsCatalogUnit",
+  "deleteOperationsCatalogUnit",
   "updateOperationsCatalogDictionaryEntry",
   "createOperationsProductionTag",
   "transitionOperationsProductionTagStatus",
@@ -179,7 +189,7 @@ const COMMAND_BOUNDARY_BY_OPERATION = Object.freeze({
 const RUNTIME_INTEGRATION = Object.freeze({
   status: "IMPLEMENTED_BP_U06",
   legacyDispatcher: "NO_LEGACY_DISPATCH",
-  reason: "BP-U06 completed the 43-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth.",
+  reason: "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth.",
 });
 
 function fail(code, detail = "") {
@@ -294,7 +304,7 @@ function routeOperations(root) {
   const ids = operations.map(({ operationId }) => operationId);
   if (new Set(ids).size !== ids.length) fail("BP_U02_ROUTE_OPERATION_DUPLICATE", ids.find((id, index) => ids.indexOf(id) !== index));
   const registryCounts = Object.fromEntries(Object.keys(ROUTE_REGISTRIES).map((registry) => [registry, operations.filter((operation) => operation.routeRegistry === registry).length]));
-  if (registryCounts["catalog-inventory"] !== 43 || registryCounts["edge-face"] !== 181) {
+  if (registryCounts["catalog-inventory"] !== 56 || registryCounts["edge-face"] !== 181) {
     fail("BP_U02_ROUTE_REGISTRY_COUNT_DRIFT", JSON.stringify(registryCounts));
   }
   return operations;
@@ -640,6 +650,52 @@ function expectedJavaSources(root = ROOT) {
   return javaOutputMap(rows);
 }
 
+// New catalog routes are introduced by the catalog P1 generator.  The binding
+// registry is itself generated, so a write must expand the registry from the
+// route source before validating exact-set/count invariants; hand-editing a
+// generated row would create a second source of truth.
+const CATALOG_UNIT_WIRE_TYPES = Object.freeze({
+  listOperationsCatalogUnits: ["CatalogUnitListQuery", "CatalogUnitList"],
+  createOperationsCatalogUnit: ["CatalogUnitCreateRequest", "CatalogUnitReadback"],
+  updateOperationsCatalogUnit: ["CatalogUnitUpdateRequest", "CatalogUnitReadback"],
+  disableOperationsCatalogUnit: ["CatalogUnitDisableRequest", "CatalogUnitReadback"],
+  deleteOperationsCatalogUnit: ["CatalogUnitDeleteRequest", "CatalogUnitDeleteReadback"],
+});
+function expandGeneratedCatalogUnitRows(binding, root) {
+  const routes = routeOperations(root);
+  const rows = [...binding.operations];
+  const present = new Set(rows.map((row) => row.operationId));
+  for (const route of routes.filter((candidate) => !present.has(candidate.operationId))) {
+    const wire = CATALOG_UNIT_WIRE_TYPES[route.operationId];
+    if (!wire) fail("BP_U02_NEW_ROUTE_BINDING_UNMAPPED", route.operationId);
+    const mode = route.method === "GET" ? "READ" : "COMMAND";
+    rows.push({
+      operationId: route.operationId,
+      owner: route.owner,
+      routeRegistry: route.routeRegistry,
+      path: route.path,
+      normalizedPath: route.normalizedPath,
+      face: route.face,
+      mode,
+      adapter: expectedAdapter(route),
+      wireRequest: wire[0],
+      wireResponse: wire[1],
+      contextKind: mode === "READ" ? "READ_CONTEXT" : "WORKSPACE_EXECUTION_CONTEXT",
+      transactionMode: mode === "READ" ? "OUTSIDE_TRANSACTION" : "REQUIRED",
+      copyRole: "NONE",
+      commandBoundary: expectedCommandBoundary(route.operationId, mode),
+    });
+  }
+  const counts = {
+    operationCount: rows.length,
+    readCount: rows.filter((row) => row.mode === "READ").length,
+    commandCount: rows.filter((row) => row.mode === "COMMAND").length,
+    contextCounts: Object.fromEntries([...CONTEXT_KINDS].sort().map((kind) => [kind, rows.filter((row) => row.contextKind === kind).length])),
+    commandBoundaryCounts: Object.fromEntries([...COMMAND_BOUNDARIES].sort().map((boundary) => [boundary, rows.filter((row) => row.commandBoundary === boundary).length])),
+  };
+  return {...binding, ...counts, operations: rows};
+}
+
 function writeText(root, relative, value) {
   const absolute = path.join(root, relative);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
@@ -648,10 +704,8 @@ function writeText(root, relative, value) {
 
 function writeOutputs(root = ROOT) {
   const binding = readJson(root, BINDINGS_PATH);
-  const refreshedBinding = {
-    ...binding,
-    routeSources: routeSourceMetadata(root),
-  };
+  const expandedBinding = expandGeneratedCatalogUnitRows(binding, root);
+  const refreshedBinding = {...expandedBinding, routeSources: routeSourceMetadata(root)};
   const rows = validateBindingContract(root, refreshedBinding);
   writeJson(root, BINDINGS_PATH, refreshedBinding);
   const outputs = outputMap(root, rows);

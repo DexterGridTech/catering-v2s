@@ -8,6 +8,12 @@ import com.catering.v2s.app.edge.generated.wire.BrandCopyPreflightRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetReleaseRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogAssetStageRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionDeleteReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionDeleteRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionList;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogAttributeDefinitionUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogCategoryDeleteRequest;
@@ -27,6 +33,19 @@ import com.catering.v2s.app.edge.generated.wire.CatalogItemCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveRequest;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemTransitionRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionDeleteReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionDeleteRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionList;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogOrderOptionDefinitionUpdateRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitDeleteReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitDeleteRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitDisableRequest;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitList;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitReadback;
+import com.catering.v2s.app.edge.generated.wire.CatalogUnitUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryAdjustmentRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryCountRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryIncreaseRequest;
@@ -49,6 +68,7 @@ import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.application.CatalogInventoryCoordinator;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
@@ -298,6 +318,56 @@ public final class OperationsCatalogInventoryController {
         return readResponse(application.readCatalogShapeManifest(read.requestId()));
     }
 
+    @GetMapping("/attribute-definitions")
+    public ResponseEntity<CatalogAttributeDefinitionList> attributeDefinitions(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return ResponseEntity.ok(attributeDefinitionList(
+                read.requestId(), application.listAttributeDefinitions(read.dataNodeRef(), read.brandRef())));
+    }
+
+    @GetMapping("/units")
+    public ResponseEntity<CatalogUnitList> catalogUnits(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return ResponseEntity.ok(catalogUnitList(
+                read.requestId(),
+                application.listUnitDefinitions(
+                        read.dataNodeRef(),
+                        read.brandRef(),
+                        optionalBoolean(read.request(), "includeInactive"),
+                        optionalUnitDimension(read.request().path("dimension").asText(null)))));
+    }
+
+    @PostMapping("/units")
+    public ResponseEntity<CatalogUnitReadback> createCatalogUnit(
+            EdgeRequestContext context,
+            @RequestBody CatalogUnitCreateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogUnit(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                idempotencyKey));
+    }
+
+    @GetMapping("/order-option-definitions")
+    public ResponseEntity<CatalogOrderOptionDefinitionList> orderOptionDefinitions(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return ResponseEntity.ok(orderOptionDefinitionList(
+                read.requestId(), application.listOrderOptionDefinitions(read.dataNodeRef(), read.brandRef())));
+    }
+
     @PostMapping("/items")
     public ResponseEntity<CatalogItemCommandReadback> createCatalogItem(
             EdgeRequestContext c,
@@ -306,6 +376,36 @@ public final class OperationsCatalogInventoryController {
         requireIdempotencyKey(k);
         return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogItem(
                 r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), k));
+    }
+
+    @PostMapping("/attribute-definitions")
+    public ResponseEntity<CatalogAttributeDefinitionReadback> createAttributeDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogAttributeDefinitionCreateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogAttributeDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                idempotencyKey));
+    }
+
+    @PostMapping("/order-option-definitions")
+    public ResponseEntity<CatalogOrderOptionDefinitionReadback> createOrderOptionDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogOrderOptionDefinitionCreateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindCreateOperationsCatalogOrderOptionDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                idempotencyKey));
     }
 
     @PostMapping("/items/{itemCode}/status")
@@ -594,6 +694,74 @@ public final class OperationsCatalogInventoryController {
                 catalogAssetBindings(context)));
     }
 
+    @PatchMapping("/attribute-definitions/{definitionRef}")
+    public ResponseEntity<CatalogAttributeDefinitionReadback> updateAttributeDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogAttributeDefinitionUpdateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindUpdateOperationsCatalogAttributeDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
+    @PatchMapping("/order-option-definitions/{definitionRef}")
+    public ResponseEntity<CatalogOrderOptionDefinitionReadback> updateOrderOptionDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogOrderOptionDefinitionUpdateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindUpdateOperationsCatalogOrderOptionDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
+    @PatchMapping("/units/{unitRef}")
+    public ResponseEntity<CatalogUnitReadback> updateCatalogUnit(
+            EdgeRequestContext context,
+            @RequestBody CatalogUnitUpdateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String unitRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindUpdateOperationsCatalogUnit(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                unitRef,
+                idempotencyKey));
+    }
+
+    @PostMapping("/units/{unitRef}/disable")
+    public ResponseEntity<CatalogUnitReadback> disableCatalogUnit(
+            EdgeRequestContext context,
+            @RequestBody CatalogUnitDisableRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String unitRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindDisableOperationsCatalogUnit(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                unitRef,
+                idempotencyKey));
+    }
+
     @PatchMapping("/categories/{categoryRef}")
     public ResponseEntity<CatalogCategoryReadback> updateCatalogCategory(
             EdgeRequestContext c,
@@ -669,6 +837,57 @@ public final class OperationsCatalogInventoryController {
                 r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), categoryRef, k));
     }
 
+    @DeleteMapping("/attribute-definitions/{definitionRef}")
+    public ResponseEntity<CatalogAttributeDefinitionDeleteReadback> deleteAttributeDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogAttributeDefinitionDeleteRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogAttributeDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
+    @DeleteMapping("/order-option-definitions/{definitionRef}")
+    public ResponseEntity<CatalogOrderOptionDefinitionDeleteReadback> deleteOrderOptionDefinition(
+            EdgeRequestContext context,
+            @RequestBody CatalogOrderOptionDefinitionDeleteRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String definitionRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogOrderOptionDefinition(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                definitionRef,
+                idempotencyKey));
+    }
+
+    @DeleteMapping("/units/{unitRef}")
+    public ResponseEntity<CatalogUnitDeleteReadback> deleteCatalogUnit(
+            EdgeRequestContext context,
+            @RequestBody CatalogUnitDeleteRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @PathVariable String unitRef) {
+        requireIdempotencyKey(idempotencyKey);
+        return ResponseEntity.ok(m1Bindings.bindDeleteOperationsCatalogUnit(
+                request,
+                sessions.token(context),
+                context.requestedBrandRef(),
+                context.correlationId(),
+                context.requestId(),
+                unitRef,
+                idempotencyKey));
+    }
+
     @PostMapping("/assets/{assetRef}/release")
     public ResponseEntity<CatalogAssetReleaseReadback> releaseCatalogAsset(
             EdgeRequestContext context,
@@ -689,6 +908,94 @@ public final class OperationsCatalogInventoryController {
     private static void requireIdempotencyKey(String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank())
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "Idempotency-Key is required");
+    }
+
+    private static CatalogAttributeDefinitionList attributeDefinitionList(
+            String requestId, CatalogOwnerApi.AttributeDefinitionListReadback readback) {
+        return new CatalogAttributeDefinitionList(
+                "CATALOG_INVENTORY_P1_20260806",
+                requestId,
+                new CatalogAttributeDefinitionList.Data(readback.definitions().stream()
+                        .map(definition -> new CatalogAttributeDefinitionList.Data.DefinitionsItem(
+                                definition.definitionRef(),
+                                definition.code(),
+                                definition.name(),
+                                definition.valueType(),
+                                definition.options().stream()
+                                        .map(option ->
+                                                new CatalogAttributeDefinitionList.Data.DefinitionsItem.OptionsItem(
+                                                        option.optionRef(), option.name(), (long)
+                                                                option.displayOrder()))
+                                        .toList(),
+                                definition.version()))
+                        .toList()));
+    }
+
+    private static CatalogUnitList catalogUnitList(
+            String requestId, CatalogOwnerApi.UnitDefinitionListReadback readback) {
+        return new CatalogUnitList(
+                "CATALOG_INVENTORY_P1_20260806",
+                requestId,
+                new CatalogUnitList.Data(readback.units().stream()
+                        .map(unit -> new CatalogUnitList.Data.UnitsItem(
+                                unit.unitRef(),
+                                unit.code(),
+                                unit.name(),
+                                unit.unitDimension().name(),
+                                (long) unit.precision(),
+                                unit.status(),
+                                readback.referencedUnitRefs().contains(unit.unitRef()),
+                                unit.version()))
+                        .toList()));
+    }
+
+    private static CatalogOrderOptionDefinitionList orderOptionDefinitionList(
+            String requestId, CatalogOwnerApi.OrderOptionDefinitionListReadback readback) {
+        List<CatalogOrderOptionDefinitionList.Data.DefinitionsItem> definitions = readback.definitions().stream()
+                .map(definition -> new CatalogOrderOptionDefinitionList.Data.DefinitionsItem(
+                        definition.definitionRef(),
+                        definition.code(),
+                        definition.name(),
+                        definition.selectionMode(),
+                        orderOptionValues(definition.values()),
+                        definition.version()))
+                .toList();
+        return new CatalogOrderOptionDefinitionList(
+                "CATALOG_INVENTORY_P1_20260806", requestId, new CatalogOrderOptionDefinitionList.Data(definitions));
+    }
+
+    private static List<CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem> orderOptionValues(
+            List<CatalogOwnerApi.OrderOptionValueReadback> values) {
+        return values.stream()
+                .map(value -> new CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem(
+                        value.valueRef(),
+                        value.code(),
+                        value.name(),
+                        (long) value.displayOrder(),
+                        orderOptionMaterials(value.materials())))
+                .toList();
+    }
+
+    private static List<CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem.MaterialsItem>
+            orderOptionMaterials(List<CatalogOwnerApi.OrderOptionMaterialReadback> materials) {
+        return materials.stream()
+                .map(material -> new CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem.MaterialsItem(
+                        material.materialRef(),
+                        material.materialItemRef(),
+                        material.materialItemName(),
+                        material.stockTargetRef(),
+                        consumptionUnitSnapshot(material.consumptionUnitSnapshot())))
+                .toList();
+    }
+
+    private static CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem.MaterialsItem
+                    .ConsumptionUnitSnapshot
+            consumptionUnitSnapshot(InventoryOwnerApi.UnitSnapshot value) {
+        return value == null
+                ? null
+                : new CatalogOrderOptionDefinitionList.Data.DefinitionsItem.ValuesItem.MaterialsItem
+                        .ConsumptionUnitSnapshot(
+                        value.unitRef(), value.code(), value.name(), value.unitDimension(), (long) value.precision());
     }
 
     private ResponseEntity<Object> readResponse(JsonNode body) {
@@ -867,5 +1174,25 @@ public final class OperationsCatalogInventoryController {
         String value = request.path(field).asText("");
         if (value.isBlank()) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
         return value;
+    }
+
+    private static boolean optionalBoolean(ObjectNode request, String field) {
+        if (!request.has(field)) return false;
+        JsonNode value = request.path(field);
+        if (value.isBoolean()) return value.asBoolean();
+        if (value.isTextual()
+                && ("true".equalsIgnoreCase(value.asText()) || "false".equalsIgnoreCase(value.asText()))) {
+            return Boolean.parseBoolean(value.asText());
+        }
+        throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be boolean");
+    }
+
+    private static CatalogOwnerApi.UnitDimension optionalUnitDimension(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return CatalogOwnerApi.UnitDimension.valueOf(value);
+        } catch (IllegalArgumentException failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "dimension is not supported", failure);
+        }
     }
 }

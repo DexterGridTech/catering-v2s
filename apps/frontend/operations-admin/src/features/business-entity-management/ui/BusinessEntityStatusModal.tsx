@@ -71,7 +71,7 @@ export function BusinessEntityStatusModal({entity, kind, queryContext, onClose, 
       open={Boolean(entity)}
       destroyOnHidden
       onCancel={submitting ? undefined : onClose}
-      mask={{closable: !submitting}}
+      maskClosable={!submitting}
       keyboard={!submitting}
       footer={[
         <Button

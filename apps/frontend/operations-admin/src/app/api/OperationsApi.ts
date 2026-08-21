@@ -28,6 +28,8 @@ const logger = createSafeLogger({
   enabled: import.meta.env.DEV,
   sink: createBeaconLogSink(import.meta.env.VITE_FRONTEND_LOG_SINK_URL),
 });
+/** Shared safe logger for feature-level workflow diagnostics. */
+export const operationsLogger = logger;
 const activeControllers = new Set<AbortController>();
 let unauthorizedRecovery: (() => void | Promise<void>) | undefined;
 export const operationsRefreshSignal = createRefreshSignal();

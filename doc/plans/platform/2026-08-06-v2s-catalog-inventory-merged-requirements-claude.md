@@ -7,12 +7,16 @@ authoredBy: Claude（合并 Claude 与 Codex 两份独立分析）
 implementationAuthority: false
 runtimeAuthority: false
 createdAt: 2026-08-06
+supersededBy: doc/plans/platform/2026-08-22-v2s-catalog-inventory-bom-business-model-requirements-discussion-codex.md
+supersededScope: 商品库存与 BOM 的 shape、owner 粒度、三方式准入、模式切换、组件候选与单位语义
 mergedFrom:
   - doc/plans/platform/2026-08-05-v2s-catalog-inventory-requirements-analysis-claude.md
   - doc/plans/platform/2026-08-05-v2s-catalog-store-light-inventory-requirements-analysis-codex.md
 ---
 
 # 合并需求（过程稿）
+
+> **SUPERSEDED-BY（商品库存与 BOM 专题）：** 本文涉及商品库存/BOM 的 shape、商品与 SKU owner 粒度、`HAS_SKU/NO_SKU` 动态切换、三方式准入、模式切换、组件候选与单位语义，已由 `doc/plans/platform/2026-08-22-v2s-catalog-inventory-bom-business-model-requirements-discussion-codex.md` 替代。其他未被该专题覆盖的 catalog/inventory 历史需求仅作来源材料，不得反向覆盖新正式需求。
 
 > **这不是最终需求稿。** 本文是两份独立分析的合并中间件，供 Codex 辩证 review 与后续几轮讨论使用。
 > 定稿前不得据此进入 Journey、契约或实现。

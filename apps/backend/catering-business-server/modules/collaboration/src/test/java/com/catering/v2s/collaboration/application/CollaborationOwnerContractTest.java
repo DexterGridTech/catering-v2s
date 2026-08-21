@@ -147,17 +147,8 @@ class CollaborationOwnerContractTest {
                 mock(CollaborationCommandReceiptService.class));
         UUID workspace = UUID.randomUUID();
 
-        CollaborationReadback.OwnerBindingPage page =
-                service.pageBindings(
-                        workspace,
-                        "workspace-key",
-                        "TEST_PROVIDER",
-                        "needle",
-                        null,
-                        "BINDING_NAME",
-                        "DESC",
-                        2,
-                        5);
+        CollaborationReadback.OwnerBindingPage page = service.pageBindings(
+                workspace, "workspace-key", "TEST_PROVIDER", "needle", null, "BINDING_NAME", "DESC", 2, 5);
 
         assertEquals(2, page.items().size());
         assertEquals("needle", page.metadata().bindingName());

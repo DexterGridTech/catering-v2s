@@ -21,6 +21,8 @@ export function RoleStatusModal({role, busy, onClose, onConfirm}: Props) {
       open
       onCancel={onClose}
       onOk={() => void onConfirm(lifecycle.getIdempotencyKey())}
+      maskClosable={!busy}
+      keyboard={!busy}
       confirmLoading={busy}
       okText="确认"
       cancelText="取消"

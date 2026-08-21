@@ -14,6 +14,7 @@ export function ExtensionDefinitionSaveModal({outcome, onClose, onViewLatest}: P
       open
       onCancel={onClose}
       onOk={conflict ? undefined : onClose}
+      maskClosable
       footer={
         conflict ? (
           <Space>

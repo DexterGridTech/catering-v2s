@@ -52,8 +52,8 @@ public interface OrganizationTaskPathLookup {
             UUID assignmentId,
             String targetType,
             UUID targetId) {
-        TaskPath taskPath = requireTaskPathAllowingDisabledTarget(
-                workspaceUuid, groupWorkspaceKey, targetType, targetId);
+        TaskPath taskPath =
+                requireTaskPathAllowingDisabledTarget(workspaceUuid, groupWorkspaceKey, targetType, targetId);
         return new CommandTaskPathFacts(
                 taskPath, isScopeAllowed(workspaceUuid, groupWorkspaceKey, assignmentType, assignmentId, taskPath));
     }

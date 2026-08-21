@@ -259,33 +259,36 @@ public class CollaborationOwnerService
                     statement.setObject(index++, workspaceUuid);
                     statement.setString(index++, groupWorkspaceKey);
                     statement.setString(index++, normalizedBindingName);
-                    statement.setString(index++, normalizedBindingName == null ? null : likePattern(normalizedBindingName));
+                    statement.setString(
+                            index++, normalizedBindingName == null ? null : likePattern(normalizedBindingName));
                     statement.setString(index++, normalizedNodeQueryText);
-                    statement.setString(index++, normalizedNodeQueryText == null ? null : likePattern(normalizedNodeQueryText));
+                    statement.setString(
+                            index++, normalizedNodeQueryText == null ? null : likePattern(normalizedNodeQueryText));
                     statement.setInt(index++, normalizedPageSize);
                     statement.setLong(index, offset);
                 },
                 (result, rowNumber) -> new BindingPageRow(
-                        ownerBinding(new BindingRow(
-                                result.getObject("binding_ref", UUID.class),
-                                workspaceUuid,
-                                groupWorkspaceKey,
-                                null,
-                                result.getString("provider_code"),
-                                result.getString("capability_class"),
-                                result.getString("node_type"),
-                                result.getString("node_ref"),
-                                result.getString("binding_display_name"),
-                                result.getString("external_owner_id"),
-                                null,
-                                result.getString("status"),
-                                null,
-                                null,
-                                null,
-                                result.getLong("version"),
-                                result.getLong("created_at_epoch_millis"),
-                                result.getLong("status_changed_at_epoch_millis"),
-                                0L),
+                        ownerBinding(
+                                new BindingRow(
+                                        result.getObject("binding_ref", UUID.class),
+                                        workspaceUuid,
+                                        groupWorkspaceKey,
+                                        null,
+                                        result.getString("provider_code"),
+                                        result.getString("capability_class"),
+                                        result.getString("node_type"),
+                                        result.getString("node_ref"),
+                                        result.getString("binding_display_name"),
+                                        result.getString("external_owner_id"),
+                                        null,
+                                        result.getString("status"),
+                                        null,
+                                        null,
+                                        null,
+                                        result.getLong("version"),
+                                        result.getLong("created_at_epoch_millis"),
+                                        result.getLong("status_changed_at_epoch_millis"),
+                                        0L),
                                 result.getString("node_display_path")),
                         result.getLong("total")));
         long total = rows.isEmpty() ? 0L : rows.get(0).total();
@@ -1088,12 +1091,11 @@ public class CollaborationOwnerService
                 definition.catalogStatusDisplayName(),
                 definition.attributeDictionary(),
                 definition.capabilities().stream()
-                        .map(value ->
-                                new CollaborationReadback.Capability(
-                                        value.capabilityClass(),
-                                        value.displayName(),
-                                        value.attributeValues(),
-                                        value.attributeValueLabels()))
+                        .map(value -> new CollaborationReadback.Capability(
+                                value.capabilityClass(),
+                                value.displayName(),
+                                value.attributeValues(),
+                                value.attributeValueLabels()))
                         .toList(),
                 status(enablement),
                 version(enablement));
@@ -1230,20 +1232,21 @@ public class CollaborationOwnerService
 
     /** The caller supplies only the closed vocabulary above; raw query input never reaches SQL. */
     private static String bindingOrderBy(String sortKey, String sortDirection) {
-        String expression = switch (sortKey) {
-            case "NODE" -> "COALESCE(node_display.node_display_path, node_display.node_display_name, binding.node_ref)";
-            case "BUSINESS" -> "COALESCE(binding.capability_class, '')";
-            case "EXTERNAL_OWNER_ID" -> "COALESCE(binding.external_owner_id, '')";
-            case "STATUS" -> "binding.status";
-            default -> "COALESCE(binding.binding_display_name, '')";
-        };
+        String expression =
+                switch (sortKey) {
+                    case "NODE" -> "COALESCE(node_display.node_display_path, node_display.node_display_name, "
+                            + "binding.no"
+                            + "de_ref)";
+                    case "BUSINESS" -> "COALESCE(binding.capability_class, '')";
+                    case "EXTERNAL_OWNER_ID" -> "COALESCE(binding.external_owner_id, '')";
+                    case "STATUS" -> "binding.status";
+                    default -> "COALESCE(binding.binding_display_name, '')";
+                };
         return expression + " " + sortDirection + " NULLS LAST, binding.binding_ref ASC";
     }
 
     private static String likePattern(String value) {
-        return "%"
-                + value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                + "%";
+        return "%" + value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     }
 
     private static String canonical(String operation, Object... values) {

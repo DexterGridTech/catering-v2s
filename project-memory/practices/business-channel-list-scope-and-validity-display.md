@@ -10,7 +10,7 @@ consumerFaces: ["platform-admin", "operations-admin"]
 owners: ["platform", "frontend-platform", "product"]
 impacts: ["architecture", "contract", "governance"]
 triggers: ["implementation", "review", "failure"]
-assertions: ["STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE", "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL", "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT"]
+assertions: ["STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE", "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL", "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT", "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED"]
 sourceRefs: ["project-memory/practices/business-channel-list-scope-and-validity-display.md"]
 ---
 
@@ -52,3 +52,9 @@ sourceRefs: ["project-memory/practices/business-channel-list-scope-and-validity-
 2. backend acceptance 覆盖 STORE、PROJECT、DISABLED 三种候选反例，以及“有效模板建渠道后再停用模板”的级联反例；
 3. foundation focused test 覆盖 `VALID`、`INVALID`、缺失值；两后台合同表格/详情的 architecture scan 覆盖所有直接消费者；
 4. review 必须区分候选投影、主列表、渠道级联状态、合同有效性与其他状态机，不能用字符串全仓替换代替语义核验。
+
+## 5. 渠道绑定状态必须由 owner 按接入类型投影
+
+`bindingRef = null` 不是“未绑定”的充分条件。内部渠道完全不涉及 collaboration binding，因此 owner readback 必须把内部无绑定投影为 `bindingStatus=NOT_REQUIRED`，列表和详情显示 `—`；外部渠道无绑定才投影为 `UNBOUND` 并显示“未绑定”，已有绑定投影为 `BOUND`。前端、排序和详情不得自行用 nullable `bindingRef` 推导这三种语义，也不能因为门店候选模板集合不包含失效模板而丢失既有渠道的 binding 语义。
+
+最小反例是同一 bounded channel read 同时返回：内部 `bindingRef=null → NOT_REQUIRED/—`、外部 `bindingRef=null → UNBOUND/未绑定`、外部 `bindingRef!=null → BOUND/已绑定`；acceptance 必须断言这三个结果，浏览器必须回读内部行不出现“未绑定”。

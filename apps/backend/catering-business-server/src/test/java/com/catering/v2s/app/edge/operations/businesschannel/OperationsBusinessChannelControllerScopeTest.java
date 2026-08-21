@@ -40,7 +40,8 @@ class OperationsBusinessChannelControllerScopeTest {
         when(store.project())
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
-        when(fixture.organizationReads.store(fixture.workspaceId, KEY, foreignStore)).thenReturn(store);
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, foreignStore))
+                .thenReturn(store);
         when(fixture.authorization.resolveSelectedProjectScope(fixture.session, fixture.projectId))
                 .thenReturn(mock(com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPath.class));
 
@@ -66,6 +67,7 @@ class OperationsBusinessChannelControllerScopeTest {
                 null,
                 "foreign channel",
                 bindingRef,
+                "BOUND",
                 "ENABLED",
                 List.of(),
                 1L);
@@ -74,7 +76,8 @@ class OperationsBusinessChannelControllerScopeTest {
                 .thenReturn(new OrganizationOverviewTaskReadService.Reference(
                         fixture.projectId, "PROJECT-01", "Project 01", true));
         when(fixture.channels.readChannel(fixture.workspaceId, KEY, channelRef)).thenReturn(channel);
-        when(fixture.organizationReads.store(fixture.workspaceId, KEY, foreignStore)).thenReturn(store);
+        when(fixture.organizationReads.store(fixture.workspaceId, KEY, foreignStore))
+                .thenReturn(store);
         when(fixture.authorization.resolveSelectedProjectScope(fixture.session, fixture.projectId))
                 .thenThrow(new WorkspaceUserService.TaskScopeDeniedException());
 
@@ -93,14 +96,12 @@ class OperationsBusinessChannelControllerScopeTest {
         when(fixture.authorization.resolveSelectedProjectScope(fixture.session, null))
                 .thenReturn(new com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPath(
                         ServiceNodeTypes.PROJECT, fixture.projectId, List.of(), "Project 01"));
-        when(fixture.channels.pageTemplates(
-                        fixture.workspaceId, KEY, fixture.projectId, null, null, null, null))
+        when(fixture.channels.pageTemplates(fixture.workspaceId, KEY, fixture.projectId, null, null, null, null))
                 .thenReturn(new BusinessChannelReadback.TemplatePage(List.of(), null, 0L));
 
         fixture.controller.templates(fixture.request, KEY, null, null, null);
 
-        verify(fixture.channels)
-                .pageTemplates(fixture.workspaceId, KEY, fixture.projectId, null, null, null, null);
+        verify(fixture.channels).pageTemplates(fixture.workspaceId, KEY, fixture.projectId, null, null, null, null);
     }
 
     @Test
@@ -192,14 +193,7 @@ class OperationsBusinessChannelControllerScopeTest {
                 mock(ExternalCollaborationBusinessChannelCoordinator.class);
         when(sessions.requireWorkspaceRead(any(), eq(KEY))).thenReturn(session);
         OperationsBusinessChannelController controller = new OperationsBusinessChannelController(
-                sessions,
-                channels,
-                commands,
-                capabilities,
-                bindings,
-                organizationReads,
-                authorization,
-                coordinator);
+                sessions, channels, commands, capabilities, bindings, organizationReads, authorization, coordinator);
         return new Fixture(
                 workspaceId,
                 projectId,

@@ -32,6 +32,7 @@ export function WorkspaceDetailDrawer({
       open={open}
       loading={loading}
       onClose={onClose}
+      maskClosable
       afterOpenChange={onAfterOpenChange}
       size={600}
       {...adminDrawerSurfaceProps}

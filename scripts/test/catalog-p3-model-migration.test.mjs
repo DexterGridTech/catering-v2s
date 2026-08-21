@@ -7,6 +7,7 @@ import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260814_100000_000__catalog_p3_model.sql'), 'utf8');
+const unitModelMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260821_090000_000__catalog_inventory_unit_model.sql'), 'utf8');
 const inventoryIdentityMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260808_160000_000__inventory_opaque_catalog_identity_refs.sql'), 'utf8');
 const itemCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260815_010000_000__catalog_voided_item_code_release.sql'), 'utf8');
 const skuCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_020000_000__catalog_sku_voided_code_release.sql'), 'utf8');
@@ -100,10 +101,11 @@ test('only the stock BOM partial index without a matching production predicate i
 });
 
 test('P3 keeps only unordered item-owned sets in the shared reference table', () => {
-  const allowedKinds = migration.match(/CHECK \(kind IN \(\s*'([^']+)',\s*'([^']+)',\s*'([^']+)'\s*\)\)/s);
+  const allowedKinds = unitModelMigration.match(/CHECK \(kind IN \(\s*'([^']+)',\s*'([^']+)'\s*\)\)/s);
   assert.ok(allowedKinds);
-  assert.deepEqual(allowedKinds.slice(1), ['PRODUCTION_TAG', 'CATALOG_TAG', 'SALES_UNIT']);
-  assert.match(itemReferenceFacts, /private static final List<String> KINDS = List\.of\(PRODUCTION_TAG, CATALOG_TAG, SALES_UNIT\);/);
+  assert.deepEqual(allowedKinds.slice(1), ['PRODUCTION_TAG', 'CATALOG_TAG']);
+  assert.match(unitModelMigration, /DELETE FROM catalog\.catalog_item_reference WHERE kind='SALES_UNIT';/);
+  assert.match(itemReferenceFacts, /private static final List<String> KINDS = List\.of\(PRODUCTION_TAG, CATALOG_TAG\);/);
   assert.doesNotMatch(itemReferenceFacts, /ITEM_IMAGE|SKU_MEDIA|ORDER_OPTION_ATTRIBUTE_VALUE/);
   assert.match(itemMediaFacts, /catalog\.catalog_item_image/);
   assert.match(skuMediaFacts, /catalog\.catalog_sku_media/);

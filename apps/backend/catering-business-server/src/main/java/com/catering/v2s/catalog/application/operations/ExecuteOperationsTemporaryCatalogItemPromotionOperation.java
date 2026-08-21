@@ -3,6 +3,7 @@ package com.catering.v2s.catalog.application.operations;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemCommandReadback;
 import com.catering.v2s.app.edge.generated.wire.TemporaryPromotionExecuteRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.application.CatalogInventoryCoordinator;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
@@ -15,12 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExecuteOperationsTemporaryCatalogItemPromotionOperation {
     public static final String OPERATION_ID = "executeOperationsTemporaryCatalogItemPromotion";
     private final CommandExecutionContextResolver contexts;
-    private final CatalogOwnerApi catalog;
+    private final CatalogInventoryCoordinator coordinator;
 
     public ExecuteOperationsTemporaryCatalogItemPromotionOperation(
-            CommandExecutionContextResolver contexts, CatalogOwnerApi catalog) {
+            CommandExecutionContextResolver contexts, CatalogInventoryCoordinator coordinator) {
         this.contexts = contexts;
-        this.catalog = catalog;
+        this.coordinator = coordinator;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -35,7 +36,7 @@ public class ExecuteOperationsTemporaryCatalogItemPromotionOperation {
         var request = invocation.request();
         return CreateOperationsCatalogItemOperation.response(
                 context.requestId(),
-                catalog.executeTemporaryCatalogItemPromotion(
+                coordinator.executeTemporaryCatalogItemPromotion(
                         context,
                         new CatalogOwnerApi.TemporaryPromotionExecuteCommand(
                                 invocation.itemCode(),
@@ -44,7 +45,6 @@ public class ExecuteOperationsTemporaryCatalogItemPromotionOperation {
                                 request.name(),
                                 request.shortName(),
                                 request.materialRole(),
-                                canonicalJson(request.attributes()),
                                 requiredLong(request.expectedSourceVersion(), "expectedSourceVersion"),
                                 requiredLong(request.expectedVersion(), "expectedVersion"),
                                 request.preflightDigest()),
@@ -59,10 +59,6 @@ public class ExecuteOperationsTemporaryCatalogItemPromotionOperation {
             String requestId,
             String itemCode,
             String idempotencyKey) {}
-
-    private static String canonicalJson(com.catering.v2s.app.edge.generated.wire.CanonicalJsonDocument value) {
-        return value == null ? null : value.canonicalJson();
-    }
 
     private static long requiredLong(Long value, String field) {
         if (value == null) throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");

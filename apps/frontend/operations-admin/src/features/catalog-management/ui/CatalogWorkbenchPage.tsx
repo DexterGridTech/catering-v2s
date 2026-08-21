@@ -8,6 +8,7 @@ import {
   ShoppingOutlined,
   StopOutlined,
   SyncOutlined,
+  TagOutlined,
   TagsOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
@@ -42,6 +43,7 @@ import {
   useCursorStack,
   useDetailDrawer,
   useOverlayLock,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {
   useCallback,
@@ -53,7 +55,12 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import {catalogInventoryClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {
+  catalogInventoryClient,
+  operationsContentTabRefreshSignal,
+  operationsProblemOf,
+  operationsRtk,
+} from '../../../app/api/OperationsTransport';
 import type {HeadCompany} from '../../../app/api/generated/operations-edge';
 import {CATALOG_INVENTORY_OPERATION_IDS} from '../../../app/api/generated/catalog-inventory-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
@@ -68,6 +75,7 @@ import {
   buildCatalogItemsQuery,
   catalogFilterConflictReason,
   catalogPriceLabel,
+  catalogTagTreeSelection,
   decodeCatalogBatchResults,
   decodeCatalogDictionaryLabels,
   decodeDetail,
@@ -89,8 +97,8 @@ import {CatalogDictionaryDrawer} from './CatalogDictionaryDrawer';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 
 type CatalogSurface = 'store' | 'brand';
-type CatalogDictionaryKind = 'TAG' | 'SALES_UNIT' | 'SKU_ATTRIBUTE' | 'SKU_ATTRIBUTE_VALUE' | 'PRODUCTION_TAG';
-type TreeSelection = {kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'UNCATEGORIZED'; ref: string; label: string};
+type CatalogDictionaryKind = 'TAG' | 'UNIT' | 'SKU_ATTRIBUTE' | 'SKU_ATTRIBUTE_VALUE' | 'PRODUCTION_TAG';
+type TreeSelection = {kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'TAG' | 'UNCATEGORIZED'; ref: string; label: string};
 type CatalogFilters = {keyword?: string; status?: string; source?: string};
 type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS' | 'ARCHIVE';
 type CatalogBatchRowResult = CatalogBatchResult & {code: string};
@@ -100,7 +108,7 @@ type CategoryAction = {
   node?: CatalogNavigation['tree'][number];
 };
 type CatalogTreeNode = {key: string; title: ReactNode; selectable?: boolean; children?: CatalogTreeNode[]};
-const defaultCatalogTreeExpandedKeys: Key[] = ['smart-root', 'shape-root', 'category-root'];
+const defaultCatalogTreeExpandedKeys: Key[] = ['smart-root', 'shape-root', 'tag-root', 'category-root'];
 
 type CatalogTreeLineProps = {
   label: string;
@@ -165,17 +173,21 @@ function itemReferenceSummary(
   navigation: CatalogNavigation,
   tagLabels: ReadonlyMap<string, string>,
 ): ReactNode {
-  const categoryNodes = row.categoryRefs
-    .map(categoryRef => navigation.tree.find(node => node.categoryRef === categoryRef))
-    .filter((node): node is CatalogNavigation['tree'][number] => Boolean(node));
+  const categoryNode = row.categoryRef ? navigation.tree.find(node => node.categoryRef === row.categoryRef) : undefined;
   const resolvedTagNames = row.tagRefs
     .map(tagRef => tagLabels.get(tagRef))
     .filter((name): name is string => Boolean(name));
   const unresolvedTagCount = row.tagRefs.length - resolvedTagNames.length;
   const labels: ReactNode[] = [
-    ...categoryNodes.map(node => (
-      <NameCodeText key={`category-${node.categoryRef}`} name={node.name} code={node.code} />
-    )),
+    ...(categoryNode
+      ? [
+          <NameCodeText
+            key={`category-${categoryNode.categoryRef}`}
+            name={categoryNode.name}
+            code={categoryNode.code}
+          />,
+        ]
+      : []),
     ...resolvedTagNames.map((name, index) => <Typography.Text key={`tag-${name}-${index}`}>{name}</Typography.Text>),
     ...(unresolvedTagCount > 0
       ? [<Typography.Text key="unresolved-tags">商品标签 {unresolvedTagCount}</Typography.Text>]
@@ -185,10 +197,9 @@ function itemReferenceSummary(
       : []),
   ];
   if (!labels.length) return '未分类';
-  const categoryVisible = categoryNodes
-    .slice(0, 2)
-    .map(node => <NameCodeText key={`category-${node.categoryRef}`} name={node.name} code={node.code} />);
-  const categoryRemaining = Math.max(0, categoryNodes.length - categoryVisible.length);
+  const categoryVisible = categoryNode
+    ? [<NameCodeText key={`category-${categoryNode.categoryRef}`} name={categoryNode.name} code={categoryNode.code} />]
+    : [];
   const tagItems = [
     ...resolvedTagNames.map((name, index) => <Typography.Text key={`tag-${name}-${index}`}>{name}</Typography.Text>),
     ...(unresolvedTagCount > 0 ? [<Typography.Text key="unresolved-tags">未解析标签</Typography.Text>] : []),
@@ -200,7 +211,6 @@ function itemReferenceSummary(
       <Space size={4} wrap>
         <Typography.Text type="secondary">分类</Typography.Text>
         {categoryVisible.length ? categoryVisible : <Typography.Text type="secondary">未分类</Typography.Text>}
-        {categoryRemaining > 0 && <Typography.Text type="secondary">+{categoryRemaining}</Typography.Text>}
       </Space>
       <Space size={4} wrap>
         <Typography.Text type="secondary">标签</Typography.Text>
@@ -245,6 +255,7 @@ function CatalogWorkbenchPage({
   const [treeExpandedKeys, setTreeExpandedKeys] = useState<Key[]>(defaultCatalogTreeExpandedKeys);
   const [copyOpen, setCopyOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [initialEditItemCode, setInitialEditItemCode] = useState<string>();
   const [rebuildPrefill, setRebuildPrefill] = useState<{code?: string; name?: string; shapeKey?: string}>();
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
   const [dictionaryKind, setDictionaryKind] = useState<CatalogDictionaryKind>('TAG');
@@ -349,6 +360,7 @@ function CatalogWorkbenchPage({
         smartViewKey: treeSelection.kind === 'SMART' ? treeSelection.ref : undefined,
         shapeKey: treeSelection.kind === 'SHAPE' ? treeSelection.ref : undefined,
         categoryRef: treeSelection.kind === 'CATEGORY' ? wireUuid(treeSelection.ref) : undefined,
+        tagRef: treeSelection.kind === 'TAG' ? wireUuid(treeSelection.ref) : undefined,
         uncategorized: treeSelection.kind === 'UNCATEGORIZED' ? true : undefined,
         includeSubCategories: treeSelection.kind === 'CATEGORY' ? true : undefined,
         status: filters.status,
@@ -373,6 +385,7 @@ function CatalogWorkbenchPage({
     skip: !scopeReady,
   });
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemsRequest, {skip: !scopeReady});
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   // `currentData` is bound to the current RTK query arguments. Using `data`
   // here can keep the previous brand/tree response visible while a new
   // request is pending, which defeats the scope generation boundary.
@@ -380,14 +393,16 @@ function CatalogWorkbenchPage({
   const navigation = decodeNavigation(navigationQuery.currentData);
   const manifest = manifestQuery.currentData?.data;
   const tagDictionaryPage = tagDictionaryQuery.currentData?.data;
+  const acceptTagDictionaryPage = tagDictionaryState.acceptPage;
+  const tagDictionaryPageSize = tagDictionaryState.pageSize;
   useEffect(() => {
     if (!tagDictionaryPage || !tagDictionaryQuery.currentData) return;
-    tagDictionaryState.acceptPage(decodeCatalogDictionaryLabels(tagDictionaryQuery.currentData), {
-      pageSize: tagDictionaryState.pageSize,
+    acceptTagDictionaryPage(decodeCatalogDictionaryLabels(tagDictionaryQuery.currentData), {
+      pageSize: tagDictionaryPageSize,
       total: tagDictionaryPage.total,
       nextCursor: tagDictionaryPage.cursor,
     });
-  }, [tagDictionaryPage, tagDictionaryQuery.currentData, tagDictionaryState.acceptPage, tagDictionaryState.pageSize]);
+  }, [acceptTagDictionaryPage, tagDictionaryPage, tagDictionaryPageSize, tagDictionaryQuery.currentData]);
   const tagDictionaryEntries = tagDictionaryState.items;
   const tagLabels = useMemo(
     () => new Map(tagDictionaryEntries.map(entry => [entry.entryRef, entry.name])),
@@ -578,6 +593,7 @@ function CatalogWorkbenchPage({
     setExpandedRows([]);
   }, [resetCursor]);
   const refresh = useCallback(() => {
+    if (!scopeReady) return;
     listRequestGeneration.current = generation.begin();
     if (surface === 'brand') void headCompanyQuery.refetch();
     void contextQuery.refetch();
@@ -592,9 +608,16 @@ function CatalogWorkbenchPage({
     itemsQuery,
     manifestQuery,
     navigationQuery,
+    scopeReady,
     surface,
     tagDictionaryQuery,
   ]);
+  const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
+  useEffect(() => {
+    if (contentTabRefreshVersion === lastContentTabRefreshVersion.current) return;
+    lastContentTabRefreshVersion.current = contentTabRefreshVersion;
+    refresh();
+  }, [contentTabRefreshVersion, refresh]);
   const closeBatchAction = useCallback(() => {
     if (batchSubmitting) return;
     setBatchAction(undefined);
@@ -611,6 +634,7 @@ function CatalogWorkbenchPage({
   const closeDetail = useCallback(
     (restoreFocus = true) => {
       detail.close();
+      setInitialEditItemCode(undefined);
       if (restoreFocus) window.requestAnimationFrame(() => detailTriggerRef.current?.focus());
     },
     [detail],
@@ -643,9 +667,7 @@ function CatalogWorkbenchPage({
         setBatchResults(alignCatalogBatchResults(selectedItemRows, decodeCatalogBatchResults(response)));
       } else {
         const updateKind: CatalogBatchUpdateKind = batchAction;
-        const refs = (
-          batchAction === 'CATEGORY' ? batchCategoryRefs : batchTagRefs
-        ) as CatalogItemSummary['categoryRefs'];
+        const refs = (batchAction === 'CATEGORY' ? batchCategoryRefs : batchTagRefs) as CatalogItemSummary['tagRefs'];
         const results = await Promise.all(
           selectedItemRows.map(async (row): Promise<CatalogBatchRowResult> => {
             try {
@@ -809,6 +831,24 @@ function CatalogWorkbenchPage({
         })),
       },
       {
+        key: 'tag-root',
+        title: <CatalogTreeLine label="商品标签" icon={<TagOutlined />} />,
+        selectable: false,
+        children: navigation.tags
+          .filter(
+            node =>
+              !match || node.name.toLocaleLowerCase().includes(match) || node.code.toLocaleLowerCase().includes(match),
+          )
+          .map(node => ({
+            key: `TAG:${node.tagRef}`,
+            title: (
+              <CatalogTreeLine label={node.name} count={node.count} icon={<TagOutlined />}>
+                <NameCodeText name={node.name} code={node.code} />
+              </CatalogTreeLine>
+            ),
+          })),
+      },
+      {
         key: 'category-root',
         title: (
           <CatalogTreeLine
@@ -871,7 +911,6 @@ function CatalogWorkbenchPage({
       {
         title: '商品',
         key: 'item',
-        fixed: 'left',
         width: 280,
         render: (_, row) => (
           <Space align="start" size={8}>
@@ -1116,12 +1155,12 @@ function CatalogWorkbenchPage({
           <Card
             size="small"
             style={{width: 312, flex: '0 0 312px'}}
-            title="商品视图和分类"
+            title="商品视图、标签和分类"
             {...testId('catalog-inventory-tree')}
           >
             <Input.Search
               allowClear
-              placeholder="搜索分类名称/编码"
+              placeholder="搜索标签或分类名称/编码"
               value={treeSearch}
               onChange={event => setTreeSearch(event.target.value)}
               {...testId('catalog-inventory-tree-search')}
@@ -1137,8 +1176,13 @@ function CatalogWorkbenchPage({
                 treeData={treeData}
                 onSelect={keys => {
                   const [kind, ...ref] = String(keys[0] ?? '').split(':');
-                  if (!['SMART', 'SHAPE', 'CATEGORY', 'UNCATEGORIZED'].includes(kind)) return;
+                  if (!['SMART', 'SHAPE', 'CATEGORY', 'TAG', 'UNCATEGORIZED'].includes(kind)) return;
                   const key = ref.join(':');
+                  if (kind === 'TAG') {
+                    const tag = navigation.tags.find(node => node.tagRef === key);
+                    if (tag) selectTree(catalogTagTreeSelection(tag));
+                    return;
+                  }
                   const label =
                     kind === 'SMART'
                       ? catalogEnumLabel(manifest, 'smartViewKey', key)
@@ -1317,6 +1361,8 @@ function CatalogWorkbenchPage({
           if (batchResults.length) closeBatchAction();
           else void runBatchAction();
         }}
+        maskClosable={!batchSubmitting}
+        keyboard={!batchSubmitting}
         okText={batchResults.length ? '关闭' : '执行'}
         cancelText="取消"
         confirmLoading={batchSubmitting}
@@ -1416,6 +1462,7 @@ function CatalogWorkbenchPage({
       </Modal>
       <CatalogItemDrawer
         itemCode={detail.target}
+        initialMode={initialEditItemCode === detail.target ? 'edit' : 'view'}
         queryContext={queryContext}
         brandRef={context?.brandRef ?? brandRef}
         canWriteCatalog={canWriteCatalog}
@@ -1446,6 +1493,7 @@ function CatalogWorkbenchPage({
         onCreated={createdCode => {
           setCreateOpen(false);
           setRebuildPrefill(undefined);
+          setInitialEditItemCode(createdCode);
           detailTriggerRef.current = null;
           detail.open(createdCode);
         }}
@@ -1490,6 +1538,8 @@ function CatalogWorkbenchPage({
         okButtonProps={categoryAction?.mode === 'DELETE' ? {danger: true} : undefined}
         onCancel={closeCategoryAction}
         onOk={() => void submitCategoryAction()}
+        maskClosable={!categorySubmitting}
+        keyboard={!categorySubmitting}
         confirmLoading={categorySubmitting}
         destroyOnHidden
         {...testId('catalog-category-action-modal')}

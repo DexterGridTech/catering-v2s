@@ -1100,6 +1100,8 @@ export type BusinessChannelView = {
   channelCode?: string | null;
   channelName: string;
   bindingRef?: string & { readonly __uuid: "Uuid" } | null;
+  bindingStatus: "NOT_REQUIRED" | "UNBOUND" | "BOUND";
+  bindingStatusDisplayName: string;
   status: "DRAFT" | "EFFECTIVE" | "DISABLED";
   statusDisplayName: string;
   stopReasons: Array<"CASCADE_TEMPLATE" | "CASCADE_EXTERNAL" | "MANUAL">;

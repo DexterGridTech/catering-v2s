@@ -51,7 +51,7 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
       open={Boolean(store)}
       destroyOnHidden
       onCancel={submitting ? undefined : onClose}
-      mask={{closable: !submitting}}
+      maskClosable={!submitting}
       keyboard={!submitting}
       footer={[
         <Button key="cancel" onClick={onClose} disabled={submitting} {...testId('operations-store-status-cancel')}>

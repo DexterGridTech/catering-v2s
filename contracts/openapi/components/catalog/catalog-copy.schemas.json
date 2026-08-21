@@ -570,7 +570,8 @@
                       "CONSUMPTION_UNIT_INCOMPATIBLE",
                       "REFERENCE_MAPPING_UNRESOLVED",
                       "REUSE_CONFIRMATION_REQUIRED",
-                      "OWNER_FACT_UNAVAILABLE"
+                      "OWNER_FACT_UNAVAILABLE",
+                      "CATALOG_COPY_DEFINITION_CONFLICT"
                     ]
                   }
                 },
@@ -994,6 +995,7 @@
         "objectVersions",
         "referenceMappings",
         "closureEdges",
+        "skipped",
         "mappingPreview",
         "referenceRewritePreview",
         "compatibilityResults",
@@ -1147,6 +1149,28 @@
               "fromRef",
               "toRef",
               "referenceKind"
+            ]
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "section": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "section",
+              "reasonCode"
             ]
           }
         },
@@ -1402,7 +1426,8 @@
                   "CONSUMPTION_UNIT_INCOMPATIBLE",
                   "REFERENCE_MAPPING_UNRESOLVED",
                   "REUSE_CONFIRMATION_REQUIRED",
-                  "OWNER_FACT_UNAVAILABLE"
+                  "OWNER_FACT_UNAVAILABLE",
+                  "CATALOG_COPY_DEFINITION_CONFLICT"
                 ]
               }
             },
@@ -1767,30 +1792,26 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "dataNodeRef",
         "itemCode",
         "formalCode",
         "shapeKey",
         "name",
-        "expectedSourceVersion"
+        "shortName",
+        "materialRole",
+        "expectedSourceVersion",
+        "dataNodeRef"
       ],
       "properties": {
-        "dataNodeRef": {
-          "type": "string",
-          "description": "design-bound field",
-          "format": "uuid"
-        },
         "itemCode": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "temporary item"
         },
         "formalCode": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "formal immutable code"
         },
         "shapeKey": {
           "type": "string",
-          "description": "design-bound field",
           "enum": [
             "STANDARD_SALE_COUNTED",
             "SKU_VARIANT_SALE_COUNTED",
@@ -1799,36 +1820,29 @@
             "COMPOSITE",
             "SERVICE",
             "BENEFIT_SHELL"
-          ]
+          ],
+          "description": "promoted shape"
         },
         "name": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "formal item name"
         },
         "shortName": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "design-bound field"
+          "type": "string",
+          "description": "formal short name"
         },
         "materialRole": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "design-bound field"
-        },
-        "attributes": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": true,
-          "properties": {},
-          "required": []
+          "type": "string",
+          "description": "material role"
         },
         "expectedSourceVersion": {
           "type": "integer",
-          "description": "design-bound field"
+          "description": "source snapshot version"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
         }
       }
     },
@@ -1997,32 +2011,28 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "dataNodeRef",
         "itemCode",
         "formalCode",
         "shapeKey",
         "name",
+        "shortName",
+        "materialRole",
         "expectedSourceVersion",
         "expectedVersion",
-        "preflightDigest"
+        "preflightDigest",
+        "dataNodeRef"
       ],
       "properties": {
-        "dataNodeRef": {
-          "type": "string",
-          "description": "design-bound field",
-          "format": "uuid"
-        },
         "itemCode": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "temporary item"
         },
         "formalCode": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "formal immutable code"
         },
         "shapeKey": {
           "type": "string",
-          "description": "design-bound field",
           "enum": [
             "STANDARD_SALE_COUNTED",
             "SKU_VARIANT_SALE_COUNTED",
@@ -2031,44 +2041,37 @@
             "COMPOSITE",
             "SERVICE",
             "BENEFIT_SHELL"
-          ]
+          ],
+          "description": "promoted shape"
         },
         "name": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "formal item name"
         },
         "shortName": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "design-bound field"
+          "type": "string",
+          "description": "formal short name"
         },
         "materialRole": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "design-bound field"
-        },
-        "attributes": {
-          "type": "object",
-          "description": "design-bound field",
-          "additionalProperties": true,
-          "properties": {},
-          "required": []
+          "type": "string",
+          "description": "material role"
         },
         "expectedSourceVersion": {
           "type": "integer",
-          "description": "design-bound field"
+          "description": "source snapshot version"
         },
         "expectedVersion": {
           "type": "integer",
-          "description": "design-bound field"
+          "description": "temporary item version"
         },
         "preflightDigest": {
           "type": "string",
-          "description": "design-bound field"
+          "description": "promotion preflight digest"
+        },
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
         }
       }
     },

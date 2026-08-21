@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
@@ -210,6 +211,33 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void navigationCategoryCountUsesTheRelationalCategoryAssignmentWrittenAtCreate() {
+        JsonNode category = create("NAV-COUNT-CATEGORY", "navigation count category", null);
+        String categoryRef = category.path("categoryRef").asText();
+        JsonNode before = category(navigation(), categoryRef);
+        String itemCode = generatedCatalogCode("NAV-CATEGORY-ITEM");
+
+        JsonNode created = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", itemCode)
+                        .put("name", "navigation category item")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED")
+                        .put("categoryRef", categoryRef));
+
+        assertEquals("DRAFT", created.path("status").asText());
+        JsonNode after = category(navigation(), categoryRef);
+        assertEquals(before.path("count").asLong() + 1, after.path("count").asLong());
+        assertEquals(
+                categoryRef,
+                service.readItem(SCOPE.toString(), BRAND, itemCode, "navigation-category-detail")
+                        .path("data")
+                        .path("item")
+                        .path("categoryRef")
+                        .asText());
+    }
+
+    @Test
     void voidedItemReleasesItsCodeWhileArchivedItemStillReservesItsCode() {
         String voidedCode = generatedCatalogCode("RELEASED-CODE");
         JsonNode voided = write(
@@ -284,9 +312,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO "
                         + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
                         + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+                        + "_code,measure_mode,inventory_mode,configuration,balance,version,created_at_epoch_millis,"
+                        + "updated_at_epoch_millis"
+                        + ") VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
                 BRAND,
@@ -390,9 +418,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO "
                         + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
                         + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+                        + "_code,measure_mode,inventory_mode,configuration,balance,version,created_at_epoch_millis,"
+                        + "updated_at_epoch_millis"
+                        + ") VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
                 BRAND,
@@ -440,8 +468,10 @@ class CatalogCategoryOwnerIntegrationTest {
         insertQG10CompositeComponent(groupRef, itemRef, catalogBlockedSkuRef, 0);
         jdbc.update(
                 "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,"
-                        + "item_code,sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,"
-                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+                        + "item_code,sku_code,measure_mode,inventory_mode,configuration,balance,version,created_at_"
+                        + "epoch_millis,"
+                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{"
+                        + "}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
                 BRAND,
@@ -539,12 +569,12 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID firstValueRef = UUID.randomUUID();
         UUID secondValueRef = UUID.randomUUID();
         UUID tagRef = UUID.randomUUID();
-        UUID salesUnitRef = UUID.randomUUID();
         insertDictionary(SCOPE, attributeRef, "SKU_ATTRIBUTE", "RANGE-ATTRIBUTE");
         insertDictionary(SCOPE, firstValueRef, "SKU_ATTRIBUTE_VALUE", "RANGE-VALUE-A", attributeRef);
         insertDictionary(SCOPE, secondValueRef, "SKU_ATTRIBUTE_VALUE", "RANGE-VALUE-B", attributeRef);
         insertDictionary(SCOPE, tagRef, "TAG", "CATALOG-TAG-RANGE");
-        insertDictionary(SCOPE, salesUnitRef, "SALES_UNIT", "UNIT-RANGE");
+        CatalogOwnerApi.UnitDefinitionReadback salesUnit =
+                createUnit("UNIT-RANGE", "Unit range", CatalogOwnerApi.UnitDimension.COUNT, 0);
         String itemCode = generatedCatalogCode("REFERENCE-RANGE");
         JsonNode created = write(
                 "createOperationsCatalogItem",
@@ -557,7 +587,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("expectedCatalogVersion", created.path("version").asLong())
                 .putObject("catalogDraft");
         draft.putArray("tagRefs").add(tagRef.toString());
-        draft.putArray("salesUnitRefs").add(salesUnitRef.toString());
+        draft.put("salesUnitRef", salesUnit.unitRef().toString());
         ArrayNode dimensions = draft.putArray("skuVariantDimensions");
         ObjectNode dimension = dimensions.addObject().put("attributeRef", attributeRef.toString());
         dimension
@@ -601,11 +631,11 @@ class CatalogCategoryOwnerIntegrationTest {
                 List.of(tagRef.toString()),
                 MAPPER.convertValue(
                         detail.path("tagRefs"), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
+        assertEquals(salesUnit.unitRef().toString(), detail.path("salesUnitRef").asText());
         assertEquals(
-                List.of(salesUnitRef.toString()),
-                MAPPER.convertValue(
-                        detail.path("salesUnitRefs"),
-                        new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
+                salesUnit.unitRef().toString(),
+                detail.path("salesUnit").path("unitRef").asText());
+        assertEquals(salesUnit.code(), detail.path("salesUnit").path("code").asText());
         assertEquals(tagRef.toString(), detail.path("tagRefs").get(0).asText());
 
         ObjectNode listRequest = MAPPER.createObjectNode();
@@ -987,17 +1017,16 @@ class CatalogCategoryOwnerIntegrationTest {
                 CatalogOwnerApi.Problem.class,
                 () -> write(
                         "saveOperationsCatalogItem",
-                        orderOptionSave(
-                                skuItemCode,
-                                skuItem.path("version").asLong(),
-                                MAPPER.createArrayNode()
-                                        .add(orderOptionGroup(
-                                                "SIZE",
-                                                "尺寸",
-                                                "SMALL",
-                                                UUID.randomUUID().toString(),
-                                                null,
-                                                null)))));
+                        MAPPER.createObjectNode()
+                                .put("itemCode", skuItemCode)
+                                .putObject("sections")
+                                .put(
+                                        "expectedCatalogVersion",
+                                        skuItem.path("version").asLong())
+                                .putObject("catalogDraft")
+                                .putArray("orderOptions")
+                                .addObject()
+                                .put("groupCode", "SIZE")));
         assertEquals("VALIDATION_ERROR", orderOptionsRejected.code());
         assertEquals(
                 1L,
@@ -1494,49 +1523,25 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "inventory config detail")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
         UUID itemRef = UUID.fromString(created.path("resourceRef").asText());
+        CatalogOwnerApi.UnitDefinitionReadback each =
+                createUnit("INVENTORY-EACH", "Each", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        CatalogOwnerApi.UnitDefinitionReadback box =
+                createUnit("INVENTORY-BOX", "Box", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        CatalogOwnerApi.UnitDefinitionReadback kilogram =
+                createUnit("INVENTORY-KILOGRAM", "Kilogram", CatalogOwnerApi.UnitDimension.WEIGHT, 3);
+        CatalogOwnerApi.UnitDefinitionReadback gram =
+                createUnit("INVENTORY-GRAM", "Gram", CatalogOwnerApi.UnitDimension.WEIGHT, 3);
+        write(
+                "saveOperationsCatalogItem",
+                itemUnitSave(itemCode, created.path("version").asLong(), each, each));
         UUID componentItemRef = UUID.randomUUID();
         UUID itemTargetRef = UUID.randomUUID();
         UUID componentTargetRef = UUID.randomUUID();
-        String itemConfiguration =
-                "{\"mode\":\"INDEPENDENT_STOCK\",\"allowNegative\":false,\"lowStockThreshold\":\"1.5\",\"countingUnit\""
-                        + ":\"BOX\",\"conversionFactor\":\"2\"}";
-        String componentConfiguration =
-                "{\"mode\":\"INDEPENDENT_STOCK\",\"allowNegative\":true,\"lowStockThreshold\":\"3.5\",\"countingUnit\":"
-                        + "\"BOX\",\"conversionFactor\":\"2\"}";
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?, ?,CAST(? AS JSONB),0,1,1,1)",
-                itemTargetRef,
-                SCOPE.toString(),
-                BRAND,
-                itemRef,
-                null,
-                itemCode,
-                null,
-                "EA",
-                itemConfiguration);
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?, ?,CAST(? AS JSONB),0,1,1,1)",
-                componentTargetRef,
-                SCOPE.toString(),
-                BRAND,
-                componentItemRef,
-                null,
-                "COMPONENT-01",
-                null,
-                "KG",
-                componentConfiguration);
-        String bomRows = "[{\"targetRef\":\"" + componentTargetRef
-                + "\",\"quantity\":\"2\",\"unit\":\"KG\",\"lineSign\":\"POSITIVE\"}]";
+        insertStockTargetWithUnits(itemTargetRef, itemRef, null, itemCode, null, each, box, false, "1.5", "2");
+        insertStockTargetWithUnits(
+                componentTargetRef, componentItemRef, null, "COMPONENT-01", null, kilogram, gram, true, "3.5", "2");
+        String bomRows =
+                "[{\"targetRef\":\"" + componentTargetRef + "\",\"quantity\":\"2\",\"lineSign\":\"POSITIVE\"}]";
         jdbc.update(
                 "INSERT INTO "
                         + "inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_re"
@@ -1574,22 +1579,47 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(2, nodes.size());
         JsonNode target = nodes.get(0);
         assertEquals(itemTargetRef.toString(), target.path("targetRef").asText());
-        assertEquals("EA", target.path("consumptionUnit").asText());
+        assertEquals(
+                each.unitRef().toString(),
+                target.path("consumptionUnitSnapshot").path("unitRef").asText());
+        assertEquals(
+                "COUNT",
+                target.path("consumptionUnitSnapshot").path("unitDimension").asText());
+        assertFalse(target.has("consumptionUnit"));
         assertEquals(4, target.path("configuration").size());
         assertFalse(target.path("configuration").has("mode"));
         assertEquals(
                 "1.5", target.path("configuration").path("lowStockThreshold").asText());
-        assertEquals("BOX", target.path("configuration").path("countingUnit").asText());
+        assertEquals(
+                box.unitRef().toString(),
+                target.path("configuration")
+                        .path("countingUnitSnapshot")
+                        .path("unitRef")
+                        .asText());
+        assertFalse(target.path("configuration").has("countingUnit"));
         assertEquals("2", target.path("configuration").path("conversionFactor").asText());
 
         JsonNode component = nodes.get(1);
         assertEquals(componentTargetRef.toString(), component.path("targetRef").asText());
-        assertEquals("KG", component.path("consumptionUnit").asText());
+        assertEquals(
+                kilogram.unitRef().toString(),
+                component.path("consumptionUnitSnapshot").path("unitRef").asText());
+        assertEquals(
+                "WEIGHT",
+                component.path("consumptionUnitSnapshot").path("unitDimension").asText());
+        assertFalse(component.has("unit"));
         assertEquals("2", component.path("quantity").asText());
         assertTrue(component.path("configuration").path("allowNegative").asBoolean());
         assertEquals(
                 "3.5", component.path("configuration").path("lowStockThreshold").asText());
-        assertEquals("BOX", component.path("configuration").path("countingUnit").asText());
+        assertEquals(
+                gram.unitRef().toString(),
+                component
+                        .path("configuration")
+                        .path("countingUnitSnapshot")
+                        .path("unitRef")
+                        .asText());
+        assertFalse(component.path("configuration").has("countingUnit"));
         assertEquals(
                 "2", component.path("configuration").path("conversionFactor").asText());
     }
@@ -1604,24 +1634,15 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "batch category inventory")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
         UUID itemRef = UUID.fromString(created.path("resourceRef").asText());
+        CatalogOwnerApi.UnitDefinitionReadback each =
+                createUnit("BATCH-INVENTORY-EACH", "Each", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        CatalogOwnerApi.UnitDefinitionReadback box =
+                createUnit("BATCH-INVENTORY-BOX", "Box", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        JsonNode withUnits = write(
+                "saveOperationsCatalogItem",
+                itemUnitSave(itemCode, created.path("version").asLong(), each, each));
         UUID targetRef = UUID.randomUUID();
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?, ?,CAST(? AS JSONB),0,1,1,1)",
-                targetRef,
-                SCOPE.toString(),
-                BRAND,
-                itemRef,
-                null,
-                itemCode,
-                null,
-                "EA",
-                "{\"mode\":\"INDEPENDENT_STOCK\",\"allowNegative\":false,\"lowStockThreshold\":\"2\",\"countingUnit\":"
-                        + "\"BOX\",\"conversionFactor\":\"1.5\"}");
+        insertStockTargetWithUnits(targetRef, itemRef, null, itemCode, null, each, box, false, "2", "1.5");
         CatalogInventoryCoordinator coordinator = coordinatorForSave();
         JsonNode before = coordinator
                 .readCatalogItem(SCOPE.toString(), BRAND, itemCode, MAPPER.createObjectNode(), "batch-category-before")
@@ -1633,10 +1654,11 @@ class CatalogCategoryOwnerIntegrationTest {
 
         ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
         ObjectNode sections = request.putObject("sections")
-                .put("expectedCatalogVersion", created.path("version").asLong());
+                .put("expectedCatalogVersion", withUnits.path("version").asLong());
         sections.putArray("expectedInventoryVersions");
         ObjectNode draft = sections.putObject("catalogDraft");
         draft.put("name", "batch category inventory").put("shapeKey", "STANDARD_SALE_COUNTED");
+        putItemUnitRefs(draft, each, each);
         draft.putObject("attributes");
         draft.putArray("images");
         draft.putArray("productionTagRefs");
@@ -2221,7 +2243,7 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
-    void dictionaryReferenceSnapshotKeepsPerEntryVoidAvailability() {
+    void unitDefinitionSnapshotsAndDictionaryReferencesHaveIndependentLifecycleRules() {
         write(
                 "createOperationsCatalogDictionaryEntry",
                 MAPPER.createObjectNode()
@@ -2234,18 +2256,10 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("dictionaryKind", "TAG")
                         .put("code", "SNAPSHOT-FREE")
                         .put("name", "Snapshot free"));
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "SALES_UNIT")
-                        .put("code", "SNAPSHOT-UNIT-USED")
-                        .put("name", "Snapshot unit used"));
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "SALES_UNIT")
-                        .put("code", "SNAPSHOT-UNIT-FREE")
-                        .put("name", "Snapshot unit free"));
+        CatalogOwnerApi.UnitDefinitionReadback usedUnit =
+                createUnit("SNAPSHOT-UNIT-USED", "Snapshot unit used", CatalogOwnerApi.UnitDimension.COUNT, 0);
+        CatalogOwnerApi.UnitDefinitionReadback freeUnit =
+                createUnit("SNAPSHOT-UNIT-FREE", "Snapshot unit free", CatalogOwnerApi.UnitDimension.COUNT, 0);
         JsonNode before = service.readDictionary(
                         SCOPE.toString(),
                         BRAND,
@@ -2254,19 +2268,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         "dictionary-snapshot-before")
                 .path("data")
                 .path("entries");
-        JsonNode unitsBefore = service.readDictionary(
-                        SCOPE.toString(),
-                        BRAND,
-                        "SALES_UNIT",
-                        MAPPER.createObjectNode().put("dictionaryKind", "SALES_UNIT"),
-                        "dictionary-unit-snapshot-before")
-                .path("data")
-                .path("entries");
         String usedRef =
                 dictionaryEntry(before, "SNAPSHOT-USED").path("entryRef").asText();
-        String usedUnitRef = dictionaryEntry(unitsBefore, "SNAPSHOT-UNIT-USED")
-                .path("entryRef")
-                .asText();
         JsonNode item = write(
                 "createOperationsCatalogItem",
                 MAPPER.createObjectNode()
@@ -2278,8 +2281,18 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("expectedCatalogVersion", item.path("version").asLong())
                 .putObject("catalogDraft");
         draft.putArray("tagRefs").add(usedRef);
-        draft.putArray("salesUnitRefs").add(usedUnitRef);
+        draft.put("salesUnitRef", usedUnit.unitRef().toString());
         write("saveOperationsCatalogItem", save);
+
+        JsonNode detail = service.readItem(SCOPE.toString(), BRAND, "SNAPSHOT-ITEM", "unit-snapshot-detail")
+                .path("data")
+                .path("item");
+        assertEquals(usedUnit.unitRef().toString(), detail.path("salesUnitRef").asText());
+        assertEquals(
+                usedUnit.unitRef().toString(),
+                detail.path("salesUnit").path("unitRef").asText());
+        assertEquals(usedUnit.code(), detail.path("salesUnit").path("code").asText());
+        assertEquals("ENABLED", detail.path("salesUnit").path("status").asText());
 
         JsonNode entries = service.readDictionary(
                         SCOPE.toString(),
@@ -2289,27 +2302,11 @@ class CatalogCategoryOwnerIntegrationTest {
                         "dictionary-snapshot-after")
                 .path("data")
                 .path("entries");
-        JsonNode units = service.readDictionary(
-                        SCOPE.toString(),
-                        BRAND,
-                        "SALES_UNIT",
-                        MAPPER.createObjectNode().put("dictionaryKind", "SALES_UNIT"),
-                        "dictionary-unit-snapshot-after")
-                .path("data")
-                .path("entries");
         assertTrue(!dictionaryEntry(entries, "SNAPSHOT-USED")
                 .path("voidAvailability")
                 .path("canVoid")
                 .asBoolean());
         assertTrue(dictionaryEntry(entries, "SNAPSHOT-FREE")
-                .path("voidAvailability")
-                .path("canVoid")
-                .asBoolean());
-        assertTrue(!dictionaryEntry(units, "SNAPSHOT-UNIT-USED")
-                .path("voidAvailability")
-                .path("canVoid")
-                .asBoolean());
-        assertTrue(dictionaryEntry(units, "SNAPSHOT-UNIT-FREE")
                 .path("voidAvailability")
                 .path("canVoid")
                 .asBoolean());
@@ -2323,16 +2320,49 @@ class CatalogCategoryOwnerIntegrationTest {
                                 .put("expectedVersion", 1)
                                 .put("targetStatus", "VOIDED")));
         assertEquals("REFERENCE_BLOCKS_VOID", blocked.code(), blocked.getMessage());
+        CatalogOwnerApi.UnitDefinitionReadback disabledUnit = service.disableUnitDefinition(
+                context("disableOperationsCatalogUnit", SCOPE, "disable-snapshot-unit"),
+                new CatalogOwnerApi.UnitDefinitionDisableCommand(usedUnit.unitRef(), usedUnit.version()),
+                "disable-snapshot-unit-key");
+        assertEquals("DISABLED", disabledUnit.status());
+        JsonNode disabledDetail = service.readItem(SCOPE.toString(), BRAND, "SNAPSHOT-ITEM", "unit-snapshot-disabled")
+                .path("data")
+                .path("item");
+        assertEquals(
+                usedUnit.unitRef().toString(),
+                disabledDetail.path("salesUnitRef").asText());
+        assertEquals(
+                usedUnit.code(), disabledDetail.path("salesUnit").path("code").asText());
+        assertEquals("DISABLED", disabledDetail.path("salesUnit").path("status").asText());
+
+        CatalogOwnerApi.UnitDefinitionListReadback activeUnits =
+                service.listUnitDefinitions(SCOPE.toString(), BRAND, false, null);
+        assertTrue(activeUnits.units().stream()
+                .noneMatch(unit -> usedUnit.unitRef().equals(unit.unitRef())));
+        CatalogOwnerApi.UnitDefinitionListReadback allUnits =
+                service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null);
+        assertEquals(
+                "DISABLED",
+                allUnits.units().stream()
+                        .filter(unit -> usedUnit.unitRef().equals(unit.unitRef()))
+                        .findFirst()
+                        .orElseThrow()
+                        .status());
+
         CatalogOwnerApi.Problem unitBlocked = assertThrows(
                 CatalogOwnerApi.Problem.class,
-                () -> write(
-                        "transitionOperationsCatalogDictionaryEntryStatus",
-                        MAPPER.createObjectNode()
-                                .put("dictionaryKind", "SALES_UNIT")
-                                .put("entryCode", "SNAPSHOT-UNIT-USED")
-                                .put("expectedVersion", 1)
-                                .put("targetStatus", "VOIDED")));
-        assertEquals("REFERENCE_BLOCKS_VOID", unitBlocked.code(), unitBlocked.getMessage());
+                () -> service.deleteUnitDefinition(
+                        context("deleteOperationsCatalogUnit", SCOPE, "delete-snapshot-unit"),
+                        new CatalogOwnerApi.UnitDefinitionDeleteCommand(usedUnit.unitRef(), disabledUnit.version()),
+                        "delete-snapshot-unit-key"));
+        assertEquals("CATALOG_UNIT_IN_USE", unitBlocked.code(), unitBlocked.getMessage());
+
+        service.deleteUnitDefinition(
+                context("deleteOperationsCatalogUnit", SCOPE, "delete-free-snapshot-unit"),
+                new CatalogOwnerApi.UnitDefinitionDeleteCommand(freeUnit.unitRef(), freeUnit.version()),
+                "delete-free-snapshot-unit-key");
+        assertTrue(service.listUnitDefinitions(SCOPE.toString(), BRAND, true, null).units().stream()
+                .noneMatch(unit -> freeUnit.unitRef().equals(unit.unitRef())));
     }
 
     @Test
@@ -2509,8 +2539,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 "skuVariantDimensions",
                 "images",
                 "productionTagRefs",
-                "tagRefs",
-                "salesUnitRefs")) {
+                "tagRefs")) {
             assertFalse(
                     jdbc.queryForObject(
                             "SELECT jsonb_exists(sections, ?) FROM catalog.catalog_item WHERE data_node_ref=? AND "
@@ -2803,6 +2832,47 @@ class CatalogCategoryOwnerIntegrationTest {
     }
 
     @Test
+    void dictionaryCommandsReturnThePersistedOpaqueEntryRefWithoutASecondRead() {
+        String code = generatedCatalogCode("DICT-READBACK");
+        JsonNode created = write(
+                "createOperationsCatalogDictionaryEntry",
+                MAPPER.createObjectNode()
+                        .put("dictionaryKind", "TAG")
+                        .put("code", code)
+                        .put("name", "回读标签"));
+
+        UUID entryRef = UUID.fromString(created.path("entryRef").asText());
+        assertEquals(
+                entryRef,
+                jdbc.queryForObject(
+                        "SELECT entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? "
+                                + "AND dictionary_kind=? AND code=?",
+                        UUID.class,
+                        SCOPE.toString(),
+                        BRAND,
+                        "TAG",
+                        code));
+
+        JsonNode updated = write(
+                "updateOperationsCatalogDictionaryEntry",
+                MAPPER.createObjectNode()
+                        .put("dictionaryKind", "TAG")
+                        .put("entryCode", code)
+                        .put("expectedVersion", created.path("version").asLong())
+                        .put("name", "回读标签已更新"));
+        assertEquals(entryRef.toString(), updated.path("entryRef").asText());
+
+        JsonNode transitioned = write(
+                "transitionOperationsCatalogDictionaryEntryStatus",
+                MAPPER.createObjectNode()
+                        .put("dictionaryKind", "TAG")
+                        .put("entryCode", code)
+                        .put("expectedVersion", updated.path("version").asLong())
+                        .put("targetStatus", "DISABLED"));
+        assertEquals(entryRef.toString(), transitioned.path("entryRef").asText());
+    }
+
+    @Test
     void orderedMediaRelationsOwnImageAndSkuMediaFactsWithoutJsonDuplicates() {
         String itemCode = generatedCatalogCode("ORDERED-MEDIA");
         JsonNode created = write(
@@ -2833,6 +2903,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 List.of(itemFirst.toString(), itemSecond.toString()),
                 MAPPER.convertValue(
                         detail.path("images"), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}));
+        assertEquals(itemFirst.toString(), detail.path("primaryImageAssetRef").asText());
         assertEquals(
                 List.of(skuFirst.toString(), skuSecond.toString()),
                 MAPPER.convertValue(
@@ -3590,432 +3661,6 @@ class CatalogCategoryOwnerIntegrationTest {
         return request;
     }
 
-    @Test
-    void orderOptionGroupsKeepNestedDictionaryOwnershipAcrossReorderAndDeletion() {
-        List<String> codes = List.of("OPT-SPICY", "OPT-MILD", "OPT-COLD", "OPT-HOT");
-        for (String code : codes)
-            write(
-                    "createOperationsCatalogDictionaryEntry",
-                    MAPPER.createObjectNode()
-                            .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                            .put("code", code)
-                            .put("name", code));
-        JsonNode entries = service.readDictionary(
-                        SCOPE.toString(),
-                        BRAND,
-                        "ORDER_OPTION_VALUE",
-                        MAPPER.createObjectNode(),
-                        "order-option-dictionaries")
-                .path("data")
-                .path("entries");
-        String spicy = dictionaryEntry(entries, "OPT-SPICY").path("entryRef").asText();
-        String mild = dictionaryEntry(entries, "OPT-MILD").path("entryRef").asText();
-        String cold = dictionaryEntry(entries, "OPT-COLD").path("entryRef").asText();
-        String hot = dictionaryEntry(entries, "OPT-HOT").path("entryRef").asText();
-        String itemCode = generatedCatalogCode("ORDER-OPTION");
-        JsonNode item = write(
-                "createOperationsCatalogItem",
-                MAPPER.createObjectNode()
-                        .put("code", itemCode)
-                        .put("name", "nested options")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        ArrayNode groups = MAPPER.createArrayNode();
-        groups.add(orderOptionGroup("TASTE", "口味", "SPICY", spicy, "MILD", mild));
-        groups.add(orderOptionGroup("TEMPERATURE", "温度", "COLD", cold, "HOT", hot));
-        assertEquals(
-                2L,
-                write(
-                                "saveOperationsCatalogItem",
-                                orderOptionSave(itemCode, item.path("version").asLong(), groups))
-                        .path("version")
-                        .asLong());
-        List<UUID> groupsBefore = jdbc.query(
-                "SELECT order_option_group_ref FROM catalog.catalog_order_option_group group_row JOIN "
-                        + "catalog.catalog_item item ON item.item_ref=group_row.item_ref WHERE item.data_node_ref=? "
-                        + "AND "
-                        + "item.brand_ref=? AND item.code=? ORDER BY group_row.group_code",
-                (rows, index) -> rows.getObject(1, UUID.class),
-                SCOPE.toString(),
-                BRAND,
-                itemCode);
-        List<UUID> valuesBefore = jdbc.query(
-                "SELECT value_row.order_option_value_ref FROM catalog.catalog_order_option_value value_row JOIN "
-                        + "catalog.catalog_order_option_group group_row ON "
-                        + "group_row.order_option_group_ref=value_row.order_option_group_ref JOIN catalog.catalog_item "
-                        + "item ON item.item_ref=group_row.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND "
-                        + "item.code=? ORDER BY group_row.group_code,value_row.value_code",
-                (rows, index) -> rows.getObject(1, UUID.class),
-                SCOPE.toString(),
-                BRAND,
-                itemCode);
-
-        ArrayNode reordered = MAPPER.createArrayNode();
-        reordered.add(groups.get(1).deepCopy());
-        reordered.add(groups.get(0).deepCopy());
-        assertEquals(
-                3L,
-                write("saveOperationsCatalogItem", orderOptionSave(itemCode, 2L, reordered))
-                        .path("version")
-                        .asLong());
-        JsonNode afterReorder = service.readItem(SCOPE.toString(), BRAND, itemCode, "order-option-reordered")
-                .path("data")
-                .path("item")
-                .path("orderOptions");
-        assertEquals("TEMPERATURE", afterReorder.get(0).path("groupCode").asText());
-        assertEquals(
-                cold,
-                afterReorder
-                        .get(0)
-                        .path("values")
-                        .get(0)
-                        .path("attributeValueRef")
-                        .asText());
-        assertEquals(
-                spicy,
-                afterReorder
-                        .get(1)
-                        .path("values")
-                        .get(0)
-                        .path("attributeValueRef")
-                        .asText());
-        assertEquals(
-                groupsBefore,
-                jdbc.query(
-                        "SELECT order_option_group_ref FROM catalog.catalog_order_option_group group_row JOIN "
-                                + "catalog.catalog_item item ON item.item_ref=group_row.item_ref WHERE "
-                                + "item.data_node_ref=? AND item.brand_ref=? AND item.code=? ORDER BY "
-                                + "group_row.group_code",
-                        (rows, index) -> rows.getObject(1, UUID.class),
-                        SCOPE.toString(),
-                        BRAND,
-                        itemCode));
-        assertEquals(
-                valuesBefore,
-                jdbc.query(
-                        "SELECT value_row.order_option_value_ref FROM catalog.catalog_order_option_value value_row "
-                                + "JOIN catalog.catalog_order_option_group group_row ON "
-                                + "group_row.order_option_group_ref=value_row.order_option_group_ref JOIN "
-                                + "catalog.catalog_item item ON item.item_ref=group_row.item_ref WHERE "
-                                + "item.data_node_ref=? AND item.brand_ref=? AND item.code=? ORDER BY "
-                                + "group_row.group_code,value_row.value_code",
-                        (rows, index) -> rows.getObject(1, UUID.class),
-                        SCOPE.toString(),
-                        BRAND,
-                        itemCode));
-
-        ArrayNode retained = MAPPER.createArrayNode().add(reordered.get(0).deepCopy());
-        assertEquals(
-                4L,
-                write("saveOperationsCatalogItem", orderOptionSave(itemCode, 3L, retained))
-                        .path("version")
-                        .asLong());
-        JsonNode afterDeletion = service.readItem(SCOPE.toString(), BRAND, itemCode, "order-option-deleted")
-                .path("data")
-                .path("item")
-                .path("orderOptions");
-        assertEquals(1, afterDeletion.size());
-        assertEquals("TEMPERATURE", afterDeletion.get(0).path("groupCode").asText());
-        assertEquals(2, afterDeletion.get(0).path("values").size());
-        assertEquals(
-                1,
-                jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM catalog.catalog_order_option_group group_row JOIN catalog.catalog_item "
-                                + "item ON item.item_ref=group_row.item_ref WHERE item.data_node_ref=? AND "
-                                + "item.brand_ref=? AND item.code=?",
-                        Integer.class,
-                        SCOPE.toString(),
-                        BRAND,
-                        itemCode));
-        assertFalse(jdbc.queryForObject(
-                "SELECT jsonb_exists(sections, 'orderOptions') FROM catalog.catalog_item WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND code=?",
-                Boolean.class,
-                SCOPE.toString(),
-                BRAND,
-                itemCode));
-    }
-
-    @Test
-    void dictionaryVoidNamesTheOrderOptionGroupAndValueThatStillReferenceIt() {
-        String dictionaryCode = generatedCatalogCode("OPTION-GUARD");
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                        .put("code", dictionaryCode)
-                        .put("name", "守卫值"));
-        String valueRef = dictionaryEntry(
-                        service.readDictionary(
-                                        SCOPE.toString(),
-                                        BRAND,
-                                        "ORDER_OPTION_VALUE",
-                                        MAPPER.createObjectNode(),
-                                        "order-option-guard-dictionary")
-                                .path("data")
-                                .path("entries"),
-                        dictionaryCode)
-                .path("entryRef")
-                .asText();
-        String itemCode = generatedCatalogCode("OPTION-GUARD-ITEM");
-        JsonNode item = write(
-                "createOperationsCatalogItem",
-                MAPPER.createObjectNode()
-                        .put("code", itemCode)
-                        .put("name", "guard item")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        ArrayNode groups =
-                MAPPER.createArrayNode().add(orderOptionGroup("SAUCE", "酱料", "GUARD-VALUE", valueRef, null, null));
-        write(
-                "saveOperationsCatalogItem",
-                orderOptionSave(itemCode, item.path("version").asLong(), groups));
-
-        CatalogOwnerApi.Problem blocked = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> write(
-                        "transitionOperationsCatalogDictionaryEntryStatus",
-                        MAPPER.createObjectNode()
-                                .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                                .put("entryCode", dictionaryCode)
-                                .put("expectedVersion", 1)
-                                .put("targetStatus", "VOIDED")));
-        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
-        assertTrue(blocked.getMessage().contains(itemCode));
-        assertTrue(blocked.getMessage().contains("SAUCE"));
-        assertTrue(blocked.getMessage().contains("GUARD-VALUE"));
-    }
-
-    /**
-     * An option value can be referenced solely by Inventory's BOM owner. Catalog must ask that owner before voiding it;
-     * catalog-local JSON/relations deliberately contain no such row.
-     */
-    @Test
-    void dictionaryVoidRejectsAnOptionValueStillReferencedOnlyByInventoryBom() {
-        String dictionaryCode = generatedCatalogCode("BOM-OPTION-GUARD");
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                        .put("code", dictionaryCode)
-                        .put("name", "BOM 守卫值"));
-        UUID optionValueRef = UUID.fromString(dictionaryEntry(
-                        service.readDictionary(
-                                        SCOPE.toString(),
-                                        BRAND,
-                                        "ORDER_OPTION_VALUE",
-                                        MAPPER.createObjectNode(),
-                                        "bom-option-guard-dictionary")
-                                .path("data")
-                                .path("entries"),
-                        dictionaryCode)
-                .path("entryRef")
-                .asText());
-
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_re"
-                        + "f,it"
-                        + "em_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,1,'[]'::jsonb,1)",
-                UUID.randomUUID(),
-                SCOPE.toString(),
-                BRAND,
-                UUID.randomUUID(),
-                null,
-                optionValueRef,
-                "BOM-OWNER",
-                null,
-                dictionaryCode);
-
-        CatalogOwnerApi.Problem blocked = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> write(
-                        "transitionOperationsCatalogDictionaryEntryStatus",
-                        MAPPER.createObjectNode()
-                                .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                                .put("entryCode", dictionaryCode)
-                                .put("expectedVersion", 1)
-                                .put("targetStatus", "VOIDED")));
-        assertEquals("REFERENCE_BLOCKS_VOID", blocked.code());
-        assertTrue(blocked.getMessage().contains("BOM"));
-        assertFalse(blocked.getMessage().contains("stock_bom"));
-        assertFalse(blocked.getMessage().contains("option_value_ref"));
-        assertEquals(
-                "ENABLED",
-                jdbc.queryForObject(
-                        "SELECT status FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                                + "dictionary_kind=? AND code=?",
-                        String.class,
-                        SCOPE.toString(),
-                        BRAND,
-                        "ORDER_OPTION_VALUE",
-                        dictionaryCode));
-    }
-
-    @Test
-    void localAndBrandCopyCarryOrderOptionRelationsWithoutRestoringJson() {
-        String localDictionaryCode = generatedCatalogCode("LOCAL-OPTION-DICTIONARY");
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                        .put("code", localDictionaryCode)
-                        .put("name", "本地选项"));
-        String localValueRef = dictionaryEntry(
-                        service.readDictionary(
-                                        SCOPE.toString(),
-                                        BRAND,
-                                        "ORDER_OPTION_VALUE",
-                                        MAPPER.createObjectNode(),
-                                        "local-option-dictionary")
-                                .path("data")
-                                .path("entries"),
-                        localDictionaryCode)
-                .path("entryRef")
-                .asText();
-        String localSourceCode = generatedCatalogCode("LOCAL-OPTION-SOURCE");
-        String localTargetCode = generatedCatalogCode("LOCAL-OPTION-TARGET");
-        JsonNode localSource = write(
-                "createOperationsCatalogItem",
-                MAPPER.createObjectNode()
-                        .put("code", localSourceCode)
-                        .put("name", "local source")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        JsonNode localTarget = write(
-                "createOperationsCatalogItem",
-                MAPPER.createObjectNode()
-                        .put("code", localTargetCode)
-                        .put("name", "local target")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        write(
-                "saveOperationsCatalogItem",
-                orderOptionSave(
-                        localSourceCode,
-                        localSource.path("version").asLong(),
-                        MAPPER.createArrayNode()
-                                .add(orderOptionGroup("LOCAL", "本地", "LOCAL-VALUE", localValueRef, null, null))));
-        ObjectNode localPreflightRequest =
-                MAPPER.createObjectNode().put("sourceItemCode", localSourceCode).put("targetItemCode", localTargetCode);
-        localPreflightRequest.putArray("selectedSections").add("ORDER_OPTIONS");
-        JsonNode localPreflight = service.preflightCopy(
-                context("preflightOperationsLocalCatalogCopy", SCOPE, "local-option-preflight"), localPreflightRequest);
-        ObjectNode localExecute = localPreflightRequest
-                .deepCopy()
-                .put("preflightDigest", localPreflight.path("preflightDigest").asText())
-                .put("expectedSourceVersion", 2L)
-                .put("expectedTargetVersion", localTarget.path("version").asLong());
-        localExecute.set("compatibilityDispositions", confirmedCompatibilityDispositions(localPreflight));
-        service.copy(
-                context("executeOperationsLocalCatalogCopy", SCOPE, "local-option-execute"),
-                localExecute,
-                "local-option-copy-key");
-        assertEquals(
-                localValueRef,
-                service.readItem(SCOPE.toString(), BRAND, localTargetCode, "local-option-readback")
-                        .path("data")
-                        .path("item")
-                        .path("orderOptions")
-                        .get(0)
-                        .path("values")
-                        .get(0)
-                        .path("attributeValueRef")
-                        .asText());
-        assertFalse(jdbc.queryForObject(
-                "SELECT jsonb_exists(sections, 'orderOptions') FROM catalog.catalog_item WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND code=?",
-                Boolean.class,
-                SCOPE.toString(),
-                BRAND,
-                localTargetCode));
-
-        String brandDictionaryCode = generatedCatalogCode("BRAND-OPTION-DICTIONARY");
-        write(
-                "createOperationsCatalogDictionaryEntry",
-                MAPPER.createObjectNode()
-                        .put("dictionaryKind", "ORDER_OPTION_VALUE")
-                        .put("code", brandDictionaryCode)
-                        .put("name", "跨品牌选项"));
-        String brandValueRef = dictionaryEntry(
-                        service.readDictionary(
-                                        SCOPE.toString(),
-                                        BRAND,
-                                        "ORDER_OPTION_VALUE",
-                                        MAPPER.createObjectNode(),
-                                        "brand-option-dictionary")
-                                .path("data")
-                                .path("entries"),
-                        brandDictionaryCode)
-                .path("entryRef")
-                .asText();
-        String brandSourceCode = generatedCatalogCode("BRAND-OPTION-SOURCE");
-        JsonNode brandSource = write(
-                "createOperationsCatalogItem",
-                MAPPER.createObjectNode()
-                        .put("code", brandSourceCode)
-                        .put("name", "brand source")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
-        write(
-                "saveOperationsCatalogItem",
-                orderOptionSave(
-                        brandSourceCode,
-                        brandSource.path("version").asLong(),
-                        MAPPER.createArrayNode()
-                                .add(orderOptionGroup(
-                                        "BRAND",
-                                        "跨品牌",
-                                        "BRAND-VALUE",
-                                        brandValueRef,
-                                        null,
-                                        /* format-wrap */
-                                        null))));
-        ObjectNode brandRequest = MAPPER.createObjectNode();
-        brandRequest.putArray("selectedItemCodes").add(brandSourceCode);
-        JsonNode brandPreflight = service.preflightCopy(
-                copyContext("preflightOperationsBrandCatalogCopy", "brand-option-preflight"), brandRequest);
-        ObjectNode brandExecute = brandRequest
-                .deepCopy()
-                .put(
-                        "expectedSourceVersion",
-                        brandPreflight.path("sourceVersion").asLong())
-                .put(
-                        "expectedTargetVersion",
-                        brandPreflight.path("targetVersion").asLong())
-                .put("preflightDigest", brandPreflight.path("preflightDigest").asText());
-        brandExecute.set(
-                "referenceMappings", brandPreflight.path("referenceMappings").deepCopy());
-        brandExecute.set("compatibilityDispositions", confirmedCompatibilityDispositions(brandPreflight));
-        service.copy(
-                copyContext("executeOperationsBrandCatalogCopy", "brand-option-execute"),
-                brandExecute,
-                "brand-option-copy-key");
-        JsonNode copiedOption = service.readItem(
-                        COPY_TARGET_SCOPE.toString(), BRAND, brandSourceCode, "brand-option-readback")
-                .path("data")
-                .path("item")
-                .path("orderOptions")
-                .get(0)
-                .path("values")
-                .get(0);
-        assertEquals("BRAND-VALUE", copiedOption.path("code").asText());
-        assertNotEquals(brandValueRef, copiedOption.path("attributeValueRef").asText());
-        assertFalse(jdbc.queryForObject(
-                "SELECT jsonb_exists(sections, 'orderOptions') FROM catalog.catalog_item WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND code=?",
-                Boolean.class,
-                COPY_TARGET_SCOPE.toString(),
-                BRAND,
-                brandSourceCode));
-    }
-
-    private static ObjectNode orderOptionSave(String itemCode, long expectedVersion, ArrayNode groups) {
-        ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
-        request.putObject("sections")
-                .put("expectedCatalogVersion", expectedVersion)
-                .putObject("catalogDraft")
-                .set("orderOptions", groups.deepCopy());
-        return request;
-    }
-
     private static ArrayNode confirmedCompatibilityDispositions(JsonNode preflight) {
         ArrayNode result = MAPPER.createArrayNode();
         preflight.path("compatibilityResults").forEach(row -> {
@@ -4026,35 +3671,6 @@ class CatalogCategoryOwnerIntegrationTest {
             }
         });
         return result;
-    }
-
-    private static ObjectNode orderOptionGroup(
-            String groupCode,
-            String groupName,
-            String firstCode,
-            String firstValueRef,
-            String secondCode,
-            String secondValueRef) {
-        ObjectNode group = MAPPER.createObjectNode()
-                .put("groupCode", groupCode)
-                .put("groupName", groupName)
-                .put("selectionMode", "SINGLE")
-                .put("required", false);
-        ArrayNode values = group.putArray("values");
-        values.addObject()
-                .put("code", firstCode)
-                .put("name", firstCode)
-                .put("attributeValueRef", firstValueRef)
-                .put("default", false)
-                .putArray("productionEffects");
-        if (secondCode != null)
-            values.addObject()
-                    .put("code", secondCode)
-                    .put("name", secondCode)
-                    .put("attributeValueRef", secondValueRef)
-                    .put("default", false)
-                    .putArray("productionEffects");
-        return group;
     }
 
     private static ObjectNode compositeSave(
@@ -4145,172 +3761,6 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("attributeValueRef", valueRef);
     }
 
-    /* Legacy operation-id copy bridge coverage retired with the bridge itself. */
-    /* @Test void copyPreflightAndExecuteUseOpaqueReferenceMappingsAndTargetReadLabels() {
-        UUID sourceCategory = UUID.randomUUID(), targetCategory = UUID.randomUUID();
-        UUID sourceValue = UUID.randomUUID(), targetValue = UUID.randomUUID();
-        UUID sourceItem = UUID.randomUUID(), targetItem = UUID.randomUUID();
-        UUID sourceBomComponent = UUID.randomUUID(), targetBomComponent = UUID.randomUUID();
-        UUID sourceSku = UUID.randomUUID(), targetSku = UUID.randomUUID();
-        UUID sourceTag = UUID.randomUUID(), targetTag = UUID.randomUUID();
-        insertCategory(SCOPE, sourceCategory, "COPY-CATEGORY");
-        insertCategory(COPY_TARGET_SCOPE, targetCategory, "COPY-CATEGORY");
-        insertDictionary(SCOPE, sourceValue, "ORDER_OPTION_VALUE", "COPY-OPTION");
-        insertDictionary(COPY_TARGET_SCOPE, targetValue, "ORDER_OPTION_VALUE", "COPY-OPTION");
-        insertProductionTag(SCOPE, sourceTag, "COPY-TAG");
-        insertProductionTag(COPY_TARGET_SCOPE, targetTag, "COPY-TAG");
-        insertItem(
-            SCOPE,
-            sourceBomComponent,
-            UUID.randomUUID(),
-            sourceCategory,
-            sourceValue,
-            sourceTag,
-            "COPY-BOM-COMPONENT");
-        insertItem(
-            COPY_TARGET_SCOPE,
-            targetBomComponent,
-            UUID.randomUUID(),
-            targetCategory,
-            targetValue,
-            targetTag,
-            "COPY-BOM-COMPONENT");
-        // itemCode is an operator-facing label only.  Its deliberately stale
-        // value proves closure follows inventoryBom.itemRef, not its code.
-        insertItem(
-            SCOPE,
-            sourceItem,
-            sourceSku,
-            sourceCategory,
-            sourceValue,
-            sourceTag,
-            "COPY-ITEM",
-            sourceBomComponent);
-        insertItem(
-            COPY_TARGET_SCOPE,
-            targetItem,
-            targetSku,
-            targetCategory,
-            targetValue,
-            targetTag,
-            "COPY-ITEM",
-            targetBomComponent);
-
-        ObjectNode selection = MAPPER.createObjectNode(); selection.putArray("selectedItemCodes").add("COPY-ITEM");
-        JsonNode preflight = service.copy(
-            "preflightOperationsBrandCatalogCopy",
-            SCOPE.toString(),
-            COPY_TARGET_SCOPE.toString(),
-            BRAND,
-            selection,
-            "catalog-copy-preflight",
-            null,
-            WORKSPACE,
-            "catalog-copy-test",
-            "STORE",
-            copyGrant());
-        // Brand copy is an owner-to-coordinator preflight and deliberately
-        // returns the bare data object; the edge later wraps the merged result.
-        JsonNode data = preflight;
-        JsonNode mappings = data.path("referenceMappings");
-        assertMapping(mappings, "CATALOG_ITEM", sourceItem, targetItem, "COPY-ITEM", null, null);
-        assertMapping(
-            mappings,
-            "CATALOG_ITEM",
-            sourceBomComponent,
-            targetBomComponent,
-            "COPY-BOM-COMPONENT",
-            null,
-            null);
-        assertMapping(mappings, "PRODUCT_SKU", sourceSku, targetSku, null, "COPY-SKU", null);
-        assertMapping(mappings, "SKU_ATTRIBUTE_VALUE", sourceValue, targetValue, null, null, "COPY-OPTION");
-
-        ObjectNode productionRequest = MAPPER.createObjectNode();
-        productionRequest.putArray("productionTagRefs").add(sourceTag.toString());
-        JsonNode productionPreflight = production.preflightCopy(
-                SCOPE.toString(),
-                COPY_TARGET_SCOPE.toString(),
-                BRAND,
-                productionRequest,
-                WORKSPACE,
-                "catalog-copy-test",
-                "STORE",
-                copyGrant());
-        assertMapping(
-            productionPreflight.path("referenceMappings"),
-            "PRODUCTION_TAG",
-            sourceTag,
-            targetTag,
-            "COPY-TAG",
-            null,
-            null);
-
-        ObjectNode execute = selection.deepCopy();
-        execute.put("expectedSourceVersion", data.path("sourceVersion").asLong());
-        execute.put("expectedTargetVersion", data.path("targetVersion").asLong());
-        execute.put("preflightDigest", data.path("preflightDigest").asText());
-        ArrayNode allMappings = execute.putArray("referenceMappings");
-        mappings.forEach(value -> allMappings.add(value.deepCopy()));
-        productionPreflight.path("referenceMappings").forEach(value -> allMappings.add(value.deepCopy()));
-        JsonNode executed = service.copy(
-            "executeOperationsBrandCatalogCopy",
-            SCOPE.toString(),
-            COPY_TARGET_SCOPE.toString(),
-            BRAND,
-            execute,
-            "catalog-copy-execute",
-            "catalog-copy-receipt",
-            WORKSPACE,
-            "catalog-copy-test",
-            "STORE",
-            copyGrant());
-        JsonNode executionMappings = executed.path("data").path("referenceMappings");
-        assertMapping(executionMappings, "CATALOG_ITEM", sourceItem, targetItem, "COPY-ITEM", null, null);
-        assertMapping(
-            executionMappings,
-            "CATALOG_ITEM",
-            sourceBomComponent,
-            targetBomComponent,
-            "COPY-BOM-COMPONENT",
-            null,
-            null);
-        assertMapping(executionMappings, "PRODUCT_SKU", sourceSku, targetSku, null, "COPY-SKU", null);
-        assertMapping(executionMappings, "SKU_ATTRIBUTE_VALUE", sourceValue, targetValue, null, null, "COPY-OPTION");
-        assertMapping(executionMappings, "PRODUCTION_TAG", sourceTag, targetTag, "COPY-TAG", null, null);
-
-        // A receipt is not a historic authorization to return stale copy data:
-        // changing target facts after the first success rejects the same key.
-        jdbc.update("UPDATE catalog.catalog_item SET version=version+1 WHERE item_ref=?", targetItem);
-        CatalogOwnerApi.Problem catalogReplay = assertThrows(CatalogOwnerApi.Problem.class, () -> service.copy(
-            "executeOperationsBrandCatalogCopy", SCOPE.toString(), COPY_TARGET_SCOPE.toString(), BRAND, execute,
-            "catalog-copy-replay", "catalog-copy-receipt", WORKSPACE, "catalog-copy-test", "STORE", copyGrant()));
-        assertEquals("STALE_COPY_PREFLIGHT", catalogReplay.code());
-
-        productionRequest.put("productionPreflightDigest", productionPreflight.path("digest").asText());
-        production.copy(SCOPE.toString(), COPY_TARGET_SCOPE.toString(), BRAND, productionRequest,
-            "production-copy-execute", "production-copy-receipt", WORKSPACE, "catalog-copy-test", "STORE", copyGrant());
-        jdbc.update(
-            "UPDATE fulfillment_production.production_tag_definition SET version=version+1 WHERE tag_ref=?",
-            targetTag);
-        ProductionTagOwnerApi.Problem productionReplay =
-                assertThrows(
-                        ProductionTagOwnerApi.Problem.class,
-                        () ->
-                                production.copy(
-                                        SCOPE.toString(),
-                                        COPY_TARGET_SCOPE.toString(),
-                                        BRAND,
-                                        productionRequest,
-                                        "production-copy-replay",
-                                        "production-copy-receipt",
-                                        WORKSPACE,
-                                        "catalog-copy-test",
-                                        "STORE",
-                                        copyGrant()));
-        assertEquals("STALE_COPY_PREFLIGHT", productionReplay.code());
-
-    } */
-
     @Test
     void legacyVoidedCategoryReferenceFailsFlywayBeforeDeletion() {
         Flyway legacy = flyway(LEGACY_POSTGRES, "20260808.130000.000");
@@ -4382,6 +3832,106 @@ class CatalogCategoryOwnerIntegrationTest {
                 parentEntryRef);
     }
 
+    private static CatalogOwnerApi.UnitDefinitionReadback createUnit(
+            String code, String name, CatalogOwnerApi.UnitDimension dimension, int precision) {
+        String key = "create-unit-" + code + "-" + UUID.randomUUID();
+        return service.createUnitDefinition(
+                context("createOperationsCatalogUnit", SCOPE, key),
+                new CatalogOwnerApi.UnitDefinitionCreateCommand(code, name, dimension, precision),
+                key);
+    }
+
+    private static ObjectNode itemUnitSave(
+            String itemCode,
+            long expectedVersion,
+            CatalogOwnerApi.UnitDefinitionReadback salesUnit,
+            CatalogOwnerApi.UnitDefinitionReadback baseMeasureUnit) {
+        ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
+        ObjectNode draft = request.putObject("sections")
+                .put("expectedCatalogVersion", expectedVersion)
+                .putObject("catalogDraft");
+        putItemUnitRefs(draft, salesUnit, baseMeasureUnit);
+        return request;
+    }
+
+    private static void putItemUnitRefs(
+            ObjectNode draft,
+            CatalogOwnerApi.UnitDefinitionReadback salesUnit,
+            CatalogOwnerApi.UnitDefinitionReadback baseMeasureUnit) {
+        if (salesUnit == null) draft.putNull("salesUnitRef");
+        else draft.put("salesUnitRef", salesUnit.unitRef().toString());
+        if (baseMeasureUnit == null) draft.putNull("baseMeasureUnitRef");
+        else draft.put("baseMeasureUnitRef", baseMeasureUnit.unitRef().toString());
+    }
+
+    private static ObjectNode unitSnapshot(CatalogOwnerApi.UnitDefinitionReadback unit) {
+        return MAPPER.createObjectNode()
+                .put("unitRef", unit.unitRef().toString())
+                .put("code", unit.code())
+                .put("name", unit.name())
+                .put("unitDimension", unit.unitDimension().name())
+                .put("precision", unit.precision());
+    }
+
+    private static void insertStockTargetWithUnits(
+            UUID targetRef,
+            UUID itemRef,
+            UUID productSkuRef,
+            String itemCode,
+            String skuCode,
+            CatalogOwnerApi.UnitDefinitionReadback consumptionUnit,
+            CatalogOwnerApi.UnitDefinitionReadback countingUnit,
+            boolean allowNegative,
+            String lowStockThreshold,
+            String conversionFactor) {
+        String mode = "INDEPENDENT_STOCK";
+        ObjectNode configuration = MAPPER.createObjectNode()
+                .put("mode", mode)
+                .put("allowNegative", allowNegative)
+                .put("lowStockThreshold", lowStockThreshold)
+                .put("conversionFactor", conversionFactor);
+        if (countingUnit == null) {
+            configuration.putNull("countingUnitRef");
+            configuration.putNull("countingUnitSnapshot");
+        } else {
+            configuration.put("countingUnitRef", countingUnit.unitRef().toString());
+            configuration.set("countingUnitSnapshot", unitSnapshot(countingUnit));
+        }
+        jdbc.update(
+                "INSERT INTO inventory.stock_target("
+                        + "target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code,sku_code,"
+                        + "measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,consumption_unit_"
+                        + "name,"
+                        + "consumption_unit_dimension,consumption_unit_precision,counting_unit_ref,counting_unit_code,"
+                        + "counting_unit_name,counting_unit_dimension,counting_unit_precision,counting_unit_convers"
+                        + "ion_factor,"
+                        + "configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) "
+                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?)",
+                targetRef,
+                SCOPE.toString(),
+                BRAND,
+                itemRef,
+                productSkuRef,
+                itemCode,
+                skuCode,
+                mode,
+                mode,
+                consumptionUnit.unitRef(),
+                consumptionUnit.code(),
+                consumptionUnit.name(),
+                consumptionUnit.unitDimension().name(),
+                consumptionUnit.precision(),
+                countingUnit == null ? null : countingUnit.unitRef(),
+                countingUnit == null ? null : countingUnit.code(),
+                countingUnit == null ? null : countingUnit.name(),
+                countingUnit == null ? null : countingUnit.unitDimension().name(),
+                countingUnit == null ? null : countingUnit.precision(),
+                new BigDecimal(conversionFactor),
+                canonical(configuration),
+                1L,
+                1L);
+    }
+
     private static void insertProductionTag(UUID scope, UUID ref, String code) {
         jdbc.update(
                 "INSERT INTO fulfillment_production.production_tag_definition "
@@ -4394,88 +3944,6 @@ class CatalogCategoryOwnerIntegrationTest {
                 code,
                 "PRODUCTION",
                 code);
-    }
-
-    private static void insertItem(
-            UUID scope, UUID itemRef, UUID skuRef, UUID categoryRef, UUID optionRef, UUID tagRef, String code) {
-        insertItem(scope, itemRef, skuRef, categoryRef, optionRef, tagRef, code, null);
-    }
-
-    private static void insertItem(
-            UUID scope,
-            UUID itemRef,
-            UUID skuRef,
-            UUID categoryRef,
-            UUID optionRef,
-            UUID tagRef,
-            String code,
-            UUID inventoryBomItemRef) {
-        ObjectNode sections = MAPPER.createObjectNode();
-        sections.putArray("orderOptions")
-                .addObject()
-                .putArray("values")
-                .addObject()
-                .put("attributeValueRef", optionRef.toString())
-                .put("code", "COPY-OPTION");
-        if (inventoryBomItemRef != null)
-            sections.putArray("inventoryBom")
-                    .addObject()
-                    .put("itemRef", inventoryBomItemRef.toString())
-                    .put("itemCode", "STALE-BOM-DISPLAY-LABEL");
-        jdbc.update(
-                "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
-                        + "ated"
-                        + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,CAST(? AS JSONB),1,1,1)",
-                itemRef,
-                scope.toString(),
-                BRAND,
-                code,
-                code,
-                sections.toString());
-        jdbc.update(
-                "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)", itemRef, categoryRef);
-        jdbc.update(
-                "INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,'PRODUCTION_TAG',?)",
-                itemRef,
-                tagRef);
-        jdbc.update(
-                "INSERT INTO "
-                        + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
-                        + "er,v"
-                        + "ariant_combination_digest) VALUES(?,?, 'COPY-SKU', 'COPY-SKU', true, 'ENABLED', 0, "
-                        + "'copy-sku')",
-                skuRef,
-                itemRef);
-    }
-
-    private static void assertMapping(
-            JsonNode mappings,
-            String objectType,
-            UUID sourceRef,
-            UUID targetRef,
-            String targetCode,
-            String targetSkuCode,
-            String targetOptionValueCode) {
-        JsonNode found = null;
-        for (JsonNode mapping : mappings)
-            if (objectType.equals(mapping.path("objectType").asText())
-                    && sourceRef.toString().equals(mapping.path("sourceRef").asText())) {
-                found = mapping;
-                break;
-            }
-        assertTrue(found != null, "missing " + objectType + " mapping");
-        assertEquals(targetRef.toString(), found.path("targetRef").asText());
-        if (targetCode == null) assertTrue(found.path("targetCode").isNull());
-        else assertEquals(targetCode, found.path("targetCode").asText());
-        if (targetSkuCode == null) assertTrue(found.path("targetSkuCode").isNull());
-        else assertEquals(targetSkuCode, found.path("targetSkuCode").asText());
-        if (targetOptionValueCode == null)
-            assertTrue(found.path("targetOptionValueCode").isNull());
-        else
-            assertEquals(
-                    targetOptionValueCode, found.path("targetOptionValueCode").asText());
     }
 
     @AfterAll
@@ -4538,8 +4006,7 @@ class CatalogCategoryOwnerIntegrationTest {
         jdbc.update(
                 "INSERT INTO catalog.catalog_composite_component(composite_component_ref,composite_group_ref,"
                         + "component_item_ref,product_sku_ref,quantity,unit,is_default,display_order) "
-                        + "VALUES(?,?,?,?,1,'份',"
-                        + "false,?)",
+                        + "VALUES(?,?,?,?,1,'份',false,?)",
                 UUID.randomUUID(),
                 groupRef,
                 itemRef,
@@ -4562,6 +4029,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("code", itemCode)
                         .put("name", "sku inventory race")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        CatalogOwnerApi.UnitDefinitionReadback raceUnit =
+                createUnit("RACE-UNIT", "Race unit", CatalogOwnerApi.UnitDimension.COUNT, 0);
         write(
                 "createOperationsCatalogDictionaryEntry",
                 MAPPER.createObjectNode()
@@ -4607,6 +4076,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 attributeRef,
                 firstValueRef,
                 secondValueRef);
+        putItemUnitRefs((ObjectNode) baseline.path("sections").path("catalogDraft"), raceUnit, raceUnit);
         long version =
                 write("saveOperationsCatalogItem", baseline).path("version").asLong();
 
@@ -4614,14 +4084,16 @@ class CatalogCategoryOwnerIntegrationTest {
                 itemCode, version, firstSkuRef, secondSkuRef, false, attributeRef, firstValueRef, secondValueRef);
         ObjectNode retainSecondSkuAndCreateTarget = skuSave(
                 itemCode, version, firstSkuRef, secondSkuRef, true, attributeRef, firstValueRef, secondValueRef);
+        putItemUnitRefs((ObjectNode) removeSecondSku.path("sections").path("catalogDraft"), raceUnit, raceUnit);
+        putItemUnitRefs(
+                (ObjectNode) retainSecondSkuAndCreateTarget.path("sections").path("catalogDraft"), raceUnit, raceUnit);
         ((ObjectNode) retainSecondSkuAndCreateTarget.path("sections"))
                 .putObject("inventoryConfiguration")
                 .putArray("nodes")
                 .addObject()
                 .put("skuCode", "SKU-2")
                 .put("productSkuRef", secondSkuRef.toString())
-                .put("mode", "INDEPENDENT_STOCK")
-                .put("consumptionUnit", "EA");
+                .put("mode", "INDEPENDENT_STOCK");
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CyclicBarrier start = new CyclicBarrier(3);

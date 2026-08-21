@@ -82,6 +82,7 @@ class BusinessChannelPolicyTest {
                 "Provider",
                 "TAKEAWAY",
                 "Takeaway",
+                List.of("Takeaway"),
                 "STORE",
                 "Store",
                 nodeRef,

@@ -11,7 +11,6 @@ import {CATALOG_TAB_LABELS, catalogTabLabel} from '../model/catalogTabLabels';
 import {copyScopeTabKey} from './LocalCatalogCopyDrawer';
 import {
   alignCatalogBatchResults,
-  attributeDraftRowsFromRecord,
   buildCatalogBatchSaveRequest,
   buildCatalogBatchStatusRequest,
   buildCatalogItemsQuery,
@@ -22,6 +21,7 @@ import {
   catalogFormValidationIssue,
   catalogPriceLabel,
   catalogSkuIssueCodes,
+  catalogTagTreeSelection,
   copyConfirmationLabel,
   copyConfirmationRows,
   decodeBrandCopyReadback,
@@ -32,12 +32,10 @@ import {
   decodeItems,
   decodeNavigation,
   decodePreflight,
-  duplicateCatalogAttributeKeys,
   isCatalogBatchRowSelectable,
   mergeCatalogSkuVoidReadback,
   partitionBrandCopyCompatibilityResults,
   productionTagCandidateFromReadback,
-  serializeCatalogAttributeDraftRows,
   serializeSkuRowsForSave,
   shapeHasVisibleTab,
   shortNameMatchesKeyword,
@@ -47,6 +45,12 @@ import {
 } from '../model/catalogModel';
 
 const testUuid = (value: string) => value as unknown as Uuid;
+const skuUnitDefaults = {
+  salesUnitOverrideRef: null,
+  baseMeasureUnitOverrideRef: null,
+  salesUnit: null,
+  baseMeasureUnit: null,
+};
 
 describe('catalog management runtime model contracts', () => {
   it('keeps the nine tab labels in one frontend source and uses the decided reference label', () => {
@@ -81,6 +85,28 @@ describe('catalog management runtime model contracts', () => {
     expect(query).not.toHaveProperty('governanceStatus');
   });
 
+  it('keeps a selected product tag in the owner-backed item query', () => {
+    const selection = catalogTagTreeSelection({
+      tagRef: wireUuid('00000000-0000-4000-8000-000000000023'),
+      code: 'SIGNATURE',
+      name: '招牌商品',
+      count: 2,
+    });
+    expect(selection).toEqual({
+      kind: 'TAG',
+      ref: '00000000-0000-4000-8000-000000000023',
+      label: '招牌商品',
+    });
+    const query = buildCatalogItemsQuery({
+      dataNodeRef: wireUuid('00000000-0000-4000-8000-000000000001'),
+      tagRef: selection.ref,
+    });
+    expect(query).toEqual({
+      dataNodeRef: '00000000-0000-4000-8000-000000000001',
+      tagRef: '00000000-0000-4000-8000-000000000023',
+    });
+  });
+
   it('matches a short name only when the active keyword actually hits it', () => {
     expect(shortNameMatchesKeyword('拿铁', '铁')).toBe(true);
     expect(shortNameMatchesKeyword('拿铁', '茶')).toBe(false);
@@ -95,38 +121,11 @@ describe('catalog management runtime model contracts', () => {
   });
 
   it('maps generated form validation failures to the owning editor tab', () => {
-    expect(
-      catalogFormValidationIssue({errorFields: [{name: ['attributesDraftRows'], errors: ['属性键重复：origin']}]}),
-    ).toEqual({tabKey: 'attributes', message: '属性键重复：origin'});
     expect(catalogFormValidationIssue({errorFields: [{name: ['displayName'], errors: ['请输入商品名称']}]})).toEqual({
       tabKey: 'basic',
       message: '请输入商品名称',
     });
     expect(catalogFormValidationIssue({errorFields: []})).toBeUndefined();
-  });
-
-  it('keeps attribute JSON types and exact string digits until the single submit serialization', () => {
-    const rows = attributeDraftRowsFromRecord({note: 'true', id: '1234567890123456789', count: 2});
-    expect(rows).toEqual([
-      {key: 'note', value: '"true"'},
-      {key: 'id', value: '"1234567890123456789"'},
-      {key: 'count', value: '2'},
-    ]);
-    expect(serializeCatalogAttributeDraftRows([...rows, {key: 'other', value: '"直营"'}])).toEqual({
-      note: 'true',
-      id: '1234567890123456789',
-      count: 2,
-      other: '直营',
-    });
-  });
-
-  it('rejects duplicate attribute keys instead of silently dropping the first row', () => {
-    const rows = [
-      {key: 'origin', value: '"直营"'},
-      {key: ' origin ', value: '"加盟"'},
-    ];
-    expect(duplicateCatalogAttributeKeys(rows)).toEqual(['origin']);
-    expect(() => serializeCatalogAttributeDraftRows(rows)).toThrow('CATALOG_ATTRIBUTE_DUPLICATE_KEY:origin');
   });
 
   it('does not hydrate a dirty draft from a same-item detail refresh', () => {
@@ -178,6 +177,7 @@ describe('catalog management runtime model contracts', () => {
         isDefault: false,
         status: 'ENABLED',
         version: 4,
+        ...skuUnitDefaults,
         mediaRefs: [],
       },
       {
@@ -192,6 +192,7 @@ describe('catalog management runtime model contracts', () => {
         isDefault: false,
         status: 'ENABLED',
         version: 5,
+        ...skuUnitDefaults,
         mediaRefs: [],
       },
     ];
@@ -235,10 +236,11 @@ describe('catalog management runtime model contracts', () => {
       {
         name: '拿铁',
         shapeKey: 'STANDARD_SALE_COUNTED',
-        attributes: {},
         images: [],
         productionTagRefs: [],
-        categoryRefs: [],
+        categoryRef: null,
+        attributeAssignments: [],
+        orderOptionConfigs: [],
         version: 7,
       } as unknown as Parameters<typeof buildCatalogSkuVoidRequest>[0],
       testUuid('node-1'),
@@ -256,7 +258,7 @@ describe('catalog management runtime model contracts', () => {
       shapeKey: 'STANDARD_SALE_COUNTED',
       images: [],
       productionTagRefs: [],
-      categoryRefs: [],
+      categoryRef: null,
     });
     expect(request.sections.catalogDraft).not.toHaveProperty('skus');
   });
@@ -387,10 +389,9 @@ describe('catalog management runtime model contracts', () => {
             itemRef: '00000000-0000-4000-8000-000000000001',
             code: 'LATTE-001',
             name: '拿铁',
-            categoryRefs: [],
+            categoryRef: null,
             productionTagRefs: [],
             tagRefs: ['00000000-0000-4000-8000-000000000002'],
-            salesUnitRefs: ['00000000-0000-4000-8000-000000000003'],
             standardSalePrice: null,
             standardSalePriceMin: 2800,
             standardSalePriceMax: 3400,
@@ -400,7 +401,6 @@ describe('catalog management runtime model contracts', () => {
       },
     } as CatalogInventoryEnvelope);
     expect(decoded.items[0].tagRefs).toEqual(['00000000-0000-4000-8000-000000000002']);
-    expect(decoded.items[0].salesUnitRefs).toEqual(['00000000-0000-4000-8000-000000000003']);
     expect(catalogPriceLabel(decoded.items[0])).toBe('¥28.00~34.00');
   });
 
@@ -414,16 +414,33 @@ describe('catalog management runtime model contracts', () => {
           status: 'ENABLED',
           shapeKey: 'STANDARD_SALE_COUNTED',
           tagRefs: ['tag-ref'],
-          salesUnitRefs: ['unit-ref'],
+          salesUnitRef: 'unit-ref',
+          baseMeasureUnitRef: 'base-unit-ref',
           inventoryBom: [
             {
               nodeType: 'ITEM',
               mode: 'INDEPENDENT_STOCK',
               targetRef: 'target-ref',
               quantity: '1',
-              unit: '份',
-              consumptionUnit: '份',
-              configuration: {allowNegative: true, lowStockThreshold: '2', countingUnit: '箱', conversionFactor: '12'},
+              consumptionUnitSnapshot: {
+                unitRef: 'unit-ref',
+                code: 'GRAM',
+                name: '克',
+                unitDimension: 'WEIGHT',
+                precision: 0,
+              },
+              configuration: {
+                allowNegative: true,
+                lowStockThreshold: '2',
+                countingUnitSnapshot: {
+                  unitRef: 'counting-ref',
+                  code: 'KILOGRAM',
+                  name: '千克',
+                  unitDimension: 'WEIGHT',
+                  precision: 4,
+                },
+                conversionFactor: '12',
+              },
             },
           ],
         },
@@ -431,11 +448,17 @@ describe('catalog management runtime model contracts', () => {
       },
     } as CatalogInventoryEnvelope);
     expect(decoded?.item.tagRefs).toEqual(['tag-ref']);
-    expect(decoded?.item.salesUnitRefs).toEqual(['unit-ref']);
+    expect(decoded?.item.salesUnitRef).toBe('unit-ref');
     expect(decoded?.item.inventoryBom[0].configuration).toEqual({
       allowNegative: true,
       lowStockThreshold: '2',
-      countingUnit: '箱',
+      countingUnitSnapshot: {
+        unitRef: 'counting-ref',
+        code: 'KILOGRAM',
+        name: '千克',
+        unitDimension: 'WEIGHT',
+        precision: 4,
+      },
       conversionFactor: '12',
     });
   });
@@ -481,6 +504,7 @@ describe('catalog management runtime model contracts', () => {
       isDefault: true,
       status: 'ENABLED',
       version: 4,
+      ...skuUnitDefaults,
       mediaRefs: [testUuid('asset-1')],
     };
     const stoppedValueRow = {
@@ -583,6 +607,7 @@ describe('catalog management runtime model contracts', () => {
       isDefault: false,
       status: 'ENABLED',
       version: 0,
+      ...skuUnitDefaults,
       mediaRefs: [],
     };
     expect(catalogSkuIssueCodes(row, 'SKU', true, true)).toEqual([
@@ -665,6 +690,7 @@ describe('catalog management runtime model contracts', () => {
           isDefault: false,
           status: 'ENABLED',
           version: 8,
+          ...skuUnitDefaults,
           mediaRefs: [],
         },
         {
@@ -679,6 +705,7 @@ describe('catalog management runtime model contracts', () => {
           isDefault: false,
           status: 'ENABLED',
           version: 0,
+          ...skuUnitDefaults,
           mediaRefs: [],
         },
       ],
@@ -705,7 +732,7 @@ describe('catalog management runtime model contracts', () => {
     const row = {
       code: 'LATTE-001',
       version: 7,
-      categoryRefs: [testUuid('old-category')],
+      categoryRef: testUuid('old-category'),
       tagRefs: [testUuid('tag-1')],
     };
     const request = buildCatalogBatchSaveRequest(row, testUuid('node-1'), 'CATEGORY', [testUuid('new-category')]);
@@ -714,9 +741,8 @@ describe('catalog management runtime model contracts', () => {
       itemCode: 'LATTE-001',
       sections: {expectedCatalogVersion: 7, expectedInventoryVersions: []},
     });
-    expect(request.sections.catalogDraft).toEqual({categoryRefs: ['new-category']});
+    expect(request.sections.catalogDraft).toEqual({categoryRef: 'new-category'});
     expect(request.sections.catalogDraft).not.toHaveProperty('name');
-    expect(request.sections.catalogDraft).not.toHaveProperty('attributes');
     expect(request.sections.catalogDraft).not.toHaveProperty('images');
     expect(request.sections.catalogDraft).not.toHaveProperty('tagRefs');
     expect(request.sections.inventoryConfiguration).toEqual({nodes: []});
@@ -726,13 +752,13 @@ describe('catalog management runtime model contracts', () => {
     const row = {
       code: 'LATTE-002',
       version: 3,
-      categoryRefs: [testUuid('category-1')],
+      categoryRef: testUuid('category-1'),
       tagRefs: [testUuid('old-tag')],
     };
     const request = buildCatalogBatchSaveRequest(row, testUuid('node-2'), 'TAG', [testUuid('new-tag')]);
     expect(request.sections.expectedCatalogVersion).toBe(3);
     expect(request.sections.catalogDraft).toEqual({tagRefs: ['new-tag']});
-    expect(request.sections.catalogDraft).not.toHaveProperty('categoryRefs');
+    expect(request.sections.catalogDraft).not.toHaveProperty('categoryRef');
   });
 
   it('keeps batch status versions and request order separate from response order', () => {
@@ -903,6 +929,14 @@ describe('catalog management runtime model contracts', () => {
           {shapeKey: 'STANDARD_SALE_COUNTED', count: 1},
           {shapeKey: 'MATERIAL', count: 2},
         ],
+        tags: [
+          {
+            tagRef: 'd3cdd2f7-8d0e-4cff-9dbe-f1b8a5a82672',
+            code: 'SIGNATURE',
+            name: '招牌商品',
+            count: 3,
+          },
+        ],
         generation: 7,
       },
     } as CatalogInventoryEnvelope;
@@ -923,5 +957,13 @@ describe('catalog management runtime model contracts', () => {
         blockingReferenceLabels: ['烤鸡翅(APP-CHICKEN-WINGS-001)'],
       },
     });
+    expect(navigation.tags).toEqual([
+      {
+        tagRef: 'd3cdd2f7-8d0e-4cff-9dbe-f1b8a5a82672',
+        code: 'SIGNATURE',
+        name: '招牌商品',
+        count: 3,
+      },
+    ]);
   });
 });

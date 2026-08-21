@@ -126,6 +126,7 @@ export function OwnerBindingDetailDrawer({
       open={detail.isOpen}
       title="绑定详情"
       onClose={detail.close}
+      maskClosable
       extra={
         current ? (
           <Space>

@@ -14,7 +14,8 @@
     "CONSUMPTION_UNIT_INCOMPATIBLE",
     "REFERENCE_MAPPING_UNRESOLVED",
     "REUSE_CONFIRMATION_REQUIRED",
-    "OWNER_FACT_UNAVAILABLE"
+    "OWNER_FACT_UNAVAILABLE",
+    "CATALOG_COPY_DEFINITION_CONFLICT"
   ],
   "limitResponseShape": {
     "actual": "integer",
@@ -22,7 +23,6 @@
   },
   "dictionaryKinds": [
     "TAG",
-    "SALES_UNIT",
     "SKU_ATTRIBUTE",
     "SKU_ATTRIBUTE_VALUE",
     "ORDER_OPTION_VALUE"

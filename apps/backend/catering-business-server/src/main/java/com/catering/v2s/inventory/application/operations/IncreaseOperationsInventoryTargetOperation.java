@@ -44,7 +44,7 @@ public class IncreaseOperationsInventoryTargetOperation {
                         targetRef,
                         requiredLong(request.expectedVersion(), "expectedVersion"),
                         requiredDecimal(request.quantity(), "quantity"),
-                        request.unit(),
+                        request.countingUnitRef(),
                         request.note()),
                 invocation.idempotencyKey());
         return response(context.requestId(), readback);

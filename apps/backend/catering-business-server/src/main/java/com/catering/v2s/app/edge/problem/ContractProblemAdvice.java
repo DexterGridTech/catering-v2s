@@ -116,6 +116,11 @@ public final class ContractProblemAdvice {
      * owner messages stay edge-generic.
      */
     private static String catalogInventoryDetail(String code, RuntimeException exception) {
+        if ("RESULT_UNKNOWN".equals(code)
+                && exception.getMessage() != null
+                && !exception.getMessage().isBlank()) {
+            return exception.getMessage();
+        }
         return switch (code) {
             case "MOVE_BOUNDARY" -> "分类已位于当前层级边界";
             case "REFERENCE_BLOCKS_VOID", "REFERENCE_BLOCKS_DELETE" -> {
@@ -126,6 +131,12 @@ public final class ContractProblemAdvice {
                                 + "操作"
                         : detail;
             }
+            case "REFERENCE_MAPPING_UNRESOLVED" -> {
+                String detail = exception.getMessage();
+                String fallback = "复制所需的商品、点单选项或库存关系无法确定";
+                yield detail == null || detail.isBlank() ? fallback : detail;
+            }
+            case "VALIDATION_ERROR" -> "请求中的业务信息不完整或不符合规则";
             default -> "商品、生产标签或库存操作不满足 owner 约束";
         };
     }
@@ -313,11 +324,9 @@ public final class ContractProblemAdvice {
     @ExceptionHandler(WorkspacePasswordResetService.ResetStateException.class)
     ResponseEntity<Problem> workspaceCredentialResetUnavailable(
             RuntimeException exception, HttpServletRequest request) {
-        return problem(
-                HttpStatus.CONFLICT,
-                "WOR" + "KSPACE_IAM_CREDENTIAL_RESET_UN" + "AVAILABLE",
-                "账号状态已变化，请重新读取后再重置登录凭据",
-                request);
+        String errorCode = "WORKSPACE_IAM_CREDENTIAL_RESET_UNAVAILABLE";
+        String detail = "账号状态已变化，请重新读取后再重置登录凭据";
+        return problem(HttpStatus.CONFLICT, errorCode, detail, request);
     }
 
     @ExceptionHandler({

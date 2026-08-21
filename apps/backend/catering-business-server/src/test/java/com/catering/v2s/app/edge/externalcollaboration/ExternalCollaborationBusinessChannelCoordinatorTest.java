@@ -34,6 +34,7 @@ class ExternalCollaborationBusinessChannelCoordinatorTest {
                         null,
                         "Disabled channel",
                         bindingRef,
+                        "BOUND",
                         "DISABLED",
                         List.of("MANUAL"),
                         3L));
@@ -68,8 +69,7 @@ class ExternalCollaborationBusinessChannelCoordinatorTest {
                         grant);
 
         CollaborationCommandApi.Problem problem = assertThrows(
-                CollaborationCommandApi.Problem.class,
-                () -> coordinator.updateOperationsBinding(command, channelRef));
+                CollaborationCommandApi.Problem.class, () -> coordinator.updateOperationsBinding(command, channelRef));
 
         assertEquals("DISABLED_OBJECT_NOT_EDITABLE", problem.code());
         verifyNoInteractions(collaboration);

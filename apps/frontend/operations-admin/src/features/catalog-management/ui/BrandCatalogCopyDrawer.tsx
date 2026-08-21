@@ -131,6 +131,10 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
   const unhandledConfirmationCount = Math.max(confirmationRows.length - confirmedCompatibilityKeys.length, 0);
   const confirmationCountMatches = !preflight || preflight.confirmationRequiredCount === confirmationRows.length;
   const allConfirmationsHandled = confirmationCountMatches && unhandledConfirmationCount === 0;
+  const blockedCompatibilityRows = useMemo(
+    () => (preflight?.compatibilityResults ?? []).filter(row => row.result === 'BLOCKED'),
+    [preflight?.compatibilityResults],
+  );
   const toggleConfirmation = (key: string, checked: boolean) => {
     setConfirmedCompatibilityKeys(current =>
       checked ? [...new Set([...current, key])] : current.filter(value => value !== key),
@@ -243,7 +247,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       destroyOnHidden={false}
-      maskClosable={!lifecycle.dirty}
+      maskClosable={!lifecycle.submitting}
       {...adminWideDrawerSurfaceProps}
       {...testId('catalog-brand-copy-drawer')}
     >
@@ -403,6 +407,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               style={{marginTop: 16}}
             />
           )}
+          {blockedCompatibilityRows.length > 0 && <CopyBlockedDefinitions rows={blockedCompatibilityRows} />}
           <Tabs
             style={{marginTop: 16}}
             items={[
@@ -414,7 +419,7 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
               },
               {
                 key: 'inventory',
-                label: '库存与BOM',
+                label: '原料用量',
                 children: (
                   <CompatibilityList
                     rows={compatibilityBuckets.inventory}
@@ -465,9 +470,6 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
           >
             我已核对所有可确认差异与引用映射
           </Checkbox>
-          {preflight.blockingCount > 0 && (
-            <Alert type="warning" showIcon title="仍有阻断项，清零后才能执行复制" style={{marginTop: 12}} />
-          )}
           <Space style={{marginTop: 16}}>
             <Button
               onClick={() => {
@@ -603,6 +605,29 @@ export function BrandCatalogCopyDrawer({open, queryContext, brandRef, onClose}: 
         </>
       )}
     </Drawer>
+  );
+}
+
+function CopyBlockedDefinitions({rows}: {rows: CopyPreflight['compatibilityResults']}) {
+  return (
+    <Alert
+      type="error"
+      showIcon
+      title="复制检查：暂时不能复制"
+      description={
+        <Space direction="vertical" size={4} style={{display: 'flex'}}>
+          {rows.map(row => (
+            <Typography.Text key={row.compatibilityId}>
+              同编码的{catalogCopyObjectTypeLabel(row.objectType)}
+              {row.businessCode ? `（${row.businessCode}）` : ''}不一致：{row.reason || '业务内容不同'}
+              。请先整理门店中的定义后重试。
+            </Typography.Text>
+          ))}
+        </Space>
+      }
+      style={{marginTop: 16}}
+      {...testId('catalog-copy-blocked-definitions')}
+    />
   );
 }
 

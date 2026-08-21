@@ -42,7 +42,12 @@ final class CatalogSkuFacts {
                 "SELECT "
                         + "sku.item_ref,sku.product_sku_ref,sku.sku_code,sku.sku_name,sku.sku_barcode,sku.standard_sale"
                         + "_pri"
-                        + "ce,sku.is_default,sku.status,sku.version,sku.display_order,sku.variant_combination_digest,at"
+                        + "ce,sku.is_default,sku.status,sku.version,sku.display_order,sku.variant_combination_digest,"
+                        + "sku.sales_unit_override_ref,sku.base_measure_unit_override_ref,"
+                        + "sku.sales_unit_ref,sku.sales_unit_code,sku.sales_unit_name,sku.sales_unit_dimension,sku."
+                        + "sales_unit_precision,"
+                        + "sku.base_measure_unit_ref,sku.base_measure_unit_code,sku.base_measure_unit_name,sku.base"
+                        + "_measure_unit_dimension,sku.base_measure_unit_precision,at"
                         + "trib"
                         + "ute_value.attribute_ref,attribute.code,attribute.name,value.entry_ref,value.code,value.name,"
                         + "valu"
@@ -74,19 +79,19 @@ final class CatalogSkuFacts {
                             sku = skuNode(result);
                             itemSkus.put(skuRef, sku);
                         }
-                        UUID attributeRef = result.getObject(12, UUID.class);
+                        UUID attributeRef = result.getObject(24, UUID.class);
                         if (attributeRef == null) continue;
                         ObjectNode value = sku.withArray("attributeValueRefs").addObject();
                         value.put("attributeRef", attributeRef.toString());
-                        value.put("attributeCode", result.getString(13));
-                        value.put("attributeName", result.getString(14));
+                        value.put("attributeCode", result.getString(25));
+                        value.put("attributeName", result.getString(26));
                         value.put(
                                 "attributeValueRef",
-                                result.getObject(15, UUID.class).toString());
-                        value.put("valueCode", result.getString(16));
-                        value.put("valueLabel", result.getString(17));
-                        value.put("displayOrder", result.getInt(19));
-                        value.put("status", result.getString(18));
+                                result.getObject(27, UUID.class).toString());
+                        value.put("valueCode", result.getString(28));
+                        value.put("valueLabel", result.getString(29));
+                        value.put("displayOrder", result.getInt(31));
+                        value.put("status", result.getString(30));
                     }
                     return null;
                 });
@@ -200,6 +205,12 @@ final class CatalogSkuFacts {
                         "REFERENCE_MAPPING_UNRESOLVED",
                         422,
                         "productSkuRef belongs to another item in this owner scope");
+            jdbc.update(
+                    "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=? WHER"
+                            + "E product_sku_ref=?",
+                    optionalUuid(node, "salesUnitOverrideRef"),
+                    optionalUuid(node, "baseMeasureUnitOverrideRef"),
+                    skuRef);
             jdbc.update("DELETE FROM catalog.catalog_sku_attribute_value WHERE product_sku_ref=?", skuRef);
             Set<UUID> attributeRefs = new LinkedHashSet<>();
             if (node.path("attributeValueRefs").isArray())
@@ -274,6 +285,13 @@ final class CatalogSkuFacts {
                             + "catalog.catalog_sku_attribute_value(product_sku_ref,attribute_ref,attribute_value_ref) "
                             + "VALUES(?,?,?)",
                     attributeRows);
+        for (CopySku sku : parsed)
+            jdbc.update(
+                    "UPDATE catalog.catalog_sku SET sales_unit_override_ref=?,base_measure_unit_override_ref=? WHER"
+                            + "E product_sku_ref=?",
+                    sku.salesUnitOverrideRef(),
+                    sku.baseMeasureUnitOverrideRef(),
+                    sku.skuRef());
     }
 
     private static CopySku parseCopySku(UUID itemRef, JsonNode node) {
@@ -294,6 +312,8 @@ final class CatalogSkuFacts {
                 ? node.path("standardSalePrice").asLong()
                 : null;
         String barcode = node.hasNonNull("skuBarcode") ? node.path("skuBarcode").asText() : null;
+        UUID salesUnitOverrideRef = optionalUuid(node, "salesUnitOverrideRef");
+        UUID baseMeasureUnitOverrideRef = optionalUuid(node, "baseMeasureUnitOverrideRef");
         List<AttributeValue> attributes = new ArrayList<>();
         Set<UUID> attributeRefs = new LinkedHashSet<>();
         if (node.path("attributeValueRefs").isArray())
@@ -315,6 +335,8 @@ final class CatalogSkuFacts {
                 status,
                 displayOrder,
                 digest,
+                salesUnitOverrideRef,
+                baseMeasureUnitOverrideRef,
                 List.copyOf(attributes));
     }
 
@@ -332,9 +354,41 @@ final class CatalogSkuFacts {
         sku.put("version", result.getLong(9));
         sku.put("displayOrder", result.getInt(10));
         sku.put("variantCombinationDigest", result.getString(11));
+        if (result.getObject(12, UUID.class) == null) sku.putNull("salesUnitOverrideRef");
+        else sku.put("salesUnitOverrideRef", result.getObject(12, UUID.class).toString());
+        if (result.getObject(13, UUID.class) == null) sku.putNull("baseMeasureUnitOverrideRef");
+        else
+            sku.put(
+                    "baseMeasureUnitOverrideRef",
+                    result.getObject(13, UUID.class).toString());
+        putUnitSnapshot(sku, "salesUnitSnapshot", result, 14, 15, 16, 17, 18);
+        putUnitSnapshot(sku, "baseMeasureUnitSnapshot", result, 19, 20, 21, 22, 23);
         sku.putArray("mediaRefs");
         sku.putArray("attributeValueRefs");
         return sku;
+    }
+
+    private void putUnitSnapshot(
+            ObjectNode target,
+            String field,
+            java.sql.ResultSet result,
+            int refIndex,
+            int codeIndex,
+            int nameIndex,
+            int dimensionIndex,
+            int precisionIndex)
+            throws java.sql.SQLException {
+        UUID ref = result.getObject(refIndex, UUID.class);
+        if (ref == null) {
+            target.putNull(field);
+            return;
+        }
+        target.putObject(field)
+                .put("unitRef", ref.toString())
+                .put("code", result.getString(codeIndex))
+                .put("name", result.getString(nameIndex))
+                .put("unitDimension", result.getString(dimensionIndex))
+                .put("precision", result.getInt(precisionIndex));
     }
 
     private static boolean isVariantCombinationConflict(DuplicateKeyException failure) {
@@ -374,7 +428,20 @@ final class CatalogSkuFacts {
             String status,
             int displayOrder,
             String digest,
+            UUID salesUnitOverrideRef,
+            UUID baseMeasureUnitOverrideRef,
             List<AttributeValue> attributes) {}
+
+    private static UUID optionalUuid(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || value.isNull() || value.asText().isBlank()) return null;
+        try {
+            return UUID.fromString(value.asText());
+        } catch (IllegalArgumentException failure) {
+            throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED", 422, field + " must be an opaque UUID ref", failure);
+        }
+    }
 
     private record AttributeValue(UUID attributeRef, UUID valueRef) {}
 }

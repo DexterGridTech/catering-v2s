@@ -121,18 +121,28 @@ test('catalog metadata modal keeps owner APIs separate while exposing all produc
     new URL('../../features/catalog-management/ui/CatalogDictionaryDrawer.tsx', import.meta.url),
     'utf8',
   );
+  const definitionLibraries = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/CatalogDefinitionLibraries.tsx', import.meta.url),
+    'utf8',
+  );
   const workbench = fs.readFileSync(
     new URL('../../features/catalog-management/ui/CatalogWorkbenchPage.tsx', import.meta.url),
     'utf8',
   );
   assert.match(
     dictionary,
-    /const dictionaryTabs[\s\S]*\{key: 'TAG', label: '商品标签'\}[\s\S]*\{key: 'SALES_UNIT', label: '销售单位'\}[\s\S]*\{key: 'SKU_ATTRIBUTE', label: 'SKU 销售属性'\}[\s\S]*\{key: 'PRODUCTION_TAG', label: '商品处理标签'\}/,
+    /const dictionaryTabs[\s\S]*\{key: 'TAG', label: '商品标签'\}[\s\S]*\{key: 'UNIT', label: '计量单位'\}[\s\S]*\{key: 'SKU_ATTRIBUTE', label: 'SKU 销售属性'\}[\s\S]*\{key: 'PRODUCTION_TAG', label: '商品处理标签'\}/,
   );
+  assert.match(dictionary, /\{key: 'ATTRIBUTES', label: '商品属性库'\}/);
+  assert.match(dictionary, /\{key: 'ORDER_OPTIONS', label: '点单选项库'\}/);
+  assert.match(dictionary, /<CatalogDefinitionLibraries[\s\S]*open=\{open\}[\s\S]*kind=\{metadataTab\}/);
   assert.match(dictionary, /<Modal[\s\S]*footer=\{null\}[\s\S]*width=\{1200\}/);
   assert.doesNotMatch(dictionary, /<Drawer/);
   assert.doesNotMatch(dictionary, /上移|下移|reorderOperationsCatalogDictionaryEntry/);
-  assert.match(dictionary, /if \(open && !wasOpen\.current\) setKind\(initialKind\);/);
+  assert.match(
+    dictionary,
+    /if \(open && !wasOpen\.current\) \{[\s\S]*setKind\(initialKind\);[\s\S]*setMetadataTab\(initialKind === 'SKU_ATTRIBUTE_VALUE' \? 'SKU_ATTRIBUTE' : initialKind\);/,
+  );
   assert.match(dictionary, /dictionaryQuery\.currentData\?\.data/);
   assert.match(dictionary, /productionQuery\.currentData\?\.data/);
   assert.match(dictionary, /const isSkuAttributeManagement = !quickManage && kind === 'SKU_ATTRIBUTE';/);
@@ -143,7 +153,7 @@ test('catalog metadata modal keeps owner APIs separate while exposing all produc
     /dictionaryKind: 'SKU_ATTRIBUTE_VALUE',[\s\S]*parentEntryRef: wireUuid\(selectedAttributeRef\)/,
   );
   assert.match(dictionary, /const \[tagForm\] = Form\.useForm/);
-  assert.match(dictionary, /const \[salesUnitForm\] = Form\.useForm/);
+  assert.match(dictionary, /const \[unitForm\] = Form\.useForm/);
   assert.match(dictionary, /const \[skuAttributeForm\] = Form\.useForm/);
   assert.match(dictionary, /const \[productionTagForm\] = Form\.useForm/);
   assert.match(dictionary, /canWrite && !quickManage && creatingKind && \(\s*<Modal/);
@@ -154,7 +164,11 @@ test('catalog metadata modal keeps owner APIs separate while exposing all produc
   assert.doesNotMatch(dictionary, /\$\{entry\.referenceKind\}:\$\{entry\.referenceRef\}/);
   assert.doesNotMatch(dictionary, /dictionaryEditingKey|editingCode|editingName/);
   assert.doesNotMatch(dictionary, /checkCodeAvailability|编码可用|toUpperCase\(|\^\[A-Z0-9\]/);
+  assert.doesNotMatch(definitionLibraries, /title: '操作'|>刷新<|可选项可不关联原料；关联后，商品配置会填写每份用量。/);
+  assert.match(definitionLibraries, /属性名称[\s\S]*setAttributeDrawer\(row\)/);
+  assert.match(definitionLibraries, /选项组[\s\S]*setOrderOptionDrawer\(row\)/);
   assert.match(workbench, /商品元数据/);
+  assert.doesNotMatch(workbench, /<Tabs\b|catalogArea|catalog-inventory-area-tabs|CatalogDefinitionLibraries/);
   assert.doesNotMatch(workbench, /catalog-inventory-production-tags/);
 });
 
@@ -418,7 +432,7 @@ test('operations password change uses the approved authentication consumers and 
 test.todo('no-seed browser L2 must prove the operations shell keeps owner branding, catalog tabs and icon mapping');
 test.todo('no-seed browser L2 must prove authored truncation exposes the complete human-readable value');
 
-test('editable catalog rows use UI-stable keys and strip editor metadata at the owner boundary', () => {
+test('editable catalog rows use UI-stable keys and preserve only definition-backed item options at the owner boundary', () => {
   const source = fs.readFileSync(
     new URL('../../features/catalog-management/ui/CatalogItemDrawer.tsx', import.meta.url),
     'utf8',
@@ -426,7 +440,6 @@ test('editable catalog rows use UI-stable keys and strip editor metadata at the 
   const l2 = fs.readFileSync(new URL('../l2/catalog-inventory.spec.ts', import.meta.url), 'utf8');
   assert.match(source, /key=\{entry\.editorId\}/);
   assert.match(source, /key=\{sku\.editorId\}/);
-  assert.match(source, /key=\{value\.editorId\}/);
   assert.doesNotMatch(
     source,
     /key=\{`\$\{(?:entry\.kind|sku\.skuCode|value\.code)-\$\{(?:index|skuIndex|valueIndex)\}`\}/,
@@ -436,7 +449,17 @@ test('editable catalog rows use UI-stable keys and strip editor metadata at the 
     /catalogDraft\.identifiers = identifierDraft\.map\(\(\{editorId: _editorId, \.\.\.entry\}\) => entry\)/,
   );
   assert.match(source, /serializeSkuRowsForSave\(skusDraft\.map\(\(\{editorId: _editorId, \.\.\.row\}\) => row\)\)/);
-  assert.match(source, /values: values\.map\(\(\{editorId: _editorId, \.\.\.value\}\) => value\)/);
+  assert.match(source, /orderOptionConfigs: orderOptionConfigsDraft\.map\(config => \(\{/);
+  assert.match(source, /definitionRef: wireUuid\(config\.definitionRef\)/);
+  assert.match(source, /definitionValueRef: wireUuid\(value\.definitionValueRef\)/);
+  assert.match(source, /materialQuantities: value\.materialQuantities\.map\(material => \(\{/);
+  assert.match(source, /materialRef: wireUuid\(material\.materialRef\)/);
+  assert.doesNotMatch(source, /catalogDraft\.orderOptions\s*=/);
+  assert.doesNotMatch(
+    source,
+    /(?:categoryRefsDraft|orderOptionsDraft|detail\.item\.orderOptions|detail\.orderOptions|attributesDraftRows|CatalogOrderOptionGroup|CatalogOrderOptionValue|OrderOptionsEditor|OrderOptionsReadOnly|AttributesKeyValueEditor|FactMap)/,
+  );
+  assert.doesNotMatch(source, /values: values\.map\(\(\{editorId: _editorId, \.\.\.value\}\) => value\)/);
   assert.match(l2, /pressSequentially/);
 });
 

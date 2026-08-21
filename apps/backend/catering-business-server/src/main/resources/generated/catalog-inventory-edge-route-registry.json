@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "c1a5092273cfc2b585fcc3cc6278c55480b7f654a2543a36a37c17d0793c05f2",
+  "contractDigest": "858ec2e574258b42788c93b4e3c7105c82282e08154665e415d0fe14565e770e",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -387,6 +387,123 @@
       "operationId": "batchTransitionOperationsCatalogItemStatus",
       "method": "POST",
       "path": "/operations/catalog-inventory/items/status",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogAttributeDefinitions",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/attribute-definitions",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogAttributeDefinition",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/attribute-definitions",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogAttributeDefinition",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogAttributeDefinition",
+      "method": "DELETE",
+      "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogOrderOptionDefinitions",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/order-option-definitions",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogOrderOptionDefinition",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/order-option-definitions",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogOrderOptionDefinition",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
+      "method": "DELETE",
+      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogUnits",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/units",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogUnit",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/units",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogUnit",
+      "method": "PATCH",
+      "path": "/operations/catalog-inventory/units/{unitRef}",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "disableOperationsCatalogUnit",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/units/{unitRef}/disable",
+      "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogUnit",
+      "method": "DELETE",
+      "path": "/operations/catalog-inventory/units/{unitRef}",
       "owner": "catalog",
       "consumerFaces": [
         "operations-admin"

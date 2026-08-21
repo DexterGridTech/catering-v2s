@@ -55,11 +55,17 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
   assert.match(frontendGenerator, /readModelsPath/);
   assert.match(frontendGenerator, /function responseEnvelopeOwner\(operation\)/);
   assert.match(frontendGenerator, /P3_GET_READ_MODEL_REQUIRED_MISSING/);
-  assert.equal(queryOperations.length, 16);
+  assert.equal(queryOperations.length, 19);
   const owners = Object.groupBy(queryOperations, responseEnvelopeOwner);
   assert.deepEqual(
     owners.P1.map(operation => operation.operationId),
-    ['getOperationsCatalogNavigation', 'getOperationsCatalogItems', 'getOperationsCatalogItem'],
+    [
+      'getOperationsCatalogNavigation',
+      'getOperationsCatalogItems',
+      'getOperationsCatalogItem',
+      'listOperationsCatalogAttributeDefinitions',
+      'listOperationsCatalogOrderOptionDefinitions',
+    ],
   );
   assert.deepEqual(
     owners.MODEL.map(operation => operation.operationId),
@@ -70,6 +76,7 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
       'getOperationsLocalCatalogCopyCandidates',
       'getOperationsBrandCatalogCopyCandidates',
       'getOperationsInventoryTargets',
+      'listOperationsCatalogUnits',
     ],
   );
   assert.deepEqual(
@@ -182,6 +189,35 @@ test('navigation allCount is a required owner statistic, never a browser aggrega
   );
 });
 
+test('navigation carries the enabled catalog-tag tree branch and the item page accepts its opaque tag filter', () => {
+  const coverage = JSON.parse(read('contracts/policy/catalog-inventory-design-byte-coverage.json'));
+  const navigationSchema = openApi.components.schemas.CatalogNavigationView;
+  const itemPageQuery = openApi.components.schemas.CatalogItemPageQuery;
+  const edge = read('apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts');
+  const navigationRow = coverage.rows.find(entry => entry.model === 'CatalogNavigationView');
+  const itemPageQueryRow = coverage.requestRows.find(entry => entry.model === 'CatalogItemPageQuery');
+  const tagEntry = navigationSchema.properties.data.properties.tags.items;
+
+  assert.ok(navigationRow);
+  assert.ok(itemPageQueryRow);
+  assert.ok(navigationRow.required.includes('tags'));
+  assert.equal(itemPageQueryRow.fields.some(field => field.path === 'tagRef' && field.format === 'uuid'), true);
+  assert.deepEqual(tagEntry.required, ['tagRef', 'code', 'name', 'count']);
+  assert.equal(tagEntry.properties.tagRef.format, 'uuid');
+  assert.equal(tagEntry.properties.count.type, 'integer');
+  assert.equal(itemPageQuery.properties.tagRef.format, 'uuid');
+  assert.equal(itemPageQuery.required.includes('tagRef'), false);
+  assert.match(edge, /tags: Array<\{ tagRef: Uuid; code: string; name: string; count: number; \}>;/);
+  assert.match(edge, /export type CatalogItemPageQuery = \{[^}]*tagRef\?: Uuid;/);
+
+  const withoutTagFilter = JSON.parse(JSON.stringify(itemPageQuery));
+  delete withoutTagFilter.properties.tagRef;
+  assert.throws(
+    () => assert.equal(withoutTagFilter.properties.tagRef.format, 'uuid'),
+    /Cannot read properties of undefined/,
+  );
+});
+
 test('CatalogItemDetail declares the material role that its owner actually returns', () => {
   const coverage = JSON.parse(read('contracts/policy/catalog-inventory-design-byte-coverage.json'));
   const detailSchema = openApi.components.schemas.CatalogItemDetail;
@@ -208,7 +244,7 @@ test('CatalogItemDetail declares the material role that its owner actually retur
 
 test('every catalog-management GET consumer preserves its generated strict response type', () => {
   const queryConsumers = [
-    ['ui/CatalogItemCreateDrawer.tsx', ['const manifest = manifestQuery.data?.data;'], ['manifestQuery.data as']],
+    ['ui/CatalogItemCreateDrawer.tsx', ['const manifest = manifestQuery.currentData?.data;'], ['manifestQuery.data as']],
     [
       'ui/CatalogWorkbenchPage.tsx',
       [

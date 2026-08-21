@@ -21,7 +21,7 @@ record CopyLimitPolicy(int selectedItemCount, int closureItemCount, Set<String> 
             policy.path("dictionaryKinds").forEach(value -> {
                 if (value.isTextual() && !value.asText().isBlank()) kinds.add(value.asText());
             });
-            if (kinds.size() != 5) throw new IllegalStateException("catalog dictionary kind policy invalid");
+            if (kinds.size() != 4) throw new IllegalStateException("catalog dictionary kind policy invalid");
             return new CopyLimitPolicy(selected, closure, Set.copyOf(kinds));
         } catch (Exception failure) {
             throw new IllegalStateException("catalog copy policy unreadable", failure);

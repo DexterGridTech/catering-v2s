@@ -2570,6 +2570,50 @@
       ]
     },
     {
+      "id": "pitfalls.platform-detail-reverse-inference",
+      "path": "project-memory/pitfalls/platform-detail-reverse-inference.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "task-start",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "PLATFORM_DETAIL_STAYS_IN_ADAPTER"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "PLATFORM_DETAIL_STAYS_IN_ADAPTER",
+          "path": "doc/review/platform/2026-08-18-v2s-external-collaboration-and-business-channel-spec-claude.md",
+          "anchor": "### 5.6 两段式解绑 —— **主程序不知道任何平台规则**"
+        }
+      ],
+      "sourceRefs": [
+        "doc/review/platform/2026-08-18-v2s-external-collaboration-and-business-channel-spec-claude.md"
+      ]
+    },
+    {
       "id": "pitfalls.repo-rule-cited-against-dexter",
       "path": "project-memory/pitfalls/repo-rule-cited-against-dexter.md",
       "layer": "routed",
@@ -2691,6 +2735,69 @@
       ]
     },
     {
+      "id": "practices.backend-acceptance-route-fixture-oracle-integrity",
+      "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "backend",
+          "contract",
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "contract",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "evidence"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
+        "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
+        "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 1. HTTP 200 不等于命中了目标业务资源"
+        },
+        {
+          "assertionKey": "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 2. 夹具必须先到达被验证的规则"
+        },
+        {
+          "assertionKey": "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA",
+          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
+          "anchor": "## 3. 业务断言不能把传输元数据当作数据泄漏"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md"
+      ]
+    },
+    {
       "id": "practices.backend-capability-lookup",
       "path": "project-memory/practices/backend-capability-lookup.md",
       "layer": "routed",
@@ -2736,6 +2843,74 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.business-channel-list-scope-and-validity-display",
+      "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "contract"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
+        "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
+        "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
+        "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 1. 门店候选模板是受业务条件约束的投影"
+        },
+        {
+          "assertionKey": "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 2. 模板失效会使既有渠道失效，但不删除历史事实"
+        },
+        {
+          "assertionKey": "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 3. 合同有效性只表达 VALID/INVALID 合同事实"
+        },
+        {
+          "assertionKey": "INTERNAL_CHANNEL_BINDING_STATUS_IS_NOT_REQUIRED",
+          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
+          "anchor": "## 5. 渠道绑定状态必须由 owner 按接入类型投影"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/business-channel-list-scope-and-validity-display.md"
       ]
     },
     {
@@ -2831,6 +3006,62 @@
       ]
     },
     {
+      "id": "practices.content-tab-unified-refresh-lifecycle",
+      "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "backend"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform",
+          "platform",
+          "product"
+        ],
+        "impacts": [
+          "architecture",
+          "contract",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
+        "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
+          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+          "anchor": "## 1. 规则"
+        },
+        {
+          "assertionKey": "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS",
+          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
+          "anchor": "## 2. 交互边界"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/content-tab-unified-refresh-lifecycle.md"
+      ]
+    },
+    {
       "id": "practices.cross-boundary-string-agreement",
       "path": "project-memory/practices/cross-boundary-string-agreement.md",
       "layer": "routed",
@@ -2913,6 +3144,69 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.external-collaboration-readback-display-and-detail-surface",
+      "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform",
+          "admin-ui",
+          "contract",
+          "backend"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform",
+          "product"
+        ],
+        "impacts": [
+          "contract",
+          "architecture",
+          "governance"
+        ],
+        "triggers": [
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
+        "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
+        "DETAIL_ACTIONS_USE_HEADER_EXTRA"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 1. 读回事实必须能直接被用户理解"
+        },
+        {
+          "assertionKey": "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 2. 新建绑定是业务准入，不是权限替代"
+        },
+        {
+          "assertionKey": "DETAIL_ACTIONS_USE_HEADER_EXTRA",
+          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
+          "anchor": "## 3. 列表与详情面"
+        }
+      ],
+      "sourceRefs": [
+        "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md"
       ]
     },
     {
@@ -3003,6 +3297,87 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.drawer-form-lifecycle",
+      "path": "project-memory/practices/drawer-form-lifecycle.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
+        "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
+        "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
+        "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
+        "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
+        "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
+          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+          "anchor": "export function useDrawerFormLifecycle({"
+        },
+        {
+          "assertionKey": "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
+        },
+        {
+          "assertionKey": "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "### 3-F · 该回 foundation 的必须回去"
+        },
+        {
+          "assertionKey": "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
+          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+          "anchor": "  readonly closedSessionKey: number;"
+        },
+        {
+          "assertionKey": "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
+          "path": "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
+          "anchor": "export function useDirtyFormLock(dirty?: boolean): boolean {"
+        },
+        {
+          "assertionKey": "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP",
+          "path": "project-memory/practices/frontend-capability-lookup.md",
+          "anchor": "| 抽屉表单生命周期 | `useDrawerFormLifecycle` / `useSubmissionLifecycle` | 含脏表单锁 `useDirtyFormLock` |"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md",
+        "doc/platform/frontend-coding-standard.md",
+        "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+        "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
+        "project-memory/practices/frontend-capability-lookup.md"
       ]
     },
     {
@@ -3321,6 +3696,63 @@
       ]
     },
     {
+      "id": "practices.ui-visible-business-language-and-dynamic-aggregate-layout",
+      "path": "project-memory/practices/ui-visible-business-language-and-dynamic-aggregate-layout.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "BUSINESS_LANGUAGE_FOR_VISIBLE_UI",
+        "PARENT_CHILD_DYNAMIC_AGGREGATE_LAYOUT",
+        "BUSINESS_CORPUS_FOR_VISIBLE_UI"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "BUSINESS_LANGUAGE_FOR_VISIBLE_UI",
+          "path": "doc/decisions/templates/ui-interaction-design-template.md",
+          "anchor": "#### 业务语言与动态明细命名（强制）"
+        },
+        {
+          "assertionKey": "PARENT_CHILD_DYNAMIC_AGGREGATE_LAYOUT",
+          "path": "doc/decisions/templates/ui-interaction-design-template.md",
+          "anchor": "#### 主从动态集合的布局、归属与保存边界（强制）"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_FOR_VISIBLE_UI",
+          "path": "project-memory/decisions/confirmed-business-language-corpus.md",
+          "anchor": "# Confirmed business language corpus"
+        }
+      ],
+      "sourceRefs": [
+        "doc/decisions/templates/ui-interaction-design-template.md",
+        "project-memory/decisions/confirmed-business-language-corpus.md"
+      ]
+    },
+    {
       "id": "practices.set-interaction-not-n-times-single",
       "path": "project-memory/practices/set-interaction-not-n-times-single.md",
       "layer": "routed",
@@ -3363,250 +3795,6 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
-      ]
-    },
-    {
-      "id": "practices.business-channel-list-scope-and-validity-display",
-      "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "admin-ui",
-          "contract"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "platform",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "architecture",
-          "contract",
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "requiredAssertions": [
-        "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
-        "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
-        "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "STORE_TEMPLATE_CANDIDATE_IS_EFFECTIVE_STORE_TEMPLATE",
-          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
-          "anchor": "## 1. 门店候选模板是受业务条件约束的投影"
-        },
-        {
-          "assertionKey": "DISABLED_TEMPLATE_CASCADES_EXISTING_CHANNEL",
-          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
-          "anchor": "## 2. 模板失效会使既有渠道失效，但不删除历史事实"
-        },
-        {
-          "assertionKey": "CONTRACT_VALIDITY_USES_SHARED_DOT_TEXT",
-          "path": "project-memory/practices/business-channel-list-scope-and-validity-display.md",
-          "anchor": "## 3. 合同有效性只表达 VALID/INVALID 合同事实"
-        }
-      ],
-      "sourceRefs": [
-        "project-memory/practices/business-channel-list-scope-and-validity-display.md"
-      ]
-    },
-    {
-      "id": "practices.content-tab-unified-refresh-lifecycle",
-      "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "admin-ui",
-          "backend"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "frontend-platform",
-          "platform",
-          "product"
-        ],
-        "impacts": [
-          "architecture",
-          "contract",
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "requiredAssertions": [
-        "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
-        "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "CONTENT_TAB_REFRESH_REACHES_ALL_READ_MODELS",
-          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
-          "anchor": "## 1. 规则"
-        },
-        {
-          "assertionKey": "CONTENT_TAB_REFRESH_PRESERVES_DIRTY_FORMS",
-          "path": "project-memory/practices/content-tab-unified-refresh-lifecycle.md",
-          "anchor": "## 2. 交互边界"
-        }
-      ],
-      "sourceRefs": [
-        "project-memory/practices/content-tab-unified-refresh-lifecycle.md"
-      ]
-    },
-    {
-      "id": "practices.external-collaboration-readback-display-and-detail-surface",
-      "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "platform",
-          "admin-ui",
-          "contract",
-          "backend"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "platform",
-          "frontend-platform",
-          "product"
-        ],
-        "impacts": [
-          "contract",
-          "architecture",
-          "governance"
-        ],
-        "triggers": [
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "requiredAssertions": [
-        "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
-        "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
-        "DETAIL_ACTIONS_USE_HEADER_EXTRA"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "OWNER_BINDING_DISPLAY_FACTS_ARE_COMPLETE",
-          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
-          "anchor": "## 1. 读回事实必须能直接被用户理解"
-        },
-        {
-          "assertionKey": "OWNER_BINDING_ADMISSION_FOLLOWS_AUTH_KIND",
-          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
-          "anchor": "## 2. 新建绑定是业务准入，不是权限替代"
-        },
-        {
-          "assertionKey": "DETAIL_ACTIONS_USE_HEADER_EXTRA",
-          "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
-          "anchor": "## 3. 列表与详情面"
-        }
-      ],
-      "sourceRefs": [
-        "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md"
-      ]
-    },
-    {
-      "id": "practices.backend-acceptance-route-fixture-oracle-integrity",
-      "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "backend",
-          "contract",
-          "admin-ui",
-          "platform"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "backend",
-          "contract",
-          "frontend-platform"
-        ],
-        "impacts": [
-          "architecture",
-          "contract",
-          "evidence"
-        ],
-        "triggers": [
-          "task-start",
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "requiredAssertions": [
-        "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
-        "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
-        "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "ACCEPTANCE_ASSERTS_EXACT_NESTED_ROUTE",
-          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
-          "anchor": "## 1. HTTP 200 不等于命中了目标业务资源"
-        },
-        {
-          "assertionKey": "ACCEPTANCE_FIXTURE_REACHES_TARGET_RULE",
-          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
-          "anchor": "## 2. 夹具必须先到达被验证的规则"
-        },
-        {
-          "assertionKey": "ACCEPTANCE_ORACLE_EXCLUDES_TRANSPORT_METADATA",
-          "path": "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md",
-          "anchor": "## 3. 业务断言不能把传输元数据当作数据泄漏"
-        }
-      ],
-      "sourceRefs": [
-        "project-memory/practices/backend-acceptance-route-fixture-oracle-integrity.md"
       ]
     }
   ]

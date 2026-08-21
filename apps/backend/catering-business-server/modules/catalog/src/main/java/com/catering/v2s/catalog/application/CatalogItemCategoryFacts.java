@@ -84,6 +84,12 @@ final class CatalogItemCategoryFacts {
                         "REFERENCE_MAPPING_UNRESOLVED", 422, "categoryRefs cannot contain a business code", failure);
             }
         }
+        if (refs.size() > 1)
+            throw new CatalogOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "商品最多只能选择一个分类");
         return List.copyOf(refs);
     }
 }

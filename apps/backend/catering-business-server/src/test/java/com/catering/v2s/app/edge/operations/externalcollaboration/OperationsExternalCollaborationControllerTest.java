@@ -78,9 +78,9 @@ class OperationsExternalCollaborationControllerTest {
         var result = new OperationsExternalCollaborationController(sessions, catalog)
                 .providerCandidates(request, KEY, "GROUP_BUY", null, 10);
 
-        assertEquals(List.of("PLANNED-PROVIDER"), result.items().stream()
-                .map(value -> value.providerCode())
-                .toList());
+        assertEquals(
+                List.of("PLANNED-PROVIDER"),
+                result.items().stream().map(value -> value.providerCode()).toList());
         assertEquals("PLANNED", result.items().get(0).catalogStatus());
         verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "GROUP_BUY");
     }

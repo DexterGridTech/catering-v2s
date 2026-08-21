@@ -120,11 +120,12 @@ public final class PlatformOrganizationOverviewController {
         try {
             subject = StoreCandidateTaskReadService.PlatformContractCandidateSubject.valueOf(subjectType);
         } catch (IllegalArgumentException exception) {
-            throw new InvalidEdgeRequestException("invalid platform organization candidate subject");
+            throw new InvalidEdgeRequestException("invalid platform organization candidate subject", exception);
         }
         if ("EXTERNAL_BINDING".equals(candidateUsage) && !isExternalBindingSubject(subject))
             throw new InvalidEdgeRequestException("invalid external binding candidate subject");
-        if ("CONTRACT_LIST".equals(candidateUsage) && subject != StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE
+        if ("CONTRACT_LIST".equals(candidateUsage)
+                && subject != StoreCandidateTaskReadService.PlatformContractCandidateSubject.STORE
                 && subject != StoreCandidateTaskReadService.PlatformContractCandidateSubject.TENANT)
             throw new InvalidEdgeRequestException("invalid contract candidate subject");
         var workspace = readFacts.requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);

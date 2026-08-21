@@ -145,6 +145,7 @@ export function BusinessChannelBindingDrawer({
     <Drawer
       open={open}
       title={binding ? '维护渠道绑定' : '建立渠道绑定'}
+      maskClosable={!lifecycle.submitting}
       onClose={lifecycle.requestClose}
       {...adminDrawerSurfaceProps}
       {...testId('business-channel-binding')}

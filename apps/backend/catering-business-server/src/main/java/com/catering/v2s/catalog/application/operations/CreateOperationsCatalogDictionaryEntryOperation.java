@@ -57,6 +57,7 @@ public class CreateOperationsCatalogDictionaryEntryOperation {
                 REVISION,
                 requestId,
                 new CatalogDictionaryEntryReadback.Result(
+                        value.entryRef(),
                         value.dictionaryKind(),
                         value.code(),
                         value.name(),

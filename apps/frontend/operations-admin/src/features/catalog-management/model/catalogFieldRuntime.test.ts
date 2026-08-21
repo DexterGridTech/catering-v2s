@@ -42,7 +42,7 @@ describe('catalog descriptor field runtime', () => {
   });
 
   it('keeps the endpoint binding denominator explicit and fingerprints context, sections and scope', () => {
-    expect(CATALOG_OPTION_OPERATION_IDS).toHaveLength(5);
+    expect(CATALOG_OPTION_OPERATION_IDS).toHaveLength(7);
     const first = catalogFieldFingerprint(source, context('TASTE'));
     expect(catalogFieldFingerprint(source, context('SIZE'))).not.toBe(first);
     expect(catalogFieldFingerprint(source, context('TASTE', 2))).not.toBe(first);
@@ -70,31 +70,30 @@ describe('catalog descriptor field runtime', () => {
     await expect(first).resolves.toMatchObject({stale: true, options: []});
   });
 
-  it('recomputes local candidates from the section rather than issuing a request', async () => {
+  it('recomputes definition-value candidates from the saved configuration rather than issuing a request', async () => {
     const resolver = createCatalogOptionResolver();
     const result = await resolver(
-      {kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'},
+      {kind: 'local', sectionPath: 'orderOptionConfigs', valueField: 'definitionValueRef', labelField: 'name'},
       {
         ...context('unused'),
-        readSection: () => [{attributeValueRef: 'value-a', name: '加辣'}],
+        readSection: () => [{definitionValueRef: 'value-a', name: '加辣'}],
       },
     );
     expect(result).toMatchObject({stale: false, options: [{value: 'value-a', label: '加辣'}]});
-    expect(result.rows).toEqual([{attributeValueRef: 'value-a', name: '加辣'}]);
+    expect(result.rows).toEqual([{definitionValueRef: 'value-a', name: '加辣'}]);
   });
 
-  it('flattens nested order-options values without turning the local source into an endpoint', async () => {
+  it('flattens configured definition values without turning the local source into an endpoint', async () => {
     const resolver = createCatalogOptionResolver();
     const result = await resolver(
-      {kind: 'local', sectionPath: 'orderOptions', valueField: 'attributeValueRef', labelField: 'name'},
+      {kind: 'local', sectionPath: 'orderOptionConfigs', valueField: 'definitionValueRef', labelField: 'name'},
       {
         ...context('unused'),
         readSection: () => [
           {
-            groupCode: 'TEMP',
             values: [
-              {attributeValueRef: 'value-a', name: '加辣'},
-              {attributeValueRef: 'value-b', name: '加葱'},
+              {definitionValueRef: 'value-a', name: '加辣'},
+              {definitionValueRef: 'value-b', name: '加葱'},
             ],
           },
         ],
@@ -105,8 +104,8 @@ describe('catalog descriptor field runtime', () => {
       {value: 'value-b', label: '加葱', disabled: false},
     ]);
     expect(result.rows).toEqual([
-      {attributeValueRef: 'value-a', name: '加辣'},
-      {attributeValueRef: 'value-b', name: '加葱'},
+      {definitionValueRef: 'value-a', name: '加辣'},
+      {definitionValueRef: 'value-b', name: '加葱'},
     ]);
   });
 

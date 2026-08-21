@@ -40,6 +40,7 @@ export function WorkspaceAccountDetailDrawer({
       loading={loading}
       size={640}
       onClose={onClose}
+      maskClosable
       afterOpenChange={onAfterOpenChange}
       {...adminDrawerSurfaceProps}
       {...testId('workspace-account-detail-drawer')}

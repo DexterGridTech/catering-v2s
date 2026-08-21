@@ -36,6 +36,19 @@ public final class CatalogOperationBindings {
     OperationBindingTypes.Wire.BrandCatalogCopyPreflight preflightOperationsBrandCatalogCopy(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BrandCopyPreflightRequest request);
     OperationBindingTypes.Wire.BrandCatalogCopyReadback executeOperationsBrandCatalogCopy(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BrandCopyExecuteRequest request);
     OperationBindingTypes.Wire.CatalogShapeManifestView getOperationsCatalogShapeManifest(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogShapeManifestQuery request);
+    OperationBindingTypes.Wire.CatalogAttributeDefinitionList listOperationsCatalogAttributeDefinitions(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionListQuery request);
+    OperationBindingTypes.Wire.CatalogAttributeDefinitionReadback createOperationsCatalogAttributeDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionCreateRequest request);
+    OperationBindingTypes.Wire.CatalogAttributeDefinitionReadback updateOperationsCatalogAttributeDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionUpdateRequest request);
+    OperationBindingTypes.Wire.CatalogAttributeDefinitionDeleteReadback deleteOperationsCatalogAttributeDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionDeleteRequest request);
+    OperationBindingTypes.Wire.CatalogOrderOptionDefinitionList listOperationsCatalogOrderOptionDefinitions(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionListQuery request);
+    OperationBindingTypes.Wire.CatalogOrderOptionDefinitionReadback createOperationsCatalogOrderOptionDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionCreateRequest request);
+    OperationBindingTypes.Wire.CatalogOrderOptionDefinitionReadback updateOperationsCatalogOrderOptionDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionUpdateRequest request);
+    OperationBindingTypes.Wire.CatalogOrderOptionDefinitionDeleteReadback deleteOperationsCatalogOrderOptionDefinition(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionDeleteRequest request);
+    OperationBindingTypes.Wire.CatalogUnitList listOperationsCatalogUnits(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.CatalogUnitListQuery request);
+    OperationBindingTypes.Wire.CatalogUnitReadback createOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitCreateRequest request);
+    OperationBindingTypes.Wire.CatalogUnitReadback updateOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitUpdateRequest request);
+    OperationBindingTypes.Wire.CatalogUnitReadback disableOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDisableRequest request);
+    OperationBindingTypes.Wire.CatalogUnitDeleteReadback deleteOperationsCatalogUnit(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDeleteRequest request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -70,6 +83,19 @@ public final class CatalogOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("preflightOperationsBrandCatalogCopy", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor EXECUTE_OPERATIONS_BRAND_CATALOG_COPY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("executeOperationsBrandCatalogCopy", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_CATALOG_SHAPE_MANIFEST_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsCatalogShapeManifest", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor LIST_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("listOperationsCatalogAttributeDefinitions", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsCatalogAttributeDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogAttributeDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("deleteOperationsCatalogAttributeDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor LIST_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("listOperationsCatalogOrderOptionDefinitions", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsCatalogOrderOptionDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogOrderOptionDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("deleteOperationsCatalogOrderOptionDefinition", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor LIST_OPERATIONS_CATALOG_UNITS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("listOperationsCatalogUnits", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsCatalogUnit", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogUnit", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor DISABLE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("disableOperationsCatalogUnit", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor DELETE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("deleteOperationsCatalogUnit", "catalog", "catalog-inventory");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -82,6 +108,9 @@ public final class CatalogOperationBindings {
       case "getOperationsLocalCatalogCopyCandidates" -> { if (descriptor != GET_OPERATIONS_LOCAL_CATALOG_COPY_CANDIDATES_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsBrandCatalogCopyCandidates" -> { if (descriptor != GET_OPERATIONS_BRAND_CATALOG_COPY_CANDIDATES_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsCatalogShapeManifest" -> { if (descriptor != GET_OPERATIONS_CATALOG_SHAPE_MANIFEST_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "listOperationsCatalogAttributeDefinitions" -> { if (descriptor != LIST_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "listOperationsCatalogOrderOptionDefinitions" -> { if (descriptor != LIST_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "listOperationsCatalogUnits" -> { if (descriptor != LIST_OPERATIONS_CATALOG_UNITS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -98,6 +127,9 @@ public final class CatalogOperationBindings {
       case "getOperationsLocalCatalogCopyCandidates" -> adapters.getOperationsLocalCatalogCopyCandidates(GET_OPERATIONS_LOCAL_CATALOG_COPY_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.LocalCopyCandidateQuery) request);
       case "getOperationsBrandCatalogCopyCandidates" -> adapters.getOperationsBrandCatalogCopyCandidates(GET_OPERATIONS_BRAND_CATALOG_COPY_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.BrandCopyCandidateQuery) request);
       case "getOperationsCatalogShapeManifest" -> adapters.getOperationsCatalogShapeManifest(GET_OPERATIONS_CATALOG_SHAPE_MANIFEST_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogShapeManifestQuery) request);
+      case "listOperationsCatalogAttributeDefinitions" -> adapters.listOperationsCatalogAttributeDefinitions(LIST_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogAttributeDefinitionListQuery) request);
+      case "listOperationsCatalogOrderOptionDefinitions" -> adapters.listOperationsCatalogOrderOptionDefinitions(LIST_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITIONS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogOrderOptionDefinitionListQuery) request);
+      case "listOperationsCatalogUnits" -> adapters.listOperationsCatalogUnits(LIST_OPERATIONS_CATALOG_UNITS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogUnitListQuery) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }
@@ -173,5 +205,45 @@ public final class CatalogOperationBindings {
 
   public OperationBindingTypes.Wire.BrandCatalogCopyReadback executeOperationsBrandCatalogCopy(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.BrandCopyExecuteRequest request) {
     return adapters.executeOperationsBrandCatalogCopy(EXECUTE_OPERATIONS_BRAND_CATALOG_COPY_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogAttributeDefinitionReadback createOperationsCatalogAttributeDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionCreateRequest request) {
+    return adapters.createOperationsCatalogAttributeDefinition(CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogAttributeDefinitionReadback updateOperationsCatalogAttributeDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionUpdateRequest request) {
+    return adapters.updateOperationsCatalogAttributeDefinition(UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogAttributeDefinitionDeleteReadback deleteOperationsCatalogAttributeDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogAttributeDefinitionDeleteRequest request) {
+    return adapters.deleteOperationsCatalogAttributeDefinition(DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogOrderOptionDefinitionReadback createOperationsCatalogOrderOptionDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionCreateRequest request) {
+    return adapters.createOperationsCatalogOrderOptionDefinition(CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogOrderOptionDefinitionReadback updateOperationsCatalogOrderOptionDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionUpdateRequest request) {
+    return adapters.updateOperationsCatalogOrderOptionDefinition(UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogOrderOptionDefinitionDeleteReadback deleteOperationsCatalogOrderOptionDefinition(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogOrderOptionDefinitionDeleteRequest request) {
+    return adapters.deleteOperationsCatalogOrderOptionDefinition(DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogUnitReadback createOperationsCatalogUnit(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitCreateRequest request) {
+    return adapters.createOperationsCatalogUnit(CREATE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogUnitReadback updateOperationsCatalogUnit(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitUpdateRequest request) {
+    return adapters.updateOperationsCatalogUnit(UPDATE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogUnitReadback disableOperationsCatalogUnit(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDisableRequest request) {
+    return adapters.disableOperationsCatalogUnit(DISABLE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.CatalogUnitDeleteReadback deleteOperationsCatalogUnit(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogUnitDeleteRequest request) {
+    return adapters.deleteOperationsCatalogUnit(DELETE_OPERATIONS_CATALOG_UNIT_DESCRIPTOR, context, request);
   }
 }

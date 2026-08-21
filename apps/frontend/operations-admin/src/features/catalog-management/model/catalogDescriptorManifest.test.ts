@@ -3,12 +3,12 @@ import type {CatalogShapeManifestView} from '../../../app/api/generated/catalog-
 import {catalogJoinedField} from './catalogDescriptorManifest';
 
 describe('catalog descriptor manifest adapter', () => {
-  it('joins categoryRefs from the generated field and shape rule instead of a local control definition', () => {
+  it('joins categoryRef from the generated field and shape rule instead of a local control definition', () => {
     const manifest = {
       fields: [
         {
-          fieldKey: 'categoryRefs',
-          dataPath: 'categoryRefs[]',
+          fieldKey: 'categoryRef',
+          dataPath: 'categoryRef',
           label: '所属分类',
           controlKind: 'treeSelect',
           tabKey: 'basic',
@@ -26,16 +26,16 @@ describe('catalog descriptor manifest adapter', () => {
         },
       ],
       fieldRules: {
-        STANDARD_SALE_COUNTED: [{field: 'categoryRefs', visible: true, readonly: false, readonlyWhen: {update: false}}],
+        STANDARD_SALE_COUNTED: [{field: 'categoryRef', visible: true, readonly: false, readonlyWhen: {update: false}}],
       },
       tabRules: {STANDARD_SALE_COUNTED: {visible: ['basic']}},
     } as unknown as Pick<CatalogShapeManifestView, 'fields' | 'fieldRules' | 'tabRules'>;
-    const field = catalogJoinedField(manifest, 'STANDARD_SALE_COUNTED', 'categoryRefs');
+    const field = catalogJoinedField(manifest, 'STANDARD_SALE_COUNTED', 'categoryRef');
     expect(field).toMatchObject({
-      fieldKey: 'categoryRefs',
+      fieldKey: 'categoryRef',
       controlKind: 'treeSelect',
       tabKey: 'basic',
-      rule: {field: 'categoryRefs'},
+      rule: {field: 'categoryRef'},
       readonly: false,
     });
     expect(field?.optionSourceRef).toMatchObject({

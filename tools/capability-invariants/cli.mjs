@@ -28,11 +28,25 @@ const CATALOG_INVENTORY_OWNER_AUTHORIZATION = Object.freeze({
   asset: {ownerRecheckId: "OWNER_RECHECK_ASSET", typedProblemMappingId: "PROBLEM_ASSET_TYPED_OWNER_EXCEPTION"},
 });
 const CATALOG_SAVE_OPERATION_ID = "saveOperationsCatalogItem";
-const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom"];
+const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom", "deleteCatalogOptionValueBoms"];
+const CATALOG_ORDER_OPTION_DEFINITION_COMMANDS = Object.freeze({
+  createOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget"],
+  updateOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget", "deleteCatalogOrderOptionValueBoms"],
+  deleteOperationsCatalogOrderOptionDefinition: ["deleteCatalogOptionValueBoms"],
+});
+const CATALOG_UNIT_DEFINITION_COMMANDS = Object.freeze({
+  updateOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
+  disableOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
+  deleteOperationsCatalogUnit: ["validateCatalogUnitLifecycle"],
+});
+function catalogInventoryDefinitionCommands(operationId) {
+  if (operationId === CATALOG_SAVE_OPERATION_ID) return CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS;
+  return CATALOG_ORDER_OPTION_DEFINITION_COMMANDS[operationId] || CATALOG_UNIT_DEFINITION_COMMANDS[operationId];
+}
 const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
 const CATALOG_SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
 const CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
-const CATALOG_DUAL_SCOPE_READ_COUNT = 7;
+const CATALOG_DUAL_SCOPE_READ_COUNT = 10;
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
@@ -493,7 +507,7 @@ function exactStringList(left, right) {
 function catalogInventoryContractOperations(root) {
   if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
   const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
-  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 43) {
+  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 56) {
     fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
   }
   const rows = new Map();
@@ -533,8 +547,9 @@ function catalogInventoryContractOperations(root) {
     } else {
       fail(`CATALOG_INVENTORY_CONTRACT_MUTATION_FLAG_INVALID:${operation.operationId}`);
     }
-    if (operation.operationId === CATALOG_SAVE_OPERATION_ID) {
-      if (!exactStringList(operation.coordinatedInventoryDefinitionCommands, CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+    const expectedDefinitionCommands = catalogInventoryDefinitionCommands(operation.operationId);
+    if (expectedDefinitionCommands) {
+      if (!exactStringList(operation.coordinatedInventoryDefinitionCommands, expectedDefinitionCommands)
         || !exactStringMap(operation.capabilityByDataNodeType, {HEAD_COMPANY: "EDIT_HEAD_COMPANY_CATALOG", STORE: "EDIT_STORE_CATALOG"})) {
         fail(`CATALOG_INVENTORY_CONTRACT_DEFINITION_COMMAND_INVALID:${operation.operationId}`);
       }
@@ -548,7 +563,7 @@ function catalogInventoryContractOperations(root) {
     }
     rows.set(identity, operation);
   }
-  if (mutations !== 27 || reads !== 16) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  if (mutations !== 37 || reads !== 19) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
   return rows;
 }
 
@@ -572,8 +587,11 @@ function catalogInventoryOpenApiOperations(document, expected, sourcePath) {
         || (contractOperation.mutation
           ? operation["x-required-capability"] !== contractOperation.authorizationRequirementId
           : Object.hasOwn(operation, "x-required-capability"))
-        || (contractOperation.operationId === CATALOG_SAVE_OPERATION_ID
-          ? !exactStringList(operation["x-coordinated-inventory-definition-commands"], CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+        || (catalogInventoryDefinitionCommands(contractOperation.operationId)
+          ? !exactStringList(
+              operation["x-coordinated-inventory-definition-commands"],
+              catalogInventoryDefinitionCommands(contractOperation.operationId),
+            )
           : Object.hasOwn(operation, "x-coordinated-inventory-definition-commands"))) {
         fail(`CATALOG_INVENTORY_OPENAPI_OPERATION_PROJECTION_DRIFT:${sourcePath}:${operation.operationId || "UNSET"}`);
       }
@@ -1140,8 +1158,9 @@ export function validateCapabilityInvariants(root = process.cwd()) {
       continue;
     }
     if (catalogInventoryOperation) {
-      const definitionCommandsValid = catalogInventoryOperation.operationId === CATALOG_SAVE_OPERATION_ID
-        ? exactStringList(requirement.coordinatedInventoryDefinitionCommands, CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS)
+      const expectedDefinitionCommands = catalogInventoryDefinitionCommands(catalogInventoryOperation.operationId);
+      const definitionCommandsValid = expectedDefinitionCommands
+        ? exactStringList(requirement.coordinatedInventoryDefinitionCommands, expectedDefinitionCommands)
         : !Object.hasOwn(requirement, "coordinatedInventoryDefinitionCommands");
       if (!definitionCommandsValid) failures.push(`CAPABILITY_CATALOG_INVENTORY_DEFINITION_COMMANDS_INVALID:${row.operationId}`);
     }

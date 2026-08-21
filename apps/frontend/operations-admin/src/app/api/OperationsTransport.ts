@@ -130,7 +130,7 @@ export function registerOperationsSessionRecovery(recovery: () => void | Promise
 }
 
 /** The app shell observes render failures through the transport boundary. */
-export {recordOperationsRenderError} from './OperationsApi';
+export {operationsLogger, recordOperationsRenderError} from './OperationsApi';
 
 export {operationsContentTabRefreshSignal, operationsRefreshSignal};
 /** Feature-facing generated RTK hooks stay behind the app transport boundary. */

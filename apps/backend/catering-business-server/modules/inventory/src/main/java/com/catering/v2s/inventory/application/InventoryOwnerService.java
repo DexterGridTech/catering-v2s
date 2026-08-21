@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,9 +38,21 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private static final String REVISION = "CATALOG_INVENTORY_P1_20260806";
     private static final String CATALOG_ITEM_SAVE_REQUIREMENT =
             "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM";
+    private static final String ITEM_BASE_UNIT_ARGS = "商品基础计量单位判断参数不完整";
+    private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
+    private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
+    private static final String TARGET_SELECT_COLUMNS =
+            "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
+                    + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
+                    + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision";
     /** Mapping types consumed by inventory copy; catalog may carry other owner mappings in the same plan. */
-    private static final Set<String> INVENTORY_COPY_MAPPING_TYPES =
-            Set.of("CATALOG_ITEM", "PRODUCT_SKU", "SKU_ATTRIBUTE_VALUE", "STOCK_TARGET");
+    private static final Set<String> INVENTORY_COPY_MAPPING_TYPES = Set.of(
+            "CATALOG_ITEM",
+            "PRODUCT_SKU",
+            "CATALOG_UNIT",
+            "CATALOG_ORDER_OPTION_DEFINITION",
+            "CATALOG_ORDER_OPTION_DEFINITION_VALUE",
+            "STOCK_TARGET");
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
@@ -117,7 +130,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public JsonNode read(
             String operationId,
             String dataNodeRef,
@@ -218,7 +231,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
             requireCommandNote(command.note());
             BigDecimal counted = requireCountedQuantity(command.countedQuantity(), command.zeroConfirmation());
-            BigDecimal normalized = normalizeQuantity(command.unit(), current, counted);
+            BigDecimal normalized = normalizeQuantity(command.countingUnitRef(), current, counted);
             InventoryMutationReadback result = writeTypedInventoryChange(
                     current,
                     command.expectedVersion(),
@@ -258,7 +271,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             InventoryMutationReadback result = writeTypedInventoryChange(
                     current,
                     command.expectedVersion(),
-                    normalizeQuantity(command.unit(), current, quantity),
+                    normalizeQuantity(command.countingUnitRef(), current, quantity),
                     "INCREASE",
                     null,
                     command.note());
@@ -295,7 +308,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             if (!Set.of("RECOUNT", "RECEIPT", "WASTE", "TRANSFER", "CORRECTION", "OTHER")
                     .contains(command.reasonCode()))
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "reasonCode is not supported");
-            BigDecimal delta = normalizeQuantity(command.unit(), current, requirePositiveQuantity(command.quantity()));
+            BigDecimal delta =
+                    normalizeQuantity(command.countingUnitRef(), current, requirePositiveQuantity(command.quantity()));
             if ("DECREASE".equals(command.direction())) delta = delta.negate();
             InventoryMutationReadback result = writeTypedInventoryChange(
                     current, command.expectedVersion(), delta, "ADJUST", command.reasonCode(), command.note());
@@ -316,8 +330,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
+        TargetRow current;
         try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckTypedTargetBeforeReceipt(
+            current = recheckTypedTargetBeforeReceipt(
                     dataNodeRef, scope.brandRef(), command.targetRef(), command.expectedVersion());
         }
         InventoryTargetCurrentReadback replay = replayTyped(
@@ -329,14 +344,25 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         if (replay != null) return replay;
         try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
                 var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
-            InventoryConfiguration configuration = requireConfiguration(command.configuration());
+            InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(current.ref());
+            InventoryConfiguration configuration =
+                    requireConfiguration(command.configuration(), consumption.precision());
             JsonNode configurationNode = mapper.valueToTree(configuration);
+            InventoryOwnerApi.UnitSnapshot countingSnapshot = configuration.countingUnitSnapshot();
             int changed = jdbc.update(
-                    "UPDATE inventory.stock_target SET configuration=CAST(? AS "
-                            + "JSONB),version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND "
+                    "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
+                            + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dimension=?,"
+                            + "counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,update"
+                            + "d_at_epoch_millis=? WHERE data_node_ref=? AND "
                             + "brand_ref=? "
                             + "AND target_ref=? AND version=?",
                     canonical(configurationNode),
+                    countingSnapshot == null ? null : countingSnapshot.unitRef(),
+                    countingSnapshot == null ? null : countingSnapshot.code(),
+                    countingSnapshot == null ? null : countingSnapshot.name(),
+                    countingSnapshot == null ? null : countingSnapshot.unitDimension(),
+                    countingSnapshot == null ? null : countingSnapshot.precision(),
+                    configuration.conversionFactor(),
                     time.currentEpochMillis(),
                     dataNodeRef,
                     scope.brandRef(),
@@ -348,6 +374,95 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             InventoryTargetCurrentReadback result = currentTyped(dataNodeRef, scope.brandRef(), command.targetRef());
             saveTypedReceipt(dataNodeRef, key, "updateOperationsInventoryTargetConfiguration", receiptRequest, result);
             return result;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void validateCatalogUnitLifecycle(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UUID unitRef,
+            CatalogUnitLifecycleChange intendedChange) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        if (unitRef == null || intendedChange == null)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "单位生命周期判断参数不完整");
+        AdvisoryLock.acquire(jdbc, 0x554E4954, unitRef);
+        List<UUID> targetRefs = jdbc.query(
+                "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
+                        + "AND (consumption_unit_ref=? OR counting_unit_ref=?) FOR UPDATE",
+                (result, row) -> result.getObject(1, UUID.class),
+                scope.dataNodeId().toString(),
+                scope.brandRef(),
+                unitRef,
+                unitRef);
+        long ledgerCount = jdbc.queryForObject(
+                "SELECT count(*) FROM inventory.stock_ledger ledger WHERE ledger.consumption_unit_ref=? "
+                        + "AND EXISTS (SELECT 1 FROM inventory.stock_target target "
+                        + "WHERE target.target_ref=ledger.target_ref "
+                        + "AND target.data_node_ref=? AND target.brand_ref=?)",
+                Long.class,
+                unitRef,
+                scope.dataNodeId().toString(),
+                scope.brandRef());
+        long bomCount = jdbc.queryForObject(
+                "SELECT count(*) FROM inventory.stock_bom bom WHERE EXISTS ("
+                        + "SELECT 1 FROM jsonb_array_elements(bom.rows) line "
+                        + "WHERE line->'consumptionUnitSnapshot'->>'unitRef'=? )",
+                Long.class,
+                unitRef.toString());
+        if ((intendedChange == CatalogUnitLifecycleChange.UPDATE_DEFINITION
+                        || intendedChange == CatalogUnitLifecycleChange.DELETE)
+                && (!targetRefs.isEmpty() || ledgerCount > 0 || bomCount > 0)) {
+            String message = intendedChange == CatalogUnitLifecycleChange.DELETE
+                    ? "该计量单位正在使用，不能删除。"
+                    : "该单位已被使用；如需改变此项，请新建计量单位后在后续配置中选择";
+            throw new InventoryOwnerApi.Problem(
+                    "CATALOG_UNIT_IN_USE",
+                    409,
+                    /* format-wrap */
+                    message);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void validateCatalogItemBaseMeasureUnitTransition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UUID itemRef,
+            UnitSnapshot itemBaseMeasureUnit,
+            List<CatalogSkuBaseMeasureUnit> skuBaseMeasureUnits) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        if (itemRef == null || skuBaseMeasureUnits == null)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, ITEM_BASE_UNIT_ARGS);
+        lockCatalogItemRefs(List.of(itemRef));
+        lockProductSkuRefs(skuBaseMeasureUnits.stream()
+                .map(CatalogSkuBaseMeasureUnit::productSkuRef)
+                .toList());
+        Map<UUID, UnitSnapshot> skuUnits = new LinkedHashMap<>();
+        for (CatalogSkuBaseMeasureUnit entry : skuBaseMeasureUnits) {
+            if (entry.productSkuRef() == null)
+                throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, SKU_BASE_UNIT_ARGS);
+            skuUnits.put(entry.productSkuRef(), entry.unitSnapshot());
+        }
+        List<TargetConsumptionUnitRow> targets = jdbc.query(
+                "SELECT target_ref,product_sku_ref,consumption_unit_ref FROM inventory.stock_target "
+                        + "WHERE data_node_ref=? AND brand_ref=? AND item_ref=? FOR UPDATE",
+                (result, row) -> new TargetConsumptionUnitRow(
+                        result.getObject(1, UUID.class),
+                        result.getObject(2, UUID.class),
+                        result.getObject(3, UUID.class)),
+                scope.dataNodeId().toString(),
+                scope.brandRef(),
+                itemRef);
+        for (TargetConsumptionUnitRow target : targets) {
+            UnitSnapshot candidate =
+                    target.productSkuRef() == null ? itemBaseMeasureUnit : skuUnits.get(target.productSkuRef());
+            if (candidate == null || !java.util.Objects.equals(candidate.unitRef(), target.consumptionUnitRef()))
+                throw new InventoryOwnerApi.Problem(
+                        "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED",
+                        409,
+                        /* format-wrap */
+                        "基础计量单位变更会改变既有库存对象的消费单位");
         }
     }
 
@@ -381,44 +496,191 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "note must be at most 200 characters");
     }
 
-    private InventoryConfiguration requireConfiguration(InventoryConfiguration configuration) {
-        if (configuration == null
-                || configuration.countingUnit() == null
-                || configuration.countingUnit().isBlank())
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration.countingUnit is required");
-        if (configuration.conversionFactor() == null
-                || configuration.conversionFactor().signum() <= 0)
+    private InventoryConfiguration requireConfiguration(
+            InventoryConfiguration configuration, int consumptionPrecision) {
+        if (configuration == null)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration is required");
+        BigDecimal factor = configuration.conversionFactor();
+        if (factor == null) factor = BigDecimal.ONE;
+        if (factor.signum() <= 0)
             throw new InventoryOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "configuration.conversionFactor must be positive");
+        if (configuration.countingUnitRef() == null && factor.compareTo(BigDecimal.ONE) != 0)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "没有盘点单位时换算因子必须为1");
+        if (configuration.countingUnitRef() != null
+                && (configuration.countingUnitSnapshot() == null
+                        || !configuration
+                                .countingUnitRef()
+                                .equals(configuration.countingUnitSnapshot().unitRef())))
+            throw new InventoryOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, "盘点单位快照与引用不一致");
         if (configuration.lowStockThreshold() != null
                 && configuration.lowStockThreshold().signum() < 0)
             throw new InventoryOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "configuration.lowStockThreshold cannot be negative");
-        return configuration;
+        BigDecimal lowStockThreshold = configuration.lowStockThreshold() == null
+                ? null
+                : truncateTowardZero(configuration.lowStockThreshold(), consumptionPrecision);
+        return new InventoryConfiguration(
+                configuration.allowNegative(),
+                lowStockThreshold,
+                configuration.countingUnitRef(),
+                factor,
+                configuration.countingUnitSnapshot());
     }
 
-    private BigDecimal normalizeQuantity(String unit, TargetRow row, BigDecimal input) {
-        if (unit == null || unit.isBlank()) return input;
-        JsonNode config = json(row.configuration());
-        String consumptionUnit = row.measureMode();
-        String countingUnit = config.path("countingUnit").asText(consumptionUnit);
-        if (!unit.equals(consumptionUnit) && !unit.equals(countingUnit)) {
+    private BigDecimal normalizeQuantity(UUID countingUnitRef, TargetRow row, BigDecimal input) {
+        InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
+        InventoryOwnerApi.CountingUnitConfiguration counting = countingUnitConfiguration(row.ref(), consumption);
+        InventoryOwnerApi.UnitSnapshot source =
+                counting.countingUnitSnapshot() == null ? consumption : counting.countingUnitSnapshot();
+        BigDecimal sourceQuantity = truncateTowardZero(input, source.precision());
+        if (countingUnitRef == null || countingUnitRef.equals(consumption.unitRef()))
+            return truncateTowardZero(sourceQuantity, consumption.precision());
+        if (counting.countingUnitSnapshot() == null
+                || !countingUnitRef.equals(counting.countingUnitSnapshot().unitRef())) {
             throw new InventoryOwnerApi.Problem(
                     ("CONSUMPTION_UNIT_INCOMPATIBLE"),
                     (422),
                     /* format-wrap */
                     ("输入单位不属于库存对象单位集合"));
         }
-        if (unit.equals(consumptionUnit) || unit.equals(countingUnit) && unit.equals(consumptionUnit)) return input;
-        BigDecimal factor = decimalNode(config, "conversionFactor");
-        if (factor.signum() <= 0) {
+        if (!consumption.unitDimension().equals(counting.countingUnitSnapshot().unitDimension())) {
             throw new InventoryOwnerApi.Problem(
                     ("CONSUMPTION_UNIT_INCOMPATIBLE"),
                     (422),
                     /* format-wrap */
-                    ("库存换算因子必须为正数"));
+                    ("盘点单位必须与消耗单位同类别"));
         }
-        return input.multiply(factor);
+        if (counting.conversionFactor() == null || counting.conversionFactor().signum() <= 0)
+            throw new InventoryOwnerApi.Problem(
+                    "CONSUMPTION_UNIT_INCOMPATIBLE",
+                    422,
+                    /* format-wrap */
+                    "库存换算因子必须为正数");
+        return truncateTowardZero(sourceQuantity.multiply(counting.conversionFactor()), consumption.precision());
+    }
+
+    private InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot(UUID targetRef) {
+        return jdbc
+                .query(
+                        "SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_d"
+                                + "imension,consumption_unit_precision "
+                                + "FROM inventory.stock_target WHERE target_ref=?",
+                        (result, row) -> unitSnapshot(result),
+                        targetRef)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new InventoryOwnerApi.Problem(
+                        "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
+                        422,
+                        /* format-wrap */
+                        "库存对象必须保存有效消耗单位快照"));
+    }
+
+    private InventoryOwnerApi.CountingUnitConfiguration countingUnitConfiguration(
+            UUID targetRef, InventoryOwnerApi.UnitSnapshot consumption) {
+        return jdbc
+                .query(
+                        "SELECT counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,cou"
+                                + "nting_unit_precision,counting_unit_conversion_factor "
+                                + "FROM inventory.stock_target WHERE target_ref=?",
+                        (result, row) -> {
+                            InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, 1);
+                            return new InventoryOwnerApi.CountingUnitConfiguration(snapshot, result.getBigDecimal(6));
+                        },
+                        targetRef)
+                .stream()
+                .findFirst()
+                .orElse(new InventoryOwnerApi.CountingUnitConfiguration(consumption, BigDecimal.ONE));
+    }
+
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result) throws java.sql.SQLException {
+        UUID ref = result.getObject(1, UUID.class);
+        if (ref == null || result.getString(2) == null || result.getString(3) == null || result.getString(4) == null)
+            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
+        return new InventoryOwnerApi.UnitSnapshot(
+                ref, result.getString(2), result.getString(3), result.getString(4), result.getInt(5));
+    }
+
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result, int firstColumn)
+            throws java.sql.SQLException {
+        UUID ref = result.getObject(firstColumn, UUID.class);
+        String code = result.getString(firstColumn + 1);
+        String name = result.getString(firstColumn + 2);
+        String dimension = result.getString(firstColumn + 3);
+        if (ref == null || code == null || name == null || dimension == null) return null;
+        return new InventoryOwnerApi.UnitSnapshot(ref, code, name, dimension, result.getInt(firstColumn + 4));
+    }
+
+    private static BigDecimal truncateTowardZero(BigDecimal value, int precision) {
+        return value.setScale(precision, RoundingMode.DOWN);
+    }
+
+    private InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(JsonNode node, String field) {
+        if (node == null || !node.isObject())
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be an object");
+        UUID ref;
+        try {
+            ref = UUID.fromString(node.path("unitRef").asText());
+        } catch (IllegalArgumentException failure) {
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + ".unitRef is required", failure);
+        }
+        String code = node.path("code").asText();
+        String name = node.path("name").asText();
+        String dimension = node.path("unitDimension").asText();
+        if (code.isBlank()
+                || name.isBlank()
+                || !Set.of("COUNT", "WEIGHT", "VOLUME", "SERVICE_DURATION", "PACKAGE")
+                        .contains(dimension)
+                || !node.has("precision")
+                || !node.path("precision").canConvertToInt()
+                || node.path("precision").asInt() < 0)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is incomplete");
+        return new InventoryOwnerApi.UnitSnapshot(
+                ref, code, name, dimension, node.path("precision").asInt());
+    }
+
+    private InventoryOwnerApi.CountingUnitConfiguration countingUnitConfiguration(
+            ObjectNode configuration, InventoryOwnerApi.UnitSnapshot consumptionUnit) {
+        if (!configuration.has("allowNegative")
+                || !configuration.path("allowNegative").isBoolean())
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration.allowNegative must be boolean");
+        UUID countingRef = optionalUuid(configuration, "countingUnitRef");
+        InventoryOwnerApi.UnitSnapshot counting = countingRef == null
+                ? null
+                : requiredUnitSnapshot(
+                        configuration.path("countingUnitSnapshot"), "configuration.countingUnitSnapshot");
+        if (counting != null && !countingRef.equals(counting.unitRef()))
+            throw new InventoryOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, "盘点单位快照与引用不一致");
+        if (counting != null && !consumptionUnit.unitDimension().equals(counting.unitDimension()))
+            throw new InventoryOwnerApi.Problem(
+                    "CONSUMPTION_UNIT_INCOMPATIBLE",
+                    422,
+                    /* format-wrap */
+                    "盘点单位必须与消耗单位同类别");
+        BigDecimal factor = configuration.hasNonNull("conversionFactor")
+                ? decimalValue(configuration, "conversionFactor")
+                : BigDecimal.ONE;
+        if (factor.signum() <= 0)
+            throw new InventoryOwnerApi.Problem(
+                    "VALIDATION_ERROR", 422, "configuration.conversionFactor must be positive");
+        if (counting == null && factor.compareTo(BigDecimal.ONE) != 0)
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "没有盘点单位时换算因子必须为1");
+        return new InventoryOwnerApi.CountingUnitConfiguration(counting, factor);
+    }
+
+    private void writeCountingConfiguration(
+            ObjectNode configuration, InventoryOwnerApi.CountingUnitConfiguration counting) {
+        if (counting.countingUnitSnapshot() == null) {
+            configuration.putNull("countingUnitRef");
+            configuration.putNull("countingUnitSnapshot");
+            configuration.put("conversionFactor", BigDecimal.ONE);
+            return;
+        }
+        configuration.put(
+                "countingUnitRef", counting.countingUnitSnapshot().unitRef().toString());
+        configuration.set("countingUnitSnapshot", mapper.valueToTree(counting.countingUnitSnapshot()));
+        configuration.put("conversionFactor", counting.conversionFactor());
     }
 
     /** Typed M1 command helper. It owns mutation facts and never delegates to the legacy JSON dispatcher. */
@@ -430,11 +692,14 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             throw new InventoryOwnerApi.Problem("NEGATIVE_STOCK_NOT_ALLOWED", 422, "库存不能为负");
         UUID entryRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
+        InventoryOwnerApi.UnitSnapshot unit = consumptionUnitSnapshot(row.ref());
         jdbc.update(
                 "INSERT INTO "
                         + "inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,"
                         + "reas"
-                        + "on_code,note,occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?)",
+                        + "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consump"
+                        + "tion_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,?,?,?"
+                        + ",?,?,?,?,?,?,?,?,?)",
                 entryRef,
                 row.ref(),
                 operation,
@@ -443,7 +708,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 after,
                 reasonCode,
                 note,
-                now);
+                now,
+                unit.unitRef(),
+                unit.code(),
+                unit.name(),
+                unit.unitDimension(),
+                unit.precision());
         if (jdbc.update(
                         "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE "
                                 + "target_ref=? AND version=?",
@@ -485,7 +755,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private InventoryTargetCurrentReadback currentTyped(String scope, String brand, UUID targetRef) {
         TargetRow row = target(scope, brand, targetRef.toString());
         JsonNode configuration = json(row.configuration());
-        InventoryConfiguration typedConfiguration = configurationReadback(configuration, row.measureMode());
+        InventoryConfiguration typedConfiguration = configurationReadback(configuration);
         BigDecimal threshold =
                 configuration.hasNonNull("lowStockThreshold") ? decimalNode(configuration, "lowStockThreshold") : null;
         String stockState = state(row.balance(), configuration);
@@ -507,16 +777,26 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 new InventoryDiagnosticsAvailabilityReadback(false, "permission_required"));
     }
 
-    private InventoryConfiguration configurationReadback(JsonNode configuration, String measureMode) {
+    private InventoryConfiguration configurationReadback(JsonNode configuration) {
         BigDecimal factor = decimalNode(configuration, "conversionFactor");
+        InventoryOwnerApi.UnitSnapshot counting = configuration.hasNonNull("countingUnitSnapshot")
+                ? requiredUnitSnapshot(configuration.path("countingUnitSnapshot"), "configuration.countingUnitSnapshot")
+                : null;
+        UUID countingRef = configuration.hasNonNull("countingUnitRef")
+                ? requiredUuid(configuration, "countingUnitRef")
+                : counting == null ? null : counting.unitRef();
+        if (countingRef != null && counting == null)
+            throw new InventoryOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, "盘点单位快照缺失");
         return new InventoryConfiguration(
                 configuration.path("allowNegative").asBoolean(false),
                 configuration.hasNonNull("lowStockThreshold") ? decimalNode(configuration, "lowStockThreshold") : null,
-                configuration.path("countingUnit").asText(measureMode),
-                factor.signum() <= 0 ? BigDecimal.ONE : factor);
+                countingRef,
+                factor.signum() <= 0 ? BigDecimal.ONE : factor,
+                counting);
     }
 
     private InventoryTargetReadback targetReadback(TargetRow row, InventoryConfiguration configuration) {
+        InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
         return new InventoryTargetReadback(
                 row.ref(),
                 row.itemRef(),
@@ -527,9 +807,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 row.measureMode(),
                 row.skuCode(),
                 null,
-                row.measureMode(),
-                configuration.countingUnit(),
-                configuration.countingUnit() + " -> " + row.measureMode() + " × "
+                consumption,
+                configuration.countingUnitSnapshot(),
+                unitLabel(configuration.countingUnitSnapshot()) + " -> " + unitLabel(consumption) + " × "
                         + decimal(configuration.conversionFactor()),
                 "INTERNAL");
     }
@@ -709,9 +989,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     "INSERT INTO "
                             + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_"
                             + "code"
-                            + ",sku_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_"
-                            + "epoc"
-                            + "h_millis) VALUES(?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT DO NOTHING",
+                            + ",sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,"
+                            + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
+                            + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
+                            + "counting_unit_precision,counting_unit_conversion_factor,configuration,balance,version,"
+                            + "created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
+                            + "?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT DO NOTHING",
                     new BatchPreparedStatementSetter() {
                         @Override
                         public void setValues(java.sql.PreparedStatement statement, int index)
@@ -730,10 +1013,44 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     sku == null
                                             ? null
                                             : requiredLabel(sku.targetSkuCode(), "PRODUCT_SKU targetSkuCode"));
+                            InventoryOwnerApi.UnitSnapshot consumption = mappedUnitSnapshot(
+                                    consumptionUnitSnapshot(target.source().ref()), mappings);
+                            InventoryConfiguration sourceConfiguration =
+                                    configurationReadback(json(target.source().configuration()));
+                            InventoryOwnerApi.UnitSnapshot counting =
+                                    mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappings);
+                            String inventoryMode = json(target.source().configuration())
+                                    .path("mode")
+                                    .asText("");
+                            if (inventoryMode.isBlank())
+                                throw new InventoryOwnerApi.Problem(
+                                        "RESULT_UNKNOWN",
+                                        500,
+                                        /* format-wrap */
+                                        "库存对象缺少 inventory mode");
                             statement.setString(8, target.source().measureMode());
-                            statement.setString(9, target.source().configuration());
-                            statement.setLong(10, time.currentEpochMillis());
-                            statement.setLong(11, time.currentEpochMillis());
+                            statement.setString(9, inventoryMode);
+                            statement.setObject(10, consumption.unitRef());
+                            statement.setString(11, consumption.code());
+                            statement.setString(12, consumption.name());
+                            statement.setString(13, consumption.unitDimension());
+                            statement.setInt(14, consumption.precision());
+                            statement.setObject(15, counting == null ? null : counting.unitRef());
+                            statement.setString(16, counting == null ? null : counting.code());
+                            statement.setString(17, counting == null ? null : counting.name());
+                            statement.setString(18, counting == null ? null : counting.unitDimension());
+                            if (counting == null) statement.setObject(19, null);
+                            else statement.setInt(19, counting.precision());
+                            statement.setBigDecimal(20, sourceConfiguration.conversionFactor());
+                            statement.setString(
+                                    21,
+                                    mappedConfiguration(
+                                            target.source().configuration(),
+                                            inventoryMode,
+                                            counting,
+                                            sourceConfiguration.conversionFactor()));
+                            statement.setLong(22, time.currentEpochMillis());
+                            statement.setLong(23, time.currentEpochMillis());
                         }
 
                         @Override
@@ -774,9 +1091,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     .map(owner ->
                             rewrittenBom(sourceDataNodeRef, targetDataNodeRef, brandRef, owner, targetRefs, mappings))
                     .toList();
-            // A copied BOM is still a new option-value reference.  It must serialize with Catalog's
-            // dictionary-void guard exactly like the direct BOM save path.
-            lockSkuAttributeValueRefs(rewrittenBoms.stream()
+            // An option-value BOM belongs only to a catalog order-option definition value.  It must
+            // serialize with that definition-value lifecycle exactly like the direct BOM save path;
+            // SKU dictionary values are not an alias for this reference.
+            lockCatalogOptionValueRefs(rewrittenBoms.stream()
                     .map(PreparedBom::option)
                     .filter(java.util.Objects::nonNull)
                     .map(ReferenceMapping::targetRef)
@@ -819,7 +1137,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                             ? null
                                             : requiredLabel(
                                                     bom.option().targetOptionValueCode(),
-                                                    "SKU_ATTRIBUTE_VALUE targetOptionValueCode"));
+                                                    "CATALOG_ORDER_OPTION_DEFINITION_VALUE targetOptionValueCode"));
                             statement.setLong(10, bom.version());
                             statement.setString(11, bom.rows());
                             statement.setLong(12, time.currentEpochMillis());
@@ -1087,6 +1405,14 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         /* format-wrap */
                         ("库存 BOM 行不是有效数组"));
             }
+            if (owner.optionValueRef() != null) {
+                ReferenceMapping optionValue =
+                        mappingFor(mappingsBySource, owner.optionValueRef(), "CATALOG_ORDER_OPTION_DEFINITION_VALUE");
+                rewrites.addObject()
+                        .put("sourceRef", owner.optionValueRef().toString())
+                        .put("targetRef", optionValue.targetRef().toString())
+                        .put("referenceKind", "CATALOG_ORDER_OPTION_DEFINITION_VALUE");
+            }
         }
         List<TargetRow> allSourceRows = sourceClosure.targets();
         Map<UUID, UUID> plannedTargetRefs = new LinkedHashMap<>();
@@ -1106,6 +1432,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         // not merely over catalog item codes. Every component item must be
         // materialized before a BOM targetRef can be rewritten.
         for (TargetRow source : allSourceRows) {
+            mappedUnitSnapshot(consumptionUnitSnapshot(source.ref()), mappingsBySource);
+            InventoryConfiguration sourceConfiguration = configurationReadback(json(source.configuration()));
+            mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappingsBySource);
             ReferenceMapping itemMapping = mappingFor(mappingsBySource, source.itemRef(), "CATALOG_ITEM");
             ReferenceMapping skuMapping = source.productSkuRef() == null
                     ? null
@@ -1209,7 +1538,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     sourceTargetRef = UUID.fromString(sourceRef);
                 } catch (IllegalArgumentException failure) {
                     throw new InventoryOwnerApi.Problem(
-                            "REFERENCE_MAPPING_UNRESOLVE" + "D",
+                            "REFERENCE_MAPPING_UNRESOLVED",
                             422,
                             "库存 BOM 组件必须为 opaque targetRef",
                             /* format-wrap */
@@ -1223,6 +1552,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                             /* format-wrap */
                             ("库存 BOM 组件不在复制闭包中"));
                 }
+                mappedUnitSnapshot(
+                        requiredUnitSnapshot(row.path("consumptionUnitSnapshot"), "BOM consumptionUnitSnapshot"),
+                        mappingsBySource);
                 rewrites.addObject()
                         .put("sourceRef", sourceRef)
                         .put("targetRef", targetRef.toString())
@@ -1258,18 +1590,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         for (TargetRow row : targets) {
             ObjectNode node = nodes.addObject()
                     .put("nodeType", row.skuCode() == null ? "ITEM" : "SKU")
-                    .put("mode", json(row.configuration()).path("mode").asText("INDEPENDENT_STOCK"))
+                    .put("mode", requiredInventoryMode(row.configuration()))
                     .put("targetRef", row.ref().toString())
                     .put("version", row.version())
                     .put("itemCode", row.itemCode())
-                    .put("consumptionUnit", row.measureMode())
                     .put("itemRef", catalogItemRef.toString());
+            node.set("consumptionUnitSnapshot", mapper.valueToTree(row.consumptionUnitSnapshot()));
             if (row.skuCode() == null) node.putNull("skuCode");
             else node.put("skuCode", row.skuCode());
             if (row.productSkuRef() == null) node.putNull("productSkuRef");
             else node.put("productSkuRef", row.productSkuRef().toString());
             node.putNull("optionValueRef").putNull("optionValueCode");
-            node.put("quantity", "0").put("unit", row.measureMode());
+            node.put("quantity", "0");
             node.set("configuration", configurationNode(row));
         }
         List<CatalogBomRow> bomOwners = jdbc.query(
@@ -1306,7 +1638,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 ObjectNode node = nodes.addObject()
                         .put(
                                 "nodeType",
-                                owner.optionValueCode() != null
+                                // The opaque value reference is the BOM owner's identity.  Its display code is an
+                                // optional read label, so a null label must not reclassify an option-value BOM as an
+                                // item BOM.
+                                owner.optionValueRef() != null
                                         ? "OPTION_VALUE_BOM"
                                         : (owner.skuCode() == null ? "ITEM_BOM" : "SKU_BOM"))
                         .put("mode", "BOM")
@@ -1315,10 +1650,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                 "quantity",
                                 row.path("quantity")
                                         .asText(row.path("quantityPerUnit").asText("0")))
-                        .put("unit", row.path("unit").asText(""))
-                        .put("consumptionUnit", componentTarget.measureMode())
                         .put("version", owner.version())
                         .put("itemRef", catalogItemRef.toString());
+                node.set("consumptionUnitSnapshot", mapper.valueToTree(componentTarget.consumptionUnitSnapshot()));
                 if (owner.productSkuRef() == null) node.putNull("productSkuRef");
                 else node.put("productSkuRef", owner.productSkuRef().toString());
                 if (owner.optionValueRef() == null) node.putNull("optionValueRef");
@@ -1517,6 +1851,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         String itemCode = optional(request, "itemCode");
         String skuCode = optional(request, "skuCode");
         String mode = required(request, "mode");
+        String measureMode = required(request, "measureMode");
+        if (!Set.of("COUNTED", "WEIGHED").contains(measureMode))
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "measureMode is not supported");
         if (!Set.of("INDEPENDENT_STOCK", "BOM").contains(mode)) {
             throw new InventoryOwnerApi.Problem(
                     ("VALIDATION_ERROR"),
@@ -1546,19 +1883,27 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         : mapper.createObjectNode();
                 configuration.setAll((ObjectNode) request.path("configuration"));
                 configuration.put("mode", mode);
-                configuration.put(
-                        "countingUnit", configuration.path("countingUnit").asText(existing.measureMode()));
-                configuration.put(
-                        "conversionFactor",
-                        configuration.path("conversionFactor").asText("1"));
                 if (!configuration.has("allowNegative")) configuration.put("allowNegative", false);
-                normalizeConfiguration(configuration);
+                InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(existing.ref());
+                InventoryOwnerApi.CountingUnitConfiguration counting =
+                        countingUnitConfiguration(configuration, consumption);
+                writeCountingConfiguration(configuration, counting);
+                InventoryOwnerApi.UnitSnapshot countingSnapshot = counting.countingUnitSnapshot();
                 if (jdbc.update(
-                                "UPDATE inventory.stock_target SET configuration=CAST(? AS "
-                                        + "JSONB),version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? "
+                                "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
+                                        + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,"
+                                        + "counting_unit_dimension=?,counting_unit_precision=?,"
+                                        + "counting_unit_conversion_factor=?,version=version+1,updated_at_epoch_mil"
+                                        + "lis=? WHERE data_node_ref=? "
                                         + "AND "
                                         + "brand_ref=? AND target_ref=? AND version=?",
                                 canonical(configuration),
+                                countingSnapshot == null ? null : countingSnapshot.unitRef(),
+                                countingSnapshot == null ? null : countingSnapshot.code(),
+                                countingSnapshot == null ? null : countingSnapshot.name(),
+                                countingSnapshot == null ? null : countingSnapshot.unitDimension(),
+                                countingSnapshot == null ? null : countingSnapshot.precision(),
+                                counting.conversionFactor(),
                                 time.currentEpochMillis(),
                                 scope,
                                 brand,
@@ -1577,27 +1922,27 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     .put("version", existing.version())
                     .put("created", false);
         }
-        String consumptionUnit = optional(request, "consumptionUnit");
-        if (consumptionUnit == null || consumptionUnit.isBlank())
-            throw new InventoryOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, "consumptionUnit is required when creating an inventory object");
+        InventoryOwnerApi.UnitSnapshot consumptionUnit =
+                requiredUnitSnapshot(request.path("consumptionUnitSnapshot"), "consumptionUnitSnapshot");
         ObjectNode configuration = request.path("configuration").isObject()
                 ? (ObjectNode) request.path("configuration").deepCopy()
                 : mapper.createObjectNode();
         configuration.put("mode", mode);
-        String configuredCountingUnit = configuration.path("countingUnit").asText("");
-        configuration.put("countingUnit", configuredCountingUnit.isBlank() ? consumptionUnit : configuredCountingUnit);
-        String configuredFactor = configuration.path("conversionFactor").asText("");
-        configuration.put("conversionFactor", configuredFactor.isBlank() ? "1" : configuredFactor);
         if (!configuration.has("allowNegative")) configuration.put("allowNegative", false);
-        normalizeConfiguration(configuration);
+        InventoryOwnerApi.CountingUnitConfiguration countingUnit =
+                countingUnitConfiguration(configuration, consumptionUnit);
+        writeCountingConfiguration(configuration, countingUnit);
         jdbc.update(
                 "INSERT INTO "
                         + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
                         + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
+                        + "_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,consumption"
+                        + "_unit_name,consumption_unit_dimension,consumption_unit_precision,"
+                        + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,counting"
+                        + "_unit_precision,counting_unit_conversion_factor,configuration,balance,version,created_"
+                        + "at_epoch_millis,updated_at_epoch_mi"
                         + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT "
+                        + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT "
                         + "(data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, "
                         + "'00000000-0000-0000-0000-000000000000'::uuid))) DO NOTHING",
                 UUID.randomUUID(),
@@ -1607,7 +1952,29 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 productSkuRef,
                 itemCode,
                 skuCode,
-                consumptionUnit,
+                measureMode,
+                mode,
+                consumptionUnit.unitRef(),
+                consumptionUnit.code(),
+                consumptionUnit.name(),
+                consumptionUnit.unitDimension(),
+                consumptionUnit.precision(),
+                countingUnit.countingUnitSnapshot() == null
+                        ? null
+                        : countingUnit.countingUnitSnapshot().unitRef(),
+                countingUnit.countingUnitSnapshot() == null
+                        ? null
+                        : countingUnit.countingUnitSnapshot().code(),
+                countingUnit.countingUnitSnapshot() == null
+                        ? null
+                        : countingUnit.countingUnitSnapshot().name(),
+                countingUnit.countingUnitSnapshot() == null
+                        ? null
+                        : countingUnit.countingUnitSnapshot().unitDimension(),
+                countingUnit.countingUnitSnapshot() == null
+                        ? null
+                        : countingUnit.countingUnitSnapshot().precision(),
+                countingUnit.conversionFactor(),
                 canonical(configuration),
                 time.currentEpochMillis(),
                 time.currentEpochMillis());
@@ -1724,6 +2091,174 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         }
     }
 
+    @Override
+    @Transactional
+    public CatalogMaterialStockTargetReadback resolveCatalogMaterialStockTarget(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID materialItemRef) {
+        CatalogAuthorizationScope scope = requireCatalogOrderOptionDefinitionContext(context);
+        if (materialItemRef == null) {
+            throw new InventoryOwnerApi.Problem(
+                    "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+                    422,
+                    /* format-wrap */
+                    "扣料原材料必须选择已有库存对象的商品");
+        }
+        lockCatalogItemRefs(List.of(materialItemRef));
+        List<UUID> targetRefs = jdbc.query(
+                "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
+                        + "AND item_ref=? ORDER BY target_ref FOR UPDATE",
+                statement -> {
+                    statement.setString(1, scope.dataNodeId().toString());
+                    statement.setString(2, scope.brandRef());
+                    statement.setObject(3, materialItemRef);
+                },
+                (result, rowNumber) -> result.getObject(1, UUID.class));
+        if (targetRefs.isEmpty()) {
+            throw new InventoryOwnerApi.Problem(
+                    "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+                    422,
+                    /* format-wrap */
+                    "扣料原材料必须先建立库存对象");
+        }
+        if (targetRefs.size() != 1) {
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "扣料原材料的库存对象无法唯一确定");
+        }
+        TargetRow target = target(
+                scope.dataNodeId().toString(),
+                scope.brandRef(),
+                targetRefs.getFirst().toString());
+        return new CatalogMaterialStockTargetReadback(
+                materialItemRef, targetRefs.getFirst(), consumptionUnitSnapshot(target.ref()));
+    }
+
+    @Override
+    @Transactional
+    public OptionValueBomDeleteReadback deleteCatalogOptionValueBoms(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogOptionValueBomDeleteCommand command,
+            String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireCatalogOrderOptionDefinitionContext(context);
+        List<UUID> optionValueRefs = command == null || command.optionValueRefs() == null
+                ? List.of()
+                : command.optionValueRefs().stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .toList();
+        if (optionValueRefs.isEmpty()) return new OptionValueBomDeleteReadback(List.of(), 0L);
+        lockCatalogOptionValueRefs(optionValueRefs);
+        String placeholders = String.join(",", java.util.Collections.nCopies(optionValueRefs.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(scope.dataNodeId().toString());
+        arguments.add(scope.brandRef());
+        arguments.addAll(optionValueRefs);
+        int deleted = jdbc.update(
+                "DELETE FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND option_value_ref IN ("
+                        + placeholders + ")",
+                arguments.toArray());
+        return new OptionValueBomDeleteReadback(optionValueRefs, deleted);
+    }
+
+    @Override
+    @Transactional
+    public OptionValueBomCopyReadback copyCatalogOptionValueBoms(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogOptionValueBomCopyCommand command,
+            String idempotencyKey) {
+        CatalogAuthorizationScope scope = requireTemporaryPromotionOptionBomContext(context);
+        if (command == null
+                || command.sourceItemRef() == null
+                || command.targetItemRef() == null
+                || command.targetItemCode() == null
+                || command.targetItemCode().isBlank()) {
+            throw new InventoryOwnerApi.Problem(
+                    "VALIDATION_ERROR",
+                    422,
+                    /* format-wrap */
+                    "临时商品转正的点单选项扣料信息不完整");
+        }
+        List<UUID> optionValueRefs = command.optionValueRefs() == null
+                ? List.of()
+                : command.optionValueRefs().stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .toList();
+        if (optionValueRefs.isEmpty()) return new OptionValueBomCopyReadback(List.of(), 0L);
+        CatalogOptionValueBomCopyCommand normalizedCommand = new CatalogOptionValueBomCopyCommand(
+                command.sourceItemRef(), command.targetItemRef(), command.targetItemCode(), optionValueRefs);
+        String dataNodeRef = scope.dataNodeId().toString();
+        String receiptKey = requireIdempotencyKey(idempotencyKey) + "|copyCatalogOptionValueBoms";
+        JsonNode receiptRequest = typedReceiptRequest(normalizedCommand, dataNodeRef, scope.brandRef());
+        OptionValueBomCopyReadback replay = replayTyped(
+                dataNodeRef,
+                receiptKey,
+                "copyCatalogOptionValueBoms",
+                receiptRequest,
+                OptionValueBomCopyReadback.class);
+        if (replay != null) return replay;
+        lockCatalogItemRefs(List.of(command.sourceItemRef(), command.targetItemRef()));
+        lockCatalogOptionValueRefs(optionValueRefs);
+        String placeholders = String.join(",", java.util.Collections.nCopies(optionValueRefs.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(scope.dataNodeId().toString());
+        arguments.add(scope.brandRef());
+        arguments.add(command.sourceItemRef());
+        arguments.addAll(optionValueRefs);
+        List<CatalogBomRow> sourceRows = jdbc.query(
+                "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text FROM "
+                        + "inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
+                        + "AND product_sku_ref IS NULL AND option_value_ref IN (" + placeholders + ") "
+                        + "ORDER BY option_value_ref FOR UPDATE",
+                statement -> {
+                    for (int index = 0; index < arguments.size(); index++)
+                        statement.setObject(index + 1, arguments.get(index));
+                },
+                (result, rowNumber) -> new CatalogBomRow(
+                        result.getObject(1, UUID.class),
+                        result.getObject(2, UUID.class),
+                        result.getString(3),
+                        result.getString(4),
+                        result.getLong(5),
+                        result.getString(6)));
+        for (CatalogBomRow source : sourceRows) {
+            int copied = jdbc.update(
+                    "INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,optio"
+                            + "n_value_ref,"
+                            + "item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,"
+                            + "?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) "
+                            + "ON CONFLICT (data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref,'00000000-00"
+                            + "00-0000-0000-000000000000'::uuid)),"
+                            + "(COALESCE(option_value_ref,'00000000-0000-0000-0000-000000000000'::uuid))) DO NOTHING",
+                    UUID.randomUUID(),
+                    scope.dataNodeId().toString(),
+                    scope.brandRef(),
+                    command.targetItemRef(),
+                    null,
+                    source.optionValueRef(),
+                    command.targetItemCode(),
+                    null,
+                    source.optionValueCode(),
+                    1L,
+                    source.rows(),
+                    time.currentEpochMillis());
+            if (copied != 1) {
+                throw new InventoryOwnerApi.Problem(
+                        "VERSION_CONFLICT",
+                        409,
+                        /* format-wrap */
+                        "转正商品的点单选项扣料信息已变化");
+            }
+        }
+        OptionValueBomCopyReadback result = new OptionValueBomCopyReadback(optionValueRefs, sourceRows.size());
+        saveTypedReceipt(dataNodeRef, receiptKey, "copyCatalogOptionValueBoms", receiptRequest, result);
+        return result;
+    }
+
     private ObjectNode canonicalSaveRequest(String canonicalRequestJson) {
         if (canonicalRequestJson == null || canonicalRequestJson.isBlank())
             throw new InventoryOwnerApi.Problem(
@@ -1811,7 +2346,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         UUID optionValueRef = optionalOpaqueRef(request, "optionValueRef");
         lockCatalogItemRefs(List.of(itemRef));
         lockProductSkuRefs(productSkuRef == null ? List.of() : List.of(productSkuRef));
-        lockSkuAttributeValueRefs(optionValueRef == null ? List.of() : List.of(optionValueRef));
+        lockCatalogOptionValueRefs(optionValueRef == null ? List.of() : List.of(optionValueRef));
         String itemCode = optional(request, "itemCode");
         String skuCode = optional(request, "skuCode");
         String optionValueCode = optional(request, "optionValueCode");
@@ -1846,14 +2381,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             }
             BigDecimal quantity = decimalValue((ObjectNode) row, "quantity");
             String lineSign = normalizeLineSign(row.path("lineSign").asText("POSITIVE"));
-            if (!Set.of("POSITIVE", "NEGATIVE").contains(lineSign)
-                    || quantity.signum() == 0
-                    || row.path("unit").asText("").isBlank()) {
+            if (!Set.of("POSITIVE", "NEGATIVE").contains(lineSign) || quantity.signum() == 0) {
                 throw new InventoryOwnerApi.Problem(
                         ("VALIDATION_ERROR"),
                         (422),
                         /* format-wrap */
-                        ("BOM 组件数量、单位与行方向必须有效"));
+                        ("BOM 组件数量与行方向必须有效"));
             }
             if (("POSITIVE".equals(lineSign) && quantity.signum() < 0)
                     || ("NEGATIVE".equals(lineSign) && quantity.signum() > 0))
@@ -1889,6 +2422,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "商品 BOM 版本已变化");
         ArrayNode normalized = mapper.createArrayNode();
         rows.forEach(row -> {
+            UUID componentTargetRef = UUID.fromString(
+                    row.path("targetRef").asText(row.path("componentTargetRef").asText()));
+            InventoryOwnerApi.UnitSnapshot componentUnit = consumptionUnitSnapshot(componentTargetRef);
             ObjectNode line = normalized
                     .addObject()
                     .put("lineSign", normalizeLineSign(row.path("lineSign").asText("POSITIVE")))
@@ -1899,8 +2435,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     .put(
                             "quantity",
                             row.path("quantity")
-                                    .asText(row.path("quantityPerUnit").asText("0")))
-                    .put("unit", row.path("unit").asText(""));
+                                    .asText(row.path("quantityPerUnit").asText("0")));
+            line.set("consumptionUnitSnapshot", mapper.valueToTree(componentUnit));
             line.put("ownerRef", itemRef.toString());
             if (productSkuRef == null) line.putNull("productSkuRef");
             else line.put("productSkuRef", productSkuRef.toString());
@@ -1995,12 +2531,11 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
         for (TargetRow row : jdbc.query(
                 "SELECT "
-                        + "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::t"
-                        + "ext,"
-                        + "version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND "
+                        + TARGET_SELECT_COLUMNS
+                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
                         + "brand_ref=? AND ("
                         + predicates + ")",
-                (row, number) -> targetRow(row),
+                (row, number) -> targetRowWithConsumptionUnitSnapshot(row),
                 args.toArray())) {
             result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
         }
@@ -2010,11 +2545,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     private List<TargetRow> loadTargetsByItemRef(String scope, String brand, UUID itemRef) {
         return jdbc.query(
                 "SELECT "
-                        + "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::t"
-                        + "ext,"
-                        + "version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND "
+                        + TARGET_SELECT_COLUMNS
+                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
                         + "brand_ref=? AND item_ref=? ORDER BY product_sku_ref NULLS FIRST",
-                (r, n) -> targetRow(r),
+                (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
                 scope,
                 brand,
                 itemRef);
@@ -2026,9 +2560,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 "SELECT "
-                        + "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::t"
-                        + "ext,"
-                        + "version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND "
+                        + TARGET_SELECT_COLUMNS
+                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
                         + "brand_ref=? AND item_ref = ANY(?::uuid[]) ORDER BY item_ref,product_sku_ref "
                         + "NULLS FIRST,target_ref",
                 statement -> {
@@ -2036,7 +2569,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     statement.setString(2, brand);
                     statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
                 },
-                (r, n) -> targetRow(r));
+                (r, n) -> targetRowWithConsumptionUnitSnapshot(r));
     }
 
     private Map<UUID, TargetRow> loadTargetsByRefs(String scope, String brand, Set<UUID> targetRefs) {
@@ -2044,9 +2577,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         UUID[] values = targetRefs.toArray(UUID[]::new);
         return jdbc.query(
                 "SELECT "
-                        + "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::t"
-                        + "ext,"
-                        + "version,updated_at_epoch_millis FROM inventory.stock_target WHERE data_node_ref=? AND "
+                        + TARGET_SELECT_COLUMNS
+                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
                         + "brand_ref=? AND target_ref = ANY(?::uuid[])",
                 statement -> {
                     statement.setString(1, scope);
@@ -2056,7 +2588,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 result -> {
                     Map<UUID, TargetRow> resolved = new LinkedHashMap<>();
                     while (result.next()) {
-                        TargetRow row = targetRow(result);
+                        TargetRow row = targetRowWithConsumptionUnitSnapshot(result);
                         if (resolved.putIfAbsent(row.ref(), row) != null)
                             throw new InventoryOwnerApi.Problem(
                                     ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
@@ -2076,13 +2608,20 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private ObjectNode configurationNode(TargetRow row) {
-        InventoryConfiguration configuration = configurationReadback(json(row.configuration()), row.measureMode());
+        InventoryConfiguration configuration = configurationReadback(json(row.configuration()));
         ObjectNode result = mapper.createObjectNode().put("allowNegative", configuration.allowNegative());
         if (configuration.lowStockThreshold() == null) result.putNull("lowStockThreshold");
         else result.put("lowStockThreshold", decimal(configuration.lowStockThreshold()));
-        result.put("countingUnit", configuration.countingUnit());
+        setNullableSnapshot(result, "countingUnitSnapshot", configuration.countingUnitSnapshot());
         result.put("conversionFactor", decimal(configuration.conversionFactor()));
         return result;
+    }
+
+    private String requiredInventoryMode(String configurationJson) {
+        String mode = json(configurationJson).path("mode").asText("");
+        if (!Set.of("INDEPENDENT_STOCK", "BOM").contains(mode))
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象缺少有效 inventory mode");
+        return mode;
     }
 
     private List<BomOwnerRow> loadBomOwnersByItemRef(String scope, String brand, UUID itemRef) {
@@ -2334,6 +2873,15 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private static TargetRow targetRow(java.sql.ResultSet row) throws java.sql.SQLException {
+        return targetRow(row, null);
+    }
+
+    private static TargetRow targetRowWithConsumptionUnitSnapshot(java.sql.ResultSet row) throws java.sql.SQLException {
+        return targetRow(row, requiredUnitSnapshot(row, 11));
+    }
+
+    private static TargetRow targetRow(java.sql.ResultSet row, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot)
+            throws java.sql.SQLException {
         return new TargetRow(
                 row.getObject(1, UUID.class),
                 row.getObject(2, UUID.class),
@@ -2344,7 +2892,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 row.getBigDecimal(7),
                 row.getString(8),
                 row.getLong(9),
-                row.getLong(10));
+                row.getLong(10),
+                consumptionUnitSnapshot);
+    }
+
+    private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(java.sql.ResultSet result, int firstColumn)
+            throws java.sql.SQLException {
+        InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
+        if (snapshot == null)
+            throw new InventoryOwnerApi.Problem(
+                    "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT);
+        return snapshot;
     }
 
     private void assertSourceNoOwnerReference(TargetRow row, String sourceScope) {
@@ -2419,14 +2977,20 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         /* format-wrap */
                         ("库存 BOM 组件不在复制闭包中"));
             }
+            InventoryOwnerApi.UnitSnapshot consumption = mappedUnitSnapshot(
+                    requiredUnitSnapshot(row.path("consumptionUnitSnapshot"), "BOM consumptionUnitSnapshot"), mappings);
             row.put("targetRef", mapped.toString());
             row.remove("componentTargetRef");
+            row.remove("unit");
+            row.remove("consumptionUnit");
+            row.remove("countingUnit");
+            row.set("consumptionUnitSnapshot", mapper.valueToTree(consumption));
             ReferenceMapping itemMapping = mappingFor(mappings, source.itemRef(), "CATALOG_ITEM");
             ReferenceMapping skuMapping =
                     source.productSkuRef() == null ? null : mappingFor(mappings, source.productSkuRef(), "PRODUCT_SKU");
             ReferenceMapping optionMapping = source.optionValueRef() == null
                     ? null
-                    : mappingFor(mappings, source.optionValueRef(), "SKU_ATTRIBUTE_VALUE");
+                    : mappingFor(mappings, source.optionValueRef(), "CATALOG_ORDER_OPTION_DEFINITION_VALUE");
             row.put("ownerRef", itemMapping.targetRef().toString());
             if (skuMapping == null) row.putNull("productSkuRef");
             else row.put("productSkuRef", skuMapping.targetRef().toString());
@@ -2440,7 +3004,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 source.productSkuRef() == null ? null : mappingFor(mappings, source.productSkuRef(), "PRODUCT_SKU");
         ReferenceMapping optionMapping = source.optionValueRef() == null
                 ? null
-                : mappingFor(mappings, source.optionValueRef(), "SKU_ATTRIBUTE_VALUE");
+                : mappingFor(mappings, source.optionValueRef(), "CATALOG_ORDER_OPTION_DEFINITION_VALUE");
         return new PreparedBom(itemMapping, skuMapping, optionMapping, source.version(), canonical(rewritten));
     }
 
@@ -2560,7 +3124,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     r.getBigDecimal(7),
                                     r.getString(8),
                                     r.getLong(9),
-                                    r.getLong(10));
+                                    r.getLong(10),
+                                    null);
                     return new TargetPageRow(
                             target,
                             r.getString(11),
@@ -2744,13 +3309,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     "lowStockThreshold",
                     decimal(configuration.path("lowStockThreshold").decimalValue()));
         else config.putNull("lowStockThreshold");
-        config.put("countingUnit", configuration.path("countingUnit").asText(row.measureMode()))
-                .put(
-                        "conversionFactor",
-                        decimal(
-                                decimalNode(configuration, "conversionFactor").signum() <= 0
-                                        ? BigDecimal.ONE
-                                        : decimalNode(configuration, "conversionFactor")));
+        InventoryOwnerApi.UnitSnapshot counting = configuration.hasNonNull("countingUnitSnapshot")
+                ? requiredUnitSnapshot(configuration.path("countingUnitSnapshot"), "configuration.countingUnitSnapshot")
+                : null;
+        setNullableSnapshot(config, "countingUnitSnapshot", counting);
+        config.put(
+                "conversionFactor",
+                decimal(
+                        decimalNode(configuration, "conversionFactor").signum() <= 0
+                                ? BigDecimal.ONE
+                                : decimalNode(configuration, "conversionFactor")));
         data.put("balance", decimal(row.balance())).put("version", row.version());
         String stockState = state(row.balance(), configuration);
         data.put("stockState", stockState).put("stale", false).put("unknown", "UNKNOWN".equals(stockState));
@@ -2805,7 +3373,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         jdbc.query(
                 "SELECT "
                         + "entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_mill"
-                        + "is,C"
+                        + "is,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dim"
+                        + "ension,"
+                        + "consumption_unit_precision,C"
                         + "OUNT(*) OVER() "
                         + "FROM inventory.stock_ledger WHERE target_ref=? AND operation_id IN ('COUNT','INCREASE') "
                         + "ORDER BY occurred_at_epoch_millis DESC,entry_ref DESC LIMIT ? OFFSET ?",
@@ -2817,7 +3387,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 result -> {
                     while (result.next()) {
                         if (entries.size() <= pageSize) {
-                            entries.addObject()
+                            ObjectNode entry = entries.addObject()
                                     .put(
                                             "entryRef",
                                             result.getObject(1, UUID.class).toString())
@@ -2828,8 +3398,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     .put("occurredAt", result.getLong(7))
                                     .put("source", result.getString(2))
                                     .put("reasonCode", result.getString(6) == null ? "" : result.getString(6));
+                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 8));
                         }
-                        total[0] = result.getLong(8);
+                        total[0] = result.getLong(13);
                     }
                     return null;
                 });
@@ -2854,8 +3425,13 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         + "SELECT sb.item_ref,sb.item_code,sb.sku_code,sb.option_value_code,entry->>'nodeType' AS "
                         + "source_kind,"
                         + "COALESCE(entry->>'quantity',entry->>'quantityPerUnit','0') AS quantity,"
-                        + "COALESCE(entry->>'unit','') AS unit,entry->>'timing' AS timing,"
-                        + "COALESCE(entry->>'status','ACTIVE') AS status,ord,COUNT(*) OVER() AS total "
+                        + "entry->'consumptionUnitSnapshot'->>'unitRef' AS consumption_unit_ref,"
+                        + "entry->'consumptionUnitSnapshot'->>'code' AS consumption_unit_code,"
+                        + "entry->'consumptionUnitSnapshot'->>'name' AS consumption_unit_name,"
+                        + "entry->'consumptionUnitSnapshot'->>'unitDimension' AS consumption_unit_dimension,"
+                        + "(entry->'consumptionUnitSnapshot'->>'precision')::integer AS consumption_unit_precision,"
+                        + "entry->>'timing' AS timing,COALESCE(entry->>'status','ACTIVE') AS status,ord,COUNT(*) OV"
+                        + "ER() AS total "
                         + "FROM inventory.stock_bom sb "
                         + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(sb.rows)='array' THEN "
                         + "sb.rows ELSE '[]'::jsonb END) WITH ORDINALITY AS e(entry,ord) "
@@ -2866,8 +3442,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                         + "jsonb_build_object('targetRef',to_jsonb(CAST(? AS text)))) "
                         + "AND COALESCE(entry->>'targetRef',entry->>'componentTargetRef')=?"
                         + ") SELECT "
-                        + "item_ref,item_code,sku_code,option_value_code,source_kind,quantity,unit,timing,status,to"
-                        + "tal "
+                        + "item_ref,item_code,sku_code,option_value_code,source_kind,quantity,consumption_unit_ref,"
+                        + "consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_"
+                        + "precision,"
+                        + "timing,status,total "
                         + "FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord LIMIT ? OFFSET ?",
                 statement -> {
                     statement.setString(1, scope);
@@ -2887,15 +3465,15 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     .put("sourceCode", result.getString(2))
                                     .put("sourceKind", result.getString(5) == null ? "ITEM" : result.getString(5))
                                     .put("quantity", result.getString(6) == null ? "0" : result.getString(6))
-                                    .put("unit", result.getString(7) == null ? "" : result.getString(7))
-                                    .put("timing", result.getString(8) == null ? "BOM" : result.getString(8))
-                                    .put("status", result.getString(9) == null ? "ACTIVE" : result.getString(9));
+                                    .put("timing", result.getString(12) == null ? "BOM" : result.getString(12))
+                                    .put("status", result.getString(13) == null ? "ACTIVE" : result.getString(13));
+                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 7));
                             if (result.getString(4) == null) entry.putNull("sourceOptionValueCode");
                             else entry.put("sourceOptionValueCode", result.getString(4));
                             if (result.getString(3) == null) entry.putNull("sourceSkuCode");
                             else entry.put("sourceSkuCode", result.getString(3));
                         }
-                        total[0] = result.getLong(10);
+                        total[0] = result.getLong(14);
                     }
                     return null;
                 });
@@ -2916,7 +3494,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         jdbc.query(
                 "SELECT "
                         + "entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_mill"
-                        + "is,C"
+                        + "is,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dim"
+                        + "ension,"
+                        + "consumption_unit_precision,C"
                         + "OUNT(*) OVER() "
                         + "FROM inventory.stock_ledger WHERE target_ref=? "
                         + "ORDER BY occurred_at_epoch_millis DESC,entry_ref DESC LIMIT ? OFFSET ?",
@@ -2928,7 +3508,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 result -> {
                     while (result.next()) {
                         if (entries.size() <= pageSize) {
-                            entries.addObject()
+                            ObjectNode entry = entries.addObject()
                                     .put(
                                             "entryRef",
                                             result.getObject(1, UUID.class).toString())
@@ -2938,8 +3518,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     .put("changeQuantity", decimal(result.getBigDecimal(3)))
                                     .put("afterQuantity", decimal(result.getBigDecimal(5)))
                                     .put("occurredAt", result.getLong(7));
+                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 8));
                         }
-                        total[0] = result.getLong(8);
+                        total[0] = result.getLong(13);
                     }
                     return null;
                 });
@@ -2988,11 +3569,14 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             throw new InventoryOwnerApi.Problem("NEGATIVE_STOCK_NOT_ALLOWED", 422, "库存不能为负");
         UUID entryRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
+        InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
         jdbc.update(
                 "INSERT INTO "
                         + "inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,"
                         + "reas"
-                        + "on_code,note,occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?)",
+                        + "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
+                        + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,"
+                        + "?,?,?,?,?,?,?,?,?,?,?,?)",
                 entryRef,
                 row.ref(),
                 operation,
@@ -3001,7 +3585,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 after,
                 optional(request, "reasonCode"),
                 optional(request, "note"),
-                now);
+                now,
+                consumption.unitRef(),
+                consumption.code(),
+                consumption.name(),
+                consumption.unitDimension(),
+                consumption.precision());
         if (jdbc.update(
                         "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE "
                                 + "target_ref=? AND version=?",
@@ -3027,12 +3616,37 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         JsonNode config = request.get("configuration");
         if (config == null || !config.isObject())
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration 必须为对象");
-        ObjectNode normalized = normalizeConfiguration((ObjectNode) config);
+        TargetRow row = target(scope, brand, targetRef);
+        ObjectNode normalized = normalizeConfiguration((ObjectNode) config, row);
         if (jdbc.update(
-                        "UPDATE inventory.stock_target SET configuration=CAST(? AS "
-                                + "JSONB),version=version+1,updated_at_epoch_millis=? WHERE data_node_ref=? AND "
+                        "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
+                                + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dime"
+                                + "nsion=?,"
+                                + "counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,up"
+                                + "dated_at_epoch_millis=? WHERE data_node_ref=? AND "
                                 + "brand_ref=? AND target_ref=? AND version=?",
                         canonical(normalized),
+                        normalized.hasNonNull("countingUnitSnapshot")
+                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                                        .unitRef()
+                                : null,
+                        normalized.hasNonNull("countingUnitSnapshot")
+                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                                        .code()
+                                : null,
+                        normalized.hasNonNull("countingUnitSnapshot")
+                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                                        .name()
+                                : null,
+                        normalized.hasNonNull("countingUnitSnapshot")
+                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                                        .unitDimension()
+                                : null,
+                        normalized.hasNonNull("countingUnitSnapshot")
+                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                                        .precision()
+                                : null,
+                        decimalNode(normalized, "conversionFactor"),
                         time.currentEpochMillis(),
                         scope,
                         brand,
@@ -3050,18 +3664,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                             "targetRef",
                             "expectedVersion",
                             "countedQuantity",
-                            "unit",
+                            "countingUnitRef",
                             "note",
                             "zeroConfirmation");
                     case "INCREASE" -> Set.of(
-                            "dataNodeRef", "targetRef", "expectedVersion", "quantity", "unit", "note");
+                            "dataNodeRef", "targetRef", "expectedVersion", "quantity", "countingUnitRef", "note");
                     case "ADJUST" -> Set.of(
                             "dataNodeRef",
                             "targetRef",
                             "expectedVersion",
                             "direction",
                             "quantity",
-                            "unit",
+                            "countingUnitRef",
                             "reasonCode",
                             "note");
                     default -> Set.of();
@@ -3088,32 +3702,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private BigDecimal normalizeQuantity(ObjectNode request, TargetRow row, BigDecimal input) {
-        String unit = optional(request, "unit");
-        if (unit == null || unit.isBlank()) return input;
-        JsonNode config = json(row.configuration());
-        String consumptionUnit = row.measureMode();
-        String countingUnit = config.path("countingUnit").asText(consumptionUnit);
-        if (!unit.equals(consumptionUnit) && !unit.equals(countingUnit)) {
-            throw new InventoryOwnerApi.Problem(
-                    ("CONSUMPTION_UNIT_INCOMPATIBLE"),
-                    (422),
-                    /* format-wrap */
-                    ("输入单位不属于库存对象单位集合"));
-        }
-        if (unit.equals(consumptionUnit) || unit.equals(countingUnit) && unit.equals(consumptionUnit)) return input;
-        BigDecimal factor = decimalNode(config, "conversionFactor");
-        if (factor.signum() <= 0) {
-            throw new InventoryOwnerApi.Problem(
-                    ("CONSUMPTION_UNIT_INCOMPATIBLE"),
-                    (422),
-                    /* format-wrap */
-                    ("库存换算因子必须为正数"));
-        }
-        return input.multiply(factor);
+        return normalizeQuantity(optionalUuid(request, "countingUnitRef"), row, input);
     }
 
-    private ObjectNode normalizeConfiguration(ObjectNode config) {
-        Set<String> allowed = Set.of("mode", "allowNegative", "lowStockThreshold", "countingUnit", "conversionFactor");
+    private ObjectNode normalizeConfiguration(ObjectNode config, TargetRow row) {
+        Set<String> allowed = Set.of(
+                "mode",
+                "allowNegative",
+                "lowStockThreshold",
+                "countingUnitRef",
+                "countingUnitSnapshot",
+                "conversionFactor");
         config.fieldNames().forEachRemaining(field -> {
             if (!allowed.contains(field))
                 throw new InventoryOwnerApi.Problem(
@@ -3121,20 +3720,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         });
         if (!config.has("allowNegative") || !config.path("allowNegative").isBoolean())
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration.allowNegative must be boolean");
-        if (!config.hasNonNull("countingUnit")
-                || config.path("countingUnit").asText().isBlank())
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration.countingUnit is required");
-        BigDecimal factor = decimalValue(config, "conversionFactor");
-        if (factor.signum() <= 0)
-            throw new InventoryOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, "configuration.conversionFactor must be positive");
         if (config.hasNonNull("lowStockThreshold")) {
             BigDecimal threshold = decimalValue(config, "lowStockThreshold");
             if (threshold.signum() < 0)
                 throw new InventoryOwnerApi.Problem(
                         "VALIDATION_ERROR", 422, "configuration.lowStockThreshold cannot be negative");
         }
-        return (ObjectNode) config.deepCopy();
+        ObjectNode normalized = (ObjectNode) config.deepCopy();
+        InventoryOwnerApi.CountingUnitConfiguration counting =
+                countingUnitConfiguration(normalized, consumptionUnitSnapshot(row.ref()));
+        writeCountingConfiguration(normalized, counting);
+        return normalized;
     }
     /** Revalidates the mutable target/version before any receipt replay can return. */
     private void recheckWriteFactsBeforeReceipt(String operationId, String scope, String brand, ObjectNode request) {
@@ -3253,9 +3849,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         JsonNode config = json(row.configuration());
         BigDecimal threshold = decimalNode(config, "lowStockThreshold");
         String stockState = queriedState == null ? state(row.balance(), config) : queriedState;
-        String countingUnit = config.path("countingUnit").asText(row.measureMode());
         BigDecimal factor = decimalNode(config, "conversionFactor");
         if (factor.signum() <= 0) factor = BigDecimal.ONE;
+        InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
+        InventoryOwnerApi.UnitSnapshot counting = config.hasNonNull("countingUnitSnapshot")
+                ? requiredUnitSnapshot(config.path("countingUnitSnapshot"), "configuration.countingUnitSnapshot")
+                : null;
         BigDecimal today = snapshot == null ? BigDecimal.ZERO : snapshot.today();
         BigDecimal seven = snapshot == null ? BigDecimal.ZERO : snapshot.sevenDays();
         BigDecimal thirty = snapshot == null ? BigDecimal.ZERO : snapshot.thirtyDays();
@@ -3270,9 +3869,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .putNull("skuName")
                 .putNull("categoryName")
                 .putNull("materialRole")
-                .put("consumptionUnit", row.measureMode())
-                .put("countingUnit", countingUnit)
-                .put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor))
+                .put(
+                        "conversionSummary",
+                        unitLabel(counting) + " -> " + unitLabel(consumption) + " × " + decimal(factor))
                 .put("balance", decimal(row.balance()))
                 .put("stockState", stockState)
                 .put("stale", false)
@@ -3283,6 +3882,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .put("change7d", decimal(seven))
                 .put("change30d", decimal(thirty))
                 .put("authorityType", "INTERNAL");
+        setNullableSnapshot(result, "consumptionUnitSnapshot", consumption);
+        setNullableSnapshot(result, "countingUnitSnapshot", counting);
         if (snapshot == null || snapshot.lastSource() == null) result.putNull("lastChangeSource");
         else result.put("lastChangeSource", snapshot.lastSource());
         if (snapshot == null || snapshot.lastAt() == null) result.putNull("lastChangeAt");
@@ -3295,9 +3896,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
 
     private ObjectNode targetDetail(TargetRow row) {
         JsonNode config = json(row.configuration());
-        String countingUnit = config.path("countingUnit").asText(row.measureMode());
         BigDecimal factor = decimalNode(config, "conversionFactor");
         if (factor.signum() <= 0) factor = BigDecimal.ONE;
+        InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
+        InventoryOwnerApi.UnitSnapshot counting = config.hasNonNull("countingUnitSnapshot")
+                ? requiredUnitSnapshot(config.path("countingUnitSnapshot"), "configuration.countingUnitSnapshot")
+                : null;
         ObjectNode result = mapper.createObjectNode()
                 .put("targetRef", row.ref().toString())
                 .put("itemRef", row.itemRef().toString())
@@ -3309,22 +3913,29 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         else result.put("productSkuRef", row.productSkuRef().toString());
         if (row.skuCode() == null) result.putNull("skuCode").putNull("skuName");
         else result.put("skuCode", row.skuCode()).putNull("skuName");
-        return result.put("consumptionUnit", row.measureMode())
-                .put("countingUnit", countingUnit)
-                .put("conversionSummary", countingUnit + " -> " + row.measureMode() + " × " + decimal(factor))
+        result.put(
+                        "conversionSummary",
+                        unitLabel(counting) + " -> " + unitLabel(consumption) + " × " +
+                                /* format-wrap */
+                                decimal(factor))
                 .put("authorityType", "INTERNAL");
+        setNullableSnapshot(result, "consumptionUnitSnapshot", consumption);
+        setNullableSnapshot(result, "countingUnitSnapshot", counting);
+        return result;
     }
 
     private ArrayNode ledgerEntries(String targetRef, int limit) {
         ArrayNode entries = mapper.createArrayNode();
         jdbc.query(
-                "SELECT entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis "
+                "SELECT entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_millis,"
+                        + "consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,"
+                        + "consumption_unit_precision "
                         + "FROM inventory.stock_ledger WHERE target_ref=? ORDER BY occurred_at_epoch_millis DESC LIMIT "
                         + limit,
                 s -> s.setObject(1, UUID.fromString(targetRef)),
                 r -> {
-                    while (r.next())
-                        entries.addObject()
+                    while (r.next()) {
+                        ObjectNode entry = entries.addObject()
                                 .put("entryRef", r.getObject(1, UUID.class).toString())
                                 .put("source", r.getString(2))
                                 .put("reasonCode", r.getString(6) == null ? "" : r.getString(6))
@@ -3332,6 +3943,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                 .put("changeQuantity", decimal(r.getBigDecimal(3)))
                                 .put("afterQuantity", decimal(r.getBigDecimal(5)))
                                 .put("occurredAt", r.getLong(7));
+                        setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(r, 8));
+                    }
                     return null;
                 });
         return entries;
@@ -3415,10 +4028,17 @@ public class InventoryOwnerService implements InventoryOwnerApi {
     }
 
     private JsonNode json(String text) {
+        if (text == null || text.isBlank())
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存 JSON fact is missing");
         try {
-            return mapper.readTree(text == null ? "{}" : text);
+            JsonNode parsed = mapper.readTree(text);
+            if (parsed == null || parsed.isNull())
+                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存 JSON fact is null");
+            return parsed;
+        } catch (InventoryOwnerApi.Problem failure) {
+            throw failure;
         } catch (Exception ex) {
-            return mapper.createObjectNode();
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存 JSON fact is invalid", ex);
         }
     }
 
@@ -3458,6 +4078,79 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         } catch (NumberFormatException ex) {
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be decimal", ex);
         }
+    }
+
+    private static UUID requiredUuid(JsonNode node, String key) {
+        if (node == null || !node.hasNonNull(key) || !node.path(key).isTextual())
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " is required");
+        try {
+            return UUID.fromString(node.path(key).asText());
+        } catch (IllegalArgumentException failure) {
+            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be a UUID", failure);
+        }
+    }
+
+    private static UUID optionalUuid(ObjectNode request, String key) {
+        if (request == null || !request.hasNonNull(key)) return null;
+        if (!request.path(key).isTextual() || request.path(key).asText().isBlank())
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be a UUID or null");
+        try {
+            return UUID.fromString(request.path(key).asText());
+        } catch (IllegalArgumentException failure) {
+            throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, key + " must be a UUID", failure);
+        }
+    }
+
+    private static String unitLabel(InventoryOwnerApi.UnitSnapshot unit) {
+        return unit == null ? "库存消耗单位" : unit.name();
+    }
+
+    private InventoryOwnerApi.UnitSnapshot mappedUnitSnapshot(
+            InventoryOwnerApi.UnitSnapshot source, Map<UUID, ReferenceMapping> mappings) {
+        if (source == null) return null;
+        ReferenceMapping mapping = mappings.get(source.unitRef());
+        if (mapping == null || !"CATALOG_UNIT".equals(mapping.objectType()))
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "库存复制所需单位引用未完成映射");
+        if (mapping.targetUnitName() == null
+                || mapping.targetUnitDimension() == null
+                || mapping.targetUnitPrecision() == null)
+            throw new InventoryOwnerApi.Problem(
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "库存复制所需单位快照不完整");
+        return new InventoryOwnerApi.UnitSnapshot(
+                mapping.targetRef(),
+                requiredLabel(mapping.targetCode(), "CATALOG_UNIT targetCode"),
+                mapping.targetUnitName(),
+                mapping.targetUnitDimension(),
+                mapping.targetUnitPrecision());
+    }
+
+    private String mappedConfiguration(
+            String sourceJson,
+            String inventoryMode,
+            InventoryOwnerApi.UnitSnapshot counting,
+            BigDecimal conversionFactor) {
+        JsonNode parsed = json(sourceJson);
+        if (!parsed.isObject())
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存配置 JSON fact is not an object");
+        ObjectNode configuration = (ObjectNode) parsed.deepCopy();
+        configuration.put("mode", inventoryMode);
+        writeCountingConfiguration(
+                configuration,
+                new InventoryOwnerApi.CountingUnitConfiguration(
+                        counting, conversionFactor == null ? BigDecimal.ONE : conversionFactor));
+        return canonical(configuration);
+    }
+
+    private void setNullableSnapshot(ObjectNode target, String field, InventoryOwnerApi.UnitSnapshot snapshot) {
+        if (snapshot == null) target.putNull(field);
+        else target.set(field, mapper.valueToTree(snapshot));
     }
 
     private static String required(ObjectNode req, String key) {
@@ -3538,7 +4231,12 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     targetRef,
                                     value.path("targetCode").asText(null),
                                     value.path("targetSkuCode").asText(null),
-                                    value.path("targetOptionValueCode").asText(null)))
+                                    value.path("targetOptionValueCode").asText(null),
+                                    value.path("targetUnitName").asText(null),
+                                    value.path("targetUnitDimension").asText(null),
+                                    value.hasNonNull("targetUnitPrecision")
+                                            ? value.path("targetUnitPrecision").asInt()
+                                            : null))
                     != null) {
                 throw new InventoryOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED",
@@ -3564,7 +4262,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         ReferenceMapping mapping = mappings.get(sourceRef);
         if (mapping == null || !objectType.equals(mapping.objectType()))
             throw new InventoryOwnerApi.Problem(
-                    "REFERENCE_MAPPING_UNRESOLVED", 422, "inventory copy reference mapping is missing or mismatched");
+                    "REFERENCE_MAPPING_UNRESOLVED",
+                    422,
+                    /* format-wrap */
+                    "库存复制所需的引用关系无法确定");
         return mapping;
     }
 
@@ -3693,6 +4394,37 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         return scope;
     }
 
+    private static CatalogAuthorizationScope requireCatalogOrderOptionDefinitionContext(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        String operationId = context.operationToken().operationId();
+        if (Set.of(
+                        "createOperationsCatalogOrderOptionDefinition",
+                        "updateOperationsCatalogOrderOptionDefinition",
+                        "deleteOperationsCatalogOrderOptionDefinition",
+                        "saveOperationsCatalogItem")
+                .contains(operationId)) {
+            return scope;
+        }
+        throw new InventoryOwnerApi.Problem(
+                "SCOPE_FORBIDDEN",
+                403,
+                /* format-wrap */
+                "当前操作无权维护点单选项的扣料原材料");
+    }
+
+    private static CatalogAuthorizationScope requireTemporaryPromotionOptionBomContext(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
+        CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
+        if ("executeOperationsTemporaryCatalogItemPromotion"
+                .equals(context.operationToken().operationId())) return scope;
+        throw new InventoryOwnerApi.Problem(
+                "SCOPE_FORBIDDEN",
+                403,
+                /* format-wrap */
+                "当前操作无权复制临时商品的点单选项扣料信息");
+    }
+
     private static CatalogAuthorizationScope requireCopyContext(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context) {
         CatalogAuthorizationScope scope = requireTypedContext(context, "catalog", null);
@@ -3775,14 +4507,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 .sorted()
                 .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x4349544D, ref));
     }
-    /** Must stay byte-for-byte compatible with CatalogOwnerService's dictionary lifecycle lock. */
-    private void lockSkuAttributeValueRefs(java.util.Collection<UUID> refs) {
+    /**
+     * Catalog option-value definitions share no dictionary lifecycle, but their BOM cleanup still needs a stable lock.
+     */
+    private void lockCatalogOptionValueRefs(java.util.Collection<UUID> refs) {
         if (refs == null || refs.isEmpty()) return;
         refs.stream()
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .sorted()
-                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534156, ref));
+                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x434F5056, ref));
     }
 
     private long periodStart(String period) {
@@ -3820,7 +4554,10 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             BigDecimal balance,
             String configuration,
             long version,
-            long updatedAt) {}
+            long updatedAt,
+            InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot) {}
+
+    private record TargetConsumptionUnitRow(UUID targetRef, UUID productSkuRef, UUID consumptionUnitRef) {}
 
     private record TargetIdentity(UUID itemRef, UUID productSkuRef) {}
 
@@ -3867,7 +4604,14 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             List<InventoryOwnerApi.LocalCopySkippedReadback> skipped) {}
 
     private record ReferenceMapping(
-            String objectType, UUID targetRef, String targetCode, String targetSkuCode, String targetOptionValueCode) {}
+            String objectType,
+            UUID targetRef,
+            String targetCode,
+            String targetSkuCode,
+            String targetOptionValueCode,
+            String targetUnitName,
+            String targetUnitDimension,
+            Integer targetUnitPrecision) {}
 
     private record TargetPageRow(
             TargetRow target,

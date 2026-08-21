@@ -4,7 +4,6 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
-import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
 import com.catering.v2s.workspace.iam.api.WorkspaceCapabilityRequirementCatalog;
@@ -152,8 +151,7 @@ public class WorkspaceCapabilityScopeResolver {
                             assignment.serviceNodeType(),
                             assignment.serviceNodeId(),
                             target.resourceType(),
-                            target.resourceId());
-                };
+                            target.resourceId());};
             } catch (RuntimeException ignored) {
                 return ScopeResolution.deny();
             }

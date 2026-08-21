@@ -58,7 +58,9 @@ public final class ExternalCollaborationWireMapper {
                         .toList(),
                 catalog.providerProfiles().stream()
                         .map(value -> providerProfile(
-                                value, catalog.externalSystem(value.externalSystemCode()).displayName()))
+                                value,
+                                catalog.externalSystem(value.externalSystemCode())
+                                        .displayName()))
                         .toList());
     }
 

@@ -248,6 +248,13 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_INVENTORY_CONSUMPTION_REFERENCES = new RouteIdentity(
             "getOperationsInventoryTargetConsumptionReferences",
             "/api/operations/catalog-inventory/inventory-targets/{targetRef}/consumption-references");
+    static final RouteIdentity OPERATIONS_INVENTORY_TARGET_LEDGER = new RouteIdentity(
+            "getOperationsInventoryTargetLedger",
+            "/api/operations/catalog-inventory/inventory-targets/{targetRef}/ledger");
+    static final RouteIdentity OPERATIONS_INVENTORY_TARGET_COUNT = new RouteIdentity(
+            "countOperationsInventoryTarget", "/api/operations/catalog-inventory/inventory-targets/{targetRef}/count");
+    static final RouteIdentity OPERATIONS_CATALOG_UNIT_UPDATE =
+            new RouteIdentity("updateOperationsCatalogUnit", "/api/operations/catalog-inventory/units/{unitRef}");
     static final RouteIdentity PLATFORM_PASSWORD_LOGIN =
             new RouteIdentity("platformPasswordLogin", "/api/platform/auth/password-login");
     static final RouteIdentity PLATFORM_ADMIN_PAGE =
@@ -669,7 +676,9 @@ class BackendAcceptanceTest {
                 loginName);
     }
 
-    /** Creates a second user on the existing project so project-owned templates and store-owned channels stay distinct. */
+    /**
+     * Creates a second user on the existing project so project-owned templates and store-owned channels stay distinct.
+     */
     Fixture projectUserFixture(Fixture existing, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
@@ -1098,6 +1107,12 @@ class BackendAcceptanceTest {
 
         Response get(RouteIdentity route, String path, String cookie, Set<Integer> expected) throws Exception {
             return send(route, "GET", path, cookie, (String) null, null, expected);
+        }
+
+        Response get(
+                RouteIdentity route, String path, String cookie, Map<String, String> headers, Set<Integer> expected)
+                throws Exception {
+            return send(route, "GET", path, cookie, (String) null, null, headers, expected);
         }
 
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)

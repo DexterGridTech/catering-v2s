@@ -8,7 +8,7 @@ export function PlatformPasswordChangeResult({open, onReauthenticate}: {open: bo
       title="修改成功"
       open={open}
       closable={false}
-      mask={{closable: false}}
+      maskClosable={false}
       footer={
         <Button type="primary" onClick={onReauthenticate} {...testId('platform-password-relogin')}>
           重新登录

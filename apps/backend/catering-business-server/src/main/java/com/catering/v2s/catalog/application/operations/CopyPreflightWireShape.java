@@ -4,11 +4,14 @@ import com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyReadback;
 import com.catering.v2s.app.edge.generated.wire.LocalCopyReadback;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Adapts owner/coordinator copy plans to the already generated HTTP wire shapes. The coordinator may carry internal
@@ -88,7 +91,7 @@ final class CopyPreflightWireShape {
         validateReferenceRewritePreview(data.path("referenceRewritePreview"));
         validateCompatibilityResults(data.path("compatibilityResults"));
         ObjectNode projected = mapper.createObjectNode();
-        for (String field : DATA_FIELDS) projected.set(field, data.path(field).deepCopy());
+        for (String field : DATA_FIELDS) projected.set(field, projectField(mapper, field, data.path(field)));
         envelope.set("data", projected);
         return envelope;
     }
@@ -312,15 +315,23 @@ final class CopyPreflightWireShape {
     private static String safeDiagnostic(Exception failure) {
         String message = failure.getMessage();
         if (message == null) return "response could not be decoded";
-        if (message.matches("(?:copy preflight|local copy execution|brand copy execution) data field is missing: "
-                + "[A-Za-z][A-Za-z0-9]*")) {
-            return message;
+        if (failure instanceof JsonMappingException mapping) {
+            String path = mapping.getPath().stream()
+                    .map(reference -> reference.getFieldName() != null
+                            ? reference.getFieldName()
+                            : reference.getIndex() >= 0 ? "[" + reference.getIndex() + "]" : "?")
+                    .collect(Collectors.joining("."));
+            return path.isBlank() ? "response schema mapping failed" : "response schema mapping failed at " + path;
         }
-        if (message.matches("(?:copy preflight|local copy execution|brand copy execution) data is required")) {
-            return message;
-        }
-        if (message.matches(
-                "(?:copy preflight|local copy execution|brand copy execution) readback is not valid JSON")) {
+        String diagnosticPattern = "(?:copy preflight|local copy preflight|brand copy preflight|"
+                + "local copy execution|brand copy execution) "
+                + "(?:data field is missing: [A-Za-z][A-Za-z0-9]*|data is required|"
+                + "readback is not valid JSON|closureEdges must be an array|"
+                + "closureEdges contains an invalid reference|mappingPreview must be an array|"
+                + "mappingPreview contains an invalid mapping|referenceRewritePreview must be an array|"
+                + "referenceRewritePreview contains an invalid reference|compatibilityResults must be an array|"
+                + "compatibilityResults contains an invalid or duplicate identity)";
+        if (message.matches(diagnosticPattern)) {
             return message;
         }
         return "response could not be decoded";
@@ -343,8 +354,40 @@ final class CopyPreflightWireShape {
             }
         }
         ObjectNode projected = mapper.createObjectNode();
-        for (String field : fields) projected.set(field, data.path(field).deepCopy());
+        for (String field : fields) projected.set(field, projectField(mapper, field, data.path(field)));
         envelope.set("data", projected);
         return envelope;
+    }
+
+    private static JsonNode projectField(ObjectMapper mapper, String field, JsonNode value) {
+        return switch (field) {
+            case "referenceMappings" -> projectArray(
+                    mapper,
+                    value,
+                    List.of(
+                            "objectType",
+                            "sourceRef",
+                            "targetRef",
+                            "targetCode",
+                            "targetSkuCode",
+                            "targetOptionValueCode"));
+            case "referenceRewritePreview" -> projectArray(
+                    mapper, value, List.of("sourceRef", "targetRef", "referenceKind"));
+            default -> value.deepCopy();
+        };
+    }
+
+    private static ArrayNode projectArray(ObjectMapper mapper, JsonNode value, List<String> fields) {
+        ArrayNode projected = mapper.createArrayNode();
+        if (!value.isArray()) return projected;
+        for (JsonNode row : value) {
+            ObjectNode item = mapper.createObjectNode();
+            if (row.isObject()) {
+                for (String field : fields)
+                    item.set(field, row.has(field) ? row.path(field).deepCopy() : mapper.nullNode());
+            }
+            projected.add(item);
+        }
+        return projected;
     }
 }

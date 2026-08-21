@@ -449,6 +449,65 @@ class PlatformAssetServiceTest {
     }
 
     @Test
+    void releasedCatalogStageCanBeRestagedWithTheSameContentCommand() {
+        byte[] png = png(0xff7c3aed);
+        String idempotencyKey = "catalog-image-released-retry-0001";
+        var first = assets.stageCatalogContent(
+                workspaceId,
+                "asset-flow",
+                dataNodeId.toString(),
+                "STORE",
+                "image/png",
+                png.length,
+                new ByteArrayInputStream(png),
+                idempotencyKey,
+                grant(workspaceId, "asset-flow", dataNodeId));
+
+        assets.releaseStaged(first.assetRef(), first.bindGrant());
+        assertEquals("RELEASED", assets.require(first.assetRef()).status());
+
+        var restaged = assets.stageCatalogContent(
+                workspaceId,
+                "asset-flow",
+                dataNodeId.toString(),
+                "STORE",
+                "image/png",
+                png.length,
+                new ByteArrayInputStream(png),
+                idempotencyKey,
+                grant(workspaceId, "asset-flow", dataNodeId));
+
+        assertEquals(first.assetRef(), restaged.assetRef());
+        assertEquals("STAGED", assets.require(first.assetRef()).status());
+        assertEquals(3L, assets.require(first.assetRef()).version());
+
+        var replay = assets.stageCatalogContent(
+                workspaceId,
+                "asset-flow",
+                dataNodeId.toString(),
+                "STORE",
+                "image/png",
+                png.length,
+                new ByteArrayInputStream(png),
+                idempotencyKey,
+                grant(workspaceId, "asset-flow", dataNodeId));
+        assertEquals(first.assetRef(), replay.assetRef());
+
+        assertThrows(
+                PlatformAssetService.AssetIdempotencyConflictException.class,
+                () -> assets.stageCatalogContent(
+                        workspaceId,
+                        "asset-flow",
+                        dataNodeId.toString(),
+                        "STORE",
+                        "image/png",
+                        png.length,
+                        new ByteArrayInputStream(png(0xffdc2626)),
+                        idempotencyKey,
+                        grant(workspaceId, "asset-flow", dataNodeId)));
+    }
+
+    @Test
     void identicalCatalogBytesInAnotherWorkspaceKeepTheActiveLogicalAssetAndGrantIndependent() {
         byte[] png = png(0xff0f5f5f);
         int objectsBefore = objects.size();

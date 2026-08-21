@@ -17,9 +17,8 @@ class CopyLimitPolicyTest {
         assertEquals(true, policy.selectedItemCount() > 0);
         assertEquals(true, policy.closureItemCount() >= policy.selectedItemCount());
         assertEquals(
-                Set.of("TAG", "SALES_UNIT", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"),
-                policy.dictionaryKinds());
-        assertEquals(true, policy.allowsDictionaryKind("SALES_UNIT"));
+                Set.of("TAG", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"), policy.dictionaryKinds());
+        assertEquals(false, policy.allowsDictionaryKind("SALES_UNIT"));
         assertEquals(false, policy.allowsDictionaryKind("SPEC"));
     }
 

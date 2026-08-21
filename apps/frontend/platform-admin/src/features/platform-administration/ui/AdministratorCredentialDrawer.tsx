@@ -77,7 +77,7 @@ export function AdministratorCredentialDrawer({
       destroyOnHidden
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
-      mask={{closable: true}}
+      maskClosable={!lifecycle.submitting}
       keyboard={!lifecycle.submitting}
       {...adminDrawerSurfaceProps}
       footer={

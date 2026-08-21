@@ -610,6 +610,7 @@ function PlatformInvitationDetailDrawer({
       open={open}
       size={600}
       destroyOnHidden
+      maskClosable
       onClose={onClose}
       {...adminDrawerSurfaceProps}
       extra={
@@ -795,6 +796,7 @@ function PlatformInvitationCreateDrawer({
       open={open}
       size={600}
       destroyOnHidden
+      maskClosable={!lifecycle.submitting}
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       {...adminDrawerSurfaceProps}

@@ -5,7 +5,7 @@
   "sourceBindings": {
     "designCoverage": {
       "path": "contracts/policy/catalog-inventory-design-byte-coverage.json",
-      "sha256": "131f3f339dfedb206156128fcb1e6b265b6ccdca7946c0560274c623eb443eb8"
+      "sha256": "371c18af52dbcc9755583c089918630bdc852e2b5b83850e6bdde4ccfcf5c142"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "e4ab3a5d4b3db3b59c2c795cf6c805981984c287227709cbe866da451944c101"
+      "sha256": "b026c14108a2bf1183d13cb79d3aacb856c7fd741b6a8d00b45d47cdd838f34f"
     }
   },
   "models": [
@@ -37,6 +37,7 @@
       "required": [
         "allCount",
         "tree",
+        "tags",
         "smartViews",
         "shapeCounts",
         "uncategorizedCount",
@@ -75,7 +76,6 @@
         "references",
         "inventoryBom",
         "productionTags",
-        "orderOptions",
         "compositeGroups",
         "governance",
         "actionAvailability",
@@ -226,6 +226,7 @@
         "objectVersions",
         "referenceMappings",
         "closureEdges",
+        "skipped",
         "mappingPreview",
         "referenceRewritePreview",
         "compatibilityResults",
@@ -439,6 +440,47 @@
         "typeEffects",
         "saveSections",
         "detailSections"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogAttributeDefinitionList",
+      "required": [
+        "definitions"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogOrderOptionDefinitionList",
+      "required": [
+        "definitions"
+      ],
+      "recovery": [
+        "loading",
+        "error",
+        "empty",
+        "ready"
+      ],
+      "ownerFactsAreReadOnly": true
+    },
+    {
+      "name": "CatalogUnitList",
+      "required": [
+        "revision",
+        "requestId",
+        "data"
       ],
       "recovery": [
         "loading",

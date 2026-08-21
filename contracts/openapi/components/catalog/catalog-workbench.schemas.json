@@ -137,6 +137,7 @@
           "required": [
             "allCount",
             "tree",
+            "tags",
             "smartViews",
             "shapeCounts",
             "uncategorizedCount",
@@ -238,6 +239,39 @@
                   "count",
                   "countSemantics",
                   "deletionAvailability"
+                ]
+              }
+            },
+            "tags": {
+              "type": "array",
+              "description": "design-bound field",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tagRef": {
+                    "type": "string",
+                    "description": "design-bound field",
+                    "format": "uuid"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "design-bound field"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "design-bound field"
+                  }
+                },
+                "required": [
+                  "tagRef",
+                  "code",
+                  "name",
+                  "count"
                 ]
               }
             },
@@ -365,13 +399,13 @@
                     ],
                     "description": "design-bound field"
                   },
-                  "categoryRefs": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "string",
-                      "format": "uuid"
-                    }
+                  "categoryRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "one optional catalog category"
                   },
                   "productionTagRefs": {
                     "type": "array",
@@ -496,7 +530,7 @@
                   "code",
                   "name",
                   "shortName",
-                  "categoryRefs",
+                  "categoryRef",
                   "productionTagRefs",
                   "shapeKey",
                   "status",
@@ -515,7 +549,8 @@
                   "stockTargetCount",
                   "bomCount",
                   "version",
-                  "updatedAt"
+                  "updatedAt",
+                  "categoryRef"
                 ]
               }
             },
@@ -604,6 +639,11 @@
           "description": "design-bound field",
           "format": "uuid"
         },
+        "tagRef": {
+          "type": "string",
+          "description": "design-bound field",
+          "format": "uuid"
+        },
         "uncategorized": {
           "type": "boolean",
           "description": "design-bound field"
@@ -684,7 +724,6 @@
             "references",
             "inventoryBom",
             "productionTags",
-            "orderOptions",
             "compositeGroups",
             "governance",
             "actionAvailability",
@@ -940,6 +979,148 @@
                           "type": "string",
                           "format": "uuid"
                         }
+                      },
+                      "salesUnitOverrideRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid",
+                        "description": "SKU sales unit override; null inherits item setting"
+                      },
+                      "baseMeasureUnitOverrideRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid",
+                        "description": "SKU base measure unit override; null inherits item setting"
+                      },
+                      "salesUnit": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ENABLED",
+                              "DISABLED"
+                            ],
+                            "description": "unit lifecycle status"
+                          },
+                          "inheritanceSource": {
+                            "type": "string",
+                            "enum": [
+                              "ITEM_DEFAULT",
+                              "SKU_OVERRIDE"
+                            ],
+                            "description": "effective assignment source"
+                          }
+                        },
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision",
+                          "status",
+                          "inheritanceSource"
+                        ]
+                      },
+                      "baseMeasureUnit": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ENABLED",
+                              "DISABLED"
+                            ],
+                            "description": "unit lifecycle status"
+                          },
+                          "inheritanceSource": {
+                            "type": "string",
+                            "enum": [
+                              "ITEM_DEFAULT",
+                              "SKU_OVERRIDE"
+                            ],
+                            "description": "effective assignment source"
+                          }
+                        },
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision",
+                          "status",
+                          "inheritanceSource"
+                        ]
                       }
                     },
                     "required": [
@@ -955,16 +1136,10 @@
                       "status",
                       "voidAvailability",
                       "version",
-                      "mediaRefs"
+                      "mediaRefs",
+                      "salesUnitOverrideRef",
+                      "baseMeasureUnitOverrideRef"
                     ]
-                  }
-                },
-                "categoryRefs": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "string",
-                    "format": "uuid"
                   }
                 },
                 "productionTagRefs": {
@@ -983,13 +1158,147 @@
                     "format": "uuid"
                   }
                 },
-                "salesUnitRefs": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "string",
-                    "format": "uuid"
-                  }
+                "salesUnitRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional sales unit"
+                },
+                "baseMeasureUnitRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional base measure unit"
+                },
+                "salesUnit": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "unitRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "unit definition reference"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "unit code"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "unit name"
+                    },
+                    "unitDimension": {
+                      "type": "string",
+                      "enum": [
+                        "COUNT",
+                        "WEIGHT",
+                        "VOLUME",
+                        "SERVICE_DURATION",
+                        "PACKAGE"
+                      ],
+                      "description": "unit category"
+                    },
+                    "precision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "decimal places; zero means whole numbers"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ENABLED",
+                        "DISABLED"
+                      ],
+                      "description": "unit lifecycle status"
+                    },
+                    "inheritanceSource": {
+                      "type": "string",
+                      "enum": [
+                        "ITEM_DEFAULT",
+                        "SKU_OVERRIDE"
+                      ],
+                      "description": "effective assignment source"
+                    }
+                  },
+                  "required": [
+                    "unitRef",
+                    "code",
+                    "name",
+                    "unitDimension",
+                    "precision",
+                    "status",
+                    "inheritanceSource"
+                  ]
+                },
+                "baseMeasureUnit": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "unitRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "unit definition reference"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "unit code"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "unit name"
+                    },
+                    "unitDimension": {
+                      "type": "string",
+                      "enum": [
+                        "COUNT",
+                        "WEIGHT",
+                        "VOLUME",
+                        "SERVICE_DURATION",
+                        "PACKAGE"
+                      ],
+                      "description": "unit category"
+                    },
+                    "precision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "decimal places; zero means whole numbers"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ENABLED",
+                        "DISABLED"
+                      ],
+                      "description": "unit lifecycle status"
+                    },
+                    "inheritanceSource": {
+                      "type": "string",
+                      "enum": [
+                        "ITEM_DEFAULT",
+                        "SKU_OVERRIDE"
+                      ],
+                      "description": "effective assignment source"
+                    }
+                  },
+                  "required": [
+                    "unitRef",
+                    "code",
+                    "name",
+                    "unitDimension",
+                    "precision",
+                    "status",
+                    "inheritanceSource"
+                  ]
                 },
                 "itemRef": {
                   "type": "string",
@@ -1043,6 +1352,14 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "primaryImageAssetRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "design-bound field",
+                  "format": "uuid"
                 },
                 "identifiers": {
                   "type": "array",
@@ -1122,96 +1439,6 @@
                 "missingPriceCount": {
                   "type": "integer",
                   "description": "design-bound field"
-                },
-                "attributes": {
-                  "type": "object",
-                  "description": "design-bound field",
-                  "additionalProperties": true,
-                  "properties": {},
-                  "required": []
-                },
-                "orderOptions": {
-                  "type": "array",
-                  "description": "design-bound field",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "groupCode": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "groupName": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "selectionMode": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "required": {
-                        "type": "boolean",
-                        "description": "design-bound field"
-                      },
-                      "values": {
-                        "type": "array",
-                        "description": "design-bound field",
-                        "items": {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "type": "string",
-                              "description": "design-bound field"
-                            },
-                            "attributeValueRef": {
-                              "type": "string",
-                              "description": "design-bound field",
-                              "format": "uuid"
-                            },
-                            "name": {
-                              "type": "string",
-                              "description": "design-bound field"
-                            },
-                            "default": {
-                              "type": "boolean",
-                              "description": "design-bound field"
-                            },
-                            "extraPrice": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
-                              "description": "design-bound field",
-                              "format": "cents"
-                            },
-                            "productionEffects": {
-                              "type": "array",
-                              "description": "design-bound field",
-                              "items": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "attributeValueRef",
-                            "name",
-                            "default",
-                            "extraPrice",
-                            "productionEffects"
-                          ]
-                        }
-                      }
-                    },
-                    "required": [
-                      "groupCode",
-                      "groupName",
-                      "selectionMode",
-                      "required",
-                      "values"
-                    ]
-                  }
                 },
                 "compositeGroups": {
                   "type": "array",
@@ -1333,122 +1560,16 @@
                 },
                 "inventoryBom": {
                   "type": "array",
-                  "description": "design-bound field",
+                  "description": "inventory target and immutable consumption-unit facts",
                   "items": {
                     "type": "object",
                     "additionalProperties": false,
-                    "properties": {
-                      "nodeType": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "mode": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "targetRef": {
-                        "type": "string",
-                        "description": "design-bound field",
-                        "format": "uuid"
-                      },
-                      "quantity": {
-                        "type": "string",
-                        "description": "design-bound field",
-                        "format": "decimal"
-                      },
-                      "unit": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "consumptionUnit": {
-                        "type": "string",
-                        "description": "Inventory owner's unit used to consume this BOM target."
-                      },
-                      "configuration": {
-                        "type": "object",
-                        "description": "Inventory owner's current configuration for this BOM target.",
-                        "additionalProperties": false,
-                        "properties": {
-                          "allowNegative": {
-                            "type": "boolean",
-                            "description": "Whether the inventory balance for this target may become negative."
-                          },
-                          "lowStockThreshold": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "description": "Configured low-stock threshold for this inventory target.",
-                            "format": "decimal"
-                          },
-                          "countingUnit": {
-                            "type": "string",
-                            "description": "Inventory unit in which this target's balance is counted."
-                          },
-                          "conversionFactor": {
-                            "type": "string",
-                            "description": "Conversion factor from the consumption unit to the counting unit.",
-                            "format": "decimal"
-                          }
-                        },
-                        "required": [
-                          "allowNegative",
-                          "lowStockThreshold",
-                          "countingUnit",
-                          "conversionFactor"
-                        ]
-                      },
-                      "version": {
-                        "type": "integer",
-                        "description": "design-bound field"
-                      },
-                      "itemCode": {
-                        "type": "string",
-                        "description": "design-bound field"
-                      },
-                      "itemRef": {
-                        "type": "string",
-                        "description": "design-bound field",
-                        "format": "uuid"
-                      },
-                      "productSkuRef": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "uuid"
-                      },
-                      "optionValueRef": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "design-bound field",
-                        "format": "uuid"
-                      },
-                      "skuCode": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "design-bound field"
-                      },
-                      "optionValueCode": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "design-bound field"
-                      }
-                    },
                     "required": [
                       "nodeType",
                       "mode",
                       "targetRef",
                       "quantity",
-                      "unit",
-                      "consumptionUnit",
+                      "consumptionUnitSnapshot",
                       "configuration",
                       "version",
                       "itemCode",
@@ -1457,13 +1578,192 @@
                       "optionValueRef",
                       "skuCode",
                       "optionValueCode"
-                    ]
+                    ],
+                    "properties": {
+                      "nodeType": {
+                        "type": "string",
+                        "description": "inventory node type"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "description": "inventory mode"
+                      },
+                      "targetRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "inventory target reference"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "description": "quantity in the component consumption unit"
+                      },
+                      "consumptionUnitSnapshot": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision"
+                        ],
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          }
+                        }
+                      },
+                      "configuration": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "allowNegative",
+                          "lowStockThreshold",
+                          "countingUnitSnapshot",
+                          "conversionFactor"
+                        ],
+                        "properties": {
+                          "allowNegative": {
+                            "type": "boolean",
+                            "description": "whether the balance may become negative"
+                          },
+                          "lowStockThreshold": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "decimal",
+                            "description": "low-stock threshold"
+                          },
+                          "countingUnitSnapshot": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "unitRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "unit definition reference"
+                              },
+                              "code": {
+                                "type": "string",
+                                "description": "unit code"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "unit name"
+                              },
+                              "unitDimension": {
+                                "type": "string",
+                                "enum": [
+                                  "COUNT",
+                                  "WEIGHT",
+                                  "VOLUME",
+                                  "SERVICE_DURATION",
+                                  "PACKAGE"
+                                ],
+                                "description": "unit category"
+                              },
+                              "precision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "decimal places; zero means whole numbers"
+                              }
+                            },
+                            "required": [
+                              "unitRef",
+                              "code",
+                              "name",
+                              "unitDimension",
+                              "precision"
+                            ]
+                          },
+                          "conversionFactor": {
+                            "type": "string",
+                            "format": "decimal",
+                            "description": "positive counting-to-consumption factor"
+                          }
+                        }
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "inventory target version"
+                      },
+                      "itemCode": {
+                        "type": "string",
+                        "description": "inventory item code"
+                      },
+                      "itemRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "inventory item reference"
+                      },
+                      "productSkuRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid",
+                        "description": "optional SKU reference"
+                      },
+                      "optionValueRef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uuid",
+                        "description": "optional option value reference"
+                      },
+                      "skuCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "optional SKU code"
+                      },
+                      "optionValueCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "optional option value code"
+                      }
+                    }
                   }
                 },
                 "productionProfiles": {
                   "type": "object",
                   "description": "design-bound field",
-                  "additionalProperties": false,
+                  "additionalProperties": true,
                   "properties": {
                     "item": {
                       "type": "object",
@@ -1579,15 +1879,272 @@
                   "type": "integer",
                   "description": "design-bound field",
                   "format": "epoch-millis"
+                },
+                "categoryRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "one optional catalog category"
+                },
+                "attributeAssignments": {
+                  "type": "array",
+                  "description": "product attribute assignments",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "definitionRef",
+                      "code",
+                      "name",
+                      "valueType",
+                      "textValue",
+                      "optionRefs"
+                    ],
+                    "properties": {
+                      "definitionRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "attribute definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "attribute code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "attribute name"
+                      },
+                      "valueType": {
+                        "type": "string",
+                        "enum": [
+                          "TEXT",
+                          "SINGLE_SELECT",
+                          "MULTI_SELECT"
+                        ],
+                        "description": "attribute value type"
+                      },
+                      "textValue": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "text value for a text attribute"
+                      },
+                      "optionRefs": {
+                        "type": "array",
+                        "description": "selected attribute choices",
+                        "items": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "attribute option reference"
+                        }
+                      }
+                    }
+                  }
+                },
+                "orderOptionConfigs": {
+                  "type": "array",
+                  "description": "product ordering option settings",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "definitionRef",
+                      "name",
+                      "selectionMode",
+                      "required",
+                      "minSelectionCount",
+                      "maxSelectionCount",
+                      "values"
+                    ],
+                    "properties": {
+                      "definitionRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ordering option definition reference"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "ordering option name"
+                      },
+                      "selectionMode": {
+                        "type": "string",
+                        "enum": [
+                          "SINGLE",
+                          "MULTIPLE"
+                        ],
+                        "description": "customer selection mode"
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "description": "whether a customer must choose"
+                      },
+                      "minSelectionCount": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "minimum selections for a multiple-choice option"
+                      },
+                      "maxSelectionCount": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "maximum selections for a multiple-choice option"
+                      },
+                      "values": {
+                        "type": "array",
+                        "description": "settings for library option values",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "definitionValueRef",
+                            "name",
+                            "displayOrder",
+                            "defaultValue",
+                            "extraPrice",
+                            "bomVersion",
+                            "materialQuantities"
+                          ],
+                          "properties": {
+                            "definitionValueRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "ordering option value reference"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "customer option name"
+                            },
+                            "displayOrder": {
+                              "type": "integer",
+                              "description": "customer display order"
+                            },
+                            "defaultValue": {
+                              "type": "boolean",
+                              "description": "default selected value"
+                            },
+                            "extraPrice": {
+                              "type": [
+                                "number",
+                                "null"
+                              ],
+                              "description": "extra price"
+                            },
+                            "bomVersion": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 0,
+                              "description": "inventory BOM version for the option value"
+                            },
+                            "materialQuantities": {
+                              "type": "array",
+                              "description": "actual material consumption",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "materialRef",
+                                  "materialItemRef",
+                                  "materialItemName",
+                                  "stockTargetRef",
+                                  "consumptionUnitSnapshot",
+                                  "actualQuantity"
+                                ],
+                                "properties": {
+                                  "materialRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "option material template reference"
+                                  },
+                                  "materialItemRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "material item reference"
+                                  },
+                                  "materialItemName": {
+                                    "type": "string",
+                                    "description": "material item name"
+                                  },
+                                  "stockTargetRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "inventory target reference"
+                                  },
+                                  "consumptionUnitSnapshot": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "unitRef",
+                                      "code",
+                                      "name",
+                                      "unitDimension",
+                                      "precision"
+                                    ],
+                                    "properties": {
+                                      "unitRef": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "description": "unit definition reference"
+                                      },
+                                      "code": {
+                                        "type": "string",
+                                        "description": "unit code"
+                                      },
+                                      "name": {
+                                        "type": "string",
+                                        "description": "unit name"
+                                      },
+                                      "unitDimension": {
+                                        "type": "string",
+                                        "enum": [
+                                          "COUNT",
+                                          "WEIGHT",
+                                          "VOLUME",
+                                          "SERVICE_DURATION",
+                                          "PACKAGE"
+                                        ],
+                                        "description": "unit category"
+                                      },
+                                      "precision": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "description": "decimal places; zero means whole numbers"
+                                      }
+                                    }
+                                  },
+                                  "actualQuantity": {
+                                    "type": [
+                                      "number",
+                                      "null"
+                                    ],
+                                    "description": "actual consumption quantity"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               },
               "required": [
                 "skuVariantDimensions",
                 "skus",
-                "categoryRefs",
                 "productionTagRefs",
                 "tagRefs",
-                "salesUnitRefs",
+                "salesUnitRef",
+                "baseMeasureUnitRef",
+                "salesUnit",
+                "baseMeasureUnit",
                 "itemRef",
                 "code",
                 "name",
@@ -1598,13 +2155,12 @@
                 "measureMode",
                 "usageCapabilities",
                 "images",
+                "primaryImageAssetRef",
                 "identifiers",
                 "skuSummary",
                 "standardSalePrice",
                 "priceGranularity",
                 "missingPriceCount",
-                "attributes",
-                "orderOptions",
                 "compositeGroups",
                 "inventoryBom",
                 "productionProfiles",
@@ -1612,7 +2168,17 @@
                 "source",
                 "externalIdentity",
                 "version",
-                "updatedAt"
+                "updatedAt",
+                "categoryRef",
+                "attributeAssignments",
+                "orderOptionConfigs",
+                "categoryRef",
+                "salesUnitRef",
+                "baseMeasureUnitRef",
+                "salesUnit",
+                "baseMeasureUnit",
+                "attributeAssignments",
+                "orderOptionConfigs"
               ]
             },
             "tabs": {
@@ -1685,122 +2251,16 @@
             },
             "inventoryBom": {
               "type": "array",
-              "description": "design-bound field",
+              "description": "inventory target and immutable consumption-unit facts",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "properties": {
-                  "nodeType": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "mode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "targetRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "quantity": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "decimal"
-                  },
-                  "unit": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "consumptionUnit": {
-                    "type": "string",
-                    "description": "Inventory owner's unit used to consume this BOM target."
-                  },
-                  "configuration": {
-                    "type": "object",
-                    "description": "Inventory owner's current configuration for this BOM target.",
-                    "additionalProperties": false,
-                    "properties": {
-                      "allowNegative": {
-                        "type": "boolean",
-                        "description": "Whether the inventory balance for this target may become negative."
-                      },
-                      "lowStockThreshold": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "Configured low-stock threshold for this inventory target.",
-                        "format": "decimal"
-                      },
-                      "countingUnit": {
-                        "type": "string",
-                        "description": "Inventory unit in which this target's balance is counted."
-                      },
-                      "conversionFactor": {
-                        "type": "string",
-                        "description": "Conversion factor from the consumption unit to the counting unit.",
-                        "format": "decimal"
-                      }
-                    },
-                    "required": [
-                      "allowNegative",
-                      "lowStockThreshold",
-                      "countingUnit",
-                      "conversionFactor"
-                    ]
-                  },
-                  "version": {
-                    "type": "integer",
-                    "description": "design-bound field"
-                  },
-                  "itemCode": {
-                    "type": "string",
-                    "description": "design-bound field"
-                  },
-                  "itemRef": {
-                    "type": "string",
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "productSkuRef": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "optionValueRef": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field",
-                    "format": "uuid"
-                  },
-                  "skuCode": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field"
-                  },
-                  "optionValueCode": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "design-bound field"
-                  }
-                },
                 "required": [
                   "nodeType",
                   "mode",
                   "targetRef",
                   "quantity",
-                  "unit",
-                  "consumptionUnit",
+                  "consumptionUnitSnapshot",
                   "configuration",
                   "version",
                   "itemCode",
@@ -1809,84 +2269,186 @@
                   "optionValueRef",
                   "skuCode",
                   "optionValueCode"
-                ]
-              }
-            },
-            "orderOptions": {
-              "type": "array",
-              "description": "design-bound field",
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
+                ],
                 "properties": {
-                  "groupCode": {
+                  "nodeType": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "inventory node type"
                   },
-                  "groupName": {
+                  "mode": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "description": "inventory mode"
                   },
-                  "selectionMode": {
+                  "targetRef": {
                     "type": "string",
-                    "description": "design-bound field"
+                    "format": "uuid",
+                    "description": "inventory target reference"
                   },
-                  "required": {
-                    "type": "boolean",
-                    "description": "design-bound field"
+                  "quantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "description": "quantity in the component consumption unit"
                   },
-                  "values": {
-                    "type": "array",
-                    "description": "design-bound field",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "design-bound field"
-                        },
-                        "default": {
-                          "type": "boolean",
-                          "description": "design-bound field"
-                        },
-                        "extraPrice": {
-                          "type": [
-                            "integer",
-                            "null"
-                          ],
-                          "description": "design-bound field",
-                          "format": "cents"
-                        },
-                        "productionEffects": {
-                          "type": "array",
-                          "description": "design-bound field",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
+                  "consumptionUnitSnapshot": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ],
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
                       },
-                      "required": [
-                        "code",
-                        "name",
-                        "default",
-                        "extraPrice",
-                        "productionEffects"
-                      ]
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
                     }
+                  },
+                  "configuration": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "allowNegative",
+                      "lowStockThreshold",
+                      "countingUnitSnapshot",
+                      "conversionFactor"
+                    ],
+                    "properties": {
+                      "allowNegative": {
+                        "type": "boolean",
+                        "description": "whether the balance may become negative"
+                      },
+                      "lowStockThreshold": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "decimal",
+                        "description": "low-stock threshold"
+                      },
+                      "countingUnitSnapshot": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "unitRef": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "unit definition reference"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "unit code"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "unit name"
+                          },
+                          "unitDimension": {
+                            "type": "string",
+                            "enum": [
+                              "COUNT",
+                              "WEIGHT",
+                              "VOLUME",
+                              "SERVICE_DURATION",
+                              "PACKAGE"
+                            ],
+                            "description": "unit category"
+                          },
+                          "precision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "decimal places; zero means whole numbers"
+                          }
+                        },
+                        "required": [
+                          "unitRef",
+                          "code",
+                          "name",
+                          "unitDimension",
+                          "precision"
+                        ]
+                      },
+                      "conversionFactor": {
+                        "type": "string",
+                        "format": "decimal",
+                        "description": "positive counting-to-consumption factor"
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "inventory target version"
+                  },
+                  "itemCode": {
+                    "type": "string",
+                    "description": "inventory item code"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "inventory item reference"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "optional SKU reference"
+                  },
+                  "optionValueRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "optional option value reference"
+                  },
+                  "skuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "optional SKU code"
+                  },
+                  "optionValueCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "optional option value code"
                   }
-                },
-                "required": [
-                  "groupCode",
-                  "groupName",
-                  "selectionMode",
-                  "required",
-                  "values"
-                ]
+                }
               }
             },
             "compositeGroups": {
@@ -3809,7 +4371,8 @@
                       "CONSUMPTION_UNIT_INCOMPATIBLE",
                       "REFERENCE_MAPPING_UNRESOLVED",
                       "REUSE_CONFIRMATION_REQUIRED",
-                      "OWNER_FACT_UNAVAILABLE"
+                      "OWNER_FACT_UNAVAILABLE",
+                      "CATALOG_COPY_DEFINITION_CONFLICT"
                     ]
                   }
                 },
@@ -4501,6 +5064,7 @@
         "objectVersions",
         "referenceMappings",
         "closureEdges",
+        "skipped",
         "mappingPreview",
         "referenceRewritePreview",
         "compatibilityResults",
@@ -4654,6 +5218,28 @@
               "fromRef",
               "toRef",
               "referenceKind"
+            ]
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "description": "design-bound field",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "section": {
+                "type": "string",
+                "description": "design-bound field"
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "design-bound field"
+              }
+            },
+            "required": [
+              "section",
+              "reasonCode"
             ]
           }
         },
@@ -4909,7 +5495,8 @@
                   "CONSUMPTION_UNIT_INCOMPATIBLE",
                   "REFERENCE_MAPPING_UNRESOLVED",
                   "REUSE_CONFIRMATION_REQUIRED",
-                  "OWNER_FACT_UNAVAILABLE"
+                  "OWNER_FACT_UNAVAILABLE",
+                  "CATALOG_COPY_DEFINITION_CONFLICT"
                 ]
               }
             },
@@ -5114,6 +5701,382 @@
             "targetVersions",
             "ownerReadbacks"
           ]
+        }
+      }
+    },
+    "CatalogAttributeDefinitionList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitions"
+          ],
+          "properties": {
+            "definitions": {
+              "type": "array",
+              "description": "whole bounded attribute definition library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "definitionRef",
+                  "code",
+                  "name",
+                  "valueType",
+                  "options",
+                  "version"
+                ],
+                "properties": {
+                  "definitionRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "attribute definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "attribute code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "attribute name"
+                  },
+                  "valueType": {
+                    "type": "string",
+                    "enum": [
+                      "TEXT",
+                      "SINGLE_SELECT",
+                      "MULTI_SELECT"
+                    ],
+                    "description": "attribute value type"
+                  },
+                  "options": {
+                    "type": "array",
+                    "description": "attribute choices",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "optionRef",
+                        "name",
+                        "displayOrder"
+                      ],
+                      "properties": {
+                        "optionRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "attribute option reference"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "choice name"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "customer display order"
+                        }
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "definition version"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitions"
+          ],
+          "properties": {
+            "definitions": {
+              "type": "array",
+              "description": "whole bounded ordering option library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "definitionRef",
+                  "code",
+                  "name",
+                  "selectionMode",
+                  "values",
+                  "version"
+                ],
+                "properties": {
+                  "definitionRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ordering option definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "ordering option business code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "ordering option name"
+                  },
+                  "selectionMode": {
+                    "type": "string",
+                    "enum": [
+                      "SINGLE",
+                      "MULTIPLE"
+                    ],
+                    "description": "customer selection mode"
+                  },
+                  "values": {
+                    "type": "array",
+                    "description": "customer options",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "valueRef",
+                        "code",
+                        "name",
+                        "displayOrder",
+                        "materials"
+                      ],
+                      "properties": {
+                        "valueRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "ordering option value reference"
+                        },
+                        "code": {
+                          "type": "string",
+                          "description": "customer option business code"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "customer option name"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "customer display order"
+                        },
+                        "materials": {
+                          "type": "array",
+                          "description": "required materials",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "materialRef",
+                              "materialItemRef",
+                              "materialItemName",
+                              "stockTargetRef",
+                              "consumptionUnitSnapshot"
+                            ],
+                            "properties": {
+                              "materialRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "option material template reference"
+                              },
+                              "materialItemRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "material item reference"
+                              },
+                              "materialItemName": {
+                                "type": "string",
+                                "description": "material item name"
+                              },
+                              "stockTargetRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "inventory target reference"
+                              },
+                              "consumptionUnitSnapshot": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "unitRef",
+                                  "code",
+                                  "name",
+                                  "unitDimension",
+                                  "precision"
+                                ],
+                                "properties": {
+                                  "unitRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "unit definition reference"
+                                  },
+                                  "code": {
+                                    "type": "string",
+                                    "description": "unit code"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "unit name"
+                                  },
+                                  "unitDimension": {
+                                    "type": "string",
+                                    "enum": [
+                                      "COUNT",
+                                      "WEIGHT",
+                                      "VOLUME",
+                                      "SERVICE_DURATION",
+                                      "PACKAGE"
+                                    ],
+                                    "description": "unit category"
+                                  },
+                                  "precision": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "decimal places; zero means whole numbers"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "definition version"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogUnitList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "units"
+          ],
+          "properties": {
+            "units": {
+              "type": "array",
+              "description": "bounded unit definition library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "unitRef",
+                  "code",
+                  "name",
+                  "unitDimension",
+                  "precision",
+                  "status",
+                  "isReferenced",
+                  "version"
+                ],
+                "properties": {
+                  "unitRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "unit definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "unit code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "unit name"
+                  },
+                  "unitDimension": {
+                    "type": "string",
+                    "enum": [
+                      "COUNT",
+                      "WEIGHT",
+                      "VOLUME",
+                      "SERVICE_DURATION",
+                      "PACKAGE"
+                    ],
+                    "description": "unit category"
+                  },
+                  "precision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "decimal places; zero means whole numbers"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED"
+                    ],
+                    "description": "whether the unit can be selected for new configurations"
+                  },
+                  "isReferenced": {
+                    "type": "boolean",
+                    "description": "whether any current catalog fact uses the unit"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "unit definition version"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

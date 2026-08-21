@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1500" viewBox="0 0 1440 1500">
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #172033; }
+      .title { font-size: 26px; font-weight: 700; }
+      .h2 { font-size: 19px; font-weight: 700; }
+      .h3 { font-size: 16px; font-weight: 650; }
+      .body { font-size: 14px; }
+      .small { font-size: 12px; fill: #667085; }
+      .muted { fill: #7a8498; }
+      .blue { fill: #175cd3; }
+      .danger { fill: #b42318; }
+      .success { fill: #067647; }
+      .panel { fill: #ffffff; stroke: #c9d2e3; stroke-width: 1.5; }
+      .soft { fill: #f7f9fc; stroke: #d8deea; }
+      .field { fill: #ffffff; stroke: #b9c3d4; }
+      .selected { fill: #eef4ff; stroke: #2e6bdc; stroke-width: 1.5; }
+      .note { fill: #eff8ff; stroke: #84caff; }
+      .warn { fill: #fffaeb; stroke: #fec84b; }
+      .blocked { fill: #fef3f2; stroke: #fda29b; }
+      .button { fill: #ffffff; stroke: #98a2b3; }
+      .primary { fill: #2458bd; stroke: #2458bd; }
+      .line { stroke: #d7deea; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1440" height="1500" fill="#eef2f7"/>
+  <text x="42" y="48" class="title">商品库存与 BOM 配置 · 低保真线框</text>
+  <text x="42" y="76" class="body muted">同一商品 Drawer / 同一“库存与 BOM”Tab 的三种代表状态；三块不是同时出现。</text>
+
+  <!-- Host boundary -->
+  <rect x="40" y="98" width="1360" height="132" rx="12" class="panel"/>
+  <text x="64" y="128" class="h3">宿主与保存边界</text>
+  <text x="64" y="158" class="body">×　商品图片　拿铁（LATTE-001）</text>
+  <text x="64" y="194" class="body muted">基础　 条码与识别　 点单选项　 商品属性　 生产提示　</text>
+  <rect x="486" y="171" width="112" height="34" rx="6" class="selected"/>
+  <text x="502" y="193" class="body blue">库存与 BOM</text>
+  <text x="618" y="194" class="body muted">引用关系</text>
+  <rect x="1190" y="162" width="74" height="36" rx="6" class="button"/>
+  <text x="1213" y="185" class="body">取消</text>
+  <rect x="1278" y="162" width="86" height="36" rx="6" class="primary"/>
+  <text x="1307" y="185" class="body" fill="#ffffff" style="fill:#fff">保存</text>
+  <text x="950" y="126" class="small">一次保存 · catalog + inventory 同一事务 · dirty/提交锁沿用 Drawer lifecycle</text>
+
+  <!-- State A -->
+  <rect x="40" y="254" width="1360" height="362" rx="12" class="panel"/>
+  <text x="64" y="286" class="h2">状态 A｜普通/称重商品：单节点退化，直接呈现唯一商品详情</text>
+  <rect x="64" y="304" width="1312" height="46" rx="7" class="note"/>
+  <text x="82" y="333" class="body blue">ⓘ 这里配置商品销售或使用时的库存扣减方式；实际余额和流水请到门店库存管理查看。</text>
+  <rect x="64" y="366" width="1312" height="58" rx="8" class="soft"/>
+  <text x="82" y="390" class="small">当前配置对象</text>
+  <text x="82" y="413" class="h3">瓶装可乐（COLA-001）</text>
+  <text x="1162" y="402" class="small">商品级 · 无 SKU</text>
+  <text x="64" y="458" class="h3">销售/使用时怎么扣库存</text>
+  <rect x="64" y="474" width="150" height="38" rx="7" class="button"/>
+  <text x="96" y="498" class="body">不参与库存</text>
+  <rect x="224" y="474" width="236" height="38" rx="7" class="selected"/>
+  <text x="248" y="498" class="body blue">直接扣当前商品库存</text>
+  <rect x="470" y="474" width="182" height="38" rx="7" class="button"/>
+  <text x="496" y="498" class="body">按 BOM 扣组件</text>
+  <text x="64" y="544" class="small">消耗单位</text>
+  <rect x="64" y="552" width="210" height="42" rx="6" class="soft"/>
+  <text x="82" y="578" class="body">瓶（BOTTLE）</text>
+  <text x="296" y="544" class="small">低库存阈值</text>
+  <rect x="296" y="552" width="170" height="42" rx="6" class="field"/>
+  <text x="312" y="578" class="body muted">0</text>
+  <text x="486" y="544" class="small">允许负库存</text>
+  <rect x="486" y="559" width="48" height="26" rx="13" fill="#d0d5dd"/>
+  <circle cx="499" cy="572" r="10" fill="#fff"/>
+  <text x="566" y="544" class="small">盘点单位（可选）</text>
+  <rect x="566" y="552" width="210" height="42" rx="6" class="field"/>
+  <text x="582" y="578" class="body muted">选择单位</text>
+  <text x="798" y="578" class="small">不显示“选择库存对象”；目标就是当前商品。</text>
+
+  <!-- State B -->
+  <rect x="40" y="638" width="1360" height="500" rx="12" class="panel"/>
+  <text x="64" y="670" class="h2">状态 B｜按 SKU 管理商品：左树定位 SKU，右侧维护该 SKU 的 BOM</text>
+  <rect x="64" y="690" width="294" height="422" rx="8" class="soft"/>
+  <text x="84" y="722" class="h3">商品结构</text>
+  <text x="84" y="758" class="body">▾ 大/中/小杯鲜榨果汁</text>
+  <text x="108" y="789" class="small">主商品壳 · 只读</text>
+  <text x="108" y="825" class="body">▾ 商品 SKU</text>
+  <text x="136" y="859" class="body">中杯（JUICE-M）</text>
+  <rect x="122" y="875" width="212" height="42" rx="6" class="selected"/>
+  <text x="138" y="902" class="body blue">大杯（JUICE-L）　BOM · 3项</text>
+  <text x="136" y="943" class="body">小杯（JUICE-S）</text>
+  <rect x="84" y="978" width="250" height="86" rx="7" class="blocked"/>
+  <text x="100" y="1004" class="small danger">主商品壳不配置库存/BOM</text>
+  <text x="100" y="1028" class="small">每个 SKU 分别选择方式，</text>
+  <text x="100" y="1048" class="small">不会再扣一次商品级库存。</text>
+
+  <rect x="378" y="690" width="998" height="422" rx="8" class="soft"/>
+  <text x="402" y="722" class="small">当前配置对象</text>
+  <text x="402" y="749" class="h3">大杯（JUICE-L）</text>
+  <text x="402" y="789" class="h3">销售/使用时怎么扣库存</text>
+  <rect x="402" y="804" width="132" height="36" rx="6" class="button"/>
+  <text x="428" y="827" class="body">不参与库存</text>
+  <rect x="544" y="804" width="220" height="36" rx="6" class="button"/>
+  <text x="570" y="827" class="body">直接扣当前 SKU 库存</text>
+  <rect x="774" y="804" width="176" height="36" rx="6" class="selected"/>
+  <text x="800" y="827" class="body blue">按 BOM 扣组件</text>
+  <text x="402" y="873" class="h3">物料耗用明细</text>
+  <rect x="1196" y="850" width="148" height="36" rx="6" class="primary"/>
+  <text x="1222" y="873" class="body" style="fill:#fff">＋ 添加耗用项</text>
+  <rect x="402" y="890" width="942" height="174" rx="7" class="panel"/>
+  <rect x="402" y="890" width="942" height="42" rx="7" fill="#f2f4f7"/>
+  <text x="422" y="916" class="small">耗用商品或原料</text>
+  <text x="720" y="916" class="small">增减</text>
+  <text x="824" y="916" class="small">每份用量</text>
+  <text x="1002" y="916" class="small">计量单位</text>
+  <text x="1230" y="916" class="small">操作</text>
+  <line x1="402" y1="974" x2="1344" y2="974" class="line"/>
+  <line x1="402" y1="1018" x2="1344" y2="1018" class="line"/>
+  <text x="422" y="958" class="body">鲜橙（ORANGE-001）</text>
+  <text x="720" y="958" class="body success">增加</text>
+  <text x="824" y="958" class="body">180</text>
+  <text x="1002" y="958" class="body">g</text>
+  <text x="1230" y="958" class="body danger">移除</text>
+  <text x="422" y="1002" class="body">大杯（CUP-L-001）</text>
+  <text x="720" y="1002" class="body success">增加</text>
+  <text x="824" y="1002" class="body">1</text>
+  <text x="1002" y="1002" class="body">个</text>
+  <text x="1230" y="1002" class="body danger">移除</text>
+  <text x="422" y="1046" class="body">吸管（STRAW-001）</text>
+  <text x="720" y="1046" class="body success">增加</text>
+  <text x="824" y="1046" class="body">1</text>
+  <text x="1002" y="1046" class="body">根</text>
+  <text x="1230" y="1046" class="body danger">移除</text>
+  <text x="402" y="1092" class="small">候选只包含：同范围 · 可用 · 可作耗用品 · 已启用库存 · 基础计量单位完整 · 非当前对象。</text>
+
+  <!-- State C -->
+  <rect x="40" y="1160" width="1360" height="292" rx="12" class="panel"/>
+  <text x="64" y="1192" class="h2">状态 C｜点单选项值：只表达附加/替换耗用，不拥有库存对象</text>
+  <rect x="64" y="1212" width="294" height="214" rx="8" class="soft"/>
+  <text x="84" y="1244" class="body">▾ 拿铁</text>
+  <text x="108" y="1276" class="body">▾ 商品选项</text>
+  <text x="132" y="1308" class="body">▾ 加料</text>
+  <rect x="120" y="1325" width="214" height="42" rx="6" class="selected"/>
+  <text x="138" y="1352" class="body blue">加珍珠 · +20g</text>
+  <text x="132" y="1398" class="body">换燕麦奶</text>
+  <rect x="378" y="1212" width="998" height="214" rx="8" class="soft"/>
+  <text x="402" y="1244" class="small">当前配置对象</text>
+  <text x="402" y="1270" class="h3">选项值：加珍珠</text>
+  <text x="402" y="1308" class="h3">这个选项是否改变物料耗用</text>
+  <rect x="402" y="1323" width="158" height="36" rx="6" class="button"/>
+  <text x="426" y="1346" class="body">不改变物料耗用</text>
+  <rect x="570" y="1323" width="194" height="36" rx="6" class="selected"/>
+  <text x="596" y="1346" class="body blue">按 BOM 增减耗用</text>
+  <rect x="788" y="1288" width="556" height="104" rx="7" class="panel"/>
+  <text x="808" y="1314" class="small">耗用商品或原料</text>
+  <text x="1042" y="1314" class="small">增减</text>
+  <text x="1144" y="1314" class="small">实际用量</text>
+  <line x1="788" y1="1330" x2="1344" y2="1330" class="line"/>
+  <text x="808" y="1362" class="body">黑糖珍珠（PEARL-001）</text>
+  <text x="1042" y="1362" class="body success">增加</text>
+  <text x="1144" y="1362" class="body">20 g</text>
+  <text x="808" y="1384" class="small">不会创建“加珍珠”的库存对象；实际用量沿用已确认规则。</text>
+
+  <text x="42" y="1482" class="small">设计边界：不画顶层“新增独立库存对象 / 新增 BOM 组件”；套餐、服务、权益壳不显示库存与 BOM 配置入口；有余额、流水、引用或历史快照时由 owner 拒绝方式切换。</text>
+</svg>

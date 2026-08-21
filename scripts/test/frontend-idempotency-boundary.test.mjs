@@ -32,10 +32,8 @@ test('set-value catalog commands derive keys from operation and request content'
     'executeOperationsBrandCatalogCopy',
     'preflightOperationsLocalCatalogCopy',
     'executeOperationsLocalCatalogCopy',
-    'createOperationsCatalogDictionaryEntry',
     'updateOperationsCatalogDictionaryEntry',
     'transitionOperationsCatalogDictionaryEntryStatus',
-    'createOperationsProductionTag',
     'updateOperationsProductionTag',
     'transitionOperationsProductionTagStatus',
     'createOperationsCatalogCategory',
@@ -53,6 +51,14 @@ test('set-value catalog commands derive keys from operation and request content'
       `${operationId} must use content-derived idempotency`,
     );
   }
+  assert.match(
+    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx'),
+    /const requestOperationId = isProduction[\s\S]*?createOperationsProductionTag[\s\S]*?createOperationsCatalogDictionaryEntry/,
+  );
+  assert.match(
+    read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx'),
+    /createContentIdempotencyKey\(requestOperationId, body\)/,
+  );
   for (const [, content] of featureSources) {
     assert.doesNotMatch(content, /['"]Idempotency-Key['"]\s*:\s*globalThis\.crypto\.randomUUID\(\)/);
   }

@@ -1,5 +1,7 @@
 # v2s 商品目录与门店轻库存 IA 设计（Codex）
 
+> **SUPERSEDED-BY（商品库存与 BOM 专题）：** 本文关于库存/BOM 左树右详情、owner 节点、`HAS_SKU/NO_SKU` 动态切换、三方式表单和组件选择的 IA，已由 `doc/plans/platform/2026-08-22-v2s-catalog-inventory-bom-business-model-requirements-discussion-codex.md` 替代，并须按该正式需求重新形成 Journey、交互稿与 IA。本文其他页面、导航和门店库存运行视图仅保留为历史设计输入，不得反向覆盖新正式需求。
+
 > 状态：`PROPOSED_FOR_DEXTER_CONFIRMATION`
 >
 > 范围：运营管理后台 IA、低保真线框、可追踪性与未来实施分包建议；不构成实现授权。

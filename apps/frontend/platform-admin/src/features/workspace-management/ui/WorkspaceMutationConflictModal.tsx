@@ -14,6 +14,7 @@ export function WorkspaceMutationConflictModal({open, onClose, onViewLatest}: Pr
       title="集团空间资料已变化"
       open={open}
       onCancel={onClose}
+      maskClosable
       footer={
         <Space>
           <Button onClick={onClose} {...testId('platform-workspace-conflict-cancel')}>

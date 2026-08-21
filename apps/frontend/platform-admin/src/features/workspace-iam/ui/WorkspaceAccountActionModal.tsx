@@ -50,6 +50,8 @@ export function WorkspaceAccountActionModal({open, action, account, busy, proble
       open={open}
       onCancel={onClose}
       onOk={() => void onConfirm(lifecycle.getIdempotencyKey())}
+      maskClosable={!busy}
+      keyboard={!busy}
       confirmLoading={busy}
       okText={content.confirm}
       cancelText="取消"

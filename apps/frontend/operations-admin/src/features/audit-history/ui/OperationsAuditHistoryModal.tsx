@@ -161,6 +161,7 @@ export function OperationsAuditHistoryModal({
       title={modalTitle}
       open={open}
       onCancel={onClose}
+      maskClosable
       width={980}
       centered
       styles={{body: {height: 640, overflowY: 'auto'}}}

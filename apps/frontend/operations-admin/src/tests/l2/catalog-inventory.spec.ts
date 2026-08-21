@@ -1,7 +1,12 @@
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import type {InventoryUnitSnapshot} from '../../features/inventory-management/ui/inventoryManagementModel';
 import {selectOperationsDataScope, selectOperationsOption} from './operationsL2';
+
+function inventoryUnitText(snapshot: InventoryUnitSnapshot) {
+  return `${snapshot.name}（${snapshot.code}）`;
+}
 
 type ScopeFacts = {
   kind: 'STORE' | 'HEAD_COMPANY';
@@ -21,8 +26,9 @@ type OwnerCase = {
   treeNodeText?: string;
   sourceItemCode?: string;
   mediaIndex?: number;
-  unitLabel?: string;
-  countingUnit?: string;
+  consumptionUnitSnapshot?: InventoryUnitSnapshot;
+  countingUnitSnapshot?: InventoryUnitSnapshot | null;
+  countingUnitRef?: string;
   conversionFactor?: string;
   direction?: 'INCREASE' | 'DECREASE';
   negativeQuantity?: string;
@@ -375,6 +381,46 @@ async function openBrandCopy(page: Page, facts: OwnerCase): Promise<Locator> {
   return copy;
 }
 
+function requiredUnitSnapshot(
+  facts: OwnerCase,
+  field: 'consumptionUnitSnapshot' | 'countingUnitSnapshot',
+): InventoryUnitSnapshot {
+  const snapshot = facts[field];
+  if (
+    !snapshot ||
+    typeof snapshot !== 'object' ||
+    !snapshot.unitRef ||
+    !snapshot.code ||
+    !snapshot.name ||
+    !['COUNT', 'WEIGHT', 'VOLUME', 'SERVICE_DURATION', 'PACKAGE'].includes(snapshot.unitDimension) ||
+    !Number.isInteger(snapshot.precision) ||
+    snapshot.precision < 0
+  ) {
+    throw new Error(`CATALOG_INVENTORY_L2_UNIT_SNAPSHOT_REQUIRED:${field}`);
+  }
+  return snapshot;
+}
+
+function requiredUnitFact(facts: OwnerCase, field: 'countingUnitRef' | 'conversionFactor'): string {
+  const value = facts[field];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`CATALOG_INVENTORY_L2_UNIT_FACT_REQUIRED:${field}`);
+  }
+  return value;
+}
+
+function requiredActionUnitSnapshot(facts: OwnerCase): InventoryUnitSnapshot {
+  const consumptionSnapshot = requiredUnitSnapshot(facts, 'consumptionUnitSnapshot');
+  const selectedUnitRef = requiredUnitFact(facts, 'countingUnitRef');
+  if (selectedUnitRef === consumptionSnapshot.unitRef) return consumptionSnapshot;
+
+  const countingSnapshot = requiredUnitSnapshot(facts, 'countingUnitSnapshot');
+  if (selectedUnitRef !== countingSnapshot.unitRef) {
+    throw new Error('CATALOG_INVENTORY_L2_UNIT_REF_SNAPSHOT_MISMATCH:countingUnitRef');
+  }
+  return countingSnapshot;
+}
+
 async function exerciseInventoryAction(
   page: Page,
   facts: OwnerCase,
@@ -385,27 +431,34 @@ async function exerciseInventoryAction(
   await (await requireControl(page, actionKey, facts)).click();
   const modal = await requireControl(page, 'INVENTORY_ACTION_MODAL', facts);
   if (actionKey === 'INVENTORY_ACTION_CONFIGURE') {
+    const consumptionSnapshot = requiredUnitSnapshot(facts, 'consumptionUnitSnapshot');
+    const countingSnapshot = requiredUnitSnapshot(facts, 'countingUnitSnapshot');
+    const countingUnitRef = requiredUnitFact(facts, 'countingUnitRef');
+    if (countingUnitRef !== countingSnapshot.unitRef) {
+      throw new Error('CATALOG_INVENTORY_L2_UNIT_REF_SNAPSHOT_MISMATCH:countingUnitRef');
+    }
     await requireControl(page, 'INVENTORY_CONFIG_ALLOW_NEGATIVE', facts);
     await requireControl(page, 'INVENTORY_CONFIG_THRESHOLD', facts);
     await requireControl(page, 'INVENTORY_CONFIG_COUNTING_UNIT', facts);
     await requireControl(page, 'INVENTORY_CONFIG_CONVERSION', facts);
-    await typeSequentially(
-      page.getByTestId('inventory-config-counting-unit'),
-      facts.countingUnit ?? facts.unitLabel ?? '件',
-    );
+    await expect(modal).toContainText(inventoryUnitText(consumptionSnapshot));
+    await selectOperationsOption(page, 'inventory-config-counting-unit', inventoryUnitText(countingSnapshot));
     await page
       .getByTestId('inventory-config-conversion-factor')
       .locator('input')
-      .fill(facts.conversionFactor ?? '1');
+      .fill(requiredUnitFact(facts, 'conversionFactor'));
   } else {
+    const consumptionSnapshot = requiredUnitSnapshot(facts, 'consumptionUnitSnapshot');
+    const actionSnapshot = requiredActionUnitSnapshot(facts);
     await requireControl(page, 'INVENTORY_ACTION_QUANTITY', facts);
     await requireControl(page, 'INVENTORY_ACTION_UNIT', facts);
     await requireControl(page, 'INVENTORY_ACTION_NOTE', facts);
+    await expect(modal).toContainText(inventoryUnitText(consumptionSnapshot));
     await page
       .getByTestId('inventory-action-quantity')
       .locator('input')
       .fill(facts.quantity ?? '1');
-    if (facts.unitLabel) await selectOperationsOption(page, 'inventory-action-unit', facts.unitLabel);
+    await selectOperationsOption(page, 'inventory-action-unit', inventoryUnitText(actionSnapshot));
     if (actionKey === 'INVENTORY_ACTION_ADJUST') {
       await requireControl(page, 'INVENTORY_ACTION_REASON', facts);
       if (facts.reasonLabel) await selectOperationsOption(page, 'inventory-action-reason', facts.reasonLabel);

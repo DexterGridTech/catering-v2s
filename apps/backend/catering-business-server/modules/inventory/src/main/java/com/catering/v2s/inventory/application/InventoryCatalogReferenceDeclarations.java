@@ -11,7 +11,7 @@ final class InventoryCatalogReferenceDeclarations {
             case "CATALOG_ITEM" -> List.of(new Source("stock_target", "item_ref"), new Source("stock_bom", "item_ref"));
             case "PRODUCT_SKU" -> List.of(
                     new Source("stock_target", "product_sku_ref"), new Source("stock_bom", "product_sku_ref"));
-            case "SKU_ATTRIBUTE_VALUE" -> List.of(new Source("stock_bom", "option_value_ref"));
+            case "CATALOG_ORDER_OPTION_DEFINITION_VALUE" -> List.of(new Source("stock_bom", "option_value_ref"));
             default -> List.of();
         };
     }

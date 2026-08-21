@@ -36,6 +36,7 @@ export function ContractOverviewDetailDrawer({
       open={open}
       loading={loading}
       onClose={onClose}
+      maskClosable
       size={560}
       destroyOnHidden
       {...adminDrawerSurfaceProps}

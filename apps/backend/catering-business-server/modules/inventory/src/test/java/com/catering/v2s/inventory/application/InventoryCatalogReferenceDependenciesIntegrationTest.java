@@ -91,7 +91,7 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
                         new InventoryOwnerApi.CatalogReferenceDependencySource("stock_target", "product_sku_ref", 1L),
                         new InventoryOwnerApi.CatalogReferenceDependencySource("stock_bom", "product_sku_ref", 1L)));
         assertSources(
-                "SKU_ATTRIBUTE_VALUE",
+                "CATALOG_ORDER_OPTION_DEFINITION_VALUE",
                 optionValueRef,
                 1L,
                 List.of(new InventoryOwnerApi.CatalogReferenceDependencySource("stock_bom", "option_value_ref", 1L)));

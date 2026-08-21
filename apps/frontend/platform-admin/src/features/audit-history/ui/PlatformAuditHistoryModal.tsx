@@ -131,6 +131,7 @@ export function PlatformAuditHistoryModal({
       title={target ? `操作历史 · ${target.displayName}` : '操作历史'}
       open={open}
       onCancel={onClose}
+      maskClosable
       width={980}
       centered
       styles={{body: {height: 640, overflowY: 'auto'}}}

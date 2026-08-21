@@ -26,7 +26,7 @@ test("inventory reference matrix declares every stock target and BOM opaque refe
     R14: ["inventory.stock_target.product_sku_ref", "PRODUCT_SKU"],
     R15: ["inventory.stock_bom.item_ref", "CATALOG_ITEM"],
     R16: ["inventory.stock_bom.product_sku_ref", "PRODUCT_SKU"],
-    R17: ["inventory.stock_bom.option_value_ref", "SKU_ATTRIBUTE_VALUE"]
+    R17: ["inventory.stock_bom.option_value_ref", "CATALOG_ORDER_OPTION_DEFINITION_VALUE"]
   };
   for (const [id, [storage, objectType]] of Object.entries(expected)) {
     const entry = entriesById.get(id);
@@ -38,7 +38,8 @@ test("inventory reference matrix declares every stock target and BOM opaque refe
     assert.equal(entry.status, "MIGRATE", `${id} keeps historical lineage only`);
   }
   assert.match(entriesById.get("R12").sourceLookup, /kind=ORDER_OPTION_VALUE/);
-  assert.match(entriesById.get("R17").sourceLookup, /kind=ORDER_OPTION_VALUE/);
+  assert.match(entriesById.get("R17").sourceLookup, /catalog_order_option_definition_value/);
+  assert.doesNotMatch(entriesById.get("R17").sourceLookup, /ORDER_OPTION_VALUE/);
   assert.doesNotMatch(entriesById.get("R06").sourceLookup, /ORDER_OPTION_VALUE/);
   assert.equal(matrix.entries.some((entry) => entry.id >= "R13" && entry.id <= "R17" && entry.objectType === "CATALOG_ITEM_OR_PRODUCT_SKU"), false);
 });
@@ -76,7 +77,7 @@ test("inventory's typed dependency guard consumes declarations generated from th
   for (const [objectType, tableName, columnName] of [
     ["CATALOG_ITEM", "stock_target", "item_ref"], ["CATALOG_ITEM", "stock_bom", "item_ref"],
     ["PRODUCT_SKU", "stock_target", "product_sku_ref"], ["PRODUCT_SKU", "stock_bom", "product_sku_ref"],
-    ["SKU_ATTRIBUTE_VALUE", "stock_bom", "option_value_ref"]
+    ["CATALOG_ORDER_OPTION_DEFINITION_VALUE", "stock_bom", "option_value_ref"]
   ]) {
     assert.match(declarations, new RegExp(`case \\"${objectType}\\"[\\s\\S]*?new Source\\(\\"${tableName}\\", \\"${columnName}\\"\\)`));
   }

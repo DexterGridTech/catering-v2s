@@ -10,6 +10,7 @@
     "sourceBindings",
     "seedDatasets",
     "seedBusinessLabels",
+    "catalogDefinitionSeed",
     "testDatasets",
     "scenarioCatalog",
     "denominators",
@@ -172,6 +173,63 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "catalogDefinitionSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tagDefinitions",
+        "unitDefinitions",
+        "materialItemCodes",
+        "attributeDefinitions",
+        "orderOptionDefinitions",
+        "itemAssignments"
+      ],
+      "properties": {
+        "tagDefinitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/codeName"
+          }
+        },
+        "unitDefinitions": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 99,
+          "items": {
+            "$ref": "#/$defs/unitDefinitionSeed"
+          }
+        },
+        "materialItemCodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "attributeDefinitions": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/attributeDefinitionSeed"
+          }
+        },
+        "orderOptionDefinitions": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/orderOptionDefinitionSeed"
+          }
+        },
+        "itemAssignments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/itemDefinitionAssignment"
           }
         }
       }
@@ -582,6 +640,351 @@
     }
   },
   "$defs": {
+    "codeName": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "business code"
+        },
+        "name": {
+          "type": "string",
+          "description": "business name"
+        }
+      }
+    },
+    "attributeDefinitionSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "valueType",
+        "options"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "attribute definition code"
+        },
+        "name": {
+          "type": "string",
+          "description": "attribute definition name"
+        },
+        "valueType": {
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "SINGLE_SELECT",
+            "MULTI_SELECT"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "displayOrder"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "attribute choice name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "attribute choice display order"
+              }
+            }
+          }
+        }
+      }
+    },
+    "orderOptionDefinitionSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "selectionMode",
+        "values"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "ordering option definition code"
+        },
+        "name": {
+          "type": "string",
+          "description": "ordering option definition name"
+        },
+        "selectionMode": {
+          "type": "string",
+          "enum": [
+            "SINGLE",
+            "MULTIPLE"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "name",
+              "displayOrder",
+              "materialItemCodes"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "ordering option value code"
+              },
+              "name": {
+                "type": "string",
+                "description": "ordering option value name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "customer display order"
+              },
+              "materialItemCodes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "unitDefinitionSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "unitDimension",
+        "precision"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "unit definition code"
+        },
+        "name": {
+          "type": "string",
+          "description": "unit definition name"
+        },
+        "unitDimension": {
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disableAfterCreate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "itemDefinitionAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemCode",
+        "tagCodes",
+        "salesUnitCode",
+        "baseMeasureUnitCode",
+        "skuUnitOverrides",
+        "attributes",
+        "orderOptions"
+      ],
+      "properties": {
+        "itemCode": {
+          "type": "string",
+          "description": "catalog item code"
+        },
+        "tagCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "salesUnitCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "baseMeasureUnitCode": {
+          "type": "string"
+        },
+        "skuUnitOverrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "skuCode",
+              "salesUnitCode",
+              "baseMeasureUnitCode",
+              "clearAfterReadback"
+            ],
+            "properties": {
+              "skuCode": {
+                "type": "string",
+                "description": "SKU code"
+              },
+              "salesUnitCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "baseMeasureUnitCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "clearAfterReadback": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "definitionCode",
+              "textValue",
+              "optionNames"
+            ],
+            "properties": {
+              "definitionCode": {
+                "type": "string",
+                "description": "attribute definition code"
+              },
+              "textValue": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "optionNames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "orderOptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "definitionCode",
+              "required",
+              "minSelectionCount",
+              "maxSelectionCount",
+              "values"
+            ],
+            "properties": {
+              "definitionCode": {
+                "type": "string",
+                "description": "ordering option definition code"
+              },
+              "required": {
+                "type": "boolean",
+                "description": "whether a customer must choose"
+              },
+              "minSelectionCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "maxSelectionCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "valueCode",
+                    "defaultValue",
+                    "extraPrice",
+                    "materialQuantities"
+                  ],
+                  "properties": {
+                    "valueCode": {
+                      "type": "string",
+                      "description": "ordering option value code"
+                    },
+                    "defaultValue": {
+                      "type": "boolean",
+                      "description": "default selected value"
+                    },
+                    "extraPrice": {
+                      "type": "number"
+                    },
+                    "materialQuantities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "materialItemCode",
+                          "actualQuantity"
+                        ],
+                        "properties": {
+                          "materialItemCode": {
+                            "type": "string",
+                            "description": "material catalog item code"
+                          },
+                          "actualQuantity": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "mediaAsset": {
       "type": "object",
       "additionalProperties": false,
@@ -752,21 +1155,30 @@
           "type": "integer",
           "description": "quantity"
         },
-        "unit": {
-          "type": "string",
-          "description": "unit"
-        },
         "productCode": {
           "type": "string",
           "description": "product code"
         },
-        "consumptionUnit": {
-          "type": "string",
-          "description": "consumption unit"
+        "salesUnitCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "catalog seed sales-unit code"
         },
-        "countingUnit": {
-          "type": "string",
-          "description": "counting unit"
+        "baseMeasureUnitCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "catalog seed base-unit code"
+        },
+        "countingUnitCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "catalog seed counting-unit code"
         },
         "allowNegative": {
           "type": "boolean",
@@ -859,10 +1271,6 @@
         "quantity": {
           "type": "integer",
           "description": "edge quantity"
-        },
-        "unit": {
-          "type": "string",
-          "description": "edge unit"
         }
       }
     },

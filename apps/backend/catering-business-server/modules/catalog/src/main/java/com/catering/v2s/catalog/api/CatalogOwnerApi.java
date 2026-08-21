@@ -1,10 +1,12 @@
 package com.catering.v2s.catalog.api;
 
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** Public owner boundary for catalog facts and commands. Coordinators may not issue catalog SQL. */
@@ -92,7 +94,13 @@ public interface CatalogOwnerApi {
             String dictionaryKind, String entryCode, long expectedVersion, String targetStatus) {}
 
     record DictionaryCommandReadback(
-            String dictionaryKind, String code, String name, String status, UUID parentEntryRef, long version) {}
+            UUID entryRef,
+            String dictionaryKind,
+            String code,
+            String name,
+            String status,
+            UUID parentEntryRef,
+            long version) {}
 
     record DictionaryBlockingReference(String referenceKind, String referenceRef) {}
 
@@ -119,8 +127,123 @@ public interface CatalogOwnerApi {
     record DictionaryViewReadback(
             String dictionaryKind, List<DictionaryEntryView> entries, String cursor, long total, String generation) {}
 
-    /** Catalog-owned free attributes cross this public boundary only as canonical JSON text. */
-    record CatalogItemCreateCommand(String name, String code, String shapeKey, String attributesJson) {}
+    record AttributeDefinitionOption(UUID optionRef, String name, int displayOrder) {}
+
+    record AttributeDefinitionCreateCommand(
+            String code, String name, String valueType, List<AttributeDefinitionOption> options) {}
+
+    record AttributeDefinitionUpdateCommand(
+            UUID definitionRef,
+            long expectedVersion,
+            String code,
+            String name,
+            List<AttributeDefinitionOption> options) {}
+
+    record AttributeDefinitionReadback(
+            UUID definitionRef,
+            String code,
+            String name,
+            String valueType,
+            List<AttributeDefinitionOption> options,
+            long version) {}
+
+    record AttributeDefinitionListReadback(List<AttributeDefinitionReadback> definitions) {}
+
+    record AttributeDefinitionDeleteReadback(UUID definitionRef, long deletedAssignmentCount) {}
+
+    record AttributeDefinitionDeleteCommand(UUID definitionRef, long expectedVersion) {}
+
+    /** Catalog-owned unit definitions are a bounded library, not a dictionary/tag projection. */
+    enum UnitDimension {
+        COUNT,
+        WEIGHT,
+        VOLUME,
+        SERVICE_DURATION,
+        PACKAGE
+    }
+
+    record UnitDefinitionCreateCommand(String code, String name, UnitDimension unitDimension, int precision) {}
+
+    record UnitDefinitionUpdateCommand(
+            UUID unitRef,
+            long expectedVersion,
+            String code,
+            String name,
+            UnitDimension unitDimension,
+            Integer precision) {}
+
+    record UnitDefinitionDisableCommand(UUID unitRef, long expectedVersion) {}
+
+    record UnitDefinitionDeleteCommand(UUID unitRef, long expectedVersion) {}
+
+    record UnitDefinitionReadback(
+            UUID unitRef,
+            String code,
+            String name,
+            UnitDimension unitDimension,
+            int precision,
+            String status,
+            long version) {}
+
+    record UnitDefinitionListReadback(List<UnitDefinitionReadback> units, Set<UUID> referencedUnitRefs) {
+        public UnitDefinitionListReadback {
+            units = List.copyOf(units);
+            referencedUnitRefs = referencedUnitRefs == null ? Set.of() : Set.copyOf(referencedUnitRefs);
+        }
+    }
+
+    /** `stockTargetRef` is owner-resolved in the coordinator; the edge never supplies it. */
+    record OrderOptionMaterialTemplate(
+            UUID materialItemRef, UUID stockTargetRef, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot) {}
+
+    /**
+     * {@code code} is the immutable, scope-unique business identity of a library value. {@code valueRef} remains the
+     * relation key; on update an existing value must echo its stored code and may not rename it.
+     */
+    record OrderOptionValueCommand(
+            UUID valueRef, String code, String name, int displayOrder, List<OrderOptionMaterialTemplate> materials) {}
+
+    record OrderOptionMaterialReadback(
+            UUID materialRef,
+            UUID materialItemRef,
+            String materialItemName,
+            UUID stockTargetRef,
+            InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot) {}
+
+    record OrderOptionValueReadback(
+            UUID valueRef, String code, String name, int displayOrder, List<OrderOptionMaterialReadback> materials) {}
+
+    record OrderOptionDefinitionCreateCommand(
+            String code, String name, String selectionMode, List<OrderOptionValueCommand> values) {}
+
+    record OrderOptionDefinitionUpdateCommand(
+            UUID definitionRef,
+            long expectedVersion,
+            String code,
+            String name,
+            String selectionMode,
+            List<OrderOptionValueCommand> values) {}
+
+    record OrderOptionDefinitionReadback(
+            UUID definitionRef,
+            String code,
+            String name,
+            String selectionMode,
+            List<OrderOptionValueReadback> values,
+            long version) {}
+
+    record OrderOptionDefinitionListReadback(List<OrderOptionDefinitionReadback> definitions) {}
+
+    record OrderOptionDefinitionMutationReadback(
+            OrderOptionDefinitionReadback definition, List<UUID> deletedDefinitionValueRefs) {}
+
+    record OrderOptionDefinitionDeleteReadback(
+            UUID definitionRef, List<UUID> deletedDefinitionValueRefs, long deletedItemConfigCount) {}
+
+    record OrderOptionDefinitionDeleteCommand(UUID definitionRef, long expectedVersion) {}
+
+    /** First-step identity is atomic: item is DRAFT and categoryRef is either one opaque ref or null. */
+    record CatalogItemCreateCommand(String name, String code, String shapeKey, UUID categoryRef) {}
 
     record CatalogItemStatusTransitionCommand(String itemCode, long expectedVersion, String targetStatus) {}
 
@@ -141,7 +264,6 @@ public interface CatalogOwnerApi {
             String name,
             String shortName,
             String materialRole,
-            String attributesJson,
             long expectedSourceVersion) {}
 
     record TemporaryPromotionExecuteCommand(
@@ -151,7 +273,6 @@ public interface CatalogOwnerApi {
             String name,
             String shortName,
             String materialRole,
-            String attributesJson,
             long expectedSourceVersion,
             long expectedVersion,
             String preflightDigest) {}
@@ -233,6 +354,63 @@ public interface CatalogOwnerApi {
     CatalogItemCommandReadback createCatalogItem(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogItemCreateCommand command,
+            String idempotencyKey);
+
+    AttributeDefinitionListReadback listAttributeDefinitions(String dataNodeRef, String brandRef);
+
+    AttributeDefinitionReadback createAttributeDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            AttributeDefinitionCreateCommand command,
+            String idempotencyKey);
+
+    AttributeDefinitionReadback updateAttributeDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            AttributeDefinitionUpdateCommand command,
+            String idempotencyKey);
+
+    AttributeDefinitionDeleteReadback deleteAttributeDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            AttributeDefinitionDeleteCommand command,
+            String idempotencyKey);
+
+    UnitDefinitionListReadback listUnitDefinitions(
+            String dataNodeRef, String brandRef, boolean includeInactive, UnitDimension dimension);
+
+    UnitDefinitionReadback createUnitDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UnitDefinitionCreateCommand command,
+            String idempotencyKey);
+
+    UnitDefinitionReadback updateUnitDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UnitDefinitionUpdateCommand command,
+            String idempotencyKey);
+
+    UnitDefinitionReadback disableUnitDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UnitDefinitionDisableCommand command,
+            String idempotencyKey);
+
+    void deleteUnitDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UnitDefinitionDeleteCommand command,
+            String idempotencyKey);
+
+    OrderOptionDefinitionListReadback listOrderOptionDefinitions(String dataNodeRef, String brandRef);
+
+    OrderOptionDefinitionReadback createOrderOptionDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            OrderOptionDefinitionCreateCommand command,
+            String idempotencyKey);
+
+    OrderOptionDefinitionMutationReadback updateOrderOptionDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            OrderOptionDefinitionUpdateCommand command,
+            String idempotencyKey);
+
+    OrderOptionDefinitionDeleteReadback deleteOrderOptionDefinition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            OrderOptionDefinitionDeleteCommand command,
             String idempotencyKey);
 
     CatalogItemCommandReadback transitionCatalogItemStatus(

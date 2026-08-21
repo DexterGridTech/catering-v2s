@@ -291,7 +291,7 @@ ACTOR=商场运营方
 BUSINESS_SCENARIO=查看或维护项目主体渠道，必要时为同一模板新增另一经营入口
 BUSINESS_GOAL=看到稳定渠道编码、名称、模板、状态和绑定状态，并从详情进入动作
 USER_VISIBLE_COPY=项目主体经营渠道；渠道名称；渠道编码；来源模板；状态；绑定状态；查看详情；新建渠道
-TECHNICAL_BOUNDARY=Page query、channelRef、bindingRef、stopReasons、grant
+TECHNICAL_BOUNDARY=Page query、channelRef、bindingRef、bindingStatus、stopReasons、grant
 FOUNDATION_PRIMITIVE=usePageQuery, createPageQueryIdentity, contextScopedQueryArgs, adminListState, useDetailDrawer, useOverlayLock, NameCodeText, testId
 ```
 
@@ -304,6 +304,8 @@ FOUNDATION_PRIMITIVE=usePageQuery, createPageQueryIdentity, contextScopedQueryAr
 └─────────────────────────────────────────────┘
 ```
 
+`绑定状态`不表示“是否存在 nullable bindingRef”这一技术事实，而显示 owner 读回的业务语义：内部渠道为“—”（无需绑定），外部无绑定为“未绑定”，外部已有绑定为“已绑定/授权状态”。
+
 ### Screen O4：经营渠道详情抽屉
 
 ```text
@@ -314,7 +316,7 @@ ACTOR=商场运营方或店铺运营方
 BUSINESS_SCENARIO=核对渠道四维、模板、绑定和当前生效/停用原因
 BUSINESS_GOAL=在业务语境中理解渠道当前为何可用、草稿或置灰，并进入允许的编辑/绑定动作
 USER_VISIBLE_COPY=经营渠道详情；渠道名称；渠道编码；来源模板；接入类型；经营主体；订单类型；到店点餐形式；外部主体编号；业务；状态；停用原因；编辑；维护绑定；停用；关闭
-TECHNICAL_BOUNDARY=stopReasons 映射成业务文案；不显示 UUID、原始 enum、authorizationRef 或 token
+TECHNICAL_BOUNDARY=bindingStatus/stopReasons 映射成业务文案；不显示 UUID、原始 enum、authorizationRef 或 token
 FOUNDATION_PRIMITIVE=useDetailDrawer, adminDetailDescriptionsProps, adminDrawerSurfaceProps, useOverlayLock, NameCodeText, testId；编辑动作关闭详情后打开独立编辑表单 Drawer
 ```
 

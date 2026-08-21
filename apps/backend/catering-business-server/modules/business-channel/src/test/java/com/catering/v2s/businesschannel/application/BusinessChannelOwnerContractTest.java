@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
-import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
+import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.sql.PreparedStatement;
@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 
 class BusinessChannelOwnerContractTest {
@@ -106,16 +106,22 @@ class BusinessChannelOwnerContractTest {
                     return rows;
                 });
 
-        BusinessChannelReadback.ChannelPage page = readService(jdbc).pageChannels(
-                UUID.randomUUID(),
-                "workspace-key",
-                "PROJECT",
-                UUID.randomUUID().toString(),
-                null,
-                null,
-                null);
+        BusinessChannelReadback.ChannelPage page = readService(jdbc)
+                .pageChannels(
+                        UUID.randomUUID(),
+                        "workspace-key",
+                        "PROJECT",
+                        UUID.randomUUID().toString(),
+                        null,
+                        null,
+                        null);
 
-        assertEquals(refs, page.items().stream().map(BusinessChannelReadback.Channel::channelRef).toList());
+        assertEquals(
+                refs,
+                page.items().stream()
+                        .map(BusinessChannelReadback.Channel::channelRef)
+                        .toList());
+        assertEquals("NOT_REQUIRED", page.items().get(0).bindingStatus());
         assertNull(page.nextCursor());
         assertEquals(refs.size(), page.total());
 
@@ -143,16 +149,16 @@ class BusinessChannelOwnerContractTest {
                     return rows;
                 });
 
-        BusinessChannelCommandApi.Problem problem = assertThrows(
-                BusinessChannelCommandApi.Problem.class,
-                () -> readService(jdbc).pageChannels(
-                        UUID.randomUUID(),
-                        "workspace-key",
-                        "STORE",
-                        UUID.randomUUID().toString(),
-                        null,
-                        null,
-                        null));
+        BusinessChannelCommandApi.Problem problem =
+                assertThrows(BusinessChannelCommandApi.Problem.class, () -> readService(jdbc)
+                        .pageChannels(
+                                UUID.randomUUID(),
+                                "workspace-key",
+                                "STORE",
+                                UUID.randomUUID().toString(),
+                                null,
+                                null,
+                                null));
 
         assertEquals("PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", problem.code());
     }
@@ -167,14 +173,8 @@ class BusinessChannelOwnerContractTest {
                     return List.of(mapper.mapRow(templateRow(UUID.randomUUID()), 0));
                 });
 
-        BusinessChannelReadback.TemplatePage page = readService(jdbc).pageTemplates(
-                UUID.randomUUID(),
-                "workspace-key",
-                UUID.randomUUID(),
-                null,
-                null,
-                null,
-                null);
+        BusinessChannelReadback.TemplatePage page = readService(jdbc)
+                .pageTemplates(UUID.randomUUID(), "workspace-key", UUID.randomUUID(), null, null, null, null);
 
         assertEquals(1, page.items().size());
         assertNull(page.nextCursor());
@@ -195,10 +195,9 @@ class BusinessChannelOwnerContractTest {
                     return rows;
                 });
 
-        BusinessChannelCommandApi.Problem problem = assertThrows(
-                BusinessChannelCommandApi.Problem.class,
-                () -> readService(jdbc).pageTemplates(
-                        UUID.randomUUID(), "workspace-key", UUID.randomUUID(), null, null, null, null));
+        BusinessChannelCommandApi.Problem problem =
+                assertThrows(BusinessChannelCommandApi.Problem.class, () -> readService(jdbc)
+                        .pageTemplates(UUID.randomUUID(), "workspace-key", UUID.randomUUID(), null, null, null, null));
 
         assertEquals("PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", problem.code());
     }
@@ -213,14 +212,15 @@ class BusinessChannelOwnerContractTest {
                     return List.of(mapper.mapRow(channelRow(UUID.randomUUID()), 0));
                 });
 
-        readService(jdbc).pageChannels(
-                UUID.randomUUID(),
-                "workspace-key",
-                "PROJECT",
-                UUID.randomUUID().toString(),
-                null,
-                "CHANNEL_NAME",
-                "DESC");
+        readService(jdbc)
+                .pageChannels(
+                        UUID.randomUUID(),
+                        "workspace-key",
+                        "PROJECT",
+                        UUID.randomUUID().toString(),
+                        null,
+                        "CHANNEL_NAME",
+                        "DESC");
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
         verify(jdbc).query(sql.capture(), any(PreparedStatementSetter.class), any(RowMapper.class));
@@ -231,10 +231,10 @@ class BusinessChannelOwnerContractTest {
     void boundedReadRejectsUnsupportedSortKeyBeforeQuerying() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
 
-        BusinessChannelCommandApi.Problem problem = assertThrows(
-                BusinessChannelCommandApi.Problem.class,
-                () -> readService(jdbc).pageTemplates(
-                        UUID.randomUUID(), "workspace-key", UUID.randomUUID(), null, null, "UNKNOWN", "ASC"));
+        BusinessChannelCommandApi.Problem problem =
+                assertThrows(BusinessChannelCommandApi.Problem.class, () -> readService(jdbc)
+                        .pageTemplates(
+                                UUID.randomUUID(), "workspace-key", UUID.randomUUID(), null, null, "UNKNOWN", "ASC"));
 
         assertEquals("VALIDATION_ERROR", problem.code());
         verifyNoInteractions(jdbc);
@@ -244,10 +244,16 @@ class BusinessChannelOwnerContractTest {
     void boundedReadRejectsDirectionWithoutAColumnBeforeQuerying() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
 
-        BusinessChannelCommandApi.Problem problem = assertThrows(
-                BusinessChannelCommandApi.Problem.class,
-                () -> readService(jdbc).pageChannels(
-                        UUID.randomUUID(), "workspace-key", "PROJECT", UUID.randomUUID().toString(), null, null, "ASC"));
+        BusinessChannelCommandApi.Problem problem =
+                assertThrows(BusinessChannelCommandApi.Problem.class, () -> readService(jdbc)
+                        .pageChannels(
+                                UUID.randomUUID(),
+                                "workspace-key",
+                                "PROJECT",
+                                UUID.randomUUID().toString(),
+                                null,
+                                null,
+                                "ASC"));
 
         assertEquals("VALIDATION_ERROR", problem.code());
         verifyNoInteractions(jdbc);
@@ -257,17 +263,17 @@ class BusinessChannelOwnerContractTest {
     void storeTemplateCandidateReadRejectsUnsupportedSortBeforeQuerying() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
 
-        BusinessChannelCommandApi.Problem problem = assertThrows(
-                BusinessChannelCommandApi.Problem.class,
-                () -> readService(jdbc).pageStoreTemplateCandidates(
-                        UUID.randomUUID(),
-                        "workspace-key",
-                        UUID.randomUUID(),
-                        UUID.randomUUID().toString(),
-                        null,
-                        50,
-                        "UNKNOWN",
-                        "ASC"));
+        BusinessChannelCommandApi.Problem problem =
+                assertThrows(BusinessChannelCommandApi.Problem.class, () -> readService(jdbc)
+                        .pageStoreTemplateCandidates(
+                                UUID.randomUUID(),
+                                "workspace-key",
+                                UUID.randomUUID(),
+                                UUID.randomUUID().toString(),
+                                null,
+                                50,
+                                "UNKNOWN",
+                                "ASC"));
 
         assertEquals("VALIDATION_ERROR", problem.code());
         verifyNoInteractions(jdbc);
@@ -291,6 +297,7 @@ class BusinessChannelOwnerContractTest {
         when(row.getString("channel_code")).thenReturn("CHANNEL-CODE");
         when(row.getString("channel_name")).thenReturn("Channel");
         when(row.getObject("binding_ref", UUID.class)).thenReturn(null);
+        when(row.getString("template_access_kind")).thenReturn("INTERNAL");
         when(row.getString("status")).thenReturn("DRAFT");
         when(row.getLong("version")).thenReturn(1L);
         return row;
@@ -320,6 +327,7 @@ class BusinessChannelOwnerContractTest {
                 channelCode,
                 "Channel",
                 null,
+                "NOT_REQUIRED",
                 "DRAFT",
                 List.of(),
                 1);

@@ -39,10 +39,7 @@ public class CreateOperationsCatalogItemOperation {
                 catalog.createCatalogItem(
                         context,
                         new CatalogOwnerApi.CatalogItemCreateCommand(
-                                request.name(),
-                                request.code(),
-                                request.shapeKey(),
-                                request.attributes().canonicalJson()),
+                                request.name(), request.code(), request.shapeKey(), request.categoryRef()),
                         invocation.idempotencyKey()));
     }
 

@@ -45,7 +45,7 @@ public class AdjustOperationsInventoryTargetOperation {
                         requiredLong(request.expectedVersion(), "expectedVersion"),
                         request.direction(),
                         requiredDecimal(request.quantity(), "quantity"),
-                        request.unit(),
+                        request.countingUnitRef(),
                         request.reasonCode(),
                         request.note()),
                 invocation.idempotencyKey());

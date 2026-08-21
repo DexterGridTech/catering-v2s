@@ -3,7 +3,7 @@
   "kind": "generated-operation-authorization-catalog",
   "generatedFrom": "contracts/registry/iam-org-governance-manifest.json",
   "closure": {
-    "mutatingOperations": 128
+    "mutatingOperations": 138
   },
   "requirements": [
     {
@@ -69,6 +69,28 @@
       "ownerRecheckId": "OWNER_RECHECK_INVENTORY",
       "typedProblemMappingId": "PROBLEM_INVENTORY_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_COUNT_OPERATIONS_INVENTORY_TARGET"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "createOperationsCatalogAttributeDefinition",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/attribute-definitions",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION"
     },
     {
       "operationIdentity": {
@@ -138,6 +160,50 @@
     },
     {
       "operationIdentity": {
+        "operationId": "createOperationsCatalogOrderOptionDefinition",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/order-option-definitions",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "createOperationsCatalogUnit",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/units",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT"
+    },
+    {
+      "operationIdentity": {
         "operationId": "createOperationsProductionTag",
         "method": "POST",
         "path": "/operations/catalog-inventory/production-tags",
@@ -160,6 +226,28 @@
     },
     {
       "operationIdentity": {
+        "operationId": "deleteOperationsCatalogAttributeDefinition",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION"
+    },
+    {
+      "operationIdentity": {
         "operationId": "deleteOperationsCatalogCategory",
         "method": "DELETE",
         "path": "/operations/catalog-inventory/categories/{categoryRef}",
@@ -179,6 +267,72 @@
       "ownerRecheckId": "OWNER_RECHECK_CATALOG",
       "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_CATEGORY"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "deleteOperationsCatalogOrderOptionDefinition",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "deleteOperationsCatalogUnit",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/units/{unitRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "disableOperationsCatalogUnit",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/units/{unitRef}/disable",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT"
     },
     {
       "operationIdentity": {
@@ -507,6 +661,28 @@
     },
     {
       "operationIdentity": {
+        "operationId": "updateOperationsCatalogAttributeDefinition",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION"
+    },
+    {
+      "operationIdentity": {
         "operationId": "updateOperationsCatalogCategory",
         "method": "PATCH",
         "path": "/operations/catalog-inventory/categories/{categoryRef}",
@@ -548,6 +724,50 @@
       "ownerRecheckId": "OWNER_RECHECK_CATALOG",
       "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "updateOperationsCatalogOrderOptionDefinition",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "updateOperationsCatalogUnit",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/units/{unitRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "catalog"
+      },
+      "requirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_UNIT",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_UNIT"
     },
     {
       "operationIdentity": {

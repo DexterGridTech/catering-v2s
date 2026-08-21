@@ -32,6 +32,7 @@ export function AdministratorDetailDrawer({
       open={open}
       loading={loading}
       onClose={onClose}
+      maskClosable
       afterOpenChange={onAfterOpenChange}
       size={520}
       {...adminDrawerSurfaceProps}

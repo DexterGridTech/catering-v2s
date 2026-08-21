@@ -265,21 +265,38 @@ public class PlatformAssetService
                 lockReceipt(receiptScope, idempotencyKey);
                 Replay replay = findReceipt(receiptScope, idempotencyKey);
                 if (replay != null) {
-                    // The catalog may claim the staged ref before a client retries the same
-                    // multipart command. ACTIVE is still the same successful stage result;
-                    // only a released asset makes the replay indeterminate.
-                    if (!requestHash.equals(replay.requestHash()) || "RELEASED".equals(replay.status()))
+                    // A released catalog stage is a completed lifecycle, not a different request. The UI uses a
+                    // deterministic content key, so closing an editor and uploading the same file again legitimately
+                    // reuses this receipt. A changed payload must still fail closed.
+                    if (!requestHash.equals(replay.requestHash())) {
+                        log.atWarn()
+                                .addKeyValue("event", "PLATFORM_ASSET_STAGE_IDEMPOTENCY_CONFLICT")
+                                .addKeyValue("reason", "RECEIPT_REQUEST_MISMATCH")
+                                .addKeyValue("receiptStatus", replay.status())
+                                .log("catalog asset stage idempotency conflict");
                         throw new AssetIdempotencyConflictException();
-                    String renewed = secret();
-                    long replayExpires = time.currentEpochMillis() + 15 * 60 * 1000L;
-                    issueBindGrant(replay.assetRef(), renewed, replayExpires);
-                    return new StageReadback(
-                            replay.assetRef(),
-                            renewed,
-                            replayExpires,
-                            replay.contentType(),
-                            replay.sizeBytes(),
-                            replay.sha256());
+                    }
+                    if ("RELEASED".equals(replay.status())) {
+                        log.atInfo()
+                                .addKeyValue("event", "PLATFORM_ASSET_STAGE_RESTAGE")
+                                .addKeyValue("reason", "RELEASED_RECEIPT_REPLAY")
+                                .addKeyValue("receiptStatus", replay.status())
+                                .log("catalog asset stage reopens a released content reference");
+                    } else {
+                        // The catalog may claim the staged ref before a client retries the same multipart command.
+                        // ACTIVE is still the same successful stage result; only a released asset needs to continue
+                        // through the normal content-addressed restage path below.
+                        String renewed = secret();
+                        long replayExpires = time.currentEpochMillis() + 15 * 60 * 1000L;
+                        issueBindGrant(replay.assetRef(), renewed, replayExpires);
+                        return new StageReadback(
+                                replay.assetRef(),
+                                renewed,
+                                replayExpires,
+                                replay.contentType(),
+                                replay.sizeBytes(),
+                                replay.sha256());
+                    }
                 }
             }
             // Object I/O completed outside a database transaction. Content-addressed
@@ -309,6 +326,11 @@ public class PlatformAssetService
                     if (!restagedByThisCommand) {
                         // A different command must not rotate the pending command's one-time
                         // grant. Only receipt replay above may renew a grant for the same intent.
+                        log.atWarn()
+                                .addKeyValue("event", "PLATFORM_ASSET_STAGE_IDEMPOTENCY_CONFLICT")
+                                .addKeyValue("reason", "STAGED_ASSET_OWNED_BY_OTHER_COMMAND")
+                                .addKeyValue("assetStatus", existing.status())
+                                .log("catalog asset stage is already pending under another command");
                         throw new AssetIdempotencyConflictException();
                     }
                 } else if (!"ACTIVE".equals(existing.status())) {
@@ -1266,10 +1288,15 @@ public class PlatformAssetService
             String digest,
             long now) {
         if (idempotencyKey == null) return;
-        jdbc.update(
+        int changed = jdbc.update(
                 "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, "
                         + "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, CAST(? AS "
-                        + "JSONB), ?)",
+                        + "JSONB), ?) ON CONFLICT (scope_key, idempotency_key) DO UPDATE SET asset_ref=EXCLUDED.ass"
+                        + "et_ref, "
+                        + "request_hash=EXCLUDED.request_hash, response_json=EXCLUDED.response_json, "
+                        + "created_at_epoch_millis=EXCLUDED.created_at_epoch_millis WHERE "
+                        + "platform_asset.asset_command_receipt.request_hash=EXCLUDED.request_hash AND "
+                        + "platform_asset.asset_command_receipt.asset_ref=EXCLUDED.asset_ref",
                 receiptScope,
                 idempotencyKey,
                 assetRef,
@@ -1277,6 +1304,13 @@ public class PlatformAssetService
                 "{\"assetRef\":\"" + assetRef + "\",\"contentType\":\"" + contentType + "\",\"sizeBytes\":" + sizeBytes
                         + ",\"sha256\":\"" + digest + "\"}",
                 now);
+        if (changed != 1) {
+            log.atWarn()
+                    .addKeyValue("event", "PLATFORM_ASSET_STAGE_IDEMPOTENCY_CONFLICT")
+                    .addKeyValue("reason", "RECEIPT_WRITE_MISMATCH")
+                    .log("catalog asset stage receipt could not be safely refreshed");
+            throw new AssetIdempotencyConflictException();
+        }
     }
 
     private void recordReleaseReceipt(

@@ -4,7 +4,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.charset.StandardCharsets;
 
-/** Bounds free catalog JSON without changing its intentionally open shape. */
+/** Bounds the remaining intentionally open catalog JSON documents; typed product definitions are relational. */
 final class CatalogJsonDocumentSizePolicy {
     static final int MAX_BYTES = 256 * 1024;
 
@@ -25,7 +25,6 @@ final class CatalogJsonDocumentSizePolicy {
     static void validateCatalogDraft(JsonNode request) {
         JsonNode draft = request == null ? null : request.path("sections").path("catalogDraft");
         if (draft == null || !draft.isObject()) return;
-        requireNodeWithin(draft, "attributes", "sections.catalogDraft.attributes");
         JsonNode profiles = draft.get("productionProfiles");
         if (profiles == null || !profiles.isObject()) return;
         requireNodeWithin(profiles, "item", "sections.catalogDraft.productionProfiles.item");

@@ -1,6 +1,5 @@
 import {
   Alert,
-  AutoComplete,
   Button,
   Checkbox,
   Descriptions,
@@ -21,10 +20,9 @@ import {
   createContentIdempotencyKey,
   NameCodeText,
   testId,
-  useOverlayLock,
-  useSubmissionLifecycle,
+  useDrawerFormLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {
@@ -39,6 +37,7 @@ import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageContext} from '../../../app/routing/model';
 import {
   envelopeResult,
+  inventoryUnitLabel,
   jsonBody,
   type InventoryCurrentView,
   type InventoryWriteResult,
@@ -54,17 +53,17 @@ type Props = {
 };
 type FormValues = {
   quantity?: number;
-  unit?: string;
+  countingUnitRef?: string;
   direction?: 'INCREASE' | 'DECREASE';
   reasonCode?: InventoryReasonCode;
   note?: string;
   zeroConfirmation?: boolean;
   allowNegative?: boolean;
   lowStockThreshold?: number;
-  countingUnit?: string;
   conversionFactor?: number;
 };
 type InventoryReasonCode = 'RECOUNT' | 'RECEIPT' | 'WASTE' | 'TRANSFER' | 'CORRECTION' | 'OTHER';
+type InventoryInputUnitOption = {label: ReactNode; value: string; precision: number};
 
 const titles: Record<InventoryActionKind, string> = {
   COUNT: '存量盘点',
@@ -100,6 +99,35 @@ function finiteNumber(value: string | number | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export function truncateTowardZero(value: number | undefined, precision: number) {
+  if (value === undefined || !Number.isFinite(value) || !Number.isSafeInteger(precision) || precision < 0) return value;
+  if (precision === 0) return Math.trunc(value);
+
+  // Truncate the decimal representation instead of multiplying a binary float.
+  // The latter can turn an input such as 0.29 into 0.28 at precision 2.
+  const text = value.toString().toLowerCase();
+  const negative = text.startsWith('-');
+  const unsigned = negative ? text.slice(1) : text;
+  const [coefficient, exponentText] = unsigned.split('e');
+  const exponent = exponentText === undefined ? 0 : Number(exponentText);
+  if (!Number.isSafeInteger(exponent)) return value;
+  const [whole, fraction = ''] = coefficient.split('.');
+  let digits = `${whole}${fraction}`;
+  let decimalPosition = whole.length + exponent;
+  if (decimalPosition <= 0) {
+    digits = `${'0'.repeat(1 - decimalPosition)}${digits}`;
+    decimalPosition = 1;
+  } else if (decimalPosition > digits.length) {
+    digits += '0'.repeat(decimalPosition - digits.length);
+  }
+  const truncatedFraction = digits.slice(decimalPosition, decimalPosition + precision);
+  const normalized = `${negative ? '-' : ''}${digits.slice(0, decimalPosition)}${
+    truncatedFraction ? `.${truncatedFraction}` : ''
+  }`;
+  const result = Number(normalized);
+  return Number.isFinite(result) ? result : value;
+}
+
 function decimal(value: number) {
   return value
     .toFixed(3)
@@ -107,22 +135,16 @@ function decimal(value: number) {
     .replace(/(\.\d*?)0+$/, '$1');
 }
 
-function conversionFactor(summary: string | null, inputUnit: string | undefined, consumptionUnit: string) {
-  if (!inputUnit || inputUnit === consumptionUnit || !summary) return 1;
-  const match = summary.match(/[=×x]\s*([0-9]+(?:\.[0-9]+)?)/i);
-  const factor = match ? Number(match[1]) : 1;
-  return Number.isFinite(factor) && factor > 0 ? factor : 1;
-}
-
-function configuredConversionFactor(current: InventoryCurrentView, inputUnit: string | undefined) {
-  if (!inputUnit || inputUnit === current.target.consumptionUnit) return 1;
-  const configuredUnit = current.configuration.countingUnit ?? current.target.countingUnit ?? undefined;
+function configuredConversionFactor(current: InventoryCurrentView, inputUnitRef: string | undefined) {
+  if (!inputUnitRef || inputUnitRef === current.target.consumptionUnitSnapshot.unitRef) return 1;
+  const configuredUnit =
+    current.configuration.countingUnitSnapshot?.unitRef ?? current.target.countingUnitSnapshot?.unitRef;
   const configuredFactor = current.configuration.conversionFactor;
-  if (inputUnit === configuredUnit && configuredFactor !== null && configuredFactor !== undefined) {
+  if (inputUnitRef === configuredUnit && configuredFactor !== null && configuredFactor !== undefined) {
     const parsed = Number(configuredFactor);
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
   }
-  return conversionFactor(current.target.conversionSummary, inputUnit, current.target.consumptionUnit);
+  return 1;
 }
 
 function resultFromConfiguration(
@@ -149,34 +171,76 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
   const [form] = Form.useForm<FormValues>();
   const [problem, setProblem] = useState<string>();
   const [result, setResult] = useState<InventoryWriteResult>();
-  const lifecycle = useSubmissionLifecycle();
+  const open = Boolean(action);
+  const lifecycle = useDrawerFormLifecycle({
+    open,
+    onOpenChange: nextOpen => {
+      if (!nextOpen) onClose();
+    },
+    dirtyMessage: '库存操作内容尚未保存。',
+    diagnosticOperationId: 'inventory-action',
+    idempotencyKey: true,
+  });
   const [count, countState] = operationsRtk.useCountOperationsInventoryTargetMutation();
   const [increase, increaseState] = operationsRtk.useIncreaseOperationsInventoryTargetMutation();
   const [adjust, adjustState] = operationsRtk.useAdjustOperationsInventoryTargetMutation();
   const [configure, configureState] = operationsRtk.useUpdateOperationsInventoryTargetConfigurationMutation();
-  const submitting =
+  const mutationSubmitting =
     countState.isLoading || increaseState.isLoading || adjustState.isLoading || configureState.isLoading;
+  const submitting = lifecycle.submitting || mutationSubmitting;
   const actionResetKey = inventoryActionResetKey(action, current?.target.targetRef);
   const initializedActionResetKey = useRef<string | undefined>(undefined);
   const quantity = Form.useWatch('quantity', form);
-  const selectedUnit = Form.useWatch('unit', form);
+  const selectedUnitRef = Form.useWatch('countingUnitRef', form);
   const direction = Form.useWatch('direction', form);
-  const selectedCountingUnit = Form.useWatch('countingUnit', form);
+  const unitListRequest = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogUnits(
+        {},
+        {
+          query: {
+            ...(queryContext.scopeRef ? {dataNodeRef: wireUuid(queryContext.scopeRef)} : {}),
+            includeInactive: false,
+          },
+        },
+      ),
+    [queryContext],
+  );
+  const unitList = operationsRtk.useListOperationsCatalogUnitsQuery(unitListRequest, {skip: !open || !current});
   const inputUnits = useMemo(() => {
     if (!current) return [];
-    return Array.from(
-      new Set(
-        [current.target.consumptionUnit, current.target.countingUnit].filter((value): value is string =>
-          Boolean(value),
-        ),
-      ),
-    ).map(value => ({label: value, value}));
-  }, [current]);
+    const snapshots = new Map(
+      [
+        current.target.consumptionUnitSnapshot,
+        current.target.countingUnitSnapshot,
+        ...(unitList.currentData?.data.units ?? []),
+      ]
+        .filter((value): value is NonNullable<typeof value> => Boolean(value))
+        .map(value => [value.unitRef, value]),
+    );
+    return [...snapshots.values()].map<InventoryInputUnitOption>(value => ({
+      label: inventoryUnitLabel(value),
+      value: value.unitRef,
+      precision: value.precision,
+    }));
+  }, [current, unitList.currentData]);
+  const selectedInputUnit = inputUnits.find(option => option.value === selectedUnitRef);
+  const sourcePrecision =
+    selectedInputUnit?.precision ??
+    current?.target.countingUnitSnapshot?.precision ??
+    current?.target.consumptionUnitSnapshot.precision ??
+    0;
+  const consumptionPrecision = current?.target.consumptionUnitSnapshot.precision ?? 0;
+  useEffect(() => {
+    if (quantity === undefined) return;
+    const normalized = truncateTowardZero(quantity, sourcePrecision);
+    if (normalized !== undefined && normalized !== quantity) form.setFieldValue('quantity', normalized);
+  }, [form, quantity, sourcePrecision]);
   const preview = useMemo(() => {
     if (!current || !action || action === 'CONFIGURE' || quantity === undefined || quantity === null) return undefined;
     const before = finiteNumber(current.balance);
     const amount = finiteNumber(quantity);
-    const factor = configuredConversionFactor(current, selectedUnit);
+    const factor = configuredConversionFactor(current, selectedUnitRef);
     const normalized = amount * factor;
     const after =
       action === 'COUNT'
@@ -185,11 +249,9 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
           ? before - normalized
           : before + normalized;
     return {before, change: action === 'COUNT' ? normalized - before : after - before, after};
-  }, [action, current, direction, quantity, selectedUnit]);
+  }, [action, current, direction, quantity, selectedUnitRef]);
   const negativeAfter = action === 'ADJUST' && preview && preview.after < 0;
   const negativeBlocked = Boolean(negativeAfter && current && !current.configuration.allowNegative);
-  useOverlayLock(Boolean(action));
-
   useEffect(() => {
     if (!current) {
       initializedActionResetKey.current = undefined;
@@ -201,19 +263,19 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
     setProblem(undefined);
     setResult(undefined);
     form.resetFields();
+    const defaultInputUnitRef =
+      current.configuration.countingUnitSnapshot?.unitRef ??
+      current.target.countingUnitSnapshot?.unitRef ??
+      current.target.consumptionUnitSnapshot.unitRef;
     form.setFieldsValue({
       direction: 'INCREASE',
-      unit: current.target.countingUnit ?? current.target.consumptionUnit,
+      countingUnitRef: defaultInputUnitRef,
       allowNegative: current.configuration.allowNegative,
       lowStockThreshold:
         current.configuration.lowStockThreshold === null
           ? undefined
           : finiteNumber(current.configuration.lowStockThreshold),
-      countingUnit: current.configuration.countingUnit ?? current.target.countingUnit ?? current.target.consumptionUnit,
-      conversionFactor: configuredConversionFactor(
-        current,
-        current.configuration.countingUnit ?? current.target.countingUnit ?? current.target.consumptionUnit,
-      ),
+      conversionFactor: configuredConversionFactor(current, defaultInputUnitRef),
     });
   }, [actionResetKey, current, form, lifecycle]);
 
@@ -225,27 +287,23 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
         form.setFields([{name: 'zeroConfirmation', errors: ['请输入 0 后确认现场实盘为 0。']}]);
         return;
       }
+      lifecycle.setSubmitting(true);
       const targetRef = wireUuid(current.target.targetRef);
       const common = {dataNodeRef: requireOperationsScopeRef(queryContext), targetRef, expectedVersion};
       if (action === 'CONFIGURE') {
-        const countingUnit =
-          values.countingUnit ??
-          current.configuration.countingUnit ??
-          current.target.countingUnit ??
-          current.target.consumptionUnit;
+        const selectedCountingUnitRef = values.countingUnitRef || null;
+        const countingUnitRef =
+          selectedCountingUnitRef === current.target.consumptionUnitSnapshot.unitRef ? null : selectedCountingUnitRef;
         const existingFactor =
-          current.configuration.conversionFactor ?? String(configuredConversionFactor(current, countingUnit));
+          current.configuration.conversionFactor ??
+          String(configuredConversionFactor(current, selectedCountingUnitRef ?? undefined));
         const body = jsonBody<InventoryTargetConfigurationRequest>({
           ...common,
           configuration: {
             allowNegative: values.allowNegative === true,
-            lowStockThreshold: values.lowStockThreshold === undefined ? null : String(values.lowStockThreshold),
-            countingUnit,
-            conversionFactor: String(
-              countingUnit === current.target.consumptionUnit
-                ? 1
-                : (values.conversionFactor ?? finiteNumber(existingFactor)),
-            ),
+            lowStockThreshold: values.lowStockThreshold === undefined ? null : values.lowStockThreshold,
+            countingUnitRef: countingUnitRef ? wireUuid(countingUnitRef) : null,
+            conversionFactor: countingUnitRef ? (values.conversionFactor ?? finiteNumber(existingFactor)) : 1,
           },
         });
         const idempotencyKey = await createContentIdempotencyKey(
@@ -271,7 +329,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                     headers,
                     body: jsonBody<InventoryCountRequest>({
                       ...common,
-                      unit: values.unit ?? current.target.consumptionUnit,
+                      countingUnitRef:
+                        values.countingUnitRef &&
+                        values.countingUnitRef !== current.target.consumptionUnitSnapshot.unitRef
+                          ? wireUuid(values.countingUnitRef)
+                          : null,
                       note,
                       countedQuantity: String(values.quantity),
                       zeroConfirmation: values.zeroConfirmation === true,
@@ -287,7 +349,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                       headers,
                       body: jsonBody<InventoryIncreaseRequest>({
                         ...common,
-                        unit: values.unit ?? current.target.consumptionUnit,
+                        countingUnitRef:
+                          values.countingUnitRef &&
+                          values.countingUnitRef !== current.target.consumptionUnitSnapshot.unitRef
+                            ? wireUuid(values.countingUnitRef)
+                            : null,
                         note,
                         quantity: String(values.quantity),
                       }),
@@ -301,7 +367,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                       headers,
                       body: jsonBody<InventoryAdjustmentRequest>({
                         ...common,
-                        unit: values.unit ?? current.target.consumptionUnit,
+                        countingUnitRef:
+                          values.countingUnitRef &&
+                          values.countingUnitRef !== current.target.consumptionUnitSnapshot.unitRef
+                            ? wireUuid(values.countingUnitRef)
+                            : null,
                         note,
                         direction: values.direction ?? 'INCREASE',
                         quantity: String(values.quantity),
@@ -318,7 +388,18 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
       setProblem(operationsProblemOf(error).detail || '库存操作未完成，请重试。');
+    } finally {
+      lifecycle.setSubmitting(false);
     }
+  };
+
+  const handleAfterOpenChange = (visible: boolean) => {
+    lifecycle.afterOpenChange(visible);
+    if (visible) return;
+    initializedActionResetKey.current = undefined;
+    form.resetFields();
+    setProblem(undefined);
+    setResult(undefined);
   };
 
   const amountLabel = action === 'COUNT' ? '实盘数量' : '数量';
@@ -336,14 +417,17 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
   ];
   const isConfiguration = action === 'CONFIGURE';
   const isZeroCount = action === 'COUNT' && quantity === 0;
-  const selectedUnitLabel = selectedUnit ?? current?.target.consumptionUnit ?? '—';
-  const previewDescription = preview
-    ? [
-        `${decimal(preview.before)} ${current?.target.consumptionUnit ?? ''} → `,
-        `${decimal(preview.after)} ${current?.target.consumptionUnit ?? ''}`,
-        `（变化 ${decimal(preview.change)}）`,
-      ].join('')
-    : '输入数量后显示 before → after 预览';
+  const selectedUnitLabel =
+    inputUnits.find(option => option.value === selectedUnitRef)?.label ??
+    inventoryUnitLabel(current?.target.consumptionUnitSnapshot);
+  const previewDescription: ReactNode = preview ? (
+    <>
+      {decimal(preview.before)} {inventoryUnitLabel(current?.target.consumptionUnitSnapshot)} → {decimal(preview.after)}{' '}
+      {inventoryUnitLabel(current?.target.consumptionUnitSnapshot)}（变化 {decimal(preview.change)}）
+    </>
+  ) : (
+    '输入数量后显示 before → after 预览'
+  );
   const actionImpactText =
     action === 'INCREASE'
       ? '增加入库数量会同时影响成本或应付核算；这里只维护轻库存数量，不替代采购或收货单据。'
@@ -354,19 +438,21 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
   return (
     <Drawer
       title={action ? `${titles[action]}：${current?.target.productName ?? ''}` : '库存操作'}
-      open={Boolean(action)}
+      open={open}
       width={620}
       destroyOnHidden
-      onClose={submitting ? undefined : onClose}
-      maskClosable={!submitting}
+      onClose={lifecycle.requestClose}
+      afterOpenChange={handleAfterOpenChange}
+      maskClosable={!lifecycle.submitting}
+      keyboard={!lifecycle.submitting}
       footer={
         result ? (
-          <Button type="primary" onClick={onClose} {...testId('inventory-action-result-close')}>
+          <Button type="primary" onClick={lifecycle.closeAfterSuccess} {...testId('inventory-action-result-close')}>
             完成
           </Button>
         ) : (
           <Space>
-            <Button onClick={onClose} disabled={submitting}>
+            <Button onClick={lifecycle.requestClose} disabled={submitting}>
               取消
             </Button>
             <Button
@@ -433,23 +519,34 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
             form={form}
             layout="vertical"
             onValuesChange={() => {
+              lifecycle.setDirty(true);
               if (action !== 'CONFIGURE') lifecycle.markBusinessIntentChanged();
             }}
           >
             {!isConfiguration && (
               <>
                 <Space align="start" style={{display: 'flex'}}>
-                  <Form.Item label={amountLabel} name="quantity" rules={quantityRules} style={{flex: 1}}>
+                  <Form.Item
+                    label={amountLabel}
+                    name="quantity"
+                    normalize={(value: number | undefined) => truncateTowardZero(value, sourcePrecision)}
+                    extra={
+                      sourcePrecision === 0
+                        ? '录入单位精度为0，只能填写整数；超出精度时向零截断。'
+                        : `录入单位精度为${sourcePrecision}位小数；超出精度时向零截断。`
+                    }
+                    rules={quantityRules}
+                    style={{flex: 1}}
+                  >
                     <InputNumber
                       min={action === 'COUNT' ? 0 : 0.0001}
-                      precision={3}
                       style={{width: '100%'}}
                       {...testId('inventory-action-quantity')}
                     />
                   </Form.Item>
                   <Form.Item
                     label="录入单位"
-                    name="unit"
+                    name="countingUnitRef"
                     rules={[{required: true, message: '请选择录入单位'}]}
                     style={{width: 180}}
                   >
@@ -505,7 +602,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                 <Alert
                   type="info"
                   showIcon
-                  title={`当前库存：${current.balance} ${current.target.consumptionUnit}`}
+                  title={
+                    <span>
+                      当前库存：{current.balance} {inventoryUnitLabel(current.target.consumptionUnitSnapshot)}
+                    </span>
+                  }
                   description={
                     <Space direction="vertical" size={4}>
                       <span>{current.target.conversionSummary ?? '按消耗单位记录'}</span>
@@ -538,7 +639,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                   type="info"
                   showIcon
                   title="正在调整独立库存配置"
-                  description="只调整阈值、负库存策略、盘点单位与换算，不修改实际余额或 BOM。"
+                  description="只调整阈值、负库存策略、盘点单位与换算，不修改实际余额或 BOM。盘点单位只能从单位库选择，余额始终按消耗单位记录。"
                   style={{marginBottom: 16}}
                 />
                 <Form.Item label="允许负库存" name="allowNegative" valuePropName="checked">
@@ -547,24 +648,21 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                 <Form.Item
                   label="低库存阈值"
                   name="lowStockThreshold"
+                  normalize={(value: number | undefined) => truncateTowardZero(value, consumptionPrecision)}
+                  extra={
+                    consumptionPrecision === 0
+                      ? '消耗单位精度为0，只能填写整数；超出精度时向零截断。'
+                      : `消耗单位精度为${consumptionPrecision}位小数；超出精度时向零截断。`
+                  }
                   rules={[{type: 'number', min: 0, message: '阈值不能小于 0'}]}
                 >
-                  <InputNumber
-                    min={0}
-                    precision={3}
-                    style={{width: '100%'}}
-                    {...testId('inventory-config-threshold')}
-                  />
+                  <InputNumber min={0} style={{width: '100%'}} {...testId('inventory-config-threshold')} />
                 </Form.Item>
-                <Form.Item label="盘点单位" name="countingUnit" rules={[{required: true, message: '请输入盘点单位'}]}>
-                  <AutoComplete
+                <Form.Item label="盘点单位" name="countingUnitRef">
+                  <Select
                     options={inputUnits}
-                    filterOption={(input, option) =>
-                      String(option?.value ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder="例如：盒、克、件；也可录入新单位"
+                    allowClear
+                    placeholder="可选：选择单位库中的同维度盘点单位"
                     {...testId('inventory-config-counting-unit')}
                   />
                 </Form.Item>
@@ -576,16 +674,15 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                     {type: 'number', min: 0.000001, message: '换算必须是正数'},
                   ]}
                   extra={
-                    selectedCountingUnit === current.target.consumptionUnit
+                    selectedUnitRef === current.target.consumptionUnitSnapshot.unitRef
                       ? '盘点单位与消耗单位相同，换算固定为 1。'
                       : undefined
                   }
                 >
                   <InputNumber
                     min={0.000001}
-                    precision={6}
                     style={{width: '100%'}}
-                    disabled={selectedCountingUnit === current.target.consumptionUnit}
+                    disabled={selectedUnitRef === current.target.consumptionUnitSnapshot.unitRef || !selectedUnitRef}
                     {...testId('inventory-config-conversion-factor')}
                   />
                 </Form.Item>
@@ -597,7 +694,11 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                     {
                       key: 'balance',
                       label: '实际余额',
-                      children: `${current.balance} ${current.target.consumptionUnit}`,
+                      children: (
+                        <>
+                          {current.balance} {inventoryUnitLabel(current.target.consumptionUnitSnapshot)}
+                        </>
+                      ),
                     },
                     {key: 'conversion', label: '当前换算', children: current.target.conversionSummary ?? '未配置'},
                   ]}

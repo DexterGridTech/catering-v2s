@@ -21,6 +21,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/dev/r5-reset.test.mjs',
   'scripts/dev/terminal-fixture-state.test.mjs',
   'scripts/test/backend-acceptance-structure.test.mjs',
+  'scripts/test/catalog-inventory-definition-seed.test.mjs',
   'scripts/test/catalog-inventory-reference-path-matrix.test.mjs',
   'scripts/test/catalog-inventory-query-envelope.test.mjs',
   'scripts/test/catalog-inventory-rtk-tag-generation.test.mjs',

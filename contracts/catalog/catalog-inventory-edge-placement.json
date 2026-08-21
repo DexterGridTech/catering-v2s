@@ -279,7 +279,85 @@
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-workbench.paths.json"
+    },
+    {
+      "operationId": "listOperationsCatalogAttributeDefinitions",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "createOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "updateOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "deleteOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "listOperationsCatalogOrderOptionDefinitions",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "createOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "updateOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "listOperationsCatalogUnits",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "createOperationsCatalogUnit",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "updateOperationsCatalogUnit",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "disableOperationsCatalogUnit",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "deleteOperationsCatalogUnit",
+      "face": "operations-admin",
+      "ownerModule": "catalog",
+      "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
     }
   ],
-  "placementDigest": "4f6b24bb6fff409e3787924292538136e183eee5b9d3e85b1bfe096dfbc7c67c"
+  "placementDigest": "08bb2f4fcd4b73eb7cdf96a68a026661b4826c34dbe31a2f02525ee3770a6ef1"
 }

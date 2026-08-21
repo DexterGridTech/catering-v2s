@@ -35,6 +35,20 @@ export class FormalSeedFailure extends Error {
 
 function fail(code) { throw new FormalSeedFailure(code); }
 function required(value, code) { if (value === undefined || value === null || value === '') fail(code); return value; }
+const defaultSeedLogoBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
+
+export function readSeedAssetFixtureBytes(asset, rootDir = root) {
+  const fixturePath = asset?.contentFixture;
+  if (fixturePath === undefined || fixturePath === null) return defaultSeedLogoBytes;
+  if (typeof fixturePath !== 'string' || !fixturePath || path.isAbsolute(fixturePath)) fail('SEED_ASSET_FIXTURE_PATH_INVALID');
+  const normalized = path.normalize(fixturePath);
+  if (normalized === '..' || normalized.startsWith(`..${path.sep}`)) fail('SEED_ASSET_FIXTURE_PATH_INVALID');
+  const absolutePath = path.join(rootDir, normalized);
+  if (!existsSync(absolutePath) || !statSync(absolutePath).isFile()) fail('SEED_ASSET_FIXTURE_MISSING');
+  const bytes = readFileSync(absolutePath);
+  if (bytes.length === 0) fail('SEED_ASSET_FIXTURE_EMPTY');
+  return bytes;
+}
 function indexByKey(values, code) {
   if (!Array.isArray(values)) fail(code);
   const result = new Map();
@@ -358,12 +372,11 @@ async function executeFormalSeed() {
       const created = await request(`platform-admin-${admin.key}`, 'createPlatformAdmin', {}, {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: requireValue(admin.displayName, 'SEED_PLATFORM_ADMIN_DISPLAY_NAME'), password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
       if (admin.status === 'DISABLED') await request(`platform-admin-disable-${admin.key}`, 'transitionPlatformAdminStatus', {platformAdminId: requireValue(created.json?.id, 'SEED_PLATFORM_ADMIN_ID')}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created.json?.version, 'SEED_PLATFORM_ADMIN_VERSION'), idempotencyKey: '$header'}});
     }
-    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
     for (const asset of fixture.stableFixtures.assets) {
       // The seed deliberately stages identical physical bytes into independent
       // workspace-logo lifecycles. Content identity may be shared; asset refs and
       // one-time grants must remain distinct owner facts.
-      const bytes = png;
+      const bytes = readSeedAssetFixtureBytes(asset);
       const form = new FormData(); form.set('usage', asset.usage); form.set('file', new Blob([bytes], {type: 'image/png'}), `${asset.key}.png`);
       const staged = await request(`asset-${asset.key}`, 'stagePlatformAsset', {}, {cookie: platformCookie, form, expected: [201]});
       ids.asset[asset.key] = staged.json;
@@ -373,9 +386,10 @@ async function executeFormalSeed() {
       // therefore created with its declared staged asset and immediately moved
       // to the owner-supported REMOVE intent, leaving no hidden direct write.
       const asset = workspace.logo ? ids.asset[workspace.logo] : ids.asset['asset-staged'];
-      const created = await request(`workspace-${workspace.key}`, 'createPlatformGroupWorkspace', {}, {cookie: platformCookie, expected: [201], body: {groupWorkspaceKey: workspace.groupWorkspaceKey, name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoAssetRef: requireValue(asset.assetRef, 'SEED_ASSET_REF'), logoBindGrant: requireValue(asset.bindGrant, 'SEED_ASSET_BIND_GRANT'), idempotencyKey: '$header'}});
+      const operationsTitle = requireValue(workspace.operationsTitle ?? `${workspace.name}运营管理后台`, 'SEED_WORKSPACE_OPERATIONS_TITLE');
+      const created = await request(`workspace-${workspace.key}`, 'createPlatformGroupWorkspace', {}, {cookie: platformCookie, expected: [201], body: {groupWorkspaceKey: workspace.groupWorkspaceKey, name: workspace.name, operationsTitle, logoAssetRef: requireValue(asset.assetRef, 'SEED_ASSET_REF'), logoBindGrant: requireValue(asset.bindGrant, 'SEED_ASSET_BIND_GRANT'), idempotencyKey: '$header'}});
       ids.workspace[workspace.key] = created.json;
-      if (!workspace.logo) await request(`workspace-remove-logo-${workspace.key}`, 'updatePlatformGroupWorkspaceDisplay', {groupWorkspaceKey: workspace.groupWorkspaceKey}, {cookie: platformCookie, body: {name: workspace.name, operationsTitle: `${workspace.name}运营管理后台`, logoIntent: 'REMOVE', expectedVersion: requireValue(created.json?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
+      if (!workspace.logo) await request(`workspace-remove-logo-${workspace.key}`, 'updatePlatformGroupWorkspaceDisplay', {groupWorkspaceKey: workspace.groupWorkspaceKey}, {cookie: platformCookie, body: {name: workspace.name, operationsTitle, logoIntent: 'REMOVE', expectedVersion: requireValue(created.json?.version, 'SEED_WORKSPACE_VERSION'), idempotencyKey: '$header'}});
     }
     for (const definition of fixture.stableFixtures.extensionDefinitions) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === definition.workspace).groupWorkspaceKey;

@@ -22,6 +22,8 @@ export const CATALOG_OPTION_OPERATION_IDS = [
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsInventoryTargets,
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsCatalogItem,
   CATALOG_INVENTORY_OPERATION_IDS.getOperationsProductionTags,
+  CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogAttributeDefinitions,
+  CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogOrderOptionDefinitions,
 ] as const satisfies readonly CatalogInventoryOperationId[];
 
 export type CatalogOptionOperationId = (typeof CATALOG_OPTION_OPERATION_IDS)[number];
@@ -263,6 +265,16 @@ async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFi
         keyOf: tag => String(tag.tagRef),
       });
     }
+    case CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogAttributeDefinitions:
+      return catalogInventoryClient.listOperationsCatalogAttributeDefinitions(
+        {},
+        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
+      );
+    case CATALOG_INVENTORY_OPERATION_IDS.listOperationsCatalogOrderOptionDefinitions:
+      return catalogInventoryClient.listOperationsCatalogOrderOptionDefinitions(
+        {},
+        {query: {dataNodeRef: context.scope.dataNodeRef}, headers},
+      );
     default:
       return assertNeverCatalogOperation(source.operationId);
   }

@@ -11,6 +11,22 @@ import java.util.UUID;
 
 /** Public inventory owner boundary. Inventory facts are stored and changed only in inventory schema. */
 public interface InventoryOwnerApi {
+    /** Immutable copied catalog unit fact. Inventory never resolves it from catalog during a stock mutation/read. */
+    record UnitSnapshot(UUID unitRef, String code, String name, String unitDimension, int precision) {}
+
+    /** Counting is an input conversion only; it never replaces the target's consumption unit snapshot. */
+    record CountingUnitConfiguration(UnitSnapshot countingUnitSnapshot, BigDecimal conversionFactor) {}
+
+    /** Effective catalog/SKU base-unit facts supplied by catalog before its own save write. */
+    record CatalogSkuBaseMeasureUnit(UUID productSkuRef, UnitSnapshot unitSnapshot) {}
+
+    enum CatalogUnitLifecycleChange {
+        RENAME,
+        UPDATE_DEFINITION,
+        DISABLE,
+        DELETE
+    }
+
     /**
      * Legacy owner boundary retained for source compatibility. Callers that can reach a runtime edge must use the
      * scope-typed overload below so the inventory owner can reject head-company balance reads.
@@ -105,23 +121,28 @@ public interface InventoryOwnerApi {
             UUID targetRef,
             long expectedVersion,
             BigDecimal countedQuantity,
-            String unit,
+            UUID countingUnitRef,
             boolean zeroConfirmation,
             String note) {}
 
-    record IncreaseTargetCommand(UUID targetRef, long expectedVersion, BigDecimal quantity, String unit, String note) {}
+    record IncreaseTargetCommand(
+            UUID targetRef, long expectedVersion, BigDecimal quantity, UUID countingUnitRef, String note) {}
 
     record AdjustTargetCommand(
             UUID targetRef,
             long expectedVersion,
             String direction,
             BigDecimal quantity,
-            String unit,
+            UUID countingUnitRef,
             String reasonCode,
             String note) {}
 
     record InventoryConfiguration(
-            boolean allowNegative, BigDecimal lowStockThreshold, String countingUnit, BigDecimal conversionFactor) {}
+            boolean allowNegative,
+            BigDecimal lowStockThreshold,
+            UUID countingUnitRef,
+            BigDecimal conversionFactor,
+            UnitSnapshot countingUnitSnapshot) {}
 
     record UpdateTargetConfigurationCommand(
             UUID targetRef, long expectedVersion, InventoryConfiguration configuration) {}
@@ -161,8 +182,8 @@ public interface InventoryOwnerApi {
             String productShape,
             String skuCode,
             String skuName,
-            String consumptionUnit,
-            String countingUnit,
+            UnitSnapshot consumptionUnitSnapshot,
+            UnitSnapshot countingUnitSnapshot,
             String conversionSummary,
             String authorityType) {}
 
@@ -301,6 +322,25 @@ public interface InventoryOwnerApi {
     record CatalogReferenceDependencySource(String tableName, String columnName, long count) {}
 
     /**
+     * Same-transaction owner judgement used by catalog unit lifecycle. This locks only inventory-owned unit references
+     * and never lets catalog inspect inventory tables directly.
+     */
+    void validateCatalogUnitLifecycle(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UUID unitRef,
+            CatalogUnitLifecycleChange intendedChange);
+
+    /**
+     * Rejects a catalog base-unit change that would leave an existing stock target with a different consumption
+     * snapshot. Inventory locks its own targets; catalog must not inspect inventory tables directly.
+     */
+    void validateCatalogItemBaseMeasureUnitTransition(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            UUID itemRef,
+            UnitSnapshot itemBaseMeasureUnit,
+            List<CatalogSkuBaseMeasureUnit> skuBaseMeasureUnits);
+
+    /**
      * Bounded task-read for the catalog workbench. It returns definition counts for the supplied product codes in one
      * owner query; it never exposes balances or ledgers, so the same read is valid for a store or a head-company
      * catalog.
@@ -358,6 +398,48 @@ public interface InventoryOwnerApi {
     CatalogItemSaveReadback saveCatalogItemProductBom(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogItemSaveBomCommand command,
+            String idempotencyKey);
+
+    /**
+     * Catalog asks this owner to resolve the inventory fact required by a point-of-sale option's material rule. The
+     * returned target is an inventory fact; catalog never infers it from an item read model.
+     */
+    /**
+     * Catalog stores the resolved stock target and its owner-declared consumption unit with the option definition. The
+     * unit is an inventory fact: catalog must not infer it from a material item label when composing an actual
+     * per-option consumption row later.
+     */
+    record CatalogMaterialStockTargetReadback(
+            UUID materialItemRef, UUID stockTargetRef, UnitSnapshot consumptionUnitSnapshot) {}
+
+    CatalogMaterialStockTargetReadback resolveCatalogMaterialStockTarget(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID materialItemRef);
+
+    /**
+     * Catalog owns definition/value lifecycle. This command removes only inventory-owned BOM rows whose option-value
+     * owner is in the explicitly deleted catalog value set; it never removes a stock target or material item.
+     */
+    record CatalogOptionValueBomDeleteCommand(List<UUID> optionValueRefs) {}
+
+    record OptionValueBomDeleteReadback(List<UUID> optionValueRefs, long deletedCount) {}
+
+    OptionValueBomDeleteReadback deleteCatalogOptionValueBoms(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogOptionValueBomDeleteCommand command,
+            String idempotencyKey);
+
+    /**
+     * A same-scope temporary-item promotion receives new catalog item identity while retaining the already configured
+     * option-value consumption facts. Catalog owns the decision to promote; inventory alone copies the BOM owners.
+     */
+    record CatalogOptionValueBomCopyCommand(
+            UUID sourceItemRef, UUID targetItemRef, String targetItemCode, List<UUID> optionValueRefs) {}
+
+    record OptionValueBomCopyReadback(List<UUID> optionValueRefs, long copiedCount) {}
+
+    OptionValueBomCopyReadback copyCatalogOptionValueBoms(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogOptionValueBomCopyCommand command,
             String idempotencyKey);
 
     final class Problem extends RuntimeException {

@@ -1,7 +1,7 @@
 package com.catering.v2s.businesschannel.api;
 
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 /** Read-only owner boundary. Management reads are bounded; candidate reads use the opaque cursor protocol. */
 public interface BusinessChannelReadApi {

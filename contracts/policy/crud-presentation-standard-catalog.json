@@ -230,6 +230,35 @@
       "detailOnly": true,
       "primaryIdentityForbidden": ["formatNameCode(store.name, store.code)"],
       "primaryIdentityRequired": ["label: '名称'", "label: '编码'"]
+    },
+    {
+      "id": "operations-business-channel-scoped-list",
+      "source": "apps/frontend/operations-admin/src/features/business-channel/ui/BusinessChannelList.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The table is a fixed project-or-store scoped channel child collection; it has no query form or pagination and only exposes owner-scoped sorting plus detail/create actions."
+    },
+    {
+      "id": "operations-project-business-channel-templates",
+      "source": "apps/frontend/operations-admin/src/features/business-channel/ui/ProjectBusinessChannelPage.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The table is the current project template projection with session-scoped data, no query form or pagination, and a separate template detail/create flow."
+    },
+    {
+      "id": "operations-store-business-channel-templates",
+      "source": "apps/frontend/operations-admin/src/features/business-channel/ui/StoreBusinessChannelPage.tsx",
+      "notApplicable": true,
+      "notApplicableReason": "The table is the current store's upstream-eligible template projection with session-scoped data, no query form or pagination, and no independent CRUD query surface."
+    },
+    {
+      "id": "platform-owner-binding-list",
+      "source": "apps/frontend/platform-admin/src/features/external-collaboration/ui/OwnerBindingList.tsx",
+      "filterKeys": ["bindingName", "nodeQueryText"],
+      "filterColumnMappings": [
+        {"filterKey": "bindingName", "visibleColumnTitle": "绑定名称"},
+        {"filterKey": "nodeQueryText", "visibleColumnTitle": "绑定节点"}
+      ],
+      "additionalVisibleColumnTitles": ["业务", "外部主体编号", "状态"],
+      "tableIndex": 0
     }
   ]
 }

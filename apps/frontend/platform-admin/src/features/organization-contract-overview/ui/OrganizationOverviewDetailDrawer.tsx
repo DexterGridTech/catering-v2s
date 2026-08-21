@@ -77,6 +77,7 @@ export function OrganizationOverviewDetailDrawer({
       open={open}
       loading={loading}
       onClose={onClose}
+      maskClosable
       size={560}
       destroyOnHidden
       {...adminDrawerSurfaceProps}

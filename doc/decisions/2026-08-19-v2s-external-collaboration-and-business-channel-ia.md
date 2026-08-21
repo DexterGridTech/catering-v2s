@@ -176,7 +176,7 @@ businessTask=查看和定位项目主体的渠道实例，允许同一模板创�
 actorAndScenario=商场运营方在 O1 下半区；主对象为 PROJECT business_channel。
 entryAndSurface=O1 内容页下半区 bounded 结果表格；首列进入 O4。
 controlType=bounded 结果表格；不提供名称/编码搜索、查询、重置或分页；表头支持临时排序；新建渠道；首列渠道名称详情；渠道编码独立只读列；状态/绑定状态只读呈现。
-dataSourceAndCascade=business-channel bounded read；template displayName、channelCode、channelName、status、binding status；表头排序由 owner bounded read 处理；owner read 不隐藏级联停用对象，且不承诺当前行数上限；历史空编码只显示 `—`。
+dataSourceAndCascade=business-channel bounded read；template displayName、channelCode、channelName、status、bindingStatus；bindingStatus 由 owner 按接入类型投影：内部无 binding 为 `NOT_REQUIRED`，外部无 binding 为 `UNBOUND`，有 binding 为 `BOUND`；界面分别显示 `—`、`未绑定`、`已绑定`，不得由前端用可空 bindingRef 反推；表头排序由 owner bounded read 处理；owner read 不隐藏级联停用对象，且不承诺当前行数上限；历史空编码只显示 `—`。
 validationAndError=列表错误不覆盖当前结果；写命令按 typed problem；外部绑定无效只阻止渠道生效，不阻止草稿/绑定管理。
 stateAndPermission=项目渠道编辑 grant 只控制写；读按 role node scope；MANUAL/CASCADE stopReasons 都映射为业务说明。
 navigationAndRefresh=表头排序状态作为 bounded read query identity；新建/编辑/绑定回读后刷新当前项目 bounded channel read；不跳到门店页。
@@ -190,7 +190,7 @@ businessTask=理解一个项目或门店渠道的四维、模板、绑定和当�
 actorAndScenario=商场运营方或店铺运营方从 O3/O5 首列进入；主对象 owner 先读最新事实。
 entryAndSurface=独立只读详情 Drawer；根据来源 face 保留 platform/operations owner boundary；不要把两个 app 合并成一套 shell；编辑动作关闭详情后打开独立编辑表单 Drawer。
 controlType=只读详情；编辑/维护绑定/停用 action 按状态和 grant；无手工“置为有效”；编辑表单不复用详情布局。
-dataSourceAndCascade=channel detail + template read + optional binding detail；bindingRef 仅用于 owner join；stopReasons 转业务文案。
+dataSourceAndCascade=channel detail + template read + optional binding detail；bindingStatus 是 owner 对内部/外部绑定语义的读回投影，bindingRef 仅用于 owner join；内部 `NOT_REQUIRED` 在详情显示 `—`，外部再按 binding detail 显示授权/有效状态；stopReasons 转业务文案。
 validationAndError=BINDING_NOT_EFFECTIVE、DISABLED_OBJECT_NOT_EDITABLE、IMMUTABLE_FIELD、DELETE_NOT_ALLOWED、VERSION_CONFLICT；出现凭证值属于 BR-19 红夹具，不靠前端修剪。
 stateAndPermission=渠道名称与渠道编码均为只读事实；门店主体 target 必须 STORE；项目主体 target 必须 PROJECT；内部渠道不显示外部授权回填占位且创建即生效；外部渠道按 binding 状态决定 DRAFT/EFFECTIVE；渠道停用/模板停用/外部停用分别可读并置灰。
 navigationAndRefresh=关闭返回来源列表；成功命令回最新 detail；binding 删除后渠道草稿与 bindingRef 清除由 edge owner readback 证明。
@@ -204,7 +204,7 @@ businessTask=在门店数据节点查看并维护门店主体渠道，只选择�
 actorAndScenario=集团/大区/项目/门店角色进入 operations-admin；当前 data node 固定为 STORE。
 entryAndSurface=独立页面 /operations/:groupWorkspaceKey/business-channels/store；不承载模板 CRUD；首列进入只读详情 Drawer，详情编辑再打开独立表单 Drawer。门店数据节点由已确认的 WorkspaceScope/queryContext 提供；storeRef 只存在于 owner API 请求与服务端授权复核，不作为浏览器路由 scope。
 controlType=可选门店模板与门店主体经营渠道均使用 ProTable 结果表格（不提供搜索或分页，表头支持临时排序）；新建渠道表单 Drawer；渠道只读详情 Drawer与独立编辑表单 Drawer；模板候选内部仍使用上级项目 provider/template cursor candidate protocol，但不把 cursor/pageSize 暴露为用户分页。
-dataSourceAndCascade=store channel bounded read + project-owned template cursor candidate read filtered `operatorKind=STORE AND status=ENABLED`（只返回上级项目维护且有效的门店模板）；候选表列为模板名称/模板编码/接入类型/订单类型，不重复显示已由查询谓词保证的状态；模板表头排序通过 candidate query 的白名单 `sortKey/sortDirection` 与 cursor 一起由 owner 处理，渠道表头排序由 owner bounded read 处理；storeRef 的 project owner read 仅作关系事实，不放宽 scope。
+dataSourceAndCascade=store channel bounded read + project-owned template cursor candidate read filtered `operatorKind=STORE AND status=ENABLED`（只返回上级项目维护且有效的门店模板）；渠道读回仍由 owner 提供 bindingStatus，不依赖候选模板集合，因此历史上来源模板失效的渠道也不会把内部无绑定误显示为未绑定；候选表列为模板名称/模板编码/接入类型/订单类型，不重复显示已由查询谓词保证的状态；模板表头排序通过 candidate query 的白名单 `sortKey/sortDirection` 与 cursor 一起由 owner 处理，渠道表头排序由 owner bounded read 处理；storeRef 的 project owner read 仅作关系事实，不放宽 scope。
 validationAndError=模板候选不因 store status 被剔除；写失败映射两个 capability target、BINDING_NOT_EFFECTIVE、PROVIDER_NOT_ENABLED、DUPLICATE_CODE、VERSION_CONFLICT 等 typed problem。
 stateAndPermission=门店渠道编辑 grant target STORE；页面可读角色按四类；非渠道 binding 无入口；停用对象仍在表内置灰。
 navigationAndRefresh=useOrganizationCandidates 仅用于业务关系候选；模板候选的 cursor、排序或 query context 改变即重置并重新收集；表头排序状态随对应 owner read 变化；bounded channel read 成功回读后刷新当前 store channel list。

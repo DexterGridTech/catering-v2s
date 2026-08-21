@@ -151,7 +151,7 @@ export function CommercialGroupInitializationDrawer({
       destroyOnHidden
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
-      mask={{closable: true}}
+      maskClosable={!lifecycle.submitting}
       keyboard={!lifecycle.submitting}
       {...adminDrawerSurfaceProps}
       footer={

@@ -177,15 +177,15 @@
       {"key": "pa-disabled", "login": "r5-disabled", "displayName": "停用平台管理员", "status": "DISABLED", "channel": "createPlatformAdmin+transitionPlatformAdminStatus"}
     ],
     "groupWorkspaces": [
-      {"key": "gw-aurora", "groupWorkspaceKey": "aurora", "name": "极光商业集团空间", "status": "ENABLED", "commercialGroup": "cg-aurora", "logo": "asset-aurora"},
+      {"key": "gw-aurora", "groupWorkspaceKey": "aurora", "name": "润欣商业", "operationsTitle": "华润万象生活餐饮运营平台", "status": "ENABLED", "commercialGroup": "cg-aurora", "logo": "asset-aurora"},
       {"key": "gw-boreal", "groupWorkspaceKey": "boreal", "name": "北境商业集团空间", "status": "DISABLED", "commercialGroup": "cg-boreal", "logo": "asset-boreal"},
       {"key": "gw-cinder", "groupWorkspaceKey": "cinder", "name": "星火待初始化空间", "status": "ENABLED", "commercialGroup": null, "logo": null}
     ],
     "assets": [
-      {"key": "asset-aurora", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-aurora", "status": "ACTIVE", "contentFixture": "fixtures/assets/aurora-logo.png"},
-      {"key": "asset-boreal", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-boreal", "status": "ACTIVE", "contentFixture": "fixtures/assets/boreal-logo.png"},
-      {"key": "asset-staged", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "STAGED", "contentFixture": "fixtures/assets/staged-logo.png"},
-      {"key": "asset-expired", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "CLEANUP_PENDING", "contentFixture": "fixtures/assets/expired-logo.png"}
+      {"key": "asset-aurora", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-aurora", "status": "ACTIVE", "contentFixture": "fixtures/assets/runxin-commercial-logo.png"},
+      {"key": "asset-boreal", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-boreal", "status": "ACTIVE"},
+      {"key": "asset-staged", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "STAGED"},
+      {"key": "asset-expired", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "CLEANUP_PENDING"}
     ],
     "extensionDefinitions": [
       {"key": "ext-brand", "workspace": "gw-aurora", "hostType": "BRAND", "fields": [{"key": "brandLevel", "label": "品牌等级"}, {"key": "brandOrigin", "label": "品牌来源"}]},
@@ -199,17 +199,23 @@
     ],
     "organization": {
       "commercialGroups": [
-        {"key": "cg-aurora", "workspace": "gw-aurora", "code": "AURORA-GROUP", "name": "极光商业集团", "extensionValues": {"groupTier": "全国集团"}},
+        {"key": "cg-aurora", "workspace": "gw-aurora", "code": "0", "name": "华润万象生活", "extensionValues": {"groupTier": "全国集团"}},
         {"key": "cg-boreal", "workspace": "gw-boreal", "code": "BOREAL-GROUP", "name": "北境商业集团"}
       ],
       "regions": [
-        {"key": "region-east", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "EAST", "name": "东区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-west", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "WEST", "name": "西区", "status": "ENABLED", "extensionValues": {"regionGrade": "二级大区"}}
+        {"key": "region-northeast", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "001", "name": "东北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-east", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "002", "name": "华北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-northwest", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "003", "name": "西北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-southwest", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "004", "name": "西南大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-west", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "005", "name": "华中大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-southeast", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "006", "name": "华东大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-south", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "007", "name": "华南大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
+        {"key": "region-head-office", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "008", "name": "总部直管", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}}
       ],
       "projects": [
-        {"key": "project-river", "parent": "region-east", "code": "RIVER", "name": "河畔项目", "status": "ENABLED", "phases": ["一期", "二期"], "extensionValues": {"projectCategory": "滨水商业"}},
-        {"key": "project-hill", "parent": "region-east", "code": "HILL", "name": "山景项目", "status": "ENABLED", "phases": ["首开区"], "extensionValues": {"projectCategory": "社区商业"}},
-        {"key": "project-lake", "parent": "region-west", "code": "LAKE", "name": "湖滨项目", "status": "DISABLED", "phases": ["滨水游憩区", "湖畔餐饮区"], "extensionValues": {"projectCategory": "文旅商业"}}
+        {"key": "project-river", "parent": "region-east", "code": "00201", "name": "太原万象城", "status": "ENABLED", "phases": ["一期", "二期"], "extensionValues": {"projectCategory": "滨水商业"}},
+        {"key": "project-hill", "parent": "region-east", "code": "00202", "name": "北京清河万象汇", "status": "ENABLED", "phases": ["首开区"], "extensionValues": {"projectCategory": "社区商业"}},
+        {"key": "project-lake", "parent": "region-west", "code": "00501", "name": "长沙万象城", "status": "DISABLED", "phases": ["滨水游憩区", "湖畔餐饮区"], "extensionValues": {"projectCategory": "文旅商业"}}
       ],
       "brands": [
         {"key": "brand-tea", "code": "TEA", "name": "茶里", "status": "ENABLED", "extensionValues": {"brandLevel": "核心品牌", "brandOrigin": "直营"}},
@@ -309,7 +315,7 @@
     "stagedOrCleanupAssets": 2,
     "extensionDefinitions": 8,
     "commercialGroups": 2,
-    "regions": 2,
+    "regions": 8,
     "projects": 3,
     "projectPhases": 5,
     "brands": 3,

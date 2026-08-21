@@ -50,6 +50,7 @@ R5 的 `entryAndSurface` 就写错过(运维后台页面路由携带了集团空
 | `validationAndError` | 每个 typed problem 的**用户可见处理**,不是错误码清单 |
 | `accessibilityAndTestId` | 键盘可达性 · aria · **状态不能只靠颜色** · testId 命名 |
 | `emptyLoadingErrorStates` | 空集合显示什么 · 加载中显示什么 · **读取失败时旧数据保留还是清空**。⚠️ 不写就会被临场发明:R5 详设全文「空态」「加载态」**零命中** |
+| `containerBehaviorUnderLoad` | **数据把容器撑满/撑爆时会怎样**:哪一段滚动 · 什么被截断或换行 · 什么绝不允许溢出视口 · 多栏之间如何对齐。⚠️ 2026-08-20 Dexter 要求新增 |
 
 ### 2.2 不可见维度 —— **必须写成一个能做的观察**
 
@@ -100,6 +101,27 @@ R5 的 `entryAndSurface` 就写错过(运维后台页面路由携带了集团空
    [静态] 契约无 cursor/pageSize 参数,前端无抽干循环;
    [acceptance] 造 N+1 条时 owner 拒绝或明确截断,不静默丢数据。
 ```
+
+### 2.1.1 `containerBehaviorUnderLoad` 与交互工件的分工(不得重复)
+
+交互工件的 `CONTAINER_LAYOUT` 管**静态形态**:容器宽高与来源、哪部分不得超出视口、
+哪一段滚动、关键对齐 —— 那是"打开页面就能看见的样子"。
+
+**本维度管的是它的另一半:数据变多时的行为。** 两者的交点是集合规模 ——
+`collectionShapeAndScale` 说得出上界,就必须说得出**到达上界时这个容器怎么反应**。
+
+必写四件:
+1. **达到 `collectionShapeAndScale` 的上界时**,该容器是滚动、分页、还是拒绝渲染;
+2. **单条内容过长时**(长名称、长编码、多行说明)是截断加提示、换行,还是撑宽容器;
+3. **哪一部分绝不允许溢出视口** —— 点名到具体元素,通常是操作区与表头;
+4. **多栏/多容器之间的对齐依据** —— 尤其左右分栏在两侧行数不等时的表现。
+
+⛔ **与交互工件的 `CONTAINER_LAYOUT` 必须逐字一致,不得各写一套。**
+静态取值以交互工件为准,本维度只补它的行为半边;
+两份不一致即缺陷,按 §5 交叉对账处理。
+
+⚠️ 具体尺寸与控件取值仍以 `doc/platform/frontend-coding-standard.md` 与 foundation
+既有 export 为准,**本模板不复述它们**。
 
 ⚠️ `collectionShapeAndScale` 写不出**预期规模**,说明形态还没定 —— 此时不许往下写。
 形态义务见 `doc/platform/foundation-charter.md` §1-J;判别式见

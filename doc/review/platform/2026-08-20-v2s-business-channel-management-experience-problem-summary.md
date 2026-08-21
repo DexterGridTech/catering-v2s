@@ -66,6 +66,7 @@ date: 2026-08-20
 19. 渠道编码显示“待生成”，但要求用户创建时手填、判重、创建后不能编辑。
 20. 内部接入渠道却显示“待外部授权回填”，这是外部接入语义污染内部渠道。
 21. 内部接入渠道显示“草稿”，但内部渠道不依赖 binding，创建后应立即生效。
+22. 内部渠道在项目主体经营渠道的“绑定状态”列显示“未绑定”，把“无需绑定”误报成“未绑定”。
 
 ### 2.2 主要规范性材料
 
@@ -122,6 +123,7 @@ date: 2026-08-20
 | O-09 | 渠道编码应用户手填、判重、只能新建不能改 | create/edit surface没有分开不可变字段 | 只在表单层做了“自动生成/可编辑”的默认假设，未下沉到 owner/DB concurrency | 详设 §0.4、CP-03明确 `DUPLICATE_CODE`、DB unique index、创建后不可变；migration `V...003`；`BusinessChannelCreateDrawer`与`BusinessChannelEditDrawer`应各自只承载允许字段 | `CONFIRMED`。渠道编码按集团空间判重；重复由 owner typed problem 返回；不能依赖前端预查代替数据库并发唯一约束 |
 | O-10 | 内部接入被显示为“待外部授权回填” | 外部 `EXTERNAL_GRANT` 状态说明被无条件套到内部渠道 | accessKind/authenticationKind 分支不在展示/状态模型的同一判定点 | BR-09/10/12；IA O4 stateAndPermission；详设 CP-03明确内部不显示外部授权占位 | `CONFIRMED`。内部渠道外部主体编号显示 `—`；外部授权回填只属于 `EXTERNAL_GRANT` |
 | O-11 | 内部接入显示“草稿” | 使用了外部渠道的 binding-effective gate，未先按 accessKind 分支 | 渠道状态机和 binding 状态机耦合错误 | 需求 BR-09、UC-06；详设明确 `INTERNAL` 创建即 `EFFECTIVE`，`EXTERNAL` 只有有效 binding 才生效；migration `V...004`修复历史安全遗留行 | `CONFIRMED`。内部渠道无 binding 也能生效；外部渠道仍必须等待有效 binding，不能为了修内部状态放宽外部门槛 |
+| O-12 | 内部渠道绑定状态显示“未绑定” | 列表把 `bindingRef == null` 直接渲染为“未绑定”，没有区分 `INTERNAL` 的合法无需绑定与 `EXTERNAL` 的未绑定 | owner readback 没有给出 binding 语义投影，前端以 nullable 技术字段代替业务状态；排序也沿用同一错误假设 | 需求 §3.1 明确内部渠道完全不涉及协作层；详设 §0.4 明确内部不依赖 binding；IA O3/O4/O5 只声明“绑定状态”却未冻结内部显示语义 | `CONFIRMED`。owner 新增 `bindingStatus=NOT_REQUIRED/UNBOUND/BOUND` 及显示投影；内部列表/详情显示 `—`，外部未绑定仍显示“未绑定”，`BINDING_STATUS` 排序使用同一 owner 语义 |
 
 ### 3.3 验证闭环问题
 
@@ -168,6 +170,8 @@ IA O1 已写明稳定 route、两张 bounded table、名称首列进入只读详
 2. descriptor 有，但当前值没有随 readback/fixture 形成闭环；
 3. access kind、authentication kind、binding status、channel status 各自正确，却没有在同一个 owner policy/state matrix 中决定最终页面状态。
 
+本次 O-12 是第三类分裂的直接实例：数据库里的 `binding_ref=null` 只能说明没有关联行，不能说明业务上“未绑定”；只有 owner 结合模板 `access_kind` 投影出 `NOT_REQUIRED` 或 `UNBOUND`，两个后台才能得到同一显示结果。
+
 后端现有修复已体现最小正确方向：`BusinessChannelPolicy`集中判断 `DINE_IN`、`INTERNAL/EXTERNAL` 和 binding；`BusinessChannelWireMapper`输出 `*DisplayName`；`V...003`支持用户输入编码及唯一索引；`V...004`修复可安全修复的历史内部草稿。它们说明根因不是“页面多写几个 if”可以解决，而是事实必须由 owner/contract 先闭合。
 
 ### 4.4 前端实现层：页面局部方便性压过了仓内既有形态
@@ -207,7 +211,7 @@ IA O1 已写明稳定 route、两张 bounded table、名称首列进入只读详
 | 详情与编辑两种 Drawer | UC-01/04/05 | IA O1/O3/O4/O5、交互 O1/O3/O4/O5 | CP-05 | `frontend-capability-lookup`、foundation 对接 | 首列名称→只读详情；详情 header action→独立编辑表单；脏表单/overlay 生命周期正确 |
 | browser route 与 data scope 分离 | G-10、O1/O5 | IA O1/O5、交互 O1/O5 | CP-04/05 | frontend §3-H、backend §2-G、`browser-route-data-scope-drift` | canonical URL 不带 project/store UUID；旧 URL只迁移不回填 scope；跨节点访问被拒绝 |
 | 用户输入业务编码 | §5.8/5.9、UC-05/06、BR-15/19/26 | IA O1/O3/O4 | CP-03/05、migration | `cross-boundary-string-agreement`、并发唯一性原则 | create 表单输入；list/detail显示；重复 typed `DUPLICATE_CODE`；edit 不可改；历史空值只读 `—` |
-| 内部即时生效/外部 binding 生效 | BR-09/10/12、UC-06/07 | IA O4/O5 | CP-02/03 | owner state machine、跨 owner command/同一 REQUIRED 事务 | 内部无 binding=EFFECTIVE；外部无有效 binding=DRAFT；历史安全内部草稿 repair；两类占位文案不串 |
+| 内部即时生效/外部 binding 生效/绑定状态显示 | BR-09/10/12、UC-06/07、需求 §3.1 | IA O3/O4/O5、交互 O3/O4 | CP-02/03/05；owner bindingStatus projection | owner state machine、跨 owner command/同一 REQUIRED 事务、不得以 nullable ref 代替业务语义 | 内部无 binding=EFFECTIVE 且列表/详情显示 `—`；外部无有效 binding=DRAFT 且显示“未绑定”；有 binding 显示“已绑定/授权状态”；排序与显示一致 |
 | 页面标题/section 文案 | 业务语料与 UC | IA `USER_VISIBLE_COPY`、交互 O1 | CP-05 | shell/catalog copy ownership、避免技术说明外泄 | 页面 identity 只出现一次；section 文案分别为模板/项目主体/门店主体 |
 
 ## 6. 最小防再犯方案：后续需求迭代应改变什么

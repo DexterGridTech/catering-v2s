@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-rtk-tag-policy",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "tagType": "catalogInventory",
-  "operationCount": 43,
+  "operationCount": 56,
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -23,6 +23,7 @@
     {
       "operationId": "getOperationsCatalogItem",
       "provides": [
+        {"kind": "static", "id": "catalog-item-detail"},
         {"kind": "requestPath", "prefix": "catalog-item-code", "path": "itemCode"},
         {"kind": "responsePath", "prefix": "catalog-item-ref", "path": ["data", "item", "itemRef"]},
         {
@@ -326,6 +327,71 @@
         {"kind": "static", "id": "local-copy-candidates"},
         {"kind": "static", "id": "brand-copy-candidates"}
       ]
+    },
+    {
+      "operationId": "listOperationsCatalogAttributeDefinitions",
+      "provides": [{"kind": "static", "id": "catalog-attribute-definition-library"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsCatalogAttributeDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-attribute-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}]
+    },
+    {
+      "operationId": "updateOperationsCatalogAttributeDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-attribute-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}]
+    },
+    {
+      "operationId": "deleteOperationsCatalogAttributeDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-attribute-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}]
+    },
+    {
+      "operationId": "listOperationsCatalogOrderOptionDefinitions",
+      "provides": [{"kind": "static", "id": "catalog-order-option-definition-library"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsCatalogOrderOptionDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-order-option-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}]
+    },
+    {
+      "operationId": "updateOperationsCatalogOrderOptionDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-order-option-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-order-option-definition-library"}, {"kind": "static", "id": "catalog-item-page"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "listOperationsCatalogUnits",
+      "provides": [{"kind": "static", "id": "catalog-unit-library"}],
+      "invalidates": []
+    },
+    {
+      "operationId": "createOperationsCatalogUnit",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-unit-library"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "updateOperationsCatalogUnit",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-unit-library"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "disableOperationsCatalogUnit",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-unit-library"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "deleteOperationsCatalogUnit",
+      "provides": [],
+      "invalidates": [{"kind": "static", "id": "catalog-unit-library"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
     }
   ]
 }

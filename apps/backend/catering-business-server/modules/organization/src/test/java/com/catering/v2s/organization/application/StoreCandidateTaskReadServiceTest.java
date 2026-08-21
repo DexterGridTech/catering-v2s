@@ -59,8 +59,7 @@ class StoreCandidateTaskReadServiceTest {
             service.platformExternalBindingCandidatePage(
                     UUID.randomUUID(),
                     "candidate-scope",
-                    new StoreCandidateTaskReadService.PlatformContractCandidateQuery(
-                            subject, null, 1, 20, null, null));
+                    new StoreCandidateTaskReadService.PlatformContractCandidateQuery(subject, null, 1, 20, null, null));
         }
 
         verify(jdbc, org.mockito.Mockito.times(5)).query(anyString(), any(RowMapper.class), any(Object[].class));

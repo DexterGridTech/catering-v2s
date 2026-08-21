@@ -2,6 +2,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Col,
   Descriptions,
   Divider,
@@ -24,6 +25,7 @@ import {
   Typography,
   Upload,
 } from 'antd';
+import {ProList} from '@ant-design/pro-components';
 import {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
@@ -34,8 +36,9 @@ import {
   testId,
   useCursorCandidates,
   useDrawerFormLifecycle,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
-import type {DescriptorTreeNode} from '@catering-v2s/admin-ui-foundation';
+import type {DescriptorTreeNode, DrawerLifecycleDiagnosticEvent} from '@catering-v2s/admin-ui-foundation';
 import {
   useCallback,
   useEffect,
@@ -46,12 +49,18 @@ import {
   type ReactNode,
   type UIEvent,
 } from 'react';
-import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {
+  operationsContentTabRefreshSignal,
+  operationsLogger,
+  operationsProblemOf,
+  operationsRtk,
+} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {
   CATALOG_INVENTORY_OPERATION_IDS,
   type CatalogItemSaveRequest,
   type CatalogShapeManifestView,
+  type CatalogUnitList,
   type JsonValue,
   type TemporaryPromotionExecuteRequest,
   type TemporaryPromotionPreflight,
@@ -62,18 +71,19 @@ import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/
 import type {
   CatalogCompositeComponent,
   CatalogCompositeGroup,
+  CatalogAttributeAssignment,
   CatalogDetail,
   CatalogInventoryBomEntry,
   CatalogNavigation,
-  CatalogOrderOptionGroup,
-  CatalogOrderOptionValue,
+  CatalogOrderOptionConfig,
   CatalogSkuRow,
   CatalogSkuVariantDimension,
 } from '../model/catalogModel';
 import {
-  attributeDraftRowsFromRecord,
   buildCatalogSkuVoidRequest,
   buildSkuMatrix,
+  catalogCentsToYuan,
+  catalogDetailImageRefs,
   catalogFormValidationIssue,
   catalogSkuIssueCodes,
   decodeCatalogMediaLimits,
@@ -81,12 +91,10 @@ import {
   decodeItems,
   decodeNavigation,
   displayValue,
-  duplicateCatalogAttributeKeys,
   mergeCatalogSkuVoidReadback,
-  serializeCatalogAttributeDraftRows,
   serializeSkuRowsForSave,
+  catalogYuanToCents,
   shouldHydrateCatalogItemDraft,
-  type CatalogAttributeDraftRow,
   type CatalogMediaLimits,
 } from '../model/catalogModel';
 import {catalogEnumLabel, catalogEnumOptions, catalogFieldLabel} from '../model/catalogManifestLabels';
@@ -109,6 +117,7 @@ import {CatalogAssetPreview} from './CatalogAssetPreview';
 
 type Props = {
   itemCode?: string;
+  initialMode?: 'view' | 'edit';
   queryContext: OperationsPageProps['queryContext'];
   brandRef?: string;
   canWriteCatalog: boolean;
@@ -139,10 +148,6 @@ type ProductionProfileDraft = CatalogDetail['item']['productionProfiles'];
 type SkuDimensionDraft = CatalogSkuVariantDimension;
 type CatalogIdentifierDraft = CatalogDetail['item']['identifiers'][number] & {editorId: string};
 type SkuRowDraft = CatalogSkuRow & {editorId: string};
-type CatalogOrderOptionValueDraft = CatalogOrderOptionValue & {editorId: string};
-type CatalogOrderOptionGroupDraft = Omit<CatalogOrderOptionGroup, 'values'> & {
-  values: CatalogOrderOptionValueDraft[];
-};
 type CatalogDictionaryQuickManageKind = Exclude<DictionaryKind, 'PRODUCTION_TAG'>;
 type ProductionTagOption = {tagRef: string; code: string; name: string; owner: string; status?: string};
 type PromotionFormValues = Pick<
@@ -153,6 +158,7 @@ type CatalogManifest = Pick<
   CatalogShapeManifestView,
   'enumLabels' | 'fields' | 'fieldRules' | 'tabRules' | 'typeEffects'
 >;
+type CatalogUnitOption = CatalogUnitList['data']['units'][number];
 // These values stay inside an incomplete editor draft. They are validated by
 // wireUuid only when a request is assembled for a generated endpoint.
 const draftUuid = (value = ''): ReturnType<typeof wireUuid> => value as ReturnType<typeof wireUuid>;
@@ -221,11 +227,12 @@ function catalogVoidBlockReason(availability: CatalogDetail['actionAvailability'
 const catalogDeniedFieldLabels: Record<string, string> = {
   name: '商品名称',
   shortName: '短名',
-  attributes: '描述属性',
+  attributeAssignments: '商品属性',
   identifiers: '标识与条码',
-  categoryRefs: '分类',
+  categoryRef: '分类',
   tagRefs: '商品标签',
-  salesUnitRefs: '销售单位',
+  salesUnitRef: '销售单位',
+  baseMeasureUnitRef: '基础计量单位',
   standardSalePrice: '商品标准价',
   images: '图片资产',
   productionTagRefs: '生产提示与生产标签',
@@ -234,10 +241,9 @@ const catalogDeniedFieldLabels: Record<string, string> = {
   skuVariantValues: 'SKU 规格值',
   skuMatrix: 'SKU 矩阵',
   skus: 'SKU 矩阵',
-  orderOptions: '点单选项',
+  orderOptionConfigs: '点单选项',
   productionProfiles: '生产提示',
   bomTarget: '库存对象',
-  bomOptionValue: '库存 BOM 所属选项值',
   inventoryBom: '库存与 BOM',
   compositeComponentSku: '套餐组件 SKU',
   compositeGroups: '套餐内容',
@@ -246,6 +252,10 @@ const catalogDeniedFieldLabels: Record<string, string> = {
 function deniedFieldLabel(manifest: CatalogManifest | undefined, fieldKey: string) {
   const label = catalogDeniedFieldLabels[fieldKey] ?? catalogFieldLabel(manifest, fieldKey);
   return label === fieldKey ? '上游维护字段' : label;
+}
+
+function catalogUnitLabel(unit?: {name: string; code: string} | null) {
+  return unit ? <NameCodeText name={unit.name} code={unit.code} /> : '—';
 }
 
 type DisabledReasonButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
@@ -269,6 +279,7 @@ function DisabledReasonButton({reason, disabled, children, ...props}: DisabledRe
 
 export function CatalogItemDrawer({
   itemCode,
+  initialMode = 'view',
   queryContext,
   brandRef,
   canWriteCatalog,
@@ -280,7 +291,7 @@ export function CatalogItemDrawer({
   onClose,
 }: Props) {
   void surface;
-  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
   const [activeTab, setActiveTab] = useState('basic');
   const [problem, setProblem] = useState<string>();
   const [localCopyOpen, setLocalCopyOpen] = useState(false);
@@ -295,9 +306,11 @@ export function CatalogItemDrawer({
   const [selectedProductionTagRefs, setSelectedProductionTagRefs] = useState<string[]>([]);
   const [selectedProductionTags, setSelectedProductionTags] = useState<ProductionTagOption[]>([]);
   const [selectedTagRefs, setSelectedTagRefs] = useState<string[]>([]);
-  const [selectedSalesUnitRefs, setSelectedSalesUnitRefs] = useState<string[]>([]);
+  const [selectedSalesUnitRef, setSelectedSalesUnitRef] = useState<string>();
+  const [selectedBaseMeasureUnitRef, setSelectedBaseMeasureUnitRef] = useState<string>();
   const initializedDraftItem = useRef<string | undefined>(undefined);
   const hydrateDraftAfterSave = useRef(false);
+  const drawerOperationInstanceId = useRef<string | undefined>(undefined);
   const initializedProductionItem = useRef<string | undefined>(undefined);
   const problemRef = useRef<HTMLDivElement | null>(null);
   const draftRowSequence = useRef(0);
@@ -323,9 +336,10 @@ export function CatalogItemDrawer({
   const [releaseCloseFailed, setReleaseCloseFailed] = useState(false);
   const [releasingBeforeClose, setReleasingBeforeClose] = useState(false);
   const [identifierDraft, setIdentifierDraft] = useState<CatalogIdentifierDraft[]>([]);
-  const [categoryRefsDraft, setCategoryRefsDraft] = useState<string[]>([]);
+  const [categoryRefDraft, setCategoryRefDraft] = useState<string>();
+  const [attributeAssignmentsDraft, setAttributeAssignmentsDraft] = useState<CatalogAttributeAssignment[]>([]);
+  const [orderOptionConfigsDraft, setOrderOptionConfigsDraft] = useState<CatalogOrderOptionConfig[]>([]);
   const [standardSalePriceDraft, setStandardSalePriceDraft] = useState<number | null>(null);
-  const [orderOptionsDraft, setOrderOptionsDraft] = useState<CatalogOrderOptionGroupDraft[]>([]);
   const [productionProfilesDraft, setProductionProfilesDraft] = useState<ProductionProfileDraft>({
     item: {},
     sku: {},
@@ -340,11 +354,7 @@ export function CatalogItemDrawer({
   const [promotionOpen, setPromotionOpen] = useState(false);
   const [promotionProblem, setPromotionProblem] = useState<string>();
   const [voidingSkuRef, setVoidingSkuRef] = useState<string>();
-  const [form] = Form.useForm<{
-    displayName: string;
-    shortName?: string;
-    attributesDraftRows: CatalogAttributeDraftRow[];
-  }>();
+  const [form] = Form.useForm<{displayName: string; shortName?: string}>();
   const [promotionForm] = Form.useForm<PromotionFormValues>();
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const request = useMemo(
@@ -392,9 +402,11 @@ export function CatalogItemDrawer({
     skip: !itemCode || !canWriteCatalog,
   });
   const productionTagPage = productionTagsQuery.currentData?.data;
+  const acceptProductionTagPage = productionTagCandidates.acceptPage;
+  const productionTagPageSize = productionTagCandidates.pageSize;
   useEffect(() => {
     if (!productionTagPage) return;
-    productionTagCandidates.acceptPage(
+    acceptProductionTagPage(
       productionTagPage.entries.map(entry => ({
         tagRef: entry.tagRef,
         code: entry.code,
@@ -403,12 +415,12 @@ export function CatalogItemDrawer({
         status: entry.status,
       })),
       {
-        pageSize: productionTagCandidates.pageSize,
+        pageSize: productionTagPageSize,
         total: productionTagPage.total,
         nextCursor: productionTagPage.cursor,
       },
     );
-  }, [productionTagCandidates.acceptPage, productionTagCandidates.pageSize, productionTagPage]);
+  }, [acceptProductionTagPage, productionTagPage, productionTagPageSize]);
   const availableProductionTags = productionTagCandidates.items;
   const [save] = operationsRtk.useSaveOperationsCatalogItemMutation();
   const [stageAsset] = operationsRtk.useStageOperationsCatalogAssetMutation();
@@ -473,6 +485,16 @@ export function CatalogItemDrawer({
     }
     onClose();
   }, [mediaDraft, onClose, releaseStagedMedia, skuStagedMedia]);
+  const onLifecycleDiagnostic = useCallback((event: DrawerLifecycleDiagnosticEvent) => {
+    drawerOperationInstanceId.current = event.operationInstanceId;
+    operationsLogger.info({
+      event: 'catalog.item.editor.lifecycle',
+      phase: event.phase,
+      outcome: event.outcome,
+      operationId: event.operationId,
+      operationInstanceId: event.operationInstanceId,
+    });
+  }, []);
   const lifecycle = useDrawerFormLifecycle({
     open: Boolean(itemCode),
     onOpenChange: open => {
@@ -481,40 +503,102 @@ export function CatalogItemDrawer({
     dirtyMessage: '商品编辑内容尚未保存。',
     dirtyGuardTestIds: {confirm: testId('catalog-item-dirty-discard'), cancel: testId('catalog-item-dirty-continue')},
     diagnosticOperationId: 'catalog-item-editor',
+    onDiagnosticEvent: onLifecycleDiagnostic,
   });
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
+  const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
+  const refetchDetail = detailQuery.refetch;
+  const refetchManifest = manifestQuery.refetch;
+  const refetchProductionTags = productionTagsQuery.refetch;
   useEffect(() => {
-    if (!detail) return;
-    if (
-      !shouldHydrateCatalogItemDraft({
-        initializedItemCode: initializedDraftItem.current,
-        detailItemCode: detail.item.code,
-        dirty: lifecycle.dirty,
-        forceHydrate: hydrateDraftAfterSave.current,
-      })
-    )
+    if (!itemCode || contentTabRefreshVersion === lastContentTabRefreshVersion.current) return;
+    lastContentTabRefreshVersion.current = contentTabRefreshVersion;
+    // A shell refresh must update the server read model without overwriting a
+    // dirty editor draft. Clean drawers opt into hydration after the refetch;
+    // the existing hydration guard keeps unsaved edits intact.
+    if (!lifecycle.dirty) hydrateDraftAfterSave.current = true;
+    operationsLogger.info({
+      event: 'catalog.item.editor.content_refresh',
+      phase: 'READ_MODEL_REFRESH',
+      outcome: 'STARTED',
+      operationId: 'catalog-item-editor',
+      operationInstanceId: drawerOperationInstanceId.current,
+    });
+    void refetchDetail();
+    void refetchManifest();
+    if (canWriteCatalog) void refetchProductionTags();
+  }, [
+    canWriteCatalog,
+    contentTabRefreshVersion,
+    itemCode,
+    lifecycle.dirty,
+    refetchDetail,
+    refetchManifest,
+    refetchProductionTags,
+  ]);
+  useEffect(() => {
+    if (itemCode) setMode(initialMode);
+  }, [initialMode, itemCode]);
+  useEffect(() => {
+    if (!detail) {
+      operationsLogger.debug({
+        event: 'catalog.item.editor.draft.hydration.waiting_detail',
+        phase: 'DRAFT_HYDRATION',
+        outcome: 'WAITING',
+        operationId: 'catalog-item-editor',
+        operationInstanceId: drawerOperationInstanceId.current,
+      });
       return;
+    }
+    const shouldHydrate = shouldHydrateCatalogItemDraft({
+      initializedItemCode: initializedDraftItem.current,
+      detailItemCode: detail.item.code,
+      dirty: lifecycle.dirty,
+      forceHydrate: hydrateDraftAfterSave.current,
+    });
+    if (!shouldHydrate) {
+      operationsLogger.debug({
+        event: lifecycle.dirty
+          ? 'catalog.item.editor.draft.hydration.skipped_dirty'
+          : 'catalog.item.editor.draft.hydration.skipped_same_item',
+        phase: 'DRAFT_HYDRATION',
+        outcome: 'SKIPPED',
+        operationId: 'catalog-item-editor',
+        operationInstanceId: drawerOperationInstanceId.current,
+      });
+      return;
+    }
+    operationsLogger.info({
+      event: 'catalog.item.editor.draft.hydrated',
+      phase: 'DRAFT_HYDRATION',
+      outcome: 'SUCCEEDED',
+      operationId: 'catalog-item-editor',
+      operationInstanceId: drawerOperationInstanceId.current,
+    });
     initializedDraftItem.current = detail.item.code;
     hydrateDraftAfterSave.current = false;
     form.setFieldsValue({
       displayName: detail.item.name,
       shortName: detail.item.shortName ?? '',
-      attributesDraftRows: attributeDraftRowsFromRecord(detail.item.attributes),
     });
     setIdentifierDraft(detail.item.identifiers.map(entry => ({...entry, editorId: createDraftRowId('identifier')})));
-    setCategoryRefsDraft([...detail.item.categoryRefs]);
-    setStandardSalePriceDraft(detail.item.standardSalePrice ?? null);
-    setSelectedTagRefs([...detail.item.tagRefs]);
-    setSelectedSalesUnitRefs([...detail.item.salesUnitRefs]);
-    setOrderOptionsDraft(
-      detail.item.orderOptions.map(group => ({
-        ...group,
-        values: group.values.map(entry => ({
-          ...entry,
-          editorId: createDraftRowId('order-option-value'),
-          productionEffects: [...entry.productionEffects],
+    setCategoryRefDraft(detail.item.categoryRef ?? undefined);
+    setAttributeAssignmentsDraft(
+      detail.item.attributeAssignments.map(assignment => ({...assignment, optionRefs: [...assignment.optionRefs]})),
+    );
+    setOrderOptionConfigsDraft(
+      detail.item.orderOptionConfigs.map(config => ({
+        ...config,
+        values: config.values.map(value => ({
+          ...value,
+          materialQuantities: value.materialQuantities.map(material => ({...material})),
         })),
       })),
     );
+    setStandardSalePriceDraft(detail.item.standardSalePrice ?? null);
+    setSelectedTagRefs([...detail.item.tagRefs]);
+    setSelectedSalesUnitRef(detail.item.salesUnitRef ?? undefined);
+    setSelectedBaseMeasureUnitRef(detail.item.baseMeasureUnitRef ?? undefined);
     setProductionProfilesDraft(cloneProfiles(detail.item.productionProfiles));
     setProductionProfileLayer('item');
     setInventoryBomDraft(detail.inventoryBom.map(entry => ({...entry})));
@@ -530,8 +614,9 @@ export function CatalogItemDrawer({
     }
     if (initializedMediaItem.current !== detail.item.code) {
       initializedMediaItem.current = detail.item.code;
+      const imageRefs = catalogDetailImageRefs(detail.item);
       setMediaDraft(
-        detail.item.images.map((assetRef, index) => ({
+        imageRefs.map((assetRef, index) => ({
           id: `existing-${assetRef}-${index}`,
           assetRef,
           fileName: index === 0 ? '已保存主图' : `已保存附图 ${index}`,
@@ -546,18 +631,23 @@ export function CatalogItemDrawer({
     setActiveTab(current =>
       detail.tabs.some(tab => tab.tabKey === current && tab.visible) ? current : (first ?? 'basic'),
     );
-  }, [createDraftRowId, detail, form, lifecycle, normalizeSkuDraftRows]);
+  }, [createDraftRowId, detail, form, lifecycle, mode, normalizeSkuDraftRows]);
   useEffect(() => {
     if (!(problem || detailQuery.error || mediaProblem)) return;
     window.requestAnimationFrame(() => problemRef.current?.focus());
   }, [detailQuery.error, mediaProblem, problem]);
   useEffect(() => {
     if (!itemCode) {
+      // The Drawer stays mounted while hidden, so closing it must clear every
+      // local draft before the next open. Clearing only the basic fields lets
+      // the previous product's attributes/order options leak into a new edit.
       initializedDraftItem.current = undefined;
       hydrateDraftAfterSave.current = false;
+      drawerOperationInstanceId.current = undefined;
       initializedProductionItem.current = undefined;
       initializedMediaItem.current = undefined;
       setMode('view');
+      setActiveTab('basic');
       setProblem(undefined);
       setMediaProblem(undefined);
       setReleaseCloseFailed(false);
@@ -565,11 +655,17 @@ export function CatalogItemDrawer({
       setMediaDraft([]);
       setSkuStagedMedia([]);
       setIdentifierDraft([]);
-      setCategoryRefsDraft([]);
+      setCategoryRefDraft(undefined);
+      setAttributeAssignmentsDraft([]);
+      setOrderOptionConfigsDraft([]);
+      setStandardSalePriceDraft(null);
       setSelectedTagRefs([]);
-      setSelectedSalesUnitRefs([]);
-      setOrderOptionsDraft([]);
+      setSelectedSalesUnitRef(undefined);
+      setSelectedBaseMeasureUnitRef(undefined);
+      setSelectedProductionTagRefs([]);
+      setSelectedProductionTags([]);
       setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}});
+      setProductionProfileLayer('item');
       setInventoryBomDraft([]);
       setCompositeGroupsDraft([]);
       setSkuVariantDimensionsDraft([]);
@@ -581,9 +677,12 @@ export function CatalogItemDrawer({
       setPromotion(undefined);
       setPromotionOpen(false);
       setPromotionProblem(undefined);
+      setVoidingSkuRef(undefined);
+      form.resetFields();
+      promotionForm.resetFields();
       lifecycle.reset();
     }
-  }, [itemCode, lifecycle]);
+  }, [form, itemCode, lifecycle, promotionForm]);
 
   const submit = async () => {
     if (!detail || !itemCode) return;
@@ -607,21 +706,13 @@ export function CatalogItemDrawer({
       setActiveTab('sku-specifications-pricing');
       return;
     }
-    let values: {displayName: string; shortName?: string; attributesDraftRows: CatalogAttributeDraftRow[]};
+    let values: {displayName: string; shortName?: string};
     try {
       values = await form.validateFields();
     } catch (error) {
       const issue = catalogFormValidationIssue(error);
       setActiveTab(issue?.tabKey ?? 'basic');
       setProblem(issue?.message ?? '请先修正商品基础信息后再保存。');
-      return;
-    }
-    let attributes: Record<string, JsonValue>;
-    try {
-      attributes = serializeCatalogAttributeDraftRows(values.attributesDraftRows ?? []);
-    } catch {
-      setActiveTab('attributes');
-      setProblem('描述属性存在重复键，请修改后再保存。');
       return;
     }
     const visibleTabs = new Set(detail.tabs.filter(tab => tab.visible).map(tab => tab.tabKey));
@@ -632,19 +723,6 @@ export function CatalogItemDrawer({
       if (invalidIndex >= 0) {
         setActiveTab('identifiers');
         setProblem(`条码与识别码第 ${invalidIndex + 1} 行缺少类型、编码或识别码。`);
-        return;
-      }
-    }
-    if (visibleTabs.has('order-options')) {
-      const invalidGroup = orderOptionsDraft.findIndex(
-        group =>
-          !group.groupCode.trim() ||
-          !group.groupName.trim() ||
-          group.values.some(value => !value.code.trim() || !value.name.trim()),
-      );
-      if (invalidGroup >= 0) {
-        setActiveTab('order-options');
-        setProblem(`点单选项第 ${invalidGroup + 1} 组缺少组编码、组名或选项值信息。`);
         return;
       }
     }
@@ -685,13 +763,13 @@ export function CatalogItemDrawer({
     if (visibleTabs.has('inventory-bom')) {
       const invalidNode = inventoryBomDraft.findIndex(node => {
         if (node.mode === 'NONE') return false;
-        if (node.mode === 'BOM') return !node.targetRef.trim() || !node.quantity.trim() || !node.unit.trim();
-        if (node.mode === 'INDEPENDENT_STOCK') return !(node.targetRef.trim() || node.consumptionUnit?.trim());
+        if (node.mode === 'BOM') return !node.targetRef.trim() || !node.quantity.trim() || !node.itemRef?.trim();
+        if (node.mode === 'INDEPENDENT_STOCK') return !node.targetRef.trim() || !node.itemRef?.trim();
         return true;
       });
       if (invalidNode >= 0) {
         setActiveTab('inventory-bom');
-        setProblem(`库存/BOM 第 ${invalidNode + 1} 个节点缺少合法模式、消耗数量/单位，或新建库存对象缺少消耗单位。`);
+        setProblem(`库存/BOM 第 ${invalidNode + 1} 个节点缺少库存对象或消耗数量，请选择已有库存对象。`);
         return;
       }
     }
@@ -722,14 +800,35 @@ export function CatalogItemDrawer({
         shortName: values.shortName?.trim() || null,
         name: values.displayName,
         shapeKey: detail.item.shapeKey,
-        attributes,
         images: mediaDraft
           .filter(asset => (asset.status === 'READY' || asset.status === 'FAILED') && asset.assetRef)
           .map(asset => wireUuid(asset.assetRef)),
         productionTagRefs: selectedProductionTagRefs.map(ref => wireUuid(ref)),
         tagRefs: selectedTagRefs.map(ref => wireUuid(ref)),
-        salesUnitRefs: selectedSalesUnitRefs.map(ref => wireUuid(ref)),
-        categoryRefs: categoryRefsDraft.map(ref => wireUuid(ref)),
+        salesUnitRef: selectedSalesUnitRef ? wireUuid(selectedSalesUnitRef) : null,
+        baseMeasureUnitRef: selectedBaseMeasureUnitRef ? wireUuid(selectedBaseMeasureUnitRef) : null,
+        categoryRef: categoryRefDraft ? wireUuid(categoryRefDraft) : null,
+        attributeAssignments: attributeAssignmentsDraft.map(assignment => ({
+          definitionRef: wireUuid(assignment.definitionRef),
+          textValue: assignment.textValue,
+          optionRefs: assignment.optionRefs.map(ref => wireUuid(ref)),
+        })),
+        orderOptionConfigs: orderOptionConfigsDraft.map(config => ({
+          definitionRef: wireUuid(config.definitionRef),
+          required: config.required,
+          minSelectionCount: config.selectionMode === 'MULTIPLE' ? config.minSelectionCount : null,
+          maxSelectionCount: config.selectionMode === 'MULTIPLE' ? config.maxSelectionCount : null,
+          values: config.values.map(value => ({
+            definitionValueRef: wireUuid(value.definitionValueRef),
+            defaultValue: value.defaultValue,
+            extraPrice: value.extraPrice,
+            expectedBomVersion: value.bomVersion ?? 0,
+            materialQuantities: value.materialQuantities.map(material => ({
+              materialRef: wireUuid(material.materialRef),
+              actualQuantity: material.actualQuantity,
+            })),
+          })),
+        })),
       };
       if (visibleTabs.has('identifiers'))
         catalogDraft.identifiers = identifierDraft.map(({editorId: _editorId, ...entry}) => entry);
@@ -739,15 +838,22 @@ export function CatalogItemDrawer({
         catalogDraft.skuVariantDimensions = skuVariantDimensionsDraft;
         catalogDraft.skus = serializeSkuRowsForSave(skusDraft.map(({editorId: _editorId, ...row}) => row));
       }
-      if (visibleTabs.has('order-options'))
-        catalogDraft.orderOptions = orderOptionsDraft.map(({values, ...group}) => ({
-          ...group,
-          values: values.map(({editorId: _editorId, ...value}) => value),
-        }));
       if (visibleTabs.has('composite-content')) catalogDraft.compositeGroups = compositeGroupsDraft;
       if (visibleTabs.has('production-prompts')) catalogDraft.productionProfiles = productionProfilesDraft;
       if (visibleTabs.has('inventory-bom'))
-        catalogDraft.inventoryBom = inventoryBomDraft.map(entry => ({...entry, skuCode: entry.skuCode ?? null}));
+        catalogDraft.inventoryBom = inventoryBomDraft.map(entry => ({
+          nodeType: entry.nodeType,
+          mode: entry.mode,
+          targetRef: wireUuid(entry.targetRef),
+          quantity: entry.quantity,
+          itemCode: entry.itemCode ?? detail.item.code,
+          itemRef: wireUuid(entry.itemRef ?? ''),
+          productSkuRef: entry.productSkuRef ? wireUuid(entry.productSkuRef) : null,
+          optionValueRef: entry.optionValueRef ? wireUuid(entry.optionValueRef) : null,
+          skuCode: entry.skuCode ?? null,
+          optionValueCode: entry.optionValueCode ?? null,
+          version: entry.version ?? 0,
+        }));
       const bindGrants = Object.fromEntries(
         [...mediaDraft, ...skuStagedMedia]
           .filter((asset): asset is MediaDraft & {assetRef: string; bindGrant: string} =>
@@ -767,11 +873,19 @@ export function CatalogItemDrawer({
                   .map(node => ({
                     nodeType: node.nodeType,
                     mode: node.mode,
-                    ...(node.targetRef.trim() ? {targetRef: wireUuid(node.targetRef.trim())} : {}),
+                    targetRef: wireUuid(node.targetRef.trim()),
                     itemCode: node.itemCode ?? detail.item.code,
+                    itemRef: wireUuid(node.itemRef ?? ''),
                     skuCode: node.skuCode ?? null,
-                    ...(node.consumptionUnit?.trim() ? {consumptionUnit: node.consumptionUnit.trim()} : {}),
-                    ...(node.configuration ? {configuration: node.configuration} : {}),
+                    productSkuRef: node.productSkuRef ? wireUuid(node.productSkuRef) : null,
+                    configuration: {
+                      allowNegative: node.configuration?.allowNegative ?? false,
+                      lowStockThreshold: node.configuration?.lowStockThreshold ?? null,
+                      countingUnitRef: node.configuration?.countingUnitSnapshot?.unitRef
+                        ? wireUuid(node.configuration.countingUnitSnapshot.unitRef)
+                        : null,
+                      conversionFactor: node.configuration?.conversionFactor ?? null,
+                    },
                   }))
               : [],
           },
@@ -928,9 +1042,8 @@ export function CatalogItemDrawer({
         formalCode: values.formalCode.trim(),
         shapeKey: values.shapeKey,
         name: values.name.trim(),
-        shortName: values.shortName?.trim() || null,
-        materialRole: values.materialRole?.trim() || null,
-        attributes: detail.item.attributes,
+        shortName: values.shortName?.trim() ?? '',
+        materialRole: values.materialRole?.trim() ?? '',
         expectedSourceVersion: detail.item.version,
       };
       const idempotencyKey = await createContentIdempotencyKey(
@@ -973,9 +1086,8 @@ export function CatalogItemDrawer({
         formalCode: values.formalCode.trim(),
         shapeKey: values.shapeKey,
         name: values.name.trim(),
-        shortName: values.shortName?.trim() || null,
-        materialRole: values.materialRole?.trim() || null,
-        attributes: detail.item.attributes,
+        shortName: values.shortName?.trim() ?? '',
+        materialRole: values.materialRole?.trim() ?? '',
         expectedSourceVersion: promotion.sourceVersion,
         expectedVersion: detail.item.version,
         preflightDigest: promotion.preflightDigest,
@@ -1035,10 +1147,8 @@ export function CatalogItemDrawer({
       setSelectedTagRefs(current =>
         current.includes(candidate.entryRef) ? current : [...current, candidate.entryRef],
       );
-    } else if (quickManage.kind === 'SALES_UNIT') {
-      setSelectedSalesUnitRefs(current =>
-        current.includes(candidate.entryRef) ? current : [...current, candidate.entryRef],
-      );
+    } else if (quickManage.kind === 'UNIT') {
+      setSelectedSalesUnitRef(candidate.entryRef);
     } else if (quickManage.kind === 'SKU_ATTRIBUTE') {
       if (quickManage.dimensionIndex === undefined) return;
       setSkuVariantDimensionsDraft(current =>
@@ -1167,6 +1277,7 @@ export function CatalogItemDrawer({
         id,
         assetRef: readback.assetRef,
         bindGrant: readback.bindGrant,
+        file,
         fileName: file.name,
         mediaType: readback.mediaType ?? file.type,
         status: 'READY',
@@ -1378,19 +1489,14 @@ export function CatalogItemDrawer({
     setIdentifierDraft(next);
     lifecycle.setDirty(true);
   };
-  const updateCategoryRefs = (next: string[]) => {
-    setCategoryRefsDraft(next);
+  const updateCategoryRef = (next: string | undefined) => {
+    setCategoryRefDraft(next);
     lifecycle.setDirty(true);
   };
   const updateStandardSalePrice = (next: number | null) => {
     setStandardSalePriceDraft(next);
     lifecycle.setDirty(true);
   };
-  const updateOrderOptions = (next: CatalogOrderOptionGroupDraft[]) => {
-    setOrderOptionsDraft(next);
-    lifecycle.setDirty(true);
-  };
-  const onOrderOptionsChange = updateOrderOptions;
   const updateProductionProfiles = (next: ProductionProfileDraft) => {
     setProductionProfilesDraft(next);
     lifecycle.setDirty(true);
@@ -1457,21 +1563,35 @@ export function CatalogItemDrawer({
                 lifecycle.setDirty(true);
               }}
               selectedTagRefs={selectedTagRefs}
-              selectedSalesUnitRefs={selectedSalesUnitRefs}
+              selectedSalesUnitRef={selectedSalesUnitRef}
+              selectedBaseMeasureUnitRef={selectedBaseMeasureUnitRef}
               onTagRefsChange={next => {
                 setSelectedTagRefs(next);
                 lifecycle.setDirty(true);
               }}
-              onSalesUnitRefsChange={next => {
-                setSelectedSalesUnitRefs(next);
+              onSalesUnitRefChange={next => {
+                setSelectedSalesUnitRef(next);
                 lifecycle.setDirty(true);
               }}
-              categoryRefsDraft={categoryRefsDraft}
-              onCategoryRefsChange={updateCategoryRefs}
+              onBaseMeasureUnitRefChange={next => {
+                setSelectedBaseMeasureUnitRef(next);
+                lifecycle.setDirty(true);
+              }}
+              categoryRefDraft={categoryRefDraft}
+              onCategoryRefChange={updateCategoryRef}
+              attributeAssignmentsDraft={attributeAssignmentsDraft}
+              onAttributeAssignmentsChange={next => {
+                setAttributeAssignmentsDraft(next);
+                lifecycle.setDirty(true);
+              }}
+              orderOptionConfigsDraft={orderOptionConfigsDraft}
+              onOrderOptionConfigsChange={next => {
+                setOrderOptionConfigsDraft(next);
+                lifecycle.setDirty(true);
+              }}
               identifierDraft={identifierDraft}
               createDraftRowId={createDraftRowId}
               standardSalePriceDraft={standardSalePriceDraft}
-              orderOptionsDraft={orderOptionsDraft}
               productionProfilesDraft={productionProfilesDraft}
               productionProfileLayer={productionProfileLayer}
               onProductionProfileLayerChange={setProductionProfileLayer}
@@ -1485,7 +1605,7 @@ export function CatalogItemDrawer({
               dictionaryRevision={Object.fromEntries(
                 Object.values([
                   'TAG',
-                  'SALES_UNIT',
+                  'UNIT',
                   'SKU_ATTRIBUTE',
                   'SKU_ATTRIBUTE_VALUE',
                   'PRODUCTION_TAG',
@@ -1493,7 +1613,6 @@ export function CatalogItemDrawer({
               )}
               onIdentifiersChange={updateIdentifiers}
               onStandardSalePriceChange={updateStandardSalePrice}
-              onOrderOptionsChange={onOrderOptionsChange}
               onProductionProfilesChange={updateProductionProfiles}
               onInventoryBomChange={updateInventoryBom}
               onCompositeGroupsChange={updateCompositeGroups}
@@ -1512,9 +1631,10 @@ export function CatalogItemDrawer({
     : [];
   const action = detail?.actionAvailability;
   // AUTO_SYNC is not an all-field read-only mode: the owner supplies the exact
-  // deniedFields set, so local supplements (tags, prompts, attributes, etc.)
+  // deniedFields set, so local supplements (tags, prompts, 商品属性等)
   // remain editable. Temporary items are the only whole-record read-only mode.
   const sourceLocked = detail ? detail.item.source === 'TEMPORARY' : false;
+  const detailImageRefs = detail ? catalogDetailImageRefs(detail.item) : [];
   const disabledActionReason = (allowed: boolean, label: string, locked = false) => {
     if (locked) return '外部订单临时商品不可直接编辑，请先完成治理转正预检。';
     if (allowed) return undefined;
@@ -1527,9 +1647,9 @@ export function CatalogItemDrawer({
       title={
         detail ? (
           <Space>
-            {detail.item.images[0] && (
+            {detailImageRefs[0] && (
               <CatalogAssetPreview
-                assetRef={detail.item.images[0]}
+                assetRef={detailImageRefs[0]}
                 alt={`${detail.item.name}主图`}
                 width={40}
                 height={40}
@@ -1552,7 +1672,7 @@ export function CatalogItemDrawer({
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       destroyOnHidden={false}
-      maskClosable={!lifecycle.dirty}
+      maskClosable={!lifecycle.submitting}
       {...adminWideDrawerSurfaceProps}
       {...testId('catalog-inventory-item-drawer')}
       extra={
@@ -1562,7 +1682,20 @@ export function CatalogItemDrawer({
               <DisabledReasonButton
                 disabled={!action?.canEdit || sourceLocked}
                 reason={disabledActionReason(Boolean(action?.canEdit), '编辑', sourceLocked)}
-                onClick={() => setMode('edit')}
+                onClick={() => {
+                  // A read-only session has no user-owned draft. Force the
+                  // current owner readback through the edit hydration path so
+                  // a prior cancelled session can never leave this form blank.
+                  if (!lifecycle.dirty) initializedDraftItem.current = undefined;
+                  operationsLogger.info({
+                    event: 'catalog.item.editor.edit_requested',
+                    phase: 'MODE_TRANSITION',
+                    outcome: ['EDIT', 'REQUESTED'].join('_'),
+                    operationId: 'catalog-item-editor',
+                    operationInstanceId: drawerOperationInstanceId.current,
+                  });
+                  setMode('edit');
+                }}
                 {...testId('catalog-item-edit')}
               >
                 编辑
@@ -1761,24 +1894,6 @@ export function CatalogItemDrawer({
         </>
       )}
       {detail && (
-        <Space size={8} style={{marginBottom: 12}} {...testId('catalog-item-fact-summary')}>
-          <Typography.Text type="secondary">事实摘要</Typography.Text>
-          {activeTab === 'basic' ? (
-            <Typography.Text type="secondary">分类 {detail.item.categoryRefs.length}</Typography.Text>
-          ) : (
-            <Button type="link" size="small" onClick={() => setActiveTab('basic')}>
-              分类 {detail.item.categoryRefs.length}
-            </Button>
-          )}
-          <Button type="link" size="small" onClick={() => setActiveTab('attributes')}>
-            描述属性 {Object.keys(detail.item.attributes).length}
-          </Button>
-          <Typography.Text type="secondary">
-            SKU {detail.item.skuSummary.nonArchivedCount} · 标签 {detail.item.tagRefs.length}
-          </Typography.Text>
-        </Space>
-      )}
-      {detail && (
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} {...testId('catalog-item-tabs')} />
       )}
       <LocalCatalogCopyDrawer
@@ -1818,6 +1933,8 @@ export function CatalogItemDrawer({
           setPromotion(undefined);
           setPromotionProblem(undefined);
         }}
+        maskClosable={!executePromotionState.isLoading}
+        keyboard={!executePromotionState.isLoading}
         okText="确认转正"
         cancelText="返回"
         okButtonProps={{disabled: !promotion?.canPromote, loading: executePromotionState.isLoading}}
@@ -1989,15 +2106,20 @@ function CatalogTabContent({
   selectedProductionTags,
   onProductionTagsChange,
   selectedTagRefs,
-  selectedSalesUnitRefs,
+  selectedSalesUnitRef,
+  selectedBaseMeasureUnitRef,
   onTagRefsChange,
-  onSalesUnitRefsChange,
-  categoryRefsDraft,
-  onCategoryRefsChange,
+  onSalesUnitRefChange,
+  onBaseMeasureUnitRefChange,
+  categoryRefDraft,
+  onCategoryRefChange,
+  attributeAssignmentsDraft,
+  onAttributeAssignmentsChange,
+  orderOptionConfigsDraft,
+  onOrderOptionConfigsChange,
   identifierDraft,
   createDraftRowId,
   standardSalePriceDraft,
-  orderOptionsDraft,
   productionProfilesDraft,
   productionProfileLayer,
   onProductionProfileLayerChange,
@@ -2011,7 +2133,6 @@ function CatalogTabContent({
   dictionaryRevision,
   onIdentifiersChange,
   onStandardSalePriceChange,
-  onOrderOptionsChange,
   onProductionProfilesChange,
   onInventoryBomChange,
   onCompositeGroupsChange,
@@ -2031,9 +2152,7 @@ function CatalogTabContent({
   navigation?: CatalogNavigation;
   editing: boolean;
   canWriteCatalog: boolean;
-  form: ReturnType<
-    typeof Form.useForm<{displayName: string; shortName?: string; attributesDraftRows: CatalogAttributeDraftRow[]}>
-  >[0];
+  form: ReturnType<typeof Form.useForm<{displayName: string; shortName?: string}>>[0];
   mediaDraft: MediaDraft[];
   onStageMedia: (file: File, existingId?: string) => Promise<void>;
   onRemoveMedia: (id: string, index: number) => void | Promise<void>;
@@ -2050,15 +2169,20 @@ function CatalogTabContent({
   selectedProductionTags: ProductionTagOption[];
   onProductionTagsChange: (next: string[]) => void;
   selectedTagRefs: string[];
-  selectedSalesUnitRefs: string[];
+  selectedSalesUnitRef?: string;
+  selectedBaseMeasureUnitRef?: string;
   onTagRefsChange: (next: string[]) => void;
-  onSalesUnitRefsChange: (next: string[]) => void;
-  categoryRefsDraft: string[];
-  onCategoryRefsChange: (next: string[]) => void;
+  onSalesUnitRefChange: (next: string | undefined) => void;
+  onBaseMeasureUnitRefChange: (next: string | undefined) => void;
+  categoryRefDraft?: string;
+  onCategoryRefChange: (next: string | undefined) => void;
+  attributeAssignmentsDraft: CatalogAttributeAssignment[];
+  onAttributeAssignmentsChange: (next: CatalogAttributeAssignment[]) => void;
+  orderOptionConfigsDraft: CatalogOrderOptionConfig[];
+  onOrderOptionConfigsChange: (next: CatalogOrderOptionConfig[]) => void;
   identifierDraft: CatalogIdentifierDraft[];
   createDraftRowId: (prefix: string) => string;
   standardSalePriceDraft: number | null;
-  orderOptionsDraft: CatalogOrderOptionGroupDraft[];
   productionProfilesDraft: ProductionProfileDraft;
   productionProfileLayer: ProfileLayer;
   onProductionProfileLayerChange: (next: ProfileLayer) => void;
@@ -2072,7 +2196,6 @@ function CatalogTabContent({
   dictionaryRevision: Partial<Record<DictionaryKind, number>>;
   onIdentifiersChange: (next: CatalogIdentifierDraft[]) => void;
   onStandardSalePriceChange: (next: number | null) => void;
-  onOrderOptionsChange: (next: CatalogOrderOptionGroupDraft[]) => void;
   onProductionProfilesChange: (next: ProductionProfileDraft) => void;
   onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void;
   onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void;
@@ -2107,23 +2230,33 @@ function CatalogTabContent({
         style={{marginBottom: 12}}
       />
     );
-  const categoryNodes = categoryRefsDraft
-    .map(categoryRef => navigation?.tree.find(node => node.categoryRef === categoryRef))
-    .filter((node): node is CatalogNavigation['tree'][number] => Boolean(node));
-  const categorySummary =
-    categoryRefsDraft.length === 0 ? (
-      <Typography.Text type="secondary">未分类</Typography.Text>
-    ) : !navigation ? (
-      <Typography.Text type="secondary">分类信息加载中</Typography.Text>
-    ) : categoryNodes.length === categoryRefsDraft.length ? (
-      <Space wrap>
-        {categoryNodes.map(node => (
-          <NameCodeText key={node.categoryRef} name={node.name} code={node.code} />
-        ))}
-      </Space>
-    ) : (
-      <Typography.Text type="secondary">分类信息暂不可用（{categoryRefsDraft.length} 个引用）</Typography.Text>
-    );
+  const categoryNode = categoryRefDraft
+    ? navigation?.tree.find(node => node.categoryRef === categoryRefDraft)
+    : undefined;
+  const categorySummary = !categoryRefDraft ? (
+    <Typography.Text type="secondary">未分类</Typography.Text>
+  ) : !navigation ? (
+    <Typography.Text type="secondary">分类信息加载中</Typography.Text>
+  ) : categoryNode ? (
+    <NameCodeText name={categoryNode.name} code={categoryNode.code} />
+  ) : (
+    <Typography.Text type="secondary">分类信息暂不可用</Typography.Text>
+  );
+  const unitRequest = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogUnits(
+        {},
+        {
+          query: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), includeInactive: false},
+          headers: brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined,
+        },
+      ),
+    [brandRef, queryContext.scopeRef],
+  );
+  const unitQuery = operationsRtk.useListOperationsCatalogUnitsQuery(unitRequest, {
+    skip: !queryContext.scopeRef,
+  });
+  const unitOptions = unitQuery.currentData?.data.units ?? [];
   const referencePickerContexts = useMemo(
     () =>
       ({
@@ -2133,44 +2266,12 @@ function CatalogTabContent({
           readSection: () => [],
           sectionRevision: () => `${detail.item.version}:${dictionaryRevision.TAG ?? 0}`,
         },
-        SALES_UNIT: {
-          scope: {dataNodeRef: wireUuid(queryContext.scopeRef ?? ''), brandRef},
-          readField: () => undefined,
-          readSection: () => [],
-          sectionRevision: () => `${detail.item.version}:${dictionaryRevision.SALES_UNIT ?? 0}`,
-        },
-      }) satisfies Record<'TAG' | 'SALES_UNIT', CatalogFieldRuntimeContext>,
-    [brandRef, detail.item.version, dictionaryRevision.SALES_UNIT, dictionaryRevision.TAG, queryContext.scopeRef],
+      }) satisfies Record<'TAG', CatalogFieldRuntimeContext>,
+    [brandRef, detail.item.version, dictionaryRevision.TAG, queryContext.scopeRef],
   );
   if (tabKey === 'basic' && editing)
     return (
       <Space direction="vertical" size={16} style={{display: 'flex'}}>
-        <Descriptions
-          size="small"
-          bordered
-          title="商品事实摘要"
-          items={[
-            {
-              key: 'itemKind',
-              label: '商品类型',
-              children: catalogEnumLabel(manifest, 'itemKind', detail.item.itemKind),
-            },
-            {
-              key: 'measureMode',
-              label: '计量模式',
-              children: catalogEnumLabel(manifest, 'measureMode', detail.item.measureMode),
-            },
-            {
-              key: 'usageCapabilities',
-              label: '使用能力',
-              children:
-                detail.item.usageCapabilities
-                  .map(value => catalogEnumLabel(manifest, 'usageCapability', value))
-                  .join('、') || '—',
-            },
-          ]}
-          {...testId('catalog-item-edit-derived-facts')}
-        />
         <Form form={form} layout="vertical" onValuesChange={onDirty}>
           <Alert type="info" showIcon title="商品编码与形态创建后不可修改" style={{marginBottom: 16}} />
           <Form.Item
@@ -2190,15 +2291,15 @@ function CatalogTabContent({
           <CatalogCategoryDescriptorField
             manifest={manifest}
             shapeKey={detail.item.shapeKey}
-            value={categoryRefsDraft}
-            denied={detail.deniedFields.includes('categoryRefs')}
+            value={categoryRefDraft}
+            denied={detail.deniedFields.includes('categoryRef')}
             scopeRef={queryContext.scopeRef}
             brandRef={brandRef}
             version={detail.item.version}
-            onChange={onCategoryRefsChange}
+            onChange={onCategoryRefChange}
             onDirty={onDirty}
           />
-          {locked('categoryRefs')}
+          {locked('categoryRef')}
           <CatalogDescriptorPicker
             manifest={manifest}
             shapeKey={detail.item.shapeKey}
@@ -2220,35 +2321,47 @@ function CatalogTabContent({
             onChange={next => onTagRefsChange(Array.isArray(next) ? next : next ? [next] : [])}
           />
           {locked('tagRefs')}
-          <CatalogDescriptorPicker
-            manifest={manifest}
-            shapeKey={detail.item.shapeKey}
-            fieldKey="salesUnitRefs"
-            value={selectedSalesUnitRefs}
-            context={referencePickerContexts.SALES_UNIT}
-            disabled={denied('salesUnitRefs')}
-            actions={
-              <Button
-                size="small"
-                disabled={denied('salesUnitRefs')}
-                onClick={() => onOpenDictionaryQuickManage('SALES_UNIT')}
-                {...testId('catalog-item-sales-unit-manage')}
-              >
-                维护销售单位
-              </Button>
-            }
-            testIdValue="catalog-item-sales-unit-refs"
-            onChange={next => onSalesUnitRefsChange(Array.isArray(next) ? next : next ? [next] : [])}
-          />
-          {locked('salesUnitRefs')}
+          <Form.Item label={fieldLabel('salesUnitRef')} extra="商品销售单位只能选择一个；原料可以留空。">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              value={selectedSalesUnitRef}
+              disabled={denied('salesUnitRef')}
+              loading={unitQuery.isLoading || unitQuery.isFetching}
+              options={unitOptions.map(unit => ({value: unit.unitRef, label: catalogUnitLabel(unit)}))}
+              onChange={value => onSalesUnitRefChange(value)}
+              {...testId('catalog-item-sales-unit')}
+            />
+          </Form.Item>
+          {locked('salesUnitRef')}
+          <Form.Item
+            label={fieldLabel('baseMeasureUnitRef')}
+            extra="基础计量单位决定库存消费单位；作为 BOM/库存对象时必须设置。"
+          >
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              value={selectedBaseMeasureUnitRef}
+              disabled={denied('baseMeasureUnitRef')}
+              loading={unitQuery.isLoading || unitQuery.isFetching}
+              options={unitOptions.map(unit => ({value: unit.unitRef, label: catalogUnitLabel(unit)}))}
+              onChange={value => onBaseMeasureUnitRefChange(value)}
+              {...testId('catalog-item-base-measure-unit')}
+            />
+          </Form.Item>
+          {locked('baseMeasureUnitRef')}
           {detail.item.priceGranularity === 'ITEM' ? (
             <Form.Item label={fieldLabel('standardSalePrice')}>
               <InputNumber
                 min={0}
-                precision={0}
-                value={standardSalePriceDraft}
+                precision={2}
+                step={0.01}
+                suffix="元"
+                value={catalogCentsToYuan(standardSalePriceDraft)}
                 disabled={denied('standardSalePrice')}
-                onChange={value => onStandardSalePriceChange(value ?? null)}
+                onChange={value => onStandardSalePriceChange(catalogYuanToCents(value))}
                 style={{width: '100%'}}
                 {...testId('catalog-item-edit-standard-price')}
               />
@@ -2321,31 +2434,30 @@ function CatalogTabContent({
               label: '描述属性',
               children: (
                 <Button type="link" size="small" onClick={() => onNavigateTab('attributes')}>
-                  {Object.keys(detail.item.attributes).length} 个属性
+                  {detail.item.attributeAssignments.length} 个属性
                 </Button>
               ),
             },
+            {
+              key: 'tagRefs',
+              label: '商品标签',
+              children: (
+                <CatalogDescriptorPicker
+                  manifest={manifest}
+                  shapeKey={detail.item.shapeKey}
+                  fieldKey="tagRefs"
+                  value={selectedTagRefs}
+                  context={referencePickerContexts.TAG}
+                  readOnly
+                  hideLabel
+                  testIdValue="catalog-item-tag-refs-readonly"
+                  onChange={() => undefined}
+                />
+              ),
+            },
+            {key: 'salesUnitRef', label: '销售单位', children: catalogUnitLabel(detail.item.salesUnit)},
+            {key: 'baseMeasureUnitRef', label: '基础计量单位', children: catalogUnitLabel(detail.item.baseMeasureUnit)},
           ]}
-        />
-        <CatalogDescriptorPicker
-          manifest={manifest}
-          shapeKey={detail.item.shapeKey}
-          fieldKey="tagRefs"
-          value={selectedTagRefs}
-          context={referencePickerContexts.TAG}
-          readOnly
-          testIdValue="catalog-item-tag-refs-readonly"
-          onChange={() => undefined}
-        />
-        <CatalogDescriptorPicker
-          manifest={manifest}
-          shapeKey={detail.item.shapeKey}
-          fieldKey="salesUnitRefs"
-          value={selectedSalesUnitRefs}
-          context={referencePickerContexts.SALES_UNIT}
-          readOnly
-          testIdValue="catalog-item-sales-unit-refs-readonly"
-          onChange={() => undefined}
         />
         <Descriptions
           {...adminWideDetailDescriptionsProps}
@@ -2353,7 +2465,9 @@ function CatalogTabContent({
             {
               key: 'images',
               label: '图片资产',
-              children: <CatalogAssetGallery assetRefs={detail.item.images} itemName={detail.item.name} />,
+              children: (
+                <CatalogAssetGallery assetRefs={catalogDetailImageRefs(detail.item)} itemName={detail.item.name} />
+              ),
             },
           ]}
         />
@@ -2437,6 +2551,7 @@ function CatalogTabContent({
         onOpenValueDictionary={(dimensionIndex, valueIndex) =>
           onOpenDictionaryQuickManage('SKU_ATTRIBUTE_VALUE', dimensionIndex, valueIndex)
         }
+        unitOptions={unitOptions}
         onDimensionsChange={onSkuVariantDimensionsChange}
         onSkusChange={onSkusChange}
         onStageSkuMedia={onStageSkuMedia}
@@ -2464,48 +2579,37 @@ function CatalogTabContent({
       />
     );
   if (tabKey === 'attributes' && editing)
-    return denied('attributes') ? (
+    return denied('attributeAssignments') ? (
       <Space direction="vertical" style={{display: 'flex'}}>
-        {locked('attributes')}
-        <FactMap value={detail.item.attributes} empty="未维护描述属性" />
+        {locked('attributeAssignments')}
+        <AttributeAssignmentsReadOnly values={detail.item.attributeAssignments} />
       </Space>
     ) : (
-      <Form form={form} layout="vertical" onValuesChange={onDirty}>
-        <Form.Item
-          label={fieldLabel('attributes')}
-          name="attributesDraftRows"
-          validateTrigger={['onChange', 'onBlur']}
-          rules={[
-            {
-              validator: (_, value: CatalogAttributeDraftRow[] | undefined) => {
-                const duplicates = duplicateCatalogAttributeKeys(value ?? []);
-                return duplicates.length
-                  ? Promise.reject(new Error('属性键重复：' + duplicates.join('、')))
-                  : Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <AttributesKeyValueEditor onDirty={onDirty} {...testId('catalog-item-edit-attributes')} />
-        </Form.Item>
-      </Form>
-    );
-  if (tabKey === 'attributes') return <FactMap value={detail.item.attributes} empty="未维护描述属性" />;
-  if (tabKey === 'order-options' && editing)
-    return denied('orderOptions') ? (
-      <Space direction="vertical" style={{display: 'flex'}}>
-        {locked('orderOptions')}
-        <OrderOptionsReadOnly values={detail.orderOptions} />
-      </Space>
-    ) : (
-      <OrderOptionsEditor
-        values={orderOptionsDraft}
-        createDraftRowId={createDraftRowId}
-        onChange={onOrderOptionsChange}
+      <AttributeAssignmentsEditor
+        values={attributeAssignmentsDraft}
+        onChange={onAttributeAssignmentsChange}
         onDirty={onDirty}
+        scopeRef={queryContext.scopeRef}
+        brandRef={brandRef}
       />
     );
-  if (tabKey === 'order-options') return <OrderOptionsReadOnly values={detail.orderOptions} />;
+  if (tabKey === 'attributes') return <AttributeAssignmentsReadOnly values={detail.item.attributeAssignments} />;
+  if (tabKey === 'order-options' && editing)
+    return denied('orderOptionConfigs') ? (
+      <Space direction="vertical" style={{display: 'flex'}}>
+        {locked('orderOptionConfigs')}
+        <OrderOptionConfigurationsReadOnly values={detail.item.orderOptionConfigs} />
+      </Space>
+    ) : (
+      <OrderOptionConfigurationsEditor
+        values={orderOptionConfigsDraft}
+        onChange={onOrderOptionConfigsChange}
+        onDirty={onDirty}
+        scopeRef={queryContext.scopeRef}
+        brandRef={brandRef}
+      />
+    );
+  if (tabKey === 'order-options') return <OrderOptionConfigurationsReadOnly values={detail.item.orderOptionConfigs} />;
   if (tabKey === 'production-prompts') {
     const detailProductionTags: ProductionTagOption[] = detail.productionTags.map(tag => ({...tag}));
     const tagMap = new Map<string, ProductionTagOption>(
@@ -2589,10 +2693,10 @@ function CatalogTabContent({
         manifest={manifest}
         shapeKey={detail.item.shapeKey}
         values={inventoryBomDraft}
-        orderOptions={orderOptionsDraft}
         scopeRef={queryContext.scopeRef}
         brandRef={brandRef}
         version={detail.item.version}
+        unitOptions={unitOptions}
         onChange={onInventoryBomChange}
         onDirty={onDirty}
       />
@@ -2695,16 +2799,16 @@ function CatalogCategoryDescriptorField({
 }: {
   manifest?: CatalogManifest;
   shapeKey: string;
-  value: string[];
+  value?: string;
   denied: boolean;
   scopeRef?: string;
   brandRef?: string;
   version: number;
-  onChange: (next: string[]) => void;
+  onChange: (next: string | undefined) => void;
   onDirty: () => void;
 }) {
   const field = useMemo(
-    () => catalogJoinedField(manifest as CatalogDescriptorManifest | undefined, shapeKey, 'categoryRefs'),
+    () => catalogJoinedField(manifest as CatalogDescriptorManifest | undefined, shapeKey, 'categoryRef'),
     [manifest, shapeKey],
   );
   const renderedField = field && denied ? {...field, readonly: true} : field;
@@ -2722,11 +2826,13 @@ function CatalogCategoryDescriptorField({
   const [treeData, setTreeData] = useState<DescriptorTreeNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [candidateResolved, setCandidateResolved] = useState(false);
   useEffect(() => {
     let cancelled = false;
     if (!field || !source) {
       setTreeData([]);
       setError('分类信息暂不可用，请稍后重试。');
+      setCandidateResolved(true);
       return () => {
         cancelled = true;
       };
@@ -2734,21 +2840,25 @@ function CatalogCategoryDescriptorField({
     if (!scopeRef) {
       setTreeData([]);
       setError('请先选择可查看范围，再加载分类。');
+      setCandidateResolved(true);
       return () => {
         cancelled = true;
       };
     }
     setLoading(true);
     setError(undefined);
+    setCandidateResolved(false);
     void resolver(source, context)
       .then(result => {
         if (cancelled || result.stale) return;
         setTreeData(result.treeData);
+        setCandidateResolved(true);
       })
       .catch(() => {
         if (!cancelled) {
           setTreeData([]);
           setError('分类候选加载失败，请重试。');
+          setCandidateResolved(true);
         }
       })
       .finally(() => {
@@ -2760,19 +2870,35 @@ function CatalogCategoryDescriptorField({
   }, [context, field, resolver, scopeRef, source]);
   if (!renderedField)
     return <Alert type="error" showIcon title="分类信息暂不可用" {...testId('catalog-item-category-field-error')} />;
+  const presentationField = {
+    ...renderedField,
+    label: '分类',
+    helpText: '选择商品所属分类，也可以暂不分类。',
+  };
+  const candidateResolutionPending = !error && !candidateResolved;
   return (
     <div {...testId('catalog-item-category-field')}>
-      <DescriptorFieldRenderer
-        field={renderedField}
-        value={value}
-        treeData={treeData}
-        optionLoading={loading}
-        optionError={error}
-        onChange={next => {
-          onChange(Array.isArray(next) ? next.map(String) : []);
-          onDirty();
-        }}
-      />
+      {candidateResolutionPending ? (
+        <Space orientation="vertical" size={4} style={{display: 'flex'}}>
+          <Typography.Text strong>{presentationField.label}</Typography.Text>
+          <Typography.Text type="secondary">分类候选加载中…</Typography.Text>
+          <Typography.Text type="secondary" style={{fontSize: 12}}>
+            {presentationField.helpText}
+          </Typography.Text>
+        </Space>
+      ) : (
+        <DescriptorFieldRenderer
+          field={presentationField}
+          value={value ?? ''}
+          treeData={treeData}
+          optionLoading={loading}
+          optionError={error}
+          onChange={next => {
+            onChange(typeof next === 'string' && next ? next : undefined);
+            onDirty();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -2895,6 +3021,7 @@ function SkuMatrixEditor({
   scopeRef,
   brandRef,
   version,
+  unitOptions,
   dictionaryRevision,
   valueDictionaryRevision,
   onOpenDictionary,
@@ -2917,6 +3044,7 @@ function SkuMatrixEditor({
   scopeRef?: string;
   brandRef?: string;
   version: number;
+  unitOptions: CatalogUnitOption[];
   dictionaryRevision: number;
   valueDictionaryRevision: number;
   onOpenDictionary?: (kind: 'SKU_ATTRIBUTE') => void;
@@ -2933,6 +3061,19 @@ function SkuMatrixEditor({
 }) {
   const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
   const mediaLimits = decodeCatalogMediaLimits(manifest);
+  const unitSelectOptions = (current?: {unitRef: CatalogUnitOption['unitRef']; code: string; name: string}) => {
+    const options = new Map(unitOptions.map(unit => [unit.unitRef, unit]));
+    if (current && !options.has(current.unitRef))
+      options.set(current.unitRef, {
+        ...current,
+        unitDimension: 'COUNT' as const,
+        precision: 0,
+        status: 'DISABLED' as const,
+        isReferenced: false,
+        version: 0,
+      });
+    return [...options.values()].map(unit => ({value: unit.unitRef, label: catalogUnitLabel(unit)}));
+  };
   const attributePickerContext = useMemo<CatalogFieldRuntimeContext>(
     () => ({
       scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
@@ -3271,13 +3412,14 @@ function SkuMatrixEditor({
                   />
                   <SkuFieldFeedback message={issue('MISSING_SKU_PRICE')}>
                     <InputNumber
-                      addonBefore="标准价（分）"
+                      prefix="标准价（元）"
                       min={0}
-                      precision={0}
+                      precision={2}
+                      step={0.01}
                       status={issue('MISSING_SKU_PRICE') ? 'error' : undefined}
-                      value={sku.standardSalePrice}
+                      value={catalogCentsToYuan(sku.standardSalePrice)}
                       onChange={standardSalePrice => {
-                        updateSku(skuIndex, {standardSalePrice: standardSalePrice ?? null});
+                        updateSku(skuIndex, {standardSalePrice: catalogYuanToCents(standardSalePrice)});
                         onDirty();
                       }}
                       {...testId(`catalog-item-sku-price-${skuIndex}`)}
@@ -3291,6 +3433,32 @@ function SkuMatrixEditor({
                       onDirty();
                     }}
                     {...testId(`catalog-item-sku-status-${skuIndex}`)}
+                  />
+                  <Select
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="继承商品销售单位"
+                    value={sku.salesUnitOverrideRef ?? undefined}
+                    options={unitSelectOptions(sku.salesUnit ?? undefined)}
+                    onChange={salesUnitOverrideRef => {
+                      updateSku(skuIndex, {salesUnitOverrideRef: salesUnitOverrideRef ?? null});
+                      onDirty();
+                    }}
+                    {...testId(`catalog-item-sku-sales-unit-override-${skuIndex}`)}
+                  />
+                  <Select
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="继承商品基础计量单位"
+                    value={sku.baseMeasureUnitOverrideRef ?? undefined}
+                    options={unitSelectOptions(sku.baseMeasureUnit ?? undefined)}
+                    onChange={baseMeasureUnitOverrideRef => {
+                      updateSku(skuIndex, {baseMeasureUnitOverrideRef: baseMeasureUnitOverrideRef ?? null});
+                      onDirty();
+                    }}
+                    {...testId(`catalog-item-sku-base-measure-unit-override-${skuIndex}`)}
                   />
                   <Space>
                     <Typography.Text>默认</Typography.Text>
@@ -3319,42 +3487,48 @@ function SkuMatrixEditor({
                       : '媒体规则加载中'}
                   </Typography.Text>
                   <Space wrap>
-                    {sku.mediaRefs.map((assetRef, mediaIndex) => (
-                      <Space direction="vertical" size={2} key={assetRef}>
-                        <CatalogAssetPreview
-                          assetRef={assetRef}
-                          alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`}
-                          width={96}
-                          height={72}
-                          testId={`catalog-item-sku-media-preview-${skuIndex}-${mediaIndex}`}
-                        />
-                        <Space>
-                          <Upload
-                            accept="image/*"
-                            showUploadList={false}
-                            beforeUpload={file => {
-                              void onStageSkuMedia(file as File, skuIndex, assetRef);
-                              return Upload.LIST_IGNORE;
-                            }}
-                          >
+                    {sku.mediaRefs.map((assetRef, mediaIndex) => {
+                      const stagedAsset = skuStagedMedia.find(
+                        asset => asset.skuIndex === skuIndex && asset.assetRef === assetRef && asset.staged,
+                      );
+                      return (
+                        <Space direction="vertical" size={2} key={assetRef}>
+                          <CatalogAssetPreview
+                            assetRef={assetRef}
+                            localFile={stagedAsset?.file}
+                            alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}图片 ${mediaIndex + 1}`}
+                            width={96}
+                            height={72}
+                            testId={`catalog-item-sku-media-preview-${skuIndex}-${mediaIndex}`}
+                          />
+                          <Space>
+                            <Upload
+                              accept="image/*"
+                              showUploadList={false}
+                              beforeUpload={file => {
+                                void onStageSkuMedia(file as File, skuIndex, assetRef);
+                                return Upload.LIST_IGNORE;
+                              }}
+                            >
+                              <Button
+                                size="small"
+                                {...testId(`catalog-item-sku-media-replace-${skuIndex}-${mediaIndex}`)}
+                              >
+                                替换
+                              </Button>
+                            </Upload>
                             <Button
                               size="small"
-                              {...testId(`catalog-item-sku-media-replace-${skuIndex}-${mediaIndex}`)}
+                              danger
+                              onClick={() => void onRemoveSkuMedia(skuIndex, assetRef)}
+                              {...testId(`catalog-item-sku-media-remove-${skuIndex}-${mediaIndex}`)}
                             >
-                              替换
+                              移除
                             </Button>
-                          </Upload>
-                          <Button
-                            size="small"
-                            danger
-                            onClick={() => void onRemoveSkuMedia(skuIndex, assetRef)}
-                            {...testId(`catalog-item-sku-media-remove-${skuIndex}-${mediaIndex}`)}
-                          >
-                            移除
-                          </Button>
+                          </Space>
                         </Space>
-                      </Space>
-                    ))}
+                      );
+                    })}
                   </Space>
                   <Space direction="vertical" size={6} style={{display: 'flex'}}>
                     {skuStagedMedia
@@ -3366,11 +3540,21 @@ function SkuMatrixEditor({
                           style={{border: '1px solid #f0f0f0', padding: 8, borderRadius: 6}}
                           {...testId(`catalog-item-sku-media-draft-${skuIndex}-${asset.id}`)}
                         >
-                          <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
-                            <Typography.Text type="secondary">
-                              {asset.status === 'UPLOADING' ? '上传中/处理中' : '上传失败'}
-                            </Typography.Text>
-                          </span>
+                          {asset.file ? (
+                            <CatalogAssetPreview
+                              localFile={asset.file}
+                              alt={`${sku.skuName || sku.skuCode || `SKU ${skuIndex + 1}`}待上传图片`}
+                              width={96}
+                              height={72}
+                              testId={`catalog-item-sku-media-draft-preview-${skuIndex}-${asset.id}`}
+                            />
+                          ) : (
+                            <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
+                              <Typography.Text type="secondary">
+                                {asset.status === 'UPLOADING' ? '上传中/处理中' : '上传失败'}
+                              </Typography.Text>
+                            </span>
+                          )}
                           <Space direction="vertical" size={2}>
                             <Typography.Text ellipsis={{tooltip: asset.fileName}}>{asset.fileName}</Typography.Text>
                             <Typography.Text
@@ -3623,364 +3807,6 @@ function SkuMatrixReadOnly({
   );
 }
 
-function OrderOptionsEditor({
-  values,
-  createDraftRowId,
-  onChange,
-  onDirty,
-}: {
-  values: CatalogOrderOptionGroupDraft[];
-  createDraftRowId: (prefix: string) => string;
-  onChange: (next: CatalogOrderOptionGroupDraft[]) => void;
-  onDirty: () => void;
-}) {
-  const [selectedGroupIndex, setSelectedGroupIndex] = useState(0);
-  const updateGroup = (index: number, patch: Partial<CatalogOrderOptionGroupDraft>) =>
-    onChange(values.map((group, groupIndex) => (groupIndex === index ? {...group, ...patch} : group)));
-  const updateValue = (groupIndex: number, valueIndex: number, patch: Partial<CatalogOrderOptionValueDraft>) =>
-    onChange(
-      values.map((group, index) =>
-        index === groupIndex
-          ? {
-              ...group,
-              values: group.values.map((value, entryIndex) =>
-                entryIndex === valueIndex ? {...value, ...patch} : value,
-              ),
-            }
-          : group,
-      ),
-    );
-  useEffect(() => {
-    if (selectedGroupIndex >= values.length) setSelectedGroupIndex(Math.max(0, values.length - 1));
-  }, [selectedGroupIndex, values.length]);
-  const selectedGroup = values[selectedGroupIndex];
-  const selectedErrors = selectedGroup
-    ? [
-        !selectedGroup.groupCode.trim() ? '组编码不能为空' : undefined,
-        !selectedGroup.groupName.trim() ? '组名不能为空' : undefined,
-        selectedGroup.values.length === 0 ? '至少添加一个选项值' : undefined,
-        ...selectedGroup.values.flatMap((value, index) => [
-          !value.code.trim() ? `第 ${index + 1} 个选项值缺少编码` : undefined,
-          !value.name.trim() ? `第 ${index + 1} 个选项值缺少名称` : undefined,
-        ]),
-      ].filter((entry): entry is string => Boolean(entry))
-    : [];
-  const addGroup = () => {
-    const next = [...values, {groupCode: '', groupName: '', selectionMode: 'SINGLE', required: false, values: []}];
-    onChange(next);
-    setSelectedGroupIndex(next.length - 1);
-    onDirty();
-  };
-  return (
-    <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-order-options-editor')}>
-      <Alert type="info" showIcon title="设置点单分组和选项值；右侧可预览当前效果并查看需要修复的内容。" />
-      <Button onClick={addGroup} {...testId('catalog-item-order-option-group-add')}>
-        新增选项组
-      </Button>
-      {values.length === 0 ? (
-        <EmptySection text="未维护点单选项组" />
-      ) : (
-        <Row gutter={12} align="top">
-          <Col span={6}>
-            <Card size="small" title="点单分组" {...testId('catalog-item-order-options-groups')}>
-              <List
-                size="small"
-                dataSource={values}
-                renderItem={(group, index) => (
-                  <List.Item
-                    key={`${group.groupCode}-${index}`}
-                    onClick={() => setSelectedGroupIndex(index)}
-                    style={{
-                      cursor: 'pointer',
-                      background: index === selectedGroupIndex ? '#e6f4ff' : undefined,
-                      paddingInline: 8,
-                    }}
-                    {...testId(`catalog-item-order-options-group-${index}`)}
-                  >
-                    <Space>
-                      <Typography.Text strong={index === selectedGroupIndex}>
-                        {group.groupName || '未命名组'}
-                      </Typography.Text>
-                      <Typography.Text type="secondary">{group.values.length}项</Typography.Text>
-                    </Space>
-                  </List.Item>
-                )}
-              />
-            </Card>
-          </Col>
-          <Col span={12}>
-            <Card
-              size="small"
-              title={selectedGroup ? `选项组详情 · ${selectedGroup.groupName || '未命名组'}` : '选项组详情'}
-              {...testId('catalog-item-order-options-details')}
-            >
-              {selectedGroup && (
-                <Space direction="vertical" size={8} style={{display: 'flex'}}>
-                  <Space wrap>
-                    <Input
-                      addonBefore="组编码"
-                      value={selectedGroup.groupCode}
-                      onChange={event => {
-                        updateGroup(selectedGroupIndex, {groupCode: event.target.value});
-                        onDirty();
-                      }}
-                      {...testId(`catalog-item-order-option-group-code-${selectedGroupIndex}`)}
-                    />
-                    <Input
-                      addonBefore="组名"
-                      value={selectedGroup.groupName}
-                      onChange={event => {
-                        updateGroup(selectedGroupIndex, {groupName: event.target.value});
-                        onDirty();
-                      }}
-                      {...testId(`catalog-item-order-option-group-name-${selectedGroupIndex}`)}
-                    />
-                    <Select
-                      value={selectedGroup.selectionMode}
-                      options={[
-                        {label: '单选', value: 'SINGLE'},
-                        {label: '多选', value: 'MULTIPLE'},
-                        {label: '固定包含', value: 'FIXED'},
-                      ]}
-                      onChange={selectionMode => {
-                        updateGroup(selectedGroupIndex, {selectionMode});
-                        onDirty();
-                      }}
-                      {...testId(`catalog-item-order-option-group-mode-${selectedGroupIndex}`)}
-                    />
-                    <Space>
-                      <Typography.Text>必选</Typography.Text>
-                      <Switch
-                        checked={selectedGroup.required}
-                        onChange={required => {
-                          updateGroup(selectedGroupIndex, {required});
-                          onDirty();
-                        }}
-                        {...testId(`catalog-item-order-option-group-required-${selectedGroupIndex}`)}
-                      />
-                    </Space>
-                  </Space>
-                  <Divider style={{margin: '4px 0'}} />
-                  <Space style={{justifyContent: 'space-between', width: '100%'}}>
-                    <Typography.Text strong>选项值</Typography.Text>
-                    <Space>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          updateGroup(selectedGroupIndex, {
-                            values: [
-                              ...selectedGroup.values,
-                              {
-                                editorId: createDraftRowId('order-option-value'),
-                                code: '',
-                                attributeValueRef: draftUuid(),
-                                name: '',
-                                default: false,
-                                extraPrice: null,
-                                productionEffects: [],
-                              },
-                            ],
-                          });
-                          onDirty();
-                        }}
-                        {...testId(`catalog-item-order-option-value-add-${selectedGroupIndex}`)}
-                      >
-                        新增选项值
-                      </Button>
-                      <Button
-                        size="small"
-                        danger
-                        onClick={() => {
-                          onChange(values.filter((_, index) => index !== selectedGroupIndex));
-                          onDirty();
-                        }}
-                        {...testId(`catalog-item-order-option-group-remove-${selectedGroupIndex}`)}
-                      >
-                        移除组
-                      </Button>
-                    </Space>
-                  </Space>
-                  {selectedGroup.values.map((value, valueIndex) => (
-                    <Card key={value.editorId} size="small" title={`选项值 ${valueIndex + 1}`}>
-                      <Space wrap>
-                        <Input
-                          addonBefore="值编码"
-                          value={value.code}
-                          onChange={event => {
-                            updateValue(selectedGroupIndex, valueIndex, {code: event.target.value});
-                            onDirty();
-                          }}
-                          {...testId(`catalog-item-order-option-value-code-${selectedGroupIndex}-${valueIndex}`)}
-                        />
-                        <Input
-                          addonBefore="值名称"
-                          value={value.name}
-                          onChange={event => {
-                            updateValue(selectedGroupIndex, valueIndex, {name: event.target.value});
-                            onDirty();
-                          }}
-                          {...testId(`catalog-item-order-option-value-name-${selectedGroupIndex}-${valueIndex}`)}
-                        />
-                        <InputNumber
-                          addonBefore="加价（分）"
-                          value={value.extraPrice}
-                          min={0}
-                          precision={0}
-                          onChange={extraPrice => {
-                            updateValue(selectedGroupIndex, valueIndex, {extraPrice: extraPrice ?? null});
-                            onDirty();
-                          }}
-                          {...testId(`catalog-item-order-option-value-price-${selectedGroupIndex}-${valueIndex}`)}
-                        />
-                        <Input
-                          addonBefore="制作影响"
-                          value={value.productionEffects.join(',')}
-                          onChange={event => {
-                            updateValue(selectedGroupIndex, valueIndex, {
-                              productionEffects: splitComma(event.target.value),
-                            });
-                            onDirty();
-                          }}
-                          {...testId(`catalog-item-order-option-value-effects-${selectedGroupIndex}-${valueIndex}`)}
-                        />
-                        <Space>
-                          <Typography.Text>默认</Typography.Text>
-                          <Switch
-                            checked={value.default}
-                            onChange={defaultValue => {
-                              updateValue(selectedGroupIndex, valueIndex, {default: defaultValue});
-                              onDirty();
-                            }}
-                            {...testId(`catalog-item-order-option-value-default-${selectedGroupIndex}-${valueIndex}`)}
-                          />
-                        </Space>
-                        <Button
-                          danger
-                          type="link"
-                          onClick={() => {
-                            updateGroup(selectedGroupIndex, {
-                              values: selectedGroup.values.filter((_, index) => index !== valueIndex),
-                            });
-                            onDirty();
-                          }}
-                          {...testId(`catalog-item-order-option-value-remove-${selectedGroupIndex}-${valueIndex}`)}
-                        >
-                          移除
-                        </Button>
-                      </Space>
-                    </Card>
-                  ))}
-                </Space>
-              )}
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small" title="点单预览 / 校验" {...testId('catalog-item-order-options-preview')}>
-              {selectedGroup ? (
-                <Space direction="vertical" size={8} style={{display: 'flex'}}>
-                  <Typography.Text strong>
-                    {selectedGroup.groupName || '未命名组'} {selectedGroup.required ? '（必选）' : '（可选）'}
-                  </Typography.Text>
-                  <Space wrap>
-                    {selectedGroup.values.map((value, index) => (
-                      <Tag color={value.default ? 'blue' : undefined} key={`${value.code}-${index}`}>
-                        {value.name || value.code || '未命名值'}
-                        {value.extraPrice === null ? '' : ` +¥${(value.extraPrice / 100).toFixed(2)}`}
-                      </Tag>
-                    ))}
-                  </Space>
-                  {selectedErrors.length ? (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      title="需要修复"
-                      description={
-                        <ul style={{paddingLeft: 16, margin: 0}}>
-                          {selectedErrors.map(error => (
-                            <li key={error}>{error}</li>
-                          ))}
-                        </ul>
-                      }
-                      {...testId('catalog-item-order-options-validation')}
-                    />
-                  ) : (
-                    <Alert
-                      type="success"
-                      showIcon
-                      title="当前分组可提交"
-                      {...testId('catalog-item-order-options-validation')}
-                    />
-                  )}
-                  <Typography.Text type="secondary">
-                    实时预览仅反映当前编辑内容；保存时会再次检查全部分组。
-                  </Typography.Text>
-                </Space>
-              ) : (
-                <Empty description="请选择一个点单分组" />
-              )}
-            </Card>
-          </Col>
-        </Row>
-      )}
-    </Space>
-  );
-}
-
-function OrderOptionsReadOnly({values}: {values: CatalogOrderOptionGroup[]}) {
-  if (!values.length) return <EmptySection text="未维护点单选项组" />;
-  return (
-    <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-order-options-readonly')}>
-      {values.map(group => {
-        const preview = group.values.length ? (
-          <Space size={4} wrap>
-            {group.values.map((value, valueIndex) => (
-              <Space key={`${value.code}-${valueIndex}`} size={2}>
-                <NameCodeText name={value.name || undefined} code={value.code || undefined} />
-                {value.default && <Typography.Text type="secondary">（默认）</Typography.Text>}
-              </Space>
-            ))}
-          </Space>
-        ) : (
-          '—'
-        );
-        const valueRows = (
-          <Space direction="vertical" size={2}>
-            {group.values.map((value, valueIndex) => (
-              <Typography.Text key={`${value.code}-${valueIndex}`}>
-                {value.code || '—'} · {value.name || '—'} · {money(value.extraPrice)} · 制作影响：
-                {value.productionEffects.join('、') || '—'}
-              </Typography.Text>
-            ))}
-          </Space>
-        );
-        return (
-          <Card
-            key={group.groupCode || group.groupName}
-            size="small"
-            title={<NameCodeText name={group.groupName || '未命名组'} code={group.groupCode || undefined} />}
-          >
-            <Descriptions
-              size="small"
-              column={2}
-              items={[
-                {
-                  key: 'mode',
-                  label: '选择规则',
-                  children: `${group.selectionMode || '—'}${group.required ? ' · 必选' : ' · 可选'}`,
-                },
-                {key: 'preview', label: '点单预览', children: preview},
-              ]}
-            />
-            {group.values.length > 0 && (
-              <Descriptions size="small" column={1} items={[{key: 'values', label: '选项值', children: valueRows}]} />
-            )}
-          </Card>
-        );
-      })}
-    </Space>
-  );
-}
-
 function ProductionProfileEditor({
   layer,
   profiles,
@@ -4086,20 +3912,20 @@ function InventoryBomEditor({
   manifest,
   shapeKey,
   values,
-  orderOptions,
   scopeRef,
   brandRef,
   version,
+  unitOptions,
   onChange,
   onDirty,
 }: {
   manifest?: CatalogManifest;
   shapeKey: string;
   values: CatalogInventoryBomEntry[];
-  orderOptions: CatalogOrderOptionGroup[];
   scopeRef?: string;
   brandRef?: string;
   version: number;
+  unitOptions: CatalogUnitOption[];
   onChange: (next: CatalogInventoryBomEntry[]) => void;
   onDirty: () => void;
 }) {
@@ -4107,12 +3933,11 @@ function InventoryBomEditor({
     () => ({
       scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
       readField: () => undefined,
-      readSection: () => orderOptions,
-      sectionRevision: () => `${version}:${JSON.stringify(orderOptions)}`,
+      readSection: () => [],
+      sectionRevision: () => version,
     }),
-    [brandRef, orderOptions, scopeRef, version],
+    [brandRef, scopeRef, version],
   );
-  const hasOrderOptionValues = orderOptions.some(group => group.values.length > 0);
   const update = (index: number, patch: Partial<CatalogInventoryBomEntry>) =>
     onChange(values.map((entry, entryIndex) => (entryIndex === index ? {...entry, ...patch} : entry)));
   const updateConfiguration = (
@@ -4122,8 +3947,8 @@ function InventoryBomEditor({
     const current = values[index]?.configuration ?? {
       allowNegative: false,
       lowStockThreshold: null,
-      countingUnit: '',
-      conversionFactor: '1',
+      countingUnitSnapshot: null,
+      conversionFactor: null,
     };
     update(index, {configuration: {...current, ...patch}});
   };
@@ -4139,11 +3964,14 @@ function InventoryBomEditor({
               mode: 'INDEPENDENT_STOCK',
               targetRef: draftUuid(),
               quantity: '0',
-              unit: '',
               itemCode: '',
               skuCode: null,
-              consumptionUnit: '',
-              configuration: {allowNegative: false, lowStockThreshold: null, countingUnit: '', conversionFactor: '1'},
+              configuration: {
+                allowNegative: false,
+                lowStockThreshold: null,
+                countingUnitSnapshot: null,
+                conversionFactor: null,
+              },
             },
           ]);
           onDirty();
@@ -4156,7 +3984,7 @@ function InventoryBomEditor({
         onClick={() => {
           onChange([
             ...values,
-            {nodeType: 'ITEM_BOM', mode: 'BOM', targetRef: draftUuid(), quantity: '1', unit: '', optionValueCode: null},
+            {nodeType: 'ITEM_BOM', mode: 'BOM', targetRef: draftUuid(), quantity: '1', optionValueCode: null},
           ]);
           onDirty();
         }}
@@ -4194,30 +4022,8 @@ function InventoryBomEditor({
               }}
               {...testId(`catalog-item-inventory-bom-mode-${index}`)}
             />
-            {entry.mode === 'BOM' && (
+            {(entry.mode === 'BOM' || entry.mode === 'INDEPENDENT_STOCK') && (
               <>
-                {catalogJoinedField(manifest as CatalogDescriptorManifest | undefined, shapeKey, 'bomOptionValue') && (
-                  <CatalogDescriptorPicker
-                    manifest={manifest}
-                    shapeKey={shapeKey}
-                    fieldKey="bomOptionValue"
-                    value={String(entry.optionValueRef ?? '')}
-                    context={pickerContext}
-                    disabled={!hasOrderOptionValues}
-                    disabledMessage={!hasOrderOptionValues ? '当前商品没有可用的点单选项值。' : undefined}
-                    testIdValue={`catalog-item-inventory-bom-option-value-${index}`}
-                    onChange={(next, rawRow) => {
-                      const row = descriptorRow(rawRow);
-                      const selected = descriptorString(next);
-                      update(index, {
-                        optionValueRef: selected ? draftUuid(selected) : null,
-                        optionValueCode: typeof row?.code === 'string' ? row.code : null,
-                        nodeType: selected ? 'OPTION_VALUE_BOM' : 'ITEM_BOM',
-                      });
-                      onDirty();
-                    }}
-                  />
-                )}
                 <CatalogDescriptorPicker
                   manifest={manifest}
                   shapeKey={shapeKey}
@@ -4242,15 +4048,6 @@ function InventoryBomEditor({
             {entry.mode === 'INDEPENDENT_STOCK' && (
               <>
                 <Input
-                  addonBefore="消耗单位（新建时必填）"
-                  value={entry.consumptionUnit ?? ''}
-                  onChange={event => {
-                    update(index, {consumptionUnit: event.target.value});
-                    onDirty();
-                  }}
-                  {...testId(`catalog-item-inventory-bom-consumption-unit-${index}`)}
-                />
-                <Input
                   addonBefore="低库存阈值"
                   value={entry.configuration?.lowStockThreshold ?? ''}
                   onChange={event => {
@@ -4270,44 +4067,52 @@ function InventoryBomEditor({
                     {...testId(`catalog-item-inventory-bom-allow-negative-${index}`)}
                   />
                 </Space>
-                <Input
-                  addonBefore="盘点单位"
-                  value={entry.configuration?.countingUnit ?? ''}
-                  onChange={event => {
-                    updateConfiguration(index, {countingUnit: event.target.value});
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  value={entry.configuration?.countingUnitSnapshot?.unitRef ?? undefined}
+                  options={unitOptions.map(unit => ({value: unit.unitRef, label: catalogUnitLabel(unit)}))}
+                  onChange={unitRef => {
+                    const unit = unitOptions.find(option => option.unitRef === unitRef);
+                    updateConfiguration(index, {
+                      countingUnitSnapshot: unit
+                        ? {
+                            unitRef: unit.unitRef,
+                            code: unit.code,
+                            name: unit.name,
+                            unitDimension: unit.unitDimension,
+                            precision: unit.precision,
+                          }
+                        : null,
+                    });
                     onDirty();
                   }}
                   {...testId(`catalog-item-inventory-bom-counting-unit-${index}`)}
                 />
                 <Input
-                  addonBefore="盘点换算"
+                  addonBefore="盘点换算（正数）"
+                  placeholder="留空表示直接按基础计量单位录入"
                   value={entry.configuration?.conversionFactor ?? ''}
                   onChange={event => {
-                    updateConfiguration(index, {conversionFactor: event.target.value});
+                    updateConfiguration(index, {conversionFactor: event.target.value || null});
                     onDirty();
                   }}
                   {...testId(`catalog-item-inventory-bom-conversion-factor-${index}`)}
                 />
               </>
             )}
-            <Input
-              addonBefore="每份消耗"
-              value={entry.quantity}
-              onChange={event => {
-                update(index, {quantity: event.target.value});
-                onDirty();
-              }}
-              {...testId(`catalog-item-inventory-bom-quantity-${index}`)}
-            />
-            <Input
-              addonBefore="单位"
-              value={entry.unit}
-              onChange={event => {
-                update(index, {unit: event.target.value});
-                onDirty();
-              }}
-              {...testId(`catalog-item-inventory-bom-unit-${index}`)}
-            />
+            {entry.mode === 'BOM' && (
+              <Input
+                addonBefore="每份消耗（基础计量单位）"
+                value={entry.quantity}
+                onChange={event => {
+                  update(index, {quantity: event.target.value});
+                  onDirty();
+                }}
+                {...testId(`catalog-item-inventory-bom-quantity-${index}`)}
+              />
+            )}
           </Space>
         </Card>
       ))}
@@ -4331,10 +4136,8 @@ function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; v
                 {key: 'mode', label: '允许模式', children: catalogEnumLabel(manifest, 'inventoryMode', entry.mode)},
                 {
                   key: 'owner',
-                  label: fieldLabel('bomOptionValue'),
-                  children: entry.optionValueCode ? (
-                    <Typography.Text code>{entry.optionValueCode}</Typography.Text>
-                  ) : entry.skuCode ? (
+                  label: '所属商品或 SKU',
+                  children: entry.skuCode ? (
                     <Typography.Text code>{entry.skuCode}</Typography.Text>
                   ) : entry.itemCode ? (
                     <Typography.Text code>{entry.itemCode}</Typography.Text>
@@ -4353,10 +4156,18 @@ function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; v
                     '未设置库存对象编码'
                   ),
                 },
-                {key: 'quantity', label: 'BOM 每份消耗', children: `${entry.quantity || '—'} ${entry.unit || ''}`},
+                {
+                  key: 'quantity',
+                  label: 'BOM 每份消耗（基础计量单位）',
+                  children: `${entry.quantity || '—'} ${entry.consumptionUnitSnapshot?.name ?? ''}`,
+                },
                 ...(entry.mode === 'INDEPENDENT_STOCK'
                   ? [
-                      {key: 'consumptionUnit', label: '消耗单位', children: entry.consumptionUnit || '—'},
+                      {
+                        key: 'consumptionUnit',
+                        label: '库存消费单位',
+                        children: catalogUnitLabel(entry.consumptionUnitSnapshot),
+                      },
                       {
                         key: 'lowStockThreshold',
                         label: '低库存阈值',
@@ -4367,7 +4178,11 @@ function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; v
                         label: '允许负库存',
                         children: entry.configuration?.allowNegative ? '是' : '否',
                       },
-                      {key: 'countingUnit', label: '盘点单位', children: entry.configuration?.countingUnit || '—'},
+                      {
+                        key: 'countingUnit',
+                        label: '盘点单位',
+                        children: catalogUnitLabel(entry.configuration?.countingUnitSnapshot),
+                      },
                       {
                         key: 'conversionFactor',
                         label: '盘点换算',
@@ -4447,14 +4262,16 @@ function CompositeCandidatePicker({
   const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemRequest, {skip: !open});
   const navigation = decodeNavigation(navigationQuery.data);
   const page = decodeItems(itemsQuery.currentData);
+  const acceptCandidatePage = candidateState.acceptPage;
+  const candidatePageSize = candidateState.pageSize;
   useEffect(() => {
     if (!itemsQuery.currentData) return;
-    candidateState.acceptPage(page.items, {
-      pageSize: candidateState.pageSize,
+    acceptCandidatePage(page.items, {
+      pageSize: candidatePageSize,
       total: page.total,
       nextCursor: page.cursor,
     });
-  }, [candidateState.acceptPage, candidateState.pageSize, itemsQuery.currentData, page.cursor, page.items, page.total]);
+  }, [acceptCandidatePage, candidatePageSize, itemsQuery.currentData, page.cursor, page.items, page.total]);
   const treeData = useMemo(() => buildCategoryTree(navigation.tree), [navigation.tree]);
   useEffect(() => {
     if (!open) {
@@ -4472,6 +4289,7 @@ function CompositeCandidatePicker({
         title="选择套餐组件商品"
         open={open}
         onClose={() => setOpen(false)}
+        maskClosable
         {...adminWideDrawerSurfaceProps}
         {...testId(`${testIdValue}-drawer`)}
       >
@@ -4822,12 +4640,13 @@ function CompositeGroupsEditor({
                   {...testId(`catalog-item-composite-component-unit-${groupIndex}-${componentIndex}`)}
                 />
                 <InputNumber
-                  addonBefore="加价（分）"
-                  value={component.extraPrice}
+                  prefix="加价（元）"
+                  value={catalogCentsToYuan(component.extraPrice)}
                   min={0}
-                  precision={0}
+                  precision={2}
+                  step={0.01}
                   onChange={extraPrice => {
-                    updateComponent(groupIndex, componentIndex, {extraPrice: extraPrice ?? null});
+                    updateComponent(groupIndex, componentIndex, {extraPrice: catalogYuanToCents(extraPrice)});
                     onDirty();
                   }}
                   {...testId(`catalog-item-composite-component-price-${groupIndex}-${componentIndex}`)}
@@ -4984,9 +4803,10 @@ function CatalogAssetEditor({
             style={{display: 'flex', border: '1px solid #f0f0f0', padding: 8, borderRadius: 6}}
             {...testId(`catalog-item-media-${index}`)}
           >
-            {asset.assetRef ? (
+            {asset.assetRef || (asset.staged && asset.file) ? (
               <CatalogAssetPreview
                 assetRef={asset.assetRef}
+                localFile={asset.staged ? asset.file : undefined}
                 alt={`${index === 0 ? '主图' : `附图 ${index}`}预览`}
                 width={96}
                 height={72}
@@ -5008,9 +4828,11 @@ function CatalogAssetEditor({
                   ? '上传中/处理中'
                   : asset.status === 'FAILED'
                     ? (asset.error ?? '上传失败')
-                    : asset.assetRef
-                      ? '可用'
-                      : '待上传'}
+                    : asset.staged
+                      ? '待保存'
+                      : asset.assetRef
+                        ? '可用'
+                        : '待上传'}
               </Typography.Text>
             </Space>
             <Space wrap>
@@ -5111,66 +4933,547 @@ function EmptySection({text}: {text: string}) {
 function money(value: number | null) {
   return value === null ? '—' : `¥${(value / 100).toFixed(2)}`;
 }
-function AttributesKeyValueEditor({
-  value,
+function AttributeAssignmentsEditor({
+  values,
   onChange,
   onDirty,
+  scopeRef,
+  brandRef,
 }: {
-  value?: CatalogAttributeDraftRow[];
-  onChange?: (next: CatalogAttributeDraftRow[]) => void;
+  values: CatalogAttributeAssignment[];
+  onChange: (next: CatalogAttributeAssignment[]) => void;
   onDirty: () => void;
+  scopeRef?: string;
+  brandRef?: string;
 }) {
-  const [rows, setRows] = useState<CatalogAttributeDraftRow[]>(() => value ?? []);
-  useEffect(() => setRows(value ?? []), [value]);
-  const commit = (next: CatalogAttributeDraftRow[]) => {
-    setRows(next);
-    onChange?.(next);
+  const commit = (next: CatalogAttributeAssignment[]) => {
+    onChange(next);
     onDirty();
   };
+  const [addOpen, setAddOpen] = useState(false);
+  const [pendingDefinitionRefs, setPendingDefinitionRefs] = useState<string[]>([]);
+  const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
+  const request = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogAttributeDefinitions(
+        {},
+        {query: {dataNodeRef: wireUuid(scopeRef ?? '')}, headers},
+      ),
+    [headers, scopeRef],
+  );
+  const query = operationsRtk.useListOperationsCatalogAttributeDefinitionsQuery(request, {skip: !scopeRef});
+  const definitions = query.currentData?.data.definitions ?? [];
+  const availableDefinitions = definitions.filter(
+    definition => !values.some(value => value.definitionRef === definition.definitionRef),
+  );
+  const openAdd = () => {
+    setPendingDefinitionRefs([]);
+    setAddOpen(true);
+  };
+  const addDefinitions = () => {
+    const selected = new Set(pendingDefinitionRefs);
+    const additions = definitions
+      .filter(
+        definition =>
+          selected.has(definition.definitionRef) &&
+          !values.some(value => value.definitionRef === definition.definitionRef),
+      )
+      .map(definition => ({
+        definitionRef: definition.definitionRef,
+        code: definition.code,
+        name: definition.name,
+        valueType: definition.valueType,
+        textValue: null,
+        optionRefs: [],
+      }));
+    if (additions.length) commit([...values, ...additions]);
+    setAddOpen(false);
+  };
+  const moveAssignment = (index: number, offset: -1 | 1) => {
+    const target = index + offset;
+    if (target < 0 || target >= values.length) return;
+    const next = [...values];
+    [next[index], next[target]] = [next[target], next[index]];
+    commit(next);
+  };
   return (
-    <Space
-      direction="vertical"
-      size={8}
-      style={{display: 'flex'}}
-      {...testId('catalog-item-attributes-key-value-editor')}
-    >
-      {rows.map((row, index) => (
-        <Space key={index} align="start" style={{display: 'flex'}}>
-          <Input
-            addonBefore="键"
-            value={row.key}
-            onChange={event =>
-              commit(rows.map((entry, rowIndex) => (rowIndex === index ? {...entry, key: event.target.value} : entry)))
-            }
-          />
-          <Input
-            addonBefore="值"
-            value={row.value}
-            onChange={event =>
-              commit(
-                rows.map((entry, rowIndex) => (rowIndex === index ? {...entry, value: event.target.value} : entry)),
-              )
-            }
-          />
-          <Button type="link" danger onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}>
-            删除
-          </Button>
-        </Space>
-      ))}
-      <Button type="dashed" onClick={() => commit([...rows, {key: '', value: ''}])}>
-        新增属性
+    <Space direction="vertical" style={{display: 'flex'}}>
+      <Button
+        type="primary"
+        onClick={openAdd}
+        disabled={!availableDefinitions.length}
+        loading={query.isFetching}
+        {...testId('catalog-item-attribute-library-add')}
+      >
+        添加商品属性
       </Button>
+      <Modal
+        title="添加商品属性"
+        open={addOpen}
+        onCancel={() => setAddOpen(false)}
+        onOk={addDefinitions}
+        maskClosable
+        okText="添加"
+        cancelText="取消"
+        destroyOnHidden
+        {...testId('catalog-item-attribute-library-add-modal')}
+      >
+        {availableDefinitions.length ? (
+          <Checkbox.Group
+            value={pendingDefinitionRefs}
+            onChange={refs => setPendingDefinitionRefs(refs.map(String))}
+            style={{display: 'flex', flexDirection: 'column', gap: 12}}
+            options={availableDefinitions.map(definition => ({
+              label: <NameCodeText name={definition.name} code={definition.code} />,
+              value: definition.definitionRef,
+            }))}
+          />
+        ) : (
+          <EmptySection text="没有可添加的商品属性。" />
+        )}
+      </Modal>
+      {values.length === 0 ? (
+        <EmptySection text="请先从商品属性库添加属性。" />
+      ) : (
+        values.map((assignment, index) => {
+          const definition = definitions.find(entry => entry.definitionRef === assignment.definitionRef);
+          return (
+            <Card
+              key={assignment.definitionRef}
+              size="small"
+              title={assignment.name}
+              extra={
+                <Space>
+                  <Tag>
+                    {assignment.valueType === 'TEXT'
+                      ? '纯文本'
+                      : assignment.valueType === 'SINGLE_SELECT'
+                        ? '单选'
+                        : '多选'}
+                  </Tag>
+                  <Button type="link" disabled={index === 0} onClick={() => moveAssignment(index, -1)}>
+                    上移
+                  </Button>
+                  <Button type="link" disabled={index === values.length - 1} onClick={() => moveAssignment(index, 1)}>
+                    下移
+                  </Button>
+                  <Button type="link" danger onClick={() => commit(values.filter((_, rowIndex) => rowIndex !== index))}>
+                    移除
+                  </Button>
+                </Space>
+              }
+            >
+              {assignment.valueType === 'TEXT' ? (
+                <Input
+                  value={assignment.textValue ?? ''}
+                  onChange={event =>
+                    commit(
+                      values.map((row, rowIndex) =>
+                        rowIndex === index ? {...row, textValue: event.target.value} : row,
+                      ),
+                    )
+                  }
+                  placeholder="填写属性值"
+                />
+              ) : (
+                <Select
+                  mode={assignment.valueType === 'MULTI_SELECT' ? 'multiple' : undefined}
+                  value={assignment.optionRefs}
+                  options={(definition?.options ?? []).map(option => ({value: option.optionRef, label: option.name}))}
+                  onChange={optionRefs =>
+                    commit(
+                      values.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? {
+                              ...row,
+                              optionRefs: Array.isArray(optionRefs) ? optionRefs : optionRefs ? [optionRefs] : [],
+                            }
+                          : row,
+                      ),
+                    )
+                  }
+                  placeholder="选择属性值"
+                />
+              )}
+            </Card>
+          );
+        })
+      )}
     </Space>
   );
 }
-function FactMap({value, empty}: {value: Record<string, JsonValue>; empty: string}) {
-  const entries = Object.entries(value);
-  return entries.length ? (
+function AttributeAssignmentsReadOnly({values}: {values: CatalogAttributeAssignment[]}) {
+  return values.length ? (
     <Descriptions
       {...adminWideDetailDescriptionsProps}
-      items={entries.map(([key, entry]) => ({key, label: key, children: displayValue(entry)}))}
+      items={values.map(value => ({
+        key: value.definitionRef,
+        label: value.name,
+        children: value.valueType === 'TEXT' ? value.textValue || '—' : `已选择 ${value.optionRefs.length} 项`,
+      }))}
     />
   ) : (
-    <EmptySection text={empty} />
+    <EmptySection text="未维护商品属性" />
+  );
+}
+function OrderOptionConfigurationsEditor({
+  values,
+  onChange,
+  onDirty,
+  scopeRef,
+  brandRef,
+}: {
+  values: CatalogOrderOptionConfig[];
+  onChange: (next: CatalogOrderOptionConfig[]) => void;
+  onDirty: () => void;
+  scopeRef?: string;
+  brandRef?: string;
+}) {
+  const commit = (next: CatalogOrderOptionConfig[]) => {
+    onChange(next);
+    onDirty();
+  };
+  const [selectedDefinitionRef, setSelectedDefinitionRef] = useState<string>();
+  const [addOpen, setAddOpen] = useState(false);
+  const [pendingDefinitionRefs, setPendingDefinitionRefs] = useState<string[]>([]);
+  const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
+  const request = useMemo(
+    () =>
+      catalogInventoryRtkRequest.listOperationsCatalogOrderOptionDefinitions(
+        {},
+        {query: {dataNodeRef: wireUuid(scopeRef ?? '')}, headers},
+      ),
+    [headers, scopeRef],
+  );
+  const query = operationsRtk.useListOperationsCatalogOrderOptionDefinitionsQuery(request, {skip: !scopeRef});
+  const definitions = query.currentData?.data.definitions ?? [];
+  const availableDefinitions = definitions.filter(
+    definition => !values.some(value => value.definitionRef === definition.definitionRef),
+  );
+  const activeDefinitionRef = values.some(config => config.definitionRef === selectedDefinitionRef)
+    ? selectedDefinitionRef
+    : values[0]?.definitionRef;
+  const activeConfig = values.find(config => config.definitionRef === activeDefinitionRef);
+  const openAdd = () => {
+    setPendingDefinitionRefs([]);
+    setAddOpen(true);
+  };
+  const buildConfig = (definition: (typeof definitions)[number]): CatalogOrderOptionConfig => ({
+    definitionRef: definition.definitionRef,
+    name: definition.name,
+    selectionMode: definition.selectionMode,
+    required: false,
+    minSelectionCount: definition.selectionMode === 'MULTIPLE' ? 0 : null,
+    maxSelectionCount: definition.selectionMode === 'MULTIPLE' ? null : null,
+    values: definition.values.map(value => ({
+      definitionValueRef: value.valueRef,
+      name: value.name,
+      displayOrder: value.displayOrder,
+      defaultValue: false,
+      extraPrice: null,
+      bomVersion: definition.version,
+      materialQuantities: value.materials.map(material => ({...material, actualQuantity: null})),
+    })),
+  });
+  const addDefinitions = () => {
+    const selected = new Set(pendingDefinitionRefs);
+    const additions = definitions
+      .filter(
+        definition =>
+          selected.has(definition.definitionRef) &&
+          !values.some(value => value.definitionRef === definition.definitionRef),
+      )
+      .map(buildConfig);
+    if (additions.length) {
+      commit([...values, ...additions]);
+      setSelectedDefinitionRef(additions[0].definitionRef);
+    }
+    setAddOpen(false);
+  };
+  const moveConfig = (index: number, offset: -1 | 1) => {
+    const target = index + offset;
+    if (target < 0 || target >= values.length) return;
+    const next = [...values];
+    [next[index], next[target]] = [next[target], next[index]];
+    commit(next);
+  };
+  const removeConfig = (definitionRef: string) => {
+    const removedIndex = values.findIndex(config => config.definitionRef === definitionRef);
+    const next = values.filter(config => config.definitionRef !== definitionRef);
+    if (activeDefinitionRef === definitionRef) {
+      setSelectedDefinitionRef(next[Math.min(removedIndex, next.length - 1)]?.definitionRef);
+    }
+    commit(next);
+  };
+  const updateActive = (patch: Partial<CatalogOrderOptionConfig>) =>
+    commit(
+      values.map(config => (config.definitionRef === activeConfig?.definitionRef ? {...config, ...patch} : config)),
+    );
+  const updateValue = (valueRef: string, patch: Partial<CatalogOrderOptionConfig['values'][number]>) =>
+    updateActive({
+      values: (activeConfig?.values ?? []).map(value =>
+        value.definitionValueRef === valueRef ? {...value, ...patch} : value,
+      ),
+    });
+  const updateMaterialQuantity = (valueRef: string, materialRef: string, actualQuantity: number | null) =>
+    updateValue(valueRef, {
+      materialQuantities: (
+        activeConfig?.values.find(value => value.definitionValueRef === valueRef)?.materialQuantities ?? []
+      ).map(material => (material.materialRef === materialRef ? {...material, actualQuantity} : material)),
+    });
+
+  return (
+    <Space direction="vertical" style={{display: 'flex'}} size="middle">
+      <Button
+        type="primary"
+        onClick={openAdd}
+        disabled={!availableDefinitions.length}
+        loading={query.isFetching}
+        {...testId('catalog-item-order-option-library-add')}
+      >
+        添加点单选项
+      </Button>
+      <Modal
+        title="添加点单选项"
+        open={addOpen}
+        onCancel={() => setAddOpen(false)}
+        onOk={addDefinitions}
+        maskClosable
+        okText="添加"
+        cancelText="取消"
+        destroyOnHidden
+        {...testId('catalog-item-order-option-library-add-modal')}
+      >
+        {availableDefinitions.length ? (
+          <Checkbox.Group
+            value={pendingDefinitionRefs}
+            onChange={refs => setPendingDefinitionRefs(refs.map(String))}
+            style={{display: 'flex', flexDirection: 'column', gap: 12}}
+            options={availableDefinitions.map(definition => ({
+              label: <NameCodeText name={definition.name} code={definition.code} />,
+              value: definition.definitionRef,
+            }))}
+          />
+        ) : (
+          <EmptySection text="没有可添加的点单选项。" />
+        )}
+      </Modal>
+      {values.length === 0 ? (
+        <EmptySection text="请先从点单选项库添加点单选项。" />
+      ) : (
+        <Row gutter={[12, 12]} align="top">
+          <Col xs={24} lg={7}>
+            <Card size="small" title="已添加的点单选项">
+              <ProList<CatalogOrderOptionConfig>
+                rowKey="definitionRef"
+                dataSource={values}
+                cardProps={false}
+                search={false}
+                toolBarRender={false}
+                pagination={false}
+                split
+                onItem={config => ({onClick: () => setSelectedDefinitionRef(config.definitionRef)})}
+                metas={{
+                  title: {
+                    dataIndex: 'name',
+                    render: (_, config) => (
+                      <Button
+                        type={config.definitionRef === activeDefinitionRef ? 'link' : 'text'}
+                        style={{paddingInline: 0}}
+                      >
+                        {config.name}
+                      </Button>
+                    ),
+                  },
+                  actions: {
+                    dataIndex: 'definitionRef',
+                    render: (_, config, index) => (
+                      <Space size={0}>
+                        <Button
+                          type="link"
+                          disabled={index === 0}
+                          onClick={event => {
+                            event.stopPropagation();
+                            moveConfig(index, -1);
+                          }}
+                        >
+                          上移
+                        </Button>
+                        <Button
+                          type="link"
+                          disabled={index === values.length - 1}
+                          onClick={event => {
+                            event.stopPropagation();
+                            moveConfig(index, 1);
+                          }}
+                        >
+                          下移
+                        </Button>
+                        <Button
+                          type="link"
+                          danger
+                          onClick={event => {
+                            event.stopPropagation();
+                            removeConfig(config.definitionRef);
+                          }}
+                        >
+                          移除
+                        </Button>
+                      </Space>
+                    ),
+                  },
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={10}>
+            <Card size="small" title="本商品设置">
+              {activeConfig && (
+                <Space direction="vertical" style={{display: 'flex'}} size="middle">
+                  <Space wrap>
+                    <Typography.Text strong>{activeConfig.name}</Typography.Text>
+                    <Tag>
+                      {activeConfig.selectionMode === 'SINGLE'
+                        ? '单选'
+                        : `多选${activeConfig.maxSelectionCount === 1 ? '（最多 1 项）' : ''}`}
+                    </Tag>
+                    <Switch
+                      checked={activeConfig.required}
+                      checkedChildren="必选"
+                      unCheckedChildren="可不选"
+                      onChange={required => updateActive({required})}
+                    />
+                  </Space>
+                  {activeConfig.selectionMode === 'MULTIPLE' && (
+                    <Space wrap>
+                      <Typography.Text>最少可选</Typography.Text>
+                      <InputNumber
+                        min={0}
+                        value={activeConfig.minSelectionCount}
+                        onChange={minSelectionCount => updateActive({minSelectionCount})}
+                      />
+                      <Typography.Text>最多可选</Typography.Text>
+                      <InputNumber
+                        min={1}
+                        value={activeConfig.maxSelectionCount}
+                        onChange={maxSelectionCount => updateActive({maxSelectionCount})}
+                      />
+                    </Space>
+                  )}
+                  <Divider style={{margin: 0}} />
+                  {activeConfig.values.map(value => (
+                    <Card key={value.definitionValueRef} size="small" title={value.name}>
+                      <Space direction="vertical" style={{display: 'flex'}} size="small">
+                        <Space wrap>
+                          <Switch
+                            checked={value.defaultValue}
+                            checkedChildren="默认"
+                            unCheckedChildren="非默认"
+                            onChange={defaultValue => updateValue(value.definitionValueRef, {defaultValue})}
+                          />
+                          <Typography.Text>加价（元）</Typography.Text>
+                          <InputNumber
+                            min={0}
+                            precision={2}
+                            prefix="¥"
+                            value={catalogCentsToYuan(value.extraPrice)}
+                            onChange={extraPrice =>
+                              updateValue(value.definitionValueRef, {extraPrice: catalogYuanToCents(extraPrice)})
+                            }
+                          />
+                        </Space>
+                        {value.materialQuantities.map(material => (
+                          <Space key={material.materialRef} wrap>
+                            <Typography.Text>{material.materialItemName}</Typography.Text>
+                            <Typography.Text>每份用量</Typography.Text>
+                            <InputNumber
+                              min={0}
+                              value={material.actualQuantity}
+                              onChange={actualQuantity =>
+                                updateMaterialQuantity(value.definitionValueRef, material.materialRef, actualQuantity)
+                              }
+                            />
+                            <Typography.Text type="secondary">
+                              {catalogUnitLabel(material.consumptionUnitSnapshot)}
+                            </Typography.Text>
+                          </Space>
+                        ))}
+                      </Space>
+                    </Card>
+                  ))}
+                </Space>
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={7}>
+            <Card size="small" title="顾客端显示效果">
+              <Space direction="vertical" style={{display: 'flex'}} size="small">
+                {values.map(config => (
+                  <Card
+                    key={config.definitionRef}
+                    size="small"
+                    title={
+                      <Space>
+                        <Typography.Text strong>{config.name}</Typography.Text>
+                        <Tag>{config.selectionMode === 'SINGLE' ? '单选' : '多选'}</Tag>
+                      </Space>
+                    }
+                  >
+                    <Typography.Text type="secondary">
+                      {config.selectionMode === 'SINGLE'
+                        ? '请选择一项'
+                        : `可选 ${config.minSelectionCount ?? 0} 至 ${config.maxSelectionCount ?? config.values.length} 项`}
+                    </Typography.Text>
+                    <Space wrap size={[4, 4]} style={{marginTop: 8}}>
+                      {config.values.map(value => (
+                        <Space key={value.definitionValueRef} wrap>
+                          <Tag color={value.defaultValue ? 'blue' : undefined}>
+                            {value.name}
+                            {value.defaultValue ? '（默认）' : ''}
+                          </Tag>
+                          {value.extraPrice !== null && (
+                            <Typography.Text type="secondary">加价 {money(value.extraPrice)}</Typography.Text>
+                          )}
+                        </Space>
+                      ))}
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      )}
+    </Space>
+  );
+}
+function OrderOptionConfigurationsReadOnly({values}: {values: CatalogOrderOptionConfig[]}) {
+  return values.length ? (
+    <Space direction="vertical" style={{display: 'flex'}}>
+      {values.map(config => (
+        <Card
+          key={config.definitionRef}
+          size="small"
+          title={config.name}
+          extra={
+            <Tag>
+              {config.selectionMode === 'SINGLE'
+                ? '单选'
+                : `多选${config.maxSelectionCount === 1 ? '（最多 1 项）' : ''}`}
+            </Tag>
+          }
+        >
+          {config.values.map(value => (
+            <Typography.Paragraph key={value.definitionValueRef} style={{marginBottom: 4}}>
+              {value.name}
+              {value.defaultValue ? '（默认）' : ''}
+              {value.extraPrice !== null ? `，加价 ${money(value.extraPrice)}` : ''}
+            </Typography.Paragraph>
+          ))}
+        </Card>
+      ))}
+    </Space>
+  ) : (
+    <EmptySection text="未维护点单选项" />
   );
 }

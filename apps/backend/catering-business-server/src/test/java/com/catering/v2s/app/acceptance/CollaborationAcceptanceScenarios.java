@@ -222,7 +222,10 @@ final class CollaborationAcceptanceScenarios {
                 fixture.session().cookie(),
                 Set.of(200));
         assertNotNull(
-                findOrNull(unfilteredPage.json().path("items"), "bindingRef", binding.json().path("bindingRef").asText()),
+                findOrNull(
+                        unfilteredPage.json().path("items"),
+                        "bindingRef",
+                        binding.json().path("bindingRef").asText()),
                 "BUSINESS: unfiltered provider binding page contains the created binding; items="
                         + bindingRefs(unfilteredPage.json().path("items"))
                         + ", metadata=" + unfilteredPage.json().path("metadata"));
@@ -235,9 +238,13 @@ final class CollaborationAcceptanceScenarios {
                 fixture.session().cookie(),
                 Set.of(200));
         assertNotNull(
-                findOrNull(page.json().path("items"), "bindingRef", binding.json().path("bindingRef").asText()),
+                findOrNull(
+                        page.json().path("items"),
+                        "bindingRef",
+                        binding.json().path("bindingRef").asText()),
                 "BUSINESS: provider binding page searches an owner-resolved ancestor path segment; query="
-                        + ancestorPathSegment + ", items=" + bindingRefs(page.json().path("items"))
+                        + ancestorPathSegment + ", items="
+                        + bindingRefs(page.json().path("items"))
                         + ", metadata=" + page.json().path("metadata"));
         assertTrue(
                 page.json().path("metadata").path("total").asLong() >= 1,
@@ -257,7 +264,9 @@ final class CollaborationAcceptanceScenarios {
                 Set.of(200));
         assertNotNull(
                 findOrNull(
-                        bindingNamePage.json().path("items"), "bindingRef", binding.json().path("bindingRef").asText()),
+                        bindingNamePage.json().path("items"),
+                        "bindingRef",
+                        binding.json().path("bindingRef").asText()),
                 "BUSINESS: binding-name search is independent from node search");
         assertEquals(
                 "MEMBERSHIP_COUPON_STORE STORE",
@@ -272,7 +281,8 @@ final class CollaborationAcceptanceScenarios {
                         + "&page=1&pageSize=1",
                 fixture.session().cookie(),
                 Set.of(200));
-        assertEquals("BINDING_NAME", sorted.json().path("metadata").path("sortKey").asText());
+        assertEquals(
+                "BINDING_NAME", sorted.json().path("metadata").path("sortKey").asText());
         assertEquals("ASC", sorted.json().path("metadata").path("sortDirection").asText());
         assertEquals(1, sorted.json().path("metadata").path("pageSize").asInt());
         assertEquals(1, sorted.json().path("items").size(), "BUSINESS: server pagination returns one requested row");
@@ -284,10 +294,10 @@ final class CollaborationAcceptanceScenarios {
             operation = "platformExternalGrantCreateRejected")
     void platformExternalGrantCreateRejected(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         PlatformFixture fixture = platformFixture(context, "STORE");
-        String providerPath = "/api/platform/group-workspaces/" + fixture.fixture().groupWorkspaceKey()
-                + "/provider-profiles/MEITUAN_ISV_A/owner-bindings?pageSize=20";
-        BackendAcceptanceTest.Response before = context.get(
-                PROVIDER_BINDINGS, providerPath, fixture.session().cookie(), Set.of(200));
+        String providerPath = "/api/platform/group-workspaces/"
+                + fixture.fixture().groupWorkspaceKey() + "/provider-profiles/MEITUAN_ISV_A/owner-bindings?pageSize=20";
+        BackendAcceptanceTest.Response before =
+                context.get(PROVIDER_BINDINGS, providerPath, fixture.session().cookie(), Set.of(200));
         BackendAcceptanceTest.Response rejected = createBinding(
                 context,
                 fixture,
@@ -298,10 +308,11 @@ final class CollaborationAcceptanceScenarios {
                 null,
                 Set.of(403));
         assertEquals(
-                "BINDING_EDIT_NOT_ALLOWED", rejected.problemCode(),
+                "BINDING_EDIT_NOT_ALLOWED",
+                rejected.problemCode(),
                 "BUSINESS: platform-admin cannot create an EXTERNAL_GRANT binding");
-        BackendAcceptanceTest.Response after = context.get(
-                PROVIDER_BINDINGS, providerPath, fixture.session().cookie(), Set.of(200));
+        BackendAcceptanceTest.Response after =
+                context.get(PROVIDER_BINDINGS, providerPath, fixture.session().cookie(), Set.of(200));
         assertEquals(
                 before.json().path("metadata").path("total").asLong(),
                 after.json().path("metadata").path("total").asLong(),
@@ -408,17 +419,21 @@ final class CollaborationAcceptanceScenarios {
                 bindingPath(fixture.fixture(), bindingRef),
                 fixture.session().cookie(),
                 Map.of(
-                        "bindingDisplayName", "edited internal mapping",
-                        "externalOwnerId", "ERP-GROUP-2",
+                        "bindingDisplayName",
+                        "edited internal mapping",
+                        "externalOwnerId",
+                        "ERP-GROUP-2",
                         "expectedVersion",
                         binding.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
         assertEquals(
-                "edited internal mapping", updated.json().path("bindingDisplayName").asText(),
+                "edited internal mapping",
+                updated.json().path("bindingDisplayName").asText(),
                 "BUSINESS: non-grant binding display name follows platform owner update policy");
         assertEquals(
-                "ERP-GROUP-2", updated.json().path("externalOwnerId").asText(),
+                "ERP-GROUP-2",
+                updated.json().path("externalOwnerId").asText(),
                 "BUSINESS: INTERNAL_MAPPING owner id follows platform owner update policy");
         BackendAcceptanceTest.Response bindings = context.get(
                 PROVIDER_BINDINGS,
@@ -489,11 +504,8 @@ final class CollaborationAcceptanceScenarios {
                 "ADAPTER_UNBIND_REQUIRED",
                 rejected.problemCode(),
                 "BUSINESS: adapter unbind is required before logical delete");
-        BackendAcceptanceTest.Response retained = context.get(
-                BINDING_DETAIL,
-                bindingPath(fixture.fixture(), bindingRef),
-                platform.cookie(),
-                Set.of(200));
+        BackendAcceptanceTest.Response retained =
+                context.get(BINDING_DETAIL, bindingPath(fixture.fixture(), bindingRef), platform.cookie(), Set.of(200));
         assertNotEquals(
                 "DELETED",
                 retained.json().path("status").asText(),
@@ -516,7 +528,8 @@ final class CollaborationAcceptanceScenarios {
             UUID nodeRef,
             String externalOwnerId)
             throws Exception {
-        return createBinding(context, fixture, providerCode, capabilityClass, nodeType, nodeRef, externalOwnerId, Set.of(200));
+        return createBinding(
+                context, fixture, providerCode, capabilityClass, nodeType, nodeRef, externalOwnerId, Set.of(200));
     }
 
     private BackendAcceptanceTest.Response createBinding(
@@ -562,19 +575,25 @@ final class CollaborationAcceptanceScenarios {
                 Set.of(200));
         assertEquals(
                 fixture.storeId().toString(),
-                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                selected.json()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
                 "BUSINESS: operations session selects the claimed store node");
         return new OperationsFixture(
                 fixture,
                 new BackendAcceptanceTest.Session(
-                        login.cookie(), selected.json(), selected.json().path("contextVersion").asLong()));
+                        login.cookie(),
+                        selected.json(),
+                        selected.json().path("contextVersion").asLong()));
     }
 
     private BackendAcceptanceTest.Response createOperationsExternalBinding(
             BackendAcceptanceTest.ScenarioContext context, OperationsFixture fixture) throws Exception {
         enableProvider(context, fixture.fixture(), "MEITUAN_ISV_A");
-        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(
-                fixture.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
         host.completeInvitation(context, projectFixture);
         OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
         String root = "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
@@ -625,21 +644,23 @@ final class CollaborationAcceptanceScenarios {
     }
 
     private void enableProvider(
-            BackendAcceptanceTest.ScenarioContext context,
-            BackendAcceptanceTest.Fixture fixture,
-            String providerCode)
+            BackendAcceptanceTest.ScenarioContext context, BackendAcceptanceTest.Fixture fixture, String providerCode)
             throws Exception {
         host.ensurePlatformAdministrator();
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
-        String path = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
-                + "/provider-profiles/" + providerCode;
+        String path =
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/provider-profiles/" + providerCode;
         BackendAcceptanceTest.Response current = context.get(PROVIDER_DETAIL, path, platform.cookie(), Set.of(200));
         if ("ENABLED".equals(current.json().path("enablementStatus").asText())) return;
         BackendAcceptanceTest.Response enabled = context.post(
                 PROVIDER_STATUS,
                 path + "/status",
                 platform.cookie(),
-                Map.of("status", "ENABLED", "expectedVersion", current.json().path("version").asLong()),
+                Map.of(
+                        "status",
+                        "ENABLED",
+                        "expectedVersion",
+                        current.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
         assertEquals("ENABLED", enabled.json().path("enablementStatus").asText(), "BUSINESS: provider is enabled");
@@ -676,7 +697,9 @@ final class CollaborationAcceptanceScenarios {
                 .getResourceAsStream("external-platform-catalog.json")) {
             assertNotNull(source, "BUSINESS: checked-in collaboration catalog is available to acceptance");
             JsonNode catalog = new ObjectMapper().readTree(source);
-            return find(catalog.path(collection), key, expected).path("catalogStatus").asText();
+            return find(catalog.path(collection), key, expected)
+                    .path("catalogStatus")
+                    .asText();
         }
     }
 

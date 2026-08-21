@@ -233,6 +233,16 @@
             }
           },
           {
+            "name": "tagRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "design-bound field",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "uncategorized",
             "in": "query",
             "required": false,

@@ -19,8 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 final class CatalogItemReferenceFacts {
     static final String PRODUCTION_TAG = "PRODUCTION_TAG";
     static final String CATALOG_TAG = "CATALOG_TAG";
-    static final String SALES_UNIT = "SALES_UNIT";
-    private static final List<String> KINDS = List.of(PRODUCTION_TAG, CATALOG_TAG, SALES_UNIT);
+    private static final List<String> KINDS = List.of(PRODUCTION_TAG, CATALOG_TAG);
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
@@ -52,11 +51,10 @@ final class CatalogItemReferenceFacts {
         return Map.copyOf(result);
     }
 
-    void replace(UUID itemRef, JsonNode productionTagRefs, JsonNode tagRefs, JsonNode salesUnitRefs) {
+    void replace(UUID itemRef, JsonNode productionTagRefs, JsonNode tagRefs) {
         jdbc.update("DELETE FROM catalog.catalog_item_reference WHERE item_ref=?", itemRef);
         insert(itemRef, PRODUCTION_TAG, normalize(productionTagRefs, "productionTagRefs"));
         insert(itemRef, CATALOG_TAG, normalize(tagRefs, "tagRefs"));
-        insert(itemRef, SALES_UNIT, normalize(salesUnitRefs, "salesUnitRefs"));
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
@@ -71,7 +69,6 @@ final class CatalogItemReferenceFacts {
                         PRODUCTION_TAG,
                         normalize(values.productionTagRefs(), "productionTagRefs"));
                 addRows(rows, entry.getKey(), CATALOG_TAG, normalize(values.tagRefs(), "tagRefs"));
-                addRows(rows, entry.getKey(), SALES_UNIT, normalize(values.salesUnitRefs(), "salesUnitRefs"));
             }
         if (!rows.isEmpty())
             jdbc.batchUpdate("INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)", rows);
@@ -147,5 +144,5 @@ final class CatalogItemReferenceFacts {
         return new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, message, cause);
     }
 
-    record CopyValues(JsonNode productionTagRefs, JsonNode tagRefs, JsonNode salesUnitRefs) {}
+    record CopyValues(JsonNode productionTagRefs, JsonNode tagRefs) {}
 }

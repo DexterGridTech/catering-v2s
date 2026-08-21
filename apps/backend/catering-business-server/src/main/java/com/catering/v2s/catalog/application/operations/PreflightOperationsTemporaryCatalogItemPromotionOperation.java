@@ -45,7 +45,6 @@ public class PreflightOperationsTemporaryCatalogItemPromotionOperation {
                                 request.name(),
                                 request.shortName(),
                                 request.materialRole(),
-                                canonicalJson(request.attributes()),
                                 requiredLong(request.expectedSourceVersion(), "expectedSourceVersion")),
                         invocation.idempotencyKey()));
     }
@@ -86,10 +85,6 @@ public class PreflightOperationsTemporaryCatalogItemPromotionOperation {
                         changes,
                         value.preflightDigest(),
                         value.canPromote()));
-    }
-
-    private static String canonicalJson(com.catering.v2s.app.edge.generated.wire.CanonicalJsonDocument value) {
-        return value == null ? null : value.canonicalJson();
     }
 
     private static long requiredLong(Long value, String field) {

@@ -5,7 +5,7 @@
   "sourceBindings": {
     "operationDesignContract": {
       "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
-      "sha256": "7cc84714552aee3a09caf8029aa076bb04014b8dca5dfd28c368ee0c2693a82f"
+      "sha256": "79d7f5822444352163a8fb53f4b173b00329d3786a13ede5c66d208a8af6d635"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "e4ab3a5d4b3db3b59c2c795cf6c805981984c287227709cbe866da451944c101"
+      "sha256": "b026c14108a2bf1183d13cb79d3aacb856c7fd741b6a8d00b45d47cdd838f34f"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
@@ -26,7 +26,7 @@
       "path": "contracts/policy/catalog-inventory-l2-scenarios.json"
     }
   },
-  "count": 43,
+  "count": 56,
   "iaIdCount": 89,
   "operations": [
     {
@@ -1222,7 +1222,8 @@
       ],
       "coordinatedInventoryDefinitionCommands": [
         "ensureCatalogInventoryTarget",
-        "saveCatalogProductBom"
+        "saveCatalogProductBom",
+        "deleteCatalogOptionValueBoms"
       ],
       "request": {
         "component": "CatalogItemSaveRequest",
@@ -1240,7 +1241,8 @@
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
-        "ASSET_NOT_READY"
+        "ASSET_NOT_READY",
+        "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED"
       ],
       "logicSteps": [
         {
@@ -1355,6 +1357,13 @@
           "problemCode": "ASSET_NOT_READY",
           "conditions": [
             "Referenced staged asset is missing, not ready, or has no matching transient header bind grant; an already ACTIVE CATALOG_ITEM_IMAGE remains reusable without a grant."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED",
+          "conditions": [
+            "An existing inventory target would retain a different consumption-unit snapshot after the submitted item or SKU base-measure unit change; the catalog save is rejected before the catalog write."
           ]
         }
       ],
@@ -4792,7 +4801,8 @@
         "SCOPE_FORBIDDEN",
         "NOT_FOUND",
         "COPY_SELECTED_ITEMS_TOO_LARGE",
-        "COPY_CLOSURE_TOO_LARGE"
+        "COPY_CLOSURE_TOO_LARGE",
+        "CATALOG_COPY_DEFINITION_CONFLICT"
       ],
       "logicSteps": [
         {
@@ -4893,6 +4903,13 @@
           "problemCode": "COPY_CLOSURE_TOO_LARGE",
           "conditions": [
             "Expanded closure count exceeds current copy policy."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "CATALOG_COPY_DEFINITION_CONFLICT",
+          "conditions": [
+            "Copy preflight finds a same-code definition with incompatible type, option or material facts."
           ]
         }
       ],
@@ -5116,6 +5133,7 @@
         "STRUCTURE_INCOMPATIBLE",
         "REFERENCE_MAPPING_UNRESOLVED",
         "OWNER_REFERENCE_LEAK",
+        "CATALOG_COPY_DEFINITION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN"
       ],
@@ -5267,6 +5285,13 @@
           "problemCode": "OWNER_REFERENCE_LEAK",
           "conditions": [
             "Rewritten target graph retains a source owner reference."
+          ]
+        },
+        {
+          "precedence": 13,
+          "problemCode": "CATALOG_COPY_DEFINITION_CONFLICT",
+          "conditions": [
+            "Copy execution finds a same-code definition with incompatible type, option or material facts after preflight recheck."
           ]
         }
       ],
@@ -7695,6 +7720,2016 @@
           "primaryVerifier": "API",
           "scenarioIds": [
             "CI-API-008"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogAttributeDefinitions",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogAttributeDefinitionListQuery",
+        "method": "GET",
+        "path": "/operations/catalog-inventory/attribute-definitions"
+      },
+      "response": {
+        "component": "CatalogAttributeDefinitionList"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "CATALOG_DEFINITION_LIMIT_EXCEEDED"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Read the scoped bounded definition library."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "CATALOG_DEFINITION_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_DEFINITION_LIMIT_EXCEEDED condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-44",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "listOperationsCatalogAttributeDefinitions：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogAttributeDefinitionCreateRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/attribute-definitions"
+      },
+      "response": {
+        "component": "CatalogAttributeDefinitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-45",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "createOperationsCatalogAttributeDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogAttributeDefinitionUpdateRequest",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}"
+      },
+      "response": {
+        "component": "CatalogAttributeDefinitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-46",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "updateOperationsCatalogAttributeDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogAttributeDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogAttributeDefinitionDeleteRequest",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/attribute-definitions/{definitionRef}"
+      },
+      "response": {
+        "component": "CatalogAttributeDefinitionDeleteReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-47",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "deleteOperationsCatalogAttributeDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogOrderOptionDefinitions",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogOrderOptionDefinitionListQuery",
+        "method": "GET",
+        "path": "/operations/catalog-inventory/order-option-definitions"
+      },
+      "response": {
+        "component": "CatalogOrderOptionDefinitionList"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "CATALOG_DEFINITION_LIMIT_EXCEEDED"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Read the scoped bounded definition library."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "CATALOG_DEFINITION_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_DEFINITION_LIMIT_EXCEEDED condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-48",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "listOperationsCatalogOrderOptionDefinitions：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "resolveCatalogOrderOptionMaterialTarget"
+      ],
+      "request": {
+        "component": "CatalogOrderOptionDefinitionCreateRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/order-option-definitions"
+      },
+      "response": {
+        "component": "CatalogOrderOptionDefinitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+          "conditions": [
+            "Owner emits the declared typed INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-49",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "createOperationsCatalogOrderOptionDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "resolveCatalogOrderOptionMaterialTarget",
+        "deleteCatalogOrderOptionValueBoms"
+      ],
+      "request": {
+        "component": "CatalogOrderOptionDefinitionUpdateRequest",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}"
+      },
+      "response": {
+        "component": "CatalogOrderOptionDefinitionReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+          "conditions": [
+            "Owner emits the declared typed INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-50",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "updateOperationsCatalogOrderOptionDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogOrderOptionDefinition",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "deleteCatalogOptionValueBoms"
+      ],
+      "request": {
+        "component": "CatalogOrderOptionDefinitionDeleteRequest",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}"
+      },
+      "response": {
+        "component": "CatalogOrderOptionDefinitionDeleteReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+          "conditions": [
+            "Owner emits the declared typed INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-51",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "deleteOperationsCatalogOrderOptionDefinition：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "listOperationsCatalogUnits",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogUnitListQuery",
+        "method": "GET",
+        "path": "/operations/catalog-inventory/units"
+      },
+      "response": {
+        "component": "CatalogUnitList"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "CATALOG_DEFINITION_LIMIT_EXCEEDED"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Read the scoped bounded definition library."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "CATALOG_DEFINITION_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_DEFINITION_LIMIT_EXCEEDED condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-52",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "listOperationsCatalogUnits：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "createOperationsCatalogUnit",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_UNIT",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "request": {
+        "component": "CatalogUnitCreateRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/units"
+      },
+      "response": {
+        "component": "CatalogUnitReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "CATALOG_UNIT_IN_USE",
+        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "CATALOG_UNIT_IN_USE",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-53",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "createOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "updateOperationsCatalogUnit",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_CATALOG_UNIT",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "validateCatalogUnitLifecycle"
+      ],
+      "request": {
+        "component": "CatalogUnitUpdateRequest",
+        "method": "PATCH",
+        "path": "/operations/catalog-inventory/units/{unitRef}"
+      },
+      "response": {
+        "component": "CatalogUnitReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "CATALOG_UNIT_IN_USE",
+        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "CATALOG_UNIT_IN_USE",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-54",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "updateOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "disableOperationsCatalogUnit",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DISABLE_OPERATIONS_CATALOG_UNIT",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "validateCatalogUnitLifecycle"
+      ],
+      "request": {
+        "component": "CatalogUnitDisableRequest",
+        "method": "POST",
+        "path": "/operations/catalog-inventory/units/{unitRef}/disable"
+      },
+      "response": {
+        "component": "CatalogUnitReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "CATALOG_UNIT_IN_USE",
+        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "CATALOG_UNIT_IN_USE",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-55",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "disableOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "deleteOperationsCatalogUnit",
+      "face": "operations-admin",
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [
+        "inventory"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_DELETE_OPERATIONS_CATALOG_UNIT",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "coordinatedInventoryDefinitionCommands": [
+        "validateCatalogUnitLifecycle"
+      ],
+      "request": {
+        "component": "CatalogUnitDeleteRequest",
+        "method": "DELETE",
+        "path": "/operations/catalog-inventory/units/{unitRef}"
+      },
+      "response": {
+        "component": "CatalogUnitDeleteReadback"
+      },
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "DUPLICATE_CODE",
+        "VERSION_CONFLICT",
+        "CATALOG_UNIT_IN_USE",
+        "CATALOG_UNIT_LIMIT_EXCEEDED",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        },
+        {
+          "order": 4,
+          "kind": "COORDINATED_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "declared owner judgment or command"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "DUPLICATE_CODE",
+          "conditions": [
+            "Owner emits the declared typed DUPLICATE_CODE condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "CATALOG_UNIT_IN_USE",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_IN_USE condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "CATALOG_UNIT_LIMIT_EXCEEDED",
+          "conditions": [
+            "Owner emits the declared typed CATALOG_UNIT_LIMIT_EXCEEDED condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 9,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "assertions": [
+        {
+          "assertionId": "ASSERT-OPERATION-56",
+          "iaIds": [],
+          "verifiedBusinessBehavior": "deleteOperationsCatalogUnit：验证该接口的 owner 边界、读写结果与失败条件均按 operation design contract 执行。",
+          "primaryVerifier": "API",
+          "scenarioIds": [
+            "CI-API-001"
           ]
         }
       ]

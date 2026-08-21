@@ -55,6 +55,13 @@ public final class OperationBindingTypes {
     public record CatalogAssetReleaseReadback() {}
     public record CatalogAssetReleaseRequest() {}
     public record CatalogAssetStageRequest() {}
+    public record CatalogAttributeDefinitionCreateRequest() {}
+    public record CatalogAttributeDefinitionDeleteReadback() {}
+    public record CatalogAttributeDefinitionDeleteRequest() {}
+    public record CatalogAttributeDefinitionList() {}
+    public record CatalogAttributeDefinitionListQuery() {}
+    public record CatalogAttributeDefinitionReadback() {}
+    public record CatalogAttributeDefinitionUpdateRequest() {}
     public record CatalogCategoryCreateRequest() {}
     public record CatalogCategoryDeleteReadback() {}
     public record CatalogCategoryDeleteRequest() {}
@@ -82,8 +89,23 @@ public final class OperationBindingTypes {
     public record CatalogItemTransitionRequest() {}
     public record CatalogNavigationQuery() {}
     public record CatalogNavigationView() {}
+    public record CatalogOrderOptionDefinitionCreateRequest() {}
+    public record CatalogOrderOptionDefinitionDeleteReadback() {}
+    public record CatalogOrderOptionDefinitionDeleteRequest() {}
+    public record CatalogOrderOptionDefinitionList() {}
+    public record CatalogOrderOptionDefinitionListQuery() {}
+    public record CatalogOrderOptionDefinitionReadback() {}
+    public record CatalogOrderOptionDefinitionUpdateRequest() {}
     public record CatalogShapeManifestQuery() {}
     public record CatalogShapeManifestView() {}
+    public record CatalogUnitCreateRequest() {}
+    public record CatalogUnitDeleteReadback() {}
+    public record CatalogUnitDeleteRequest() {}
+    public record CatalogUnitDisableRequest() {}
+    public record CatalogUnitList() {}
+    public record CatalogUnitListQuery() {}
+    public record CatalogUnitReadback() {}
+    public record CatalogUnitUpdateRequest() {}
     public record CatalogWorkbenchContext() {}
     public record CommercialGroupInitializeRequest() {}
     public record CommercialGroupRoot() {}

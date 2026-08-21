@@ -77,7 +77,7 @@ export function PlatformPasswordChangeDrawer({
       open={open}
       size={480}
       destroyOnHidden
-      mask={{closable: true}}
+      maskClosable={!lifecycle.submitting}
       keyboard={!lifecycle.submitting}
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}

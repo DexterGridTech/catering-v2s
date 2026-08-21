@@ -337,12 +337,18 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "entryRef",
             "dictionaryKind",
             "code",
             "name",
             "status"
           ],
           "properties": {
+            "entryRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "entry opaque ref"
+            },
             "dictionaryKind": {
               "type": "string",
               "description": "dictionary kind"
@@ -376,6 +382,1434 @@
         "version": {
           "type": "integer",
           "description": "version"
+        }
+      }
+    },
+    "CatalogAttributeDefinitionListQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "CatalogAttributeDefinitionList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitions"
+          ],
+          "properties": {
+            "definitions": {
+              "type": "array",
+              "description": "whole bounded attribute definition library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "definitionRef",
+                  "code",
+                  "name",
+                  "valueType",
+                  "options",
+                  "version"
+                ],
+                "properties": {
+                  "definitionRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "attribute definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "attribute code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "attribute name"
+                  },
+                  "valueType": {
+                    "type": "string",
+                    "enum": [
+                      "TEXT",
+                      "SINGLE_SELECT",
+                      "MULTI_SELECT"
+                    ],
+                    "description": "attribute value type"
+                  },
+                  "options": {
+                    "type": "array",
+                    "description": "attribute choices",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "optionRef",
+                        "name",
+                        "displayOrder"
+                      ],
+                      "properties": {
+                        "optionRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "attribute option reference"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "choice name"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "customer display order"
+                        }
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "definition version"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogAttributeDefinitionCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "valueType",
+        "options",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "code": {
+          "type": "string",
+          "description": "attribute code"
+        },
+        "name": {
+          "type": "string",
+          "description": "attribute name"
+        },
+        "valueType": {
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "SINGLE_SELECT",
+            "MULTI_SELECT"
+          ],
+          "description": "attribute value type"
+        },
+        "options": {
+          "type": "array",
+          "description": "attribute choices",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "displayOrder"
+            ],
+            "properties": {
+              "optionRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "existing option reference; null when adding"
+              },
+              "name": {
+                "type": "string",
+                "description": "choice name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "customer display order"
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogAttributeDefinitionUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionRef",
+        "expectedVersion",
+        "code",
+        "name",
+        "options",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "definitionRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "attribute definition reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "code": {
+          "type": "string",
+          "description": "attribute code"
+        },
+        "name": {
+          "type": "string",
+          "description": "attribute name"
+        },
+        "options": {
+          "type": "array",
+          "description": "attribute choices",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "displayOrder"
+            ],
+            "properties": {
+              "optionRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "existing option reference; null when adding"
+              },
+              "name": {
+                "type": "string",
+                "description": "choice name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "customer display order"
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogAttributeDefinitionDeleteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionRef",
+        "expectedVersion",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "definitionRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "attribute definition reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        }
+      }
+    },
+    "CatalogAttributeDefinitionReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definition"
+          ],
+          "properties": {
+            "definition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "definitionRef",
+                "code",
+                "name",
+                "valueType",
+                "options",
+                "version"
+              ],
+              "properties": {
+                "definitionRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "attribute definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "attribute code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "attribute name"
+                },
+                "valueType": {
+                  "type": "string",
+                  "enum": [
+                    "TEXT",
+                    "SINGLE_SELECT",
+                    "MULTI_SELECT"
+                  ],
+                  "description": "attribute value type"
+                },
+                "options": {
+                  "type": "array",
+                  "description": "attribute choices",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "optionRef",
+                      "name",
+                      "displayOrder"
+                    ],
+                    "properties": {
+                      "optionRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "attribute option reference"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "choice name"
+                      },
+                      "displayOrder": {
+                        "type": "integer",
+                        "description": "customer display order"
+                      }
+                    }
+                  }
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "definition version"
+                }
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "definition version"
+        }
+      }
+    },
+    "CatalogAttributeDefinitionDeleteReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitionRef",
+            "deletedAssignmentCount"
+          ],
+          "properties": {
+            "definitionRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "deleted attribute definition reference"
+            },
+            "deletedAssignmentCount": {
+              "type": "integer",
+              "description": "product attribute assignments removed by the cascade"
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "delete receipt version"
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionListQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitions"
+          ],
+          "properties": {
+            "definitions": {
+              "type": "array",
+              "description": "whole bounded ordering option library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "definitionRef",
+                  "code",
+                  "name",
+                  "selectionMode",
+                  "values",
+                  "version"
+                ],
+                "properties": {
+                  "definitionRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ordering option definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "ordering option business code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "ordering option name"
+                  },
+                  "selectionMode": {
+                    "type": "string",
+                    "enum": [
+                      "SINGLE",
+                      "MULTIPLE"
+                    ],
+                    "description": "customer selection mode"
+                  },
+                  "values": {
+                    "type": "array",
+                    "description": "customer options",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "valueRef",
+                        "code",
+                        "name",
+                        "displayOrder",
+                        "materials"
+                      ],
+                      "properties": {
+                        "valueRef": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "ordering option value reference"
+                        },
+                        "code": {
+                          "type": "string",
+                          "description": "customer option business code"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "customer option name"
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "description": "customer display order"
+                        },
+                        "materials": {
+                          "type": "array",
+                          "description": "required materials",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "materialRef",
+                              "materialItemRef",
+                              "materialItemName",
+                              "stockTargetRef",
+                              "consumptionUnitSnapshot"
+                            ],
+                            "properties": {
+                              "materialRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "option material template reference"
+                              },
+                              "materialItemRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "material item reference"
+                              },
+                              "materialItemName": {
+                                "type": "string",
+                                "description": "material item name"
+                              },
+                              "stockTargetRef": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "inventory target reference"
+                              },
+                              "consumptionUnitSnapshot": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "unitRef",
+                                  "code",
+                                  "name",
+                                  "unitDimension",
+                                  "precision"
+                                ],
+                                "properties": {
+                                  "unitRef": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "unit definition reference"
+                                  },
+                                  "code": {
+                                    "type": "string",
+                                    "description": "unit code"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "unit name"
+                                  },
+                                  "unitDimension": {
+                                    "type": "string",
+                                    "enum": [
+                                      "COUNT",
+                                      "WEIGHT",
+                                      "VOLUME",
+                                      "SERVICE_DURATION",
+                                      "PACKAGE"
+                                    ],
+                                    "description": "unit category"
+                                  },
+                                  "precision": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "decimal places; zero means whole numbers"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "definition version"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "selectionMode",
+        "values",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "code": {
+          "type": "string",
+          "description": "ordering option business code; immutable after creation"
+        },
+        "name": {
+          "type": "string",
+          "description": "ordering option name"
+        },
+        "selectionMode": {
+          "type": "string",
+          "enum": [
+            "SINGLE",
+            "MULTIPLE"
+          ],
+          "description": "customer selection mode"
+        },
+        "values": {
+          "type": "array",
+          "description": "customer options",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "name",
+              "displayOrder",
+              "materials"
+            ],
+            "properties": {
+              "valueRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "existing option value reference; null when adding"
+              },
+              "code": {
+                "type": "string",
+                "description": "customer option business code; immutable after creation"
+              },
+              "name": {
+                "type": "string",
+                "description": "customer option name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "customer display order"
+              },
+              "materials": {
+                "type": "array",
+                "description": "required materials",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "materialItemRef"
+                  ],
+                  "properties": {
+                    "materialItemRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "material item reference"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionRef",
+        "expectedVersion",
+        "code",
+        "name",
+        "selectionMode",
+        "values",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "definitionRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ordering option definition reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "code": {
+          "type": "string",
+          "description": "stored immutable group code; if supplied it must equal the creation code"
+        },
+        "name": {
+          "type": "string",
+          "description": "ordering option name"
+        },
+        "selectionMode": {
+          "type": "string",
+          "enum": [
+            "SINGLE",
+            "MULTIPLE"
+          ],
+          "description": "customer selection mode"
+        },
+        "values": {
+          "type": "array",
+          "description": "customer options",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "name",
+              "displayOrder",
+              "materials"
+            ],
+            "properties": {
+              "valueRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "existing option value reference; null when adding"
+              },
+              "code": {
+                "type": "string",
+                "description": "stored immutable code for an existing option, or the creation code for a new option"
+              },
+              "name": {
+                "type": "string",
+                "description": "customer option name"
+              },
+              "displayOrder": {
+                "type": "integer",
+                "description": "customer display order"
+              },
+              "materials": {
+                "type": "array",
+                "description": "required materials",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "materialItemRef"
+                  ],
+                  "properties": {
+                    "materialItemRef": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "material item reference"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionDeleteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionRef",
+        "expectedVersion",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "definitionRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ordering option definition reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definition",
+            "deletedDefinitionValueRefs"
+          ],
+          "properties": {
+            "definition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "definitionRef",
+                "code",
+                "name",
+                "selectionMode",
+                "values",
+                "version"
+              ],
+              "properties": {
+                "definitionRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "ordering option definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "ordering option business code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "ordering option name"
+                },
+                "selectionMode": {
+                  "type": "string",
+                  "enum": [
+                    "SINGLE",
+                    "MULTIPLE"
+                  ],
+                  "description": "customer selection mode"
+                },
+                "values": {
+                  "type": "array",
+                  "description": "customer options",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "valueRef",
+                      "code",
+                      "name",
+                      "displayOrder",
+                      "materials"
+                    ],
+                    "properties": {
+                      "valueRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ordering option value reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "customer option business code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "customer option name"
+                      },
+                      "displayOrder": {
+                        "type": "integer",
+                        "description": "customer display order"
+                      },
+                      "materials": {
+                        "type": "array",
+                        "description": "required materials",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "materialRef",
+                            "materialItemRef",
+                            "materialItemName",
+                            "stockTargetRef",
+                            "consumptionUnitSnapshot"
+                          ],
+                          "properties": {
+                            "materialRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "option material template reference"
+                            },
+                            "materialItemRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "material item reference"
+                            },
+                            "materialItemName": {
+                              "type": "string",
+                              "description": "material item name"
+                            },
+                            "stockTargetRef": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "inventory target reference"
+                            },
+                            "consumptionUnitSnapshot": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "unitRef",
+                                "code",
+                                "name",
+                                "unitDimension",
+                                "precision"
+                              ],
+                              "properties": {
+                                "unitRef": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "description": "unit definition reference"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "description": "unit code"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "unit name"
+                                },
+                                "unitDimension": {
+                                  "type": "string",
+                                  "enum": [
+                                    "COUNT",
+                                    "WEIGHT",
+                                    "VOLUME",
+                                    "SERVICE_DURATION",
+                                    "PACKAGE"
+                                  ],
+                                  "description": "unit category"
+                                },
+                                "precision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "description": "decimal places; zero means whole numbers"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "definition version"
+                }
+              }
+            },
+            "deletedDefinitionValueRefs": {
+              "type": "array",
+              "description": "option values removed by this whole-definition update",
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "deleted option value reference"
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "definition version"
+        }
+      }
+    },
+    "CatalogOrderOptionDefinitionDeleteReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitionRef",
+            "deletedDefinitionValueRefs",
+            "deletedItemConfigCount"
+          ],
+          "properties": {
+            "definitionRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "deleted ordering option definition reference"
+            },
+            "deletedDefinitionValueRefs": {
+              "type": "array",
+              "description": "deleted option value references",
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "description": "deleted option value reference"
+              }
+            },
+            "deletedItemConfigCount": {
+              "type": "integer",
+              "description": "product ordering option configurations removed by the cascade"
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "delete receipt version"
+        }
+      }
+    },
+    "CatalogUnitListQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "includeInactive": {
+          "type": "boolean",
+          "description": "include disabled units in maintenance list"
+        },
+        "dimension": {
+          "type": "string",
+          "description": "optional unit dimension filter"
+        }
+      }
+    },
+    "CatalogUnitList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "units"
+          ],
+          "properties": {
+            "units": {
+              "type": "array",
+              "description": "bounded unit definition library",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "unitRef",
+                  "code",
+                  "name",
+                  "unitDimension",
+                  "precision",
+                  "status",
+                  "isReferenced",
+                  "version"
+                ],
+                "properties": {
+                  "unitRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "unit definition reference"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "unit code"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "unit name"
+                  },
+                  "unitDimension": {
+                    "type": "string",
+                    "enum": [
+                      "COUNT",
+                      "WEIGHT",
+                      "VOLUME",
+                      "SERVICE_DURATION",
+                      "PACKAGE"
+                    ],
+                    "description": "unit category"
+                  },
+                  "precision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "decimal places; zero means whole numbers"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED"
+                    ],
+                    "description": "whether the unit can be selected for new configurations"
+                  },
+                  "isReferenced": {
+                    "type": "boolean",
+                    "description": "whether any current catalog fact uses the unit"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "unit definition version"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CatalogUnitCreateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "unitDimension",
+        "precision",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "code": {
+          "type": "string",
+          "description": "unit code"
+        },
+        "name": {
+          "type": "string",
+          "description": "unit name"
+        },
+        "unitDimension": {
+          "type": "string",
+          "description": "unit category"
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "decimal places; zero means whole numbers"
+        }
+      }
+    },
+    "CatalogUnitUpdateRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unitRef",
+        "expectedVersion",
+        "name",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "unitRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "unit reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        },
+        "code": {
+          "type": "string",
+          "description": "optional unit code"
+        },
+        "name": {
+          "type": "string",
+          "description": "unit name"
+        },
+        "unitDimension": {
+          "type": "string",
+          "description": "optional unit category"
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "optional decimal places; zero means whole numbers"
+        }
+      }
+    },
+    "CatalogUnitDisableRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unitRef",
+        "expectedVersion",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "unitRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "unit reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        }
+      }
+    },
+    "CatalogUnitDeleteRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unitRef",
+        "expectedVersion",
+        "dataNodeRef"
+      ],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "unitRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "unit reference"
+        },
+        "expectedVersion": {
+          "type": "integer",
+          "description": "expected version"
+        }
+      }
+    },
+    "CatalogUnitReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unit"
+          ],
+          "properties": {
+            "unit": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "unitRef",
+                "code",
+                "name",
+                "unitDimension",
+                "precision",
+                "status",
+                "version"
+              ],
+              "properties": {
+                "unitRef": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "unit definition reference"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "unit code"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "unit name"
+                },
+                "unitDimension": {
+                  "type": "string",
+                  "enum": [
+                    "COUNT",
+                    "WEIGHT",
+                    "VOLUME",
+                    "SERVICE_DURATION",
+                    "PACKAGE"
+                  ],
+                  "description": "unit category"
+                },
+                "precision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "decimal places; zero means whole numbers"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED"
+                  ],
+                  "description": "whether the unit can be selected for new configurations"
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "unit definition version"
+                }
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "unit definition version"
+        }
+      }
+    },
+    "CatalogUnitDeleteReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "result"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unitRef"
+          ],
+          "properties": {
+            "unitRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "deleted unit definition reference"
+            }
+          }
+        },
+        "version": {
+          "type": "integer",
+          "description": "delete receipt version"
         }
       }
     },

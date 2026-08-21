@@ -7,9 +7,14 @@ import {
   testId,
   useCursorStack,
   useDetailDrawer,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useMemo, useRef, useState} from 'react';
-import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  operationsContentTabRefreshSignal,
+  operationsProblemOf,
+  operationsRtk,
+} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import type {Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
@@ -20,6 +25,7 @@ import {
   envelopeData,
   hasCapability,
   inventoryAuthorityLabel,
+  inventoryUnitLabel,
   type InventoryCounts,
   type InventoryPage,
   type InventoryTargetSummary,
@@ -58,6 +64,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
   const [view, setView] = useState<StockView>('ALL');
   const detail = useDetailDrawer<Uuid>();
   const detailTriggerRef = useRef<HTMLElement | null>(null);
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const scopeReady = Boolean(queryContext.scopeRef);
   const navigationRequest = useMemo(
     () =>
@@ -104,6 +111,17 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
     [categoryRef, cursor, keyword, pageSize, queryContext.scopeRef, view],
   );
   const list = operationsRtk.useGetOperationsInventoryTargetsQuery(request, {skip: !scopeReady});
+  const refetchNavigation = navigation.refetch;
+  const refetchManifest = manifestQuery.refetch;
+  const refetchList = list.refetch;
+  useEffect(() => {
+    if (!scopeReady || contentTabRefreshVersion === 0) return;
+    // This catalog-inventory edge has no LIST tag. Re-read every inventory
+    // workbench model while preserving the current filters and cursor page.
+    void refetchNavigation();
+    void refetchManifest();
+    void refetchList();
+  }, [contentTabRefreshVersion, refetchList, refetchManifest, refetchNavigation, scopeReady]);
   const page = envelopeData<InventoryPage>(list.currentData);
   const rows = page?.items ?? [];
   const counts = useMemo<InventoryCounts>(() => {
@@ -185,10 +203,15 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         render: (_, row) => (
           <Space direction="vertical" size={0}>
             <span>
-              {row.balance} {row.consumptionUnit}
+              {row.balance} {inventoryUnitLabel(row.consumptionUnitSnapshot)}
             </span>
             <Typography.Text type="secondary" style={{fontSize: 12}}>
-              {row.conversionSummary ?? (row.countingUnit ? `盘点单位：${row.countingUnit}` : '未配置盘点单位')}
+              {row.conversionSummary ??
+                (row.countingUnitSnapshot ? (
+                  <>盘点单位：{inventoryUnitLabel(row.countingUnitSnapshot)}</>
+                ) : (
+                  '未配置盘点单位'
+                ))}
             </Typography.Text>
           </Space>
         ),

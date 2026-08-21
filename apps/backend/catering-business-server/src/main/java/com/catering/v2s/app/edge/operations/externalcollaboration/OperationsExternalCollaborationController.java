@@ -7,7 +7,6 @@ import com.catering.v2s.app.edge.platform.externalcollaboration.ExternalCollabor
 import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
-import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
@@ -119,5 +118,4 @@ public final class OperationsExternalCollaborationController {
     private static UUID providerTie(String providerCode) {
         return UUID.nameUUIDFromBytes(providerCode.getBytes(StandardCharsets.UTF_8));
     }
-
 }

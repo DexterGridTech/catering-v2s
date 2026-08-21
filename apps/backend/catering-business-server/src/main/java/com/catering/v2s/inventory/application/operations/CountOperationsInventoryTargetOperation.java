@@ -48,7 +48,7 @@ public class CountOperationsInventoryTargetOperation {
                         targetRef,
                         requiredLong(request.expectedVersion(), "expectedVersion"),
                         requiredDecimal(request.countedQuantity(), "countedQuantity"),
-                        request.unit(),
+                        request.countingUnitRef(),
                         Boolean.TRUE.equals(request.zeroConfirmation()),
                         request.note()),
                 invocation.idempotencyKey());

@@ -16,7 +16,7 @@ const displayTextDenominator = (source) => {
   return [
     ["bootstrap.displayName", source.bootstrapBoundary.displayName],
     ...fixtures.platformAdmins.map((entry) => [`platformAdmin:${entry.key}`, entry.displayName]),
-    ...fixtures.groupWorkspaces.map((entry) => [`groupWorkspace:${entry.key}`, entry.name]),
+    ...fixtures.groupWorkspaces.flatMap((entry) => [[`groupWorkspace:${entry.key}`, entry.name], [`operationsTitle:${entry.key}`, entry.operationsTitle ?? `${entry.name}运营管理后台`]]),
     ...fixtures.extensionDefinitions.flatMap((definition) => definition.fields.map((field) => [`extensionLabel:${definition.key}:${field.key}`, field.label])),
     ...organization.commercialGroups.flatMap((entry) => [[`commercialGroup:${entry.key}`, entry.name], ...Object.entries(entry.extensionValues ?? {}).map(([key, value]) => [`commercialGroupExtension:${entry.key}:${key}`, value])]),
     ...organization.regions.flatMap((entry) => [[`region:${entry.key}`, entry.name], ...Object.entries(entry.extensionValues ?? {}).map(([key, value]) => [`regionExtension:${entry.key}:${key}`, value])]),

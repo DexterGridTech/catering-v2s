@@ -62,20 +62,17 @@
           {
             "skuCode": "LATTE-SKU-S",
             "componentCode": "BEAN-001",
-            "quantity": 14,
-            "unit": "GRAM"
+            "quantity": 14
           },
           {
             "skuCode": "LATTE-SKU-M",
             "componentCode": "BEAN-001",
-            "quantity": 18,
-            "unit": "GRAM"
+            "quantity": 18
           },
           {
             "skuCode": "LATTE-SKU-L",
             "componentCode": "BEAN-001",
-            "quantity": 24,
-            "unit": "GRAM"
+            "quantity": 24
           }
         ],
         "relations": [
@@ -272,29 +269,25 @@
             "ownerCode": "CAESAR-001",
             "ownerKind": "ITEM",
             "componentCode": "LETTUCE-001",
-            "quantity": 120,
-            "unit": "GRAM"
+            "quantity": 120
           },
           {
             "ownerCode": "DRESSING-CLASSIC",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "DRESSING-001",
-            "quantity": 30,
-            "unit": "GRAM"
+            "quantity": 30
           },
           {
             "ownerCode": "SIZE-LARGE",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "CHICKEN-001",
-            "quantity": 80,
-            "unit": "GRAM"
+            "quantity": 80
           },
           {
             "ownerCode": "TOPPING-BACON",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "BACON-001",
-            "quantity": 20,
-            "unit": "GRAM"
+            "quantity": 20
           }
         ],
         "relations": [
@@ -449,43 +442,43 @@
         "stockTargets": [
           {
             "productCode": "BEAN-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "BOX-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "BOX",
+            "countingUnitCode": "PACK"
           },
           {
             "productCode": "LETTUCE-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "BACON-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "EGG-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "EACH",
+            "countingUnitCode": "EACH"
           },
           {
             "productCode": "CHICKEN-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "CUTLERY-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "BOX",
+            "countingUnitCode": "PACK"
           },
           {
             "productCode": "DRESSING-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           }
         ],
         "constructedAt": "seed-definition",
@@ -773,19 +766,461 @@
       "CAESAR-TOPPING": "配料"
     },
     "units": {
+      "SERVING": "份",
+      "EACH": "个",
+      "CUP": "杯",
+      "BOTTLE": "瓶",
+      "BOX": "箱",
+      "PACK": "包",
       "GRAM": "克",
       "KILOGRAM": "千克",
-      "EACH": "个",
-      "BOX": "箱",
-      "g": "克",
-      "ml": "毫升",
-      "bottle": "瓶",
-      "case": "箱",
-      "pack": "包",
-      "piece": "个",
-      "个": "个",
-      "套": "套"
+      "MILLILITER": "毫升",
+      "LITER": "升",
+      "HOUR": "小时",
+      "SET": "套",
+      "SLICE": "片",
+      "DISABLED_EACH": "停用个"
     }
+  },
+  "catalogDefinitionSeed": {
+    "tagDefinitions": [
+      {
+        "code": "RECOMMENDED",
+        "name": "推荐商品"
+      },
+      {
+        "code": "SEASONAL",
+        "name": "当季推荐"
+      }
+    ],
+    "unitDefinitions": [
+      {
+        "code": "SERVING",
+        "name": "份",
+        "unitDimension": "COUNT",
+        "precision": 0
+      },
+      {
+        "code": "EACH",
+        "name": "个",
+        "unitDimension": "COUNT",
+        "precision": 0
+      },
+      {
+        "code": "CUP",
+        "name": "杯",
+        "unitDimension": "COUNT",
+        "precision": 0
+      },
+      {
+        "code": "BOTTLE",
+        "name": "瓶",
+        "unitDimension": "COUNT",
+        "precision": 0
+      },
+      {
+        "code": "BOX",
+        "name": "箱",
+        "unitDimension": "PACKAGE",
+        "precision": 0
+      },
+      {
+        "code": "PACK",
+        "name": "包",
+        "unitDimension": "PACKAGE",
+        "precision": 0
+      },
+      {
+        "code": "GRAM",
+        "name": "克",
+        "unitDimension": "WEIGHT",
+        "precision": 0
+      },
+      {
+        "code": "KILOGRAM",
+        "name": "千克",
+        "unitDimension": "WEIGHT",
+        "precision": 4
+      },
+      {
+        "code": "MILLILITER",
+        "name": "毫升",
+        "unitDimension": "VOLUME",
+        "precision": 0
+      },
+      {
+        "code": "LITER",
+        "name": "升",
+        "unitDimension": "VOLUME",
+        "precision": 3
+      },
+      {
+        "code": "HOUR",
+        "name": "小时",
+        "unitDimension": "SERVICE_DURATION",
+        "precision": 2
+      },
+      {
+        "code": "SET",
+        "name": "套",
+        "unitDimension": "PACKAGE",
+        "precision": 0
+      },
+      {
+        "code": "SLICE",
+        "name": "片",
+        "unitDimension": "COUNT",
+        "precision": 0
+      },
+      {
+        "code": "DISABLED_EACH",
+        "name": "停用个",
+        "unitDimension": "COUNT",
+        "precision": 0,
+        "disableAfterCreate": true
+      }
+    ],
+    "materialItemCodes": [
+      "DRESSING-001",
+      "BACON-001",
+      "EGG-001",
+      "CHICKEN-001"
+    ],
+    "attributeDefinitions": [
+      {
+        "code": "SHELF_LIFE",
+        "name": "保质期",
+        "valueType": "TEXT",
+        "options": []
+      },
+      {
+        "code": "SPICINESS",
+        "name": "辣度",
+        "valueType": "SINGLE_SELECT",
+        "options": [
+          {
+            "name": "不辣",
+            "displayOrder": 0
+          },
+          {
+            "name": "微辣",
+            "displayOrder": 1
+          },
+          {
+            "name": "中辣",
+            "displayOrder": 2
+          }
+        ]
+      },
+      {
+        "code": "ALLERGENS",
+        "name": "过敏原",
+        "valueType": "MULTI_SELECT",
+        "options": [
+          {
+            "name": "蛋类",
+            "displayOrder": 0
+          },
+          {
+            "name": "乳制品",
+            "displayOrder": 1
+          },
+          {
+            "name": "麸质",
+            "displayOrder": 2
+          }
+        ]
+      }
+    ],
+    "orderOptionDefinitions": [
+      {
+        "code": "CAESAR_DRESSING",
+        "name": "酱汁",
+        "selectionMode": "SINGLE",
+        "values": [
+          {
+            "code": "CLASSIC",
+            "name": "凯撒酱",
+            "displayOrder": 0,
+            "materialItemCodes": [
+              "DRESSING-001"
+            ]
+          },
+          {
+            "code": "LIGHT",
+            "name": "少酱",
+            "displayOrder": 1,
+            "materialItemCodes": []
+          }
+        ]
+      },
+      {
+        "code": "CAESAR_TOPPINGS",
+        "name": "加料",
+        "selectionMode": "MULTIPLE",
+        "values": [
+          {
+            "code": "BACON",
+            "name": "培根",
+            "displayOrder": 0,
+            "materialItemCodes": [
+              "BACON-001"
+            ]
+          },
+          {
+            "code": "EGG",
+            "name": "鸡蛋",
+            "displayOrder": 1,
+            "materialItemCodes": [
+              "EGG-001"
+            ]
+          },
+          {
+            "code": "CHICKEN",
+            "name": "鸡胸肉",
+            "displayOrder": 2,
+            "materialItemCodes": [
+              "CHICKEN-001"
+            ]
+          }
+        ]
+      }
+    ],
+    "itemAssignments": [
+      {
+        "itemCode": "CAESAR-001",
+        "tagCodes": [
+          "RECOMMENDED"
+        ],
+        "salesUnitCode": "SERVING",
+        "baseMeasureUnitCode": "SERVING",
+        "skuUnitOverrides": [],
+        "attributes": [
+          {
+            "definitionCode": "SHELF_LIFE",
+            "textValue": "当天制作",
+            "optionNames": []
+          },
+          {
+            "definitionCode": "SPICINESS",
+            "textValue": null,
+            "optionNames": [
+              "微辣"
+            ]
+          },
+          {
+            "definitionCode": "ALLERGENS",
+            "textValue": null,
+            "optionNames": [
+              "蛋类",
+              "乳制品"
+            ]
+          }
+        ],
+        "orderOptions": [
+          {
+            "definitionCode": "CAESAR_DRESSING",
+            "required": false,
+            "minSelectionCount": null,
+            "maxSelectionCount": null,
+            "values": [
+              {
+                "valueCode": "CLASSIC",
+                "defaultValue": true,
+                "extraPrice": 0,
+                "materialQuantities": [
+                  {
+                    "materialItemCode": "DRESSING-001",
+                    "actualQuantity": 30
+                  }
+                ]
+              },
+              {
+                "valueCode": "LIGHT",
+                "defaultValue": false,
+                "extraPrice": 0,
+                "materialQuantities": []
+              }
+            ]
+          },
+          {
+            "definitionCode": "CAESAR_TOPPINGS",
+            "required": false,
+            "minSelectionCount": 0,
+            "maxSelectionCount": 2,
+            "values": [
+              {
+                "valueCode": "BACON",
+                "defaultValue": false,
+                "extraPrice": 200,
+                "materialQuantities": [
+                  {
+                    "materialItemCode": "BACON-001",
+                    "actualQuantity": 20
+                  }
+                ]
+              },
+              {
+                "valueCode": "EGG",
+                "defaultValue": false,
+                "extraPrice": 100,
+                "materialQuantities": [
+                  {
+                    "materialItemCode": "EGG-001",
+                    "actualQuantity": 1
+                  }
+                ]
+              },
+              {
+                "valueCode": "CHICKEN",
+                "defaultValue": false,
+                "extraPrice": 300,
+                "materialQuantities": [
+                  {
+                    "materialItemCode": "CHICKEN-001",
+                    "actualQuantity": 80
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "itemCode": "LATTE-001",
+        "tagCodes": [
+          "SEASONAL"
+        ],
+        "salesUnitCode": "CUP",
+        "baseMeasureUnitCode": "MILLILITER",
+        "skuUnitOverrides": [
+          {
+            "skuCode": "LATTE-SKU-S",
+            "salesUnitCode": "DISABLED_EACH",
+            "baseMeasureUnitCode": "MILLILITER",
+            "clearAfterReadback": true
+          },
+          {
+            "skuCode": "LATTE-SKU-M",
+            "salesUnitCode": null,
+            "baseMeasureUnitCode": null,
+            "clearAfterReadback": false
+          }
+        ],
+        "attributes": [
+          {
+            "definitionCode": "SHELF_LIFE",
+            "textValue": "当日饮用",
+            "optionNames": []
+          },
+          {
+            "definitionCode": "SPICINESS",
+            "textValue": null,
+            "optionNames": [
+              "不辣"
+            ]
+          },
+          {
+            "definitionCode": "ALLERGENS",
+            "textValue": null,
+            "optionNames": [
+              "乳制品"
+            ]
+          }
+        ],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "DINNER-SET-001",
+        "tagCodes": [],
+        "salesUnitCode": "SET",
+        "baseMeasureUnitCode": "SET",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "PORK-WEIGHT-001",
+        "tagCodes": [],
+        "salesUnitCode": "KILOGRAM",
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "DRESSING-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "BACON-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "EGG-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "EACH",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "CHICKEN-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "BEAN-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "BOX-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "BOX",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "LETTUCE-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "GRAM",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "CUTLERY-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "BOX",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      }
+    ]
   },
   "testDatasets": [
     {
@@ -875,12 +1310,12 @@
         {
           "type": "StockTarget",
           "code": "BEAN-UNIT-CONFLICT",
-          "consumptionUnit": "GRAM"
+          "baseMeasureUnitCode": "GRAM"
         },
         {
           "type": "StockTarget",
           "code": "BEAN-UNIT-CONFLICT",
-          "consumptionUnit": "EACH"
+          "baseMeasureUnitCode": "EACH"
         }
       ],
       "edges": [],
@@ -920,12 +1355,12 @@
           {
             "type": "StockTarget",
             "code": "BEAN-UNIT-CONFLICT",
-            "consumptionUnit": "GRAM"
+            "baseMeasureUnitCode": "GRAM"
           },
           {
             "type": "StockTarget",
             "code": "BEAN-UNIT-CONFLICT",
-            "consumptionUnit": "EACH"
+            "baseMeasureUnitCode": "EACH"
           }
         ],
         "edges": []
@@ -4090,7 +4525,6 @@
   "forbiddenStructures": [
     "SalesStockView",
     "InventoryAuthorityConfig",
-    "CatalogAttributeDefinition",
     "independentStockTargetCreate",
     "projectScopedProductionTag"
   ],
@@ -4165,5 +4599,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "89c0a55ec34c5b4c72832bee4340c4bc2d9676e670328256d81b9fa337c8fc27"
+  "fixtureDigest": "340391d8201e9085983ec40fc12452e7f29ad0d951d7a9d72e3bbfae95efb012"
 }

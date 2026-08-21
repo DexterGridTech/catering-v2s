@@ -65,6 +65,30 @@ const loadManagedRun = () => {
 
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
 const itemVersion = (json) => Number(itemResult(json)?.version ?? json?.version ?? 1);
+const sessionIdentityFromSession = (session, type, requested, diagnostic = () => {}) => {
+  const candidates = Array.isArray(session?.candidates) ? session.candidates : [];
+  const chosen = requested
+    ? candidates.find((entry) => entry.roleNodeType === type && String(entry.roleNodeRef) === String(requested))
+    : null;
+  if (!chosen) {
+    diagnostic({
+      type,
+      requested: requested || null,
+      mode: session?.mode || null,
+      outcome: session?.outcome || null,
+      contextVersion: session?.contextVersion || null,
+      assignmentCandidateCount: candidates.length,
+      assignmentCandidates: candidates.map((entry) => ({
+        type: entry.roleNodeType,
+        id: entry.roleNodeRef,
+        assignmentId: entry.roleAssignmentRef,
+        roleName: entry.roleName,
+      })),
+    });
+    fail(`SEED_SESSION_IDENTITY_NOT_VISIBLE:${type}`);
+  }
+  return chosen;
+};
 const dataNodeFromSession = (session, type, requested, diagnostic = () => {}) => {
   const selected = type === "STORE" ? session?.scopeContext?.store : session?.scopeContext?.headCompany;
   if (selected?.dataNodeRef && (!requested || selected.dataNodeRef === requested)) return {ref: selected.dataNodeRef, contextVersion: session.contextVersion};
@@ -80,8 +104,13 @@ const dataNodeFromSession = (session, type, requested, diagnostic = () => {}) =>
       candidateTypes: [...new Set((session?.dataNodeCandidates ?? []).map((entry) => entry.dataNodeType).filter(Boolean))],
       candidateCount: Array.isArray(session?.dataNodeCandidates) ? session.dataNodeCandidates.length : 0,
       candidateRefs: (session?.dataNodeCandidates ?? []).map((entry) => ({type: entry.dataNodeType, ref: entry.dataNodeRef, code: entry.dataNodeCode})),
-      assignmentCandidateCount: Array.isArray(session?.roleAssignmentCandidates) ? session.roleAssignmentCandidates.length : 0,
-      assignmentCandidates: (session?.roleAssignmentCandidates ?? []).map((entry) => ({type: entry.serviceNodeType, id: entry.serviceNodeId, assignmentId: entry.assignmentId})),
+      assignmentCandidateCount: Array.isArray(session?.candidates) ? session.candidates.length : 0,
+      assignmentCandidates: (session?.candidates ?? []).map((entry) => ({
+        type: entry.roleNodeType,
+        id: entry.roleNodeRef,
+        assignmentId: entry.roleAssignmentRef,
+        roleName: entry.roleName,
+      })),
       hasScopeContext: Boolean(session?.scopeContext),
     });
     fail(`SEED_DATA_NODE_NOT_VISIBLE:${type}`);
@@ -96,6 +125,44 @@ const requiredUuid = (value, label) => {
 };
 const dictionaryRefKey = (kind, code) => `${kind}:${code}`;
 const seedBusinessLabels = fixture.seedBusinessLabels ?? {};
+// This is a policy fixture, not an executor-local example.  It describes the
+// complete representative definition-library experience that R5 must expose;
+// the executor only resolves its codes through owner HTTP readbacks.
+const catalogDefinitionSeed = fixture.catalogDefinitionSeed;
+const requireCatalogDefinitionSeed = (seed = catalogDefinitionSeed) => {
+  if (!seed || !Array.isArray(seed.tagDefinitions) || !Array.isArray(seed.unitDefinitions)
+      || !Array.isArray(seed.materialItemCodes) || !Array.isArray(seed.attributeDefinitions)
+      || !Array.isArray(seed.orderOptionDefinitions) || !Array.isArray(seed.itemAssignments))
+    fail("SEED_CATALOG_DEFINITION_FIXTURE_REQUIRED");
+  const attributeTypes = [...new Set(seed.attributeDefinitions.map((entry) => entry.valueType))].sort();
+  const selectionModes = [...new Set(seed.orderOptionDefinitions.map((entry) => entry.selectionMode))].sort();
+  if (JSON.stringify(attributeTypes) !== JSON.stringify(["MULTI_SELECT", "SINGLE_SELECT", "TEXT"]))
+    fail("SEED_CATALOG_DEFINITION_ATTRIBUTE_TYPES_INVALID");
+  if (JSON.stringify(selectionModes) !== JSON.stringify(["MULTIPLE", "SINGLE"]))
+    fail("SEED_CATALOG_DEFINITION_SELECTION_MODES_INVALID");
+  const materialCodes = new Set(seed.materialItemCodes);
+  const materialReferences = seed.orderOptionDefinitions
+    .flatMap((definition) => definition.values ?? [])
+    .flatMap((value) => value.materialItemCodes ?? []);
+  if (!materialReferences.length || materialReferences.some((code) => !materialCodes.has(code)))
+    fail("SEED_CATALOG_DEFINITION_MATERIAL_FIXTURE_INVALID");
+  const unitCodes = new Set(seed.unitDefinitions.map((entry) => entry.code));
+  if (seed.unitDefinitions.length < 10 || seed.unitDefinitions.length > 99 || unitCodes.size !== seed.unitDefinitions.length)
+    fail("SEED_CATALOG_DEFINITION_UNIT_LIBRARY_INVALID");
+  const dimensions = new Set(["COUNT", "WEIGHT", "VOLUME", "SERVICE_DURATION", "PACKAGE"]);
+  if (seed.unitDefinitions.some((entry) => !entry.code || !isChineseBusinessText(entry.name)
+      || !dimensions.has(entry.unitDimension) || !Number.isInteger(entry.precision) || entry.precision < 0))
+    fail("SEED_CATALOG_DEFINITION_UNIT_FACTS_INVALID");
+  if (seed.itemAssignments.some((assignment) => (assignment.salesUnitCode !== null && !unitCodes.has(assignment.salesUnitCode))
+      || !unitCodes.has(assignment.baseMeasureUnitCode)
+      || (assignment.skuUnitOverrides || []).some((override) =>
+        (override.salesUnitCode !== null && !unitCodes.has(override.salesUnitCode))
+        || (override.baseMeasureUnitCode !== null && !unitCodes.has(override.baseMeasureUnitCode)))))
+    fail("SEED_CATALOG_DEFINITION_UNIT_ASSIGNMENT_INVALID");
+  for (const name of [...seed.tagDefinitions, ...seed.unitDefinitions, ...seed.attributeDefinitions, ...seed.orderOptionDefinitions]
+    .map((entry) => entry.name)) if (!isChineseBusinessText(name)) fail("SEED_CATALOG_DEFINITION_BUSINESS_LABEL_INVALID");
+  return seed;
+};
 const isChineseBusinessText = (value) => typeof value === "string" && /[\u3400-\u9fff]/.test(value) && !/[A-Za-z]/.test(value);
 const businessLabel = (labels, code, kind) => {
   const label = labels?.[code];
@@ -105,7 +172,6 @@ const businessLabel = (labels, code, kind) => {
 const categoryLabel = (code) => businessLabel(seedBusinessLabels.categories, code, "CATALOG_CATEGORY");
 const productionTagLabel = (code) => businessLabel(seedBusinessLabels.productionTags, code, "PRODUCTION_TAG");
 const dictionaryLabel = (kind, code) => businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
-const optionGroupLabel = (code) => businessLabel(seedBusinessLabels.optionGroups, code, "ORDER_OPTION_GROUP");
 const unitLabel = (code) => businessLabel(seedBusinessLabels.units, code, "UNIT");
 const skuAttributeValueCode = (attributeCode, valueCode, context = "UNKNOWN") => {
   const attribute = String(attributeCode ?? "").trim();
@@ -118,18 +184,84 @@ const freshLocalRef = (refs, key) => {
   return refs.localRefs.get(key);
 };
 const dictionaryRef = (refs, kind, code) => requiredUuid(refs.dictionaryRefs.get(dictionaryRefKey(kind, code)), `${kind}:${code}`);
+const unitDefinition = (refs, code) => {
+  if (code == null) return null;
+  const definition = refs.unitDefinitions.get(String(code));
+  if (!definition) fail(`SEED_UNIT_DEFINITION_REF_MISSING:${code}`);
+  return definition;
+};
+const unitRef = (refs, code) => {
+  const definition = unitDefinition(refs, code);
+  return definition == null ? null : requiredUuid(definition.unitRef, `CATALOG_UNIT:${code}`);
+};
+const unitSnapshot = (refs, code) => {
+  const definition = unitDefinition(refs, code);
+  if (!definition) fail("SEED_UNIT_SNAPSHOT_REQUIRED");
+  return {
+    unitRef: requiredUuid(definition.unitRef, `CATALOG_UNIT:${code}`),
+    code: definition.code,
+    name: definition.name,
+    unitDimension: definition.unitDimension,
+    precision: Number(definition.precision),
+  };
+};
 const itemRef = (refs, code) => requiredUuid(refs.itemRefs.get(code), `CATALOG_ITEM:${code}`);
 const skuCode = (refs, referenceOrCode) => refs.skuCodeByReference.get(referenceOrCode) ?? referenceOrCode;
 const skuRef = (refs, referenceOrCode) => requiredUuid(refs.skuRefs.get(skuCode(refs, referenceOrCode)), `PRODUCT_SKU:${referenceOrCode}`);
 const skuAttributeValueRef = (refs, attributeCode, valueCode, context = "UNKNOWN") => dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", skuAttributeValueCode(attributeCode, valueCode, context));
-const orderOptionValueRef = (refs, code) => dictionaryRef(refs, "ORDER_OPTION_VALUE", code);
-const optionValueRef = (refs, code) => orderOptionValueRef(refs, code);
 const skuDisplayName = (itemName, sku) => {
   const values = Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode]) => dictionaryLabel("SKU_ATTRIBUTE_VALUE", skuAttributeValueCode(attributeCode, valueCode, "sku:" + (sku.skuCode ?? sku.code ?? "UNKNOWN"))));
   return values.length ? `${itemName}（${values.join("、")}）` : itemName;
 };
-const sourceBusinessAttributes = (source) => ({商品来源: source.headquarterTemplate ? "总部标准商品" : "门店体验商品"});
-const canonicalBusinessAttributes = () => ({商品来源: "目录体验样品"});
+// The parity plan predates the scalar unit model.  This is an explicit,
+// finite fixture adapter, not a runtime fallback: every legacy locator must be
+// mapped to a unit-definition code before an owner command is sent.
+const sourceUnitCodeMap = Object.freeze({
+  PORTION: "SERVING",
+  PIECE: "EACH",
+  SET: "SET",
+  CUP: "CUP",
+  g: "GRAM",
+  piece: "EACH",
+  ml: "MILLILITER",
+  个: "EACH",
+  套: "SET",
+  pack: "PACK",
+  case: "BOX",
+  bottle: "BOTTLE",
+});
+const sourceUnitCode = (value, context) => {
+  if (value == null || value === "") return null;
+  const code = sourceUnitCodeMap[String(value)];
+  if (!code) fail(`SEED_SOURCE_UNIT_MAPPING_MISSING:${context}:${value}`);
+  return code;
+};
+const sourceUnitAssignment = (source) => {
+  const materialRule = (source.inventoryBomRules ?? [])
+    .find((rule) => rule.mode === "INDEPENDENT_STOCK" && rule.independentStock)?.independentStock ?? null;
+  const salesUnitCode = sourceUnitCode(source.salesUnitKey, `sales:${source.fixtureKey ?? source.catalogItemCode}`);
+  const baseMeasureUnitCode = sourceUnitCode(
+    materialRule?.consumptionUnitRef ?? source.salesUnitKey,
+    `base:${source.fixtureKey ?? source.catalogItemCode}`,
+  );
+  return {salesUnitCode, baseMeasureUnitCode, independentStock: materialRule};
+};
+// These are fixture-declared conversions, not a general unit-conversion
+// engine.  The owner still validates that both snapshots share a dimension.
+const seedConversionFactors = Object.freeze({
+  "KILOGRAM->GRAM": "1000",
+  "PACK->BOX": "10",
+});
+const seedConversionFactor = (countingCode, consumptionCode, context) => {
+  if (!countingCode) return "1";
+  const factor = seedConversionFactors[`${countingCode}->${consumptionCode}`];
+  if (!factor) fail(`SEED_CONVERSION_FACTOR_FIXTURE_MISSING:${context}:${countingCode}->${consumptionCode}`);
+  if (!(Number(factor) > 0) || !Number.isFinite(Number(factor))) fail(`SEED_CONVERSION_FACTOR_FIXTURE_INVALID:${context}`);
+  return factor;
+};
+const categoryRefFor = (source, refs) => source?.categoryKey
+  ? requiredUuid(refs.categoryRefs.get(String(source.categoryKey)), `CATALOG_CATEGORY:${source.categoryKey}`)
+  : null;
 const skuVariantDimensionsFor = (skus, refs, contextPrefix) => {
   const dimensionCodes = [...new Set((skus ?? []).flatMap((sku) => Object.keys(sku.attributeValues ?? {})))];
   return dimensionCodes.map((attributeCode) => ({
@@ -154,6 +286,7 @@ const skuVariantDimensionsFor = (skus, refs, contextPrefix) => {
 
 const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {includeComposite = true} = {}) => {
   const shapeKey = source.shapeKey;
+  const assignment = sourceUnitAssignment(source);
   const priceGranularity = shapeKey === "SKU_VARIANT_SALE_COUNTED" ? "SKU" : "ITEM";
   const price = source.standardSalePriceCents ?? null;
   const skuVariantDimensions = skuVariantDimensionsFor(source.skus ?? [], refs, "source:" + (source.fixtureKey ?? source.catalogItemCode));
@@ -168,22 +301,28 @@ const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {in
     status: "ENABLED",
     version: 1,
     mediaRefs: assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey] ? [assetRefs[sku.mediaAssetKey ?? source.mediaAssetKey]] : [],
+    salesUnitOverrideRef: null,
+    baseMeasureUnitOverrideRef: null,
   }));
-  const orderOptions = (source.optionGroups ?? []).map((group) => ({groupCode: group.optionGroupCode ?? group.optionGroupRef ?? group.groupName, groupName: group.groupName, selectionMode: group.selectionRule ?? "SINGLE", required: Boolean(group.required), values: (group.optionValues ?? []).map((value) => { const code = value.optionValueCode ?? value.optionValueRef; return {code, name: dictionaryLabel("ORDER_OPTION_VALUE", code), attributeValueRef: orderOptionValueRef(refs, code), default: false, extraPrice: value.standardPriceDeltaCents ?? null, productionEffects: value.preparationImpact ? [value.preparationImpact] : []}; })}));
   const compositeGroups = includeComposite ? (source.compositeStructure?.componentGroups ?? []).map((group, index) => ({groupCode: `GROUP-${index + 1}`, groupName: group.groupName, selectionRule: group.selectionRule, components: (group.components ?? []).map((component) => { const componentCode = sourceByKey.get(component.componentFixtureKey)?.catalogItemCode ?? component.componentFixtureKey; const componentSkuReference = component.componentSkuRef ?? null; const componentSkuCode = componentSkuReference ? skuCode(refs, componentSkuReference) : null; return {itemCode: componentCode, itemRef: itemRef(refs, componentCode), skuCode: componentSkuCode, productSkuRef: componentSkuReference ? skuRef(refs, componentSkuReference) : null, quantity: String(component.quantity ?? 1), unit: unitLabel("EACH"), default: Boolean(component.defaultSelected), extraPrice: component.standardExtraPriceCents ?? null, status: "ENABLED"}; })})) : [];
   return {
     name: source.name,
     shapeKey,
-    attributes: sourceBusinessAttributes(source),
+    // Product attributes and ordering options are relational definition facts.
+    // Every initial item save must therefore submit their typed empty collections,
+    // never the retired item-owned JSON/map structures from the V4 source fixture.
+    attributeAssignments: [],
+    orderOptionConfigs: [],
     images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : [],
     productionTagRefs: (source.tagKeys ?? []).map((code) => requiredUuid(refs.productionTagRefs.get(String(code)), `PRODUCTION_TAG:${code}`)),
-    categoryRefs: source.categoryKey ? [requiredUuid(refs.categoryRefs.get(String(source.categoryKey)), `CATALOG_CATEGORY:${source.categoryKey}`)] : [],
+    categoryRef: categoryRefFor(source, refs),
+    salesUnitRef: unitRef(refs, assignment.salesUnitCode),
+    baseMeasureUnitRef: unitRef(refs, assignment.baseMeasureUnitCode),
     shortName: source.shortName ?? source.name,
     identifiers: source.identifiers ?? [],
     priceGranularity,
     standardSalePrice: price,
     missingPriceCount: price === null ? 1 : 0,
-    orderOptions,
     compositeGroups,
     skuVariantDimensions,
     productionProfiles: {item: source.preparationProfile ?? {}, sku: {}, optionValue: {}},
@@ -200,8 +339,16 @@ const canonicalSeedEntries = (seedDatasets = [], dependencyOrder = []) => {
   });
 };
 
-const canonicalDraft = (dataset, item, assetRefs, refs) => {
+const definitionAssignmentFor = (itemCode) => {
+  const assignment = catalogDefinitionSeed.itemAssignments.find((entry) => entry.itemCode === itemCode);
+  if (!assignment) fail(`SEED_CATALOG_DEFINITION_ASSIGNMENT_MISSING:${itemCode}`);
+  return assignment;
+};
+
+const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = null) => {
   const entities = dataset.entities || {};
+  const assignment = assignmentOverride ?? definitionAssignmentFor(item.code);
+  const skuOverrides = new Map((assignment.skuUnitOverrides || []).map((override) => [override.skuCode, override]));
   const skuEntries = (entities.skus || []).map((sku) => ({
     productSkuRef: freshLocalRef(refs, `SKU:${sku.code}`),
     skuCode: sku.code,
@@ -225,22 +372,10 @@ const canonicalDraft = (dataset, item, assetRefs, refs) => {
     status: sku.status || "ENABLED",
     version: 1,
     mediaRefs: assetRefs[sku.mediaAssetKey || item.mediaAssetKey] ? [assetRefs[sku.mediaAssetKey || item.mediaAssetKey]] : [],
+    salesUnitOverrideRef: unitRef(refs, skuOverrides.get(sku.code)?.salesUnitCode ?? null),
+    baseMeasureUnitOverrideRef: unitRef(refs, skuOverrides.get(sku.code)?.baseMeasureUnitCode ?? null),
   }));
   const skuVariantDimensions = skuVariantDimensionsFor(entities.skus || [], refs, "canonical:" + dataset.fixtureId);
-  const optionGroups = (entities.optionGroups || []).map((group) => ({
-    groupCode: group.code,
-    groupName: optionGroupLabel(group.code),
-    selectionMode: "SINGLE",
-    required: true,
-    values: (entities.optionValues || []).filter((value) => value.groupCode === group.code).map((value) => ({
-      code: value.code,
-      name: dictionaryLabel("ORDER_OPTION_VALUE", value.code),
-      attributeValueRef: orderOptionValueRef(refs, value.code),
-      default: false,
-      extraPrice: null,
-      productionEffects: [],
-    })),
-  }));
   const compositeRelations = (entities.relations || []).filter((edge) => edge.from === item.code && edge.refKind === "SKU");
   const compositeGroups = compositeRelations.length ? [{
     groupCode: `${item.code}-COMPONENTS`,
@@ -254,17 +389,19 @@ const canonicalDraft = (dataset, item, assetRefs, refs) => {
     name: item.name,
     shapeKey: item.shapeKey,
     shortName: item.name,
-    attributes: canonicalBusinessAttributes(),
+    attributeAssignments: [],
+    orderOptionConfigs: [],
     images: sourceImage,
     identifiers: [],
     productionTagRefs: [],
-    categoryRefs: [],
+    categoryRef: null,
+    salesUnitRef: unitRef(refs, assignment.salesUnitCode),
+    baseMeasureUnitRef: unitRef(refs, assignment.baseMeasureUnitCode),
     priceGranularity: item.shapeKey === "SKU_VARIANT_SALE_COUNTED" ? "SKU" : "ITEM",
     standardSalePrice: standardPrice,
     missingPriceCount: standardPrice === null ? 1 : 0,
     skuVariantDimensions,
     skus: skuEntries,
-    orderOptions: optionGroups,
     compositeGroups,
     productionProfiles: {item: item.materialRole ? {materialRole: item.materialRole} : {}, sku: {}, optionValue: {}},
   };
@@ -303,7 +440,6 @@ const collectSeedReferences = (seedPlan) => {
   const canonical = canonicalSeedEntries(seedPlan.seedDatasets, seedPlan.canonicalDependencyOrder);
   const attributes = new Set();
   const skuAttributeValues = new Map();
-  const orderOptionValues = new Set();
   const problems = [];
   const collectSku = (sku, origin) => {
     for (const [attributeCode, valueCode] of Object.entries(sku?.attributeValues ?? {})) {
@@ -323,54 +459,33 @@ const collectSeedReferences = (seedPlan) => {
       skuAttributeValues.set(qualifiedCode, {code: qualifiedCode, attributeCode, valueCode: String(valueCode).trim()});
     }
   };
-  const collectOrderOption = (code, origin) => {
-    const normalized = String(code ?? "").trim();
-    if (!normalized) {
-      problems.push("SEED_ORDER_OPTION_VALUE_IDENTITY_INVALID:" + origin);
-      return;
-    }
-    orderOptionValues.add(normalized);
-  };
   for (const source of seedPlan.sourceItems ?? []) {
     for (const sku of source.skus ?? []) collectSku(sku, "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":sku:" + (sku.skuCode ?? "UNKNOWN"));
-    for (const group of source.optionGroups ?? []) {
-      for (const value of group.optionValues ?? []) collectOrderOption(value.optionValueCode ?? value.optionValueRef, "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":option-group:" + (group.optionGroupCode ?? group.optionGroupRef ?? group.groupName));
-    }
   }
   for (const {dataset} of canonical) {
     for (const sku of dataset.entities?.skus ?? []) collectSku(sku, "canonical:" + dataset.fixtureId + ":sku:" + (sku.code ?? "UNKNOWN"));
-    for (const value of dataset.entities?.optionValues ?? []) collectOrderOption(value.code, "canonical:" + dataset.fixtureId + ":option-value");
   }
   if (problems.length) fail("SEED_REFERENCE_PREFLIGHT_INVALID:" + problems.join("|"));
   return {
     attributes: [...attributes].sort(),
     skuAttributeValues: [...skuAttributeValues.values()].sort((left, right) => left.code.localeCompare(right.code)),
-    orderOptionValues: [...orderOptionValues].sort(),
   };
 };
 
 const assertSeedBusinessLabels = (seedPlan) => {
+  requireCatalogDefinitionSeed();
   const references = collectSeedReferences(seedPlan);
   const canonical = canonicalSeedEntries(seedPlan.seedDatasets, seedPlan.canonicalDependencyOrder);
-  const unitCodes = ["EACH"];
-  for (const source of seedPlan.sourceItems ?? []) {
-    for (const rule of source.inventoryBomRules ?? []) {
-      if (rule.independentStock) {
-        unitCodes.push(rule.independentStock.consumptionUnitRef ?? "EACH", rule.independentStock.countingUnitRef ?? rule.independentStock.consumptionUnitRef ?? "EACH");
-      }
-      for (const line of rule.bomLines ?? []) unitCodes.push(line.unit ?? "EACH");
-    }
-  }
-  for (const {dataset} of canonical) {
-    for (const line of dataset.entities?.bomLines ?? []) unitCodes.push(line.unit ?? "EACH");
-    for (const target of dataset.entities?.stockTargets ?? []) unitCodes.push(target.consumptionUnit, target.countingUnit);
-  }
+  // The label set is sourced from the finite unit-definition library.  Source
+  // parity locators are still exercised through the explicit adapter so an
+  // unseen legacy value cannot silently become a made-up unit.
+  const unitCodes = catalogDefinitionSeed.unitDefinitions.map((entry) => entry.code);
+  for (const source of seedPlan.sourceItems ?? []) sourceUnitAssignment(source);
+  for (const assignment of catalogDefinitionSeed.itemAssignments) definitionAssignmentFor(assignment.itemCode);
   assertExactBusinessLabelSet("CATALOG_CATEGORY", (seedPlan.sourceItems ?? []).map((item) => item.categoryKey), seedBusinessLabels.categories);
   assertExactBusinessLabelSet("PRODUCTION_TAG", (seedPlan.sourceItems ?? []).flatMap((item) => item.tagKeys ?? []), seedBusinessLabels.productionTags);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE", references.attributes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", references.skuAttributeValues.map((entry) => entry.code), seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
-  assertExactBusinessLabelSet("ORDER_OPTION_VALUE", references.orderOptionValues, seedBusinessLabels.dictionary?.ORDER_OPTION_VALUE);
-  assertExactBusinessLabelSet("ORDER_OPTION_GROUP", canonical.flatMap(({dataset}) => (dataset.entities?.optionGroups ?? []).map((group) => group.code)), seedBusinessLabels.optionGroups);
   assertExactBusinessLabelSet("UNIT", unitCodes, seedBusinessLabels.units);
 };
 
@@ -435,15 +550,46 @@ async function execute() {
     if (!accepted) { firstFailure ??= `${stage}_HTTP_${response.status}`; const error = new Error(firstFailure); error.response = json; throw error; }
     return {json, cookie: cookies(response.headers.get("set-cookie"))};
   };
-  const loginClient = async (scopeType, loginName, password, inheritedBrandRef = null) => {
-    const login = await request(`${scopeType}-login`, "operationsWorkspacePasswordLogin", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {body: {loginName, password}});
+  const loginClient = async (
+    scopeType,
+    loginName,
+    password,
+    inheritedBrandRef = null,
+    requestedDataNodeRef = null,
+    stageScope = scopeType,
+  ) => {
+    const login = await request(`${stageScope}-login`, "operationsWorkspacePasswordLogin", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {body: {loginName, password}});
     let cookie = login.cookie; if (!cookie) fail(`SEED_${scopeType}_SESSION_COOKIE_MISSING`);
-    const entry = await request(`${scopeType}-session-entry`, "getOperationsWorkspaceSessionEntry", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {cookie});
-    const requested = scopeType === "STORE" ? process.env.CATALOG_INVENTORY_STORE_REF : process.env.CATALOG_INVENTORY_HEAD_COMPANY_REF;
-    const current = dataNodeFromSession(entry.json, scopeType, requested, (detail) => phase(`${scopeType}-session-entry-diagnostic`, "FAIL", {operationId: "getOperationsWorkspaceSessionEntry", ...detail}));
+    const entry = await request(`${stageScope}-session-entry`, "getOperationsWorkspaceSessionEntry", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {cookie});
+    const requested = requestedDataNodeRef || (scopeType === "STORE" ? process.env.CATALOG_INVENTORY_STORE_REF : process.env.CATALOG_INVENTORY_HEAD_COMPANY_REF);
     let session = entry.json;
+    if (session?.outcome === "SELECT_IDENTITY") {
+      const identity = sessionIdentityFromSession(session, scopeType, requested, (detail) =>
+        phase(`${stageScope}-session-identity-diagnostic`, "FAIL", {
+          operationId: "getOperationsWorkspaceSessionEntry",
+          ...detail,
+        }));
+      const selected = await request(
+        `${stageScope}-select-context`,
+        "selectOperationsWorkspaceSessionContext",
+        {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"},
+        {
+          cookie,
+          body: {
+            roleAssignmentRef: identity.roleAssignmentRef,
+            requiredContextVersion: session.contextVersion,
+          },
+        },
+      );
+      session = selected.json;
+    }
+    const current = dataNodeFromSession(session, scopeType, requested, (detail) =>
+      phase(`${stageScope}-session-entry-diagnostic`, "FAIL", {
+        operationId: "getOperationsWorkspaceSessionEntry",
+        ...detail,
+      }));
     if (!current.ref) {
-      const selected = await request(`${scopeType}-select-data-node`, "selectOperationsWorkspaceSessionDataNode", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {cookie, body: {dataNodeRef: current.candidate.dataNodeRef, dataNodeType: scopeType, requiredContextVersion: current.contextVersion}});
+      const selected = await request(`${stageScope}-select-data-node`, "selectOperationsWorkspaceSessionDataNode", {groupWorkspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"}, {cookie, body: {dataNodeRef: current.candidate.dataNodeRef, dataNodeType: scopeType, requiredContextVersion: current.contextVersion}});
       session = selected.json;
     }
     const selectedNode = scopeType === "STORE" ? session?.scopeContext?.store : session?.scopeContext?.headCompany;
@@ -454,7 +600,7 @@ async function execute() {
     // seed, so reuse it when no explicit seed override is supplied instead of
     // asking the head-company scope to infer a brand from an ambiguous node.
     let brandRef = process.env.CATALOG_INVENTORY_BRAND_REF || inheritedBrandRef || null;
-    const context = await request(`${scopeType}-workbench-context`, "getOperationsCatalogWorkbenchContext", {}, {cookie, brandRef, queryParameters: {dataNodeRef}});
+    const context = await request(`${stageScope}-workbench-context`, "getOperationsCatalogWorkbenchContext", {}, {cookie, brandRef, queryParameters: {dataNodeRef}});
     brandRef = brandRef || context.json?.data?.brandRef || null;
     if (!brandRef) fail(`SEED_${scopeType}_BRAND_REF_MISSING`);
     return {scopeType, cookie, session, dataNodeRef: String(dataNodeRef), brandRef, workspaceKey: process.env.CATALOG_INVENTORY_GROUP_WORKSPACE_KEY || "aurora"};
@@ -462,10 +608,14 @@ async function execute() {
   try {
     const defaultPassword = credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD || process.env.CATALOG_INVENTORY_OPERATIONS_PASSWORD;
     const storeLogin = process.env.CATALOG_INVENTORY_STORE_LOGIN || "r5-account-single-role";
+    const inventoryLogin = process.env.CATALOG_INVENTORY_INVENTORY_LOGIN || "r5-account-multi-role";
     const headLogin = process.env.CATALOG_INVENTORY_HEAD_COMPANY_LOGIN || "r5-account-invite-existing";
     if (!defaultPassword) fail("SEED_OPERATIONS_PASSWORD_MISSING");
     const store = await loginClient("STORE", storeLogin, defaultPassword);
     const head = await loginClient("HEAD_COMPANY", headLogin, defaultPassword, store.brandRef);
+    const inventoryStore = await loginClient("STORE", inventoryLogin, defaultPassword, store.brandRef, store.dataNodeRef, "STORE_INVENTORY");
+    if (inventoryStore.dataNodeRef !== store.dataNodeRef || inventoryStore.brandRef !== store.brandRef)
+      fail("SEED_INVENTORY_CLIENT_SCOPE_MISMATCH");
     if (store.brandRef !== head.brandRef) fail("SEED_BRAND_SCOPE_MISMATCH");
     const clients = [head, store];
     const assetRefs = {};
@@ -501,7 +651,11 @@ async function execute() {
     const refsByClient = new Map();
     const refsFor = (client) => {
       const key = `${client.scopeType}:${client.dataNodeRef}`;
-      if (!refsByClient.has(key)) refsByClient.set(key, {categoryRefs: new Map(), productionTagRefs: new Map(), dictionaryRefs: new Map(), dictionaryParentRefs: new Map(), itemRefs: new Map(), skuRefs: new Map(), skuCodeByReference: new Map(), localRefs: new Map()});
+      if (!refsByClient.has(key)) refsByClient.set(key, {
+        categoryRefs: new Map(), productionTagRefs: new Map(), dictionaryRefs: new Map(), dictionaryParentRefs: new Map(),
+        itemRefs: new Map(), skuRefs: new Map(), skuCodeByReference: new Map(), localRefs: new Map(),
+        attributeDefinitions: new Map(), orderOptionDefinitions: new Map(), unitDefinitions: new Map(), disabledUnitCodes: new Set(),
+      });
       return refsByClient.get(key);
     };
     const recordItemReadback = async (client, refs, code, stage) => {
@@ -516,16 +670,55 @@ async function execute() {
         if (dictionaryRef(refs, "SKU_ATTRIBUTE_VALUE", valueCode) !== valueRef) fail(`SEED_SKU_ATTRIBUTE_VALUE_READBACK_REF_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
         if (value.valueLabel !== dictionaryLabel("SKU_ATTRIBUTE_VALUE", valueCode)) fail(`SEED_SKU_ATTRIBUTE_VALUE_READBACK_LABEL_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
       }
-      for (const group of item?.orderOptions || []) for (const value of group.values || []) if (value.code) {
-        const valueCode = String(value.code).trim();
-        const valueRef = requiredUuid(value.attributeValueRef, `ORDER_OPTION_VALUE:${valueCode}:readback`);
-        if (orderOptionValueRef(refs, valueCode) !== valueRef) fail(`SEED_ORDER_OPTION_VALUE_READBACK_REF_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
-        if (value.name !== dictionaryLabel("ORDER_OPTION_VALUE", valueCode)) fail(`SEED_ORDER_OPTION_VALUE_READBACK_LABEL_MISMATCH:${client.scopeType}:${code}:${valueCode}`);
-      }
       return item;
     };
     const materializeOwnerRefs = async (client) => {
       const refs = refsFor(client);
+      for (const definition of catalogDefinitionSeed.unitDefinitions) {
+        const created = await request(`${client.scopeType}-unit-${definition.code}`, "createOperationsCatalogUnit", {}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            code: definition.code,
+            name: definition.name,
+            unitDimension: definition.unitDimension,
+            precision: definition.precision,
+          },
+        });
+        const unit = itemResult(created.json)?.unit;
+        if (!unit || unit.code !== definition.code || unit.name !== definition.name
+            || unit.unitDimension !== definition.unitDimension || Number(unit.precision) !== Number(definition.precision)
+            || unit.status !== "ENABLED")
+          fail(`SEED_UNIT_DEFINITION_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+        refs.unitDefinitions.set(definition.code, {
+          unitRef: requiredUuid(unit.unitRef, `CATALOG_UNIT:${definition.code}`),
+          code: unit.code,
+          name: unit.name,
+          unitDimension: unit.unitDimension,
+          precision: Number(unit.precision),
+          status: unit.status,
+          version: Number(unit.version ?? itemVersion(created.json)),
+        });
+        if (definition.disableAfterCreate) refs.disabledUnitCodes.add(definition.code);
+      }
+      const enabledUnits = await request(`${client.scopeType}-unit-list-enabled`, "listOperationsCatalogUnits", {}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        queryParameters: {dataNodeRef: client.dataNodeRef, includeInactive: false},
+      });
+      const enabledRows = (enabledUnits.json?.data ?? enabledUnits.json)?.units ?? [];
+      if (enabledRows.length !== catalogDefinitionSeed.unitDefinitions.length
+          || enabledRows.some((unit) => unit.status !== "ENABLED"))
+        fail(`SEED_UNIT_ENABLED_CANDIDATE_READBACK_INVALID:${client.scopeType}`);
+      const allUnits = await request(`${client.scopeType}-unit-list-all`, "listOperationsCatalogUnits", {}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        queryParameters: {dataNodeRef: client.dataNodeRef, includeInactive: true},
+      });
+      const allRows = (allUnits.json?.data ?? allUnits.json)?.units ?? [];
+      if (allRows.length !== catalogDefinitionSeed.unitDefinitions.length)
+        fail(`SEED_UNIT_LIBRARY_READBACK_INVALID:${client.scopeType}`);
       const categoryCodes = [...new Set(plan.sourceItems.map((item) => item.categoryKey).filter(Boolean))];
       const tagCodes = [...new Set(plan.sourceItems.flatMap((item) => item.tagKeys || []))];
       for (const code of categoryCodes) await request(`${client.scopeType}-category-${code}`, "createOperationsCatalogCategory", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, code, name: categoryLabel(code), parentCategoryRef: null}});
@@ -542,12 +735,12 @@ async function execute() {
         refs.productionTagRefs.set(row.code, requiredUuid(row.tagRef, `PRODUCTION_TAG:${row.code}:readback`));
       }
       for (const code of tagCodes) requiredUuid(refs.productionTagRefs.get(code), `PRODUCTION_TAG:${code}`);
-      const materializeDictionary = async (kind, entries) => {
+      const materializeDictionary = async (kind, entries, entryName = (entry) => dictionaryLabel(kind, entry.code)) => {
         const codes = entries.map((entry) => entry.code);
-        for (const entry of entries) await request(`${client.scopeType}-${kind}-${entry.code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code: entry.code, name: dictionaryLabel(kind, entry.code), parentEntryRef: entry.parentEntryRef}});
+        for (const entry of entries) await request(`${client.scopeType}-${kind}-${entry.code}`, "createOperationsCatalogDictionaryEntry", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, dictionaryKind: kind, code: entry.code, name: entryName(entry), parentEntryRef: entry.parentEntryRef}});
         const dictionary = await request(`${client.scopeType}-${kind}-readback`, "getOperationsCatalogDictionary", {dictionaryKind: kind}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef, pageSize: 100}});
         for (const row of (dictionary.json?.data ?? dictionary.json)?.entries || []) {
-          if (codes.includes(row.code) && row.name !== dictionaryLabel(kind, row.code)) fail(`SEED_DICTIONARY_LABEL_READBACK_INVALID:${kind}:${row.code}`);
+          if (codes.includes(row.code) && row.name !== entryName(entries.find((entry) => entry.code === row.code))) fail(`SEED_DICTIONARY_LABEL_READBACK_INVALID:${kind}:${row.code}`);
           refs.dictionaryRefs.set(dictionaryRefKey(kind, row.code), requiredUuid(row.entryRef, `${kind}:${row.code}:readback`));
           refs.dictionaryParentRefs.set(dictionaryRefKey(kind, row.code), row.parentEntryRef ?? null);
         }
@@ -555,15 +748,12 @@ async function execute() {
       };
       await materializeDictionary("SKU_ATTRIBUTE", referenceCodes.attributes.map((code) => ({code, parentEntryRef: null})));
       await materializeDictionary("SKU_ATTRIBUTE_VALUE", referenceCodes.skuAttributeValues.map((entry) => ({code: entry.code, parentEntryRef: dictionaryRef(refs, "SKU_ATTRIBUTE", entry.attributeCode)})));
-      await materializeDictionary("ORDER_OPTION_VALUE", referenceCodes.orderOptionValues.map((code) => ({code, parentEntryRef: null})));
+      await materializeDictionary("TAG", catalogDefinitionSeed.tagDefinitions.map((entry) => ({...entry, parentEntryRef: null})), (entry) => entry.name);
       for (const entry of referenceCodes.skuAttributeValues) {
         const key = dictionaryRefKey("SKU_ATTRIBUTE_VALUE", entry.code);
         const actualParent = refs.dictionaryParentRefs.get(key);
         const expectedParent = dictionaryRef(refs, "SKU_ATTRIBUTE", entry.attributeCode);
         if (actualParent !== expectedParent) fail(`SEED_SKU_ATTRIBUTE_VALUE_PARENT_READBACK_INVALID:${client.scopeType}:${entry.code}`);
-      }
-      for (const code of referenceCodes.orderOptionValues) {
-        if (refs.dictionaryParentRefs.get(dictionaryRefKey("ORDER_OPTION_VALUE", code)) !== null) fail(`SEED_ORDER_OPTION_VALUE_PARENT_READBACK_INVALID:${client.scopeType}:${code}`);
       }
       return refs;
     };
@@ -582,7 +772,7 @@ async function execute() {
         const create = await request(`${client.scopeType}-canonical-create-${item.code}`, "createOperationsCatalogItem", {}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
-          body: {dataNodeRef: client.dataNodeRef, name: item.name, code: item.code, shapeKey: item.shapeKey, attributes: canonicalBusinessAttributes()},
+        body: {dataNodeRef: client.dataNodeRef, name: item.name, code: item.code, shapeKey: item.shapeKey, categoryRef: null},
         });
         const expectedCatalogVersion = itemVersion(create.json);
         const catalogDraft = canonicalDraft(dataset, item, assetRefs, refs);
@@ -594,7 +784,15 @@ async function execute() {
         });
         if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
         canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
-        await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}`);
+        const readback = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-${item.code}`);
+        if (readback?.categoryRef != null) {
+          phase(`${client.scopeType}-canonical-category-readback-${item.code}`, "FAIL", {
+            operationId: "getOperationsCatalogItem",
+            expectedCategoryRef: null,
+            actualCategoryRef: readback.categoryRef,
+          });
+          fail(`SEED_CATEGORY_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${item.code}`);
+        }
       }
     }
     const sourceByKey = new Map(plan.sourceItems.map((item) => [item.fixtureKey, item]));
@@ -627,6 +825,211 @@ async function execute() {
       phase(`${stage}-target-readback`, "FAIL", {operationId: "getOperationsCatalogItem", itemCode, skuCode: skuCode || null, targetRefRead: false});
       return null;
     };
+    const materializeCatalogDefinitionLibraries = async (client) => {
+      const refs = refsFor(client);
+      const index = inventoryIndexByClient.get(client.scopeType) || new Map();
+      const targetRefsByMaterialCode = new Map();
+      for (const itemCode of catalogDefinitionSeed.materialItemCodes) {
+        const targetRef = await resolveTargetRef(client, index, itemCode, null, `${client.scopeType}-definition-material`);
+        if (!targetRef) fail(`SEED_CATALOG_DEFINITION_STOCK_TARGET_MISSING:${client.scopeType}:${itemCode}`);
+        targetRefsByMaterialCode.set(itemCode, targetRef);
+      }
+      for (const definition of catalogDefinitionSeed.attributeDefinitions) {
+        const created = await request(`${client.scopeType}-attribute-definition-${definition.code}`, "createOperationsCatalogAttributeDefinition", {}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            code: definition.code,
+            name: definition.name,
+            valueType: definition.valueType,
+            options: definition.options.map((option) => ({optionRef: null, name: option.name, displayOrder: option.displayOrder})),
+          },
+        });
+        const readback = itemResult(created.json)?.definition;
+        if (!readback || readback.code !== definition.code || readback.valueType !== definition.valueType)
+          fail(`SEED_ATTRIBUTE_DEFINITION_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+        const options = new Map((readback.options ?? []).map((option) => [option.name, requiredUuid(option.optionRef, `ATTRIBUTE_OPTION:${definition.code}:${option.name}`)]));
+        if (options.size !== definition.options.length || definition.options.some((option) => !options.has(option.name)))
+          fail(`SEED_ATTRIBUTE_DEFINITION_OPTIONS_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+        refs.attributeDefinitions.set(definition.code, {definitionRef: requiredUuid(readback.definitionRef, `ATTRIBUTE_DEFINITION:${definition.code}`), options});
+      }
+      const attributes = await request(`${client.scopeType}-attribute-definitions-readback`, "listOperationsCatalogAttributeDefinitions", {}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        queryParameters: {dataNodeRef: client.dataNodeRef},
+      });
+      const readAttributes = (attributes.json?.data ?? attributes.json)?.definitions ?? [];
+      for (const definition of catalogDefinitionSeed.attributeDefinitions) {
+        const actual = readAttributes.find((entry) => entry.code === definition.code);
+        if (!actual || actual.name !== definition.name || actual.valueType !== definition.valueType)
+          fail(`SEED_ATTRIBUTE_DEFINITION_LIST_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+      }
+      for (const definition of catalogDefinitionSeed.orderOptionDefinitions) {
+        const created = await request(`${client.scopeType}-order-option-definition-${definition.code}`, "createOperationsCatalogOrderOptionDefinition", {}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            code: definition.code,
+            name: definition.name,
+            selectionMode: definition.selectionMode,
+            values: definition.values.map((value) => ({
+              valueRef: null,
+              code: value.code,
+              name: value.name,
+              displayOrder: value.displayOrder,
+              materials: value.materialItemCodes.map((itemCode) => ({materialItemRef: itemRef(refs, itemCode)})),
+            })),
+          },
+        });
+        const readback = itemResult(created.json)?.definition;
+        if (!readback || readback.code !== definition.code || readback.selectionMode !== definition.selectionMode)
+          fail(`SEED_ORDER_OPTION_DEFINITION_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+        const values = new Map();
+        for (const value of readback.values ?? []) {
+          const source = definition.values.find((entry) => entry.code === value.code);
+          if (!source || value.name !== source.name || Number(value.displayOrder) !== Number(source.displayOrder))
+            fail(`SEED_ORDER_OPTION_DEFINITION_VALUE_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}`);
+          const materials = new Map();
+          for (const material of value.materials ?? []) {
+            const materialItemRef = requiredUuid(material.materialItemRef, `ORDER_OPTION_MATERIAL_ITEM:${definition.code}:${value.code}`);
+            const itemCode = catalogDefinitionSeed.materialItemCodes.find((code) => itemRef(refs, code) === materialItemRef);
+            if (!itemCode || requiredUuid(material.stockTargetRef, `ORDER_OPTION_MATERIAL_TARGET:${definition.code}:${value.code}`) !== targetRefsByMaterialCode.get(itemCode))
+              fail(`SEED_ORDER_OPTION_MATERIAL_TARGET_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}`);
+            const expectedConsumptionUnitSnapshot = unitSnapshot(refs, definitionAssignmentFor(itemCode).baseMeasureUnitCode);
+            if (JSON.stringify(material.consumptionUnitSnapshot) !== JSON.stringify(expectedConsumptionUnitSnapshot))
+              fail(`SEED_ORDER_OPTION_MATERIAL_UNIT_SNAPSHOT_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}:${itemCode}`);
+            materials.set(itemCode, {
+              materialRef: requiredUuid(material.materialRef, `ORDER_OPTION_MATERIAL:${definition.code}:${value.code}:${itemCode}`),
+              consumptionUnitSnapshot: material.consumptionUnitSnapshot,
+            });
+          }
+          if (materials.size !== source.materialItemCodes.length || source.materialItemCodes.some((code) => !materials.has(code)))
+            fail(`SEED_ORDER_OPTION_MATERIAL_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}`);
+          values.set(value.code, {definitionValueRef: requiredUuid(value.valueRef, `ORDER_OPTION_DEFINITION_VALUE:${definition.code}:${value.code}`), materials});
+        }
+        if (values.size !== definition.values.length) fail(`SEED_ORDER_OPTION_DEFINITION_VALUES_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+        refs.orderOptionDefinitions.set(definition.code, {definitionRef: requiredUuid(readback.definitionRef, `ORDER_OPTION_DEFINITION:${definition.code}`), values});
+      }
+      const orderOptions = await request(`${client.scopeType}-order-option-definitions-readback`, "listOperationsCatalogOrderOptionDefinitions", {}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        queryParameters: {dataNodeRef: client.dataNodeRef},
+      });
+      const readOrderOptions = (orderOptions.json?.data ?? orderOptions.json)?.definitions ?? [];
+      for (const definition of catalogDefinitionSeed.orderOptionDefinitions) {
+        const actual = readOrderOptions.find((entry) => entry.code === definition.code);
+        if (!actual || actual.name !== definition.name || actual.selectionMode !== definition.selectionMode)
+          fail(`SEED_ORDER_OPTION_DEFINITION_LIST_READBACK_INVALID:${client.scopeType}:${definition.code}`);
+      }
+    };
+    const assignmentDraft = (client, assignment) => {
+      const refs = refsFor(client);
+      const canonical = canonicalByCode.get(assignment.itemCode);
+      if (!canonical) fail(`SEED_CATALOG_DEFINITION_ASSIGNMENT_ITEM_INVALID:${assignment.itemCode}`);
+      const draft = canonicalDraft(canonical.dataset, canonical.item, assetRefs, refs, assignment);
+      draft.tagRefs = assignment.tagCodes.map((code) => dictionaryRef(refs, "TAG", code));
+      draft.salesUnitRef = unitRef(refs, assignment.salesUnitCode);
+      draft.baseMeasureUnitRef = unitRef(refs, assignment.baseMeasureUnitCode);
+      draft.attributeAssignments = assignment.attributes.map((attribute) => {
+        const definition = refs.attributeDefinitions.get(attribute.definitionCode);
+        if (!definition) fail(`SEED_ATTRIBUTE_ASSIGNMENT_DEFINITION_MISSING:${client.scopeType}:${attribute.definitionCode}`);
+        return {
+          definitionRef: definition.definitionRef,
+          textValue: attribute.textValue,
+          optionRefs: attribute.optionNames.map((name) => requiredUuid(definition.options.get(name), `ATTRIBUTE_ASSIGNMENT_OPTION:${attribute.definitionCode}:${name}`)),
+        };
+      });
+      draft.orderOptionConfigs = assignment.orderOptions.map((config) => {
+        const definition = refs.orderOptionDefinitions.get(config.definitionCode);
+        if (!definition) fail(`SEED_ORDER_OPTION_ASSIGNMENT_DEFINITION_MISSING:${client.scopeType}:${config.definitionCode}`);
+        return {
+          definitionRef: definition.definitionRef,
+          required: config.required,
+          minSelectionCount: config.minSelectionCount,
+          maxSelectionCount: config.maxSelectionCount,
+          values: config.values.map((value) => {
+            const definitionValue = definition.values.get(value.valueCode);
+            if (!definitionValue) fail(`SEED_ORDER_OPTION_ASSIGNMENT_VALUE_MISSING:${client.scopeType}:${config.definitionCode}:${value.valueCode}`);
+            return {
+              definitionValueRef: definitionValue.definitionValueRef,
+              defaultValue: value.defaultValue,
+              extraPrice: value.extraPrice,
+              expectedBomVersion: 0,
+              materialQuantities: value.materialQuantities.map((quantity) => {
+                const material = definitionValue.materials.get(quantity.materialItemCode);
+                if (!material) fail(`SEED_ORDER_OPTION_ASSIGNMENT_MATERIAL_MISSING:${client.scopeType}:${config.definitionCode}:${value.valueCode}:${quantity.materialItemCode}`);
+                return {materialRef: material.materialRef, actualQuantity: quantity.actualQuantity};
+              }),
+            };
+          }),
+        };
+      });
+      draft.skus = (draft.skus ?? []).map((sku) => {
+        const override = (assignment.skuUnitOverrides ?? []).find((entry) => entry.skuCode === sku.skuCode);
+        return {
+          ...sku,
+          salesUnitOverrideRef: unitRef(refs, override?.salesUnitCode ?? null),
+          baseMeasureUnitOverrideRef: unitRef(refs, override?.baseMeasureUnitCode ?? null),
+        };
+      });
+      return draft;
+    };
+    const assertDefinitionAssignmentReadback = (client, assignment, actual) => {
+      const refs = refsFor(client);
+      const expectedTagRefs = assignment.tagCodes.map((code) => dictionaryRef(refs, "TAG", code)).sort();
+      if (JSON.stringify([...(actual.tagRefs ?? [])].sort()) !== JSON.stringify(expectedTagRefs))
+        fail(`SEED_CATALOG_TAG_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}`);
+      const expectedItemSalesUnitRef = unitRef(refs, assignment.salesUnitCode);
+      const expectedItemBaseMeasureUnitRef = unitRef(refs, assignment.baseMeasureUnitCode);
+      if ((actual.salesUnitRef ?? null) !== expectedItemSalesUnitRef || (actual.baseMeasureUnitRef ?? null) !== expectedItemBaseMeasureUnitRef)
+        fail(`SEED_ITEM_UNIT_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}`);
+      const assertEffectiveUnit = (actualUnit, expectedRef, expectedSource, label) => {
+        if ((actualUnit?.unitRef ?? null) !== expectedRef || (actualUnit?.inheritanceSource ?? null) !== expectedSource)
+          fail(`SEED_EFFECTIVE_UNIT_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${label}`);
+      };
+      assertEffectiveUnit(actual.salesUnit, expectedItemSalesUnitRef, expectedItemSalesUnitRef ? "ITEM_DEFAULT" : null, "ITEM_SALES");
+      assertEffectiveUnit(actual.baseMeasureUnit, expectedItemBaseMeasureUnitRef, expectedItemBaseMeasureUnitRef ? "ITEM_DEFAULT" : null, "ITEM_BASE");
+      for (const sku of actual.skus ?? []) {
+        const expected = (assignment.skuUnitOverrides ?? []).find((entry) => entry.skuCode === sku.skuCode);
+        const expectedSalesOverrideRef = unitRef(refs, expected?.salesUnitCode ?? null);
+        const expectedBaseOverrideRef = unitRef(refs, expected?.baseMeasureUnitCode ?? null);
+        if ((sku.salesUnitOverrideRef ?? null) !== expectedSalesOverrideRef || (sku.baseMeasureUnitOverrideRef ?? null) !== expectedBaseOverrideRef)
+          fail(`SEED_SKU_UNIT_OVERRIDE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${sku.skuCode}`);
+        const expectedSalesEffectiveRef = expectedSalesOverrideRef ?? expectedItemSalesUnitRef;
+        const expectedBaseEffectiveRef = expectedBaseOverrideRef ?? expectedItemBaseMeasureUnitRef;
+        assertEffectiveUnit(sku.salesUnit, expectedSalesEffectiveRef, expectedSalesEffectiveRef ? (expectedSalesOverrideRef ? "SKU_OVERRIDE" : "ITEM_DEFAULT") : null, `${sku.skuCode}:SALES`);
+        assertEffectiveUnit(sku.baseMeasureUnit, expectedBaseEffectiveRef, expectedBaseEffectiveRef ? (expectedBaseOverrideRef ? "SKU_OVERRIDE" : "ITEM_DEFAULT") : null, `${sku.skuCode}:BASE`);
+      }
+      for (const expected of assignment.attributes) {
+        const definition = refs.attributeDefinitions.get(expected.definitionCode);
+        const value = (actual.attributeAssignments ?? []).find((entry) => entry.definitionRef === definition?.definitionRef);
+        if (!value || value.textValue !== expected.textValue)
+          fail(`SEED_ATTRIBUTE_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}`);
+        const expectedOptions = expected.optionNames.map((name) => definition.options.get(name)).sort();
+        if (JSON.stringify([...(value.optionRefs ?? [])].sort()) !== JSON.stringify(expectedOptions))
+          fail(`SEED_ATTRIBUTE_ASSIGNMENT_OPTIONS_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}`);
+      }
+      for (const expected of assignment.orderOptions) {
+        const definition = refs.orderOptionDefinitions.get(expected.definitionCode);
+        const config = (actual.orderOptionConfigs ?? []).find((entry) => entry.definitionRef === definition?.definitionRef);
+        if (!config || config.required !== expected.required || config.minSelectionCount !== expected.minSelectionCount || config.maxSelectionCount !== expected.maxSelectionCount)
+          fail(`SEED_ORDER_OPTION_CONFIG_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}`);
+        for (const expectedValue of expected.values) {
+          const definitionValue = definition.values.get(expectedValue.valueCode);
+          const value = (config.values ?? []).find((entry) => entry.definitionValueRef === definitionValue?.definitionValueRef);
+          if (!value || value.defaultValue !== expectedValue.defaultValue || Number(value.extraPrice) !== Number(expectedValue.extraPrice))
+            fail(`SEED_ORDER_OPTION_OVERRIDE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}:${expectedValue.valueCode}`);
+          for (const expectedMaterial of expectedValue.materialQuantities) {
+            const material = definitionValue.materials.get(expectedMaterial.materialItemCode);
+            const actualQuantity = (value.materialQuantities ?? []).find((entry) => entry.materialRef === material?.materialRef);
+            if (!actualQuantity || String(actualQuantity.actualQuantity) !== String(expectedMaterial.actualQuantity))
+              fail(`SEED_ORDER_OPTION_QUANTITY_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}:${expectedValue.valueCode}:${expectedMaterial.materialItemCode}`);
+          }
+        }
+      }
+    };
     for (const client of clients) {
       const refs = refsFor(client);
       for (const source of seedItems) {
@@ -638,7 +1041,8 @@ async function execute() {
       for (const source of seedItems) {
         if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
         if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
-        const create = await request(`${client.scopeType}-create-${source.catalogItemCode}`, "createOperationsCatalogItem", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, name: source.name, code: source.catalogItemCode, shapeKey: source.shapeKey, attributes: sourceBusinessAttributes(source)}});
+        const expectedCategoryRef = categoryRefFor(source, refs);
+        const create = await request(`${client.scopeType}-create-${source.catalogItemCode}`, "createOperationsCatalogItem", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, name: source.name, code: source.catalogItemCode, shapeKey: source.shapeKey, categoryRef: expectedCategoryRef}});
         const expectedCatalogVersion = itemVersion(create.json);
         // Source fixture order is not a graph topological order.  Persist the
         // independent item shape first, read each owner UUID back, then add
@@ -647,7 +1051,17 @@ async function execute() {
         const save = await request(`${client.scopeType}-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}}});
         if (!itemResult(save.json)?.version) fail(`SEED_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
         currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
-        await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-${source.catalogItemCode}`);
+        const readback = await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-${source.catalogItemCode}`);
+        const actualCategoryRef = readback?.categoryRef ?? null;
+        if (actualCategoryRef !== expectedCategoryRef) {
+          phase(`${client.scopeType}-category-readback-${source.catalogItemCode}`, "FAIL", {
+            operationId: "getOperationsCatalogItem",
+            expectedCategoryRef,
+            actualCategoryRef,
+            categoryKey: source.categoryKey ?? null,
+          });
+          fail(`SEED_CATEGORY_ASSIGNMENT_READBACK_INVALID:${client.scopeType}:${source.catalogItemCode}`);
+        }
       }
       for (const source of seedItems) {
         if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
@@ -663,7 +1077,28 @@ async function execute() {
         inventoryIndexByClient.set(client.scopeType, buildTargetIndex(page.json));
       } else inventoryIndexByClient.set(client.scopeType, new Map());
       const nav = await request(`${client.scopeType}-navigation-readback`, "getOperationsCatalogNavigation", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
-      if (nav.json?.data?.tree === undefined && nav.json?.data?.shapeCounts === undefined) fail(`SEED_NAVIGATION_READBACK_INVALID:${client.scopeType}`);
+      const navigationData = nav.json?.data ?? nav.json;
+      if (navigationData?.tree === undefined && navigationData?.shapeCounts === undefined) fail(`SEED_NAVIGATION_READBACK_INVALID:${client.scopeType}`);
+      const expectedCategoryCounts = new Map();
+      for (const source of seedItems) {
+        if (client.scopeType === "HEAD_COMPANY" && !source.headquarterTemplate) continue;
+        if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
+        if (source.categoryKey) expectedCategoryCounts.set(String(source.categoryKey), (expectedCategoryCounts.get(String(source.categoryKey)) ?? 0) + 1);
+      }
+      const actualCategoryCounts = new Map((navigationData?.tree ?? []).map((row) => [String(row.code), Number(row.count ?? 0)]));
+      for (const [categoryCode, expectedCount] of expectedCategoryCounts) {
+        const actualCount = actualCategoryCounts.get(categoryCode);
+        if (actualCount !== expectedCount) {
+          phase(`${client.scopeType}-category-count-readback-${categoryCode}`, "FAIL", {
+            operationId: "getOperationsCatalogNavigation",
+            categoryCode,
+            expectedCount,
+            actualCount: actualCount ?? null,
+            countSource: "catalog_item_category",
+          });
+          fail(`SEED_CATEGORY_COUNT_READBACK_INVALID:${client.scopeType}:${categoryCode}`);
+        }
+      }
       const items = await request(`${client.scopeType}-items-readback`, "getOperationsCatalogItems", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef, pageSize: 100}});
       const expectedCount = client.scopeType === "HEAD_COMPANY" ? plan.eligibility.eligibleByScope.headCompany : plan.eligibility.eligibleByScope.store;
       const itemPage = items.json?.data ?? items.json;
@@ -700,18 +1135,23 @@ async function execute() {
       const refs = refsFor(client);
       for (const {dataset, item, target} of canonicalMaterialEntries(plan.seedDatasets, plan.canonicalDependencyOrder)) {
         if (!target) fail(`SEED_CANONICAL_MATERIAL_TARGET_MISSING:${item.code}`);
+        const assignment = definitionAssignmentFor(item.code);
+        const consumptionUnitCode = assignment.baseMeasureUnitCode;
+        const consumptionDefinition = unitDefinition(refs, consumptionUnitCode);
+        const countingUnitCode = consumptionDefinition.unitDimension === "WEIGHT"
+          ? "KILOGRAM"
+          : consumptionDefinition.unitDimension === "PACKAGE" ? "PACK" : null;
         const node = {
           nodeType: "CATALOG_ITEM",
           mode: "INDEPENDENT_STOCK",
           itemCode: item.code,
           itemRef: itemRef(refs, item.code),
           productSkuRef: null,
-          consumptionUnit: unitLabel(target.consumptionUnit),
           configuration: {
             allowNegative: false,
             lowStockThreshold: "0",
-            countingUnit: unitLabel(target.countingUnit),
-            conversionFactor: "1",
+            countingUnitRef: unitRef(refs, countingUnitCode),
+            conversionFactor: seedConversionFactor(countingUnitCode, consumptionUnitCode, `canonical:${item.code}`),
           },
         };
         const configured = await request(`${client.scopeType}-canonical-material-config-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
@@ -739,7 +1179,29 @@ async function execute() {
         const materialRule = rules.find((rule) => rule.mode === "INDEPENDENT_STOCK" && rule.independentStock);
         if (materialRule) {
           const stock = materialRule.independentStock;
-          const node = {nodeType: "CATALOG_ITEM", mode: "INDEPENDENT_STOCK", itemCode: source.catalogItemCode, itemRef: itemRef(refs, source.catalogItemCode), productSkuRef: null, consumptionUnit: unitLabel(stock.consumptionUnitRef || "EACH"), configuration: {allowNegative: Boolean(stock.allowNegative), lowStockThreshold: String(stock.lowStockThreshold ?? 0), countingUnit: unitLabel(stock.countingUnitRef || stock.consumptionUnitRef || "EACH"), conversionFactor: String(stock.countingToConsumptionQuantity || 1)}};
+          const assignment = sourceUnitAssignment(source);
+          const consumptionDefinition = unitDefinition(refs, assignment.baseMeasureUnitCode);
+          const proposedCountingCode = stock.countingUnitEnabled ? sourceUnitCode(stock.countingUnitRef, `counting:${source.fixtureKey ?? source.catalogItemCode}`) : null;
+          const proposedCountingDefinition = proposedCountingCode ? unitDefinition(refs, proposedCountingCode) : null;
+          const countingUnitCode = proposedCountingDefinition && proposedCountingDefinition.unitDimension === consumptionDefinition.unitDimension
+            ? proposedCountingCode
+            : null;
+          const conversionFactor = countingUnitCode ? String(stock.countingToConsumptionQuantity ?? 1) : "1";
+          if (!(Number(conversionFactor) > 0) || !Number.isFinite(Number(conversionFactor)))
+            fail(`SEED_SOURCE_CONVERSION_FACTOR_INVALID:${source.fixtureKey ?? source.catalogItemCode}`);
+          const node = {
+            nodeType: "CATALOG_ITEM",
+            mode: "INDEPENDENT_STOCK",
+            itemCode: source.catalogItemCode,
+            itemRef: itemRef(refs, source.catalogItemCode),
+            productSkuRef: null,
+            configuration: {
+              allowNegative: Boolean(stock.allowNegative),
+              lowStockThreshold: String(stock.lowStockThreshold ?? 0),
+              countingUnitRef: unitRef(refs, countingUnitCode),
+              conversionFactor,
+            },
+          };
           const detail = await request(`${client.scopeType}-material-config-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
@@ -779,6 +1241,89 @@ async function execute() {
         inventoryIndexByClient.set(client.scopeType, index);
       }
     }
+    // Exercise the real owner normalization path on a canonical material:
+    // 0.3567 kg must become 356 g because the consumption unit declares
+    // precision zero and truncation is toward zero.  The follow-up rename
+    // proves the ledger keeps its immutable consumption snapshot rather than
+    // re-reading a later unit-definition name.
+    const verifyPrecisionAndHistory = async (client, catalogClient = client) => {
+      const refs = refsFor(catalogClient);
+      const index = inventoryIndexByClient.get(client.scopeType) || new Map();
+      const targetRef = index.get(keyForTarget("BEAN-001", null));
+      if (!targetRef) fail(`SEED_PRECISION_TARGET_MISSING:${client.scopeType}:BEAN-001`);
+      const currentResponse = await request(`${client.scopeType}-precision-current`, "getOperationsInventoryTarget", {targetRef}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        queryParameters: {dataNodeRef: client.dataNodeRef},
+      });
+      const current = currentResponse.json?.data ?? currentResponse.json;
+      const consumption = current?.target?.consumptionUnitSnapshot;
+      const counting = current?.configuration?.countingUnitSnapshot;
+      if (consumption?.code !== "GRAM" || Number(consumption.precision) !== 0 || counting?.code !== "KILOGRAM")
+        fail(`SEED_PRECISION_UNIT_SNAPSHOT_INVALID:${client.scopeType}`);
+      const expectedVersion = Number(current.version);
+      if (!Number.isInteger(expectedVersion) || expectedVersion < 1) fail(`SEED_PRECISION_VERSION_INVALID:${client.scopeType}`);
+      const counted = await request(`${client.scopeType}-precision-count`, "countOperationsInventoryTarget", {targetRef}, {
+        cookie: client.cookie,
+        brandRef: client.brandRef,
+        body: {
+          dataNodeRef: client.dataNodeRef,
+          targetRef,
+          expectedVersion,
+          countedQuantity: "0.3567",
+          countingUnitRef: counting.unitRef,
+          note: "单位精度验证",
+          zeroConfirmation: false,
+        },
+      });
+      const mutation = itemResult(counted.json);
+      if (String(mutation?.after ?? "") !== "356" || String(mutation?.change ?? "") !== "356" || !mutation?.ledgerEntryRef)
+        fail(`SEED_PRECISION_TRUNCATION_INVALID:${client.scopeType}`);
+      const ledger = async (stage) => {
+        const response = await request(stage, "getOperationsInventoryTargetLedger", {targetRef}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          queryParameters: {targetRef, cursor: "", pageSize: 20},
+        });
+        return response.json?.data ?? response.json;
+      };
+      const firstLedger = await ledger(`${client.scopeType}-precision-ledger-before-rename`);
+      const firstEntry = (firstLedger?.entries ?? []).find((entry) => entry.entryRef === mutation.ledgerEntryRef);
+      if (firstEntry?.changeQuantity !== "356" || firstEntry?.consumptionUnitSnapshot?.code !== "GRAM"
+          || firstEntry?.consumptionUnitSnapshot?.name !== "克" || Number(firstEntry?.consumptionUnitSnapshot?.precision) !== 0)
+        fail(`SEED_PRECISION_LEDGER_SNAPSHOT_INVALID:${client.scopeType}`);
+      const gram = unitDefinition(refs, "GRAM");
+      const renamed = await request(`${client.scopeType}-precision-rename`, "updateOperationsCatalogUnit", {unitRef: gram.unitRef}, {
+        cookie: catalogClient.cookie,
+        brandRef: catalogClient.brandRef,
+        body: {dataNodeRef: catalogClient.dataNodeRef, unitRef: gram.unitRef, expectedVersion: gram.version, name: "克（历史验证）"},
+      });
+      const renamedUnit = itemResult(renamed.json)?.unit;
+      if (!renamedUnit || renamedUnit.name !== "克（历史验证）") fail(`SEED_PRECISION_RENAME_READBACK_INVALID:${client.scopeType}`);
+      const afterRename = await ledger(`${client.scopeType}-precision-ledger-after-rename`);
+      const historicalEntry = (afterRename?.entries ?? []).find((entry) => entry.entryRef === mutation.ledgerEntryRef);
+      if (historicalEntry?.consumptionUnitSnapshot?.name !== "克") fail(`SEED_PRECISION_HISTORY_REINTERPRETED:${client.scopeType}`);
+      await request(`${client.scopeType}-precision-rename-restore`, "updateOperationsCatalogUnit", {unitRef: gram.unitRef}, {
+        cookie: catalogClient.cookie,
+        brandRef: catalogClient.brandRef,
+        body: {dataNodeRef: catalogClient.dataNodeRef, unitRef: gram.unitRef, expectedVersion: Number(renamedUnit.version), name: "克"},
+      });
+      phase(`${client.scopeType}-precision-history`, "PASS", {
+        operationId: "countOperationsInventoryTarget",
+        targetRef,
+        input: "0.3567 KILOGRAM",
+        storedConsumptionQuantity: "356 GRAM",
+        ledgerEntryRef: mutation.ledgerEntryRef,
+        historySnapshotStable: true,
+      });
+    };
+    await verifyPrecisionAndHistory(inventoryStore, store);
+    // The reusable definitions are deliberately created only after the
+    // material items' independent StockTargets have been read from their
+    // owning inventory projections.  The order-option owner command resolves
+    // the target itself in the same REQUIRED transaction; the seed never
+    // fabricates or supplies an inventory target reference across the boundary.
+    for (const client of clients) await materializeCatalogDefinitionLibraries(client);
     // Write BOM rows after every independent target exists and its owner ref has
     // been read back.  Reuse the version returned by each prior save so one
     // item with several BOM nodes cannot collide on a hard-coded version.
@@ -788,24 +1333,31 @@ async function execute() {
       const index = inventoryIndexByClient.get(client.scopeType) || new Map();
       for (const {dataset, item} of canonicalEntries) {
         const lines = dataset.entities?.bomLines || [];
-        const itemLines = lines.filter((line) => (line.ownerCode || item.code) === item.code || line.ownerKind === "ITEM" || line.ownerKind === "OPTION_VALUE");
+        // Retired fixture option-value rows were owned by the old dictionary
+        // leaf.  The current owner model derives option-value BOM rows from
+        // definition templates plus product material quantities below, so only
+        // item/SKU BOM facts are materialized in this legacy canonical pass.
+        const itemLines = lines.filter((line) => line.ownerKind !== "OPTION_VALUE" && ((line.ownerCode || item.code) === item.code || line.ownerKind === "ITEM"));
         const grouped = new Map();
         for (const line of itemLines) {
           const ownerCode = line.ownerCode || item.code;
           const skuCode = line.ownerKind === "SKU" || line.skuCode ? (line.skuCode || ownerCode) : null;
-          const optionValueCode = line.ownerKind === "OPTION_VALUE" ? ownerCode : null;
+          const optionValueCode = null;
           const key = `${ownerCode}|${skuCode || "ITEM"}|${optionValueCode || ""}`;
           if (!grouped.has(key)) grouped.set(key, {ownerCode, skuCode, optionValueCode, lines: []});
           grouped.get(key).lines.push(line);
         }
         for (const group of grouped.values()) {
           const rows = [];
+          const expectedRows = [];
           for (const line of group.lines) {
             const targetRef = await resolveTargetRef(client, index, line.componentCode, null, `${client.scopeType}-canonical-bom-${item.code}`);
             if (!targetRef) fail(`SEED_CANONICAL_BOM_TARGET_MISSING:${client.scopeType}:${item.code}:${line.componentCode}`);
-            rows.push({targetRef, quantity: String(line.quantity), unit: unitLabel(line.unit), lineSign: "POSITIVE"});
+            const row = {targetRef, quantity: String(line.quantity), lineSign: "POSITIVE"};
+            rows.push(row);
+            expectedRows.push({...row, consumptionUnitSnapshot: unitSnapshot(refs, definitionAssignmentFor(line.componentCode).baseMeasureUnitCode)});
           }
-          const nodeType = group.optionValueCode ? "OPTION_VALUE_BOM" : (group.skuCode ? "SKU_BOM" : "ITEM_BOM");
+          const nodeType = group.skuCode ? "SKU_BOM" : "ITEM_BOM";
           // The idempotency key is derived from the stage.  Option-value BOM
           // groups therefore need their option value in the stage as well as
           // the item/SKU; otherwise several legitimate groups collapse to the
@@ -819,7 +1371,7 @@ async function execute() {
             dataNodeRef: client.dataNodeRef,
               itemCode: item.code,
               sections: {
-                catalogDraft: {...canonicalDraft(dataset, item, assetRefs, refs), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType, itemCode: item.code, itemRef: itemRef(refs, item.code), skuCode: group.skuCode, productSkuRef: group.skuCode ? skuRef(refs, group.skuCode) : null, optionValueCode: group.optionValueCode, optionValueRef: group.optionValueCode ? optionValueRef(refs, group.optionValueCode) : null, version: 0}))},
+                catalogDraft: {...canonicalDraft(dataset, item, assetRefs, refs), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType, itemCode: item.code, itemRef: itemRef(refs, item.code), skuCode: group.skuCode, productSkuRef: group.skuCode ? skuRef(refs, group.skuCode) : null, optionValueCode: null, optionValueRef: null, version: 0}))},
                 inventoryConfiguration: {nodes: []},
                 expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
                 expectedInventoryVersions: [],
@@ -828,7 +1380,7 @@ async function execute() {
           });
           if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_BOM_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}:${group.skuCode || "ITEM"}`);
           canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
-          expectedBomReadbacks.push({client, source: {catalogItemCode: item.code, name: item.name}, nodeType, nodeSku: group.skuCode, nodeOptionValue: group.optionValueCode, rows, canonical: true});
+          expectedBomReadbacks.push({client, source: {catalogItemCode: item.code, name: item.name}, nodeType, nodeSku: group.skuCode, nodeOptionValue: group.optionValueCode, rows: expectedRows, canonical: true});
         }
       }
       for (const source of seedItems) {
@@ -840,13 +1392,16 @@ async function execute() {
           const nodeSkuReference = rule.nodeType === "SKU" ? String(rule.nodeKey).replace(/^SKU:/, "") : null;
           const nodeSku = nodeSkuReference ? skuCode(refs, nodeSkuReference) : null;
           const rows = [];
+          const expectedRows = [];
           for (const line of rule.bomLines || []) {
             const component = sourceByKey.get(line.componentFixtureKey);
             if (!component) fail(`SEED_BOM_COMPONENT_MISSING:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}:${line.componentFixtureKey}`);
             const componentSku = line.componentSkuRef ? skuCode(refs, line.componentSkuRef) : null;
             const targetRef = await resolveTargetRef(client, index, component.catalogItemCode, componentSku, `${client.scopeType}-bom-${source.catalogItemCode}`);
             if (!targetRef) fail(`SEED_BOM_TARGET_MISSING:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}:${component.fixtureKey}:${componentSku || "ITEM"}`);
-            rows.push({targetRef, quantity: String(line.quantityPerUnit ?? line.quantity ?? 1), unit: unitLabel(line.unit || "EACH"), lineSign: "POSITIVE"});
+            const row = {targetRef, quantity: String(line.quantityPerUnit ?? line.quantity ?? 1), lineSign: "POSITIVE"};
+            rows.push(row);
+            expectedRows.push({...row, consumptionUnitSnapshot: unitSnapshot(refs, sourceUnitAssignment(component).baseMeasureUnitCode)});
           }
           if (rows.length !== (rule.bomLines || []).length || !rows.length) fail(`SEED_BOM_ROWS_INCOMPLETE:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}`);
           const bomSave = await request(`${client.scopeType}-bom-${source.catalogItemCode}-${nodeSku || "ITEM"}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
@@ -865,14 +1420,15 @@ async function execute() {
             },
           });
           currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(bomSave.json));
-          expectedBomReadbacks.push({client, source, nodeType: rule.nodeType === "SKU" ? "SKU_BOM" : "ITEM_BOM", nodeSku, rows});
+          expectedBomReadbacks.push({client, source, nodeType: rule.nodeType === "SKU" ? "SKU_BOM" : "ITEM_BOM", nodeSku, rows: expectedRows});
         }
       }
     }
     // Full readback is a business assertion, not just HTTP status.  Every BOM
     // rule is read back by source item/node and every target ref, quantity and
-    // unit is compared; a single omitted component must fail the seed rather
-    // than being hidden by a non-empty sample item.
+    // owner-derived consumption snapshot is compared; a single omitted
+    // component must fail the seed rather than being hidden by a non-empty
+    // sample item.
     for (const expected of expectedBomReadbacks) {
       const readbackNodeKey = expected.nodeOptionValue || expected.nodeSku || "ITEM";
       const detail = await request(`bom-readback-${expected.client.scopeType}-${expected.source.catalogItemCode}-${readbackNodeKey}`, "getOperationsCatalogItem", {itemCode: expected.source.catalogItemCode}, {cookie: expected.client.cookie, brandRef: expected.client.brandRef, queryParameters: {dataNodeRef: expected.client.dataNodeRef}});
@@ -881,8 +1437,139 @@ async function execute() {
       const matched = actualRows.filter((row) => row.nodeType === expected.nodeType && (row.skuCode || null) === expected.nodeSku && (row.optionValueCode || null) === (expected.nodeOptionValue || null));
       if (matched.length !== expected.rows.length) fail(`SEED_BOM_READBACK_ROWS_MISMATCH:${expected.client.scopeType}:${expected.source.catalogItemCode}:${expected.nodeSku || "ITEM"}`);
       for (const expectedRow of expected.rows) {
-        const actual = matched.find((row) => row.targetRef === expectedRow.targetRef && String(row.quantity) === expectedRow.quantity && String(row.unit) === expectedRow.unit);
+        const actual = matched.find((row) => row.targetRef === expectedRow.targetRef
+          && String(row.quantity) === expectedRow.quantity
+          && JSON.stringify(row.consumptionUnitSnapshot) === JSON.stringify(expectedRow.consumptionUnitSnapshot));
         if (!actual) fail(`SEED_BOM_READBACK_FACT_MISMATCH:${expected.client.scopeType}:${expected.source.catalogItemCode}:${expected.nodeSku || "ITEM"}`);
+      }
+    }
+    // Attach the reusable definitions to representative sale items after all
+    // legacy item/SKU BOM writes.  A catalog save replaces the typed assignment
+    // collections, so this must be the final catalog-draft save for each item.
+    // The inventory coordinator creates the OPTION_VALUE_BOM rows from these
+    // configuration values and their definition-owned material templates.
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const assignment of catalogDefinitionSeed.itemAssignments) {
+        const draft = assignmentDraft(client, assignment);
+        const configured = await request(`${client.scopeType}-definition-assignment-${assignment.itemCode}`, "saveOperationsCatalogItem", {itemCode: assignment.itemCode}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          headers: catalogAssetBindGrantHeaders(draft),
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            itemCode: assignment.itemCode,
+            sections: {
+              catalogDraft: draft,
+              inventoryConfiguration: {nodes: []},
+              expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, assignment.itemCode)) ?? 1,
+              expectedInventoryVersions: [],
+            },
+          },
+        });
+        if (!itemResult(configured.json)?.version) fail(`SEED_CATALOG_DEFINITION_ASSIGNMENT_SAVE_READBACK_MISSING:${client.scopeType}:${assignment.itemCode}`);
+        canonicalVersions.set(canonicalItemKey(client, assignment.itemCode), itemVersion(configured.json));
+        const actual = await recordItemReadback(client, refs, assignment.itemCode, `${client.scopeType}-definition-assignment-${assignment.itemCode}`);
+        assertDefinitionAssignmentReadback(client, assignment, actual);
+        const expectedOptionMaterialRows = assignment.orderOptions.flatMap((config) => config.values)
+          .flatMap((value) => value.materialQuantities).length;
+        const actualOptionMaterialRows = (actual.inventoryBom ?? [])
+          .filter((row) => row.nodeType === "OPTION_VALUE_BOM").length;
+        if (actualOptionMaterialRows !== expectedOptionMaterialRows)
+          fail(
+            `SEED_ORDER_OPTION_BOM_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:expected=${expectedOptionMaterialRows}:actual=${actualOptionMaterialRows}`,
+          );
+      }
+    }
+    // Disable only after the unit has a real catalog/SKU binding.  The active
+    // candidate list must then exclude it while the existing readback keeps
+    // the immutable reference and snapshot visible.
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const code of refs.disabledUnitCodes) {
+        const unit = unitDefinition(refs, code);
+        const disabled = await request(`${client.scopeType}-unit-disable-${code}`, "disableOperationsCatalogUnit", {unitRef: unit.unitRef}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          body: {dataNodeRef: client.dataNodeRef, unitRef: unit.unitRef, expectedVersion: unit.version},
+        });
+        const disabledUnit = itemResult(disabled.json)?.unit;
+        if (!disabledUnit || disabledUnit.unitRef !== unit.unitRef || disabledUnit.status !== "DISABLED")
+          fail(`SEED_UNIT_DISABLE_READBACK_INVALID:${client.scopeType}:${code}`);
+        refs.unitDefinitions.set(code, {...unit, status: disabledUnit.status, version: Number(disabledUnit.version ?? itemVersion(disabled.json))});
+        const enabled = await request(`${client.scopeType}-unit-list-enabled-after-disable-${code}`, "listOperationsCatalogUnits", {}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          queryParameters: {dataNodeRef: client.dataNodeRef, includeInactive: false},
+        });
+        const enabledRows = (enabled.json?.data ?? enabled.json)?.units ?? [];
+        if (enabledRows.some((row) => row.unitRef === unit.unitRef)) fail(`SEED_DISABLED_UNIT_REMAINS_CANDIDATE:${client.scopeType}:${code}`);
+        const all = await request(`${client.scopeType}-unit-list-all-after-disable-${code}`, "listOperationsCatalogUnits", {}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          queryParameters: {dataNodeRef: client.dataNodeRef, includeInactive: true},
+        });
+        const existing = ((all.json?.data ?? all.json)?.units ?? []).find((row) => row.unitRef === unit.unitRef);
+        if (!existing || existing.status !== "DISABLED" || existing.name !== unit.name || existing.unitDimension !== unit.unitDimension || Number(existing.precision) !== Number(unit.precision))
+          fail(`SEED_DISABLED_UNIT_HISTORY_READBACK_INVALID:${client.scopeType}:${code}`);
+        const boundAssignment = catalogDefinitionSeed.itemAssignments.find((assignment) =>
+          (assignment.salesUnitCode === code || assignment.baseMeasureUnitCode === code
+            || (assignment.skuUnitOverrides ?? []).some((override) => override.salesUnitCode === code || override.baseMeasureUnitCode === code)));
+        if (!boundAssignment) fail(`SEED_DISABLED_UNIT_BINDING_FIXTURE_MISSING:${code}`);
+        const detail = await request(`${client.scopeType}-disabled-unit-binding-readback-${code}`, "getOperationsCatalogItem", {itemCode: boundAssignment.itemCode}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          queryParameters: {dataNodeRef: client.dataNodeRef},
+        });
+        const detailData = detail.json?.data ?? detail.json;
+        const boundSku = (detailData?.item ?? detailData)?.skus?.find((sku) =>
+          sku.salesUnit?.unitRef === unit.unitRef || sku.baseMeasureUnit?.unitRef === unit.unitRef);
+        const boundItem = detailData?.item ?? detailData;
+        if ((boundItem?.salesUnit?.unitRef !== unit.unitRef && boundItem?.baseMeasureUnit?.unitRef !== unit.unitRef) && !boundSku)
+          fail(`SEED_DISABLED_UNIT_EXISTING_BINDING_NOT_VISIBLE:${client.scopeType}:${code}`);
+        const boundSnapshot = boundSku?.salesUnit?.unitRef === unit.unitRef ? boundSku.salesUnit : boundSku?.baseMeasureUnit?.unitRef === unit.unitRef ? boundSku.baseMeasureUnit : boundItem.salesUnit?.unitRef === unit.unitRef ? boundItem.salesUnit : boundItem.baseMeasureUnit;
+        if (!boundSnapshot || boundSnapshot.unitRef !== unit.unitRef || boundSnapshot.status !== "DISABLED")
+          fail(`SEED_DISABLED_UNIT_EXISTING_SNAPSHOT_INVALID:${client.scopeType}:${code}`);
+      }
+    }
+    // Clear the designated SKU override after its first readback.  The second
+    // readback must show null override refs and the item default as effective
+    // unit, proving inheritance instead of a copied literal.
+    for (const client of clients) {
+      const refs = refsFor(client);
+      for (const assignment of catalogDefinitionSeed.itemAssignments) {
+        const clearOverrides = (assignment.skuUnitOverrides ?? []).filter((override) => override.clearAfterReadback);
+        if (!clearOverrides.length) continue;
+        const clearedAssignment = {
+          ...assignment,
+          skuUnitOverrides: (assignment.skuUnitOverrides ?? []).map((override) => override.clearAfterReadback
+            ? {...override, salesUnitCode: null, baseMeasureUnitCode: null, clearAfterReadback: false}
+            : override),
+        };
+        const draft = assignmentDraft(client, clearedAssignment);
+        const cleared = await request(`${client.scopeType}-definition-assignment-clear-overrides-${assignment.itemCode}`, "saveOperationsCatalogItem", {itemCode: assignment.itemCode}, {
+          cookie: client.cookie,
+          brandRef: client.brandRef,
+          headers: catalogAssetBindGrantHeaders(draft),
+          body: {
+            dataNodeRef: client.dataNodeRef,
+            itemCode: assignment.itemCode,
+            sections: {
+              catalogDraft: draft,
+              inventoryConfiguration: {nodes: []},
+              expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, assignment.itemCode)) ?? 1,
+              expectedInventoryVersions: [],
+            },
+          },
+        });
+        canonicalVersions.set(canonicalItemKey(client, assignment.itemCode), itemVersion(cleared.json));
+        const actual = await recordItemReadback(client, refs, assignment.itemCode, `${client.scopeType}-definition-assignment-clear-overrides-${assignment.itemCode}`);
+        assertDefinitionAssignmentReadback(client, clearedAssignment, actual);
+        for (const override of clearOverrides) {
+          const sku = (actual.skus ?? []).find((entry) => entry.skuCode === override.skuCode);
+          if (!sku || sku.salesUnitOverrideRef !== null || sku.baseMeasureUnitOverrideRef !== null)
+            fail(`SEED_SKU_UNIT_OVERRIDE_CLEAR_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${override.skuCode}`);
+        }
       }
     }
     // Read every canonical seed item back in both owner scopes.  This is the
@@ -894,19 +1581,17 @@ async function execute() {
         const detailData = detail.json?.data ?? detail.json;
         const actual = detailData?.item ?? detailData;
         if (actual?.code !== item.code || actual?.shapeKey !== item.shapeKey) fail(`SEED_CANONICAL_ITEM_READBACK_INVALID:${client.scopeType}:${item.code}`);
-        if (actual?.attributes?.商品来源 !== "目录体验样品") fail(`SEED_CANONICAL_SOURCE_READBACK_INVALID:${client.scopeType}:${item.code}`);
         if (dataset.fixtureId === "SEED-LATTE") {
           const expectedSkus = (dataset.entities?.skus || []).map((entry) => entry.code).sort();
           const actualSkus = (actual.skus || []).map((entry) => entry.skuCode).sort();
           if (JSON.stringify(actualSkus) !== JSON.stringify(expectedSkus)) fail(`SEED_CANONICAL_LATTE_SKU_READBACK_INVALID:${client.scopeType}`);
         }
         if (dataset.fixtureId === "SEED-CAESAR") {
-          const groups = actual.orderOptions || [];
-          const expectedGroups = (dataset.entities?.optionGroups || []).map((entry) => entry.code).sort();
-          const actualGroups = groups.map((entry) => entry.groupCode).sort();
-          if (JSON.stringify(actualGroups) !== JSON.stringify(expectedGroups)) fail(`SEED_CANONICAL_CAESAR_OPTIONS_READBACK_INVALID:${client.scopeType}`);
           const expectedItemBom = (dataset.entities?.bomLines || []).filter((line) => line.ownerKind === "ITEM").length;
-          const expectedOptionBom = (dataset.entities?.bomLines || []).filter((line) => line.ownerKind === "OPTION_VALUE").length;
+          const expectedOptionBom = catalogDefinitionSeed.itemAssignments
+            .find((assignment) => assignment.itemCode === item.code)?.orderOptions
+            .flatMap((config) => config.values)
+            .flatMap((value) => value.materialQuantities).length ?? 0;
           const actualItemBom = (actual.inventoryBom || []).filter((row) => row.nodeType === "ITEM_BOM" || row.nodeType === "CATALOG_ITEM").length;
           const actualOptionBom = (actual.inventoryBom || []).filter((row) => row.nodeType === "OPTION_VALUE_BOM").length;
           if (expectedItemBom !== actualItemBom || expectedOptionBom !== actualOptionBom) fail(`SEED_CANONICAL_CAESAR_BOM_READBACK_INVALID:${client.scopeType}`);
@@ -979,7 +1664,8 @@ const selfTest = () => {
     ["CODE_AS_TYPED_REF", () => requiredUuid("LATTE-001", "PRODUCT_SKU")],
     ["RAW_SKU_ATTRIBUTE_VALUE_CODE", () => skuAttributeValueRef({dictionaryRefs: new Map([["SKU_ATTRIBUTE_VALUE:MEDIUM", "11111111-1111-4111-8111-111111111111"]])}, "DRINK_SIZE", "MEDIUM", "red-mutation")],
     ["MISSING_SKU_ATTRIBUTE_VALUE_IDENTITY", () => skuAttributeValueCode("DRINK_SIZE", null, "red-mutation")],
-    ["ORDER_OPTION_VALUE_WRONG_KIND", () => orderOptionValueRef({dictionaryRefs: new Map([["SKU_ATTRIBUTE_VALUE:DRESSING-CLASSIC", "11111111-1111-4111-8111-111111111111"]])}, "DRESSING-CLASSIC")],
+    ["CATALOG_DEFINITION_FIXTURE_MISSING", () => requireCatalogDefinitionSeed(null)],
+    ["CATALOG_DEFINITION_ATTRIBUTE_TYPES", () => requireCatalogDefinitionSeed({...catalogDefinitionSeed, attributeDefinitions: catalogDefinitionSeed.attributeDefinitions.filter((definition) => definition.valueType !== "TEXT")})],
     ["QUALIFIED_SKU_VALUE_CODE_COLLISION", () => {
       const collisionDataset = {fixtureId: "RED-CODE-COLLISION", entities: {catalogItems: [{code: "RED-CODE-COLLISION"}], skus: [{code: "RED-1", attributeValues: {A: "B-C"}}, {code: "RED-2", attributeValues: {"A-B": "C"}}]}};
       collectSeedReferences({...plan, seedDatasets: [...plan.seedDatasets, collisionDataset], canonicalDependencyOrder: [...plan.canonicalDependencyOrder, collisionDataset.fixtureId]});

@@ -146,6 +146,7 @@ export function OwnerBindingFormDrawer({
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       destroyOnHidden
+      maskClosable={!lifecycle.submitting}
       keyboard={!lifecycle.submitting}
       {...adminDrawerSurfaceProps}
       footer={

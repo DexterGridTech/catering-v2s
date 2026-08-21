@@ -2,6 +2,7 @@ package com.catering.v2s.inventory.application.operations;
 
 import com.catering.v2s.app.edge.generated.wire.InventoryTargetConfigurationRequest;
 import com.catering.v2s.app.edge.generated.wire.InventoryTargetCurrentView;
+import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -20,11 +21,19 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
 
     private final CommandExecutionContextResolver contexts;
     private final InventoryOwnerApi inventory;
+    private final CatalogOwnerApi catalog;
 
     public UpdateOperationsInventoryTargetConfigurationOperation(
             CommandExecutionContextResolver contexts, InventoryOwnerApi inventory) {
+        this(contexts, inventory, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public UpdateOperationsInventoryTargetConfigurationOperation(
+            CommandExecutionContextResolver contexts, InventoryOwnerApi inventory, CatalogOwnerApi catalog) {
         this.contexts = contexts;
         this.inventory = inventory;
+        this.catalog = catalog;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -39,6 +48,29 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                 invocation.correlationId(),
                 invocation.requestId());
         InventoryTargetConfigurationRequest.Configuration configuration = request.configuration();
+        InventoryOwnerApi.UnitSnapshot countingUnitSnapshot = null;
+        if (configuration != null && configuration.countingUnitRef() != null) {
+            if (catalog == null) {
+                throw new InventoryOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 500, "单位快照解析器不可用");
+            }
+            countingUnitSnapshot = catalog
+                    .listUnitDefinitions(
+                            context.ownerScope().dataNodeId().toString(),
+                            context.ownerScope().brandRef(),
+                            true,
+                            null)
+                    .units()
+                    .stream()
+                    .filter(unit -> unit.unitRef().equals(configuration.countingUnitRef()))
+                    .findFirst()
+                    .map(unit -> new InventoryOwnerApi.UnitSnapshot(
+                            unit.unitRef(),
+                            unit.code(),
+                            unit.name(),
+                            unit.unitDimension().name(),
+                            unit.precision()))
+                    .orElseThrow(() -> new InventoryOwnerApi.Problem("UNIT_NOT_FOUND", 422, "盘点单位不存在"));
+        }
         InventoryOwnerApi.InventoryTargetCurrentReadback readback = inventory.updateTargetConfiguration(
                 context,
                 new InventoryOwnerApi.UpdateTargetConfigurationCommand(
@@ -48,15 +80,10 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                                 requiredBoolean(
                                         configuration == null ? null : configuration.allowNegative(),
                                         "configuration.allowNegative"),
-                                requiredDecimal(
-                                        configuration == null ? null : configuration.lowStockThreshold(),
-                                        "configuration.lowStockThreshold"),
-                                requiredText(
-                                        configuration == null ? null : configuration.countingUnit(),
-                                        "configuration.countingUnit"),
-                                requiredDecimal(
-                                        configuration == null ? null : configuration.conversionFactor(),
-                                        "configuration.conversionFactor"))),
+                                optionalDecimal(configuration == null ? null : configuration.lowStockThreshold()),
+                                configuration == null ? null : configuration.countingUnitRef(),
+                                optionalDecimal(configuration == null ? null : configuration.conversionFactor()),
+                                countingUnitSnapshot)),
                 invocation.idempotencyKey());
         return response(readback);
     }
@@ -86,15 +113,15 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
                         target.productShape(),
                         target.skuCode(),
                         target.skuName(),
-                        target.consumptionUnit(),
-                        target.countingUnit(),
+                        consumptionUnitSnapshot(target.consumptionUnitSnapshot()),
+                        countingUnitSnapshot(target.countingUnitSnapshot()),
                         target.conversionSummary(),
                         target.authorityType()),
                 decimal(value.balance()),
                 new InventoryTargetCurrentView.Configuration(
                         configuration.allowNegative(),
                         decimal(configuration.lowStockThreshold()),
-                        configuration.countingUnit(),
+                        configurationSnapshot(configuration.countingUnitSnapshot()),
                         decimal(configuration.conversionFactor())),
                 value.stockState(),
                 value.stale(),
@@ -147,23 +174,36 @@ public class UpdateOperationsInventoryTargetConfigurationOperation {
         return value;
     }
 
-    private static BigDecimal requiredDecimal(String value, String field) {
-        try {
-            if (value == null || value.isBlank()) throw new NumberFormatException();
-            return new BigDecimal(value);
-        } catch (NumberFormatException invalid) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be decimal", invalid);
-        }
-    }
-
-    private static String requiredText(String value, String field) {
-        if (value == null || value.isBlank())
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, field + " is required");
+    private static BigDecimal optionalDecimal(BigDecimal value) {
         return value;
     }
 
     private static String decimal(BigDecimal value) {
         return value == null ? null : value.stripTrailingZeros().toPlainString();
+    }
+
+    private static InventoryTargetCurrentView.Target.ConsumptionUnitSnapshot consumptionUnitSnapshot(
+            InventoryOwnerApi.UnitSnapshot value) {
+        return value == null
+                ? null
+                : new InventoryTargetCurrentView.Target.ConsumptionUnitSnapshot(
+                        value.unitRef(), value.code(), value.name(), value.unitDimension(), (long) value.precision());
+    }
+
+    private static InventoryTargetCurrentView.Target.CountingUnitSnapshot countingUnitSnapshot(
+            InventoryOwnerApi.UnitSnapshot value) {
+        return value == null
+                ? null
+                : new InventoryTargetCurrentView.Target.CountingUnitSnapshot(
+                        value.unitRef(), value.code(), value.name(), value.unitDimension(), (long) value.precision());
+    }
+
+    private static InventoryTargetCurrentView.Configuration.CountingUnitSnapshot configurationSnapshot(
+            InventoryOwnerApi.UnitSnapshot value) {
+        return value == null
+                ? null
+                : new InventoryTargetCurrentView.Configuration.CountingUnitSnapshot(
+                        value.unitRef(), value.code(), value.name(), value.unitDimension(), (long) value.precision());
     }
 
     private static String string(UUID value) {

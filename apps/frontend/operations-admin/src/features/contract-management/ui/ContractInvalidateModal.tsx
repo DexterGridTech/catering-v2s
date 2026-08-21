@@ -43,7 +43,7 @@ export function ContractInvalidateModal({contract, queryContext, onClose, onInva
       open={Boolean(contract)}
       destroyOnHidden
       onCancel={submitting ? undefined : onClose}
-      mask={{closable: !submitting}}
+      maskClosable={!submitting}
       keyboard={!submitting}
       footer={[
         <Button

@@ -113,7 +113,8 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
         "x-coordinated-inventory-definition-commands": [
           "ensureCatalogInventoryTarget",
-          "saveCatalogProductBom"
+          "saveCatalogProductBom",
+          "deleteCatalogOptionValueBoms"
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
         "x-mutation": true,

@@ -26,7 +26,10 @@ public final class CollaborationReadback {
     }
 
     public record Capability(
-            String capabilityClass, String displayName, JsonNode attributeValues, Map<String, String> attributeValueLabels) {
+            String capabilityClass,
+            String displayName,
+            JsonNode attributeValues,
+            Map<String, String> attributeValueLabels) {
         public Capability {
             capabilityClass = Objects.requireNonNull(capabilityClass, "capabilityClass");
             displayName = Objects.requireNonNull(displayName, "displayName");
@@ -54,9 +57,11 @@ public final class CollaborationReadback {
             long version) {
         public ProviderProfile {
             businessScope = List.copyOf(businessScope == null ? List.of() : businessScope);
-            businessScopeDisplayNames = List.copyOf(businessScopeDisplayNames == null ? List.of() : businessScopeDisplayNames);
+            businessScopeDisplayNames =
+                    List.copyOf(businessScopeDisplayNames == null ? List.of() : businessScopeDisplayNames);
             bindableNodeTypes = List.copyOf(bindableNodeTypes == null ? List.of() : bindableNodeTypes);
-            bindableNodeTypeDisplayNames = List.copyOf(bindableNodeTypeDisplayNames == null ? List.of() : bindableNodeTypeDisplayNames);
+            bindableNodeTypeDisplayNames =
+                    List.copyOf(bindableNodeTypeDisplayNames == null ? List.of() : bindableNodeTypeDisplayNames);
         }
     }
 

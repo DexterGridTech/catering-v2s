@@ -30,7 +30,7 @@ CONSUMER_FACE=<platform-admin | operations-admin | public>
 
 ## 1.1 UI 详设强制标准（不可省略）
 
-每个 user-facing screen、弹出面和可触发控件都必须在本工件中单独声明下列九项；没有其中任何
+每个 user-facing screen、弹出面和可触发控件都必须在本工件中单独声明下列各项；缺少其中任何
 一项的 screen 不得进入 implementation-facing design：
 
 ```text
@@ -43,7 +43,32 @@ BUSINESS_GOAL=<用户希望完成的业务结果>
 USER_VISIBLE_COPY=<标题、字段、按钮、空态、确认与失败提示的逐项业务文案>
 TECHNICAL_BOUNDARY=<服务端核验/contract 字段；不可显示给用户>
 FOUNDATION_PRIMITIVE=<一个或多个 @catering-v2s/admin-ui-foundation 的确切 export；或 NONE_WITH_REASON:<当前 screen 不适用的具体理由>>
+CONTAINER_LAYOUT=<容器宽高与来源 · 哪一部分不得超出视口 · 哪一段滚动 · 关键对齐>
 ```
+
+`CONTAINER_LAYOUT` 是 2026-08-20 Dexter 要求新增的第十项声明。原因:
+**它是"看得见但只有渲染出来才发现"的一类事实** —— 线框画得下,真机上却横向溢出、
+出现双层滚动条、或多栏基线不齐;而这些在 Dexter 体验之前无人发现。
+
+四件必须写全,缺一即 `REVISE`:
+
+1. **宽高与来源** —— 优先写 foundation 已有 export 的确切名字,不要自造像素值。
+   Drawer 已有现成解:`adminWideDrawerSurfaceProps` 的宽度是
+   `min(1024px, calc(100vw - 48px))`,天然不超视口;标签列宽 `164` 也在其中。
+   非 Drawer 容器(内容页多栏、树加详情、表格区、Modal)没有现成解时,
+   写出具体依据和它在窄屏下的行为,⛔ 不写"自适应"这类无法检验的词。
+2. **哪一部分不得超出视口** —— 通常是外框与操作区(按钮、分页、Tab 头)。
+   点名到具体元素,不写"整体不溢出"。
+3. **哪一段滚动** —— 点名唯一的滚动容器。
+   ⛔ 同一 screen 出现两个可滚动祖先必须显式说明理由,否则视为缺陷。
+4. **关键对齐** —— 标签列宽、多栏之间的基线、表格列与表头的对齐依据。
+
+**红例(必须能打红)**:把窗口宽度收到 1280 以下,该 screen 出现横向滚动条,
+或内容区与页面同时出现纵向滚动条 ⇒ 本项不成立。
+
+⚠️ 本项**不规定统一尺寸**,只强制**逐屏声明**。
+具体取值仍以 `doc/platform/frontend-coding-standard.md` 与 foundation 既有 export 为准,
+本模板不复述它们。
 
 `FOUNDATION_PRIMITIVE` 是逐 screen 的强制声明，不是泛写“将复用 foundation”。每个名称必须能在
 `libraries/frontend/admin-ui-foundation/src/index.ts` 重新打开；一个 screen 可用逗号列出多个 export。
@@ -89,11 +114,22 @@ Drawer/Modal/Tab，宿主与被打开面必须拆成各自 screen id，各自提
 裁决的 screen；它不是通过结论，不能作为 implementation-facing input，也不能用来掩盖可由作者自行
 补齐的缺项。
 
+<a id="business-language-and-dynamic-item-naming"></a>
+
+#### 业务语言与动态明细命名（强制）
+
 所有用户可见文案以已接受 business corpus 的业务称谓为准，禁止暴露 contract、schema、权限或
 实现术语。例：`node`/“节点”不可作为用户可见标签；按任务改为“任职机构”“可查看范围”“可查看
 机构”等具体业务词。技术字段可以在 face/owner 矩阵出现，但每个对应 UI 文案必须在
 `USER_VISIBLE_COPY` 中明确映射。无法从 corpus/Journey 推导的文案必须标为 `待 Dexter 裁决`，
 不能用技术词填空。
+
+`USER_VISIBLE_COPY`、低保真线框、字段/列表列名、按钮、placeholder、空态、确认和失败提示都属于
+用户可见文案。它们只能说明用户能理解的**业务对象、业务动作和业务结果**；`component`/“组件”、
+`target`、BOM、`ref`、owner、scope、schema、transaction、内部状态枚举及其中文直译都只能放入
+`TECHNICAL_BOUNDARY`、face/owner 矩阵或 implementation-facing 说明。动态数据的可见名称尤其不得
+照搬底层结构：名称必须让用户知道“这是什么、业务上有什么作用”；没有业务词时应保留为
+`待 Dexter 裁决`，不得以技术名凑齐界面。
 
 #### Owner-definition 驱动字段槽位（强制）
 
@@ -107,7 +143,7 @@ Drawer/Modal/Tab，宿主与被打开面必须拆成各自 screen id，各自提
 
 两个管理后台的登录 screen 均为独立页面，实施必须使用仓内已安装的
 `@ant-design/pro-components` `LoginFormPage`：平台为“运维管理后台登录”，运营为“运营管理后台登录”。
-公开邀请、公开密码恢复不是管理后台登录页，不适用本条，但仍适用本节的九项声明。
+公开邀请、公开密码恢复不是管理后台登录页，不适用本条，但仍适用本节的逐项声明。
 
 登录 screen 在画线框前还必须先重开当前锁定 `@ant-design/pro-components` 版本的
 `LoginFormPage` 类型与实现，并在 IA 中列出官方构成映射：`logo`、`title`、`subTitle`、
@@ -160,7 +196,7 @@ TECHNICAL_BOUNDARY=<...>
 FOUNDATION_PRIMITIVE=<一个或多个确切 foundation export；或 NONE_WITH_REASON:<...>>
 ```
 
-若该 screen 是任一管理后台登录页，紧接上述九项再写：
+若该 screen 是任一管理后台登录页，紧接上述各项再写：
 
 ```text
 LOGIN_FORM_PAGE_VERSION=<installed @ant-design/pro-components version>
@@ -208,6 +244,20 @@ URL、页面 key 或旧选择猜测候选；前端过滤只改善可用性，不
 - 新增稳定标识、资产 staging/release、前端生成 technical key 或把用户选择的对象当授权范围，均不得
   靠 UI 猜测：先重开 owner source。当前 contract 没有合法来源时标 `GAP`，并保留原始业务问题；不得
   以隐藏 input、URL、已加载列表或页面 key 伪造事实。
+
+<a id="parent-child-dynamic-aggregate-layout"></a>
+
+#### 主从动态集合的布局、归属与保存边界（强制）
+
+当一张表单同时维护主集合及其从属动态集合时，线框、控件依赖图和字段事实矩阵必须先明确：
+**层级关系、当前正在编辑的主项、每层集合边界、增删排序规则，以及整体/逐项保存边界**。不得把所有
+层级平铺成连续卡片、无归属的重复行或一张无法判断父项的表。
+
+主集合必须提供稳定的当前项定位面（例如列表或可编辑表格）；从属集合只能绑定当前选中主项，切换
+主项时同步切换其从属数据，不能把不同主项的从属数据混排。每一层还必须逐项声明：无主项、当前主项
+下零条、已有数据三种状态；新增、删除、待删除确认、排序、去重、最少项、切换当前项和保存后的
+readback。已有从属数据时不得同时显示“没有数据”的空态。用户不阅读技术说明也应能辨认：**现在在
+编辑哪一项、下方数据属于谁、保存会影响什么**。
 
 ### 1.3 业务驱动的搜索与候选选择详设（每个 search-capable screen 强制）
 

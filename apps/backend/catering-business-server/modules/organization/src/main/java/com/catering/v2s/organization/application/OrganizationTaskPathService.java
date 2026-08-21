@@ -50,8 +50,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     @Transactional(readOnly = true)
     public TaskPath requireStatusTransitionTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
         TaskPathRef target = new TaskPathRef(targetType, targetId);
-        TaskPath taskPath =
-                resolveTaskPaths(workspaceUuid, key, List.of(target), true, true).get(target);
+        TaskPath taskPath = resolveTaskPaths(workspaceUuid, key, List.of(target), true, true)
+                .get(target);
         if (taskPath == null) throw new TaskPathNotFoundException();
         return taskPath;
     }
@@ -63,8 +63,8 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             UUID workspaceUuid, String key, String targetType, UUID targetId) {
         if (!ServiceNodeTypes.STORE.equals(targetType)) throw new TaskPathNotFoundException();
         TaskPathRef target = new TaskPathRef(targetType, targetId);
-        TaskPath taskPath =
-                resolveTaskPaths(workspaceUuid, key, List.of(target), true, false).get(target);
+        TaskPath taskPath = resolveTaskPaths(workspaceUuid, key, List.of(target), true, false)
+                .get(target);
         if (taskPath == null) throw new TaskPathNotFoundException();
         return taskPath;
     }

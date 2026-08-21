@@ -277,6 +277,45 @@ class InventoryCopyReplayIntegrationTest {
                         "BRAND",
                         targetItem));
 
+        ObjectNode optionOnly =
+                localCopyRequest(sourceItem, targetItem, sourceSku, targetSku, sourceOption, targetOption);
+        optionOnly.putArray("selectedSections").add("OPTION_VALUE_BOM");
+        JsonNode optionPreflight = service.preflightCopy(
+                sourceScope.toString(),
+                targetScope.toString(),
+                "BRAND",
+                optionOnly,
+                WORKSPACE,
+                "inventory-copy-replay",
+                "STORE",
+                grant(targetScope));
+        assertTrue(optionPreflight.path("skipped").isEmpty());
+        optionOnly.put(
+                "inventoryPreflightDigest", optionPreflight.path("digest").asText());
+        mergePreflightReferenceMappings(optionOnly, optionPreflight);
+        JsonNode optionCopied = service.copy(
+                sourceScope.toString(),
+                targetScope.toString(),
+                "BRAND",
+                optionOnly,
+                "local-option-only",
+                "local-option-only-receipt",
+                WORKSPACE,
+                "inventory-copy-replay",
+                "STORE",
+                grant(targetScope));
+        assertEquals("COMMITTED", optionCopied.path("status").asText());
+        assertEquals(
+                1,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
+                                + "AND option_value_ref=?",
+                        Integer.class,
+                        targetScope.toString(),
+                        "BRAND",
+                        targetItem,
+                        targetOption));
+
         ObjectNode absent = localCopyRequest(sourceItem, targetItem, sourceSku, targetSku, sourceOption, targetOption);
         absent.putArray("selectedSections").add("ITEM_BOM").add("OPTION_VALUE_BOM");
         jdbc.update(
@@ -310,6 +349,38 @@ class InventoryCopyReplayIntegrationTest {
                 grant(targetScope));
         assertEquals("SKIPPED", absentExecution.path("status").asText());
         assertEquals(absentPreflight.path("skipped"), absentExecution.path("skipped"));
+    }
+
+    @Test
+    void preflightRejectsSkuAttributeValueAliasForAnOptionValueBom() {
+        UUID sourceScope = UUID.randomUUID();
+        UUID targetScope = UUID.randomUUID();
+        UUID sourceItem = UUID.randomUUID();
+        UUID targetItem = UUID.randomUUID();
+        UUID sourceSku = UUID.randomUUID();
+        UUID targetSku = UUID.randomUUID();
+        UUID sourceOption = UUID.randomUUID();
+        UUID targetOption = UUID.randomUUID();
+        insertBomOwner(sourceScope, sourceItem, null, sourceOption, "ALIAS-SOURCE", null, "ALIAS-OPTION");
+        ObjectNode request = localCopyRequest(sourceItem, targetItem, sourceSku, targetSku, sourceOption, targetOption);
+        request.putArray("selectedSections").add("OPTION_VALUE_BOM");
+        request.withArray("referenceMappings").forEach(value -> {
+            if (sourceOption.toString().equals(value.path("sourceRef").asText()))
+                ((ObjectNode) value).put("objectType", "SKU_ATTRIBUTE_VALUE");
+        });
+
+        InventoryOwnerApi.Problem failure = assertThrows(
+                InventoryOwnerApi.Problem.class,
+                () -> service.preflightCopy(
+                        sourceScope.toString(),
+                        targetScope.toString(),
+                        "BRAND",
+                        request,
+                        WORKSPACE,
+                        "inventory-copy-replay",
+                        "STORE",
+                        grant(targetScope)));
+        assertEquals("REFERENCE_MAPPING_UNRESOLVED", failure.code());
     }
 
     @Test
@@ -532,7 +603,7 @@ class InventoryCopyReplayIntegrationTest {
                 .put("targetRef", targetSku.toString())
                 .put("targetSkuCode", "LOCAL-TARGET-SKU");
         mappings.addObject()
-                .put("objectType", "SKU_ATTRIBUTE_VALUE")
+                .put("objectType", "CATALOG_ORDER_OPTION_DEFINITION_VALUE")
                 .put("sourceRef", sourceOption.toString())
                 .put("targetRef", targetOption.toString())
                 .put("targetOptionValueCode", "LOCAL-TARGET-OPTION");

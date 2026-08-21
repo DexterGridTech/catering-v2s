@@ -10,11 +10,10 @@ class CatalogDictionaryKindTest {
     @Test
     void mapsOnlyTheClosedDictionaryVocabulary() {
         assertEquals("CATALOG_TAG", CatalogOwnerService.dictionaryObjectType("TAG"));
-        assertEquals("SALES_UNIT", CatalogOwnerService.dictionaryObjectType("SALES_UNIT"));
         assertEquals("SKU_ATTRIBUTE", CatalogOwnerService.dictionaryObjectType("SKU_ATTRIBUTE"));
         assertEquals("SKU_ATTRIBUTE_VALUE", CatalogOwnerService.dictionaryObjectType("SKU_ATTRIBUTE_VALUE"));
         CatalogOwnerApi.Problem problem =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.dictionaryObjectType("SPEC"));
+                assertThrows(CatalogOwnerApi.Problem.class, () -> CatalogOwnerService.dictionaryObjectType("UNIT"));
         assertEquals("VALIDATION_ERROR", problem.code());
         assertEquals(422, problem.status());
     }

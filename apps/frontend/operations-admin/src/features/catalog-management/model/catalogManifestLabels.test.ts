@@ -4,7 +4,7 @@ import {catalogEnumLabel, catalogEnumOptions, catalogFieldHelpText, catalogField
 
 const manifest = {
   enumLabels: {shapeKey: {STANDARD_SALE_COUNTED: '普通销售商品', MATERIAL: '原材料'}},
-  fields: [{fieldKey: 'categoryRefs', label: '分类', helpText: '选择商品所属分类。'}],
+  fields: [{fieldKey: 'categoryRef', label: '分类', helpText: '选择商品所属分类。'}],
 } as unknown as Pick<CatalogShapeManifestView, 'enumLabels' | 'fields'>;
 
 describe('catalog manifest label bindings', () => {
@@ -18,8 +18,12 @@ describe('catalog manifest label bindings', () => {
   });
 
   it('resolves field label and help text by the declared field key', () => {
-    expect(catalogFieldLabel(manifest, 'categoryRefs')).toBe('分类');
-    expect(catalogFieldHelpText(manifest, 'categoryRefs')).toBe('选择商品所属分类。');
+    expect(catalogFieldLabel(manifest, 'categoryRef')).toBe('分类');
+    expect(catalogFieldHelpText(manifest, 'categoryRef')).toBe('选择商品所属分类。');
+    expect(catalogFieldLabel(undefined, 'name')).toBe('商品名称');
+    expect(catalogFieldLabel(undefined, 'shortName')).toBe('短名');
+    expect(catalogFieldLabel(undefined, 'standardSalePrice')).toBe('商品标准价');
+    expect(catalogFieldLabel(undefined, 'attributeAssignments')).toBe('商品属性');
     expect(catalogFieldLabel(manifest, 'notDeclared')).toBe('notDeclared');
   });
 });

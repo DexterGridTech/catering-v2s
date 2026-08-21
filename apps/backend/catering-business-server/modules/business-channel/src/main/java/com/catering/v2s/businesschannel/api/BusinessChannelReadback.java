@@ -31,6 +31,8 @@ public final class BusinessChannelReadback {
             String channelCode,
             String channelName,
             UUID bindingRef,
+            /** Owner-projected binding meaning: NOT_REQUIRED, UNBOUND, or BOUND. */
+            String bindingStatus,
             String status,
             List<String> stopReasons,
             long version) {

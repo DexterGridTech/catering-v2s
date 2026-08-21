@@ -4,11 +4,14 @@ import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveReadback;
 import com.catering.v2s.app.edge.generated.wire.CatalogItemSaveRequest;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.application.CatalogInventoryCoordinator;
+import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class SaveOperationsCatalogItemOperation {
     public static final String OPERATION_ID = "saveOperationsCatalogItem";
+    private static final Logger LOG = LoggerFactory.getLogger(SaveOperationsCatalogItemOperation.class);
     private final CommandExecutionContextResolver contexts;
     private final CatalogInventoryCoordinator coordinator;
     private final tools.jackson.databind.ObjectMapper mapper;
@@ -53,9 +57,27 @@ public class SaveOperationsCatalogItemOperation {
             return mapper.readValue(readback.canonicalJson(), CatalogItemSaveReadback.class);
         } catch (CatalogOwnerApi.Problem failure) {
             throw failure;
+        } catch (InventoryOwnerApi.Problem failure) {
+            // Cross-owner validation is part of this REQUIRED transaction. Preserve its typed
+            // status/code at the HTTP edge instead of misclassifying a deliberate rejection as
+            // an unreadable catalog readback.
+            throw failure;
         } catch (Exception failure) {
+            LOG.warn(
+                    "catalog_save_failed operationId={} correlationId={} requestId={} exceptionType={} causeType={}",
+                    OPERATION_ID,
+                    invocation.correlationId(),
+                    invocation.requestId(),
+                    failure.getClass().getName(),
+                    rootCause(failure).getClass().getName());
             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "catalog save readback is invalid", failure);
         }
+    }
+
+    private static Throwable rootCause(Throwable failure) {
+        Throwable current = failure;
+        while (current.getCause() != null && current.getCause() != current) current = current.getCause();
+        return current;
     }
 
     public record Invocation(

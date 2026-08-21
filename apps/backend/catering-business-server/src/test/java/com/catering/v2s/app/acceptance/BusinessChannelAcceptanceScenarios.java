@@ -83,11 +83,35 @@ final class BusinessChannelAcceptanceScenarios {
                 "EFFECTIVE",
                 channel.json().path("status").asText(),
                 "BUSINESS: an internal channel is effective immediately without an external binding");
+        assertEquals(
+                "NOT_REQUIRED",
+                channel.json().path("bindingStatus").asText(),
+                "BUSINESS: an internal channel has no binding requirement");
+        assertEquals(
+                "—",
+                channel.json().path("bindingStatusDisplayName").asText(),
+                "BUSINESS: an internal channel does not present an unbound state");
+
+        BackendAcceptanceTest.Response projectChannels = context.get(
+                CHANNEL_LIST_PROJECT,
+                "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey() + "/projects/"
+                        + fixture.fixture().projectId() + "/business-channels",
+                fixture.session().cookie(),
+                Set.of(200));
+        JsonNode internalListRow = find(
+                projectChannels.json().path("items"),
+                "channelRef",
+                channel.json().path("channelRef").asText());
+        assertEquals(
+                "NOT_REQUIRED",
+                internalListRow.path("bindingStatus").asText(),
+                "BUSINESS: project channel list preserves the owner binding semantic");
 
         Map<String, Object> duplicateTemplateBody = new LinkedHashMap<>();
         duplicateTemplateBody.put("projectRef", fixture.fixture().projectId().toString());
         duplicateTemplateBody.put("templateName", "Duplicate template code");
-        duplicateTemplateBody.put("templateCode", template.json().path("templateCode").asText());
+        duplicateTemplateBody.put(
+                "templateCode", template.json().path("templateCode").asText());
         duplicateTemplateBody.put("accessKind", "INTERNAL");
         duplicateTemplateBody.put("operatorKind", "PROJECT");
         duplicateTemplateBody.put("orderKind", "TAKEAWAY");
@@ -107,10 +131,12 @@ final class BusinessChannelAcceptanceScenarios {
                 "BUSINESS: template code is unique within the project");
 
         Map<String, Object> duplicateChannelBody = new LinkedHashMap<>();
-        duplicateChannelBody.put("templateRef", template.json().path("templateRef").asText());
+        duplicateChannelBody.put(
+                "templateRef", template.json().path("templateRef").asText());
         duplicateChannelBody.put("ownerNodeType", "PROJECT");
         duplicateChannelBody.put("ownerNodeRef", fixture.fixture().projectId().toString());
-        duplicateChannelBody.put("channelCode", channel.json().path("channelCode").asText());
+        duplicateChannelBody.put(
+                "channelCode", channel.json().path("channelCode").asText());
         duplicateChannelBody.put("channelName", "Duplicate channel code");
         duplicateChannelBody.put("bindingRef", null);
         BackendAcceptanceTest.Response duplicateChannel = context.post(
@@ -290,41 +316,20 @@ final class BusinessChannelAcceptanceScenarios {
     void storeTemplateScope(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         OperationsFixture projectOwner =
                 operationsFixture(context, "PROJECT", Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
-        BackendAcceptanceTest.Response projectTemplate =
-                createTemplate(
-                        context,
-                        projectOwner,
-                        "Project template",
-                        "INTERNAL",
-                        "PROJECT",
-                        "TAKEAWAY",
-                        null,
-                        null);
+        BackendAcceptanceTest.Response projectTemplate = createTemplate(
+                context, projectOwner, "Project template", "INTERNAL", "PROJECT", "TAKEAWAY", null, null);
         BackendAcceptanceTest.Response storeTemplate =
-                createTemplate(
-                        context,
-                        projectOwner,
-                        "Store template",
-                        "INTERNAL",
-                        "STORE",
-                        "TAKEAWAY",
-                        null,
-                        null);
-        BackendAcceptanceTest.Response disabledStoreTemplate =
-                createTemplate(
-                        context,
-                        projectOwner,
-                        "Disabled store template",
-                        "INTERNAL",
-                        "STORE",
-                        "TAKEAWAY",
-                        null,
-                        null);
+                createTemplate(context, projectOwner, "Store template", "INTERNAL", "STORE", "TAKEAWAY", null, null);
+        BackendAcceptanceTest.Response disabledStoreTemplate = createTemplate(
+                context, projectOwner, "Disabled store template", "INTERNAL", "STORE", "TAKEAWAY", null, null);
         BackendAcceptanceTest.Response disabledStoreTemplateReadback = context.post(
                 TEMPLATE_STATUS,
                 templatePath(
                                 projectOwner.fixture(),
-                                UUID.fromString(disabledStoreTemplate.json().path("templateRef").asText()))
+                                UUID.fromString(disabledStoreTemplate
+                                        .json()
+                                        .path("templateRef")
+                                        .asText()))
                         + "/status",
                 projectOwner.session().cookie(),
                 Map.of(
@@ -341,8 +346,8 @@ final class BusinessChannelAcceptanceScenarios {
         BackendAcceptanceTest.Fixture storeFixture =
                 host.siblingStoreFixtureSameBrand(projectOwner.fixture(), Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT"));
         host.completeInvitation(context, storeFixture);
-        OperationsFixture storeViewer = selectStore(
-                context, new OperationsFixture(storeFixture, host.login(context, storeFixture)));
+        OperationsFixture storeViewer =
+                selectStore(context, new OperationsFixture(storeFixture, host.login(context, storeFixture)));
         BackendAcceptanceTest.Response candidates = context.get(
                 TEMPLATE_CANDIDATES,
                 "/api/operations/group-workspaces/" + storeViewer.fixture().groupWorkspaceKey()
@@ -358,7 +363,11 @@ final class BusinessChannelAcceptanceScenarios {
                 candidates.json().path("items").get(0).path("templateRef").asText(),
                 "BUSINESS: store candidate is the owner-compatible template");
         assertFalse(
-                candidates.json().toString().contains(disabledStoreTemplate.json().path("templateRef").asText()),
+                candidates
+                        .json()
+                        .toString()
+                        .contains(
+                                disabledStoreTemplate.json().path("templateRef").asText()),
                 "BUSINESS: disabled store template is not an effective candidate");
         BackendAcceptanceTest.Response channel = createChannel(
                 context,
@@ -371,15 +380,18 @@ final class BusinessChannelAcceptanceScenarios {
                 "EFFECTIVE",
                 channel.json().path("status").asText(),
                 "BUSINESS: an internal store channel is effective immediately");
-        UUID storeTemplateRef = UUID.fromString(storeTemplate.json().path("templateRef").asText());
+        UUID storeTemplateRef =
+                UUID.fromString(storeTemplate.json().path("templateRef").asText());
         UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
         BackendAcceptanceTest.Response stoppedStoreTemplate = context.post(
                 TEMPLATE_STATUS,
                 templatePath(projectOwner.fixture(), storeTemplateRef) + "/status",
                 projectOwner.session().cookie(),
                 Map.of(
-                        "status", "DISABLED",
-                        "expectedVersion", storeTemplate.json().path("version").asLong()),
+                        "status",
+                        "DISABLED",
+                        "expectedVersion",
+                        storeTemplate.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
         assertEquals(
@@ -469,15 +481,15 @@ final class BusinessChannelAcceptanceScenarios {
             operation = "crossNodeReadAuthorization")
     void crossNodeReadAuthorization(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Set<String> storeChannelCapabilities = Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT");
-        OperationsFixture attacker = selectStore(
-                context, operationsFixture(context, "STORE", storeChannelCapabilities));
-        BackendAcceptanceTest.Fixture ownerFixture = host.siblingStoreFixtureSameBrand(
-                attacker.fixture(), storeChannelCapabilities);
+        OperationsFixture attacker =
+                selectStore(context, operationsFixture(context, "STORE", storeChannelCapabilities));
+        BackendAcceptanceTest.Fixture ownerFixture =
+                host.siblingStoreFixtureSameBrand(attacker.fixture(), storeChannelCapabilities);
         host.completeInvitation(context, ownerFixture);
-        OperationsFixture owner = selectStore(
-                context, new OperationsFixture(ownerFixture, host.login(context, ownerFixture)));
-        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(
-                attacker.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        OperationsFixture owner =
+                selectStore(context, new OperationsFixture(ownerFixture, host.login(context, ownerFixture)));
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(attacker.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
         host.completeInvitation(context, projectFixture);
         OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
         enableProvider(context, owner.fixture(), "MEITUAN_ISV_B");
@@ -498,7 +510,16 @@ final class BusinessChannelAcceptanceScenarios {
                 "STORE",
                 owner.fixture().storeId(),
                 "M1 protected channel");
-        UUID ownerChannelRef = UUID.fromString(ownerChannel.json().path("channelRef").asText());
+        assertEquals(
+                "UNBOUND",
+                ownerChannel.json().path("bindingStatus").asText(),
+                "BUSINESS: an external channel without a binding is explicitly unbound");
+        assertEquals(
+                "未绑定",
+                ownerChannel.json().path("bindingStatusDisplayName").asText(),
+                "BUSINESS: external channel binding display remains distinct from internal no-binding");
+        UUID ownerChannelRef =
+                UUID.fromString(ownerChannel.json().path("channelRef").asText());
         BackendAcceptanceTest.Response ownerBinding = createBinding(
                 context,
                 owner,
@@ -509,7 +530,8 @@ final class BusinessChannelAcceptanceScenarios {
                 owner.fixture().storeId(),
                 "M1 protected binding",
                 "M1 protected external owner");
-        UUID ownerBindingRef = UUID.fromString(ownerBinding.json().path("bindingRef").asText());
+        UUID ownerBindingRef =
+                UUID.fromString(ownerBinding.json().path("bindingRef").asText());
         assertEquals(
                 "PENDING_AUTHORIZATION",
                 ownerBinding.json().path("status").asText(),
@@ -528,8 +550,8 @@ final class BusinessChannelAcceptanceScenarios {
 
         BackendAcceptanceTest.Response candidateMismatch = context.get(
                 TEMPLATE_CANDIDATES,
-                root + "/business-channel-template-candidates?projectRef=" + forgedProjectRef
-                        + "&storeRef=" + owner.fixture().storeId() + "&pageSize=20",
+                root + "/business-channel-template-candidates?projectRef=" + forgedProjectRef + "&storeRef="
+                        + owner.fixture().storeId() + "&pageSize=20",
                 attacker.session().cookie(),
                 Set.of(403));
         assertScopeDenied(
@@ -540,8 +562,9 @@ final class BusinessChannelAcceptanceScenarios {
         assertScopeDenied(
                 context.get(
                         TEMPLATE_CANDIDATES,
-                        root + "/business-channel-template-candidates?projectRef=" + owner.fixture().projectId()
-                                + "&storeRef=" + owner.fixture().storeId() + "&pageSize=20",
+                        root + "/business-channel-template-candidates?projectRef="
+                                + owner.fixture().projectId() + "&storeRef="
+                                + owner.fixture().storeId() + "&pageSize=20",
                         attacker.session().cookie(),
                         Set.of(403)),
                 ownerTemplate.json().path("templateRef").asText(),
@@ -586,10 +609,10 @@ final class BusinessChannelAcceptanceScenarios {
             module = "BUSINESS_CHANNEL",
             operation = "sameStoreTwoOwnerIds")
     void sameStoreTwoOwnerIds(BackendAcceptanceTest.ScenarioContext context) throws Exception {
-        OperationsFixture fixture = selectStore(
-                context, operationsFixture(context, "STORE", Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT")));
-        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(
-                fixture.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        OperationsFixture fixture =
+                selectStore(context, operationsFixture(context, "STORE", Set.of("BC-BUSINESS-CHANNEL-STORE-EDIT")));
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture.fixture(), Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
         host.completeInvitation(context, projectFixture);
         OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
         enableProvider(context, fixture.fixture(), "MEITUAN_ISV_A");
@@ -663,14 +686,12 @@ final class BusinessChannelAcceptanceScenarios {
     }
 
     private void enableProvider(
-            BackendAcceptanceTest.ScenarioContext context,
-            BackendAcceptanceTest.Fixture fixture,
-            String providerCode)
+            BackendAcceptanceTest.ScenarioContext context, BackendAcceptanceTest.Fixture fixture, String providerCode)
             throws Exception {
         host.ensurePlatformAdministrator();
         BackendAcceptanceTest.Session platform = host.platformLogin(context);
-        String path = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
-                + "/provider-profiles/" + providerCode;
+        String path =
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/provider-profiles/" + providerCode;
         BackendAcceptanceTest.Response current = context.get(PROVIDER_DETAIL, path, platform.cookie(), Set.of(200));
         if ("ENABLED".equals(current.json().path("enablementStatus").asText())) return;
         BackendAcceptanceTest.Response enabled = context.post(
@@ -678,15 +699,17 @@ final class BusinessChannelAcceptanceScenarios {
                 path + "/status",
                 platform.cookie(),
                 Map.of(
-                        "status", "ENABLED",
-                        "expectedVersion", current.json().path("version").asLong()),
+                        "status",
+                        "ENABLED",
+                        "expectedVersion",
+                        current.json().path("version").asLong()),
                 headers(),
                 Set.of(200));
         assertEquals("ENABLED", enabled.json().path("enablementStatus").asText(), "BUSINESS: provider is enabled");
     }
 
-    private OperationsFixture selectStore(
-            BackendAcceptanceTest.ScenarioContext context, OperationsFixture fixture) throws Exception {
+    private OperationsFixture selectStore(BackendAcceptanceTest.ScenarioContext context, OperationsFixture fixture)
+            throws Exception {
         String root = "/api/operations/group-workspaces/" + fixture.fixture().groupWorkspaceKey();
         BackendAcceptanceTest.Response selected = context.post(
                 OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
@@ -700,12 +723,18 @@ final class BusinessChannelAcceptanceScenarios {
                 Set.of(200));
         assertEquals(
                 fixture.fixture().storeId().toString(),
-                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                selected.json()
+                        .path("scopeContext")
+                        .path("store")
+                        .path("dataNodeRef")
+                        .asText(),
                 "BUSINESS: acceptance session selects the claimed store node");
         return new OperationsFixture(
                 fixture.fixture(),
                 new BackendAcceptanceTest.Session(
-                        fixture.session().cookie(), selected.json(), selected.json().path("contextVersion").asLong()));
+                        fixture.session().cookie(),
+                        selected.json(),
+                        selected.json().path("contextVersion").asLong()));
     }
 
     private BackendAcceptanceTest.Response createBinding(

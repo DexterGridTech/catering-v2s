@@ -351,7 +351,7 @@ export function LocalCatalogCopyDrawer({open, sourceItemCode, targetShapeKey, qu
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       destroyOnHidden={false}
-      maskClosable={!lifecycle.dirty}
+      maskClosable={!lifecycle.submitting}
       {...adminWideDrawerSurfaceProps}
       {...testId('catalog-local-copy-drawer')}
     >

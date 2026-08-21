@@ -5,9 +5,9 @@ import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerforman
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelPage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelStatusRequest;
+import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplatePage;
-import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateStatusRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateView;
@@ -26,8 +26,8 @@ import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationBindingReadApi;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
+import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -492,13 +492,13 @@ public final class OperationsBusinessChannelController {
                 throw new WorkspaceUserService.TaskScopeDeniedException();
             }
         } else {
-            organizationAuthorization.resolveSelectedProjectScope(session, store.project().id());
+            organizationAuthorization.resolveSelectedProjectScope(
+                    session, store.project().id());
         }
         return store;
     }
 
-    private void requireStoreProjectPair(
-            WorkspaceSessionReadback session, UUID projectRef, UUID storeRef) {
+    private void requireStoreProjectPair(WorkspaceSessionReadback session, UUID projectRef, UUID storeRef) {
         if (projectRef == null) throw new InvalidEdgeRequestException("projectRef is required");
         if (storeRef == null) throw new InvalidEdgeRequestException("storeRef is required");
         var store = requireScopedStore(session, session.groupWorkspaceKey(), storeRef);
@@ -590,5 +590,4 @@ public final class OperationsBusinessChannelController {
         }
         return normalized;
     }
-
 }

@@ -202,7 +202,10 @@ export function BusinessChannelDetailDrawer({
                 {
                   key: 'binding',
                   label: '绑定状态',
-                  children: binding?.statusDisplayName || (channel.bindingRef ? '已关联绑定' : '未关联绑定'),
+                  children:
+                    channel.bindingStatus === 'NOT_REQUIRED'
+                      ? '—'
+                      : binding?.statusDisplayName || channel.bindingStatusDisplayName || '—',
                 },
               ]}
             />

@@ -91,7 +91,7 @@ export function WorkspaceInvitationActionModal({
       open={open}
       onCancel={submitting ? undefined : onCancel}
       destroyOnHidden
-      mask={{closable: !submitting}}
+      maskClosable={!submitting}
       keyboard={!submitting}
       footer={[
         <Button

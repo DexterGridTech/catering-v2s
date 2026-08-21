@@ -59,6 +59,8 @@ export function AdministratorStatusModal({
       open={Boolean(admin)}
       onCancel={onClose}
       onOk={() => void submit()}
+      maskClosable={!busy}
+      keyboard={!busy}
       confirmLoading={busy}
       okText="确认"
       cancelText="取消"

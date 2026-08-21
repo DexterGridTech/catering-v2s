@@ -20,8 +20,9 @@ continues to admit an authenticated role to a page; an owner-valid scoped GET de
 the requested data can be read.  A read-only role may therefore have page access with an empty
 capability set.
 
-`saveOperationsCatalogItem` is one catalog user workflow, not two separately authorized user
-actions. It may coordinate only `ensureCatalogInventoryTarget` and `saveCatalogProductBom` in
+`saveOperationsCatalogItem` is one catalog user workflow, not separately authorized user
+actions. It may coordinate only `ensureCatalogInventoryTarget`, `saveCatalogProductBom` and
+`deleteCatalogOptionValueBoms` in
 the same `REQUIRED` transaction. Those commands remain inventory owner facts and validations,
 but their authorization source is the save operation's exact requirement
 `CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM` plus its target-specific catalog
@@ -51,7 +52,7 @@ grant.
 
 Cross-owner coordination is not a generic owner-capability bypass. The operation policy for
 `saveOperationsCatalogItem` declares the finite
-`coordinatedInventoryDefinitionCommands=[ensureCatalogInventoryTarget,saveCatalogProductBom]`;
+`coordinatedInventoryDefinitionCommands=[ensureCatalogInventoryTarget,saveCatalogProductBom,deleteCatalogOptionValueBoms]`;
 the generated edge projection and inventory owner both use that declaration. No other catalog
 operation, inventory command, or owner command may infer permission from that list.
 

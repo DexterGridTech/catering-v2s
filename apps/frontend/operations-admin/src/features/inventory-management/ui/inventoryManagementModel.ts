@@ -1,8 +1,23 @@
+import {createElement, type ReactNode} from 'react';
+import {NameCodeText} from '@catering-v2s/admin-ui-foundation';
 import type {CatalogInventoryEnvelope, Uuid} from '../../../app/api/generated/catalog-inventory-edge';
 
 export type StockView = 'ALL' | 'NEEDS_ATTENTION' | 'LOW' | 'OUT' | 'NEGATIVE' | 'UNKNOWN';
 
 export type InventoryCounts = Record<StockView, number>;
+
+export type InventoryUnitSnapshot = {
+  unitRef: Uuid;
+  code: string;
+  name: string;
+  unitDimension: 'COUNT' | 'WEIGHT' | 'VOLUME' | 'SERVICE_DURATION' | 'PACKAGE';
+  precision: number;
+};
+
+export function inventoryUnitLabel(snapshot: InventoryUnitSnapshot | null | undefined): ReactNode {
+  if (!snapshot) return '—';
+  return createElement(NameCodeText, {name: snapshot.name, code: snapshot.code});
+}
 
 export type InventoryTargetSummary = {
   targetRef: Uuid;
@@ -13,8 +28,8 @@ export type InventoryTargetSummary = {
   skuName: string | null;
   categoryName: string | null;
   materialRole: string | null;
-  consumptionUnit: string;
-  countingUnit: string | null;
+  consumptionUnitSnapshot: InventoryUnitSnapshot;
+  countingUnitSnapshot: InventoryUnitSnapshot | null;
   conversionSummary: string | null;
   balance: string;
   stockState: string;
@@ -39,6 +54,7 @@ export type InventoryLedgerEntry = {
   changeQuantity: string;
   afterQuantity: string;
   occurredAt: number;
+  consumptionUnitSnapshot: InventoryUnitSnapshot;
 };
 export type InventoryHistoryEntry = {
   entryRef: Uuid;
@@ -49,6 +65,7 @@ export type InventoryHistoryEntry = {
   occurredAt: number;
   source: string;
   reasonCode: string;
+  consumptionUnitSnapshot: InventoryUnitSnapshot;
 };
 export type InventoryReference = {
   sourceCode: string;
@@ -56,7 +73,7 @@ export type InventoryReference = {
   sourceName?: string;
   ownerScope?: {ownerType: string; ownerRef: Uuid; brandRef: Uuid};
   quantity: string;
-  unit: string;
+  consumptionUnitSnapshot: InventoryUnitSnapshot;
   timing: string;
   status: string;
 };
@@ -74,7 +91,7 @@ export type InventoryCurrentView = {
   configuration: {
     allowNegative: boolean;
     lowStockThreshold: string | null;
-    countingUnit?: string | null;
+    countingUnitSnapshot: InventoryUnitSnapshot | null;
     conversionFactor?: string | null;
   };
   stockState: string;
