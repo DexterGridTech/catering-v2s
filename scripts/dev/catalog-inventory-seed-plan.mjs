@@ -20,8 +20,9 @@ const v4Dir = path.resolve(root, profile.v4CatalogSourceDirectory);
 
 const assertPlan = (input) => {
   if (input.revision !== fixture.revision) fail("SEED_FIXTURE_REVISION_DRIFT");
-  if (!Array.isArray(input.seedDatasets) || input.seedDatasets.length !== 5) fail("SEED_DATASET_DENOMINATOR_DRIFT");
-  if (new Set(input.seedDatasets.map((d) => d.fixtureId)).size !== 5) fail("SEED_DATASET_ID_DUPLICATE");
+  const expectedSeedDatasetCount = input.denominators?.seed;
+  if (!Number.isInteger(expectedSeedDatasetCount) || expectedSeedDatasetCount < 5 || !Array.isArray(input.seedDatasets) || input.seedDatasets.length !== expectedSeedDatasetCount) fail("SEED_DATASET_DENOMINATOR_DRIFT");
+  if (new Set(input.seedDatasets.map((d) => d.fixtureId)).size !== expectedSeedDatasetCount) fail("SEED_DATASET_ID_DUPLICATE");
   const relations = input.seedDatasets.flatMap((d) => d.entities?.relations ?? []);
   const datasetIds = new Set(input.seedDatasets.map((d) => d.fixtureId));
   const seedDatasets = input.seedDatasets;
@@ -128,6 +129,7 @@ const assertPlan = (input) => {
     eligibleSourceItems,
     excludedSourceItems,
     eligibility: {sourceItemCount: sourceItems.length, eligibleItemCount: eligibleSourceItems.length, excludedItemCount: excludedSourceItems.length, eligibleByScope},
+    seedDatasetCount: expectedSeedDatasetCount,
     seedDatasets,
     seedDependencyEdges: dependencyEdges,
     canonicalDependencyOrder: order,

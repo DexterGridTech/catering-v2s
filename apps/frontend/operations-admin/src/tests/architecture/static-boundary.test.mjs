@@ -452,8 +452,8 @@ test('editable catalog rows use UI-stable keys and preserve only definition-back
   assert.match(source, /orderOptionConfigs: orderOptionConfigsDraft\.map\(config => \(\{/);
   assert.match(source, /definitionRef: wireUuid\(config\.definitionRef\)/);
   assert.match(source, /definitionValueRef: wireUuid\(value\.definitionValueRef\)/);
-  assert.match(source, /materialQuantities: value\.materialQuantities\.map\(material => \(\{/);
-  assert.match(source, /materialRef: wireUuid\(material\.materialRef\)/);
+  assert.doesNotMatch(source, /materialQuantities/);
+  assert.doesNotMatch(source, /materialRef: wireUuid\(/);
   assert.doesNotMatch(source, /catalogDraft\.orderOptions\s*=/);
   assert.doesNotMatch(
     source,

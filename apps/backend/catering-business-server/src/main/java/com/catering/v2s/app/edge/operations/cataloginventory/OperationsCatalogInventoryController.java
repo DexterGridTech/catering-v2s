@@ -227,6 +227,16 @@ public final class OperationsCatalogInventoryController {
                 read.dataNodeRef(), read.brandRef(), read.request(), read.requestId(), read.dataNodeType()));
     }
 
+    @GetMapping("/inventory-consumption-target-candidates")
+    public ResponseEntity<Object> inventoryConsumptionTargetCandidates(
+            EdgeRequestContext context,
+            @RequestParam Map<String, String> query,
+            @PathVariable Map<String, String> path) {
+        ReadRequest read = readRequest(context, query, path, CATALOG_SCOPE);
+        return readResponse(application.readInventoryConsumptionTargetCandidates(
+                read.dataNodeRef(), read.brandRef(), read.request(), read.requestId(), read.dataNodeType()));
+    }
+
     @GetMapping("/inventory-targets/{targetRef}")
     public ResponseEntity<Object> inventoryTarget(
             EdgeRequestContext context,

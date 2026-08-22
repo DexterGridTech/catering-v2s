@@ -8,7 +8,8 @@
     "getOperationsInventoryTargetBusinessHistory",
     "getOperationsInventoryTargetConsumptionReferences",
     "getOperationsInventoryTargetLedger",
-    "getOperationsInventoryTargetDiagnostics"
+    "getOperationsInventoryTargetDiagnostics",
+    "getOperationsInventoryConsumptionTargetCandidates"
   ],
   "paths": {
     "/operations/catalog-inventory/inventory-targets": {
@@ -501,6 +502,90 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/operations/catalog-inventory/inventory-consumption-target-candidates": {
+      "get": {
+        "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+        "tags": [
+          "Inventory"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "inventory",
+        "x-coordinated-owners": [],
+        "x-capability-keys": [],
+        "x-capability-by-data-node-type": {},
+        "x-allowed-data-node-types": [
+          "HEAD_COMPANY",
+          "STORE"
+        ],
+        "x-authorization-requirement-id": null,
+        "x-mutation": false,
+        "responses": {
+          "200": {
+            "description": "Typed readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryConsumptionTargetCandidatePage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Typed problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypedProblem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "dataNodeRef",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "selected store node"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "candidate search keyword"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "opaque candidate cursor"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "candidate page size"
             }
           }
         ]

@@ -4,7 +4,7 @@
   "status": "PASS",
   "authority": "STATIC_PLAN_ONLY",
   "revision": "CATALOG_INVENTORY_P1_20260806",
-  "fixtureDigest": "6ec73e1fcc7ffae2daa8d9babde973ea9a58d3298dfed4a7919d614831048cad",
+  "fixtureDigest": "d49040bd976d504881be88477e3a67840a21954a94d7d42c7a86a06c21bea95d",
   "profile": "catalog-inventory",
   "mediaPlan": [
     {
@@ -6448,6 +6448,7 @@
       "store": 66
     }
   },
+  "seedDatasetCount": 6,
   "seedDatasets": [
     {
       "fixtureId": "SEED-LATTE",
@@ -6491,20 +6492,17 @@
           {
             "skuCode": "LATTE-SKU-S",
             "componentCode": "BEAN-001",
-            "quantity": 14,
-            "unit": "GRAM"
+            "quantity": 14
           },
           {
             "skuCode": "LATTE-SKU-M",
             "componentCode": "BEAN-001",
-            "quantity": 18,
-            "unit": "GRAM"
+            "quantity": 18
           },
           {
             "skuCode": "LATTE-SKU-L",
             "componentCode": "BEAN-001",
-            "quantity": 24,
-            "unit": "GRAM"
+            "quantity": 24
           }
         ],
         "relations": [
@@ -6701,29 +6699,25 @@
             "ownerCode": "CAESAR-001",
             "ownerKind": "ITEM",
             "componentCode": "LETTUCE-001",
-            "quantity": 120,
-            "unit": "GRAM"
+            "quantity": 120
           },
           {
             "ownerCode": "DRESSING-CLASSIC",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "DRESSING-001",
-            "quantity": 30,
-            "unit": "GRAM"
+            "quantity": 30
           },
           {
             "ownerCode": "SIZE-LARGE",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "CHICKEN-001",
-            "quantity": 80,
-            "unit": "GRAM"
+            "quantity": 80
           },
           {
             "ownerCode": "TOPPING-BACON",
             "ownerKind": "OPTION_VALUE",
             "componentCode": "BACON-001",
-            "quantity": 20,
-            "unit": "GRAM"
+            "quantity": 20
           }
         ],
         "relations": [
@@ -6815,6 +6809,135 @@
       ]
     },
     {
+      "fixtureId": "SEED-MILK-TEA",
+      "purpose": "选项值正负 BOM，验证换燕麦奶的实际用量。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "MILK-TEA-001",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "name": "燕麦奶茶",
+            "mediaAssetKey": "lemonade"
+          }
+        ],
+        "optionGroups": [
+          {
+            "code": "MILK_SWAP"
+          }
+        ],
+        "optionValues": [
+          {
+            "code": "REGULAR_MILK",
+            "groupCode": "MILK_SWAP"
+          },
+          {
+            "code": "OAT_MILK",
+            "groupCode": "MILK_SWAP"
+          }
+        ],
+        "bomLines": [
+          {
+            "ownerCode": "REGULAR_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "MILK-001",
+            "quantity": 200
+          },
+          {
+            "ownerCode": "OAT_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "MILK-001",
+            "quantity": -200
+          },
+          {
+            "ownerCode": "OAT_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "OAT-MILK-001",
+            "quantity": 200
+          }
+        ],
+        "relations": [
+          {
+            "from": "REGULAR_MILK",
+            "to": "MILK-001",
+            "refKind": "BOM",
+            "refCode": "MILK-001"
+          },
+          {
+            "from": "OAT_MILK",
+            "to": "MILK-001",
+            "refKind": "BOM",
+            "refCode": "MILK-001"
+          },
+          {
+            "from": "OAT_MILK",
+            "to": "OAT-MILK-001",
+            "refKind": "BOM",
+            "refCode": "OAT-MILK-001"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "lemonade",
+            "fileName": "lemonade.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "de3bbd2c9c51ddcddfbffefd757b6e5590ee1cd9cad93bc1b5bdeb45d89ea1c2",
+            "sourceName": "Lemonade and mini pogacas.jpg",
+            "sourceLicense": "CC BY-SA 4.0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "lemonade"
+      ]
+    },
+    {
       "fixtureId": "SEED-MATERIALS",
       "purpose": "物料、库存对象、消耗单位与盘点单位。",
       "entities": {
@@ -6873,48 +6996,70 @@
             "shapeKey": "MATERIAL",
             "materialRole": "RAW_MATERIAL",
             "name": "凯撒沙拉酱"
+          },
+          {
+            "code": "MILK-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "牛奶"
+          },
+          {
+            "code": "OAT-MILK-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "燕麦奶"
           }
         ],
         "stockTargets": [
           {
             "productCode": "BEAN-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "BOX-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "BOX",
+            "countingUnitCode": "PACK"
           },
           {
             "productCode": "LETTUCE-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "BACON-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "EGG-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "EACH",
+            "countingUnitCode": "EACH"
           },
           {
             "productCode": "CHICKEN-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
           },
           {
             "productCode": "CUTLERY-001",
-            "consumptionUnit": "EACH",
-            "countingUnit": "BOX"
+            "baseMeasureUnitCode": "BOX",
+            "countingUnitCode": "PACK"
           },
           {
             "productCode": "DRESSING-001",
-            "consumptionUnit": "GRAM",
-            "countingUnit": "KILOGRAM"
+            "baseMeasureUnitCode": "GRAM",
+            "countingUnitCode": "KILOGRAM"
+          },
+          {
+            "productCode": "MILK-001",
+            "baseMeasureUnitCode": "MILLILITER",
+            "countingUnitCode": "LITER"
+          },
+          {
+            "productCode": "OAT-MILK-001",
+            "baseMeasureUnitCode": "MILLILITER",
+            "countingUnitCode": "LITER"
           }
         ],
         "constructedAt": "seed-definition",
@@ -7121,6 +7266,11 @@
       "prerequisite": "SEED-MATERIALS",
       "dependent": "SEED-CAESAR",
       "reason": "relation:BOM"
+    },
+    {
+      "prerequisite": "SEED-MATERIALS",
+      "dependent": "SEED-MILK-TEA",
+      "reason": "relation:BOM"
     }
   ],
   "canonicalDependencyOrder": [
@@ -7128,6 +7278,7 @@
     "SEED-WEIGHED",
     "SEED-LATTE",
     "SEED-CAESAR",
+    "SEED-MILK-TEA",
     "SEED-DINNER-SET"
   ],
   "relations": [
@@ -7166,6 +7317,24 @@
       "to": "BACON-001",
       "refKind": "BOM",
       "refCode": "BACON-001"
+    },
+    {
+      "from": "REGULAR_MILK",
+      "to": "MILK-001",
+      "refKind": "BOM",
+      "refCode": "MILK-001"
+    },
+    {
+      "from": "OAT_MILK",
+      "to": "MILK-001",
+      "refKind": "BOM",
+      "refCode": "MILK-001"
+    },
+    {
+      "from": "OAT_MILK",
+      "to": "OAT-MILK-001",
+      "refKind": "BOM",
+      "refCode": "OAT-MILK-001"
     }
   ],
   "dependencyOrder": [
@@ -7173,6 +7342,7 @@
     "SEED-WEIGHED",
     "SEED-LATTE",
     "SEED-CAESAR",
+    "SEED-MILK-TEA",
     "SEED-DINNER-SET"
   ],
   "requiredOperations": [
@@ -7200,5 +7370,5 @@
     }
   },
   "noDirectDatabaseWrites": true,
-  "planDigest": "d70b95f9e3fba9337db38285a2caa82cab32516d3ea2df72bf43fbd11d36a7e4"
+  "planDigest": "91098b7bc1cdd24cc020adb8ddca5ccae20b381499bac0d35cf50d0091134f71"
 }

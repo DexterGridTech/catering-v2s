@@ -27,7 +27,7 @@ const GENERATED_EDGE_TS = "contracts/catalog/catalogInventoryEdgeWire.ts";
 const OPERATIONS_TRANSPORT_PATH = "apps/frontend/operations-admin/src/app/api/OperationsTransport.ts";
 const SAVE_OPERATION_ID = "saveOperationsCatalogItem";
 const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
-const SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom", "deleteCatalogOptionValueBoms"];
+const SAVE_INVENTORY_DEFINITION_COMMANDS = ["replaceCatalogInventoryRules"];
 const CATALOG_ORDER_OPTION_DEFINITION_COMMANDS = Object.freeze({
   createOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget"],
   updateOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget", "deleteCatalogOrderOptionValueBoms"],
@@ -52,6 +52,7 @@ const CATALOG_LIBRARY_OPERATION_IDS = new Set([
   "updateOperationsCatalogUnit",
   "disableOperationsCatalogUnit",
   "deleteOperationsCatalogUnit",
+  "getOperationsInventoryConsumptionTargetCandidates",
 ]);
 const TRANSPORT_OWNED_READ_RESPONSE_MODELS = new Set([
   "CatalogAttributeDefinitionList",
@@ -64,7 +65,7 @@ function inventoryDefinitionCommands(operationId) {
 }
 const SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
 const DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
-const DUAL_SCOPE_READ_COUNT = 10;
+const DUAL_SCOPE_READ_COUNT = 11;
 
 function abs(rel) { return path.join(ROOT, rel); }
 function readJson(rel) { return JSON.parse(fs.readFileSync(abs(rel), "utf8")); }
@@ -226,14 +227,14 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
     R07: [["CatalogItemPage", "items[].productionTagRefs"], ["CatalogItemDetail", "item.productionTagRefs"], ["CatalogItemSaveRequest", "sections.catalogDraft.productionTagRefs"]],
     R08: [["CatalogItemDetail", "item.skus[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.skus[].productSkuRef"]],
     R09: [["CatalogItemDetail", "item.compositeGroups[].components[].itemRef"], ["CatalogItemDetail", "item.compositeGroups[].components[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.compositeGroups[].components[].productSkuRef"]],
-    R10: [["CatalogItemDetail", "item.inventoryBom[].itemRef"], ["CatalogItemDetail", "item.inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].productSkuRef"]],
+    R10: [["CatalogItemDetail", "inventoryRules.nodes[].owner.itemRef"], ["CatalogItemDetail", "inventoryRules.nodes[].owner.productSkuRef"], ["CatalogItemDetail", "inventoryRules.nodes[].owner.optionValueRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.itemRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.optionValueRef"]],
     R11: [["CatalogItemDetail", "productionTags[].tagRef"]],
     R12: [["CatalogItemDetail", "item.orderOptionConfigs[].values[].definitionValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.orderOptionConfigs[].values[].definitionValueRef"]],
-    R13: [["InventoryTargetPage", "data.items[].itemRef"], ["InventoryTargetCurrentView", "target.itemRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].itemRef"]],
-    R14: [["InventoryTargetPage", "data.items[].productSkuRef"], ["InventoryTargetCurrentView", "target.productSkuRef"], ["CatalogItemSaveRequest", "sections.inventoryConfiguration.nodes[].productSkuRef"]],
-    R15: [["CatalogItemDetail", "inventoryBom[].itemRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].itemRef"]],
-    R16: [["CatalogItemDetail", "inventoryBom[].productSkuRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].productSkuRef"]],
-    R17: [["CatalogItemDetail", "inventoryBom[].optionValueRef"], ["CatalogItemSaveRequest", "sections.catalogDraft.inventoryBom[].optionValueRef"]]
+    R13: [["InventoryTargetPage", "data.items[].itemRef"], ["InventoryTargetCurrentView", "target.itemRef"], ["InventoryConsumptionTargetCandidatePage", "items[].itemRef"]],
+    R14: [["InventoryTargetPage", "data.items[].productSkuRef"], ["InventoryTargetCurrentView", "target.productSkuRef"], ["InventoryConsumptionTargetCandidatePage", "items[].productSkuRef"]],
+    R15: [["CatalogItemDetail", "inventoryRules.nodes[].bom.lines[].itemRef"]],
+    R16: [["CatalogItemDetail", "inventoryRules.nodes[].bom.lines[].productSkuRef"]],
+    R17: [["CatalogItemDetail", "inventoryRules.nodes[].owner.optionValueRef"], ["CatalogItemSaveRequest", "sections.inventoryRules.nodes[].owner.optionValueRef"]]
   };
   for (const [rowId, locations] of Object.entries(requiredCoverage)) for (const [model, pathValue] of locations) {
     const field = fields.get(model)?.get(pathValue);
@@ -256,7 +257,7 @@ function validateOpaqueReferencePaths(openapi, policy, matrix) {
 function validateOperationAuthorizationPolicy(edge, openapi) {
   const writes = edge.operations.filter((operation) => operation.mutation);
   const reads = edge.operations.filter((operation) => !operation.mutation);
-  expect(writes.length === 37 && reads.length === 19, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
+  expect(writes.length === 37 && reads.length === 20, "P1_OPERATION_AUTHORIZATION_CARDINALITY");
   expect(reads.every((operation) => operation.authorizationRequirementId === null && operation.capabilityKeys.length === 0 && Object.keys(operation.capabilityByDataNodeType || {}).length === 0), "P1_GET_ACTION_CAPABILITY_FORBIDDEN");
   expect(writes.every((operation) => typeof operation.authorizationRequirementId === "string" && operation.authorizationRequirementId.startsWith("CATALOG_INVENTORY_OPERATION_") && operation.capabilityKeys.length > 0), "P1_MUTATION_AUTHORIZATION_REQUIREMENT");
   expect(writes.filter((operation) => operation.allowedDataNodeTypes.length === 2).length === 29 && writes.filter((operation) => operation.allowedDataNodeTypes.length === 1).length === 8, "P1_MUTATION_SCOPE_POLICY_CARDINALITY");
@@ -316,8 +317,8 @@ const expectedB3FieldSpecs = [
   {fieldKey: "skuVariantAttribute", dataPath: "skuVariantDimensions[].attributeRef", controlKind: "select", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
   {fieldKey: "skuVariantValues", dataPath: "skuVariantDimensions[].values[].valueRef", controlKind: "multiSelect", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
   {fieldKey: "skuMatrix", dataPath: "skus[]", controlKind: "skuVariantMatrix", tabKey: "sku-specifications-pricing", admittedShapes: ["SKU_VARIANT_SALE_COUNTED"]},
-  {fieldKey: "bomTarget", dataPath: "inventoryBom[].targetRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"]},
-  {fieldKey: "bomOptionValue", dataPath: "inventoryBom[].optionValueRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
+  {fieldKey: "inventoryRuleMode", dataPath: "inventoryRules.nodes[].mode", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"]},
+  {fieldKey: "inventoryBomComponent", dataPath: "inventoryRules.nodes[].bom.lines[].targetRef", controlKind: "select", tabKey: "inventory-bom", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
   {fieldKey: "compositeComponentSku", dataPath: "compositeGroups[].components[].productSkuRef", controlKind: "select", tabKey: "composite-content", admittedShapes: ["COMPOSITE"]},
   {fieldKey: "productionTagRefs", dataPath: "productionTagRefs[]", controlKind: "multiSelect", tabKey: "production-prompts", admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"]},
   {fieldKey: "tagRefs", dataPath: "tagRefs[]", controlKind: "multiSelect", tabKey: "basic", admittedShapes: expectedShapes},
@@ -535,7 +536,7 @@ function validate(root = ROOT) {
   const service = shape.shapes.find((entry) => entry.key === "SERVICE");
   const benefit = shape.shapes.find((entry) => entry.key === "BENEFIT_SHELL");
   expect(catalogHasSku.allowedModes.length === 1 && catalogHasSku.allowedModes[0] === "NONE", "P1_HAS_SKU_MODES");
-  expect(catalogNoSku.allowedModes.includes("INDEPENDENT_STOCK") && catalogNoSku.allowedModes.includes("BOM"), "P1_NO_SKU_MODES");
+  expect(catalogNoSku.allowedModes.includes("DIRECT") && catalogNoSku.allowedModes.includes("BOM"), "P1_NO_SKU_MODES");
   expect(service.skuPolicy.skuMode === "NONE" && benefit.skuPolicy.skuMode === "NONE", "P1_NON_SKU_SHAPES");
   const expectedTabs = {
     STANDARD_SALE_COUNTED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
@@ -554,11 +555,11 @@ function validate(root = ROOT) {
   expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "code").readonlyWhen.update && shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "code").readonlyWhen.view, "P1_CODE_IMMUTABLE_AFTER_CREATE");
   expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "shapeKey").readonlyWhen.update, "P1_SHAPE_IMMUTABLE_AFTER_CREATE");
   expect(shape.fieldRules.STANDARD_SALE_COUNTED.find((entry) => entry.field === "usageCapabilities").readonly === true, "P1_CAPABILITY_READONLY");
-  expect(shape.typeEffects.shapeNodeAdmission.SERVICE.inventoryBom === false && shape.typeEffects.shapeNodeAdmission.BENEFIT_SHELL.inventoryBom === false, "P1_SHAPE_NODE_ADMISSION");
+  expect(shape.typeEffects.shapeNodeAdmission.SERVICE.ownerGrain === "NONE" && shape.typeEffects.shapeNodeAdmission.BENEFIT_SHELL.ownerGrain === "NONE", "P1_SHAPE_NODE_ADMISSION");
   for (const shapeKey of ["SERVICE", "BENEFIT_SHELL"]) {
     const admission = shape.typeEffects.shapeNodeAdmission[shapeKey];
     const eligibility = shape.typeEffects.modeEligibilityByShape[shapeKey];
-    expect(admission.inventoryBom === false && Object.values(eligibility).every((modes) => Array.isArray(modes) && modes.length === 0), "P1_NO_INVENTORY_MODE_GATE:" + shapeKey);
+    expect(admission.ownerGrain === "NONE" && admission.allowedNodeTypes.length === 0 && Object.values(eligibility).every((modes) => Array.isArray(modes) && modes.length === 0), "P1_NO_INVENTORY_MODE_GATE:" + shapeKey);
   }
   const generatedJava = fs.readFileSync(abs("contracts/catalog/CatalogInventoryShapeManifest.java"), "utf8");
   const generatedTs = fs.readFileSync(abs("contracts/catalog/catalogInventoryShapeManifest.ts"), "utf8");
@@ -566,10 +567,10 @@ function validate(root = ROOT) {
   expect(generatedTs.includes(shape.manifestDigest) && generatedTs.includes("shapeKeys") && generatedTs.includes("modeRules"), "P1_GENERATED_TS_DRIFT");
   const generatedEdgeJava = fs.readFileSync(abs(GENERATED_EDGE_JAVA), "utf8");
   const generatedEdgeTs = fs.readFileSync(abs(GENERATED_EDGE_TS), "utf8");
-  expect(generatedEdgeJava.includes("OPERATION_COUNT = 56") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("ensureCatalogInventoryTarget") && generatedEdgeJava.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_JAVA_DRIFT");
-  expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("ensureCatalogInventoryTarget") && generatedEdgeTs.includes("saveCatalogProductBom"), "P1_GENERATED_EDGE_TS_DRIFT");
+  expect(generatedEdgeJava.includes("OPERATION_COUNT = 57") && generatedEdgeJava.includes("record Operation") && generatedEdgeJava.includes("OPERATIONS") && generatedEdgeJava.includes("List<String> coordinatedInventoryDefinitionCommands") && generatedEdgeJava.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_JAVA_DRIFT");
+  expect(generatedEdgeTs.includes("operationCount") && generatedEdgeTs.includes("coordinatedInventoryDefinitionCommands") && generatedEdgeTs.includes("replaceCatalogInventoryRules"), "P1_GENERATED_EDGE_TS_DRIFT");
 
-  expect(edge.revision === REVISION && edge.operationCount === 56 && edge.operations.length === 56, "P1_EDGE_OPERATION_COUNT");
+  expect(edge.revision === REVISION && edge.operationCount === 57 && edge.operations.length === 57, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
   expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
   const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces}));
@@ -589,7 +590,7 @@ function validate(root = ROOT) {
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
   }
-  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 56, "P1_OPENAPI_OPERATION_REACHABILITY");
+  expect(exact(rootOperations, edge.operations.map((entry) => entry.operationId)) && rootOperations.length === 57, "P1_OPENAPI_OPERATION_REACHABILITY");
   const assetStageSchema = openapi.components?.schemas?.CatalogAssetStageRequest;
   expect(assetStageSchema?.properties?.content?.type === "string" && assetStageSchema.properties.content.format === "binary" && assetStageSchema.required?.includes("dataNodeRef") && !Object.prototype.hasOwnProperty.call(assetStageSchema.properties, "assetRef"), "P1_ASSET_UPLOAD_BINARY_SCHEMA");
   const assetStageOperation = Object.values(openapi.paths || {}).flatMap((pathItem) => Object.values(pathItem)).find((operation) => operation?.operationId === "stageOperationsCatalogAsset");
@@ -605,7 +606,7 @@ function validate(root = ROOT) {
     const shardData = readJson("contracts/openapi/" + shard);
     for (const [route, pathItem] of Object.entries(shardData.paths || {})) for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) shardOperations.push(operation.operationId);
   }
-  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 56, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
+  expect(exact(shardOperations, edge.operations.map((entry) => entry.operationId)) && shardOperations.length === 57, "P1_OPENAPI_SHARD_OPERATION_REACHABILITY");
 
   expect(readModels.sixInventoryDetailZones.length === 6 && exact(readModels.sixInventoryDetailZones, expectedZones), "P1_SIX_INVENTORY_ZONES");
   for (const modelName of shape.readModelNames) expect(readModels.models.some((entry) => entry.name === modelName), "P1_READ_MODEL_MISSING:" + modelName);
@@ -660,7 +661,7 @@ function validate(root = ROOT) {
 
   const seedIds = fixtures.seedDatasets.map((entry) => entry.fixtureId);
   const testIds = fixtures.testDatasets.map((entry) => entry.fixtureId);
-  expect(fixtures.seedDatasets.length === 5 && fixtures.testDatasets.length >= 26, "P1_FIXTURE_COUNTS");
+  expect(fixtures.seedDatasets.length === 6 && fixtures.testDatasets.length >= 26, "P1_FIXTURE_COUNTS");
   expect(new Set(seedIds).size === seedIds.length && new Set(testIds).size === testIds.length, "P1_FIXTURE_ID_UNIQUE");
   expect(seedIds.every((entry) => !testIds.includes(entry)), "P1_SEED_TEST_OVERLAP");
   expect(fixtures.seedDatasets.every((entry) => entry.class === "SEED" && entry.ownerScopes?.length && entry.setupChannel && entry.readbackSelectors?.length && entry.cleanupPolicy), "P1_SEED_CONTRACT_SHAPE");
@@ -688,7 +689,7 @@ function validate(root = ROOT) {
     if (scenario.layer === "L2") expect(noForbiddenLocatorFields(scenario), "P1_L2_LOCATOR_FIELD:" + scenario.scenarioId);
   }
 
-  expect(assertions.count === 56 && assertions.operations.length === 56, "P1_ASSERTION_OPERATION_COUNT");
+  expect(assertions.count === 57 && assertions.operations.length === 57, "P1_ASSERTION_OPERATION_COUNT");
   const operationIds = [...operationDesign.operations.map((entry) => entry.operationId), ...CATALOG_LIBRARY_OPERATION_IDS];
   expect(exact(assertions.operations.map((entry) => entry.operationId), operationIds), "P1_ASSERTION_OPERATION_EXACT_SET");
   const saveAssertion = assertions.operations.find((entry) => entry.operationId === SAVE_OPERATION_ID);
@@ -763,7 +764,7 @@ function selfTest() {
   redB3("missing-field", (candidate) => candidate.fields.pop());
   redB3("missing-control-kind", (candidate) => candidate.controlKinds.pop());
   redB3("missing-shape-rule", (candidate) => { candidate.fieldRules.SKU_VARIANT_SALE_COUNTED = candidate.fieldRules.SKU_VARIANT_SALE_COUNTED.filter((entry) => entry.field !== "skuMatrix"); });
-  redB3("wire-label-field", (candidate) => { candidate.fields.find((field) => field.fieldKey === "bomTarget").optionSourceRef.labelParts = ["name"]; delete candidate.fields.find((field) => field.fieldKey === "bomTarget").optionSourceRef.labelField; });
+  redB3("wire-label-field", (candidate) => { candidate.fields.find((field) => field.fieldKey === "inventoryBomComponent").optionSourceRef.labelParts = ["name"]; delete candidate.fields.find((field) => field.fieldKey === "inventoryBomComponent").optionSourceRef.labelField; });
   redB3("context-binding", (candidate) => { candidate.fields.find((field) => field.fieldKey === "skuVariantValues").optionSourceRef.contextBindings.attributeRef = {fieldKey: "missingField"}; });
   const redTabRules = JSON.parse(JSON.stringify(good)); redTabRules.tabRules.STANDARD_SALE_COUNTED.visible = redTabRules.tabRules.STANDARD_SALE_COUNTED.visible.filter((tab) => tab !== "order-options"); expectRed(exact(redTabRules.tabRules.STANDARD_SALE_COUNTED.visible, ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"]), "TAB_RULES");
   const redTabContent = JSON.parse(JSON.stringify(good)); delete redTabContent.tabRules.COMPOSITE.contentRules["composite-content"]; expectRed(Boolean(redTabContent.tabRules.COMPOSITE.contentRules?.["composite-content"]), "COMPOSITE_CONTENT_RULE");
@@ -785,7 +786,7 @@ function selfTest() {
   expect(failureCodeRed, "SELF_TEST_BATCH_FAILURE_CODE_NOT_RED");
   const rootIds = Object.values(root.paths).flatMap((pathItem) => Object.values(pathItem).filter((entry) => entry.operationId).map((entry) => entry.operationId));
   const redRouteIds = rootIds.slice(1);
-  expectRed(redRouteIds.length === 56, "OPENAPI_REACHABILITY");
+  expectRed(redRouteIds.length === 57, "OPENAPI_REACHABILITY");
   const firstSchema = Object.values(root.components.schemas).find((schema) => schema.properties && Object.keys(schema.properties).length);
   const firstProperty = firstSchema && Object.values(firstSchema.properties)[0];
   const redTyped = firstProperty ? {...firstProperty} : null;
@@ -906,7 +907,7 @@ function writeEvidence() {
     notes: [
       "P1 does not claim HTTP, DB, seed runtime or browser L2 PASS.",
       "P1 copies all 34 v4 media assets; its 5 seed datasets and 8 bound media keys are representative definition graphs, not the final DEV seed denominator.",
-      "P1 design-byte coverage is exact over 25 read models plus CatalogItemSaveRequest: nested field paths, required bits, formats, four voidAvailability sites and type conventions are checked against the approved matrix; structural schema PASS alone is not sufficient.",
+      "P1 design-byte coverage is exact over 26 read models plus CatalogItemSaveRequest: nested field paths, required bits, formats, four voidAvailability sites and type conventions are checked against the approved matrix; structural schema PASS alone is not sufficient.",
       "The approved design-byte matrix is the single semantic denominator for this package; generated Java/TypeScript edge wire carries its policy hash and field digest for downstream byte reconciliation.",
       "P2 full seed must preserve v4 business coverage of 73 catalog items and 34 media assets after adapting forbidden v4 structures to the v2s model; a smaller final seed is not accepted.",
       "Seed must upload real bytes through stageOperationsCatalogAsset multipart/form-data, create products through createOperationsCatalogItem using returned assetRefs, and never fall back to SQL.",
@@ -923,10 +924,10 @@ try {
   if (command === "--self-test") selfTest();
   else if (command === "--write-evidence") writeEvidence();
   else {
-    validate();
+    const result = validate();
     const apiScenarios = readJson(API_SCENARIO_PATH);
     const l2Scenarios = readJson(L2_SCENARIO_PATH);
-    process.stdout.write(`CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=56\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n`);
+    process.stdout.write(`CATALOG_INVENTORY_P1_CHECK=PASS\nSHAPES=7\nOPERATIONS=${result.edge.operations.length}\nAPI_SCENARIOS=${apiScenarios.scenarioCount}/${apiScenarios.caseCount}\nL2_SCENARIOS=${l2Scenarios.scenarioCount}/${l2Scenarios.caseCount}\nIA_IDS=89\nCOPY_LIMITS=POLICY_ONLY\n`);
   }
 } catch (error) {
   process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n");

@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "858ec2e574258b42788c93b4e3c7105c82282e08154665e415d0fe14565e770e",
+  "contractDigest": "22fccbdf1db5e8ba59421fa0e4d9457c15a8327ac3fbe89237c15bba49b9aaef",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -505,6 +505,15 @@
       "method": "DELETE",
       "path": "/operations/catalog-inventory/units/{unitRef}",
       "owner": "catalog",
+      "consumerFaces": [
+        "operations-admin"
+      ]
+    },
+    {
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "owner": "inventory",
       "consumerFaces": [
         "operations-admin"
       ]

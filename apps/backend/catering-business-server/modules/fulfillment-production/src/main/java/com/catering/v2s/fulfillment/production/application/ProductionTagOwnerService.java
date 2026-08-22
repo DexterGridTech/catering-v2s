@@ -960,7 +960,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         ObjectNode result = mapper.createObjectNode()
                 .put("owner", "fulfillment-production")
                 .put("firstBlockingProblem", firstBlocking)
-                .put("digest", hash(snapshot));
+                .put("digest", hash(copyDigestSnapshot(snapshot)));
         result.set("closureItems", closureItems);
         result.set("mappingPreview", mappings);
         result.set("referenceMappings", referenceMappings);
@@ -1377,6 +1377,17 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    /** Planned opaque target refs are execution artifacts; semantic copy facts remain in the digest. */
+    private ObjectNode copyDigestSnapshot(ObjectNode snapshot) {
+        ObjectNode stable = snapshot.deepCopy();
+        for (String field : List.of("referenceMappings", "referenceRewritePreview")) {
+            JsonNode rows = stable.path(field);
+            if (!rows.isArray()) continue;
+            for (JsonNode row : rows) if (row instanceof ObjectNode object) object.putNull("targetRef");
+        }
+        return stable;
     }
 
     private String canonical(JsonNode value) {

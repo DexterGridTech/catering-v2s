@@ -6,11 +6,11 @@
   "sourceBindings": {
     "requirements": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
-      "sha256": "9c80dc61fb1a365b2b1dada76725fd169ef9bf874af79f561c53e821e7a159fd"
+      "sha256": "ce32dcf053b2a427576f38ad83719683a7e0488a28b530befea0cd3b31efeeea"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "4bb3f560b6b3cf4a57f49050c6c5104a7c853b018e48ea9510e465244311557d"
+      "sha256": "860224dc6b167bf66b2025715be6eb8f1d24312d3fca728801b6183e4f44d959"
     },
     "copyPolicy": {
       "path": "contracts/policy/catalog-inventory-copy-policy.json"
@@ -379,6 +379,135 @@
       ]
     },
     {
+      "fixtureId": "SEED-MILK-TEA",
+      "purpose": "选项值正负 BOM，验证换燕麦奶的实际用量。",
+      "entities": {
+        "catalogItems": [
+          {
+            "code": "MILK-TEA-001",
+            "shapeKey": "STANDARD_SALE_COUNTED",
+            "name": "燕麦奶茶",
+            "mediaAssetKey": "lemonade"
+          }
+        ],
+        "optionGroups": [
+          {
+            "code": "MILK_SWAP"
+          }
+        ],
+        "optionValues": [
+          {
+            "code": "REGULAR_MILK",
+            "groupCode": "MILK_SWAP"
+          },
+          {
+            "code": "OAT_MILK",
+            "groupCode": "MILK_SWAP"
+          }
+        ],
+        "bomLines": [
+          {
+            "ownerCode": "REGULAR_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "MILK-001",
+            "quantity": 200
+          },
+          {
+            "ownerCode": "OAT_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "MILK-001",
+            "quantity": -200
+          },
+          {
+            "ownerCode": "OAT_MILK",
+            "ownerKind": "OPTION_VALUE",
+            "componentCode": "OAT-MILK-001",
+            "quantity": 200
+          }
+        ],
+        "relations": [
+          {
+            "from": "REGULAR_MILK",
+            "to": "MILK-001",
+            "refKind": "BOM",
+            "refCode": "MILK-001"
+          },
+          {
+            "from": "OAT_MILK",
+            "to": "MILK-001",
+            "refKind": "BOM",
+            "refCode": "MILK-001"
+          },
+          {
+            "from": "OAT_MILK",
+            "to": "OAT-MILK-001",
+            "refKind": "BOM",
+            "refCode": "OAT-MILK-001"
+          }
+        ],
+        "constructedAt": "seed-definition",
+        "source": "fixture-catalog",
+        "ownerGraph": [
+          {
+            "scopeKind": "HEAD_COMPANY_BRAND",
+            "headCompanyRef": "HC-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": 0
+          },
+          {
+            "scopeKind": "STORE_BRAND",
+            "storeRef": "STORE-A",
+            "brandRef": "BR-A",
+            "balanceAndLedgerExpected": "legal-sample"
+          }
+        ],
+        "stockFacts": {
+          "headCompanyBalance": 0,
+          "headCompanyLedgerEntries": 0,
+          "storeBalanceAndLedger": "present-for-materials"
+        },
+        "mediaAssets": [
+          {
+            "mediaAssetKey": "lemonade",
+            "fileName": "lemonade.jpg",
+            "contentType": "image/jpeg",
+            "sha256": "de3bbd2c9c51ddcddfbffefd757b6e5590ee1cd9cad93bc1b5bdeb45d89ea1c2",
+            "sourceName": "Lemonade and mini pogacas.jpg",
+            "sourceLicense": "CC BY-SA 4.0",
+            "sourceProvider": "Wikimedia Commons"
+          }
+        ]
+      },
+      "class": "SEED",
+      "ownerScopes": [
+        {
+          "scopeKind": "HEAD_COMPANY_BRAND",
+          "headCompanyRef": "HC-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": 0
+        },
+        {
+          "scopeKind": "STORE_BRAND",
+          "storeRef": "STORE-A",
+          "brandRef": "BR-A",
+          "balanceAndLedgerExpected": "legal-sample"
+        }
+      ],
+      "scenarioIds": [
+        "CI-API-026"
+      ],
+      "setupChannel": "P2_HTTP_OWNER_APIS",
+      "readbackSelectors": [
+        "fixtureId",
+        "ownerScopes",
+        "entities"
+      ],
+      "cleanupPolicy": "P2_RUN_SCOPED_REVERT",
+      "mediaAssetKeys": [
+        "lemonade"
+      ]
+    },
+    {
       "fixtureId": "SEED-MATERIALS",
       "purpose": "物料、库存对象、消耗单位与盘点单位。",
       "entities": {
@@ -437,6 +566,18 @@
             "shapeKey": "MATERIAL",
             "materialRole": "RAW_MATERIAL",
             "name": "凯撒沙拉酱"
+          },
+          {
+            "code": "MILK-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "牛奶"
+          },
+          {
+            "code": "OAT-MILK-001",
+            "shapeKey": "MATERIAL",
+            "materialRole": "RAW_MATERIAL",
+            "name": "燕麦奶"
           }
         ],
         "stockTargets": [
@@ -479,6 +620,16 @@
             "productCode": "DRESSING-001",
             "baseMeasureUnitCode": "GRAM",
             "countingUnitCode": "KILOGRAM"
+          },
+          {
+            "productCode": "MILK-001",
+            "baseMeasureUnitCode": "MILLILITER",
+            "countingUnitCode": "LITER"
+          },
+          {
+            "productCode": "OAT-MILK-001",
+            "baseMeasureUnitCode": "MILLILITER",
+            "countingUnitCode": "LITER"
           }
         ],
         "constructedAt": "seed-definition",
@@ -884,7 +1035,9 @@
       "DRESSING-001",
       "BACON-001",
       "EGG-001",
-      "CHICKEN-001"
+      "CHICKEN-001",
+      "MILK-001",
+      "OAT-MILK-001"
     ],
     "attributeDefinitions": [
       {
@@ -984,6 +1137,30 @@
             ]
           }
         ]
+      },
+      {
+        "code": "MILK_SWAP",
+        "name": "奶基底",
+        "selectionMode": "SINGLE",
+        "values": [
+          {
+            "code": "REGULAR_MILK",
+            "name": "牛奶",
+            "displayOrder": 0,
+            "materialItemCodes": [
+              "MILK-001"
+            ]
+          },
+          {
+            "code": "OAT_MILK",
+            "name": "燕麦奶",
+            "displayOrder": 1,
+            "materialItemCodes": [
+              "MILK-001",
+              "OAT-MILK-001"
+            ]
+          }
+        ]
       }
     ],
     "itemAssignments": [
@@ -1027,19 +1204,12 @@
               {
                 "valueCode": "CLASSIC",
                 "defaultValue": true,
-                "extraPrice": 0,
-                "materialQuantities": [
-                  {
-                    "materialItemCode": "DRESSING-001",
-                    "actualQuantity": 30
-                  }
-                ]
+                "extraPrice": 0
               },
               {
                 "valueCode": "LIGHT",
                 "defaultValue": false,
-                "extraPrice": 0,
-                "materialQuantities": []
+                "extraPrice": 0
               }
             ]
           },
@@ -1052,35 +1222,114 @@
               {
                 "valueCode": "BACON",
                 "defaultValue": false,
-                "extraPrice": 200,
-                "materialQuantities": [
-                  {
-                    "materialItemCode": "BACON-001",
-                    "actualQuantity": 20
-                  }
-                ]
+                "extraPrice": 200
               },
               {
                 "valueCode": "EGG",
                 "defaultValue": false,
-                "extraPrice": 100,
-                "materialQuantities": [
-                  {
-                    "materialItemCode": "EGG-001",
-                    "actualQuantity": 1
-                  }
-                ]
+                "extraPrice": 100
               },
               {
                 "valueCode": "CHICKEN",
                 "defaultValue": false,
-                "extraPrice": 300,
-                "materialQuantities": [
-                  {
-                    "materialItemCode": "CHICKEN-001",
-                    "actualQuantity": 80
-                  }
-                ]
+                "extraPrice": 300
+              }
+            ]
+          }
+        ],
+        "optionValueBoms": [
+          {
+            "valueCode": "CLASSIC",
+            "lines": [
+              {
+                "materialItemCode": "DRESSING-001",
+                "lineSign": "POSITIVE",
+                "quantity": 30
+              }
+            ]
+          },
+          {
+            "valueCode": "BACON",
+            "lines": [
+              {
+                "materialItemCode": "BACON-001",
+                "lineSign": "POSITIVE",
+                "quantity": 20
+              }
+            ]
+          },
+          {
+            "valueCode": "EGG",
+            "lines": [
+              {
+                "materialItemCode": "EGG-001",
+                "lineSign": "POSITIVE",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "valueCode": "CHICKEN",
+            "lines": [
+              {
+                "materialItemCode": "CHICKEN-001",
+                "lineSign": "POSITIVE",
+                "quantity": 80
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "itemCode": "MILK-TEA-001",
+        "tagCodes": [],
+        "salesUnitCode": "CUP",
+        "baseMeasureUnitCode": "MILLILITER",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": [
+          {
+            "definitionCode": "MILK_SWAP",
+            "required": false,
+            "minSelectionCount": null,
+            "maxSelectionCount": null,
+            "values": [
+              {
+                "valueCode": "REGULAR_MILK",
+                "defaultValue": true,
+                "extraPrice": 0
+              },
+              {
+                "valueCode": "OAT_MILK",
+                "defaultValue": false,
+                "extraPrice": 100
+              }
+            ]
+          }
+        ],
+        "optionValueBoms": [
+          {
+            "valueCode": "REGULAR_MILK",
+            "lines": [
+              {
+                "materialItemCode": "MILK-001",
+                "lineSign": "POSITIVE",
+                "quantity": 200
+              }
+            ]
+          },
+          {
+            "valueCode": "OAT_MILK",
+            "lines": [
+              {
+                "materialItemCode": "MILK-001",
+                "lineSign": "NEGATIVE",
+                "quantity": 200
+              },
+              {
+                "materialItemCode": "OAT-MILK-001",
+                "lineSign": "POSITIVE",
+                "quantity": 200
               }
             ]
           }
@@ -1216,6 +1465,24 @@
         "tagCodes": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "BOX",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "MILK-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "MILLILITER",
+        "skuUnitOverrides": [],
+        "attributes": [],
+        "orderOptions": []
+      },
+      {
+        "itemCode": "OAT-MILK-001",
+        "tagCodes": [],
+        "salesUnitCode": null,
+        "baseMeasureUnitCode": "MILLILITER",
         "skuUnitOverrides": [],
         "attributes": [],
         "orderOptions": []
@@ -3316,6 +3583,7 @@
           "SEED-LATTE",
           "SEED-DINNER-SET",
           "SEED-CAESAR",
+          "SEED-MILK-TEA",
           "SEED-MATERIALS",
           "SEED-WEIGHED"
         ],
@@ -4505,7 +4773,7 @@
     "l2": "contracts/policy/catalog-inventory-l2-scenarios.json"
   },
   "denominators": {
-    "seed": 5,
+    "seed": 6,
     "test": 39,
     "apiDefinitions": 26,
     "apiCases": 99,
@@ -4599,5 +4867,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "340391d8201e9085983ec40fc12452e7f29ad0d951d7a9d72e3bbfae95efb012"
+  "fixtureDigest": "d49040bd976d504881be88477e3a67840a21954a94d7d42c7a86a06c21bea95d"
 }

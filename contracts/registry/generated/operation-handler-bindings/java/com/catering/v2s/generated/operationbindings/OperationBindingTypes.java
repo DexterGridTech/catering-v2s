@@ -134,6 +134,8 @@ public final class OperationBindingTypes {
     public record InventoryBusinessHistoryPage() {}
     public record InventoryChangeSummaryView() {}
     public record InventoryConsumptionReferencePage() {}
+    public record InventoryConsumptionTargetCandidatePage() {}
+    public record InventoryConsumptionTargetCandidateQuery() {}
     public record InventoryCountRequest() {}
     public record InventoryDiagnosticsQuery() {}
     public record InventoryDiagnosticsView() {}

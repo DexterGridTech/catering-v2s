@@ -13,7 +13,7 @@ const assertDefinitionSeed = (seed) => {
     ["MULTI_SELECT", "SINGLE_SELECT", "TEXT"],
   );
   assert.deepEqual(
-    seed.orderOptionDefinitions.map((definition) => definition.selectionMode).sort(),
+    [...new Set(seed.orderOptionDefinitions.map((definition) => definition.selectionMode))].sort(),
     ["MULTIPLE", "SINGLE"],
   );
   const materialCodes = new Set(seed.materialItemCodes);
@@ -32,6 +32,11 @@ const assertDefinitionSeed = (seed) => {
     caesar.orderOptions.some((option) => option.definitionCode === "CAESAR_TOPPINGS" && option.minSelectionCount === 0 && option.maxSelectionCount === 2),
     true,
   );
+  assert.equal(caesar.optionValueBoms.some((bom) => bom.valueCode === "CHICKEN" && bom.lines[0].quantity === 80), true);
+  assert.equal(caesar.optionValueBoms.some((bom) => Object.hasOwn(bom.lines[0], "actualQuantity")), false);
+  const milkTea = seed.itemAssignments.find((assignment) => assignment.itemCode === "MILK-TEA-001");
+  assert.ok(milkTea);
+  assert.equal(milkTea.optionValueBoms.find((bom) => bom.valueCode === "OAT_MILK").lines.some((line) => line.lineSign === "NEGATIVE"), true);
 };
 
 test("catalog definition seed declares a complete HTTP-resolvable library and item override graph", () => {
@@ -54,7 +59,10 @@ test("catalog definition seed declares a complete HTTP-resolvable library and it
   assert.equal(catalogDraft.properties.salesUnitRefs, undefined);
   assert.deepEqual(catalogDraft.properties.attributeAssignments.items.required, ["definitionRef", "optionRefs"]);
   assert.deepEqual(catalogDraft.properties.orderOptionConfigs.items.required, ["definitionRef", "required", "values"]);
-  assert.deepEqual(catalogDraft.properties.orderOptionConfigs.items.properties.values.items.required, ["definitionValueRef", "defaultValue", "expectedBomVersion", "materialQuantities"]);
+  assert.deepEqual(catalogDraft.properties.orderOptionConfigs.items.properties.values.items.required, ["definitionValueRef", "defaultValue", "expectedBomVersion"]);
+  assert.equal(catalogDraft.properties.orderOptionConfigs.items.properties.values.items.properties.materialQuantities, undefined);
+  assert.ok(fixture.catalogDefinitionSeed.itemAssignments.some((assignment) => assignment.optionValueBoms?.length));
+  assert.equal(JSON.stringify(fixture.catalogDefinitionSeed).includes("materialQuantities"), false);
 });
 
 test("definition seed rejects a retired fixed option mode as a red mutation", () => {

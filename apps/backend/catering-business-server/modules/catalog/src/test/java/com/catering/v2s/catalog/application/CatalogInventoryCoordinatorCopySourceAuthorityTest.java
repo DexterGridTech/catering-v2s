@@ -382,38 +382,38 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
     }
 
     @Test
-    void catalogSaveInventoryReadbackRequiresEnvelopeDataAndNonBlankTargetRef() {
+    void catalogSaveRequestCanonicalizationRejectsMalformedEnvelope() {
         CatalogInventoryCoordinator service =
                 new CatalogInventoryCoordinator(null, null, null, null, new ObjectMapper(), null, null);
+        ObjectMapper mapper = new ObjectMapper();
 
-        Object result = parseCatalogSaveOwnerReadback(
-                service,
-                "{\"revision\":\"v1\",\"requestId\":\"req-1\",\"data\":{\"targetRef\":\"target-1\",\"version\":1,\"crea"
-                        + "ted\":true}}");
+        Object result = canonicalSaveRequest(
+                service, "{\"itemCode\":\"LATTE-001\",\"sections\":{\"catalogDraft\":{\"name\":\"拿铁\"}}}");
         assertFalse(result == null);
 
-        CatalogOwnerApi.Problem absentData = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> parseCatalogSaveOwnerReadback(service, "{\"targetRef\":\"target-1\"}"));
-        assertEquals("RESULT_UNKNOWN", absentData.code());
+        CatalogOwnerApi.Problem invalidJson =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, "not-json"));
+        assertEquals("VALIDATION_ERROR", invalidJson.code());
 
-        CatalogOwnerApi.Problem blankTargetRef = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> parseCatalogSaveOwnerReadback(
-                        service, "{\"data\":{\"targetRef\":\"\",\"version\":1,\"created\":true}}"));
-        assertEquals("RESULT_UNKNOWN", blankTargetRef.code());
+        CatalogOwnerApi.Problem nonObject =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, "[]"));
+        assertEquals("VALIDATION_ERROR", nonObject.code());
 
-        CatalogOwnerApi.Problem incompleteOwnerPayload = assertThrows(
+        CatalogOwnerApi.Problem oversizedDraft = assertThrows(
                 CatalogOwnerApi.Problem.class,
-                () -> parseCatalogSaveOwnerReadback(service, "{\"data\":{\"targetRef\":\"target-1\"}}"));
-        assertEquals("RESULT_UNKNOWN", incompleteOwnerPayload.code());
-
-        CatalogOwnerApi.Problem unknownOwnerPayload = assertThrows(
-                CatalogOwnerApi.Problem.class,
-                () -> parseCatalogSaveOwnerReadback(
+                () -> canonicalSaveRequest(
                         service,
-                        "{\"data\":{\"targetRef\":\"target-1\",\"version\":1,\"created\":true,\"unexpected\":true}}"));
-        assertEquals("RESULT_UNKNOWN", unknownOwnerPayload.code());
+                        mapper.createObjectNode()
+                                .putObject("sections")
+                                .putObject("catalogDraft")
+                                .putObject("productionProfiles")
+                                .put("item", "x".repeat(256 * 1024))
+                                .toString()));
+        assertEquals("VALIDATION_ERROR", oversizedDraft.code());
+
+        CatalogOwnerApi.Problem malformedRequest =
+                assertThrows(CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, "null"));
+        assertEquals("VALIDATION_ERROR", malformedRequest.code());
     }
 
     @Test
@@ -489,10 +489,9 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         return row;
     }
 
-    private static Object parseCatalogSaveOwnerReadback(CatalogInventoryCoordinator service, String canonicalJson) {
+    private static Object canonicalSaveRequest(CatalogInventoryCoordinator service, String canonicalJson) {
         try {
-            Method method =
-                    CatalogInventoryCoordinator.class.getDeclaredMethod("parseCatalogSaveOwnerReadback", String.class);
+            Method method = CatalogInventoryCoordinator.class.getDeclaredMethod("canonicalSaveRequest", String.class);
             method.setAccessible(true);
             return method.invoke(service, canonicalJson);
         } catch (InvocationTargetException failure) {

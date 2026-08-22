@@ -253,6 +253,9 @@ class BackendAcceptanceTest {
             "/api/operations/catalog-inventory/inventory-targets/{targetRef}/ledger");
     static final RouteIdentity OPERATIONS_INVENTORY_TARGET_COUNT = new RouteIdentity(
             "countOperationsInventoryTarget", "/api/operations/catalog-inventory/inventory-targets/{targetRef}/count");
+    static final RouteIdentity OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES = new RouteIdentity(
+            "getOperationsInventoryConsumptionTargetCandidates",
+            "/api/operations/catalog-inventory/inventory-consumption-target-candidates");
     static final RouteIdentity OPERATIONS_CATALOG_UNIT_UPDATE =
             new RouteIdentity("updateOperationsCatalogUnit", "/api/operations/catalog-inventory/units/{unitRef}");
     static final RouteIdentity PLATFORM_PASSWORD_LOGIN =
@@ -1016,6 +1019,49 @@ class BackendAcceptanceTest {
                 itemCode,
                 skuCode,
                 mapper.writeValueAsString(rows),
+                now);
+    }
+
+    /** Raw blocker fixture for candidate revalidation cases; it deliberately bypasses catalog and owner commands. */
+    void insertInventoryTargetFixture(
+            UUID dataNodeRef,
+            UUID brandRef,
+            UUID targetRef,
+            UUID itemRef,
+            String itemCode,
+            String consumptionUnitRef,
+            String consumptionUnitCode,
+            String consumptionUnitName,
+            String consumptionUnitDimension,
+            boolean componentEligible)
+            throws Exception {
+        long now = Instant.now().toEpochMilli();
+        jdbc.update(
+                "INSERT INTO inventory.stock_target ("
+                        + "target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code,sku_code,"
+                        + "measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,"
+                        + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
+                        + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
+                        + "counting_unit_precision,counting_unit_conversion_factor,component_eligible,"
+                        + "configuration,balance,version,definition_status,created_at_epoch_millis,"
+                        + "updated_at_epoch_millis) "
+                        + "VALUES(?,?,?,?,NULL,?,NULL,?,?,?,?,?,?,?,NULL,NULL,NULL,NULL,NULL,?,?,'{}'::jsonb,"
+                        + "0,1,'ENABLED',?,?)",
+                targetRef,
+                dataNodeRef.toString(),
+                brandRef.toString(),
+                itemRef,
+                itemCode,
+                "COUNTED",
+                "DIRECT",
+                consumptionUnitRef == null ? null : UUID.fromString(consumptionUnitRef),
+                consumptionUnitCode,
+                consumptionUnitName,
+                consumptionUnitDimension,
+                consumptionUnitRef == null ? null : 0,
+                null,
+                componentEligible,
+                now,
                 now);
     }
 

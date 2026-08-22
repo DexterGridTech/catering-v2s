@@ -55,7 +55,7 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
   assert.match(frontendGenerator, /readModelsPath/);
   assert.match(frontendGenerator, /function responseEnvelopeOwner\(operation\)/);
   assert.match(frontendGenerator, /P3_GET_READ_MODEL_REQUIRED_MISSING/);
-  assert.equal(queryOperations.length, 19);
+  assert.equal(queryOperations.length, 20);
   const owners = Object.groupBy(queryOperations, responseEnvelopeOwner);
   assert.deepEqual(
     owners.P1.map(operation => operation.operationId),
@@ -65,6 +65,7 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
       'getOperationsCatalogItem',
       'listOperationsCatalogAttributeDefinitions',
       'listOperationsCatalogOrderOptionDefinitions',
+      'getOperationsInventoryConsumptionTargetCandidates',
     ],
   );
   assert.deepEqual(
@@ -437,7 +438,7 @@ test('owner typed Problems retain causes at every allowed parse or serialization
     assert.match(owner, new RegExp(boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   for (const boundary of [
     '"owner copy readback is invalid", failure',
-    '"inventory save owner readback is invalid", failure',
+    '"商品库存规则保存后无法读取", failure',
     '"catalog save composition cannot encode owner request", failure',
     '"catalog save request is invalid", failure',
   ])
@@ -498,7 +499,7 @@ test('catalog asset settlement makes one global batch judgment and leaves versio
   };
   const settlement = methodSlice(
     'private void settleWorkspaceCatalogAssets',
-    'private InventoryTargetEnsureReadback parseCatalogSaveOwnerReadback',
+    'private String canonicalLocalJson',
   );
   assert.match(settlement, /catalog\.assetRefsStillReferenced\(candidates\)/);
   assert.doesNotMatch(settlement, /assets\.require\(/);

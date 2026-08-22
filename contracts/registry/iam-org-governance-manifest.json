@@ -628,11 +628,7 @@
     },
     "unsupportedResourceTypeDecision": "DENY"
   },
-      "coordinatedInventoryDefinitionCommands": [
-        "ensureCatalogInventoryTarget",
-        "saveCatalogProductBom",
-        "deleteCatalogOptionValueBoms"
-      ],
+      "coordinatedInventoryDefinitionCommands": ["replaceCatalogInventoryRules"],
   "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
   "ownerModule": "catalog",
   "ownerRecheckId": "OWNER_RECHECK_CATALOG",

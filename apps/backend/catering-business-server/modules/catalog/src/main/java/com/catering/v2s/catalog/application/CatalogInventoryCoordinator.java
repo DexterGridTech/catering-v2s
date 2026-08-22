@@ -253,7 +253,7 @@ public class CatalogInventoryCoordinator {
                 context.ownerScope().brandRef(),
                 sourceItemRef.toString(),
                 context.requestId());
-        JsonNode sourceNodes = definition.path("data").path("nodes");
+        JsonNode sourceNodes = definition.path("data").path("inventoryRules").path("nodes");
         if (!sourceNodes.isArray()) return;
         String measureMode = sourceItem.path("measureMode").asText("");
         if (measureMode.isBlank())
@@ -270,7 +270,7 @@ public class CatalogInventoryCoordinator {
                         500,
                         /* format-wrap */
                         "临时商品库存对象缺少 inventory mode");
-            if (!"INDEPENDENT_STOCK".equals(mode)) continue;
+            if (!"DIRECT".equals(mode)) continue;
             String skuCode = sourceNode.path("skuCode").asText("");
             JsonNode targetSku = skuCode.isBlank() ? null : findSku(targetItem.path("skus"), skuCode);
             String productSkuRef =
@@ -377,6 +377,12 @@ public class CatalogInventoryCoordinator {
         return result;
     }
 
+    public JsonNode readInventoryConsumptionTargetCandidates(
+            String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
+        return primaryRead(() -> inventory.readCatalogInventoryConsumptionTargetCandidates(
+                dataNodeRef, brandRef, request, requestId, dataNodeType));
+    }
+
     public JsonNode readInventoryTarget(
             String dataNodeRef, String brandRef, String targetRef, String requestId, String dataNodeType) {
         JsonNode result =
@@ -447,10 +453,38 @@ public class CatalogInventoryCoordinator {
                 new CatalogOwnerApi.CatalogItemSaveCommand(command.itemCode(), canonicalLocalJson(request));
         CatalogOwnerApi.CatalogItemSaveReadback readback =
                 catalog.saveCatalogItem(context, normalizedCommand, idempotencyKey);
-        coordinateSaveInventory(context, request, idempotencyKey);
-        coordinateOrderOptionValueBoms(context, request, idempotencyKey);
+        coordinateReplaceInventoryRules(context, request, idempotencyKey);
         settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
-        return readback;
+        return mergeInventorySaveReadback(readback, context, request, idempotencyKey);
+    }
+
+    private CatalogOwnerApi.CatalogItemSaveReadback mergeInventorySaveReadback(
+            CatalogOwnerApi.CatalogItemSaveReadback catalogReadback,
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            ObjectNode request,
+            String idempotencyKey) {
+        try {
+            ObjectNode root = (ObjectNode) mapper.readTree(catalogReadback.canonicalJson());
+            JsonNode detail = readCatalogItem(
+                    context.ownerScope().dataNodeId().toString(),
+                    context.ownerScope().brandRef(),
+                    request.path("itemCode").asText(),
+                    mapper.createObjectNode(),
+                    context.requestId());
+            JsonNode inventoryRules = detail.path("data").path("inventoryRules");
+            if (!inventoryRules.isObject())
+                inventoryRules = mapper.createObjectNode().putArray("nodes");
+            if (root.path("result") instanceof ObjectNode result) {
+                result.set("inventoryRules", inventoryRules.deepCopy());
+            } else throw new IllegalStateException("catalog save readback result is not an object");
+            return new CatalogOwnerApi.CatalogItemSaveReadback(canonicalLocalJson(root));
+        } catch (Exception failure) {
+            throw inventoryRulesReadbackProblem(failure);
+        }
+    }
+
+    private CatalogOwnerApi.Problem inventoryRulesReadbackProblem(Exception failure) {
+        return new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品库存规则保存后无法读取", failure);
     }
     /** Typed local-copy composition with catalog and inventory owner-native commands. */
     public record LocalCopyPreflightReadback(String canonicalJson) {}
@@ -714,270 +748,186 @@ public class CatalogInventoryCoordinator {
         return canonicalLocalCopyJson(value);
     }
 
-    private void coordinateSaveInventory(
+    /**
+     * Rebuilds the inventory owner set from the catalog task-read after catalog save. Client owner refs are only
+     * evidence to validate; the command sent to inventory uses this derived set so the UI cannot create a second owner
+     * grain or pair a SKU/option with the wrong item.
+     */
+    private void coordinateReplaceInventoryRules(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
         CatalogAuthorizationScope scope = context.ownerScope();
-        JsonNode sections = request.path("sections");
-        JsonNode configuration = sections.path("inventoryConfiguration");
-        JsonNode expectedVersions = sections.path("expectedInventoryVersions");
-        JsonNode draft = sections.path("catalogDraft");
-        if (!configuration.path("nodes").isArray()
-                && !draft.path("inventoryBom").isArray()) return;
         CatalogInventoryProjection projection = catalogInventoryProjection(
                 scope.dataNodeId().toString(),
                 scope.brandRef(),
                 request.path("itemCode").asText(),
                 context.requestId());
-        java.util.Map<String, Long> versions = new java.util.HashMap<>();
-        if (expectedVersions.isArray())
-            expectedVersions.forEach(expected -> versions.put(
-                    expected.path("targetRef").asText(),
-                    expected.path("version").asLong()));
-        if (configuration.path("nodes").isArray())
-            for (JsonNode sourceNode : configuration.path("nodes")) {
-                if (!sourceNode.isObject()) continue;
-                ObjectNode node = (ObjectNode) sourceNode;
-                String mode = node.path("mode").asText("NONE");
-                if ("NONE".equals(mode) || "BOM".equals(mode)) continue;
-                String targetRef = node.path("targetRef").asText("");
-                String itemCode =
-                        node.path("itemCode").asText(request.path("itemCode").asText(""));
-                String skuCode =
-                        node.hasNonNull("skuCode") ? node.path("skuCode").asText() : null;
-                if (node.hasNonNull("productSkuRef") && (skuCode == null || skuCode.isBlank())) {
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR", 422, "inventoryConfiguration.productSkuRef requires skuCode");
-                }
-                String itemRef =
-                        opaqueProjectionRef(node, "itemRef", projection.itemRef(), "inventoryConfiguration.itemRef");
-                String productSkuRef = skuCode == null
-                        ? null
-                        : opaqueProjectionRef(
-                                node,
-                                "productSkuRef",
-                                projection.productSkuRef(skuCode),
-                                "inventoryConfiguration.productSkuRef");
-                ObjectNode ensure = mapper.createObjectNode()
-                        .put("itemRef", itemRef)
-                        .put("itemCode", itemCode)
-                        .put("mode", mode)
-                        .put("measureMode", projection.measureMode());
-                if (productSkuRef == null) ensure.putNull("productSkuRef");
-                else ensure.put("productSkuRef", productSkuRef);
-                if (skuCode == null) ensure.putNull("skuCode");
-                else ensure.put("skuCode", skuCode);
-                if (!targetRef.isBlank()) ensure.put("targetRef", targetRef);
-                JsonNode consumptionUnitSnapshot = projection.consumptionUnitSnapshot(skuCode);
-                if (consumptionUnitSnapshot == null || !consumptionUnitSnapshot.isObject())
-                    throw new CatalogOwnerApi.Problem(
-                            "BASE_MEASURE_UNIT_REQUIRED",
-                            422,
-                            /* format-wrap */
-                            "库存对象必须有基础计量单位快照");
-                ensure.set("consumptionUnitSnapshot", consumptionUnitSnapshot.deepCopy());
-                if (node.path("configuration").isObject()) {
-                    ObjectNode targetConfiguration = ((ObjectNode) node.path("configuration")).deepCopy();
-                    if (targetConfiguration.hasNonNull("countingUnitRef")
-                            && !targetConfiguration.hasNonNull("countingUnitSnapshot"))
-                        targetConfiguration.set(
-                                "countingUnitSnapshot",
-                                unitSnapshotForRef(
-                                        context,
-                                        UUID.fromString(targetConfiguration
-                                                .path("countingUnitRef")
-                                                .asText())));
-                    ensure.set("configuration", targetConfiguration);
-                }
-                if (!targetRef.isBlank()
-                        && node.path("configuration").isObject()
-                        && node.path("configuration").size() > 0) {
-                    Long expected = versions.get(targetRef);
-                    if (expected == null)
-                        throw new CatalogOwnerApi.Problem(
-                                "VALIDATION_ERROR", 422, "inventory target version is required");
-                    ensure.put("expectedVersion", expected);
-                }
-                InventoryTargetEnsureReadback ensured = parseCatalogSaveOwnerReadback(inventory
-                        .ensureCatalogItemSaveTarget(
-                                context,
-                                new InventoryOwnerApi.CatalogItemSaveEnsureTargetCommand(canonicalLocalJson(ensure)),
-                                idempotencyKey + ":ensure:" + itemRef + ":"
-                                        + (productSkuRef == null ? "ITEM" : productSkuRef))
-                        .canonicalJson());
-                node.put("targetRef", ensured.targetRef());
-            }
-        if (draft.path("inventoryBom").isArray()) {
-            java.util.Map<String, ArrayNode> grouped = new java.util.LinkedHashMap<>();
-            java.util.Map<String, ObjectNode> commands = new java.util.LinkedHashMap<>();
-            java.util.Map<String, Long> versionsByKey = new java.util.HashMap<>();
-            draft.path("inventoryBom").forEach(entry -> {
-                if (!"BOM".equals(entry.path("mode").asText("NONE"))) return;
-                String skuCode =
-                        entry.hasNonNull("skuCode") ? entry.path("skuCode").asText() : "";
-                String optionValueCode = entry.hasNonNull("optionValueCode")
-                        ? entry.path("optionValueCode").asText()
-                        : "";
-                if (!skuCode.isBlank() && !optionValueCode.isBlank()) {
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR",
-                            422,
-                            /*
-                             * Keep this argument on its own physical line.
-                             */
-                            "BOM owner 不能同时指定 SKU 与选项值");
-                }
-                String itemRef = opaqueProjectionRef(entry, "itemRef", projection.itemRef(), "inventoryBom.itemRef");
-                String productSkuRef = skuCode.isBlank()
-                        ? null
-                        : opaqueProjectionRef(
-                                entry,
-                                "productSkuRef",
-                                projection.productSkuRef(skuCode),
-                                "inventoryBom.productSkuRef");
-                String optionValueRef = optionValueCode.isBlank()
-                        ? null
-                        : opaqueProjectionRef(
-                                entry,
-                                "optionValueRef",
-                                projection.optionValueRef(optionValueCode),
-                                "inventoryBom.optionValueRef");
-                String key = itemRef + "|" + (productSkuRef == null ? "" : productSkuRef) + "|"
-                        + (optionValueRef == null ? "" : optionValueRef);
-                grouped.computeIfAbsent(key, ignored -> mapper.createArrayNode())
-                        .add(entry);
-                commands.computeIfAbsent(key, ignored -> {
-                    ObjectNode command = mapper.createObjectNode()
-                            .put("itemRef", itemRef)
-                            .put(
-                                    "itemCode",
-                                    entry.path("itemCode")
-                                            .asText(request.path("itemCode").asText("")));
-                    if (productSkuRef == null) command.putNull("productSkuRef");
-                    else command.put("productSkuRef", productSkuRef);
-                    if (optionValueRef == null) command.putNull("optionValueRef");
-                    else command.put("optionValueRef", optionValueRef);
-                    if (skuCode.isBlank()) command.putNull("skuCode");
-                    else command.put("skuCode", skuCode);
-                    if (optionValueCode.isBlank()) command.putNull("optionValueCode");
-                    else command.put("optionValueCode", optionValueCode);
-                    return command;
-                });
-                if (entry.has("version"))
-                    versionsByKey.putIfAbsent(key, entry.path("version").asLong());
-            });
-            grouped.forEach((key, entries) -> {
-                ObjectNode command = commands.get(key).deepCopy();
-                command.set("rows", entries);
-                command.put("expectedVersion", versionsByKey.getOrDefault(key, 0L));
-                inventory.saveCatalogItemProductBom(
-                        context,
-                        new InventoryOwnerApi.CatalogItemSaveBomCommand(canonicalLocalJson(command)),
-                        idempotencyKey + ":bom:" + key);
-            });
+        JsonNode submitted = request.path("sections").path("inventoryRules").path("nodes");
+        if (!submitted.isArray()) {
+            String detail = "商品库存规则必须为 owner 节点列表";
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, detail);
         }
+        ObjectNode command = mapper.createObjectNode()
+                .put("itemRef", projection.itemRef())
+                .put("itemCode", projection.itemCode())
+                .put("measureMode", projection.measureMode());
+        ArrayNode derived = command.putArray("nodes");
+        Set<String> consumedSubmitted = new java.util.HashSet<>();
+        String shape = projection.shapeKey();
+        if (!Set.of("COMPOSITE", "SERVICE", "BENEFIT_SHELL").contains(shape)) {
+            appendDerivedInventoryRule(derived, submitted, consumedSubmitted, projection, "ITEM", null, null);
+        }
+        if ("SKU_VARIANT_SALE_COUNTED".equals(shape)) {
+            for (Map.Entry<String, String> sku : projection.productSkuRefs().entrySet())
+                appendDerivedInventoryRule(
+                        derived, submitted, consumedSubmitted, projection, "SKU", sku.getKey(), null);
+        }
+        if (Set.of("STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED").contains(shape)) {
+            for (Map.Entry<String, String> option : projection.optionValueRefs().entrySet())
+                appendDerivedInventoryRule(
+                        derived, submitted, consumedSubmitted, projection, "OPTION_VALUE", null, option.getKey());
+        }
+        for (JsonNode raw : submitted) {
+            String key = submittedOwnerKey(raw.path("owner"));
+            if (!consumedSubmitted.contains(key)) {
+                String detail = "提交的库存 owner 不属于当前商品形态";
+                throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, detail);
+            }
+        }
+        inventory.replaceCatalogInventoryRules(
+                context,
+                new InventoryOwnerApi.CatalogInventoryRulesReplaceCommand(canonicalLocalJson(command)),
+                idempotencyKey + ":inventory-rules");
     }
 
-    /**
-     * A definition value owns one option-value BOM for each item. The submitted hidden expectedBomVersion originates
-     * from the prior inventory definition readback; it is never defaulted, so a stale editor cannot overwrite a BOM.
-     */
-    private void coordinateOrderOptionValueBoms(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
-        JsonNode submitted = request.path("sections").path("catalogDraft").path("orderOptionConfigs");
-        if (!submitted.isArray()) submitted = request.path("sections").path("orderOptionConfigs");
-        if (!submitted.isArray()) return;
-        java.util.Map<String, Long> expectedVersions = expectedOptionBomVersions(submitted);
-        CatalogAuthorizationScope scope = context.ownerScope();
-        String itemCode = request.path("itemCode").asText();
-        JsonNode item = catalog.readItem(scope.dataNodeId().toString(), scope.brandRef(), itemCode, context.requestId())
-                .path("data")
-                .path("item");
-        String itemRef = requiredOpaqueTaskRef(item, "itemRef", "catalog item save readback");
-        if (!item.path("orderOptionConfigs").isArray())
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品点单选项保存后无法读取");
-        for (JsonNode config : item.path("orderOptionConfigs")) {
-            if (!config.path("values").isArray())
-                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品点单选项值保存后无法读取");
-            for (JsonNode value : config.path("values")) {
-                String valueRef = requiredOpaqueTaskRef(value, "definitionValueRef", "商品点单选项值");
-                Long expected = expectedVersions.get(valueRef);
-                if (expected == null)
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR",
-                            422,
-                            /* format-wrap */
-                            "点单选项的扣料版本已变化，请刷新后重试");
-                ArrayNode rows = mapper.createArrayNode();
-                JsonNode quantities = value.path("materialQuantities");
-                if (!quantities.isArray())
-                    throw new CatalogOwnerApi.Problem(
-                            "RESULT_UNKNOWN",
-                            500,
-                            /* format-wrap */
-                            "商品点单选项原料保存后无法读取");
-                for (JsonNode quantity : quantities) {
-                    ObjectNode row = rows.addObject()
-                            .put(
-                                    "targetRef",
-                                    requiredOpaqueTaskRef(
-                                            quantity,
-                                            "stockTargetRef",
-                                            /* format-wrap */
-                                            "点单选项原料库存对象"))
-                            .put("quantity", quantity.path("actualQuantity").asText())
-                            .put("lineSign", "POSITIVE");
-                    // No item or stock readiness is inferred here: material target was resolved at definition save.
-                }
-                if (rows.isEmpty()) {
-                    inventory.deleteCatalogOptionValueBoms(
-                            context,
-                            new InventoryOwnerApi.CatalogOptionValueBomDeleteCommand(
-                                    List.of(UUID.fromString(valueRef))),
-                            idempotencyKey + ":order-option-bom-delete:" + valueRef);
-                    continue;
-                }
-                ObjectNode bom = mapper.createObjectNode()
-                        .put("itemRef", itemRef)
-                        .put("itemCode", itemCode)
-                        .putNull("productSkuRef")
-                        .put("optionValueRef", valueRef)
-                        .putNull("skuCode")
-                        .putNull("optionValueCode")
-                        .put("expectedVersion", expected);
-                bom.set("rows", rows);
-                inventory.saveCatalogItemProductBom(
-                        context,
-                        new InventoryOwnerApi.CatalogItemSaveBomCommand(canonicalLocalJson(bom)),
-                        idempotencyKey + ":order-option-bom:" + valueRef);
-            }
+    private void appendDerivedInventoryRule(
+            ArrayNode target,
+            JsonNode submitted,
+            Set<String> consumedSubmitted,
+            CatalogInventoryProjection projection,
+            String ownerType,
+            String skuCode,
+            String optionValueCode) {
+        JsonNode source = findSubmittedInventoryRule(submitted, projection, ownerType, skuCode, optionValueCode);
+        if (source != null) consumedSubmitted.add(submittedOwnerKey(source.path("owner")));
+        ObjectNode node = target.addObject();
+        ObjectNode owner = node.putObject("owner").put("ownerType", ownerType).put("itemRef", projection.itemRef());
+        if ("SKU".equals(ownerType)) {
+            owner.put("productSkuRef", projection.productSkuRef(skuCode));
+            owner.putNull("optionValueRef");
+            owner.put("itemCode", projection.itemCode());
+            owner.put("skuCode", skuCode);
+            owner.putNull("optionValueCode");
+        } else if ("OPTION_VALUE".equals(ownerType)) {
+            owner.putNull("productSkuRef");
+            owner.put("optionValueRef", projection.optionValueRef(optionValueCode));
+            owner.put("itemCode", projection.itemCode());
+            owner.putNull("skuCode");
+            owner.put("optionValueCode", optionValueCode);
+        } else {
+            owner.putNull("productSkuRef");
+            owner.putNull("optionValueRef");
+            owner.put("itemCode", projection.itemCode());
+            owner.putNull("skuCode");
+            owner.putNull("optionValueCode");
         }
+        String mode = source == null ? "NONE" : source.path("mode").asText("NONE");
+        if (!allowedModes(projection.shapeKey(), "ITEM".equals(ownerType) ? "CATALOG_ITEM" : ownerType)
+                .contains(mode)) {
+            String detail = "该商品形态的库存 owner 不允许此扣减方式";
+            throw new CatalogOwnerApi.Problem("INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", 422, detail);
+        }
+        node.put("mode", mode);
+        // Catalog derives this capability; inventory receives only the snapshot and never reads catalog schema.
+        node.put("componentEligible", "MATERIAL".equals(projection.shapeKey()) && "ITEM".equals(ownerType));
+        JsonNode effectiveUnit = "SKU".equals(ownerType)
+                ? projection.consumptionUnitSnapshot(skuCode)
+                : projection.consumptionUnitSnapshot(null);
+        if (effectiveUnit == null || !effectiveUnit.isObject()) node.putNull("consumptionUnitSnapshot");
+        else node.set("consumptionUnitSnapshot", effectiveUnit.deepCopy());
+        copyNullable(source, node, "expectedTargetVersion");
+        copyNullable(source, node, "expectedBomVersion");
+        if (source != null && source.path("directConfiguration").isObject())
+            node.set("directConfiguration", enrichCountingUnitSnapshot(projection, (ObjectNode)
+                    source.path("directConfiguration")));
+        else node.putNull("directConfiguration");
+        if (source != null && source.path("bom").isObject())
+            node.set("bom", source.path("bom").deepCopy());
+        else node.putNull("bom");
     }
 
-    private java.util.Map<String, Long> expectedOptionBomVersions(JsonNode configs) {
-        java.util.Map<String, Long> values = new java.util.LinkedHashMap<>();
-        for (JsonNode config : configs) {
-            if (!config.path("values").isArray())
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "商品点单选项值必须为列表");
-            for (JsonNode value : config.path("values")) {
-                String valueRef = requiredOpaqueTaskRef(value, "definitionValueRef", "商品点单选项值");
-                if (!value.path("expectedBomVersion").canConvertToLong()
-                        || value.path("expectedBomVersion").asLong() < 0)
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR",
-                            422,
-                            /* format-wrap */
-                            "点单选项的扣料版本无效，请刷新后重试");
-                if (values.putIfAbsent(
-                                valueRef, value.path("expectedBomVersion").asLong())
-                        != null)
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR",
-                            422,
-                            /* format-wrap */
-                            "商品点单选项值不能重复");
-            }
+    private JsonNode findSubmittedInventoryRule(
+            JsonNode submitted,
+            CatalogInventoryProjection projection,
+            String ownerType,
+            String skuCode,
+            String optionValueCode) {
+        if (!submitted.isArray()) return null;
+        String expectedRef = "SKU".equals(ownerType)
+                ? projection.productSkuRef(skuCode)
+                : "OPTION_VALUE".equals(ownerType) ? projection.optionValueRef(optionValueCode) : projection.itemRef();
+        for (JsonNode candidate : submitted) {
+            JsonNode owner = candidate.path("owner");
+            if (!ownerType.equals(owner.path("ownerType").asText())) continue;
+            if (expectedRef != null
+                    && (expectedRef.equals(owner.path("productSkuRef").asText(null))
+                            || expectedRef.equals(owner.path("optionValueRef").asText(null))
+                            || expectedRef.equals(owner.path("itemRef").asText(null)))) return candidate;
+            if ("SKU".equals(ownerType)
+                    && skuCode != null
+                    && skuCode.equals(owner.path("skuCode").asText(null))) return candidate;
+            if ("OPTION_VALUE".equals(ownerType)
+                    && optionValueCode != null
+                    && optionValueCode.equals(owner.path("optionValueCode").asText(null))) return candidate;
         }
-        return java.util.Map.copyOf(values);
+        return null;
+    }
+
+    private ObjectNode enrichCountingUnitSnapshot(
+            CatalogInventoryProjection projection, ObjectNode sourceConfiguration) {
+        ObjectNode configuration = sourceConfiguration.deepCopy();
+        String countingUnitRef = configuration.path("countingUnitRef").asText("");
+        if (countingUnitRef.isBlank()) {
+            configuration.putNull("countingUnitSnapshot");
+            return configuration;
+        }
+        UUID ref;
+        try {
+            ref = UUID.fromString(countingUnitRef);
+        } catch (IllegalArgumentException failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "盘点单位引用无效", failure);
+        }
+        CatalogOwnerApi.UnitDefinitionReadback unit =
+                catalog
+                        .listUnitDefinitions(projection.dataNodeRef(), projection.brandRef(), true, null)
+                        .units()
+                        .stream()
+                        .filter(candidate -> ref.equals(candidate.unitRef()))
+                        .findFirst()
+                        .orElseThrow(() -> {
+                            String detail = "盘点单位不存在";
+                            return new CatalogOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, detail);
+                        });
+        ObjectNode snapshot = mapper.createObjectNode()
+                .put("unitRef", unit.unitRef().toString())
+                .put("code", unit.code())
+                .put("name", unit.name())
+                .put("unitDimension", unit.unitDimension().name())
+                .put("precision", unit.precision());
+        configuration.set("countingUnitSnapshot", snapshot);
+        return configuration;
+    }
+
+    private String submittedOwnerKey(JsonNode owner) {
+        return owner.path("ownerType").asText("") + ":"
+                + owner.path("itemRef").asText("") + ":"
+                + owner.path("productSkuRef").asText("") + ":"
+                + owner.path("optionValueRef").asText("");
+    }
+
+    private void copyNullable(JsonNode source, ObjectNode target, String field) {
+        if (source != null && source.has(field))
+            target.set(field, source.path(field).deepCopy());
+        else target.putNull(field);
     }
 
     private CatalogOwnerApi.OrderOptionDefinitionCreateCommand resolveMaterialTargets(
@@ -1075,51 +1025,6 @@ public class CatalogInventoryCoordinator {
                     "图片资产尚未准备好或已失效、版本已变化或仍被引用",
                     /* format-wrap */
                     failure);
-        }
-    }
-
-    /** Exact payload owned by inventory's catalog-save task envelope. */
-    private record InventoryTargetEnsureReadback(String targetRef, long version, boolean created) {}
-
-    private String requiredInventoryTargetRef(JsonNode readback) {
-        if (readback == null || !readback.isObject()) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "inventory save owner readback is invalid");
-        }
-        String targetRef = readback.path("targetRef").asText();
-        if (targetRef.isBlank()) {
-            throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN", 500, "inventory save owner readback targetRef is required");
-        }
-        return targetRef;
-    }
-
-    private InventoryTargetEnsureReadback parseCatalogSaveOwnerReadback(String canonicalJson) {
-        try {
-            var envelope = mapper.readTree(canonicalJson);
-            if (!envelope.path("data").isObject()) {
-                throw new CatalogOwnerApi.Problem(
-                        "RESULT_UNKNOWN", 500, "inventory save owner readback data is invalid");
-            }
-            JsonNode data = envelope.path("data");
-            if (!data.hasNonNull("targetRef")
-                    || !data.path("version").canConvertToLong()
-                    || !data.path("created").isBoolean()) {
-                throw new CatalogOwnerApi.Problem(
-                        "RESULT_UNKNOWN", 500, "inventory save owner readback fields are invalid");
-            }
-            InventoryTargetEnsureReadback readback = mapper.treeToValue(data, InventoryTargetEnsureReadback.class);
-            if (readback == null
-                    || readback.targetRef() == null
-                    || readback.targetRef().isBlank()) {
-                throw new CatalogOwnerApi.Problem(
-                        "RESULT_UNKNOWN", 500, "inventory save owner readback targetRef is required");
-            }
-            return readback;
-        } catch (CatalogOwnerApi.Problem failure) {
-            throw failure;
-        } catch (Exception failure) {
-            throw new CatalogOwnerApi.Problem(
-                    "RESULT_UNKNOWN", 500, "inventory save owner readback is invalid", failure);
         }
     }
 
@@ -1732,19 +1637,185 @@ public class CatalogInventoryCoordinator {
             // NOT_APPLICABLE_WITH_REASON: InventoryOwnerApi defines this as a raw definition graph;
             // its legacy enveloped compatibility is a different owner contract, not a CatalogOwner detail response.
             JsonNode definitionData = definition.path("data").isObject() ? definition.path("data") : definition;
-            if (definitionData.isObject() && definitionData.path("nodes").isArray()) {
-                data.set("inventoryBom", definitionData.path("nodes"));
+            JsonNode inventoryRules = definitionData.path("inventoryRules");
+            if (definitionData.isObject()
+                    && inventoryRules.isObject()
+                    && inventoryRules.path("nodes").isArray()) {
+                ObjectNode completedRules = completeInventoryRules(item, inventoryRules);
+                data.set("inventoryRules", completedRules.deepCopy());
                 if (data.path("item").isObject()) {
-                    ((ObjectNode) data.path("item"))
-                            .set("inventoryBom", definitionData.path("nodes").deepCopy());
-                    enrichOrderOptionBomVersions(data.path("item"), definitionData.path("nodes"));
-                    enrichSkuVoidAvailability(data.path("item"), definitionData.path("nodes"));
+                    ((ObjectNode) data.path("item")).set("inventoryRules", completedRules.deepCopy());
+                    enrichOrderOptionBomVersions(data.path("item"), completedRules.path("nodes"));
+                    ArrayNode targetFacts = inventoryTargetFacts(completedRules.path("nodes"));
+                    enrichSkuVoidAvailability(data.path("item"), targetFacts);
+                    enrichCatalogItemVoidAvailability(data, targetFacts);
                 }
-                enrichCatalogItemVoidAvailability(data, definitionData.path("nodes"));
             }
         }
         // Catalog detail already receives production-tag names from the production owner
         // selected-ref readback; do not re-read the full candidate page to overwrite them.
+    }
+
+    /**
+     * Inventory returns only persisted definitions. The catalog detail contract is the complete derived owner set,
+     * including explicit NONE nodes, so the coordinator fills the shape-owned zero state without moving ownership of
+     * any inventory fact into catalog JSON.
+     */
+    private ObjectNode completeInventoryRules(JsonNode item, JsonNode persistedRules) {
+        ObjectNode result = mapper.createObjectNode();
+        ArrayNode nodes = result.putArray("nodes");
+        String shape = item.path("shapeKey").asText("");
+        String itemRef = item.path("itemRef").asText("");
+        String itemCode = item.path("code").asText("");
+        String itemName = item.path("name").asText(itemCode);
+        if (itemRef.isBlank() || itemCode.isBlank())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品库存 owner 投影缺少商品引用");
+        if (!Set.of("COMPOSITE", "SERVICE", "BENEFIT_SHELL").contains(shape))
+            appendCompleteInventoryRule(
+                    nodes, persistedRules.path("nodes"), shape, "ITEM", itemRef, null, null, itemCode, itemName);
+        if ("SKU_VARIANT_SALE_COUNTED".equals(shape) && item.path("skus").isArray())
+            item.path("skus")
+                    .forEach(sku -> appendCompleteInventoryRule(
+                            nodes,
+                            persistedRules.path("nodes"),
+                            shape,
+                            "SKU",
+                            itemRef,
+                            sku.path("productSkuRef").asText(""),
+                            null,
+                            itemCode,
+                            itemName,
+                            sku.path("skuCode").asText("")));
+        if (Set.of("STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED").contains(shape)
+                && item.path("orderOptionConfigs").isArray())
+            item.path("orderOptionConfigs").forEach(config -> {
+                if (!config.path("values").isArray()) return;
+                config.path("values")
+                        .forEach(value -> appendCompleteInventoryRule(
+                                nodes,
+                                persistedRules.path("nodes"),
+                                shape,
+                                "OPTION_VALUE",
+                                itemRef,
+                                null,
+                                value.path("definitionValueRef").asText(""),
+                                itemCode,
+                                itemName,
+                                null,
+                                value.path("name").asText("")));
+            });
+        return result;
+    }
+
+    private void appendCompleteInventoryRule(
+            ArrayNode output,
+            JsonNode persisted,
+            String shape,
+            String ownerType,
+            String itemRef,
+            String productSkuRef,
+            String optionValueRef,
+            String itemCode,
+            String itemName,
+            String... displayCodes) {
+        JsonNode existing = findInventoryRule(persisted, ownerType, itemRef, productSkuRef, optionValueRef);
+        ObjectNode node = existing != null && existing.isObject()
+                ? ((ObjectNode) existing).deepCopy()
+                : mapper.createObjectNode();
+        ObjectNode owner = node.putObject("owner").put("ownerType", ownerType).put("itemRef", itemRef);
+        if (productSkuRef == null || productSkuRef.isBlank()) owner.putNull("productSkuRef");
+        else owner.put("productSkuRef", productSkuRef);
+        if (optionValueRef == null || optionValueRef.isBlank()) owner.putNull("optionValueRef");
+        else owner.put("optionValueRef", optionValueRef);
+        owner.put("itemCode", itemCode);
+        owner.putNull("skuCode");
+        owner.putNull("optionValueCode");
+        if ("SKU".equals(ownerType) && displayCodes.length > 0) owner.put("skuCode", displayCodes[0]);
+        if ("OPTION_VALUE".equals(ownerType) && displayCodes.length > 1)
+            owner.put("optionValueCode", persistedDisplayCode(existing, "optionValueCode", displayCodes[1]));
+        node.put("itemCode", itemCode).put("itemName", itemName);
+        node.putNull("skuCode").putNull("optionValueCode");
+        if ("SKU".equals(ownerType) && displayCodes.length > 0) node.put("skuCode", displayCodes[0]);
+        if ("OPTION_VALUE".equals(ownerType) && displayCodes.length > 1)
+            node.put("optionValueCode", persistedDisplayCode(existing, "optionValueCode", displayCodes[1]));
+        ArrayNode allowed = node.putArray("allowedModes");
+        allowedModes(shape, "ITEM".equals(ownerType) ? "CATALOG_ITEM" : ownerType)
+                .forEach(allowed::add);
+        node.put("defaultMode", "NONE");
+        node.putNull("disabledReason");
+        if (existing == null) {
+            node.put("mode", "NONE");
+            node.putNull("directConfiguration");
+            node.putNull("bom");
+        }
+        output.add(node);
+    }
+
+    private String persistedDisplayCode(JsonNode existing, String field, String fallback) {
+        String ownerCode =
+                existing == null ? "" : existing.path("owner").path(field).asText("");
+        if (!ownerCode.isBlank()) return ownerCode;
+        String nodeCode = existing == null ? "" : existing.path(field).asText("");
+        return nodeCode.isBlank() ? fallback : nodeCode;
+    }
+
+    private JsonNode findInventoryRule(
+            JsonNode persisted, String ownerType, String itemRef, String productSkuRef, String optionValueRef) {
+        if (!persisted.isArray()) return null;
+        for (JsonNode node : persisted) {
+            JsonNode owner = node.path("owner");
+            if (!ownerType.equals(owner.path("ownerType").asText())) continue;
+            if (!itemRef.equals(owner.path("itemRef").asText())) continue;
+            String actualSku = owner.path("productSkuRef").asText("");
+            String actualOption = owner.path("optionValueRef").asText("");
+            if (java.util.Objects.equals(productSkuRef == null ? "" : productSkuRef, actualSku)
+                    && java.util.Objects.equals(optionValueRef == null ? "" : optionValueRef, actualOption)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private List<String> allowedModes(String shape, String ownerType) {
+        try {
+            JsonNode admission = mapper.readTree(CatalogInventoryShapeManifest.MANIFEST_JSON)
+                    .path("typeEffects")
+                    .path("shapeNodeAdmission")
+                    .path(shape)
+                    .path("allowedModesByNodeType")
+                    .path(ownerType);
+            if (!admission.isArray()) {
+                String detail = "形态节点准入契约不可用";
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, detail);
+            }
+            List<String> result = new ArrayList<>();
+            admission.forEach(value -> result.add(value.asText()));
+            return List.copyOf(result);
+        } catch (CatalogOwnerApi.Problem failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态节点准入契约不可用", failure);
+        }
+    }
+
+    private ArrayNode inventoryTargetFacts(JsonNode inventoryNodes) {
+        ArrayNode facts = mapper.createArrayNode();
+        if (!inventoryNodes.isArray()) return facts;
+        inventoryNodes.forEach(node -> {
+            JsonNode owner = node.path("owner");
+            JsonNode direct = node.path("directConfiguration");
+            if (direct.isObject() && direct.hasNonNull("targetRef")) {
+                ObjectNode fact = facts.addObject()
+                        .put("targetRef", direct.path("targetRef").asText());
+                if (owner.hasNonNull("productSkuRef"))
+                    fact.put("productSkuRef", owner.path("productSkuRef").asText());
+            }
+            if (node.path("bom").path("lines").isArray())
+                node.path("bom").path("lines").forEach(line -> facts.addObject()
+                        .put("targetRef", line.path("targetRef").asText())
+                        .put("productSkuRef", owner.path("productSkuRef").asText("")));
+        });
+        return facts;
     }
 
     /**
@@ -1757,11 +1828,12 @@ public class CatalogInventoryCoordinator {
         java.util.Map<String, Long> versions = new java.util.LinkedHashMap<>();
         if (inventoryNodes.isArray())
             inventoryNodes.forEach(node -> {
-                String ref = node.path("optionValueRef").asText("");
-                if (ref.isBlank() || !node.path("version").canConvertToLong()) return;
-                Long previous = versions.putIfAbsent(ref, node.path("version").asLong());
+                String ref = node.path("owner").path("optionValueRef").asText("");
+                JsonNode bom = node.path("bom");
+                if (ref.isBlank() || !bom.path("version").canConvertToLong()) return;
+                Long previous = versions.putIfAbsent(ref, bom.path("version").asLong());
                 if (previous != null
-                        && previous.longValue() != node.path("version").asLong())
+                        && previous.longValue() != bom.path("version").asLong())
                     throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "同一选项扣料版本不一致");
             });
         item.path("orderOptionConfigs").forEach(config -> {
@@ -2045,6 +2117,16 @@ public class CatalogInventoryCoordinator {
                                     code, requiredOpaqueTaskRef(value, "valueRef", "catalog option-value task read"));
                     });
             });
+        if (item.path("orderOptionConfigs").isArray())
+            item.path("orderOptionConfigs").forEach(config -> {
+                if (config.path("values").isArray())
+                    config.path("values").forEach(value -> {
+                        String ref = value.path("definitionValueRef").asText("");
+                        String code = value.path("valueCode")
+                                .asText(value.path("name").asText(""));
+                        if (!ref.isBlank() && !code.isBlank()) optionValueRefs.put(code, ref);
+                    });
+            });
         JsonNode itemBaseMeasureUnit = item.path("baseMeasureUnit").isObject()
                 ? item.path("baseMeasureUnit").deepCopy()
                 : null;
@@ -2058,7 +2140,11 @@ public class CatalogInventoryCoordinator {
                     skuBaseMeasureUnits.put(code, sku.path("baseMeasureUnit").deepCopy());
             });
         return new CatalogInventoryProjection(
+                dataNodeRef,
+                brandRef,
                 itemRef,
+                item.path("code").asText(itemCode),
+                item.path("shapeKey").asText(""),
                 measureMode,
                 Map.copyOf(skuRefs),
                 Map.copyOf(optionValueRefs),
@@ -2066,39 +2152,12 @@ public class CatalogInventoryCoordinator {
                 Map.copyOf(skuBaseMeasureUnits));
     }
 
-    private JsonNode unitSnapshotForRef(WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID unitRef) {
-        if (unitRef == null) throw new CatalogOwnerApi.Problem("UNIT_NOT_FOUND", 422, "盘点单位不存在");
-        CatalogOwnerApi.UnitDefinitionReadback unit = catalog
-                .listUnitDefinitions(
-                        context.ownerScope().dataNodeId().toString(),
-                        context.ownerScope().brandRef(),
-                        true,
-                        null)
-                .units()
-                .stream()
-                .filter(candidate -> unitRef.equals(candidate.unitRef()))
-                .findFirst()
-                .orElseThrow(() -> new CatalogOwnerApi.Problem("UNIT_NOT_FOUND", 422, "盘点单位不存在"));
-        return mapper.createObjectNode()
-                .put("unitRef", unit.unitRef().toString())
-                .put("code", unit.code())
-                .put("name", unit.name())
-                .put("unitDimension", unit.unitDimension().name())
-                .put("precision", unit.precision());
-    }
-
-    private String opaqueProjectionRef(JsonNode source, String key, String derived, String subject) {
-        if (source != null
-                && source.hasNonNull(key)
-                && !source.path(key).asText().isBlank()) return requiredOpaqueTaskRef(source, key, subject);
-        if (derived == null || derived.isBlank())
-            throw new CatalogOwnerApi.Problem(
-                    "REFERENCE_MAPPING_UNRESOLVED", 422, subject + " is required as an opaque UUID ref");
-        return requiredOpaqueTaskRef(mapper.createObjectNode().put(key, derived), key, subject);
-    }
-
     private record CatalogInventoryProjection(
+            String dataNodeRef,
+            String brandRef,
             String itemRef,
+            String itemCode,
+            String shapeKey,
             String measureMode,
             Map<String, String> productSkuRefs,
             Map<String, String> optionValueRefs,

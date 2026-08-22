@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-rtk-tag-policy",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "tagType": "catalogInventory",
-  "operationCount": 56,
+  "operationCount": 57,
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -57,12 +57,7 @@
         {"kind": "static", "id": "local-copy-candidates"},
         {"kind": "static", "id": "brand-copy-candidates"},
         {"kind": "static", "id": "inventory-target-page"},
-        {
-          "kind": "responseArrayValue",
-          "prefix": "inventory-target",
-          "arrayPath": ["result", "inventoryBom"],
-          "valuePath": "targetRef"
-        }
+        {"kind": "static", "id": "inventory-rule-definition"}
       ]
     },
     {
@@ -392,6 +387,14 @@
       "operationId": "deleteOperationsCatalogUnit",
       "provides": [],
       "invalidates": [{"kind": "static", "id": "catalog-unit-library"}, {"kind": "static", "id": "catalog-item-detail"}, {"kind": "static", "id": "inventory-target-page"}]
+    },
+    {
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "provides": [
+        {"kind": "static", "id": "inventory-consumption-target-candidates"},
+        {"kind": "static", "id": "inventory-rule-definition"}
+      ],
+      "invalidates": []
     }
   ]
 }

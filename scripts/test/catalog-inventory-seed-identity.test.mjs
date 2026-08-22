@@ -62,7 +62,7 @@ test("seed labels close the complete SKU tuple and reusable catalog-definition f
     ],
   );
   assert.deepEqual(definitions.attributeDefinitions.map((entry) => entry.valueType).sort(), ["MULTI_SELECT", "SINGLE_SELECT", "TEXT"]);
-  assert.deepEqual(definitions.orderOptionDefinitions.map((entry) => entry.selectionMode).sort(), ["MULTIPLE", "SINGLE"]);
+  assert.deepEqual([...new Set(definitions.orderOptionDefinitions.map((entry) => entry.selectionMode))].sort(), ["MULTIPLE", "SINGLE"]);
   const caesar = definitions.itemAssignments.find((entry) => entry.itemCode === "CAESAR-001");
   const latte = definitions.itemAssignments.find((entry) => entry.itemCode === "LATTE-001");
   assert.ok(caesar && latte);
@@ -72,7 +72,19 @@ test("seed labels close the complete SKU tuple and reusable catalog-definition f
   const toppings = caesar.orderOptions.find((entry) => entry.definitionCode === "CAESAR_TOPPINGS");
   assert.deepEqual([toppings.minSelectionCount, toppings.maxSelectionCount], [0, 2]);
   assert.equal(toppings.values.find((entry) => entry.valueCode === "BACON").extraPrice, 200);
-  assert.equal(toppings.values.find((entry) => entry.valueCode === "CHICKEN").materialQuantities[0].actualQuantity, 80);
+  assert.equal(
+    caesar.optionValueBoms.find((entry) => entry.valueCode === "CHICKEN").lines[0].quantity,
+    80,
+  );
+  assert.equal(
+    caesar.optionValueBoms.some((entry) => entry.lines.some((line) => line.lineSign === "NEGATIVE")),
+    false,
+  );
+  const milkTea = definitions.itemAssignments.find((entry) => entry.itemCode === "MILK-TEA-001");
+  assert.equal(
+    milkTea.optionValueBoms.find((entry) => entry.valueCode === "OAT_MILK").lines.some((line) => line.lineSign === "NEGATIVE"),
+    true,
+  );
 });
 
 test("every required SKU seed graph supplies the selected variant axes", () => {
@@ -109,6 +121,8 @@ test("seed executor preserves SKU dictionaries while materializing current reusa
   assert.match(executor, /orderOptionConfigs = assignment\.orderOptions/);
   assert.match(executor, /expectedBomVersion: 0/);
   assert.match(executor, /SEED_ORDER_OPTION_BOM_READBACK_INVALID/);
+  assert.match(executor, /inventoryRulesFromReadback\(current\)/);
+  assert.doesNotMatch(executor, /materialQuantities/);
   const skuAttributeReadback = executor.indexOf('await materializeDictionary("SKU_ATTRIBUTE"');
   const skuAttributeValueReadback = executor.indexOf('await materializeDictionary("SKU_ATTRIBUTE_VALUE"');
   assert.ok(skuAttributeReadback >= 0 && skuAttributeReadback < skuAttributeValueReadback);

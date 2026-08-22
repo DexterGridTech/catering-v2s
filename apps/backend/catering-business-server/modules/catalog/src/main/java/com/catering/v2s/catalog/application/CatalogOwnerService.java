@@ -1776,7 +1776,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 ArrayNode copiedCompositeGroups = compositeGroups(rewrittenSections);
                 ArrayNode copiedSkuVariantDimensions =
                         submittedSkuVariantDimensions(rewrittenSections.path("skuVariantDimensions"));
-                validateShapeOwnedSections(shapeRule(row.shapeKey()), rewrittenSections.path("inventoryBom"));
                 JsonNode copiedImages = rewrittenSections.path("images");
                 JsonNode copiedProductionTagRefs = rewrittenSections.path("productionTagRefs");
                 JsonNode copiedTagRefs = rewrittenSections.path("tagRefs");
@@ -2014,7 +2013,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 } else if (sourceSections.has(key))
                     merged.set(key, sourceSections.path(key).deepCopy());
             }
-            validateShapeOwnedSections(shapeRule(target.shapeKey()), merged.path("inventoryBom"));
             if (copiedSkuVariantDimensions != null && copiedSkus != null) {
                 skuVariantAxisFacts.validateRetirements(target.ref(), copiedSkuVariantDimensions, copiedSkus);
             }
@@ -2294,7 +2292,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         .getOrDefault(source.ref(), mapper.createArrayNode());
                 if (!configs.isEmpty()) continue;
             }
-            if (!sourceSections.has(sectionKey(section))) {
+            if (!hasLocalCopySourceFacts(sourceSections, sectionKey(section))) {
                 skipped.addObject().put("section", section).put("reasonCode", "SKIPPED_SOURCE_ABSENT");
             }
         }
@@ -2319,7 +2317,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             case "SKU_STRUCTURE" -> "skus";
             case "SKU_BOM" -> "skuBom";
             case "OPTION_VALUE_BOM" -> "optionValueBom";
-            case "ITEM_BOM" -> "inventoryBom";
+            case "ITEM_BOM" -> "inventoryRules";
             case "ORDER_OPTIONS" -> "orderOptionConfigs";
             case "PACKAGE_STRUCTURE" -> "compositeGroups";
             case "PRODUCTION_PROMPTS" -> "productionProfiles";
@@ -2514,41 +2512,9 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         requireScope(dataNodeRef, brandRef);
         if (targetRef == null || targetRef.isBlank())
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "targetRef is required");
-        ArrayNode entries = mapper.createArrayNode();
-        jdbc.query(
-                "SELECT code,name,status,sections::text FROM catalog.catalog_item WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND status <> 'VOIDED' ORDER BY code",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        String sourceCode = result.getString(1);
-                        String sourceName = result.getString(2);
-                        String sourceStatus = result.getString(3);
-                        JsonNode sections = json(result.getString(4));
-                        JsonNode bom = sections.path("inventoryBom");
-                        if (!bom.isArray()) continue;
-                        bom.forEach(node -> {
-                            if (!targetRef.equals(node.path("targetRef").asText())) return;
-                            ObjectNode entry = entries.addObject()
-                                    .put("sourceCode", sourceCode)
-                                    .put("sourceKind", node.path("nodeType").asText("ITEM"))
-                                    .put("sourceName", sourceName)
-                                    .put("quantity", node.path("quantity").asText("0"))
-                                    .put("unit", node.path("unit").asText(""))
-                                    .put("timing", "BOM")
-                                    .put("status", sourceStatus);
-                            entry.putObject("ownerScope")
-                                    .put("ownerType", "DATA_NODE")
-                                    .put("ownerRef", dataNodeRef)
-                                    .put("brandRef", brandRef);
-                        });
-                    }
-                    return null;
-                });
-        return entries;
+        // Inventory owns BOM rows and their consumption references. Catalog has no persisted BOM payload to scan;
+        // the catalog/inventory coordinator exposes the task read from the inventory owner instead.
+        return mapper.createArrayNode();
     }
 
     @Override
@@ -2958,9 +2924,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 .put("referenceRef", reference.itemRef().toString())
                 .put("code", reference.code())
                 .put("direction", "INBOUND"));
-        ArrayNode inventoryBom = data.putArray("inventoryBom");
-        JsonNode bom = sections.path("inventoryBom");
-        if (bom.isArray()) bom.forEach(entry -> inventoryBom.add(bomEntry(entry)));
+        data.putObject("inventoryRules").putArray("nodes");
         ArrayNode productionTags = data.putArray("productionTags");
         productionTags.addAll(
                 productionTagDetails(dataNodeRef, brandRef, sections.path("productionTagRefs"), requestId));
@@ -3281,11 +3245,16 @@ public class CatalogOwnerService implements CatalogOwnerApi {
             // are coordinated separately in the same REQUIRED transaction.  Keeping a
             // second catalog JSON copy would make the detail surface drift from the
             // owner fact, so the catalog owner deliberately ignores this section.
-            if (!"inventoryBom".equals(entry.getKey()))
+            if (!Set.of("inventoryBom", "inventoryRules").contains(entry.getKey()))
                 sections.set(entry.getKey(), entry.getValue().deepCopy());
         });
         sectionsRequest.fields().forEachRemaining(entry -> {
-            if (!Set.of("catalogDraft", "expectedCatalogVersion", "expectedInventoryVersions")
+            if (!Set.of(
+                            "catalogDraft",
+                            "expectedCatalogVersion",
+                            "expectedInventoryVersions",
+                            "inventoryRules",
+                            "inventoryConfiguration")
                     .contains(entry.getKey()))
                 sections.set(entry.getKey(), entry.getValue().deepCopy());
         });
@@ -3305,13 +3274,14 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         // not persisted in catalog JSON.  It is still a declared catalog
         // reference path, so validate the submitted canonical draft before the
         // coordinator can hand it across the owner boundary.
+        if (draft.has("inventoryBom")
+                || sectionsRequest.has("inventoryBom")
+                || sectionsRequest.has("inventoryConfiguration")
+                || sectionsRequest.has("expectedInventoryVersions")) {
+            String detail = "旧库存 BOM/多次写入字段已退役，请使用 inventoryRules";
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, detail);
+        }
         ObjectNode referencePayload = sections.deepCopy();
-        if (draft.has("inventoryBom"))
-            referencePayload.set("inventoryBom", draft.path("inventoryBom").deepCopy());
-        if (sectionsRequest.has("inventoryBom"))
-            referencePayload.set(
-                    "inventoryBom", sectionsRequest.path("inventoryBom").deepCopy());
-        validateShapeOwnedSections(rule, referencePayload.path("inventoryBom"));
         skuVariantAxisFacts.validateRetirements(current.ref(), nextSkuVariantDimensions, nextSkus);
         validateSkuCombinations(nextSkus, nextSkuVariantDimensions, rule);
         validateDeclaredOpaqueReferences(dataNodeRef, brandRef, referencePayload, current.ref());
@@ -3649,13 +3619,13 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 throw new CatalogOwnerApi.Problem(
                         "VALIDATION_ERROR", 422, "skuTransitions cannot be combined with catalog section changes");
         }
-        if (sections.path("inventoryConfiguration").path("nodes").isArray()
-                && !sections.path("inventoryConfiguration").path("nodes").isEmpty()) {
+        if (sections.path("inventoryRules").path("nodes").isArray()
+                && !sections.path("inventoryRules").path("nodes").isEmpty()) {
             throw new CatalogOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "skuTransitions cannot be combined with inventory changes");
         }
-        if (sections.path("expectedInventoryVersions").isArray()
-                && !sections.path("expectedInventoryVersions").isEmpty()) {
+        if (sections.path("inventoryRules").path("nodes").isArray()
+                && !sections.path("inventoryRules").path("nodes").isEmpty()) {
             throw new CatalogOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "skuTransitions cannot be combined with inventory changes");
         }
@@ -3975,74 +3945,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         409,
                         "active SKU variant combinations must be unique within an item");
             }
-        }
-    }
-
-    /**
-     * Enforces the shape-owned portions of a save at the owner boundary. The wire nodeType is intentionally ignored:
-     * the coordinator and Inventory derive the semantic node from skuCode/optionValueCode and opaque refs.
-     */
-    private void validateShapeOwnedSections(CatalogInventoryShapeManifest.ShapeRule rule, JsonNode inventoryBom) {
-        JsonNode manifest = generatedCatalogManifest();
-        if (inventoryBom == null || !inventoryBom.isArray() || inventoryBom.isEmpty()) return;
-        JsonNode admission = manifest.path("typeEffects")
-                .path("shapeNodeAdmission")
-                .path(rule.shapeKey().name());
-        if (!admission.path("inventoryBom").asBoolean(false)) {
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "该商品形态不支持库存 BOM");
-        }
-        JsonNode allowedNodeTypes = admission.path("allowedNodeTypes");
-        if (!allowedNodeTypes.isArray()) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态节点准入契约不可用");
-        }
-        for (JsonNode entry : inventoryBom) {
-            if (!entry.isObject())
-                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "inventoryBom must contain objects");
-            String skuCode = entry.path("skuCode").asText("").trim();
-            String optionValueCode = entry.path("optionValueCode").asText("").trim();
-            if (!skuCode.isBlank() && !optionValueCode.isBlank()) {
-                {
-                    throw new CatalogOwnerApi.Problem(
-                            ("VALIDATION_ERROR"),
-                            (422),
-                            /* format-wrap */
-                            ("BOM owner 不能同时指定 SKU 与选项值"));
-                }
-            }
-            String semanticNodeType =
-                    !optionValueCode.isBlank() ? "OPTION_VALUE" : !skuCode.isBlank() ? "SKU" : "CATALOG_ITEM";
-            if (!containsText(allowedNodeTypes, semanticNodeType)) {
-                {
-                    throw new CatalogOwnerApi.Problem(
-                            ("VALIDATION_ERROR"),
-                            (422),
-                            /* format-wrap */
-                            ("该商品形态不允许此 BOM 引用节点: " + semanticNodeType));
-                }
-            }
-            String submittedMode = entry.path("mode").asText("").trim();
-            if (!submittedMode.isBlank()) {
-                JsonNode eligibleModes = manifest.path("typeEffects")
-                        .path("modeEligibilityByShape")
-                        .path(rule.shapeKey().name())
-                        .path(semanticNodeType);
-                if (!eligibleModes.isArray() || !containsText(eligibleModes, submittedMode)) {
-                    throw new CatalogOwnerApi.Problem(
-                            "VALIDATION_ERROR",
-                            422,
-                            "该商品形态的" + " " + semanticNodeType + " 节点不允许库存模式: "
-                                    /* format-wrap */
-                                    + submittedMode);
-                }
-            }
-        }
-    }
-
-    private JsonNode generatedCatalogManifest() {
-        try {
-            return mapper.readTree(CatalogInventoryShapeManifest.MANIFEST_JSON);
-        } catch (Exception failure) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "形态契约不可用", failure);
         }
     }
 
@@ -4673,7 +4575,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         ArrayNode promotedCompositeGroups = compositeGroups(promotedSections);
         ArrayNode promotedSkuVariantDimensions =
                 submittedSkuVariantDimensions(promotedSections.path("skuVariantDimensions"));
-        validateShapeOwnedSections(rule, promotedSections.path("inventoryBom"));
         JsonNode promotedImages = promotedSections.path("images");
         JsonNode promotedProductionTagRefs = promotedSections.path("productionTagRefs");
         JsonNode promotedTagRefs = promotedSections.path("tagRefs");
@@ -5414,7 +5315,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                 sections.path("orderOptionConfigs").isArray()
                         ? sections.path("orderOptionConfigs").deepCopy()
                         : mapper.createArrayNode());
-        result.putArray("inventoryBom");
+        result.putObject("inventoryRules").putArray("nodes");
         result.putArray("productionTags");
         result.set("skuTransitions", skuTransitions == null ? mapper.createArrayNode() : skuTransitions);
         result.put("version", version);
@@ -5427,8 +5328,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         return sections.path("skuCount").asInt(0) > 0
                 || (sections.path("identifiers").isArray()
                         && sections.path("identifiers").size() > 0)
-                || (sections.path("inventoryBom").isArray()
-                        && sections.path("inventoryBom").size() > 0)
                 || (sections.path("productionTagRefs").isArray()
                         && sections.path("productionTagRefs").size() > 0)
                 || (sections.path("skus").isArray() && sections.path("skus").size() > 0);
@@ -5654,7 +5553,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         List<UUID> itemRefs = new ArrayList<>();
         List<ProductSkuRelation> skuRelations = new ArrayList<>();
         collectCatalogRelationRefs(sections.path("compositeGroups"), itemRefs, skuRelations);
-        collectCatalogRelationRefs(sections.path("inventoryBom"), itemRefs, skuRelations);
         List<UUID> ownSkuRefs = new ArrayList<>();
         if (sections.path("skus").isArray())
             for (JsonNode sku : sections.path("skus"))
@@ -6114,12 +6012,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
         putNullableLong(item, "standardExtraPrice", sections.path("standardExtraPrice"));
         item.put("priceGranularity", skuFacts.priceGranularity())
                 .put("missingPriceCount", skuFacts.missingPriceCount());
-        item.put("stockTargetCount", 0)
-                .put(
-                        "bomCount",
-                        sections.path("inventoryBom").isArray()
-                                ? sections.path("inventoryBom").size()
-                                : 0);
+        item.put("stockTargetCount", 0).put("bomCount", 0);
         item.put("version", row.version()).put("updatedAt", row.updatedAt());
         return item;
     }
@@ -6313,9 +6206,7 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         ? sections.path("orderOptionConfigs")
                         : mapper.createArrayNode());
         item.set("compositeGroups", compositeGroups(sections.path("compositeGroups")));
-        ArrayNode itemBom = item.putArray("inventoryBom");
-        if (sections.path("inventoryBom").isArray())
-            sections.path("inventoryBom").forEach(entry -> itemBom.add(bomEntry(entry)));
+        item.putObject("inventoryRules").putArray("nodes");
         ObjectNode profiles = item.putObject("productionProfiles");
         profiles.set("item", objectOrEmpty(sections.path("productionProfiles").path("item")));
         profiles.set("sku", objectOrEmpty(sections.path("productionProfiles").path("sku")));
@@ -6458,25 +6349,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
     private static void copyOptionalText(ObjectNode target, JsonNode source, String field) {
         JsonNode value = source.get(field);
         if (value != null && value.isTextual() && !value.asText().isBlank()) target.put(field, value.asText());
-    }
-
-    private ObjectNode bomEntry(JsonNode entry) {
-        ObjectNode result = mapper.createObjectNode()
-                .put("nodeType", entry.path("nodeType").asText("STOCK_TARGET"))
-                .put("mode", entry.path("mode").asText("CONFIGURED"))
-                .put("targetRef", entry.path("targetRef").asText())
-                .put("quantity", entry.path("quantity").asText("0"));
-        if (entry.hasNonNull("consumptionUnitSnapshot"))
-            result.set(
-                    "consumptionUnitSnapshot",
-                    entry.path("consumptionUnitSnapshot").deepCopy());
-        else result.putNull("consumptionUnitSnapshot");
-        copyNullableText(result, entry, "itemCode");
-        copyNullableText(result, entry, "skuCode");
-        copyNullableText(result, entry, "optionValueCode");
-        if (entry.has("version")) result.put("version", entry.path("version").asLong());
-        if (entry.has("lineSign")) result.put("lineSign", entry.path("lineSign").asText());
-        return result;
     }
 
     private static void copyNullableText(ObjectNode target, JsonNode source, String field) {
@@ -7291,11 +7163,6 @@ public class CatalogOwnerService implements CatalogOwnerApi {
                         addDeclaredRef(result, component.path("itemRef"), "COMPOSITE_COMPONENT");
                         addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU");
                     }
-        if (node.path("inventoryBom").isArray())
-            for (JsonNode component : node.path("inventoryBom")) {
-                addDeclaredRef(result, component.path("itemRef"), "BOM_COMPONENT");
-                addDeclaredRef(result, component.path("productSkuRef"), "PRODUCT_SKU");
-            }
         return List.copyOf(result);
     }
 

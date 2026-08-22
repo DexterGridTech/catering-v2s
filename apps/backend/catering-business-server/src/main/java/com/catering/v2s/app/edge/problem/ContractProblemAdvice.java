@@ -38,6 +38,7 @@ import com.catering.v2s.workspace.iam.application.WorkspacePasswordResetService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService.RoleCapabilityCatalogDriftException;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @RestControllerAdvice
 public final class ContractProblemAdvice {
     private static final Logger log = LoggerFactory.getLogger(ContractProblemAdvice.class);
+    private static final tools.jackson.databind.ObjectMapper RESPONSE_JSON = new tools.jackson.databind.ObjectMapper();
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<Problem> multipartTooLarge(MaxUploadSizeExceededException exception, HttpServletRequest request) {
@@ -107,7 +109,8 @@ public final class ContractProblemAdvice {
                                 ? "none"
                                 : exception.getCause().getClass().getSimpleName());
         String detail = catalogInventoryDetail(code, exception);
-        return problem(HttpStatus.valueOf(status), code, detail, request);
+        JsonNode details = exception instanceof InventoryOwnerApi.Problem inventory ? inventory.details() : null;
+        return problem(HttpStatus.valueOf(status), code, detail, request, details);
     }
 
     /**
@@ -643,6 +646,11 @@ public final class ContractProblemAdvice {
 
     public static ResponseEntity<Problem> problem(
             HttpStatus status, String code, String detail, HttpServletRequest request) {
+        return problem(status, code, detail, request, null);
+    }
+
+    public static ResponseEntity<Problem> problem(
+            HttpStatus status, String code, String detail, HttpServletRequest request, JsonNode details) {
         PublicSecurityDiagnosticRequestState.freezeFailure(request, status.value(), code);
         RequestCompletionDiagnosticState.freezeFailure(request, code);
         RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
@@ -652,17 +660,42 @@ public final class ContractProblemAdvice {
         return ResponseEntity.status(status)
                 .contentType(MediaType.valueOf("application/problem+json"))
                 .body(new Problem(
-                        "about:blank", code, status.value(), detail, request.getRequestURI(), code, correlationId));
+                        "about:blank",
+                        code,
+                        status.value(),
+                        detail,
+                        request.getRequestURI(),
+                        code,
+                        correlationId,
+                        responseDetails(details)));
     }
 
     public static ResponseEntity<Problem> problem(
             HttpStatus status, String code, String detail, EdgeRequestContext request) {
+        return problem(status, code, detail, request, null);
+    }
+
+    public static ResponseEntity<Problem> problem(
+            HttpStatus status, String code, String detail, EdgeRequestContext request, JsonNode details) {
         String correlationId = request.correlationId();
         if (correlationId == null || correlationId.isBlank())
             correlationId = UUID.randomUUID().toString();
         return ResponseEntity.status(status)
                 .contentType(MediaType.valueOf("application/problem+json"))
-                .body(new Problem("about:blank", code, status.value(), detail, "", code, correlationId));
+                .body(new Problem(
+                        "about:blank",
+                        code,
+                        status.value(),
+                        detail,
+                        "",
+                        code,
+                        correlationId,
+                        responseDetails(details)));
+    }
+
+    /** Owner APIs use Jackson 2 nodes; the Spring Boot 4 edge serializes Jackson 3 nodes. */
+    private static tools.jackson.databind.JsonNode responseDetails(JsonNode details) {
+        return details == null ? null : RESPONSE_JSON.readTree(details.toString());
     }
 
     public record Problem(
@@ -672,5 +705,17 @@ public final class ContractProblemAdvice {
             String detail,
             String instance,
             String errorCode,
-            String correlationId) {}
+            String correlationId,
+            tools.jackson.databind.JsonNode details) {
+        public Problem(
+                String type,
+                String title,
+                int status,
+                String detail,
+                String instance,
+                String errorCode,
+                String correlationId) {
+            this(type, title, status, detail, instance, errorCode, correlationId, null);
+        }
+    }
 }

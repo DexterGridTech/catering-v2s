@@ -234,15 +234,6 @@ final class CatalogDefinitionFacts {
                 Long.class,
                 row.ref());
         jdbc.update(
-                "DELETE FROM catalog.catalog_item_order_option_material_quantity WHERE "
-                        + "item_order_option_value_override_ref IN (SELECT "
-                        + "override_row.item_order_option_value_override_ref "
-                        + "FROM catalog.catalog_item_order_option_value_override override_row JOIN "
-                        + "catalog.catalog_item_order_option_config config_row ON "
-                        + "config_row.item_order_option_config_ref=override_row.item_order_option_config_ref "
-                        + "WHERE config_row.order_option_definition_ref=?)",
-                row.ref());
-        jdbc.update(
                 "DELETE FROM catalog.catalog_item_order_option_value_override WHERE "
                         + "item_order_option_config_ref IN (SELECT item_order_option_config_ref FROM "
                         + "catalog.catalog_item_order_option_config WHERE order_option_definition_ref=?)",
@@ -412,13 +403,6 @@ final class CatalogDefinitionFacts {
             }
         }
         existing.keySet().stream().filter(ref -> !retained.contains(ref)).forEach(ref -> {
-            jdbc.update(
-                    "DELETE FROM catalog.catalog_item_order_option_material_quantity WHERE "
-                            + "item_order_option_value_override_ref IN (SELECT "
-                            + "item_order_option_value_override_ref FROM "
-                            + "catalog.catalog_item_order_option_value_override WHERE "
-                            + "order_option_definition_value_ref=?)",
-                    ref);
             jdbc.update(
                     "DELETE FROM catalog.catalog_item_order_option_value_override WHERE "
                             + "order_option_definition_value_ref=?",

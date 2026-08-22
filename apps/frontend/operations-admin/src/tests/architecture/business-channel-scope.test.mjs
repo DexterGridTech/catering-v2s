@@ -77,8 +77,11 @@ test('business-channel candidate reads validate the real organization store/proj
   assert.match(controller, /WorkspaceUserService organizationAuthorization/);
   assert.match(controller, /private OrganizationOverviewTaskReadService\.Item requireScopedStore\(/);
   assert.match(
-    controller,
-    /if \(session\.scopeContext\(\) != null && session\.scopeContext\(\)\.store\(\) != null\)[\s\S]*?requireStore\(session\)[\s\S]*?else \{[\s\S]*?organizationAuthorization\.resolveSelectedProjectScope\(session, store\.project\(\)\.id\(\)\);/,
+    controller.slice(
+      controller.indexOf('private OrganizationOverviewTaskReadService.Item requireScopedStore('),
+      controller.indexOf('private void requireStoreProjectPair('),
+    ),
+    /if \(session\.scopeContext\(\) != null && session\.scopeContext\(\)\.store\(\) != null\)[\s\S]*?requireStore\(session\)[\s\S]*?else \{[\s\S]*?organizationAuthorization\.resolveSelectedProjectScope\(\s*session,\s*store\.project\(\)\.id\(\)\);/,
   );
   assert.match(controller, /var store = requireScopedStore\(session, session\.groupWorkspaceKey\(\), storeRef\);/);
   assert.match(controller, /if \(!projectRef\.equals\(store\.project\(\)\.id\(\)\)\)/);

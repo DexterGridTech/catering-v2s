@@ -2452,6 +2452,7 @@
         "SEED-LATTE",
         "SEED-DINNER-SET",
         "SEED-CAESAR",
+        "SEED-MILK-TEA",
         "SEED-MATERIALS",
         "SEED-WEIGHED",
         "FIXTURE-SEED-READBACK"
@@ -2521,8 +2522,28 @@
         },
         {
           "caseId": "CI-API-026-04",
-          "fixtureRef": "SEED-MATERIALS",
+          "fixtureRef": "SEED-MILK-TEA",
           "parameterization": "case-4-of-5",
+          "parameter": {
+            "seedFixture": "SEED-MILK-TEA",
+            "readbackSelector": "fixtureId+ownerScopes+entities"
+          },
+          "expected": {
+            "assertionKey": "CI-API-026:SEED-MILK-TEA/fixtureId+ownerScopes+entities",
+            "fixtureRef": "SEED-MILK-TEA",
+            "parameter": {
+              "seedFixture": "SEED-MILK-TEA",
+              "readbackSelector": "fixtureId+ownerScopes+entities"
+            }
+          },
+          "expectedBusinessResult": "五个代表商品图按契约读回；case={\"seedFixture\":\"SEED-MILK-TEA\",\"readbackSelector\":\"fixtureId+ownerScopes+entities\"}",
+          "polarity": "POSITIVE",
+          "expectationKind": "FACT"
+        },
+        {
+          "caseId": "CI-API-026-05",
+          "fixtureRef": "SEED-MATERIALS",
+          "parameterization": "case-5-of-5",
           "parameter": {
             "seedFixture": "SEED-MATERIALS",
             "readbackSelector": "fixtureId+ownerScopes+entities"
@@ -2536,26 +2557,6 @@
             }
           },
           "expectedBusinessResult": "五个代表商品图按契约读回；case={\"seedFixture\":\"SEED-MATERIALS\",\"readbackSelector\":\"fixtureId+ownerScopes+entities\"}",
-          "polarity": "POSITIVE",
-          "expectationKind": "FACT"
-        },
-        {
-          "caseId": "CI-API-026-05",
-          "fixtureRef": "SEED-WEIGHED",
-          "parameterization": "case-5-of-5",
-          "parameter": {
-            "seedFixture": "SEED-WEIGHED",
-            "readbackSelector": "fixtureId+ownerScopes+entities"
-          },
-          "expected": {
-            "assertionKey": "CI-API-026:SEED-WEIGHED/fixtureId+ownerScopes+entities",
-            "fixtureRef": "SEED-WEIGHED",
-            "parameter": {
-              "seedFixture": "SEED-WEIGHED",
-              "readbackSelector": "fixtureId+ownerScopes+entities"
-            }
-          },
-          "expectedBusinessResult": "五个代表商品图按契约读回；case={\"seedFixture\":\"SEED-WEIGHED\",\"readbackSelector\":\"fixtureId+ownerScopes+entities\"}",
           "polarity": "POSITIVE",
           "expectationKind": "FACT"
         }

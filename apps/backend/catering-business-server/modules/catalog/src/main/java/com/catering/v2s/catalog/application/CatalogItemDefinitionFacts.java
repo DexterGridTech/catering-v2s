@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -89,12 +89,7 @@ final class CatalogItemDefinitionFacts {
                         + "config.max_selection_count,"
                         + "value_definition.order_option_definition_value_ref,value_definition.name,value_definitio"
                         + "n.display_order,"
-                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price,"
-                        + "material.order_option_definition_material_ref,material.material_item_ref,material_item.n"
-                        + "ame,material.stock_target_ref,"
-                        + "material.consumption_unit_ref,material.consumption_unit_code,material.consumption_unit_name,"
-                        + "material.consumption_unit_dimension,material.consumption_unit_precision,quantity.actual_"
-                        + "quantity "
+                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price "
                         + "FROM catalog.catalog_item_order_option_config config "
                         + "JOIN catalog.catalog_order_option_definition definition ON definition.order_option_defin"
                         + "ition_ref=config.order_option_definition_ref "
@@ -104,19 +99,10 @@ final class CatalogItemDefinitionFacts {
                         + "er_option_config_ref=config.item_order_option_config_ref "
                         + "AND override.order_option_definition_value_ref=value_definition.order_option_definition_"
                         + "value_ref "
-                        + "LEFT JOIN catalog.catalog_order_option_definition_material material ON material.order_op"
-                        + "tion_definition_value_ref=value_definition.order_option_definition_value_ref "
-                        + "LEFT JOIN catalog.catalog_item material_item ON material_item.item_ref=material.material"
-                        + "_item_ref "
-                        + "LEFT JOIN catalog.catalog_item_order_option_material_quantity quantity ON quantity.item_"
-                        + "order_option_value_override_ref=override.item_order_option_value_override_ref "
-                        + "AND quantity.order_option_definition_material_ref=material.order_option_definition_mater"
-                        + "ial_ref "
                         + "WHERE config.item_ref IN ("
                         + placeholders(refs)
                         + ") ORDER BY config.item_ref,definition.name,definition.order_option_definition_ref,value_"
-                        + "definition.display_order,value_definition.order_option_definition_value_ref,material.o"
-                        + "rder_option_definition_material_ref",
+                        + "definition.display_order,value_definition.order_option_definition_value_ref",
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {
@@ -148,36 +134,7 @@ final class CatalogItemDefinitionFacts {
                             value.put("defaultValue", rows.getObject(12) != null && rows.getBoolean(13));
                             if (rows.getObject(14) == null) value.putNull("extraPrice");
                             else value.put("extraPrice", rows.getLong(14));
-                            value.putArray("materialQuantities");
                             values.put(valueKey(configRef, definitionValueRef), value);
-                        }
-                        UUID materialRef = rows.getObject(15, UUID.class);
-                        if (materialRef != null) {
-                            ObjectNode material =
-                                    value.withArray("materialQuantities").addObject();
-                            material.put("materialRef", materialRef.toString());
-                            material.put(
-                                    "materialItemRef",
-                                    rows.getObject(16, UUID.class).toString());
-                            material.put("materialItemName", rows.getString(17));
-                            material.put(
-                                    "stockTargetRef",
-                                    rows.getObject(18, UUID.class).toString());
-                            UUID consumptionUnitRef = rows.getObject(19, UUID.class);
-                            if (consumptionUnitRef == null)
-                                throw new CatalogOwnerApi.Problem(
-                                        "RESULT_UNKNOWN",
-                                        500,
-                                        /* format-wrap */
-                                        "点单选项原料缺少消耗单位快照");
-                            material.putObject("consumptionUnitSnapshot")
-                                    .put("unitRef", consumptionUnitRef.toString())
-                                    .put("code", rows.getString(20))
-                                    .put("name", rows.getString(21))
-                                    .put("unitDimension", rows.getString(22))
-                                    .put("precision", rows.getInt(23));
-                            if (rows.getObject(24) == null) material.putNull("actualQuantity");
-                            else material.put("actualQuantity", rows.getBigDecimal(24));
                         }
                     }
                     return null;
@@ -386,18 +343,6 @@ final class CatalogItemDefinitionFacts {
                         override.definitionValueRef(),
                         override.isDefault(),
                         override.extraPrice());
-                for (MaterialQuantity quantity : override.materialQuantities())
-                    jdbc.update(
-                            "INSERT INTO catalog.catalog_item_order_option_material_quantity(item_order_option_valu"
-                                    +
-                                    /* format-wrap */
-                                    "e_override_ref,order_option_definition_material_ref,actual_quantity) "
-                                    +
-                                    /* format-wrap */
-                                    "VALUES(?,?,?)",
-                            overrideRef,
-                            quantity.materialRef(),
-                            quantity.actualQuantity());
             }
         }
         existing.entrySet().stream()
@@ -413,13 +358,6 @@ final class CatalogItemDefinitionFacts {
     }
 
     private void deleteOrderOptionConfigChildren(UUID configRef) {
-        jdbc.update(
-                "DELETE FROM catalog.catalog_item_order_option_material_quantity WHERE "
-                        + "item_order_option_value_override_ref IN (SELECT "
-                        + "item_order_option_value_override_ref FROM "
-                        + "catalog.catalog_item_order_option_value_override WHERE "
-                        + "item_order_option_config_ref=?)",
-                configRef);
         jdbc.update(
                 "DELETE FROM catalog.catalog_item_order_option_value_override WHERE "
                         + "item_order_option_config_ref=?",
@@ -764,21 +702,6 @@ final class CatalogItemDefinitionFacts {
                                             /* format-wrap */
                                             "点单选项值复制引用未完成映射")
                                     .toString());
-                    for (JsonNode quantityNode : value.withArray("materialQuantities")) {
-                        if (!(quantityNode instanceof ObjectNode quantity))
-                            throw new CatalogOwnerApi.Problem(
-                                    "RESULT_UNKNOWN",
-                                    500,
-                                    /* format-wrap */
-                                    "点单选项扣料用量不是对象");
-                        quantity.put(
-                                "materialRef",
-                                required(
-                                                plan.materialMappings(),
-                                                requiredUuid(quantity, "materialRef"),
-                                                "点单选项扣料原料复制引用未完成映射")
-                                        .toString());
-                    }
                 }
             }
             replaceOrderOptionConfigs(targetScope, targetBrand, item.getValue(), rewritten);
@@ -1268,25 +1191,17 @@ final class CatalogItemDefinitionFacts {
         return Map.copyOf(definitions);
     }
 
-    private Map<UUID, MaterialTemplate> definitionValues(UUID definitionRef) {
+    private Set<UUID> definitionValues(UUID definitionRef) {
         return jdbc.query(
-                "SELECT value_row.order_option_definition_value_ref,material.order_option_definition_material_ref "
+                "SELECT value_row.order_option_definition_value_ref "
                         + "FROM catalog.catalog_order_option_definition_value value_row "
-                        + "LEFT JOIN catalog.catalog_order_option_definition_material material ON material.order_op"
-                        + "tion_definition_value_ref=value_row.order_option_definition_value_ref "
                         + "WHERE value_row.order_option_definition_ref=? ORDER BY value_row.display_order,value_row"
-                        + ".order_option_definition_value_ref,material.order_option_definition_material_ref",
+                        + ".order_option_definition_value_ref",
                 rows -> {
-                    Map<UUID, List<UUID>> materials = new LinkedHashMap<>();
+                    LinkedHashSet<UUID> values = new LinkedHashSet<>();
                     while (rows.next()) {
-                        UUID valueRef = rows.getObject(1, UUID.class);
-                        materials.computeIfAbsent(valueRef, ignored -> new ArrayList<>());
-                        UUID materialRef = rows.getObject(2, UUID.class);
-                        if (materialRef != null) materials.get(valueRef).add(materialRef);
+                        values.add(rows.getObject(1, UUID.class));
                     }
-                    Map<UUID, MaterialTemplate> values = new LinkedHashMap<>();
-                    materials.forEach((valueRef, materialRefs) ->
-                            values.put(valueRef, new MaterialTemplate(List.copyOf(materialRefs))));
                     return values;
                 },
                 definitionRef);
@@ -1327,7 +1242,7 @@ final class CatalogItemDefinitionFacts {
                     + "填写该范围");
         if (multiple && (config.minSelectionCount() < 0 || config.maxSelectionCount() < config.minSelectionCount()))
             throw problem("点单选项的可选数量范围无效");
-        if (multiple && config.maxSelectionCount() > definition.values().size()) {
+        if (multiple && config.maxSelectionCount() > definition.valueRefs().size()) {
             throw problem("点单选项的最多可选数不能超过库中的选项数");
         }
         if (!config.required()
@@ -1337,30 +1252,16 @@ final class CatalogItemDefinitionFacts {
                 config.minSelectionCount() > 0) {
             throw problem("非必选的多选点单选项最少可选数必须为零");
         }
-        if (config.values().size() != definition.values().size()) {
+        if (config.values().size() != definition.valueRefs().size()) {
             throw problem("商品必须保留点单选项库中的全部选项");
         }
         LinkedHashSet<UUID> submitted = new LinkedHashSet<>();
         int defaultCount = 0;
         for (OrderOptionValueOverride override : config.values()) {
             if (!submitted.add(override.definitionValueRef())
-                    || !definition.values().containsKey(override.definitionValueRef()))
+                    || !definition.valueRefs().contains(override.definitionValueRef()))
                 throw problem("商品点单选项包含不属于所选定义的值");
             if (override.isDefault()) defaultCount++;
-            MaterialTemplate template = definition.values().get(override.definitionValueRef());
-            LinkedHashSet<UUID> materials = new LinkedHashSet<>();
-            for (MaterialQuantity quantity : override.materialQuantities()) {
-                if (!materials.add(quantity.materialRef())
-                        || !template.materialRefs().contains(quantity.materialRef())
-                        || quantity.actualQuantity() == null
-                        || quantity.actualQuantity().signum() <= 0)
-                    throw problem("点单选项的原料用量必" +
-                            /* format-wrap */
-                            "须逐项填写且不能新增、替换或删除库中的原料");
-            }
-            if (materials.size() != template.materialRefs().size()) {
-                throw problem("点单选项的每项原料都必须填写实际用量");
-            }
         }
         if ("SINGLE".equals(definition.selectionMode())
                 &&
@@ -1396,20 +1297,12 @@ final class CatalogItemDefinitionFacts {
             List<OrderOptionValueOverride> overrides = new ArrayList<>();
             if (!node.path("values").isArray()) throw problem("商品点单选项必须包含库中的选项");
             for (JsonNode value : node.path("values")) {
-                List<MaterialQuantity> quantities = new ArrayList<>();
-                if (!value.path("materialQuantities").isArray()) {
-                    throw problem("点单选项原料用量必须为列表");
-                }
-                for (JsonNode quantity : value.path("materialQuantities"))
-                    quantities.add(new MaterialQuantity(
-                            requiredUuid(quantity, "materialRef"), decimal(quantity, "actualQuantity")));
                 overrides.add(new OrderOptionValueOverride(
                         requiredUuid(value, "definitionValueRef"),
                         value.path("defaultValue").asBoolean(false),
                         value.hasNonNull("extraPrice")
                                 ? value.path("extraPrice").asLong()
-                                : null,
-                        List.copyOf(quantities)));
+                                : null));
             }
             values.add(new OrderOptionConfig(
                     definitionRef, node.path("required").asBoolean(false), min, max, List.copyOf(overrides)));
@@ -1448,15 +1341,6 @@ final class CatalogItemDefinitionFacts {
         if (!node.hasNonNull(field)) return null;
         if (!node.path(field).canConvertToInt()) throw problem(field + " must be an integer");
         return node.path(field).asInt();
-    }
-
-    private static BigDecimal decimal(JsonNode node, String field) {
-        if (!node.hasNonNull(field)) throw problem(field + " is required");
-        try {
-            return node.path(field).decimalValue();
-        } catch (RuntimeException failure) {
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, field + " must be a decimal", failure);
-        }
     }
 
     private static CatalogOwnerApi.Problem problem(String message) {
@@ -1500,9 +1384,7 @@ final class CatalogItemDefinitionFacts {
 
     private record AttributeAssignment(UUID definitionRef, String textValue, List<UUID> optionRefs) {}
 
-    private record MaterialTemplate(List<UUID> materialRefs) {}
-
-    private record OrderOptionDefinition(String selectionMode, Map<UUID, MaterialTemplate> values) {}
+    private record OrderOptionDefinition(String selectionMode, Set<UUID> valueRefs) {}
 
     private record OrderOptionConfig(
             UUID definitionRef,
@@ -1511,10 +1393,7 @@ final class CatalogItemDefinitionFacts {
             Integer maxSelectionCount,
             List<OrderOptionValueOverride> values) {}
 
-    private record OrderOptionValueOverride(
-            UUID definitionValueRef, boolean isDefault, Long extraPrice, List<MaterialQuantity> materialQuantities) {}
-
-    private record MaterialQuantity(UUID materialRef, BigDecimal actualQuantity) {}
+    private record OrderOptionValueOverride(UUID definitionValueRef, boolean isDefault, Long extraPrice) {}
 
     record CopyOrderOptionDefinition(
             UUID ref,

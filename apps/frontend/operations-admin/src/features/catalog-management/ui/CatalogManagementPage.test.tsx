@@ -251,7 +251,7 @@ describe('catalog management runtime model contracts', () => {
       dataNodeRef: 'node-1',
       itemCode: 'LATTE-001',
       skuTransitions: [{skuRef: 'sku-1', targetStatus: 'VOIDED', expectedVersion: 3}],
-      sections: {expectedCatalogVersion: 7, inventoryConfiguration: {nodes: []}, expectedInventoryVersions: []},
+      sections: {expectedCatalogVersion: 7, inventoryRules: {nodes: []}},
     });
     expect(request.sections.catalogDraft).toMatchObject({
       name: '拿铁',
@@ -404,7 +404,7 @@ describe('catalog management runtime model contracts', () => {
     expect(catalogPriceLabel(decoded.items[0])).toBe('¥28.00~34.00');
   });
 
-  it('keeps inventory configuration and reference fields on detail readback', () => {
+  it('keeps inventory rule configuration and reference fields on detail readback', () => {
     const decoded = decodeDetail({
       data: {
         item: {
@@ -416,22 +416,30 @@ describe('catalog management runtime model contracts', () => {
           tagRefs: ['tag-ref'],
           salesUnitRef: 'unit-ref',
           baseMeasureUnitRef: 'base-unit-ref',
-          inventoryBom: [
+        },
+        inventoryRules: {
+          nodes: [
             {
-              nodeType: 'ITEM',
-              mode: 'INDEPENDENT_STOCK',
-              targetRef: 'target-ref',
-              quantity: '1',
-              consumptionUnitSnapshot: {
-                unitRef: 'unit-ref',
-                code: 'GRAM',
-                name: '克',
-                unitDimension: 'WEIGHT',
-                precision: 0,
-              },
-              configuration: {
+              owner: {ownerType: 'ITEM', itemRef: 'item-ref', productSkuRef: null, optionValueRef: null},
+              itemCode: 'LATTE-001',
+              itemName: '拿铁',
+              skuCode: null,
+              optionValueCode: null,
+              allowedModes: ['NONE', 'DIRECT', 'BOM'],
+              defaultMode: 'NONE',
+              disabledReason: null,
+              mode: 'DIRECT',
+              directConfiguration: {
+                targetRef: 'target-ref',
                 allowNegative: true,
                 lowStockThreshold: '2',
+                consumptionUnitSnapshot: {
+                  unitRef: 'unit-ref',
+                  code: 'GRAM',
+                  name: '克',
+                  unitDimension: 'WEIGHT',
+                  precision: 0,
+                },
                 countingUnitSnapshot: {
                   unitRef: 'counting-ref',
                   code: 'KILOGRAM',
@@ -440,7 +448,9 @@ describe('catalog management runtime model contracts', () => {
                   precision: 4,
                 },
                 conversionFactor: '12',
+                version: 2,
               },
+              bom: null,
             },
           ],
         },
@@ -449,9 +459,17 @@ describe('catalog management runtime model contracts', () => {
     } as CatalogInventoryEnvelope);
     expect(decoded?.item.tagRefs).toEqual(['tag-ref']);
     expect(decoded?.item.salesUnitRef).toBe('unit-ref');
-    expect(decoded?.item.inventoryBom[0].configuration).toEqual({
+    expect(decoded?.inventoryRules.nodes[0].directConfiguration).toEqual({
+      targetRef: 'target-ref',
       allowNegative: true,
       lowStockThreshold: '2',
+      consumptionUnitSnapshot: {
+        unitRef: 'unit-ref',
+        code: 'GRAM',
+        name: '克',
+        unitDimension: 'WEIGHT',
+        precision: 0,
+      },
       countingUnitSnapshot: {
         unitRef: 'counting-ref',
         code: 'KILOGRAM',
@@ -460,6 +478,7 @@ describe('catalog management runtime model contracts', () => {
         precision: 4,
       },
       conversionFactor: '12',
+      version: 2,
     });
   });
 
@@ -739,13 +758,13 @@ describe('catalog management runtime model contracts', () => {
     expect(request).toMatchObject({
       dataNodeRef: 'node-1',
       itemCode: 'LATTE-001',
-      sections: {expectedCatalogVersion: 7, expectedInventoryVersions: []},
+      sections: {expectedCatalogVersion: 7, inventoryRules: {nodes: []}},
     });
     expect(request.sections.catalogDraft).toEqual({categoryRef: 'new-category'});
     expect(request.sections.catalogDraft).not.toHaveProperty('name');
     expect(request.sections.catalogDraft).not.toHaveProperty('images');
     expect(request.sections.catalogDraft).not.toHaveProperty('tagRefs');
-    expect(request.sections.inventoryConfiguration).toEqual({nodes: []});
+    expect(request.sections.inventoryRules).toEqual({nodes: []});
   });
 
   it('builds a tag batch save without copying the row category relationship', () => {

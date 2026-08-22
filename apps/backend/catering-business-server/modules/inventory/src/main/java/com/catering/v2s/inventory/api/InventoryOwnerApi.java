@@ -350,6 +350,12 @@ public interface InventoryOwnerApi {
         throw new UnsupportedOperationException("inventory summary read is not implemented");
     }
 
+    /** Cursor task-read used by the catalog inventory workbench for BOM component selection. */
+    default JsonNode readCatalogInventoryConsumptionTargetCandidates(
+            String dataNodeRef, String brandRef, ObjectNode request, String requestId, String dataNodeType) {
+        throw new UnsupportedOperationException("inventory consumption target candidate read is not implemented");
+    }
+
     /** Controlled creation path from a catalog item's inventory/BOM tab. */
     JsonNode ensureCatalogInventoryTarget(
             String dataNodeRef,
@@ -388,6 +394,11 @@ public interface InventoryOwnerApi {
 
     record CatalogItemSaveBomCommand(String canonicalRequestJson) {}
 
+    /** One immutable whole-save command for every inventory owner definition derived by catalog. */
+    record CatalogInventoryRulesReplaceCommand(String canonicalRequestJson) {}
+
+    record InventoryConsumptionTargetCandidateQuery(String keyword, long cursor, int pageSize) {}
+
     record CatalogItemSaveReadback(String canonicalJson) {}
 
     CatalogItemSaveReadback ensureCatalogItemSaveTarget(
@@ -398,6 +409,11 @@ public interface InventoryOwnerApi {
     CatalogItemSaveReadback saveCatalogItemProductBom(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             CatalogItemSaveBomCommand command,
+            String idempotencyKey);
+
+    CatalogItemSaveReadback replaceCatalogInventoryRules(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            CatalogInventoryRulesReplaceCommand command,
             String idempotencyKey);
 
     /**
@@ -445,17 +461,27 @@ public interface InventoryOwnerApi {
     final class Problem extends RuntimeException {
         private final String code;
         private final int status;
+        private final JsonNode details;
 
         public Problem(String code, int status, String message) {
             super(message);
             this.code = code;
             this.status = status;
+            this.details = null;
         }
 
         public Problem(String code, int status, String message, Throwable cause) {
             super(message, cause);
             this.code = code;
             this.status = status;
+            this.details = null;
+        }
+
+        public Problem(String code, int status, String message, JsonNode details) {
+            super(message);
+            this.code = code;
+            this.status = status;
+            this.details = details;
         }
 
         public String code() {
@@ -464,6 +490,10 @@ public interface InventoryOwnerApi {
 
         public int status() {
             return status;
+        }
+
+        public JsonNode details() {
+            return details;
         }
     }
 }

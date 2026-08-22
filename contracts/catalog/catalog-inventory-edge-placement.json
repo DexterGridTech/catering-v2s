@@ -357,7 +357,13 @@
       "face": "operations-admin",
       "ownerModule": "catalog",
       "shard": "paths/operations-admin/catalog-dictionary-management.paths.json"
+    },
+    {
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "face": "operations-admin",
+      "ownerModule": "inventory",
+      "shard": "paths/operations-admin/catalog-workbench.paths.json"
     }
   ],
-  "placementDigest": "08bb2f4fcd4b73eb7cdf96a68a026661b4826c34dbe31a2f02525ee3770a6ef1"
+  "placementDigest": "6e31d8e1551e26e28eb12b398273656fc416c4bbc64cc1b73f8c0964238eab5b"
 }

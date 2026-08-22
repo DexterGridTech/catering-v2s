@@ -73,7 +73,7 @@ import type {
   CatalogCompositeGroup,
   CatalogAttributeAssignment,
   CatalogDetail,
-  CatalogInventoryBomEntry,
+  CatalogInventoryRuleNode,
   CatalogNavigation,
   CatalogOrderOptionConfig,
   CatalogSkuRow,
@@ -85,12 +85,14 @@ import {
   catalogCentsToYuan,
   catalogDetailImageRefs,
   catalogFormValidationIssue,
+  catalogInventoryProblemTab,
   catalogSkuIssueCodes,
   decodeCatalogMediaLimits,
   decodeDetail,
   decodeItems,
   decodeNavigation,
   displayValue,
+  catalogInventoryRuleToDraft,
   mergeCatalogSkuVoidReadback,
   serializeSkuRowsForSave,
   catalogYuanToCents,
@@ -114,6 +116,7 @@ import {
 } from './CatalogDictionaryDrawer';
 import {LocalCatalogCopyDrawer} from './LocalCatalogCopyDrawer';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
+import {CatalogInventoryBomWorkbench} from './CatalogInventoryBomWorkbench';
 
 type Props = {
   itemCode?: string;
@@ -243,8 +246,8 @@ const catalogDeniedFieldLabels: Record<string, string> = {
   skus: 'SKU 矩阵',
   orderOptionConfigs: '点单选项',
   productionProfiles: '生产提示',
-  bomTarget: '库存对象',
-  inventoryBom: '库存与 BOM',
+  inventoryBomComponent: '耗用对象',
+  inventoryRules: '库存与 BOM',
   compositeComponentSku: '套餐组件 SKU',
   compositeGroups: '套餐内容',
 };
@@ -346,7 +349,7 @@ export function CatalogItemDrawer({
     optionValue: {},
   });
   const [productionProfileLayer, setProductionProfileLayer] = useState<ProfileLayer>('item');
-  const [inventoryBomDraft, setInventoryBomDraft] = useState<CatalogInventoryBomEntry[]>([]);
+  const [inventoryRulesDraft, setInventoryRulesDraft] = useState<CatalogInventoryRuleNode[]>([]);
   const [compositeGroupsDraft, setCompositeGroupsDraft] = useState<CatalogCompositeGroup[]>([]);
   const [skuVariantDimensionsDraft, setSkuVariantDimensionsDraft] = useState<SkuDimensionDraft[]>([]);
   const [skusDraft, setSkusDraft] = useState<SkuRowDraft[]>([]);
@@ -591,7 +594,6 @@ export function CatalogItemDrawer({
         ...config,
         values: config.values.map(value => ({
           ...value,
-          materialQuantities: value.materialQuantities.map(material => ({...material})),
         })),
       })),
     );
@@ -601,7 +603,23 @@ export function CatalogItemDrawer({
     setSelectedBaseMeasureUnitRef(detail.item.baseMeasureUnitRef ?? undefined);
     setProductionProfilesDraft(cloneProfiles(detail.item.productionProfiles));
     setProductionProfileLayer('item');
-    setInventoryBomDraft(detail.inventoryBom.map(entry => ({...entry})));
+    setInventoryRulesDraft(
+      detail.inventoryRules.nodes.map(node => ({
+        ...node,
+        owner: {...node.owner},
+        allowedModes: [...node.allowedModes],
+        directConfiguration: node.directConfiguration ? {...node.directConfiguration} : null,
+        bom: node.bom
+          ? {
+              version: node.bom.version,
+              lines: node.bom.lines.map(line => ({
+                ...line,
+                consumptionUnitSnapshot: {...line.consumptionUnitSnapshot},
+              })),
+            }
+          : null,
+      })),
+    );
     setCompositeGroupsDraft(
       detail.compositeGroups.map(group => ({...group, components: group.components.map(entry => ({...entry}))})),
     );
@@ -666,7 +684,7 @@ export function CatalogItemDrawer({
       setSelectedProductionTags([]);
       setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}});
       setProductionProfileLayer('item');
-      setInventoryBomDraft([]);
+      setInventoryRulesDraft([]);
       setCompositeGroupsDraft([]);
       setSkuVariantDimensionsDraft([]);
       setSkusDraft([]);
@@ -761,10 +779,15 @@ export function CatalogItemDrawer({
       }
     }
     if (visibleTabs.has('inventory-bom')) {
-      const invalidNode = inventoryBomDraft.findIndex(node => {
+      const invalidNode = inventoryRulesDraft.findIndex(node => {
         if (node.mode === 'NONE') return false;
-        if (node.mode === 'BOM') return !node.targetRef.trim() || !node.quantity.trim() || !node.itemRef?.trim();
-        if (node.mode === 'INDEPENDENT_STOCK') return !node.targetRef.trim() || !node.itemRef?.trim();
+        if (node.mode === 'DIRECT') return !node.directConfiguration;
+        if (node.mode === 'BOM') {
+          return (
+            !node.bom?.lines.length ||
+            node.bom.lines.some(line => !line.targetRef || !line.itemRef || !line.quantity.trim())
+          );
+        }
         return true;
       });
       if (invalidNode >= 0) {
@@ -823,10 +846,6 @@ export function CatalogItemDrawer({
             defaultValue: value.defaultValue,
             extraPrice: value.extraPrice,
             expectedBomVersion: value.bomVersion ?? 0,
-            materialQuantities: value.materialQuantities.map(material => ({
-              materialRef: wireUuid(material.materialRef),
-              actualQuantity: material.actualQuantity,
-            })),
           })),
         })),
       };
@@ -840,20 +859,6 @@ export function CatalogItemDrawer({
       }
       if (visibleTabs.has('composite-content')) catalogDraft.compositeGroups = compositeGroupsDraft;
       if (visibleTabs.has('production-prompts')) catalogDraft.productionProfiles = productionProfilesDraft;
-      if (visibleTabs.has('inventory-bom'))
-        catalogDraft.inventoryBom = inventoryBomDraft.map(entry => ({
-          nodeType: entry.nodeType,
-          mode: entry.mode,
-          targetRef: wireUuid(entry.targetRef),
-          quantity: entry.quantity,
-          itemCode: entry.itemCode ?? detail.item.code,
-          itemRef: wireUuid(entry.itemRef ?? ''),
-          productSkuRef: entry.productSkuRef ? wireUuid(entry.productSkuRef) : null,
-          optionValueRef: entry.optionValueRef ? wireUuid(entry.optionValueRef) : null,
-          skuCode: entry.skuCode ?? null,
-          optionValueCode: entry.optionValueCode ?? null,
-          version: entry.version ?? 0,
-        }));
       const bindGrants = Object.fromEntries(
         [...mediaDraft, ...skuStagedMedia]
           .filter((asset): asset is MediaDraft & {assetRef: string; bindGrant: string} =>
@@ -866,37 +871,10 @@ export function CatalogItemDrawer({
         itemCode,
         sections: {
           catalogDraft,
-          inventoryConfiguration: {
-            nodes: visibleTabs.has('inventory-bom')
-              ? inventoryBomDraft
-                  .filter(node => node.mode === 'INDEPENDENT_STOCK')
-                  .map(node => ({
-                    nodeType: node.nodeType,
-                    mode: node.mode,
-                    targetRef: wireUuid(node.targetRef.trim()),
-                    itemCode: node.itemCode ?? detail.item.code,
-                    itemRef: wireUuid(node.itemRef ?? ''),
-                    skuCode: node.skuCode ?? null,
-                    productSkuRef: node.productSkuRef ? wireUuid(node.productSkuRef) : null,
-                    configuration: {
-                      allowNegative: node.configuration?.allowNegative ?? false,
-                      lowStockThreshold: node.configuration?.lowStockThreshold ?? null,
-                      countingUnitRef: node.configuration?.countingUnitSnapshot?.unitRef
-                        ? wireUuid(node.configuration.countingUnitSnapshot.unitRef)
-                        : null,
-                      conversionFactor: node.configuration?.conversionFactor ?? null,
-                    },
-                  }))
-              : [],
-          },
           expectedCatalogVersion: detail.item.version,
-          expectedInventoryVersions: visibleTabs.has('inventory-bom')
-            ? inventoryBomDraft
-                .filter(
-                  node => node.mode === 'INDEPENDENT_STOCK' && node.targetRef.trim() && node.version !== undefined,
-                )
-                .map(node => ({targetRef: wireUuid(node.targetRef), version: node.version as number}))
-            : [],
+          inventoryRules: {
+            nodes: visibleTabs.has('inventory-bom') ? inventoryRulesDraft.map(catalogInventoryRuleToDraft) : [],
+          },
         },
       };
       const idempotencyKey = await createContentIdempotencyKey(
@@ -926,7 +904,10 @@ export function CatalogItemDrawer({
         current.map(asset => ({...asset, bindGrant: undefined, file: undefined, staged: false})),
       );
     } catch (error) {
-      setProblem(operationsProblemOf(error).detail);
+      const feedback = operationsProblemOf(error);
+      const problemTab = catalogInventoryProblemTab(feedback.errorCode);
+      if (problemTab) setActiveTab(problemTab);
+      setProblem(feedback.detail);
       lifecycle.setSubmitting(false);
     }
   };
@@ -1006,7 +987,7 @@ export function CatalogItemDrawer({
         setProblem(undefined);
         try {
           const dataNodeRef = requireOperationsScopeRef(queryContext);
-          const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku);
+          const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku, detail.inventoryRules);
           const idempotencyKey = await createContentIdempotencyKey(
             CATALOG_INVENTORY_OPERATION_IDS.saveOperationsCatalogItem,
             body,
@@ -1501,8 +1482,8 @@ export function CatalogItemDrawer({
     setProductionProfilesDraft(next);
     lifecycle.setDirty(true);
   };
-  const updateInventoryBom = (next: CatalogInventoryBomEntry[]) => {
-    setInventoryBomDraft(next);
+  const updateInventoryRules = (next: CatalogInventoryRuleNode[]) => {
+    setInventoryRulesDraft(next);
     lifecycle.setDirty(true);
   };
   const updateCompositeGroups = (next: CatalogCompositeGroup[]) => {
@@ -1595,7 +1576,7 @@ export function CatalogItemDrawer({
               productionProfilesDraft={productionProfilesDraft}
               productionProfileLayer={productionProfileLayer}
               onProductionProfileLayerChange={setProductionProfileLayer}
-              inventoryBomDraft={inventoryBomDraft}
+              inventoryRulesDraft={inventoryRulesDraft}
               compositeGroupsDraft={compositeGroupsDraft}
               skuVariantDimensionsDraft={skuVariantDimensionsDraft}
               skusDraft={skusDraft}
@@ -1614,7 +1595,7 @@ export function CatalogItemDrawer({
               onIdentifiersChange={updateIdentifiers}
               onStandardSalePriceChange={updateStandardSalePrice}
               onProductionProfilesChange={updateProductionProfiles}
-              onInventoryBomChange={updateInventoryBom}
+              onInventoryRulesChange={updateInventoryRules}
               onCompositeGroupsChange={updateCompositeGroups}
               onSkuVariantDimensionsChange={updateSkuVariantDimensions}
               onSkusChange={updateSkus}
@@ -2123,7 +2104,7 @@ function CatalogTabContent({
   productionProfilesDraft,
   productionProfileLayer,
   onProductionProfileLayerChange,
-  inventoryBomDraft,
+  inventoryRulesDraft,
   compositeGroupsDraft,
   skuVariantDimensionsDraft,
   skusDraft,
@@ -2134,7 +2115,7 @@ function CatalogTabContent({
   onIdentifiersChange,
   onStandardSalePriceChange,
   onProductionProfilesChange,
-  onInventoryBomChange,
+  onInventoryRulesChange,
   onCompositeGroupsChange,
   onSkuVariantDimensionsChange,
   onSkusChange,
@@ -2186,7 +2167,7 @@ function CatalogTabContent({
   productionProfilesDraft: ProductionProfileDraft;
   productionProfileLayer: ProfileLayer;
   onProductionProfileLayerChange: (next: ProfileLayer) => void;
-  inventoryBomDraft: CatalogInventoryBomEntry[];
+  inventoryRulesDraft: CatalogInventoryRuleNode[];
   compositeGroupsDraft: CatalogCompositeGroup[];
   skuVariantDimensionsDraft: SkuDimensionDraft[];
   skusDraft: SkuRowDraft[];
@@ -2197,7 +2178,7 @@ function CatalogTabContent({
   onIdentifiersChange: (next: CatalogIdentifierDraft[]) => void;
   onStandardSalePriceChange: (next: number | null) => void;
   onProductionProfilesChange: (next: ProductionProfileDraft) => void;
-  onInventoryBomChange: (next: CatalogInventoryBomEntry[]) => void;
+  onInventoryRulesChange: (next: CatalogInventoryRuleNode[]) => void;
   onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void;
   onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void;
   onSkusChange: (next: CatalogSkuRow[]) => void;
@@ -2682,26 +2663,32 @@ function CatalogTabContent({
       </Space>
     );
   }
-  if (tabKey === 'inventory-bom' && editing)
-    return denied('inventoryBom') ? (
+  if (tabKey === 'inventory-bom') {
+    const inventoryRulesDenied = denied('inventoryRules');
+    return (
       <Space direction="vertical" style={{display: 'flex'}}>
-        {locked('inventoryBom')}
-        <InventoryBomReadOnly manifest={manifest} values={detail.inventoryBom} />
+        {inventoryRulesDenied && locked('inventoryRules')}
+        <CatalogInventoryBomWorkbench
+          shapeKey={detail.item.shapeKey}
+          nodes={inventoryRulesDenied ? detail.inventoryRules.nodes : inventoryRulesDraft}
+          editing={editing && !inventoryRulesDenied}
+          scopeRef={queryContext.scopeRef}
+          brandRef={brandRef}
+          unitOptions={unitOptions}
+          baseUnitForOwner={node =>
+            node.owner.ownerType === 'ITEM'
+              ? detail.item.baseMeasureUnit
+              : node.owner.ownerType === 'SKU'
+                ? (detail.item.skus.find(sku => sku.productSkuRef === node.owner.productSkuRef)?.baseMeasureUnit ??
+                  null)
+                : null
+          }
+          onChange={onInventoryRulesChange}
+          onDirty={onDirty}
+        />
       </Space>
-    ) : (
-      <InventoryBomEditor
-        manifest={manifest}
-        shapeKey={detail.item.shapeKey}
-        values={inventoryBomDraft}
-        scopeRef={queryContext.scopeRef}
-        brandRef={brandRef}
-        version={detail.item.version}
-        unitOptions={unitOptions}
-        onChange={onInventoryBomChange}
-        onDirty={onDirty}
-      />
     );
-  if (tabKey === 'inventory-bom') return <InventoryBomReadOnly manifest={manifest} values={detail.inventoryBom} />;
+  }
   if (tabKey === 'composite-content' && editing)
     return denied('compositeGroups') ? (
       <Space direction="vertical" style={{display: 'flex'}}>
@@ -3908,297 +3895,6 @@ function ProductionProfilesReadOnly({profiles}: {profiles: ProductionProfileDraf
   );
 }
 
-function InventoryBomEditor({
-  manifest,
-  shapeKey,
-  values,
-  scopeRef,
-  brandRef,
-  version,
-  unitOptions,
-  onChange,
-  onDirty,
-}: {
-  manifest?: CatalogManifest;
-  shapeKey: string;
-  values: CatalogInventoryBomEntry[];
-  scopeRef?: string;
-  brandRef?: string;
-  version: number;
-  unitOptions: CatalogUnitOption[];
-  onChange: (next: CatalogInventoryBomEntry[]) => void;
-  onDirty: () => void;
-}) {
-  const pickerContext = useMemo<CatalogFieldRuntimeContext>(
-    () => ({
-      scope: {dataNodeRef: wireUuid(scopeRef ?? ''), brandRef},
-      readField: () => undefined,
-      readSection: () => [],
-      sectionRevision: () => version,
-    }),
-    [brandRef, scopeRef, version],
-  );
-  const update = (index: number, patch: Partial<CatalogInventoryBomEntry>) =>
-    onChange(values.map((entry, entryIndex) => (entryIndex === index ? {...entry, ...patch} : entry)));
-  const updateConfiguration = (
-    index: number,
-    patch: Partial<NonNullable<CatalogInventoryBomEntry['configuration']>>,
-  ) => {
-    const current = values[index]?.configuration ?? {
-      allowNegative: false,
-      lowStockThreshold: null,
-      countingUnitSnapshot: null,
-      conversionFactor: null,
-    };
-    update(index, {configuration: {...current, ...patch}});
-  };
-  return (
-    <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-editor')}>
-      <Alert type="info" showIcon title="在此配置库存方式和配方；实际库存请到门店库存管理查看。" />
-      <Button
-        onClick={() => {
-          onChange([
-            ...values,
-            {
-              nodeType: 'ITEM',
-              mode: 'INDEPENDENT_STOCK',
-              targetRef: draftUuid(),
-              quantity: '0',
-              itemCode: '',
-              skuCode: null,
-              configuration: {
-                allowNegative: false,
-                lowStockThreshold: null,
-                countingUnitSnapshot: null,
-                conversionFactor: null,
-              },
-            },
-          ]);
-          onDirty();
-        }}
-        {...testId('catalog-item-inventory-bom-add')}
-      >
-        新增独立库存对象
-      </Button>
-      <Button
-        onClick={() => {
-          onChange([
-            ...values,
-            {nodeType: 'ITEM_BOM', mode: 'BOM', targetRef: draftUuid(), quantity: '1', optionValueCode: null},
-          ]);
-          onDirty();
-        }}
-        {...testId('catalog-item-inventory-bom-add-line')}
-      >
-        新增 BOM 组件
-      </Button>
-      {values.length === 0 && <EmptySection text="未维护库存对象或 BOM" />}
-      {values.map((entry, index) => (
-        <Card
-          key={`${entry.targetRef}-${index}`}
-          size="small"
-          title={`节点 ${index + 1}`}
-          extra={
-            <Button
-              danger
-              type="link"
-              onClick={() => {
-                onChange(values.filter((_, entryIndex) => entryIndex !== index));
-                onDirty();
-              }}
-              {...testId(`catalog-item-inventory-bom-remove-${index}`)}
-            >
-              移除
-            </Button>
-          }
-        >
-          <Space wrap>
-            <Select
-              value={entry.mode}
-              options={catalogEnumOptions(manifest, 'inventoryMode')}
-              onChange={mode => {
-                update(index, {mode});
-                onDirty();
-              }}
-              {...testId(`catalog-item-inventory-bom-mode-${index}`)}
-            />
-            {(entry.mode === 'BOM' || entry.mode === 'INDEPENDENT_STOCK') && (
-              <>
-                <CatalogDescriptorPicker
-                  manifest={manifest}
-                  shapeKey={shapeKey}
-                  fieldKey="bomTarget"
-                  value={String(entry.targetRef ?? '')}
-                  context={pickerContext}
-                  testIdValue={`catalog-item-inventory-bom-target-${index}`}
-                  onChange={(next, rawRow) => {
-                    const row = descriptorRow(rawRow);
-                    update(index, {
-                      targetRef: draftUuid(descriptorString(next)),
-                      itemCode: typeof row?.productCode === 'string' ? row.productCode : '',
-                      itemRef: typeof row?.itemRef === 'string' ? draftUuid(row.itemRef) : undefined,
-                      productSkuRef: typeof row?.productSkuRef === 'string' ? draftUuid(row.productSkuRef) : null,
-                      skuCode: typeof row?.skuCode === 'string' ? row.skuCode : null,
-                    });
-                    onDirty();
-                  }}
-                />
-              </>
-            )}
-            {entry.mode === 'INDEPENDENT_STOCK' && (
-              <>
-                <Input
-                  addonBefore="低库存阈值"
-                  value={entry.configuration?.lowStockThreshold ?? ''}
-                  onChange={event => {
-                    updateConfiguration(index, {lowStockThreshold: event.target.value || null});
-                    onDirty();
-                  }}
-                  {...testId(`catalog-item-inventory-bom-low-threshold-${index}`)}
-                />
-                <Space>
-                  <Typography.Text>允许负库存</Typography.Text>
-                  <Switch
-                    checked={entry.configuration?.allowNegative ?? false}
-                    onChange={allowNegative => {
-                      updateConfiguration(index, {allowNegative});
-                      onDirty();
-                    }}
-                    {...testId(`catalog-item-inventory-bom-allow-negative-${index}`)}
-                  />
-                </Space>
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  value={entry.configuration?.countingUnitSnapshot?.unitRef ?? undefined}
-                  options={unitOptions.map(unit => ({value: unit.unitRef, label: catalogUnitLabel(unit)}))}
-                  onChange={unitRef => {
-                    const unit = unitOptions.find(option => option.unitRef === unitRef);
-                    updateConfiguration(index, {
-                      countingUnitSnapshot: unit
-                        ? {
-                            unitRef: unit.unitRef,
-                            code: unit.code,
-                            name: unit.name,
-                            unitDimension: unit.unitDimension,
-                            precision: unit.precision,
-                          }
-                        : null,
-                    });
-                    onDirty();
-                  }}
-                  {...testId(`catalog-item-inventory-bom-counting-unit-${index}`)}
-                />
-                <Input
-                  addonBefore="盘点换算（正数）"
-                  placeholder="留空表示直接按基础计量单位录入"
-                  value={entry.configuration?.conversionFactor ?? ''}
-                  onChange={event => {
-                    updateConfiguration(index, {conversionFactor: event.target.value || null});
-                    onDirty();
-                  }}
-                  {...testId(`catalog-item-inventory-bom-conversion-factor-${index}`)}
-                />
-              </>
-            )}
-            {entry.mode === 'BOM' && (
-              <Input
-                addonBefore="每份消耗（基础计量单位）"
-                value={entry.quantity}
-                onChange={event => {
-                  update(index, {quantity: event.target.value});
-                  onDirty();
-                }}
-                {...testId(`catalog-item-inventory-bom-quantity-${index}`)}
-              />
-            )}
-          </Space>
-        </Card>
-      ))}
-    </Space>
-  );
-}
-
-function InventoryBomReadOnly({manifest, values}: {manifest?: CatalogManifest; values: CatalogInventoryBomEntry[]}) {
-  const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
-  return (
-    <Space direction="vertical" size={8} style={{display: 'flex'}} {...testId('catalog-item-inventory-bom-readonly')}>
-      {!values.length ? (
-        <EmptySection text="未维护库存对象或 BOM" />
-      ) : (
-        values.map((entry, index) => (
-          <Card key={`${entry.targetRef}-${index}`} size="small" title="库存 / BOM 节点">
-            <Descriptions
-              size="small"
-              column={2}
-              items={[
-                {key: 'mode', label: '允许模式', children: catalogEnumLabel(manifest, 'inventoryMode', entry.mode)},
-                {
-                  key: 'owner',
-                  label: '所属商品或 SKU',
-                  children: entry.skuCode ? (
-                    <Typography.Text code>{entry.skuCode}</Typography.Text>
-                  ) : entry.itemCode ? (
-                    <Typography.Text code>{entry.itemCode}</Typography.Text>
-                  ) : (
-                    '商品/SKU'
-                  ),
-                },
-                {
-                  key: 'target',
-                  label: fieldLabel('bomTarget'),
-                  children: entry.itemCode ? (
-                    <Typography.Text code>{entry.itemCode}</Typography.Text>
-                  ) : entry.skuCode ? (
-                    <Typography.Text code>{entry.skuCode}</Typography.Text>
-                  ) : (
-                    '未设置库存对象编码'
-                  ),
-                },
-                {
-                  key: 'quantity',
-                  label: 'BOM 每份消耗（基础计量单位）',
-                  children: `${entry.quantity || '—'} ${entry.consumptionUnitSnapshot?.name ?? ''}`,
-                },
-                ...(entry.mode === 'INDEPENDENT_STOCK'
-                  ? [
-                      {
-                        key: 'consumptionUnit',
-                        label: '库存消费单位',
-                        children: catalogUnitLabel(entry.consumptionUnitSnapshot),
-                      },
-                      {
-                        key: 'lowStockThreshold',
-                        label: '低库存阈值',
-                        children: entry.configuration?.lowStockThreshold || '—',
-                      },
-                      {
-                        key: 'allowNegative',
-                        label: '允许负库存',
-                        children: entry.configuration?.allowNegative ? '是' : '否',
-                      },
-                      {
-                        key: 'countingUnit',
-                        label: '盘点单位',
-                        children: catalogUnitLabel(entry.configuration?.countingUnitSnapshot),
-                      },
-                      {
-                        key: 'conversionFactor',
-                        label: '盘点换算',
-                        children: entry.configuration?.conversionFactor || '—',
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </Card>
-        ))
-      )}
-    </Space>
-  );
-}
-
 function CompositeCandidatePicker({
   manifest,
   value,
@@ -5172,7 +4868,6 @@ function OrderOptionConfigurationsEditor({
       defaultValue: false,
       extraPrice: null,
       bomVersion: definition.version,
-      materialQuantities: value.materials.map(material => ({...material, actualQuantity: null})),
     })),
   });
   const addDefinitions = () => {
@@ -5215,13 +4910,6 @@ function OrderOptionConfigurationsEditor({
         value.definitionValueRef === valueRef ? {...value, ...patch} : value,
       ),
     });
-  const updateMaterialQuantity = (valueRef: string, materialRef: string, actualQuantity: number | null) =>
-    updateValue(valueRef, {
-      materialQuantities: (
-        activeConfig?.values.find(value => value.definitionValueRef === valueRef)?.materialQuantities ?? []
-      ).map(material => (material.materialRef === materialRef ? {...material, actualQuantity} : material)),
-    });
-
   return (
     <Space direction="vertical" style={{display: 'flex'}} size="middle">
       <Button
@@ -5382,22 +5070,6 @@ function OrderOptionConfigurationsEditor({
                             }
                           />
                         </Space>
-                        {value.materialQuantities.map(material => (
-                          <Space key={material.materialRef} wrap>
-                            <Typography.Text>{material.materialItemName}</Typography.Text>
-                            <Typography.Text>每份用量</Typography.Text>
-                            <InputNumber
-                              min={0}
-                              value={material.actualQuantity}
-                              onChange={actualQuantity =>
-                                updateMaterialQuantity(value.definitionValueRef, material.materialRef, actualQuantity)
-                              }
-                            />
-                            <Typography.Text type="secondary">
-                              {catalogUnitLabel(material.consumptionUnitSnapshot)}
-                            </Typography.Text>
-                          </Space>
-                        ))}
                       </Space>
                     </Card>
                   ))}

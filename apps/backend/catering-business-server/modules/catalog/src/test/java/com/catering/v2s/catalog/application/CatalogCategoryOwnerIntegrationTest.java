@@ -314,7 +314,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + ",sku"
                         + "_code,measure_mode,inventory_mode,configuration,balance,version,created_at_epoch_millis,"
                         + "updated_at_epoch_millis"
-                        + ") VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{}'::jsonb,0,1,1,1)",
+                        + ") VALUES(?,?,?,?,?,?,?,'COUNTED','DIRECT','{}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
                 BRAND,
@@ -420,7 +420,7 @@ class CatalogCategoryOwnerIntegrationTest {
                         + ",sku"
                         + "_code,measure_mode,inventory_mode,configuration,balance,version,created_at_epoch_millis,"
                         + "updated_at_epoch_millis"
-                        + ") VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{}'::jsonb,0,1,1,1)",
+                        + ") VALUES(?,?,?,?,?,?,?,'COUNTED','DIRECT','{}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
                 BRAND,
@@ -470,7 +470,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,"
                         + "item_code,sku_code,measure_mode,inventory_mode,configuration,balance,version,created_at_"
                         + "epoch_millis,"
-                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,'INDEPENDENT_STOCK','INDEPENDENT_STOCK','{"
+                        + "updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,'COUNTED','DIRECT','{"
                         + "}'::jsonb,0,1,1,1)",
                 UUID.randomUUID(),
                 SCOPE.toString(),
@@ -1024,9 +1024,11 @@ class CatalogCategoryOwnerIntegrationTest {
                                         "expectedCatalogVersion",
                                         skuItem.path("version").asLong())
                                 .putObject("catalogDraft")
-                                .putArray("orderOptions")
+                                .putArray("orderOptionConfigs")
                                 .addObject()
-                                .put("groupCode", "SIZE")));
+                                .put("definitionRef", UUID.randomUUID().toString())
+                                .put("required", false)
+                                .set("values", MAPPER.createArrayNode())));
         assertEquals("VALIDATION_ERROR", orderOptionsRejected.code());
         assertEquals(
                 1L,
@@ -1041,14 +1043,22 @@ class CatalogCategoryOwnerIntegrationTest {
         ObjectNode bomDraft = optionValueBom
                 .putObject("sections")
                 .put("expectedCatalogVersion", 1L)
-                .putObject("catalogDraft");
-        bomDraft.putArray("inventoryBom")
-                .addObject()
-                .put("nodeType", "ITEM_BOM")
-                .put("optionValueCode", "SWEETENER");
+                .putObject("inventoryRules");
+        ObjectNode bomNode = bomDraft.putArray("nodes").addObject();
+        bomNode.putObject("owner")
+                .put("ownerType", "ITEM")
+                .put("itemRef", skuItem.path("resourceRef").asText())
+                .putNull("productSkuRef")
+                .putNull("optionValueRef");
+        bomNode.put("mode", "BOM")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion")
+                .putNull("directConfiguration");
+        bomNode.putObject("bom").putArray("lines");
         CatalogOwnerApi.Problem optionValueRejected =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", optionValueBom));
-        assertEquals("VALIDATION_ERROR", optionValueRejected.code());
+        assertEquals("INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", optionValueRejected.code());
         assertEquals(
                 1L,
                 jdbc.queryForObject(
@@ -1066,16 +1076,27 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "service without inventory BOM")
                         .put("shapeKey", "SERVICE"));
         ObjectNode serviceBom = MAPPER.createObjectNode().put("itemCode", serviceItemCode);
-        serviceBom
+        ObjectNode serviceSections = serviceBom
                 .putObject("sections")
                 .put("expectedCatalogVersion", serviceItem.path("version").asLong())
-                .putObject("catalogDraft")
-                .putArray("inventoryBom")
-                .addObject()
-                .put("nodeType", "ITEM_BOM");
+                .putObject("inventoryRules");
+        ObjectNode serviceNode = serviceSections.putArray("nodes").addObject();
+        serviceNode
+                .putObject("owner")
+                .put("ownerType", "ITEM")
+                .put("itemRef", serviceItem.path("resourceRef").asText())
+                .putNull("productSkuRef")
+                .putNull("optionValueRef");
+        serviceNode
+                .put("mode", "BOM")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion")
+                .putNull("directConfiguration");
+        serviceNode.putObject("bom").putArray("lines");
         CatalogOwnerApi.Problem serviceBomRejected =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", serviceBom));
-        assertEquals("VALIDATION_ERROR", serviceBomRejected.code());
+        assertEquals("REFERENCE_MAPPING_UNRESOLVED", serviceBomRejected.code());
 
         String standardItemCode = generatedCatalogCode("OPTION-VALUE-MODE");
         JsonNode standardItem = write(
@@ -1085,18 +1106,32 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "option value mode")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
         ObjectNode invalidOptionMode = MAPPER.createObjectNode().put("itemCode", standardItemCode);
-        invalidOptionMode
+        ObjectNode invalidOptionSections = invalidOptionMode
                 .putObject("sections")
                 .put("expectedCatalogVersion", standardItem.path("version").asLong())
-                .putObject("catalogDraft")
-                .putArray("inventoryBom")
-                .addObject()
-                .put("nodeType", "ITEM_BOM")
-                .put("mode", "INDEPENDENT_STOCK")
-                .put("optionValueCode", "SWEETENER");
+                .putObject("inventoryRules");
+        ObjectNode invalidOptionNode = invalidOptionSections.putArray("nodes").addObject();
+        invalidOptionNode
+                .putObject("owner")
+                .put("ownerType", "OPTION_VALUE")
+                .put("itemRef", standardItem.path("resourceRef").asText())
+                .putNull("productSkuRef")
+                .put("optionValueRef", UUID.randomUUID().toString());
+        invalidOptionNode
+                .put("mode", "DIRECT")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion");
+        invalidOptionNode
+                .putObject("directConfiguration")
+                .put("allowNegative", false)
+                .putNull("lowStockThreshold")
+                .putNull("countingUnitRef")
+                .put("conversionFactor", "1");
+        invalidOptionNode.putNull("bom");
         CatalogOwnerApi.Problem invalidOptionModeRejected = assertThrows(
                 CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", invalidOptionMode));
-        assertEquals("VALIDATION_ERROR", invalidOptionModeRejected.code());
+        assertEquals("REFERENCE_MAPPING_UNRESOLVED", invalidOptionModeRejected.code());
         assertEquals(
                 1L,
                 jdbc.queryForObject(
@@ -1537,9 +1572,19 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID componentItemRef = UUID.randomUUID();
         UUID itemTargetRef = UUID.randomUUID();
         UUID componentTargetRef = UUID.randomUUID();
-        insertStockTargetWithUnits(itemTargetRef, itemRef, null, itemCode, null, each, box, false, "1.5", "2");
+        insertStockTargetWithUnits(itemTargetRef, itemRef, null, itemCode, null, each, box, false, false, "1.5", "2");
         insertStockTargetWithUnits(
-                componentTargetRef, componentItemRef, null, "COMPONENT-01", null, kilogram, gram, true, "3.5", "2");
+                componentTargetRef,
+                componentItemRef,
+                null,
+                "COMPONENT-01",
+                null,
+                kilogram,
+                gram,
+                true,
+                true,
+                "3.5",
+                "2");
         String bomRows =
                 "[{\"targetRef\":\"" + componentTargetRef + "\",\"quantity\":\"2\",\"lineSign\":\"POSITIVE\"}]";
         jdbc.update(
@@ -1574,7 +1619,8 @@ class CatalogCategoryOwnerIntegrationTest {
                         SCOPE.toString(), BRAND, itemCode, MAPPER.createObjectNode(), "inventory-config-detail")
                 .path("data")
                 .path("item")
-                .path("inventoryBom");
+                .path("inventoryRules")
+                .path("nodes");
 
         assertEquals(2, nodes.size());
         JsonNode target = nodes.get(0);
@@ -1642,20 +1688,20 @@ class CatalogCategoryOwnerIntegrationTest {
                 "saveOperationsCatalogItem",
                 itemUnitSave(itemCode, created.path("version").asLong(), each, each));
         UUID targetRef = UUID.randomUUID();
-        insertStockTargetWithUnits(targetRef, itemRef, null, itemCode, null, each, box, false, "2", "1.5");
+        insertStockTargetWithUnits(targetRef, itemRef, null, itemCode, null, each, box, false, false, "2", "1.5");
         CatalogInventoryCoordinator coordinator = coordinatorForSave();
         JsonNode before = coordinator
                 .readCatalogItem(SCOPE.toString(), BRAND, itemCode, MAPPER.createObjectNode(), "batch-category-before")
                 .path("data")
                 .path("item")
-                .path("inventoryBom")
+                .path("inventoryRules")
+                .path("nodes")
                 .deepCopy();
         JsonNode category = create(generatedCatalogCode("BATCH-CATEGORY"), "批量分类", null);
 
         ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
         ObjectNode sections = request.putObject("sections")
                 .put("expectedCatalogVersion", withUnits.path("version").asLong());
-        sections.putArray("expectedInventoryVersions");
         ObjectNode draft = sections.putObject("catalogDraft");
         draft.put("name", "batch category inventory").put("shapeKey", "STANDARD_SALE_COUNTED");
         putItemUnitRefs(draft, each, each);
@@ -1663,7 +1709,7 @@ class CatalogCategoryOwnerIntegrationTest {
         draft.putArray("images");
         draft.putArray("productionTagRefs");
         draft.putArray("categoryRefs").add(category.path("categoryRef").asText());
-        sections.putObject("inventoryConfiguration").putArray("nodes");
+        sections.putObject("inventoryRules").putArray("nodes");
 
         new TransactionTemplate(new DataSourceTransactionManager(dataSource()))
                 .executeWithoutResult(status -> coordinator.saveCatalogItem(
@@ -1676,7 +1722,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .readCatalogItem(SCOPE.toString(), BRAND, itemCode, MAPPER.createObjectNode(), "batch-category-after")
                 .path("data")
                 .path("item")
-                .path("inventoryBom");
+                .path("inventoryRules")
+                .path("nodes");
         assertEquals(before, after, "a category-only batch save must not retire or rewrite inventory facts");
         assertEquals(targetRef.toString(), after.get(0).path("targetRef").asText());
     }
@@ -1723,8 +1770,8 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 CatalogOwnerTypes.REVISION,
                 replayResult.path("item").path("revision").asText());
-        assertTrue(replayResult.path("inventoryBom").isArray());
-        assertEquals(0, replayResult.path("inventoryBom").size());
+        assertTrue(replayResult.path("inventoryRules").path("nodes").isArray());
+        assertEquals(0, replayResult.path("inventoryRules").path("nodes").size());
         assertTrue(replayResult.path("productionTags").isArray());
         assertEquals(0, replayResult.path("productionTags").size());
         assertEquals(2L, replayResult.path("version").asLong());
@@ -2395,20 +2442,29 @@ class CatalogCategoryOwnerIntegrationTest {
                 "SKU-CROSS",
                 "SKU cross");
         ObjectNode save = MAPPER.createObjectNode().put("itemCode", "SKU-CROSS");
-        ObjectNode draft =
+        ObjectNode sections =
                 save.putObject("sections").put("expectedCatalogVersion", 1).putObject("catalogDraft");
-        draft.putArray("inventoryBom")
-                .addObject()
+        ObjectNode rules = sections.putObject("inventoryRules");
+        ObjectNode node = rules.putArray("nodes").addObject();
+        node.putObject("owner")
+                .put("ownerType", "SKU")
                 .put("itemRef", ownerItemRef.toString())
                 .put("productSkuRef", mismatchedSkuRef.toString())
-                .put("skuCode", "MISMATCHED");
+                .put("skuCode", "MISMATCHED")
+                .putNull("optionValueRef");
+        node.put("mode", "NONE")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion")
+                .putNull("directConfiguration")
+                .putNull("bom");
         CatalogOwnerApi.Problem rejected =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", save));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", rejected.code());
     }
 
     @Test
-    void suppliedProductSkuRefRequiresItsSkuCodeInsteadOfSilentlyBecomingAnItemRelation() {
+    void skuOwnerCannotBeSubmittedForAnOrdinaryItemWithoutASkuOwnerShape() {
         UUID currentItemRef = UUID.randomUUID(),
                 referencedItemRef = UUID.randomUUID(),
                 referencedSkuRef = UUID.randomUUID();
@@ -2443,18 +2499,26 @@ class CatalogCategoryOwnerIntegrationTest {
                 referencedSkuRef,
                 referencedItemRef);
         ObjectNode save = MAPPER.createObjectNode().put("itemCode", "SKU-LINK-CURRENT");
-        save.putObject("sections")
-                .put("expectedCatalogVersion", 1)
-                .putObject("catalogDraft")
-                .putArray("inventoryBom")
-                .addObject()
-                .put("itemRef", referencedItemRef.toString())
-                .put("productSkuRef", referencedSkuRef.toString());
+        ObjectNode sections =
+                save.putObject("sections").put("expectedCatalogVersion", 1).putObject("catalogDraft");
+        ObjectNode rules = sections.putObject("inventoryRules");
+        ObjectNode node = rules.putArray("nodes").addObject();
+        node.putObject("owner")
+                .put("ownerType", "SKU")
+                .put("itemRef", currentItemRef.toString())
+                .put("productSkuRef", referencedSkuRef.toString())
+                .putNull("skuCode")
+                .putNull("optionValueRef");
+        node.put("mode", "NONE")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion")
+                .putNull("directConfiguration")
+                .putNull("bom");
 
         CatalogOwnerApi.Problem rejected =
                 assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", save));
-        assertEquals("VALIDATION_ERROR", rejected.code());
-        assertEquals("productSkuRef requires skuCode", rejected.getMessage());
+        assertEquals("REFERENCE_MAPPING_UNRESOLVED", rejected.code());
     }
 
     @Test
@@ -3736,8 +3800,7 @@ class CatalogCategoryOwnerIntegrationTest {
             JsonNode value = currentItem.path(field);
             draft.set(field, value.isMissingNode() ? MAPPER.createArrayNode() : value.deepCopy());
         }
-        sections.putObject("inventoryConfiguration").putArray("nodes");
-        sections.putArray("expectedInventoryVersions");
+        sections.putObject("inventoryRules").putArray("nodes");
         return request;
     }
 
@@ -3882,9 +3945,10 @@ class CatalogCategoryOwnerIntegrationTest {
             CatalogOwnerApi.UnitDefinitionReadback consumptionUnit,
             CatalogOwnerApi.UnitDefinitionReadback countingUnit,
             boolean allowNegative,
+            boolean componentEligible,
             String lowStockThreshold,
             String conversionFactor) {
-        String mode = "INDEPENDENT_STOCK";
+        String mode = "DIRECT";
         ObjectNode configuration = MAPPER.createObjectNode()
                 .put("mode", mode)
                 .put("allowNegative", allowNegative)
@@ -3904,9 +3968,9 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "name,"
                         + "consumption_unit_dimension,consumption_unit_precision,counting_unit_ref,counting_unit_code,"
                         + "counting_unit_name,counting_unit_dimension,counting_unit_precision,counting_unit_convers"
-                        + "ion_factor,"
+                        + "ion_factor,component_eligible,"
                         + "configuration,balance,version,created_at_epoch_millis,updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?)",
+                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?)",
                 targetRef,
                 SCOPE.toString(),
                 BRAND,
@@ -3927,6 +3991,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 countingUnit == null ? null : countingUnit.unitDimension().name(),
                 countingUnit == null ? null : countingUnit.precision(),
                 new BigDecimal(conversionFactor),
+                componentEligible,
                 canonical(configuration),
                 1L,
                 1L);
@@ -4028,7 +4093,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 MAPPER.createObjectNode()
                         .put("code", itemCode)
                         .put("name", "sku inventory race")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
         CatalogOwnerApi.UnitDefinitionReadback raceUnit =
                 createUnit("RACE-UNIT", "Race unit", CatalogOwnerApi.UnitDimension.COUNT, 0);
         write(
@@ -4087,13 +4152,25 @@ class CatalogCategoryOwnerIntegrationTest {
         putItemUnitRefs((ObjectNode) removeSecondSku.path("sections").path("catalogDraft"), raceUnit, raceUnit);
         putItemUnitRefs(
                 (ObjectNode) retainSecondSkuAndCreateTarget.path("sections").path("catalogDraft"), raceUnit, raceUnit);
-        ((ObjectNode) retainSecondSkuAndCreateTarget.path("sections"))
-                .putObject("inventoryConfiguration")
-                .putArray("nodes")
-                .addObject()
-                .put("skuCode", "SKU-2")
+        ObjectNode raceSections = (ObjectNode) retainSecondSkuAndCreateTarget.path("sections");
+        ObjectNode raceRules = raceSections.putObject("inventoryRules");
+        ObjectNode raceNode = raceRules.putArray("nodes").addObject();
+        raceNode.putObject("owner")
+                .put("ownerType", "SKU")
+                .put("itemRef", created.path("resourceRef").asText())
                 .put("productSkuRef", secondSkuRef.toString())
-                .put("mode", "INDEPENDENT_STOCK");
+                .put("skuCode", "SKU-2")
+                .putNull("optionValueRef");
+        raceNode.put("mode", "DIRECT")
+                .putNull("consumptionUnitSnapshot")
+                .putNull("expectedTargetVersion")
+                .putNull("expectedBomVersion")
+                .putNull("bom");
+        raceNode.putObject("directConfiguration")
+                .put("allowNegative", false)
+                .putNull("lowStockThreshold")
+                .putNull("countingUnitRef")
+                .put("conversionFactor", "1");
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CyclicBarrier start = new CyclicBarrier(3);

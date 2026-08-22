@@ -205,6 +205,15 @@ const unitSnapshot = (refs, code) => {
     precision: Number(definition.precision),
   };
 };
+// BOM snapshots are persisted inside PostgreSQL JSONB. JSONB does not retain
+// object insertion order, so readback assertions must compare the declared
+// unit facts rather than JSON.stringify output.
+const sameUnitSnapshot = (actual, expected) => Boolean(actual && expected)
+  && String(actual.unitRef ?? "") === String(expected.unitRef ?? "")
+  && String(actual.code ?? "") === String(expected.code ?? "")
+  && String(actual.name ?? "") === String(expected.name ?? "")
+  && String(actual.unitDimension ?? "") === String(expected.unitDimension ?? "")
+  && Number(actual.precision) === Number(expected.precision);
 const itemRef = (refs, code) => requiredUuid(refs.itemRefs.get(code), `CATALOG_ITEM:${code}`);
 const skuCode = (refs, referenceOrCode) => refs.skuCodeByReference.get(referenceOrCode) ?? referenceOrCode;
 const skuRef = (refs, referenceOrCode) => requiredUuid(refs.skuRefs.get(skuCode(refs, referenceOrCode)), `PRODUCT_SKU:${referenceOrCode}`);
@@ -422,6 +431,11 @@ const bomStageKey = ({ownerCode = null, optionValueCode = null, skuCode = null} 
   ["sku", skuCode || ""],
   ["option", optionValueCode || ""],
 ].map(([name, value]) => `${name}=${encodeURIComponent(value)}`).join("|");
+// Catalog detail exposes a DIRECT owner target through the nested inventory
+// rule configuration; inventory-target list rows expose the same opaque ref
+// as a flat targetRef.  Keep the seed readback adapter aligned with both
+// owner read shapes instead of treating a valid catalog rule as missing.
+const targetRefFromCatalogRule = (row) => row?.targetRef ?? row?.directConfiguration?.targetRef ?? null;
 const buildTargetIndex = (json) => {
   const index = new Map();
   for (const row of json?.data?.items ?? []) index.set(keyForTarget(row.itemCode ?? row.productCode, row.skuCode), row.targetRef ?? row.ref);
@@ -505,7 +519,7 @@ async function execute() {
   persist();
   try {
     if (process.env.CATALOG_INVENTORY_SEED_CONFIRMATION !== profile.runtime.confirmationValue) fail("EXPLICIT_CATALOG_INVENTORY_SEED_CONFIRMATION_REQUIRED");
-    if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== 5 || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
+    if (!plan || plan.status !== "PASS" || plan.sourceItems?.length !== profile.parity.catalogItems || !Array.isArray(plan.eligibleSourceItems) || !Array.isArray(plan.excludedSourceItems) || !plan.eligibility?.eligibleByScope || plan.mediaPlan?.length !== profile.parity.mediaAssets || !Number.isInteger(plan.seedDatasetCount) || plan.seedDatasetCount < 5 || !Array.isArray(plan.seedDatasets) || plan.seedDatasets.length !== plan.seedDatasetCount || new Set(plan.seedDatasets.map((dataset) => dataset.fixtureId)).size !== plan.seedDatasetCount || !Array.isArray(plan.canonicalDependencyOrder)) fail("SEED_STATIC_PLAN_REQUIRED");
     assertSeedBusinessLabels(plan);
     if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
     ({manifest, credentials} = loadManagedRun());
@@ -672,6 +686,79 @@ async function execute() {
       }
       return item;
     };
+    const inventoryRuleDraftFromReadback = (node) => {
+      const owner = node?.owner ?? {};
+      const mode = node?.mode ?? "NONE";
+      const direct = node?.directConfiguration ?? null;
+      const counting = direct?.countingUnitSnapshot ?? null;
+      return {
+        owner: {
+          ownerType: owner.ownerType,
+          itemRef: owner.itemRef,
+          productSkuRef: owner.productSkuRef ?? null,
+          optionValueRef: owner.optionValueRef ?? null,
+          itemCode: owner.itemCode ?? node.itemCode ?? null,
+          skuCode: owner.skuCode ?? node.skuCode ?? null,
+          optionValueCode: owner.optionValueCode ?? node.optionValueCode ?? null,
+        },
+        mode,
+        consumptionUnitSnapshot: null,
+        expectedTargetVersion: mode === "DIRECT" && Number.isInteger(Number(direct?.version)) ? Number(direct.version) : null,
+        expectedBomVersion: mode === "BOM" && Number.isInteger(Number(node?.bom?.version)) ? Number(node.bom.version) : null,
+        directConfiguration: mode === "DIRECT" ? {
+          allowNegative: Boolean(direct?.allowNegative),
+          lowStockThreshold: direct?.lowStockThreshold ?? null,
+          countingUnitRef: counting?.unitRef ?? null,
+          conversionFactor: direct?.conversionFactor ?? "1",
+        } : null,
+        bom: mode === "BOM" ? {
+          lines: (node?.bom?.lines ?? []).map((line) => ({
+            targetRef: line.targetRef,
+            lineSign: line.lineSign,
+            quantity: String(line.quantity),
+          })),
+        } : null,
+      };
+    };
+    const inventoryRulesFromReadback = (item) => ({
+      nodes: (item?.inventoryRules?.nodes ?? []).map(inventoryRuleDraftFromReadback),
+    });
+    const replaceInventoryRule = (item, replacement) => {
+      const rules = inventoryRulesFromReadback(item);
+      const expectedOwner = replacement.owner;
+      const key = (owner) => [owner?.ownerType, owner?.itemRef, owner?.productSkuRef ?? "", owner?.optionValueRef ?? ""].join("|");
+      const index = rules.nodes.findIndex((node) => key(node.owner) === key(expectedOwner));
+      if (index < 0) fail(`SEED_INVENTORY_OWNER_READBACK_MISSING:${expectedOwner?.ownerType}:${expectedOwner?.itemCode ?? "UNKNOWN"}`);
+      rules.nodes[index] = replacement;
+      return rules;
+    };
+    const inventoryOwner = ({ownerType, itemRef: ownerItemRef, productSkuRef = null, optionValueRef = null, itemCode, skuCode = null, optionValueCode = null}) => ({
+      ownerType,
+      itemRef: ownerItemRef,
+      productSkuRef,
+      optionValueRef,
+      itemCode,
+      skuCode: ownerType === "SKU" ? skuCode : null,
+      optionValueCode: ownerType === "OPTION_VALUE" ? optionValueCode : null,
+    });
+    const directInventoryRule = ({owner, expectedTargetVersion = null, allowNegative = false, lowStockThreshold = null, countingUnitRef = null, conversionFactor = "1"}) => ({
+      owner,
+      mode: "DIRECT",
+      consumptionUnitSnapshot: null,
+      expectedTargetVersion,
+      expectedBomVersion: null,
+      directConfiguration: {allowNegative, lowStockThreshold, countingUnitRef, conversionFactor},
+      bom: null,
+    });
+    const bomInventoryRule = ({owner, expectedBomVersion = null, lines}) => ({
+      owner,
+      mode: "BOM",
+      consumptionUnitSnapshot: null,
+      expectedTargetVersion: null,
+      expectedBomVersion,
+      directConfiguration: null,
+      bom: {lines: lines.map((line) => ({targetRef: line.targetRef, lineSign: line.lineSign, quantity: String(line.quantity)}))},
+    });
     const materializeOwnerRefs = async (client) => {
       const refs = refsFor(client);
       for (const definition of catalogDefinitionSeed.unitDefinitions) {
@@ -780,7 +867,7 @@ async function execute() {
           cookie: client.cookie,
           brandRef: client.brandRef,
           headers: catalogAssetBindGrantHeaders(catalogDraft),
-          body: {dataNodeRef: client.dataNodeRef, itemCode: item.code, sections: {catalogDraft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}},
+          body: {dataNodeRef: client.dataNodeRef, itemCode: item.code, sections: {catalogDraft, inventoryRules: {nodes: []}, expectedCatalogVersion}},
         });
         if (!itemResult(save.json)?.version) fail(`SEED_CANONICAL_SAVE_READBACK_MISSING:${client.scopeType}:${item.code}`);
         canonicalVersions.set(canonicalItemKey(client, item.code), itemVersion(save.json));
@@ -815,12 +902,13 @@ async function execute() {
         queryParameters: {dataNodeRef: client.dataNodeRef},
       });
       const data = detail.json?.data ?? detail.json;
-      const rows = data?.inventoryBom ?? data?.item?.inventoryBom ?? [];
-      const row = rows.find((candidate) => String(candidate.itemCode ?? itemCode) === String(itemCode) && (candidate.skuCode || null) === (skuCode || null) && candidate.targetRef);
-      if (row?.targetRef) {
-        index.set(keyForTarget(itemCode, skuCode), row.targetRef);
+      const rows = data?.inventoryRules?.nodes ?? data?.item?.inventoryRules?.nodes ?? [];
+      const row = rows.find((candidate) => String(candidate.itemCode ?? itemCode) === String(itemCode) && (candidate.skuCode || null) === (skuCode || null) && targetRefFromCatalogRule(candidate));
+      const targetRef = targetRefFromCatalogRule(row);
+      if (targetRef) {
+        index.set(keyForTarget(itemCode, skuCode), targetRef);
         phase(`${stage}-target-readback`, "PASS", {operationId: "getOperationsCatalogItem", itemCode, skuCode: skuCode || null, targetRefRead: true});
-        return row.targetRef;
+        return targetRef;
       }
       phase(`${stage}-target-readback`, "FAIL", {operationId: "getOperationsCatalogItem", itemCode, skuCode: skuCode || null, targetRefRead: false});
       return null;
@@ -898,7 +986,7 @@ async function execute() {
             if (!itemCode || requiredUuid(material.stockTargetRef, `ORDER_OPTION_MATERIAL_TARGET:${definition.code}:${value.code}`) !== targetRefsByMaterialCode.get(itemCode))
               fail(`SEED_ORDER_OPTION_MATERIAL_TARGET_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}`);
             const expectedConsumptionUnitSnapshot = unitSnapshot(refs, definitionAssignmentFor(itemCode).baseMeasureUnitCode);
-            if (JSON.stringify(material.consumptionUnitSnapshot) !== JSON.stringify(expectedConsumptionUnitSnapshot))
+            if (!sameUnitSnapshot(material.consumptionUnitSnapshot, expectedConsumptionUnitSnapshot))
               fail(`SEED_ORDER_OPTION_MATERIAL_UNIT_SNAPSHOT_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}:${itemCode}`);
             materials.set(itemCode, {
               materialRef: requiredUuid(material.materialRef, `ORDER_OPTION_MATERIAL:${definition.code}:${value.code}:${itemCode}`),
@@ -957,11 +1045,6 @@ async function execute() {
               defaultValue: value.defaultValue,
               extraPrice: value.extraPrice,
               expectedBomVersion: 0,
-              materialQuantities: value.materialQuantities.map((quantity) => {
-                const material = definitionValue.materials.get(quantity.materialItemCode);
-                if (!material) fail(`SEED_ORDER_OPTION_ASSIGNMENT_MATERIAL_MISSING:${client.scopeType}:${config.definitionCode}:${value.valueCode}:${quantity.materialItemCode}`);
-                return {materialRef: material.materialRef, actualQuantity: quantity.actualQuantity};
-              }),
             };
           }),
         };
@@ -1021,12 +1104,6 @@ async function execute() {
           const value = (config.values ?? []).find((entry) => entry.definitionValueRef === definitionValue?.definitionValueRef);
           if (!value || value.defaultValue !== expectedValue.defaultValue || Number(value.extraPrice) !== Number(expectedValue.extraPrice))
             fail(`SEED_ORDER_OPTION_OVERRIDE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}:${expectedValue.valueCode}`);
-          for (const expectedMaterial of expectedValue.materialQuantities) {
-            const material = definitionValue.materials.get(expectedMaterial.materialItemCode);
-            const actualQuantity = (value.materialQuantities ?? []).find((entry) => entry.materialRef === material?.materialRef);
-            if (!actualQuantity || String(actualQuantity.actualQuantity) !== String(expectedMaterial.actualQuantity))
-              fail(`SEED_ORDER_OPTION_QUANTITY_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}:${expectedValue.valueCode}:${expectedMaterial.materialItemCode}`);
-          }
         }
       }
     };
@@ -1048,7 +1125,7 @@ async function execute() {
         // independent item shape first, read each owner UUID back, then add
         // composite edges in a second whole-save pass below.
         const draft = convertSourceItem(source, assetRefs, refs, sourceByKey, {includeComposite: false});
-        const save = await request(`${client.scopeType}-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion, expectedInventoryVersions: []}}});
+        const save = await request(`${client.scopeType}-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryRules: {nodes: []}, expectedCatalogVersion}}});
         if (!itemResult(save.json)?.version) fail(`SEED_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
         currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
         const readback = await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-${source.catalogItemCode}`);
@@ -1068,7 +1145,7 @@ async function execute() {
         if (client.scopeType === "STORE" && source.headquarterTemplate) continue;
         if (!(source.compositeStructure?.componentGroups || []).length) continue;
         const draft = convertSourceItem(source, assetRefs, refs, sourceByKey);
-        const save = await request(`${client.scopeType}-composite-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryConfiguration: {nodes: []}, expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1, expectedInventoryVersions: []}}});
+        const save = await request(`${client.scopeType}-composite-save-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, headers: catalogAssetBindGrantHeaders(draft), body: {dataNodeRef: client.dataNodeRef, itemCode: source.catalogItemCode, sections: {catalogDraft: draft, inventoryRules: {nodes: []}, expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1}}});
         if (!itemResult(save.json)?.version) fail(`SEED_COMPOSITE_SAVE_READBACK_MISSING:${source.catalogItemCode}`);
         currentVersions.set(clientItemKey(client, source.catalogItemCode), itemVersion(save.json));
       }
@@ -1141,19 +1218,13 @@ async function execute() {
         const countingUnitCode = consumptionDefinition.unitDimension === "WEIGHT"
           ? "KILOGRAM"
           : consumptionDefinition.unitDimension === "PACKAGE" ? "PACK" : null;
-        const node = {
-          nodeType: "CATALOG_ITEM",
-          mode: "INDEPENDENT_STOCK",
-          itemCode: item.code,
-          itemRef: itemRef(refs, item.code),
-          productSkuRef: null,
-          configuration: {
-            allowNegative: false,
-            lowStockThreshold: "0",
-            countingUnitRef: unitRef(refs, countingUnitCode),
-            conversionFactor: seedConversionFactor(countingUnitCode, consumptionUnitCode, `canonical:${item.code}`),
-          },
-        };
+        const node = directInventoryRule({
+          owner: inventoryOwner({ownerType: "ITEM", itemRef: itemRef(refs, item.code), itemCode: item.code}),
+          allowNegative: false,
+          lowStockThreshold: "0",
+          countingUnitRef: unitRef(refs, countingUnitCode),
+          conversionFactor: seedConversionFactor(countingUnitCode, consumptionUnitCode, `canonical:${item.code}`),
+        });
         const configured = await request(`${client.scopeType}-canonical-material-config-${item.code}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
@@ -1163,9 +1234,8 @@ async function execute() {
             itemCode: item.code,
             sections: {
               catalogDraft: canonicalDraft(dataset, item, assetRefs, refs),
-              inventoryConfiguration: {nodes: [node]},
+              inventoryRules: {nodes: [node]},
               expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
-              expectedInventoryVersions: [],
             },
           },
         });
@@ -1189,19 +1259,13 @@ async function execute() {
           const conversionFactor = countingUnitCode ? String(stock.countingToConsumptionQuantity ?? 1) : "1";
           if (!(Number(conversionFactor) > 0) || !Number.isFinite(Number(conversionFactor)))
             fail(`SEED_SOURCE_CONVERSION_FACTOR_INVALID:${source.fixtureKey ?? source.catalogItemCode}`);
-          const node = {
-            nodeType: "CATALOG_ITEM",
-            mode: "INDEPENDENT_STOCK",
-            itemCode: source.catalogItemCode,
-            itemRef: itemRef(refs, source.catalogItemCode),
-            productSkuRef: null,
-            configuration: {
-              allowNegative: Boolean(stock.allowNegative),
-              lowStockThreshold: String(stock.lowStockThreshold ?? 0),
-              countingUnitRef: unitRef(refs, countingUnitCode),
-              conversionFactor,
-            },
-          };
+          const node = directInventoryRule({
+            owner: inventoryOwner({ownerType: "ITEM", itemRef: itemRef(refs, source.catalogItemCode), itemCode: source.catalogItemCode}),
+            allowNegative: Boolean(stock.allowNegative),
+            lowStockThreshold: String(stock.lowStockThreshold ?? 0),
+            countingUnitRef: unitRef(refs, countingUnitCode),
+            conversionFactor,
+          });
           const detail = await request(`${client.scopeType}-material-config-${source.catalogItemCode}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
@@ -1211,9 +1275,8 @@ async function execute() {
               itemCode: source.catalogItemCode,
               sections: {
                 catalogDraft: convertSourceItem(source, assetRefs, refs, sourceByKey),
-                inventoryConfiguration: {nodes: [node]},
+                inventoryRules: {nodes: [node]},
                 expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1,
-                expectedInventoryVersions: [],
               },
             },
           });
@@ -1230,13 +1293,19 @@ async function execute() {
         const index = new Map();
         for (const source of seedItems.filter((entry) => entry.headquarterTemplate)) {
           const detail = await request(`${client.scopeType}-inventory-detail-${source.catalogItemCode}`, "getOperationsCatalogItem", {itemCode: source.catalogItemCode}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
-          const rows = detail.json?.data?.inventoryBom ?? detail.json?.data?.item?.inventoryBom ?? [];
-          for (const row of rows) if (row.targetRef) index.set(keyForTarget(row.itemCode ?? source.catalogItemCode, row.skuCode), row.targetRef);
+          const rows = detail.json?.data?.inventoryRules?.nodes ?? detail.json?.data?.item?.inventoryRules?.nodes ?? [];
+          for (const row of rows) {
+            const targetRef = targetRefFromCatalogRule(row);
+            if (targetRef) index.set(keyForTarget(row.itemCode ?? source.catalogItemCode, row.skuCode), targetRef);
+          }
         }
         for (const {item} of canonicalMaterialEntries(plan.seedDatasets, plan.canonicalDependencyOrder)) {
           const detail = await request(`${client.scopeType}-canonical-inventory-detail-${item.code}`, "getOperationsCatalogItem", {itemCode: item.code}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
-          const rows = detail.json?.data?.inventoryBom ?? detail.json?.data?.item?.inventoryBom ?? [];
-          for (const row of rows) if (row.targetRef) index.set(keyForTarget(row.itemCode ?? item.code, row.skuCode), row.targetRef);
+          const rows = detail.json?.data?.inventoryRules?.nodes ?? detail.json?.data?.item?.inventoryRules?.nodes ?? [];
+          for (const row of rows) {
+            const targetRef = targetRefFromCatalogRule(row);
+            if (targetRef) index.set(keyForTarget(row.itemCode ?? item.code, row.skuCode), targetRef);
+          }
         }
         inventoryIndexByClient.set(client.scopeType, index);
       }
@@ -1363,6 +1432,22 @@ async function execute() {
           // the item/SKU; otherwise several legitimate groups collapse to the
           // same key and the second write is rejected as a replay mismatch.
           const stageKey = bomStageKey(group);
+          const current = await recordItemReadback(client, refs, item.code, `${client.scopeType}-canonical-bom-before-${item.code}-${stageKey}`);
+          const existingRule = (current.inventoryRules?.nodes ?? []).find((candidate) =>
+            candidate.owner?.ownerType === (group.skuCode ? "SKU" : "ITEM")
+            && candidate.owner?.itemRef === itemRef(refs, item.code)
+            && (candidate.owner?.productSkuRef ?? null) === (group.skuCode ? skuRef(refs, group.skuCode) : null));
+          const rule = bomInventoryRule({
+            owner: inventoryOwner({
+              ownerType: group.skuCode ? "SKU" : "ITEM",
+              itemRef: itemRef(refs, item.code),
+              productSkuRef: group.skuCode ? skuRef(refs, group.skuCode) : null,
+              itemCode: item.code,
+              skuCode: group.skuCode,
+            }),
+            expectedBomVersion: existingRule?.bom?.version ?? null,
+            lines: rows,
+          });
           const save = await request(`${client.scopeType}-canonical-bom-${item.code}-${stageKey}`, "saveOperationsCatalogItem", {itemCode: item.code}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
@@ -1371,10 +1456,9 @@ async function execute() {
             dataNodeRef: client.dataNodeRef,
               itemCode: item.code,
               sections: {
-                catalogDraft: {...canonicalDraft(dataset, item, assetRefs, refs), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType, itemCode: item.code, itemRef: itemRef(refs, item.code), skuCode: group.skuCode, productSkuRef: group.skuCode ? skuRef(refs, group.skuCode) : null, optionValueCode: null, optionValueRef: null, version: 0}))},
-                inventoryConfiguration: {nodes: []},
+                catalogDraft: canonicalDraft(dataset, item, assetRefs, refs),
+                inventoryRules: replaceInventoryRule(current, rule),
                 expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, item.code)) ?? 1,
-                expectedInventoryVersions: [],
               },
             },
           });
@@ -1404,6 +1488,22 @@ async function execute() {
             expectedRows.push({...row, consumptionUnitSnapshot: unitSnapshot(refs, sourceUnitAssignment(component).baseMeasureUnitCode)});
           }
           if (rows.length !== (rule.bomLines || []).length || !rows.length) fail(`SEED_BOM_ROWS_INCOMPLETE:${client.scopeType}:${source.fixtureKey}:${rule.nodeKey}`);
+          const current = await recordItemReadback(client, refs, source.catalogItemCode, `${client.scopeType}-bom-before-${source.catalogItemCode}-${nodeSku || "ITEM"}`);
+          const ownerType = nodeSkuReference ? "SKU" : "ITEM";
+          const owner = inventoryOwner({
+            ownerType,
+            itemRef: itemRef(refs, source.catalogItemCode),
+            productSkuRef: nodeSkuReference ? skuRef(refs, nodeSkuReference) : null,
+            itemCode: source.catalogItemCode,
+            skuCode: nodeSku,
+          });
+          const existingRule = (current.inventoryRules?.nodes ?? []).find((candidate) => {
+            const candidateOwner = candidate.owner ?? {};
+            return candidateOwner.ownerType === ownerType
+              && candidateOwner.itemRef === owner.itemRef
+              && (candidateOwner.productSkuRef ?? null) === (owner.productSkuRef ?? null);
+          });
+          const rulePayload = bomInventoryRule({owner, expectedBomVersion: existingRule?.bom?.version ?? null, lines: rows});
           const bomSave = await request(`${client.scopeType}-bom-${source.catalogItemCode}-${nodeSku || "ITEM"}`, "saveOperationsCatalogItem", {itemCode: source.catalogItemCode}, {
             cookie: client.cookie,
             brandRef: client.brandRef,
@@ -1412,10 +1512,9 @@ async function execute() {
             dataNodeRef: client.dataNodeRef,
               itemCode: source.catalogItemCode,
               sections: {
-                catalogDraft: {...convertSourceItem(source, assetRefs, refs, sourceByKey), inventoryBom: rows.map((row) => ({...row, mode: "BOM", nodeType: rule.nodeType, itemCode: source.catalogItemCode, itemRef: itemRef(refs, source.catalogItemCode), skuCode: nodeSku, productSkuRef: nodeSkuReference ? skuRef(refs, nodeSkuReference) : null, optionValueCode: null, optionValueRef: null, version: 0}))},
-                inventoryConfiguration: {nodes: []},
+                catalogDraft: convertSourceItem(source, assetRefs, refs, sourceByKey),
+                inventoryRules: replaceInventoryRule(current, rulePayload),
                 expectedCatalogVersion: currentVersions.get(clientItemKey(client, source.catalogItemCode)) ?? 1,
-                expectedInventoryVersions: [],
               },
             },
           });
@@ -1433,25 +1532,76 @@ async function execute() {
       const readbackNodeKey = expected.nodeOptionValue || expected.nodeSku || "ITEM";
       const detail = await request(`bom-readback-${expected.client.scopeType}-${expected.source.catalogItemCode}-${readbackNodeKey}`, "getOperationsCatalogItem", {itemCode: expected.source.catalogItemCode}, {cookie: expected.client.cookie, brandRef: expected.client.brandRef, queryParameters: {dataNodeRef: expected.client.dataNodeRef}});
       const detailData = detail.json?.data ?? detail.json;
-      const actualRows = detailData?.item?.inventoryBom ?? detailData?.inventoryBom ?? [];
-      const matched = actualRows.filter((row) => row.nodeType === expected.nodeType && (row.skuCode || null) === expected.nodeSku && (row.optionValueCode || null) === (expected.nodeOptionValue || null));
-      if (matched.length !== expected.rows.length) fail(`SEED_BOM_READBACK_ROWS_MISMATCH:${expected.client.scopeType}:${expected.source.catalogItemCode}:${expected.nodeSku || "ITEM"}`);
+      const actualRows = detailData?.item?.inventoryRules?.nodes ?? detailData?.inventoryRules?.nodes ?? [];
+      const expectedOwnerType = expected.nodeOptionValue ? "OPTION_VALUE" : expected.nodeSku ? "SKU" : "ITEM";
+      const matched = actualRows.filter((row) => row.owner?.ownerType === expectedOwnerType
+        && (row.owner?.skuCode || null) === expected.nodeSku
+        && (row.owner?.optionValueCode || null) === (expected.nodeOptionValue || null));
+      const matchedLines = matched.flatMap((row) => row.bom?.lines ?? []);
+      if (matched.length !== 1 || matchedLines.length !== expected.rows.length)
+        fail(`SEED_BOM_READBACK_ROWS_MISMATCH:${expected.client.scopeType}:${expected.source.catalogItemCode}:${expected.nodeSku || "ITEM"}`);
       for (const expectedRow of expected.rows) {
-        const actual = matched.find((row) => row.targetRef === expectedRow.targetRef
-          && String(row.quantity) === expectedRow.quantity
-          && JSON.stringify(row.consumptionUnitSnapshot) === JSON.stringify(expectedRow.consumptionUnitSnapshot));
+        const actual = matchedLines.find((line) => line.targetRef === expectedRow.targetRef
+            && line.lineSign === expectedRow.lineSign
+            && String(line.quantity) === expectedRow.quantity
+            && sameUnitSnapshot(line.consumptionUnitSnapshot, expectedRow.consumptionUnitSnapshot));
         if (!actual) fail(`SEED_BOM_READBACK_FACT_MISMATCH:${expected.client.scopeType}:${expected.source.catalogItemCode}:${expected.nodeSku || "ITEM"}`);
       }
     }
-    // Attach the reusable definitions to representative sale items after all
-    // legacy item/SKU BOM writes.  A catalog save replaces the typed assignment
-    // collections, so this must be the final catalog-draft save for each item.
-    // The inventory coordinator creates the OPTION_VALUE_BOM rows from these
-    // configuration values and their definition-owned material templates.
+    // Attach the reusable definitions and their actual option-value BOMs only
+    // after all item/SKU inventory writes.  Product option configuration owns
+    // selection/default/price facts; inventoryRules owns every actual sign and
+    // quantity, including the negative replacement line.
     for (const client of clients) {
       const refs = refsFor(client);
       for (const assignment of catalogDefinitionSeed.itemAssignments) {
+        const current = await recordItemReadback(client, refs, assignment.itemCode, `${client.scopeType}-definition-assignment-before-${assignment.itemCode}`);
         const draft = assignmentDraft(client, assignment);
+        const inventoryRules = inventoryRulesFromReadback(current);
+        const expectedOptionBoms = [];
+        const index = inventoryIndexByClient.get(client.scopeType) || new Map();
+        for (const optionBom of assignment.optionValueBoms ?? []) {
+          const definition = refs.orderOptionDefinitions;
+          const definitionValue = [...definition.values()].flatMap((entry) => [...entry.values.values()]).find((value) => value.code === optionBom.valueCode);
+          if (!definitionValue) fail(`SEED_ORDER_OPTION_BOM_VALUE_MISSING:${client.scopeType}:${assignment.itemCode}:${optionBom.valueCode}`);
+          const targetLines = [];
+          for (const line of optionBom.lines) {
+            const targetRef = await resolveTargetRef(client, index, line.materialItemCode, null, `${client.scopeType}-option-bom-${assignment.itemCode}-${optionBom.valueCode}`);
+            if (!targetRef) fail(`SEED_ORDER_OPTION_BOM_TARGET_MISSING:${client.scopeType}:${assignment.itemCode}:${optionBom.valueCode}:${line.materialItemCode}`);
+            targetLines.push({
+              targetRef,
+              lineSign: line.lineSign,
+              quantity: String(line.quantity),
+              consumptionUnitSnapshot: unitSnapshot(
+                refs,
+                definitionAssignmentFor(line.materialItemCode).baseMeasureUnitCode,
+              ),
+            });
+          }
+          const owner = inventoryOwner({
+            ownerType: "OPTION_VALUE",
+            itemRef: itemRef(refs, assignment.itemCode),
+            optionValueRef: definitionValue.definitionValueRef,
+            itemCode: assignment.itemCode,
+            optionValueCode: optionBom.valueCode,
+          });
+          const existingRule = inventoryRules.nodes.find((candidate) => {
+            const candidateOwner = candidate.owner ?? {};
+            return candidateOwner.ownerType === "OPTION_VALUE"
+              && candidateOwner.itemRef === owner.itemRef
+              && candidateOwner.optionValueRef === owner.optionValueRef;
+          });
+          const rule = bomInventoryRule({owner, expectedBomVersion: existingRule?.bom?.version ?? null, lines: targetLines});
+          const ruleIndex = inventoryRules.nodes.findIndex((candidate) => {
+            const candidateOwner = candidate.owner ?? {};
+            return candidateOwner.ownerType === "OPTION_VALUE"
+              && candidateOwner.itemRef === owner.itemRef
+              && candidateOwner.optionValueRef === owner.optionValueRef;
+          });
+          if (ruleIndex < 0) fail(`SEED_ORDER_OPTION_BOM_OWNER_MISSING:${client.scopeType}:${assignment.itemCode}:${optionBom.valueCode}`);
+          inventoryRules.nodes[ruleIndex] = rule;
+          expectedOptionBoms.push({optionValueRef: owner.optionValueRef, valueCode: optionBom.valueCode, lines: targetLines});
+        }
         const configured = await request(`${client.scopeType}-definition-assignment-${assignment.itemCode}`, "saveOperationsCatalogItem", {itemCode: assignment.itemCode}, {
           cookie: client.cookie,
           brandRef: client.brandRef,
@@ -1461,9 +1611,8 @@ async function execute() {
             itemCode: assignment.itemCode,
             sections: {
               catalogDraft: draft,
-              inventoryConfiguration: {nodes: []},
+              inventoryRules,
               expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, assignment.itemCode)) ?? 1,
-              expectedInventoryVersions: [],
             },
           },
         });
@@ -1471,14 +1620,26 @@ async function execute() {
         canonicalVersions.set(canonicalItemKey(client, assignment.itemCode), itemVersion(configured.json));
         const actual = await recordItemReadback(client, refs, assignment.itemCode, `${client.scopeType}-definition-assignment-${assignment.itemCode}`);
         assertDefinitionAssignmentReadback(client, assignment, actual);
-        const expectedOptionMaterialRows = assignment.orderOptions.flatMap((config) => config.values)
-          .flatMap((value) => value.materialQuantities).length;
-        const actualOptionMaterialRows = (actual.inventoryBom ?? [])
-          .filter((row) => row.nodeType === "OPTION_VALUE_BOM").length;
+        const actualOptionMaterialRows = (actual.inventoryRules?.nodes ?? [])
+          .filter((row) => row.owner?.ownerType === "OPTION_VALUE" && row.mode === "BOM")
+          .flatMap((row) => row.bom?.lines ?? []).length;
+        const expectedOptionMaterialRows = expectedOptionBoms.flatMap((entry) => entry.lines).length;
         if (actualOptionMaterialRows !== expectedOptionMaterialRows)
           fail(
             `SEED_ORDER_OPTION_BOM_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:expected=${expectedOptionMaterialRows}:actual=${actualOptionMaterialRows}`,
           );
+        for (const expected of expectedOptionBoms) {
+          const actualRule = (actual.inventoryRules?.nodes ?? []).find((row) =>
+            row.owner?.ownerType === "OPTION_VALUE" && row.owner?.optionValueRef === expected.optionValueRef);
+          if (!actualRule || actualRule.mode !== "BOM") fail(`SEED_ORDER_OPTION_BOM_MODE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.valueCode}`);
+          for (const expectedLine of expected.lines) {
+            if (!(actualRule.bom?.lines ?? []).some((line) => line.targetRef === expectedLine.targetRef
+                && line.lineSign === expectedLine.lineSign
+                && String(line.quantity) === expectedLine.quantity
+                && sameUnitSnapshot(line.consumptionUnitSnapshot, expectedLine.consumptionUnitSnapshot)))
+              fail(`SEED_ORDER_OPTION_BOM_LINE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.valueCode}`);
+          }
+        }
       }
     }
     // Disable only after the unit has a real catalog/SKU binding.  The active
@@ -1540,6 +1701,12 @@ async function execute() {
       for (const assignment of catalogDefinitionSeed.itemAssignments) {
         const clearOverrides = (assignment.skuUnitOverrides ?? []).filter((override) => override.clearAfterReadback);
         if (!clearOverrides.length) continue;
+        const current = await recordItemReadback(
+          client,
+          refs,
+          assignment.itemCode,
+          `${client.scopeType}-definition-assignment-before-clear-${assignment.itemCode}`,
+        );
         const clearedAssignment = {
           ...assignment,
           skuUnitOverrides: (assignment.skuUnitOverrides ?? []).map((override) => override.clearAfterReadback
@@ -1556,9 +1723,8 @@ async function execute() {
             itemCode: assignment.itemCode,
             sections: {
               catalogDraft: draft,
-              inventoryConfiguration: {nodes: []},
+              inventoryRules: inventoryRulesFromReadback(current),
               expectedCatalogVersion: canonicalVersions.get(canonicalItemKey(client, assignment.itemCode)) ?? 1,
-              expectedInventoryVersions: [],
             },
           },
         });
@@ -1591,16 +1757,26 @@ async function execute() {
           const expectedOptionBom = catalogDefinitionSeed.itemAssignments
             .find((assignment) => assignment.itemCode === item.code)?.orderOptions
             .flatMap((config) => config.values)
-            .flatMap((value) => value.materialQuantities).length ?? 0;
-          const actualItemBom = (actual.inventoryBom || []).filter((row) => row.nodeType === "ITEM_BOM" || row.nodeType === "CATALOG_ITEM").length;
-          const actualOptionBom = (actual.inventoryBom || []).filter((row) => row.nodeType === "OPTION_VALUE_BOM").length;
+            .map((value) => catalogDefinitionSeed.itemAssignments
+              .find((assignment) => assignment.itemCode === item.code)?.optionValueBoms
+              .find((bom) => bom.valueCode === value.valueCode)?.lines ?? [])
+            .flat().length ?? 0;
+          const actualRules = actual.inventoryRules?.nodes ?? [];
+          const actualItemBom = actualRules
+            .filter((row) => row.owner?.ownerType === "ITEM" && row.mode === "BOM")
+            .flatMap((row) => row.bom?.lines ?? []).length;
+          const actualOptionBom = actualRules
+            .filter((row) => row.owner?.ownerType === "OPTION_VALUE" && row.mode === "BOM")
+            .flatMap((row) => row.bom?.lines ?? []).length;
           if (expectedItemBom !== actualItemBom || expectedOptionBom !== actualOptionBom) fail(`SEED_CANONICAL_CAESAR_BOM_READBACK_INVALID:${client.scopeType}`);
         }
         if (item.shapeKey === "MATERIAL") {
           const expectedRole = item.materialRole;
           const actualRole = actual.materialRole ?? actual.productionProfiles?.item?.materialRole;
           if (actualRole !== expectedRole) fail(`SEED_CANONICAL_MATERIAL_ROLE_READBACK_INVALID:${client.scopeType}:${item.code}`);
-          if (!(actual.inventoryBom || []).some((row) => row.mode === "INDEPENDENT_STOCK" && row.itemCode === item.code)) fail(`SEED_CANONICAL_STOCK_TARGET_READBACK_INVALID:${client.scopeType}:${item.code}`);
+          if (!(actual.inventoryRules?.nodes ?? []).some((row) => row.mode === "DIRECT"
+              && row.owner?.ownerType === "ITEM" && row.owner?.itemCode === item.code))
+            fail(`SEED_CANONICAL_STOCK_TARGET_READBACK_INVALID:${client.scopeType}:${item.code}`);
         }
       }
     }

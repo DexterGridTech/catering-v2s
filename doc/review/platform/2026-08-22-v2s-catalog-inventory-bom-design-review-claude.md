@@ -138,3 +138,30 @@ EVIDENCE_TIER=静态读源码 + 数字独立复算(77/20/56+1)+ 锚点 grep 复�
 **授权边界**:本 GO 仅表示该设计可作为后续 implementation 授权的输入。不等于实施授权,
 不授权契约/代码修改、测试、DEV、reset、seed、browser L2、UAT、部署或数据操作。
 两条 S 建议在 CP-00 开工前以文本修订折入,不需要重开裁定。
+
+---
+
+## 附录 · 收口后到达的多维证伪补充(2026-08-22 深夜)
+
+主评审收口后,后台八维证伪扇出完成了 4/8 维(其余因会话额度中断,对抗复核未跑)。
+其中三条经我本人回源码坐实,**升级本轮结论为 GO 附加三条 S 待折入**(M/S/N 修订为 0/5/2):
+
+**S-3(升格自扇出 matrix 维)· A-01 声明层退役零落点。** 需求 §5.1 裁定 OPTIONAL_TABLE 与
+HAS_SKU/NO_SKU 两种口径「都不再保留」,但 `OPTIONAL_TABLE`、`skuMode`、`hasSkuRule` 在详设
+与串行计划**全文零命中**(本人 grep 复验)。p1.mjs 第 172/174/176 行 shape 声明、第 219–231 行
+`modeRules` 的 HAS_SKU/NO_SKU 条件、第 447–449 行 `hasSkuRule` 等旧口径声明都不在 §9b 变更
+定位或任何 CP 步骤中 —— 实施可以在不触碰它们的情况下满足 CP-01 全部已写门,让 manifest 继续
+对外宣告旧粒度,形成同一事实第二住址。**最小修复**:CP-01 增补退役清单(上列行级声明逐条列出)。
+
+**S-4(扇出 crossdoc 维)· DIRECT 一级文案两套「逐字」权威互斥。** 交互稿 USER_VISIBLE_COPY
+固定「直接扣当前商品或 SKU」;而已接受线框 SVG 中实为「直接扣当前商品库存」「直接扣当前 SKU 库存」
+两个变体(本人 grep 复验)。详设同时要求「与线框逐字一致」与「与 USER_VISIBLE_COPY 一致」,
+二者不可同真。**需 Dexter 一句裁定**:按 owner 上下文取两变体,还是统一回单一标签。
+
+**S-5(扇出 crossdoc/template 维)· 文案分母不全 + IA CIB-01 容器行为未逐字引用交互稿。**
+选项值一级文案、树节点摘要、五条件提示、IA §4 新增六条中文均不在交互稿 USER_VISIBLE_COPY 分母内;
+IA CIB-01 的 containerBehaviorUnderLoad 为转述而非逐字(CIB-02 是逐字的,可照做)。
+**最小修复**:补全 USER_VISIBLE_COPY 唯一分母;CIB-01 静态半边改逐字引用。
+
+扇出另有两条(A-05 触发谓词与 X→NONE 分支未钉住;组件复核锁形态)未经对抗复核亦未经我
+回源码,标 `PLAUSIBLE_UNVERIFIED`,交 Codex 辩证 intake 自判。

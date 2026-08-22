@@ -13,7 +13,7 @@
     "organization",
     "workspace-iam"
   ],
-  "operationCount": 56,
+  "operationCount": 57,
   "operations": [
     {
       "ordinal": 1,
@@ -743,9 +743,7 @@
         "STORE"
       ],
       "coordinatedInventoryDefinitionCommands": [
-        "ensureCatalogInventoryTarget",
-        "saveCatalogProductBom",
-        "deleteCatalogOptionValueBoms"
+        "replaceCatalogInventoryRules"
       ],
       "initiatingOwner": "catalog",
       "coordinatedOwners": [
@@ -763,7 +761,12 @@
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
         "ASSET_NOT_READY",
-        "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED"
+        "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED",
+        "INVENTORY_DEDUCTION_MODE_NOT_ALLOWED",
+        "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED",
+        "INVENTORY_BOM_EMPTY",
+        "INVENTORY_BOM_SELF_REFERENCE",
+        "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE"
       ],
       "logicSteps": [
         {
@@ -885,6 +888,41 @@
           "problemCode": "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED",
           "conditions": [
             "An existing inventory target would retain a different consumption-unit snapshot after the submitted item or SKU base-measure unit change; the catalog save is rejected before the catalog write."
+          ]
+        },
+        {
+          "precedence": 10,
+          "problemCode": "INVENTORY_DEDUCTION_MODE_NOT_ALLOWED",
+          "conditions": [
+            "The submitted shape, owner node or mode is outside the contract admission matrix."
+          ]
+        },
+        {
+          "precedence": 11,
+          "problemCode": "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED",
+          "conditions": [
+            "The submitted mode change is blocked by the inventory owner lifecycle guard."
+          ]
+        },
+        {
+          "precedence": 12,
+          "problemCode": "INVENTORY_BOM_EMPTY",
+          "conditions": [
+            "A BOM mode is submitted without at least one valid component line."
+          ]
+        },
+        {
+          "precedence": 13,
+          "problemCode": "INVENTORY_BOM_SELF_REFERENCE",
+          "conditions": [
+            "A BOM line points back to its own owner."
+          ]
+        },
+        {
+          "precedence": 14,
+          "problemCode": "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+          "conditions": [
+            "A BOM component fails the scoped status, capability, target or consumption-unit eligibility checks."
           ]
         }
       ],
@@ -8304,6 +8342,101 @@
       },
       "scenarioIds": [],
       "transaction": "REQUIRED"
+    },
+    {
+      "ordinal": 57,
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [],
+      "mutation": false,
+      "authorizationRequirementId": null,
+      "capabilityByDataNodeType": {},
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "initiatingOwner": "inventory",
+      "coordinatedOwners": [],
+      "requestComponent": "InventoryConsumptionTargetCandidateQuery",
+      "responseComponent": "InventoryConsumptionTargetCandidatePage",
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Read the scoped bounded definition library."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "inventory.api",
+          "owner": "inventory",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "scenarioIds": [],
+      "transaction": "READ_ONLY"
     }
   ],
   "typedProblemCodes": [
@@ -8323,6 +8456,11 @@
     "DUPLICATE_CODE",
     "HIERARCHY_CYCLE",
     "IDEMPOTENCY_MISMATCH",
+    "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+    "INVENTORY_BOM_EMPTY",
+    "INVENTORY_BOM_SELF_REFERENCE",
+    "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED",
+    "INVENTORY_DEDUCTION_MODE_NOT_ALLOWED",
     "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
     "MOVE_BOUNDARY",
     "NEGATIVE_STOCK_NOT_ALLOWED",
@@ -8362,6 +8500,7 @@
     "InventoryLedgerPage",
     "InventoryDiagnosticsView",
     "InventoryWriteReadback",
+    "InventoryConsumptionTargetCandidatePage",
     "StagedCatalogAsset",
     "CatalogAssetReleaseReadback",
     "CatalogShapeManifestView",
@@ -8385,8 +8524,8 @@
     },
     "shapeManifest": {
       "path": "contracts/catalog/catalog-item-editor-manifest.json",
-      "digest": "1405b9246cd202bfc8d16da69ad894a41929746d711f8a61e31904e4cd884806"
+      "digest": "e81e5d4ea76ed3043edfd6fcb83e9d9b62769c4a7becfd4efe64861693854d10"
     }
   },
-  "contractDigest": "858ec2e574258b42788c93b4e3c7105c82282e08154665e415d0fe14565e770e"
+  "contractDigest": "22fccbdf1db5e8ba59421fa0e4d9457c15a8327ac3fbe89237c15bba49b9aaef"
 }

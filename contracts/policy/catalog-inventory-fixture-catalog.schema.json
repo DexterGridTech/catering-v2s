@@ -942,8 +942,7 @@
                   "required": [
                     "valueCode",
                     "defaultValue",
-                    "extraPrice",
-                    "materialQuantities"
+                    "extraPrice"
                   ],
                   "properties": {
                     "valueCode": {
@@ -956,26 +955,53 @@
                     },
                     "extraPrice": {
                       "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "optionValueBoms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "valueCode",
+              "lines"
+            ],
+            "properties": {
+              "valueCode": {
+                "type": "string",
+                "description": "ordering option value code"
+              },
+              "lines": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "materialItemCode",
+                    "lineSign",
+                    "quantity"
+                  ],
+                  "properties": {
+                    "materialItemCode": {
+                      "type": "string",
+                      "description": "material catalog item code"
                     },
-                    "materialQuantities": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "materialItemCode",
-                          "actualQuantity"
-                        ],
-                        "properties": {
-                          "materialItemCode": {
-                            "type": "string",
-                            "description": "material catalog item code"
-                          },
-                          "actualQuantity": {
-                            "type": "number"
-                          }
-                        }
-                      }
+                    "lineSign": {
+                      "type": "string",
+                      "enum": [
+                        "POSITIVE",
+                        "NEGATIVE"
+                      ]
+                    },
+                    "quantity": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
                     }
                   }
                 }

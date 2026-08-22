@@ -5,11 +5,11 @@
   "sourceBindings": {
     "requirements": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-merged-requirements-claude.md",
-      "sha256": "9c80dc61fb1a365b2b1dada76725fd169ef9bf874af79f561c53e821e7a159fd"
+      "sha256": "ce32dcf053b2a427576f38ad83719683a7e0488a28b530befea0cd3b31efeeea"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
-      "sha256": "4bb3f560b6b3cf4a57f49050c6c5104a7c853b018e48ea9510e465244311557d"
+      "sha256": "860224dc6b167bf66b2025715be6eb8f1d24312d3fca728801b6183e4f44d959"
     },
     "v4Manifest": {
       "path": "../catering-server-v4/frontend/packages/generated-contracts/src/catalog-item-editor-manifest.ts",
@@ -113,8 +113,8 @@
     },
     "inventoryMode": {
       "NONE": "无库存控制",
-      "INDEPENDENT_STOCK": "独立库存",
-      "BOM": "BOM 消耗"
+      "DIRECT": "直接扣本品库存",
+      "BOM": "按 BOM 扣组件库存"
     },
     "catalogSection": {
       "BASIC_INFO": "基本信息",
@@ -379,9 +379,9 @@
       "helpText": "按已选规格属性和属性值维护 SKU 矩阵。"
     },
     {
-      "fieldKey": "bomTarget",
-      "dataPath": "inventoryBom[].targetRef",
-      "label": "库存对象",
+      "fieldKey": "inventoryRuleMode",
+      "dataPath": "inventoryRules.nodes[].mode",
+      "label": "库存扣减方式",
       "controlKind": "select",
       "tabKey": "inventory-bom",
       "admittedShapes": [
@@ -390,44 +390,49 @@
         "STANDARD_SALE_WEIGHED",
         "MATERIAL"
       ],
-      "helpText": "选择用于库存消耗的库存对象。",
+      "helpText": "为当前结构中的配置对象选择唯一的库存扣减方式。",
+      "optionSourceRef": {
+        "kind": "enum",
+        "enumKind": "inventoryMode"
+      }
+    },
+    {
+      "fieldKey": "inventoryBomComponent",
+      "dataPath": "inventoryRules.nodes[].bom.lines[].targetRef",
+      "label": "耗用对象",
+      "controlKind": "select",
+      "tabKey": "inventory-bom",
+      "admittedShapes": [
+        "STANDARD_SALE_COUNTED",
+        "SKU_VARIANT_SALE_COUNTED",
+        "STANDARD_SALE_WEIGHED"
+      ],
+      "helpText": "从库存 owner 提供的合格候选中选择耗用对象。",
       "optionSourceRef": {
         "kind": "endpoint",
-        "operationId": "getOperationsInventoryTargets",
+        "operationId": "getOperationsInventoryConsumptionTargetCandidates",
         "path": {},
         "query": {
           "dataNodeRef": {
             "context": "scope.dataNodeRef"
+          },
+          "cursor": {
+            "fieldKey": "inventoryRuleCandidateCursor"
+          },
+          "pageSize": {
+            "fieldKey": "inventoryRuleCandidatePageSize"
           }
         },
         "headers": {},
         "itemsPath": "data.items",
         "valueField": "targetRef",
         "labelParts": [
-          "productName",
+          "itemName",
           "skuName",
-          "productCode",
+          "itemCode",
           "skuCode"
         ],
         "disabledWhen": null
-      }
-    },
-    {
-      "fieldKey": "bomOptionValue",
-      "dataPath": "inventoryBom[].optionValueRef",
-      "label": "所属选项值",
-      "controlKind": "select",
-      "tabKey": "inventory-bom",
-      "admittedShapes": [
-        "STANDARD_SALE_COUNTED",
-        "STANDARD_SALE_WEIGHED"
-      ],
-      "helpText": "选择当前商品点单选项页签中已有的选项值。",
-      "optionSourceRef": {
-        "kind": "local",
-        "sectionPath": "orderOptionConfigs",
-        "valueField": "definitionValueRef",
-        "labelField": "name"
       }
     },
     {
@@ -807,7 +812,7 @@
       "defaultMode": "NONE",
       "disabledModes": [
         {
-          "mode": "INDEPENDENT_STOCK",
+          "mode": "DIRECT",
           "reason": "按 SKU 管理商品的库存由 SKU 控制。"
         },
         {
@@ -822,24 +827,24 @@
       "condition": "NO_SKU",
       "allowedModes": [
         "NONE",
-        "INDEPENDENT_STOCK",
+        "DIRECT",
         "BOM"
       ],
       "defaultMode": "NONE",
       "disabledModes": [],
-      "description": "无 SKU 主商品可选择无库存、独立库存或 BOM。"
+      "description": "无 SKU 主商品可选择无库存、直接扣本品或 BOM。"
     },
     {
       "nodeType": "SKU",
       "condition": null,
       "allowedModes": [
         "NONE",
-        "INDEPENDENT_STOCK",
+        "DIRECT",
         "BOM"
       ],
       "defaultMode": "NONE",
       "disabledModes": [],
-      "description": "SKU 可无库存、独立库存或配置 SKU BOM。"
+      "description": "SKU 可无库存、直接扣本品或配置 SKU BOM。"
     },
     {
       "nodeType": "OPTION_VALUE",
@@ -851,7 +856,7 @@
       "defaultMode": "NONE",
       "disabledModes": [
         {
-          "mode": "INDEPENDENT_STOCK",
+          "mode": "DIRECT",
           "reason": "选项值不生成独立库存对象，只能通过 BOM 消耗其他库存对象。"
         }
       ],
@@ -1085,7 +1090,7 @@
         }
       },
       {
-        "field": "bomTarget",
+        "field": "inventoryRuleMode",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1096,7 +1101,7 @@
         }
       },
       {
-        "field": "bomOptionValue",
+        "field": "inventoryBomComponent",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1287,7 +1292,18 @@
         }
       },
       {
-        "field": "bomTarget",
+        "field": "inventoryRuleMode",
+        "visible": true,
+        "required": false,
+        "readonly": false,
+        "readonlyWhen": {
+          "create": false,
+          "update": false,
+          "view": true
+        }
+      },
+      {
+        "field": "inventoryBomComponent",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1467,7 +1483,7 @@
         }
       },
       {
-        "field": "bomTarget",
+        "field": "inventoryRuleMode",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1478,7 +1494,7 @@
         }
       },
       {
-        "field": "bomOptionValue",
+        "field": "inventoryBomComponent",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -1636,7 +1652,7 @@
         }
       },
       {
-        "field": "bomTarget",
+        "field": "inventoryRuleMode",
         "visible": true,
         "required": false,
         "readonly": false,
@@ -2715,7 +2731,7 @@
         "defaultMode": "NONE",
         "disabledModes": [
           {
-            "mode": "INDEPENDENT_STOCK",
+            "mode": "DIRECT",
             "reason": "按 SKU 管理商品的库存由 SKU 控制。"
           },
           {
@@ -2730,24 +2746,24 @@
         "condition": "NO_SKU",
         "allowedModes": [
           "NONE",
-          "INDEPENDENT_STOCK",
+          "DIRECT",
           "BOM"
         ],
         "defaultMode": "NONE",
         "disabledModes": [],
-        "description": "无 SKU 主商品可选择无库存、独立库存或 BOM。"
+        "description": "无 SKU 主商品可选择无库存、直接扣本品或 BOM。"
       },
       {
         "nodeType": "SKU",
         "condition": null,
         "allowedModes": [
           "NONE",
-          "INDEPENDENT_STOCK",
+          "DIRECT",
           "BOM"
         ],
         "defaultMode": "NONE",
         "disabledModes": [],
-        "description": "SKU 可无库存、独立库存或配置 SKU BOM。"
+        "description": "SKU 可无库存、直接扣本品或配置 SKU BOM。"
       },
       {
         "nodeType": "OPTION_VALUE",
@@ -2759,7 +2775,7 @@
         "defaultMode": "NONE",
         "disabledModes": [
           {
-            "mode": "INDEPENDENT_STOCK",
+            "mode": "DIRECT",
             "reason": "选项值不生成独立库存对象，只能通过 BOM 消耗其他库存对象。"
           }
         ],
@@ -2768,68 +2784,94 @@
     ],
     "shapeNodeAdmission": {
       "STANDARD_SALE_COUNTED": {
+        "ownerGrain": "ITEM",
         "allowedNodeTypes": [
           "CATALOG_ITEM",
-          "OPTION_GROUP",
-          "OPTION_VALUE",
-          "SKU"
+          "OPTION_VALUE"
         ],
-        "inventoryBom": true
+        "allowedModesByNodeType": {
+          "CATALOG_ITEM": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ],
+          "OPTION_VALUE": [
+            "NONE",
+            "BOM"
+          ]
+        }
       },
       "SKU_VARIANT_SALE_COUNTED": {
+        "ownerGrain": "SKU",
         "allowedNodeTypes": [
           "CATALOG_ITEM",
           "SKU"
         ],
-        "inventoryBom": true
+        "allowedModesByNodeType": {
+          "CATALOG_ITEM": [
+            "NONE"
+          ],
+          "SKU": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ]
+        }
       },
       "STANDARD_SALE_WEIGHED": {
+        "ownerGrain": "ITEM",
         "allowedNodeTypes": [
           "CATALOG_ITEM",
-          "OPTION_GROUP",
-          "OPTION_VALUE",
-          "SKU"
+          "OPTION_VALUE"
         ],
-        "inventoryBom": true
+        "allowedModesByNodeType": {
+          "CATALOG_ITEM": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ],
+          "OPTION_VALUE": [
+            "NONE",
+            "BOM"
+          ]
+        }
       },
       "MATERIAL": {
+        "ownerGrain": "ITEM",
         "allowedNodeTypes": [
           "CATALOG_ITEM"
         ],
-        "inventoryBom": true
+        "allowedModesByNodeType": {
+          "CATALOG_ITEM": [
+            "NONE",
+            "DIRECT"
+          ]
+        }
       },
       "COMPOSITE": {
-        "allowedNodeTypes": [
-          "CATALOG_ITEM",
-          "COMPOSITE_COMPONENT"
-        ],
-        "inventoryBom": false
+        "ownerGrain": "NONE",
+        "allowedNodeTypes": [],
+        "allowedModesByNodeType": {}
       },
       "SERVICE": {
-        "allowedNodeTypes": [
-          "CATALOG_ITEM"
-        ],
-        "inventoryBom": false
+        "ownerGrain": "NONE",
+        "allowedNodeTypes": [],
+        "allowedModesByNodeType": {}
       },
       "BENEFIT_SHELL": {
-        "allowedNodeTypes": [
-          "CATALOG_ITEM"
-        ],
-        "inventoryBom": false
+        "ownerGrain": "NONE",
+        "allowedNodeTypes": [],
+        "allowedModesByNodeType": {}
       }
     },
     "modeEligibilityByShape": {
       "STANDARD_SALE_COUNTED": {
         "CATALOG_ITEM": [
           "NONE",
-          "INDEPENDENT_STOCK",
+          "DIRECT",
           "BOM"
         ],
-        "SKU": [
-          "NONE",
-          "INDEPENDENT_STOCK",
-          "BOM"
-        ],
+        "SKU": [],
         "OPTION_VALUE": [
           "NONE",
           "BOM"
@@ -2841,7 +2883,7 @@
         ],
         "SKU": [
           "NONE",
-          "INDEPENDENT_STOCK",
+          "DIRECT",
           "BOM"
         ],
         "OPTION_VALUE": []
@@ -2849,14 +2891,10 @@
       "STANDARD_SALE_WEIGHED": {
         "CATALOG_ITEM": [
           "NONE",
-          "INDEPENDENT_STOCK",
+          "DIRECT",
           "BOM"
         ],
-        "SKU": [
-          "NONE",
-          "INDEPENDENT_STOCK",
-          "BOM"
-        ],
+        "SKU": [],
         "OPTION_VALUE": [
           "NONE",
           "BOM"
@@ -2865,8 +2903,7 @@
       "MATERIAL": {
         "CATALOG_ITEM": [
           "NONE",
-          "INDEPENDENT_STOCK",
-          "BOM"
+          "DIRECT"
         ],
         "SKU": [],
         "OPTION_VALUE": []
@@ -2978,6 +3015,7 @@
     "InventoryLedgerPage",
     "InventoryDiagnosticsView",
     "InventoryWriteReadback",
+    "InventoryConsumptionTargetCandidatePage",
     "StagedCatalogAsset",
     "CatalogAssetReleaseReadback",
     "CatalogShapeManifestView",
@@ -3011,7 +3049,7 @@
       "item",
       "tabs",
       "references",
-      "inventoryBom",
+      "inventoryRules",
       "productionTags",
       "compositeGroups",
       "governance",
@@ -3139,6 +3177,12 @@
       "result",
       "version"
     ],
+    "InventoryConsumptionTargetCandidatePage": [
+      "items",
+      "total",
+      "cursor",
+      "nextCursor"
+    ],
     "StagedCatalogAsset": [
       "revision",
       "requestId",
@@ -3180,5 +3224,5 @@
       "data"
     ]
   },
-  "manifestDigest": "1405b9246cd202bfc8d16da69ad894a41929746d711f8a61e31904e4cd884806"
+  "manifestDigest": "e81e5d4ea76ed3043edfd6fcb83e9d9b62769c4a7becfd4efe64861693854d10"
 }

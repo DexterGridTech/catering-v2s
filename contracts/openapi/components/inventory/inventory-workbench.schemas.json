@@ -508,6 +508,166 @@
         }
       }
     },
+    "InventoryConsumptionTargetCandidatePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "requestId",
+        "data"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "contract revision"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "request correlation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "cursor",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "description": "cursor page of eligible inventory component targets",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "targetRef",
+                  "itemRef",
+                  "productSkuRef",
+                  "itemCode",
+                  "skuCode",
+                  "itemName",
+                  "skuName",
+                  "status",
+                  "consumptionUnitSnapshot"
+                ],
+                "properties": {
+                  "targetRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "inventory target reference"
+                  },
+                  "itemRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "component item reference"
+                  },
+                  "productSkuRef": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "optional component SKU reference"
+                  },
+                  "itemCode": {
+                    "type": "string",
+                    "description": "component item code"
+                  },
+                  "skuCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "optional component SKU code"
+                  },
+                  "itemName": {
+                    "type": "string",
+                    "description": "component item name"
+                  },
+                  "skuName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "optional component SKU name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ENABLED",
+                      "DISABLED"
+                    ],
+                    "description": "component catalog status"
+                  },
+                  "consumptionUnitSnapshot": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "unitRef",
+                      "code",
+                      "name",
+                      "unitDimension",
+                      "precision"
+                    ],
+                    "properties": {
+                      "unitRef": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "unit definition reference"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "unit code"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "unit name"
+                      },
+                      "unitDimension": {
+                        "type": "string",
+                        "enum": [
+                          "COUNT",
+                          "WEIGHT",
+                          "VOLUME",
+                          "SERVICE_DURATION",
+                          "PACKAGE"
+                        ],
+                        "description": "unit category"
+                      },
+                      "precision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "decimal places; zero means whole numbers"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "total": {
+              "type": "integer",
+              "description": "total eligible candidate count"
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "echoed opaque cursor"
+            },
+            "nextCursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "opaque cursor for the next page"
+            }
+          }
+        }
+      }
+    },
     "InventoryTargetPageQuery": {
       "type": "object",
       "additionalProperties": false,
@@ -1475,6 +1635,32 @@
           "type": "string",
           "format": "uuid",
           "description": "inventory target reference"
+        }
+      }
+    },
+    "InventoryConsumptionTargetCandidateQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected store node"
+        },
+        "keyword": {
+          "type": "string",
+          "description": "candidate search keyword"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "opaque candidate cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "candidate page size"
         }
       }
     },

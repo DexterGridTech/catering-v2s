@@ -26,9 +26,7 @@ const FULL_CATALOG_PARITY_DELIVERY_PHASE = "P4";
 // operation's catalog capability; direct inventory writes retain their own
 // EDIT_STORE_INVENTORY requirement.
 const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = Object.freeze([
-  "ensureCatalogInventoryTarget",
-  "saveCatalogProductBom",
-  "deleteCatalogOptionValueBoms",
+  "replaceCatalogInventoryRules"
 ]);
 
 function abs(rel) { return path.join(ROOT, rel); }
@@ -206,7 +204,7 @@ const enumLabels = {
   skuMode: {NONE: "无 SKU", OPTIONAL_TABLE: "可选 SKU", REQUIRED_MATRIX: "规格矩阵 SKU"},
   priceGranularity: {ITEM: "商品级定价", SKU: "SKU 级定价"},
   inventoryNodeType: {CATALOG_ITEM: "商品", SKU: "SKU", OPTION_VALUE: "点单选项值"},
-  inventoryMode: {NONE: "无库存控制", INDEPENDENT_STOCK: "独立库存", BOM: "BOM 消耗"},
+  inventoryMode: {NONE: "无库存控制", DIRECT: "直接扣本品库存", BOM: "按 BOM 扣组件库存"},
   catalogSection: {BASIC_INFO: "基本信息", SKU_STRUCTURE: "SKU 结构", SKU_BOM: "SKU BOM", ORDER_OPTIONS: "点单选项", OPTION_VALUE_BOM: "选项值 BOM", ITEM_BOM: "商品 BOM", PACKAGE_STRUCTURE: "套餐结构", PRODUCTION_PROMPTS: "制作提示"}
 };
 const enumLabelEntries = Object.entries(enumLabels).flatMap(([kind, values]) => Object.entries(values).map(([value, label]) => ({kind, value, label})));
@@ -218,13 +216,13 @@ const capabilityValues = enumValues("usageCapability");
 
 const modeRules = [
   {nodeType: "CATALOG_ITEM", condition: "HAS_SKU", allowedModes: ["NONE"], defaultMode: "NONE", disabledModes: [
-    {mode: "INDEPENDENT_STOCK", reason: "按 SKU 管理商品的库存由 SKU 控制。"},
+    {mode: "DIRECT", reason: "按 SKU 管理商品的库存由 SKU 控制。"},
     {mode: "BOM", reason: "按 SKU 管理商品的主商品不能配置 BOM。"}
   ], description: "主商品有启用或停用 SKU 时只能无库存控制。"},
-  {nodeType: "CATALOG_ITEM", condition: "NO_SKU", allowedModes: ["NONE", "INDEPENDENT_STOCK", "BOM"], defaultMode: "NONE", disabledModes: [], description: "无 SKU 主商品可选择无库存、独立库存或 BOM。"},
-  {nodeType: "SKU", condition: null, allowedModes: ["NONE", "INDEPENDENT_STOCK", "BOM"], defaultMode: "NONE", disabledModes: [], description: "SKU 可无库存、独立库存或配置 SKU BOM。"},
+  {nodeType: "CATALOG_ITEM", condition: "NO_SKU", allowedModes: ["NONE", "DIRECT", "BOM"], defaultMode: "NONE", disabledModes: [], description: "无 SKU 主商品可选择无库存、直接扣本品或 BOM。"},
+  {nodeType: "SKU", condition: null, allowedModes: ["NONE", "DIRECT", "BOM"], defaultMode: "NONE", disabledModes: [], description: "SKU 可无库存、直接扣本品或配置 SKU BOM。"},
   {nodeType: "OPTION_VALUE", condition: null, allowedModes: ["NONE", "BOM"], defaultMode: "NONE", disabledModes: [
-    {mode: "INDEPENDENT_STOCK", reason: "选项值不生成独立库存对象，只能通过 BOM 消耗其他库存对象。"}
+    {mode: "DIRECT", reason: "选项值不生成独立库存对象，只能通过 BOM 消耗其他库存对象。"}
   ], description: "选项值只能无库存控制或 BOM。"}
 ];
 
@@ -323,14 +321,14 @@ const fieldDescriptors = [
     admittedShapes: ["SKU_VARIANT_SALE_COUNTED"], helpText: "按已选规格属性和属性值维护 SKU 矩阵。"
   },
   {
-    fieldKey: "bomTarget", dataPath: "inventoryBom[].targetRef", label: "库存对象", controlKind: "select", tabKey: "inventory-bom",
-    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"], helpText: "选择用于库存消耗的库存对象。",
-    optionSourceRef: endpointSource({operationId: "getOperationsInventoryTargets", query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.items", valueField: "targetRef", labelParts: ["productName", "skuName", "productCode", "skuCode"], disabledWhen: null})
+    fieldKey: "inventoryRuleMode", dataPath: "inventoryRules.nodes[].mode", label: "库存扣减方式", controlKind: "select", tabKey: "inventory-bom",
+    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED", "MATERIAL"], helpText: "为当前结构中的配置对象选择唯一的库存扣减方式。",
+    optionSourceRef: {kind: "enum", enumKind: "inventoryMode"}
   },
   {
-    fieldKey: "bomOptionValue", dataPath: "inventoryBom[].optionValueRef", label: "所属选项值", controlKind: "select", tabKey: "inventory-bom",
-    admittedShapes: ["STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED"], helpText: "选择当前商品点单选项页签中已有的选项值。",
-    optionSourceRef: localSource({sectionPath: "orderOptionConfigs", valueField: "definitionValueRef", labelField: "name"})
+    fieldKey: "inventoryBomComponent", dataPath: "inventoryRules.nodes[].bom.lines[].targetRef", label: "耗用对象", controlKind: "select", tabKey: "inventory-bom",
+    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"], helpText: "从库存 owner 提供的合格候选中选择耗用对象。",
+    optionSourceRef: endpointSource({operationId: "getOperationsInventoryConsumptionTargetCandidates", query: {dataNodeRef: scopeBinding("scope.dataNodeRef"), cursor: fieldBinding("inventoryRuleCandidateCursor"), pageSize: fieldBinding("inventoryRuleCandidatePageSize")}, itemsPath: "data.items", valueField: "targetRef", labelParts: ["itemName", "skuName", "itemCode", "skuCode"], disabledWhen: null})
   },
   {
     fieldKey: "compositeComponentSku", dataPath: "compositeGroups[].components[].productSkuRef", label: "组件 SKU", controlKind: "select", tabKey: "composite-content",
@@ -366,13 +364,29 @@ const fieldDescriptorByKey = new Map(fieldDescriptors.map((field) => [field.fiel
 if (fieldDescriptors.length !== 14 || new Set(fieldDescriptors.map((field) => field.fieldKey)).size !== 14) throw new Error("P1_B3_FIELD_DESCRIPTOR_DENOMINATOR_INVALID");
 if (controlKindValues.length !== 16 || new Set(controlKindValues).size !== 16) throw new Error("P1_B3_CONTROL_KIND_DENOMINATOR_INVALID");
 const shapeNodeAdmission = {
-  STANDARD_SALE_COUNTED: {allowedNodeTypes: ["CATALOG_ITEM", "OPTION_GROUP", "OPTION_VALUE", "SKU"], inventoryBom: true},
-  SKU_VARIANT_SALE_COUNTED: {allowedNodeTypes: ["CATALOG_ITEM", "SKU"], inventoryBom: true},
-  STANDARD_SALE_WEIGHED: {allowedNodeTypes: ["CATALOG_ITEM", "OPTION_GROUP", "OPTION_VALUE", "SKU"], inventoryBom: true},
-  MATERIAL: {allowedNodeTypes: ["CATALOG_ITEM"], inventoryBom: true},
-  COMPOSITE: {allowedNodeTypes: ["CATALOG_ITEM", "COMPOSITE_COMPONENT"], inventoryBom: false},
-  SERVICE: {allowedNodeTypes: ["CATALOG_ITEM"], inventoryBom: false},
-  BENEFIT_SHELL: {allowedNodeTypes: ["CATALOG_ITEM"], inventoryBom: false}
+  STANDARD_SALE_COUNTED: {
+    ownerGrain: "ITEM",
+    allowedNodeTypes: ["CATALOG_ITEM", "OPTION_VALUE"],
+    allowedModesByNodeType: {CATALOG_ITEM: ["NONE", "DIRECT", "BOM"], OPTION_VALUE: ["NONE", "BOM"]}
+  },
+  SKU_VARIANT_SALE_COUNTED: {
+    ownerGrain: "SKU",
+    allowedNodeTypes: ["CATALOG_ITEM", "SKU"],
+    allowedModesByNodeType: {CATALOG_ITEM: ["NONE"], SKU: ["NONE", "DIRECT", "BOM"]}
+  },
+  STANDARD_SALE_WEIGHED: {
+    ownerGrain: "ITEM",
+    allowedNodeTypes: ["CATALOG_ITEM", "OPTION_VALUE"],
+    allowedModesByNodeType: {CATALOG_ITEM: ["NONE", "DIRECT", "BOM"], OPTION_VALUE: ["NONE", "BOM"]}
+  },
+  MATERIAL: {
+    ownerGrain: "ITEM",
+    allowedNodeTypes: ["CATALOG_ITEM"],
+    allowedModesByNodeType: {CATALOG_ITEM: ["NONE", "DIRECT"]}
+  },
+  COMPOSITE: {ownerGrain: "NONE", allowedNodeTypes: [], allowedModesByNodeType: {}},
+  SERVICE: {ownerGrain: "NONE", allowedNodeTypes: [], allowedModesByNodeType: {}},
+  BENEFIT_SHELL: {ownerGrain: "NONE", allowedNodeTypes: [], allowedModesByNodeType: {}}
 };
 const shapeRules = shapes.map((shape) => ({
   shapeKey: shape.key, label: enumLabels.shapeKey[shape.key], itemKind: shape.itemKind, measureMode: shape.measureMode, skuMode: shape.skuPolicy.skuMode, priceGranularity: shape.skuPolicy.priceGranularity,
@@ -380,12 +394,8 @@ const shapeRules = shapes.map((shape) => ({
 }));
 const modeEligibilityByShape = Object.fromEntries(shapes.map((shape) => {
   const admission = shapeNodeAdmission[shape.key];
-  const hasSku = shape.skuPolicy.skuMode === "REQUIRED_MATRIX";
   const modesFor = (nodeType) => {
-    if (!admission.inventoryBom || !admission.allowedNodeTypes.includes(nodeType)) return [];
-    if (nodeType === "CATALOG_ITEM" && hasSku) return ["NONE"];
-    if (nodeType === "OPTION_VALUE") return ["NONE", "BOM"];
-    return ["NONE", "INDEPENDENT_STOCK", "BOM"];
+    return admission.allowedModesByNodeType[nodeType] || [];
   };
   return [shape.key, {
     CATALOG_ITEM: modesFor("CATALOG_ITEM"),
@@ -422,11 +432,12 @@ const readModelNames = [
   "LocalCopyCandidatePage", "LocalCopyPreflight", "LocalCopyReadback", "TemporaryPromotionPreflight", "CatalogItemCommandReadback",
   "BrandCopyCandidatePage", "BrandCatalogCopyPreflight", "BrandCatalogCopyReadback", "InventoryTargetPage", "InventoryTargetCurrentView",
   "InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView",
-  "InventoryWriteReadback", "StagedCatalogAsset", "CatalogAssetReleaseReadback", "CatalogShapeManifestView",
+  "InventoryWriteReadback", "InventoryConsumptionTargetCandidatePage", "StagedCatalogAsset", "CatalogAssetReleaseReadback", "CatalogShapeManifestView",
   "CatalogAttributeDefinitionList", "CatalogOrderOptionDefinitionList", "CatalogUnitList"
 ];
 const readModelRequired = {
   ...Object.fromEntries(readModelNames.map((name) => [name, designCoverageByModel.get(name)?.required || ["revision", "requestId", "data"]])),
+  CatalogItemDetail: ["item", "tabs", "references", "inventoryRules", "productionTags", "compositeGroups", "governance", "actionAvailability", "deniedFields", "fieldOwnership", "queryIdentity"],
   CatalogAttributeDefinitionList: ["definitions"],
   CatalogOrderOptionDefinitionList: ["definitions"],
   CatalogUnitList: ["revision", "requestId", "data"]
@@ -528,7 +539,7 @@ const legacyOperationMetadata = operationRows.map(function (row) {
 // dictionary or item-owned ORDER_OPTION_VALUE model.  Their fields are kept
 // here because this generator is the single source for the catalog P1 OpenAPI,
 // route registry and generated wire DTOs.
-const catalogLibraryOperation = ({ordinal, operationId, method, path: operationPath, requestComponent, responseComponent, problemCodes, coordinatedOwners = [], coordinatedInventoryDefinitionCommands}) => {
+const catalogLibraryOperation = ({ordinal, operationId, method, path: operationPath, requestComponent, responseComponent, problemCodes, coordinatedOwners = [], coordinatedInventoryDefinitionCommands, initiatingOwner = "catalog"}) => {
   const mutation = method !== "GET";
   const capabilityByDataNodeType = mutation
     ? {HEAD_COMPANY: "EDIT_HEAD_COMPANY_CATALOG", STORE: "EDIT_STORE_CATALOG"}
@@ -548,7 +559,7 @@ const catalogLibraryOperation = ({ordinal, operationId, method, path: operationP
     capabilityByDataNodeType,
     allowedDataNodeTypes: ["HEAD_COMPANY", "STORE"],
     ...(coordinatedInventoryDefinitionCommands ? {coordinatedInventoryDefinitionCommands} : {}),
-    initiatingOwner: "catalog",
+    initiatingOwner,
     coordinatedOwners,
     requestComponent,
     responseComponent,
@@ -561,7 +572,7 @@ const catalogLibraryOperation = ({ordinal, operationId, method, path: operationP
     callChain: [
       {order: 1, kind: "EDGE", target: "operations-edge", purpose: "typed mapping only"},
       {order: 2, kind: "SECURITY_CONTEXT", target: "workspace-iam trusted context", purpose: "request-scoped authorization facts"},
-      {order: 3, kind: "INITIATING_OWNER", target: "catalog.api", owner: "catalog", purpose: "own decision and final readback"},
+      {order: 3, kind: "INITIATING_OWNER", target: initiatingOwner + ".api", owner: initiatingOwner, purpose: "own decision and final readback"},
       ...coordinatedOwners.map((owner, index) => ({order: index + 4, kind: "COORDINATED_OWNER", target: owner + ".api", owner, purpose: "declared owner judgment or command"}))
     ],
     conditionToProblem: problemCodes.map((problemCode, index) => ({precedence: index + 1, problemCode, conditions: ["Owner emits the declared typed " + problemCode + " condition."]})),
@@ -574,7 +585,18 @@ const definitionLimitProblems = ["VALIDATION_ERROR", "SCOPE_FORBIDDEN", "CATALOG
 const attributeMutationProblems = ["VALIDATION_ERROR", "SCOPE_FORBIDDEN", "NOT_FOUND", "DUPLICATE_CODE", "VERSION_CONFLICT", "IDEMPOTENCY_MISMATCH", "RESULT_UNKNOWN"];
 const orderOptionMutationProblems = ["VALIDATION_ERROR", "SCOPE_FORBIDDEN", "NOT_FOUND", "DUPLICATE_CODE", "VERSION_CONFLICT", "IDEMPOTENCY_MISMATCH", "RESULT_UNKNOWN", "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"];
 const unitMutationProblems = ["VALIDATION_ERROR", "SCOPE_FORBIDDEN", "NOT_FOUND", "DUPLICATE_CODE", "VERSION_CONFLICT", "CATALOG_UNIT_IN_USE", "CATALOG_UNIT_LIMIT_EXCEEDED", "IDEMPOTENCY_MISMATCH", "RESULT_UNKNOWN"];
-const operationMetadata = [...legacyOperationMetadata,
+const inventoryRuleProblems = ["INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED", "INVENTORY_BOM_EMPTY", "INVENTORY_BOM_SELF_REFERENCE", "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE"];
+const inventoryRuleConditions = [
+  "The submitted shape, owner node or mode is outside the contract admission matrix.",
+  "The submitted mode change is blocked by the inventory owner lifecycle guard.",
+  "A BOM mode is submitted without at least one valid component line.",
+  "A BOM line points back to its own owner.",
+  "A BOM component fails the scoped status, capability, target or consumption-unit eligibility checks."
+].map((conditions, index) => ({precedence: index + 10, problemCode: inventoryRuleProblems[index], conditions: [conditions]}));
+const operationMetadata = [
+  ...legacyOperationMetadata.map((entry) => entry.operationId === "saveOperationsCatalogItem"
+    ? {...entry, problemCodes: Array.from(new Set([...entry.problemCodes, ...inventoryRuleProblems])), conditionToProblem: [...entry.conditionToProblem, ...inventoryRuleConditions]}
+    : entry),
   catalogLibraryOperation({ordinal: 44, operationId: "listOperationsCatalogAttributeDefinitions", method: "GET", path: "/operations/catalog-inventory/attribute-definitions", requestComponent: "CatalogAttributeDefinitionListQuery", responseComponent: "CatalogAttributeDefinitionList", problemCodes: definitionLimitProblems}),
   catalogLibraryOperation({ordinal: 45, operationId: "createOperationsCatalogAttributeDefinition", method: "POST", path: "/operations/catalog-inventory/attribute-definitions", requestComponent: "CatalogAttributeDefinitionCreateRequest", responseComponent: "CatalogAttributeDefinitionReadback", problemCodes: attributeMutationProblems}),
   catalogLibraryOperation({ordinal: 46, operationId: "updateOperationsCatalogAttributeDefinition", method: "PATCH", path: "/operations/catalog-inventory/attribute-definitions/{definitionRef}", requestComponent: "CatalogAttributeDefinitionUpdateRequest", responseComponent: "CatalogAttributeDefinitionReadback", problemCodes: attributeMutationProblems}),
@@ -587,7 +609,8 @@ const operationMetadata = [...legacyOperationMetadata,
   catalogLibraryOperation({ordinal: 53, operationId: "createOperationsCatalogUnit", method: "POST", path: "/operations/catalog-inventory/units", requestComponent: "CatalogUnitCreateRequest", responseComponent: "CatalogUnitReadback", problemCodes: unitMutationProblems}),
   catalogLibraryOperation({ordinal: 54, operationId: "updateOperationsCatalogUnit", method: "PATCH", path: "/operations/catalog-inventory/units/{unitRef}", requestComponent: "CatalogUnitUpdateRequest", responseComponent: "CatalogUnitReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]}),
   catalogLibraryOperation({ordinal: 55, operationId: "disableOperationsCatalogUnit", method: "POST", path: "/operations/catalog-inventory/units/{unitRef}/disable", requestComponent: "CatalogUnitDisableRequest", responseComponent: "CatalogUnitReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]}),
-  catalogLibraryOperation({ordinal: 56, operationId: "deleteOperationsCatalogUnit", method: "DELETE", path: "/operations/catalog-inventory/units/{unitRef}", requestComponent: "CatalogUnitDeleteRequest", responseComponent: "CatalogUnitDeleteReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]})
+  catalogLibraryOperation({ordinal: 56, operationId: "deleteOperationsCatalogUnit", method: "DELETE", path: "/operations/catalog-inventory/units/{unitRef}", requestComponent: "CatalogUnitDeleteRequest", responseComponent: "CatalogUnitDeleteReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]}),
+  catalogLibraryOperation({ordinal: 57, operationId: "getOperationsInventoryConsumptionTargetCandidates", method: "GET", path: "/operations/catalog-inventory/inventory-consumption-target-candidates", requestComponent: "InventoryConsumptionTargetCandidateQuery", responseComponent: "InventoryConsumptionTargetCandidatePage", problemCodes: ["VALIDATION_ERROR", "SCOPE_FORBIDDEN"], initiatingOwner: "inventory"})
 ];
 
 const edgeContract = {
@@ -694,7 +717,7 @@ const fieldSchema = (model, field) => {
   if (field === "revision" || field === "requestId" || field === "generation" || field === "cursor" || field === "preflightDigest" || field.endsWith("Ref") || field.endsWith("Code")) return stringField("P1 typed field " + model + "." + field);
   if (["total", "entryCount", "pageSize", "version", "sourceVersion", "targetVersion", "selectedCount", "closureCount"].includes(field)) return integerField("P1 typed count/version " + model + "." + field);
   if (["loading", "error", "empty", "ready", "diagnosticsAvailability", "permission"].includes(field)) return objectField("P1 state fact " + model + "." + field);
-  if (["tree", "smartViews", "shapeCounts", "items", "tabs", "references", "inventoryBom", "productionTags", "governance", "closure", "referenceMappings", "compatibilityResults", "targetVersions", "entries", "queries", "timings", "warnings", "recentChanges", "ledger", "balance", "configuration", "stockState"].includes(field)) return arrayField("P1 collection fact " + model + "." + field, objectField("typed entry"));
+  if (["tree", "smartViews", "shapeCounts", "items", "tabs", "references", "inventoryRules", "productionTags", "governance", "closure", "referenceMappings", "compatibilityResults", "targetVersions", "entries", "queries", "timings", "warnings", "recentChanges", "ledger", "balance", "configuration", "stockState"].includes(field)) return arrayField("P1 collection fact " + model + "." + field, objectField("typed entry"));
   if (["summary", "item", "target", "data", "changeSummary", "current", "source", "result", "resource", "details"].includes(field)) return objectField("P1 object fact " + model + "." + field);
   if (["increase", "decrease", "netChange", "quantity", "actual", "limit"].includes(field)) return integerField("P1 numeric fact " + model + "." + field);
   return stringField("P1 typed field " + model + "." + field);
@@ -811,8 +834,9 @@ const requestFieldMap = {
   // First-step item identity is intentionally small and atomic.  Descriptive
   // attributes are definition assignments in the full save, never a free map.
   CatalogItemCreateRequest: {dataNodeRef: uuidField("selected data node"), name: stringField("catalog item name"), code: stringField("catalog code"), categoryRef: {type: ["string", "null"], format: "uuid", description: "one optional catalog category"}, shapeKey: stringField("shape")},
-  CatalogItemSaveRequest: {dataNodeRef: uuidField("selected data node"), itemCode: stringField("catalog item code"), expectedVersion: integerField("expected catalog version"), categoryRef: {type: ["string", "null"], format: "uuid", description: "one optional catalog category"}, salesUnitRef: {type: ["string", "null"], format: "uuid", description: "one optional sales unit"}, baseMeasureUnitRef: {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"}, attributeAssignments: arrayField("typed product attribute assignments", typedEntry({definitionRef: uuidField("attribute definition reference"), textValue: {type: ["string", "null"], description: "text value for a text attribute"}, optionRefs: arrayField("selected attribute option references", uuidField("attribute option reference"))}, ["definitionRef", "optionRefs"])), orderOptionConfigs: arrayField("typed product ordering option settings", typedEntry({definitionRef: uuidField("ordering option definition reference"), required: booleanField("whether a customer must choose"), minSelectionCount: {type: ["integer", "null"], description: "minimum selections for a multiple-choice option"}, maxSelectionCount: {type: ["integer", "null"], description: "maximum selections for a multiple-choice option"}, values: arrayField("settings for library option values", typedEntry({definitionValueRef: uuidField("ordering option value reference"), defaultValue: booleanField("default selected value"), extraPrice: {type: ["number", "null"], description: "extra price"}, expectedBomVersion: {type: "integer", minimum: 0, description: "hidden optimistic version returned by item detail"}, materialQuantities: arrayField("actual material consumption", typedEntry({materialRef: uuidField("option material template reference"), actualQuantity: {type: ["number", "null"], description: "actual consumption quantity"}}, ["materialRef", "actualQuantity"]))}, ["definitionValueRef", "defaultValue", "expectedBomVersion", "materialQuantities"]))}, ["definitionRef", "required", "values"]))},
+  CatalogItemSaveRequest: {dataNodeRef: uuidField("selected data node"), itemCode: stringField("catalog item code"), expectedVersion: integerField("expected catalog version"), categoryRef: {type: ["string", "null"], format: "uuid", description: "one optional catalog category"}, salesUnitRef: {type: ["string", "null"], format: "uuid", description: "one optional sales unit"}, baseMeasureUnitRef: {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"}, attributeAssignments: arrayField("typed product attribute assignments", typedEntry({definitionRef: uuidField("attribute definition reference"), textValue: {type: ["string", "null"], description: "text value for a text attribute"}, optionRefs: arrayField("selected attribute option references", uuidField("attribute option reference"))}, ["definitionRef", "optionRefs"])), orderOptionConfigs: arrayField("typed product ordering option settings", typedEntry({definitionRef: uuidField("ordering option definition reference"), required: booleanField("whether a customer must choose"), minSelectionCount: {type: ["integer", "null"], description: "minimum selections for a multiple-choice option"}, maxSelectionCount: {type: ["integer", "null"], description: "maximum selections for a multiple-choice option"}, values: arrayField("settings for library option values", typedEntry({definitionValueRef: uuidField("ordering option value reference"), defaultValue: booleanField("default selected value"), extraPrice: {type: ["number", "null"], description: "extra price"}, expectedBomVersion: {type: "integer", minimum: 0, description: "hidden optimistic version returned by item detail"}}, ["definitionValueRef", "defaultValue", "expectedBomVersion"]))}, ["definitionRef", "required", "values"]))},
   CatalogUnitListQuery: {dataNodeRef: uuidField("selected data node"), includeInactive: {type: "boolean", description: "include disabled units in maintenance list"}, dimension: stringField("optional unit dimension filter")},
+  InventoryConsumptionTargetCandidateQuery: {dataNodeRef: uuidField("selected store node"), keyword: stringField("candidate search keyword"), cursor: stringField("opaque candidate cursor"), pageSize: {type: "integer", minimum: 1, maximum: 100, description: "candidate page size"}},
   CatalogUnitCreateRequest: {dataNodeRef: uuidField("selected data node"), code: stringField("unit code"), name: stringField("unit name"), unitDimension: stringField("unit category"), precision: {type: "integer", minimum: 0, description: "decimal places; zero means whole numbers"}},
   CatalogUnitUpdateRequest: {dataNodeRef: uuidField("selected data node"), unitRef: uuidField("unit reference"), expectedVersion: integerField("expected version"), code: stringField("optional unit code"), name: stringField("unit name"), unitDimension: stringField("optional unit category"), precision: {type: "integer", minimum: 0, description: "optional decimal places; zero means whole numbers"}},
   CatalogUnitDisableRequest: {dataNodeRef: uuidField("selected data node"), unitRef: uuidField("unit reference"), expectedVersion: integerField("expected version")},
@@ -879,7 +903,8 @@ const optionalRequestFields = {
   CatalogUnitUpdateRequest: new Set(["code", "unitDimension", "precision"]),
   InventoryCountRequest: new Set(["countingUnitRef"]),
   InventoryIncreaseRequest: new Set(["countingUnitRef"]),
-  InventoryAdjustmentRequest: new Set(["countingUnitRef"])
+  InventoryAdjustmentRequest: new Set(["countingUnitRef"]),
+  InventoryConsumptionTargetCandidateQuery: new Set(["keyword", "cursor", "pageSize"])
 };
 const unitSnapshotSchema = typedEntry({
   unitRef: uuidField("unit definition reference"),
@@ -903,6 +928,76 @@ const catalogUnitAssignmentSchema = {
   },
   required: ["unitRef", "code", "name", "unitDimension", "precision", "status", "inheritanceSource"]
 };
+const inventoryRuleModeSchema = {type: "string", enum: ["NONE", "DIRECT", "BOM"], description: "one mutually exclusive inventory deduction mode"};
+const inventoryRuleOwnerSchema = typedEntry({
+  ownerType: {type: "string", enum: ["ITEM", "SKU", "OPTION_VALUE"], description: "derived owner grain"},
+  itemRef: uuidField("catalog item reference"),
+  productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional SKU reference"},
+  optionValueRef: {type: ["string", "null"], format: "uuid", description: "optional option value reference"},
+  itemCode: {type: ["string", "null"], description: "catalog display code supplied by catalog owner"},
+  skuCode: {type: ["string", "null"], description: "SKU display code supplied by catalog owner"},
+  optionValueCode: {type: ["string", "null"], description: "option value display code supplied by catalog owner"}
+}, ["ownerType", "itemRef", "productSkuRef", "optionValueRef"]);
+const inventoryRuleDirectConfigurationSchema = typedEntry({
+  allowNegative: booleanField("whether the balance may become negative"),
+  lowStockThreshold: {type: ["string", "null"], format: "decimal", description: "low-stock threshold in consumption unit"},
+  countingUnitRef: {type: ["string", "null"], format: "uuid", description: "optional counting unit reference"},
+  conversionFactor: {type: ["string", "null"], format: "decimal", description: "positive counting-to-consumption factor"}
+}, ["allowNegative", "lowStockThreshold", "countingUnitRef", "conversionFactor"]);
+const inventoryRuleBomLineSaveSchema = typedEntry({
+  targetRef: uuidField("component inventory target reference"),
+  lineSign: {type: "string", enum: ["POSITIVE", "NEGATIVE"], description: "component add/remove direction"},
+  quantity: {type: "string", format: "decimal", description: "component quantity in its consumption unit"}
+}, ["targetRef", "lineSign", "quantity"]);
+const inventoryRuleNodeSaveSchema = typedEntry({
+  owner: inventoryRuleOwnerSchema,
+  mode: inventoryRuleModeSchema,
+  consumptionUnitSnapshot: nullableUnitSnapshotSchema,
+  expectedTargetVersion: {type: ["integer", "null"], minimum: 0, description: "direct target version observed by the caller"},
+  expectedBomVersion: {type: ["integer", "null"], minimum: 0, description: "BOM definition version observed by the caller"},
+  directConfiguration: {type: ["object", "null"], additionalProperties: false, properties: inventoryRuleDirectConfigurationSchema.properties, required: inventoryRuleDirectConfigurationSchema.required},
+  bom: {type: ["object", "null"], additionalProperties: false, required: ["lines"], properties: {lines: arrayField("component BOM lines", inventoryRuleBomLineSaveSchema)}}
+}, ["owner", "mode", "consumptionUnitSnapshot", "expectedTargetVersion", "expectedBomVersion", "directConfiguration", "bom"]);
+const inventoryRulesSaveSchema = typedEntry({
+  nodes: arrayField("all derived inventory owners for this item", inventoryRuleNodeSaveSchema)
+}, ["nodes"]);
+const inventoryRuleDirectReadbackSchema = typedEntry({
+  targetRef: {type: ["string", "null"], format: "uuid", description: "direct stock target reference"},
+  allowNegative: {type: ["boolean", "null"], description: "whether the balance may become negative"},
+  lowStockThreshold: {type: ["string", "null"], format: "decimal", description: "low-stock threshold in consumption unit"},
+  consumptionUnitSnapshot: nullableUnitSnapshotSchema,
+  countingUnitSnapshot: nullableUnitSnapshotSchema,
+  conversionFactor: {type: ["string", "null"], format: "decimal", description: "positive counting-to-consumption factor"},
+  version: {type: ["integer", "null"], minimum: 0, description: "target version"}
+}, ["targetRef", "allowNegative", "lowStockThreshold", "consumptionUnitSnapshot", "countingUnitSnapshot", "conversionFactor", "version"]);
+const inventoryRuleBomLineReadbackSchema = typedEntry({
+  targetRef: uuidField("component inventory target reference"),
+  itemRef: uuidField("component item reference"),
+  productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional component SKU reference"},
+  itemCode: stringField("component item code"),
+  skuCode: {type: ["string", "null"], description: "optional component SKU code"},
+  itemName: stringField("component item name"),
+  skuName: {type: ["string", "null"], description: "optional component SKU name"},
+  lineSign: {type: "string", enum: ["POSITIVE", "NEGATIVE"], description: "component add/remove direction"},
+  quantity: {type: "string", format: "decimal", description: "component quantity"},
+  consumptionUnitSnapshot: unitSnapshotSchema
+}, ["targetRef", "itemRef", "productSkuRef", "itemCode", "skuCode", "itemName", "skuName", "lineSign", "quantity", "consumptionUnitSnapshot"]);
+const inventoryRuleNodeReadbackSchema = typedEntry({
+  owner: inventoryRuleOwnerSchema,
+  itemCode: stringField("owner item code"),
+  itemName: stringField("owner item name"),
+  skuCode: {type: ["string", "null"], description: "optional owner SKU code"},
+  optionValueCode: {type: ["string", "null"], description: "optional owner option value code"},
+  allowedModes: arrayField("modes admitted by shape and owner grain", inventoryRuleModeSchema),
+  defaultMode: inventoryRuleModeSchema,
+  disabledReason: {type: ["string", "null"], description: "safe reason when an admitted mode is disabled"},
+  mode: inventoryRuleModeSchema,
+  directConfiguration: {type: ["object", "null"], additionalProperties: false, properties: inventoryRuleDirectReadbackSchema.properties, required: inventoryRuleDirectReadbackSchema.required},
+  bom: {type: ["object", "null"], additionalProperties: false, required: ["version", "lines"], properties: {version: {type: ["integer", "null"], minimum: 0}, lines: arrayField("component BOM lines", inventoryRuleBomLineReadbackSchema)}}
+}, ["owner", "itemCode", "itemName", "skuCode", "optionValueCode", "allowedModes", "defaultMode", "disabledReason", "mode", "directConfiguration", "bom"]);
+const inventoryRulesReadbackSchema = typedEntry({
+  nodes: arrayField("derived inventory owner rules", inventoryRuleNodeReadbackSchema)
+}, ["nodes"]);
 const attributeAssignmentSchema = typedEntry({
   definitionRef: uuidField("attribute definition reference"),
   code: stringField("attribute code"),
@@ -924,16 +1019,8 @@ const orderOptionConfigSchema = typedEntry({
     displayOrder: integerField("customer display order"),
     defaultValue: booleanField("default selected value"),
     extraPrice: {type: ["number", "null"], description: "extra price"},
-    bomVersion: {type: ["integer", "null"], minimum: 0, description: "inventory BOM version for the option value"},
-    materialQuantities: arrayField("actual material consumption", typedEntry({
-      materialRef: uuidField("option material template reference"),
-      materialItemRef: uuidField("material item reference"),
-      materialItemName: stringField("material item name"),
-      stockTargetRef: uuidField("inventory target reference"),
-      consumptionUnitSnapshot: unitSnapshotSchema,
-      actualQuantity: {type: ["number", "null"], description: "actual consumption quantity"}
-    }, ["materialRef", "materialItemRef", "materialItemName", "stockTargetRef", "consumptionUnitSnapshot", "actualQuantity"]))
-  }, ["definitionValueRef", "name", "displayOrder", "defaultValue", "extraPrice", "bomVersion", "materialQuantities"]))
+    bomVersion: {type: ["integer", "null"], minimum: 0, description: "inventory BOM version for the option value"}
+  }, ["definitionValueRef", "name", "displayOrder", "defaultValue", "extraPrice", "bomVersion"]))
 }, ["definitionRef", "name", "selectionMode", "required", "minSelectionCount", "maxSelectionCount", "values"]);
 const attributeAssignmentSaveSchema = typedEntry({
   definitionRef: uuidField("attribute definition reference"),
@@ -949,12 +1036,8 @@ const orderOptionConfigSaveSchema = typedEntry({
     definitionValueRef: uuidField("ordering option value reference"),
     defaultValue: booleanField("default selected value"),
     extraPrice: {type: ["number", "null"], description: "extra price"},
-    expectedBomVersion: {type: "integer", minimum: 0, description: "inventory BOM version observed in item detail"},
-    materialQuantities: arrayField("actual material consumption", typedEntry({
-      materialRef: uuidField("option material template reference"),
-      actualQuantity: {type: ["number", "null"], description: "actual consumption quantity"}
-    }, ["materialRef", "actualQuantity"]))
-  }, ["definitionValueRef", "defaultValue", "expectedBomVersion", "materialQuantities"]))
+    expectedBomVersion: {type: "integer", minimum: 0, description: "inventory BOM version observed in item detail"}
+  }, ["definitionValueRef", "defaultValue", "expectedBomVersion"]))
 }, ["definitionRef", "required", "values"]);
 const responseFieldMap = {
   CatalogAttributeDefinitionList: {
@@ -1060,6 +1143,26 @@ const responseFieldMap = {
       }, ["unitRef", "code", "name", "unitDimension", "precision", "status", "isReferenced", "version"]))
     }, ["units"])
   },
+  InventoryConsumptionTargetCandidatePage: {
+    revision: stringField("contract revision"),
+    requestId: stringField("request correlation"),
+    data: typedEntry({
+      items: arrayField("cursor page of eligible inventory component targets", typedEntry({
+        targetRef: uuidField("inventory target reference"),
+        itemRef: uuidField("component item reference"),
+        productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional component SKU reference"},
+        itemCode: stringField("component item code"),
+        skuCode: {type: ["string", "null"], description: "optional component SKU code"},
+        itemName: stringField("component item name"),
+        skuName: {type: ["string", "null"], description: "optional component SKU name"},
+        status: {type: "string", enum: ["ENABLED", "DISABLED"], description: "component catalog status"},
+        consumptionUnitSnapshot: unitSnapshotSchema
+      }, ["targetRef", "itemRef", "productSkuRef", "itemCode", "skuCode", "itemName", "skuName", "status", "consumptionUnitSnapshot"])),
+      total: integerField("total eligible candidate count"),
+      cursor: {type: ["string", "null"], description: "echoed opaque cursor"},
+      nextCursor: {type: ["string", "null"], description: "opaque cursor for the next page"}
+    }, ["items", "total", "cursor", "nextCursor"])
+  },
   CatalogUnitReadback: {
     revision: stringField("contract revision"),
     requestId: stringField("request correlation"),
@@ -1099,7 +1202,7 @@ const responseFieldMap = {
         orderOptionConfigs: arrayField("saved product ordering option settings", orderOptionConfigSchema),
         version: integerField("saved catalog version")
       }, ["itemRef", "code", "categoryRef", "salesUnitRef", "baseMeasureUnitRef", "salesUnit", "baseMeasureUnit", "attributeAssignments", "orderOptionConfigs", "version"]),
-      inventoryBom: arrayField("saved inventory/BOM", typedEntry({targetRef: uuidField("target ref"), mode: stringField("mode")}, ["targetRef", "mode"])),
+      inventoryRules: inventoryRulesReadbackSchema,
       productionTags: arrayField("saved production tags", typedEntry({code: stringField("tag code"), status: stringField("status")}, ["code", "status"])),
       skuTransitions: arrayField("SKU lifecycle transition judgments", typedEntry({
         skuRef: uuidField("SKU opaque reference"),
@@ -1134,6 +1237,17 @@ const responseFieldMap = {
   }
 };
 
+// The candidate page is owned by this P1 declaration.  The historical
+// read-model coverage still describes the retired fact envelope, so it must
+// not overwrite the cursor candidate contract when component schemas are
+// assembled from the read-model registry.
+componentSchemas.InventoryConsumptionTargetCandidatePage = {
+  type: "object",
+  additionalProperties: false,
+  required: ["revision", "requestId", "data"],
+  properties: responseFieldMap.InventoryConsumptionTargetCandidatePage
+};
+
 // The item editor owns a single optional category and relational definition
 // facts.  This patch is deliberately applied to the existing long-lived item
 // detail schema so unaffected SKU, inventory and governance facts remain
@@ -1146,6 +1260,7 @@ const applyDefinitionFactsToCatalogItemDetail = (detailSchema) => {
   delete item.properties.attributes;
   delete item.properties.orderOptions;
   delete item.properties.salesUnitRefs;
+  delete item.properties.inventoryBom;
   item.properties.categoryRef = {type: ["string", "null"], format: "uuid", description: "one optional catalog category"};
   item.properties.salesUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional sales unit"};
   item.properties.baseMeasureUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"};
@@ -1161,12 +1276,15 @@ const applyDefinitionFactsToCatalogItemDetail = (detailSchema) => {
     skuItems.properties.baseMeasureUnit = catalogUnitAssignmentSchema;
     skuItems.required = Array.from(new Set([...(skuItems.required || []), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef"]));
   }
-  item.required = (item.required || []).filter((field) => !["categoryRefs", "attributes", "orderOptions", "salesUnitRefs"].includes(field));
+  item.required = (item.required || []).filter((field) => !["categoryRefs", "attributes", "orderOptions", "salesUnitRefs", "inventoryBom"].includes(field));
   item.required.push(
     "categoryRef", "salesUnitRef", "baseMeasureUnitRef", "salesUnit", "baseMeasureUnit", "attributeAssignments", "orderOptionConfigs"
   );
   delete data.properties.orderOptions;
   delete data.properties.orderOptionConfigs;
+  delete data.properties.inventoryBom;
+  data.properties.inventoryRules = inventoryRulesReadbackSchema;
+  data.required = Array.from(new Set([...(data.required || []).filter((field) => field !== "inventoryBom"), "inventoryRules"]));
   data.required = (data.required || []).filter((field) => !["orderOptions", "orderOptionConfigs"].includes(field));
 };
 applyDefinitionFactsToCatalogItemDetail(componentSchemas.CatalogItemDetail);
@@ -1183,7 +1301,8 @@ const responseRequiredFields = {
   CatalogItemBatchStatusTransitionReadback: ["revision", "requestId", "results"],
   CatalogAttributeDefinitionList: ["revision", "requestId", "data"],
   CatalogOrderOptionDefinitionList: ["revision", "requestId", "data"],
-  CatalogUnitList: ["revision", "requestId", "data"]
+  CatalogUnitList: ["revision", "requestId", "data"],
+  InventoryConsumptionTargetCandidatePage: ["revision", "requestId", "data"]
 };
 for (const entry of operationMetadata) {
   const baseFields = requestFieldMap[entry.requestComponent] || {dataNodeRef: uuidField("selected data node")};
@@ -1210,8 +1329,9 @@ for (const entry of operationMetadata) {
   }
 }
 const applyDefinitionFactsToCatalogItemSaveRequest = (saveSchema) => {
-  const draft = saveSchema?.properties?.sections?.properties?.catalogDraft;
-  if (!draft) throw new Error("P1_CATALOG_ITEM_SAVE_DRAFT_SCHEMA_MISSING");
+  const sections = saveSchema?.properties?.sections;
+  const draft = sections?.properties?.catalogDraft;
+  if (!sections || !draft) throw new Error("P1_CATALOG_ITEM_SAVE_DRAFT_SCHEMA_MISSING");
   delete draft.properties.attributes;
   delete draft.properties.categoryRefs;
   delete draft.properties.orderOptions;
@@ -1221,6 +1341,7 @@ const applyDefinitionFactsToCatalogItemSaveRequest = (saveSchema) => {
   draft.properties.baseMeasureUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"};
   draft.properties.attributeAssignments = arrayField("typed product attribute assignments", attributeAssignmentSaveSchema);
   draft.properties.orderOptionConfigs = arrayField("typed product ordering option settings", orderOptionConfigSaveSchema);
+  delete draft.properties.inventoryBom;
   const skuItems = draft.properties.skus?.items;
   if (skuItems?.properties) {
     skuItems.properties.salesUnitOverrideRef = {type: ["string", "null"], format: "uuid", description: "SKU sales unit override; null inherits item setting"};
@@ -1228,56 +1349,12 @@ const applyDefinitionFactsToCatalogItemSaveRequest = (saveSchema) => {
     skuItems.required = Array.from(new Set([...(skuItems.required || []), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef"]));
   }
   draft.required = (draft.required || []).filter((field) => !["attributes", "categoryRefs", "orderOptions", "salesUnitRefs"].includes(field));
+  delete sections.properties.inventoryConfiguration;
+  delete sections.properties.expectedInventoryVersions;
+  sections.properties.inventoryRules = inventoryRulesSaveSchema;
+  sections.required = Array.from(new Set([...(sections.required || []).filter((field) => !["inventoryConfiguration", "expectedInventoryVersions"].includes(field)), "inventoryRules"]));
 };
 applyDefinitionFactsToCatalogItemSaveRequest(componentSchemas.CatalogItemSaveRequest);
-
-// Whole-save inventory input carries only target identity and the counting
-// configuration.  Consumption-unit facts are resolved by inventory from the
-// catalog-owned effective base-unit snapshot and are never accepted as a
-// caller-supplied string or JSON fallback.
-const inventoryConfigurationSaveSchema = typedEntry({
-  allowNegative: {type: "boolean", description: "whether the balance may become negative"},
-  lowStockThreshold: {type: ["string", "null"], format: "decimal", description: "low-stock threshold"},
-  countingUnitRef: {type: ["string", "null"], format: "uuid", description: "optional counting unit reference"},
-  conversionFactor: {type: ["string", "null"], format: "decimal", description: "positive counting-to-consumption factor"}
-}, ["allowNegative", "lowStockThreshold", "countingUnitRef", "conversionFactor"]);
-const inventoryConfigurationNodeSaveSchema = typedEntry({
-  nodeType: stringField("inventory node type"),
-  mode: stringField("inventory mode"),
-  targetRef: uuidField("inventory target reference"),
-  itemCode: stringField("inventory item code"),
-  itemRef: uuidField("inventory item reference"),
-  skuCode: {type: ["string", "null"], description: "optional SKU code"},
-  productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional SKU reference"},
-  configuration: inventoryConfigurationSaveSchema
-}, ["nodeType", "mode", "targetRef", "itemCode", "itemRef", "skuCode", "productSkuRef", "configuration"]);
-const inventoryBomSaveLineSchema = typedEntry({
-  nodeType: stringField("inventory node type"),
-  mode: stringField("inventory mode"),
-  targetRef: uuidField("inventory target reference"),
-  quantity: {type: "string", format: "decimal", description: "quantity in the component consumption unit"},
-  itemCode: stringField("inventory item code"),
-  itemRef: uuidField("inventory item reference"),
-  productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional SKU reference"},
-  optionValueRef: {type: ["string", "null"], format: "uuid", description: "optional option value reference"},
-  skuCode: {type: ["string", "null"], description: "optional SKU code"},
-  optionValueCode: {type: ["string", "null"], description: "optional option value code"},
-  version: integerField("inventory target version")
-}, ["nodeType", "mode", "targetRef", "quantity", "itemCode", "itemRef", "productSkuRef", "optionValueRef", "skuCode", "optionValueCode", "version"]);
-const patchCatalogItemSaveInventoryInputs = (saveSchema) => {
-  const sections = saveSchema?.properties?.sections?.properties;
-  const draft = sections?.catalogDraft;
-  const inventoryConfiguration = sections?.inventoryConfiguration;
-  const nodes = inventoryConfiguration?.properties?.nodes;
-  if (!draft || !inventoryConfiguration || !nodes?.items) throw new Error("P1_CATALOG_ITEM_SAVE_INVENTORY_INPUT_SCHEMA_MISSING");
-  draft.properties.inventoryBom = {type: "array", description: "inventory target identities and quantities; unit facts are owner-derived", items: inventoryBomSaveLineSchema};
-  const draftRequired = new Set(draft.required || []);
-  draftRequired.delete("inventoryBom");
-  draft.required = [...draftRequired];
-  inventoryConfiguration.properties.nodes = {type: "array", description: "inventory targets coordinated by whole-save", items: inventoryConfigurationNodeSaveSchema};
-  inventoryConfiguration.required = ["nodes"];
-};
-patchCatalogItemSaveInventoryInputs(componentSchemas.CatalogItemSaveRequest);
 
 const renameRequiredField = (schema, from, to, replacement) => {
   if (!schema?.properties) throw new Error(`P1_SCHEMA_FIELD_PARENT_MISSING:${from}`);
@@ -1288,27 +1365,6 @@ const renameRequiredField = (schema, from, to, replacement) => {
     if (!schema.required.includes(to)) schema.required.push(to);
   }
 };
-const inventoryConfigurationReadbackSchema = typedEntry({
-  allowNegative: {type: "boolean", description: "whether the balance may become negative"},
-  lowStockThreshold: {type: ["string", "null"], format: "decimal", description: "low-stock threshold"},
-  countingUnitSnapshot: nullableUnitSnapshotSchema,
-  conversionFactor: {type: "string", format: "decimal", description: "positive counting-to-consumption factor"}
-}, ["allowNegative", "lowStockThreshold", "countingUnitSnapshot", "conversionFactor"]);
-const inventoryBomLineSchema = typedEntry({
-  nodeType: stringField("inventory node type"),
-  mode: stringField("inventory mode"),
-  targetRef: uuidField("inventory target reference"),
-  quantity: {type: "string", format: "decimal", description: "quantity in the component consumption unit"},
-  consumptionUnitSnapshot: unitSnapshotSchema,
-  configuration: inventoryConfigurationReadbackSchema,
-  version: integerField("inventory target version"),
-  itemCode: stringField("inventory item code"),
-  itemRef: uuidField("inventory item reference"),
-  productSkuRef: {type: ["string", "null"], format: "uuid", description: "optional SKU reference"},
-  optionValueRef: {type: ["string", "null"], format: "uuid", description: "optional option value reference"},
-  skuCode: {type: ["string", "null"], description: "optional SKU code"},
-  optionValueCode: {type: ["string", "null"], description: "optional option value code"}
-}, ["nodeType", "mode", "targetRef", "quantity", "consumptionUnitSnapshot", "configuration", "version", "itemCode", "itemRef", "productSkuRef", "optionValueRef", "skuCode", "optionValueCode"]);
 const patchInventoryItem = (schema) => {
   const item = schema?.properties?.data?.properties?.items?.items;
   if (!item) throw new Error("P1_INVENTORY_ITEM_SCHEMA_MISSING");
@@ -1324,12 +1380,6 @@ const patchInventoryTargetView = (schema) => {
   if (!configuration) throw new Error("P1_INVENTORY_CONFIGURATION_SCHEMA_MISSING");
   renameRequiredField(configuration, "countingUnit", "countingUnitSnapshot", nullableUnitSnapshotSchema);
 };
-const patchInventoryBom = (schema) => {
-  const data = schema?.properties?.data;
-  const item = data?.properties?.item;
-  if (item?.properties?.inventoryBom) item.properties.inventoryBom = {type: "array", description: "inventory target and immutable consumption-unit facts", items: inventoryBomLineSchema};
-  if (data?.properties?.inventoryBom) data.properties.inventoryBom = {type: "array", description: "inventory target and immutable consumption-unit facts", items: inventoryBomLineSchema};
-};
 patchInventoryItem(componentSchemas.InventoryTargetPage);
 patchInventoryTargetView(componentSchemas.InventoryTargetCurrentView);
 for (const model of ["InventoryLedgerPage", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage"]) {
@@ -1340,7 +1390,7 @@ for (const model of ["InventoryLedgerPage", "InventoryBusinessHistoryPage", "Inv
     entries.required = [...new Set([...(entries.required || []).filter((field) => field !== "unit"), "consumptionUnitSnapshot"])]
   }
 }
-patchInventoryBom(componentSchemas.CatalogItemDetail);
+if (!componentSchemas.CatalogItemDetail?.properties?.data?.properties?.inventoryRules) throw new Error("P1_CATALOG_ITEM_INVENTORY_RULES_SCHEMA_MISSING");
 componentSchemas.InventoryTargetConfigurationRequest = {
   type: "object",
   additionalProperties: false,
@@ -1375,7 +1425,7 @@ componentSchemas.TypedProblem = {type: "object", additionalProperties: false, re
 const paths = {};
 for (const entry of operationMetadata) {
   const operation = {
-    operationId: entry.operationId, tags: [entry.ordinal >= 29 && entry.ordinal <= 39 ? "Inventory" : "Catalog"],
+    operationId: entry.operationId, tags: [entry.initiatingOwner === "inventory" || (entry.ordinal >= 29 && entry.ordinal <= 39) ? "Inventory" : "Catalog"],
     "x-consumer-faces": entry.consumerFaces, "x-owner-module": entry.initiatingOwner,
     "x-coordinated-owners": entry.coordinatedOwners, "x-capability-keys": entry.capabilityKeys,
     "x-capability-by-data-node-type": entry.capabilityByDataNodeType,
@@ -1409,11 +1459,11 @@ const componentShardGroups = {
   "components/catalog/catalog-dictionary.schemas.json": ["CatalogDictionaryView", "CatalogDictionaryQuery", "CatalogDictionaryEntryCreateRequest", "CatalogDictionaryEntryUpdateRequest", "CatalogDictionaryEntryReorderRequest", "CatalogDictionaryEntryReadback", "CatalogAttributeDefinitionListQuery", "CatalogAttributeDefinitionList", "CatalogAttributeDefinitionCreateRequest", "CatalogAttributeDefinitionUpdateRequest", "CatalogAttributeDefinitionDeleteRequest", "CatalogAttributeDefinitionReadback", "CatalogAttributeDefinitionDeleteReadback", "CatalogOrderOptionDefinitionListQuery", "CatalogOrderOptionDefinitionList", "CatalogOrderOptionDefinitionCreateRequest", "CatalogOrderOptionDefinitionUpdateRequest", "CatalogOrderOptionDefinitionDeleteRequest", "CatalogOrderOptionDefinitionReadback", "CatalogOrderOptionDefinitionDeleteReadback", "CatalogUnitListQuery", "CatalogUnitList", "CatalogUnitCreateRequest", "CatalogUnitUpdateRequest", "CatalogUnitDisableRequest", "CatalogUnitDeleteRequest", "CatalogUnitReadback", "CatalogUnitDeleteReadback"],
   "components/catalog/catalog-copy.schemas.json": ["LocalCopyCandidatePage", "LocalCopyPreflight", "LocalCopyReadback", "BrandCopyCandidatePage", "BrandCatalogCopyPreflight", "BrandCatalogCopyReadback"],
   "components/inventory/inventory-common.schemas.json": ["InventoryTargetPage", "InventoryTargetCurrentView"],
-  "components/inventory/inventory-workbench.schemas.json": ["InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView"],
+  "components/inventory/inventory-workbench.schemas.json": ["InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView", "InventoryConsumptionTargetCandidatePage"],
   "components/inventory/inventory-command.schemas.json": ["InventoryWriteReadback", "InventoryCountRequest", "InventoryIncreaseRequest", "InventoryAdjustmentRequest", "InventoryTargetConfigurationRequest"],
   "components/fulfillment-production/production-tag.schemas.json": ["ProductionTagPage", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
 };
-const schemaShardForOrdinal = (ordinal) => ordinal >= 44 && ordinal <= 56 ? "components/catalog/catalog-dictionary.schemas.json" : ordinal === 43 ? "components/catalog/catalog-item.schemas.json" :
+const schemaShardForOrdinal = (ordinal) => ordinal >= 44 && ordinal <= 56 ? "components/catalog/catalog-dictionary.schemas.json" : ordinal === 57 ? "components/inventory/inventory-workbench.schemas.json" : ordinal === 43 ? "components/catalog/catalog-item.schemas.json" :
   ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.json" :
   ordinal >= 36 && ordinal <= 39 ? "components/inventory/inventory-command.schemas.json" :
   ordinal >= 21 && ordinal <= 28 ? "components/catalog/catalog-copy.schemas.json" :
@@ -1439,7 +1489,7 @@ const pathShardGroups = {
   "paths/operations-admin/catalog-item-management.paths.json": [5, 6, 7, 24, 25, 40, 41, 43],
   "paths/operations-admin/catalog-dictionary-management.paths.json": [8, 9, 10, 11, 12, 13, 14, 15, 16, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56],
   "paths/operations-admin/catalog-copy.paths.json": [22, 23, 27, 28],
-  "paths/operations-admin/inventory-workbench.paths.json": [29, 30, 31, 32, 33, 34, 35],
+  "paths/operations-admin/inventory-workbench.paths.json": [29, 30, 31, 32, 33, 34, 35, 57],
   "paths/operations-admin/inventory-management.paths.json": [36, 37, 38, 39],
   "paths/operations-admin/production-tag-management.paths.json": [17, 18, 19, 20]
 };
@@ -1474,9 +1524,16 @@ const seedDatasets = [
     bomLines: [{ownerCode: "CAESAR-001", ownerKind: "ITEM", componentCode: "LETTUCE-001", quantity: 120}, {ownerCode: "DRESSING-CLASSIC", ownerKind: "OPTION_VALUE", componentCode: "DRESSING-001", quantity: 30}, {ownerCode: "SIZE-LARGE", ownerKind: "OPTION_VALUE", componentCode: "CHICKEN-001", quantity: 80}, {ownerCode: "TOPPING-BACON", ownerKind: "OPTION_VALUE", componentCode: "BACON-001", quantity: 20}],
     relations: [{from: "CAESAR-001", to: "LETTUCE-001", refKind: "BOM", refCode: "LETTUCE-001"}, {from: "DRESSING-CLASSIC", to: "DRESSING-001", refKind: "BOM", refCode: "DRESSING-001"}, {from: "SIZE-LARGE", to: "CHICKEN-001", refKind: "BOM", refCode: "CHICKEN-001"}, {from: "TOPPING-BACON", to: "BACON-001", refKind: "BOM", refCode: "BACON-001"}]
   }},
+  {fixtureId: "SEED-MILK-TEA", purpose: "选项值正负 BOM，验证换燕麦奶的实际用量。", entities: {
+    catalogItems: [{code: "MILK-TEA-001", shapeKey: "STANDARD_SALE_COUNTED", name: "燕麦奶茶"}],
+    optionGroups: [{code: "MILK_SWAP"}],
+    optionValues: [{code: "REGULAR_MILK", groupCode: "MILK_SWAP"}, {code: "OAT_MILK", groupCode: "MILK_SWAP"}],
+    bomLines: [{ownerCode: "REGULAR_MILK", ownerKind: "OPTION_VALUE", componentCode: "MILK-001", quantity: 200}, {ownerCode: "OAT_MILK", ownerKind: "OPTION_VALUE", componentCode: "MILK-001", quantity: -200}, {ownerCode: "OAT_MILK", ownerKind: "OPTION_VALUE", componentCode: "OAT-MILK-001", quantity: 200}],
+    relations: [{from: "REGULAR_MILK", to: "MILK-001", refKind: "BOM", refCode: "MILK-001"}, {from: "OAT_MILK", to: "MILK-001", refKind: "BOM", refCode: "MILK-001"}, {from: "OAT_MILK", to: "OAT-MILK-001", refKind: "BOM", refCode: "OAT-MILK-001"}]
+  }},
   {fixtureId: "SEED-MATERIALS", purpose: "物料、库存对象、消耗单位与盘点单位。", entities: {
-    catalogItems: [{code: "BEAN-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "咖啡豆"}, {code: "BOX-001", shapeKey: "MATERIAL", materialRole: "PACKAGING", name: "外带盒"}, {code: "LETTUCE-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "沙拉基底"}, {code: "BACON-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "培根"}, {code: "EGG-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "鸡蛋"}, {code: "CHICKEN-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "鸡胸肉"}, {code: "CUTLERY-001", shapeKey: "MATERIAL", materialRole: "PACKAGING", name: "餐具"}, {code: "DRESSING-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "凯撒沙拉酱"}],
-    stockTargets: [{productCode: "BEAN-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "BOX-001", baseMeasureUnitCode: "BOX", countingUnitCode: "PACK"}, {productCode: "LETTUCE-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "BACON-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "EGG-001", baseMeasureUnitCode: "EACH", countingUnitCode: "EACH"}, {productCode: "CHICKEN-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "CUTLERY-001", baseMeasureUnitCode: "BOX", countingUnitCode: "PACK"}, {productCode: "DRESSING-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}]
+    catalogItems: [{code: "BEAN-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "咖啡豆"}, {code: "BOX-001", shapeKey: "MATERIAL", materialRole: "PACKAGING", name: "外带盒"}, {code: "LETTUCE-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "沙拉基底"}, {code: "BACON-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "培根"}, {code: "EGG-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "鸡蛋"}, {code: "CHICKEN-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "鸡胸肉"}, {code: "CUTLERY-001", shapeKey: "MATERIAL", materialRole: "PACKAGING", name: "餐具"}, {code: "DRESSING-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "凯撒沙拉酱"}, {code: "MILK-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "牛奶"}, {code: "OAT-MILK-001", shapeKey: "MATERIAL", materialRole: "RAW_MATERIAL", name: "燕麦奶"}],
+    stockTargets: [{productCode: "BEAN-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "BOX-001", baseMeasureUnitCode: "BOX", countingUnitCode: "PACK"}, {productCode: "LETTUCE-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "BACON-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "EGG-001", baseMeasureUnitCode: "EACH", countingUnitCode: "EACH"}, {productCode: "CHICKEN-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "CUTLERY-001", baseMeasureUnitCode: "BOX", countingUnitCode: "PACK"}, {productCode: "DRESSING-001", baseMeasureUnitCode: "GRAM", countingUnitCode: "KILOGRAM"}, {productCode: "MILK-001", baseMeasureUnitCode: "MILLILITER", countingUnitCode: "LITER"}, {productCode: "OAT-MILK-001", baseMeasureUnitCode: "MILLILITER", countingUnitCode: "LITER"}]
   }},
   {fixtureId: "SEED-WEIGHED", purpose: "称重销售商品占位，确保 measureMode 不被库存模式替代。", entities: {
     catalogItems: [{code: "PORK-WEIGHT-001", shapeKey: "STANDARD_SALE_WEIGHED", name: "称重卤肉"}]
@@ -1486,6 +1543,7 @@ const seedScenarioMap = {
   "SEED-LATTE": ["CI-API-026"],
   "SEED-DINNER-SET": ["CI-API-026"],
   "SEED-CAESAR": ["CI-API-026"],
+  "SEED-MILK-TEA": ["CI-API-026"],
   "SEED-MATERIALS": ["CI-API-010", "CI-API-011", "CI-API-026"],
   "SEED-WEIGHED": ["CI-API-026"]
 };
@@ -1493,8 +1551,12 @@ const seedOwnerScopes = [
   {scopeKind: "HEAD_COMPANY_BRAND", headCompanyRef: "HC-A", brandRef: "BR-A", balanceAndLedgerExpected: 0},
   {scopeKind: "STORE_BRAND", storeRef: "STORE-A", brandRef: "BR-A", balanceAndLedgerExpected: "legal-sample"}
 ];
-const seedMediaKeys = (fixtureId) => {
+const seedMediaBinding = (fixtureId) => {
   const binding = mediaCatalog.seedBindings?.[fixtureId] || {};
+  return fixtureId === "SEED-MILK-TEA" ? {...binding, catalogItem: "lemonade"} : binding;
+};
+const seedMediaKeys = (fixtureId) => {
+  const binding = seedMediaBinding(fixtureId);
   const keys = [];
   if (binding.catalogItem) keys.push(binding.catalogItem);
   for (const key of binding.skus || []) keys.push(key);
@@ -1515,7 +1577,7 @@ for (const dataset of seedDatasets) {
   const mediaKeys = seedMediaKeys(dataset.fixtureId);
   dataset.mediaAssetKeys = mediaKeys;
   dataset.entities.mediaAssets = mediaKeys.map((assetKey) => ({mediaAssetKey: assetKey, ...mediaCatalog.assets[assetKey]}));
-  const binding = mediaCatalog.seedBindings?.[dataset.fixtureId] || {};
+  const binding = seedMediaBinding(dataset.fixtureId);
   if (binding.catalogItem && dataset.entities.catalogItems?.[0]) dataset.entities.catalogItems[0].mediaAssetKey = binding.catalogItem;
   if (binding.catalogItems && dataset.entities.catalogItems) for (const item of dataset.entities.catalogItems) if (binding.catalogItems[item.code]) item.mediaAssetKey = binding.catalogItems[item.code];
   if (binding.skus && dataset.entities.skus) for (const sku of dataset.entities.skus) sku.mediaAssetKey = binding.skus[0];
@@ -1597,7 +1659,7 @@ const catalogDefinitionSeed = {
     {code: "SLICE", name: "片", unitDimension: "COUNT", precision: 0},
     {code: "DISABLED_EACH", name: "停用个", unitDimension: "COUNT", precision: 0, disableAfterCreate: true}
   ],
-  materialItemCodes: ["DRESSING-001", "BACON-001", "EGG-001", "CHICKEN-001"],
+  materialItemCodes: ["DRESSING-001", "BACON-001", "EGG-001", "CHICKEN-001", "MILK-001", "OAT-MILK-001"],
   attributeDefinitions: [
     {code: "SHELF_LIFE", name: "保质期", valueType: "TEXT", options: []},
     {code: "SPICINESS", name: "辣度", valueType: "SINGLE_SELECT", options: [
@@ -1616,6 +1678,10 @@ const catalogDefinitionSeed = {
       {code: "BACON", name: "培根", displayOrder: 0, materialItemCodes: ["BACON-001"]},
       {code: "EGG", name: "鸡蛋", displayOrder: 1, materialItemCodes: ["EGG-001"]},
       {code: "CHICKEN", name: "鸡胸肉", displayOrder: 2, materialItemCodes: ["CHICKEN-001"]}
+    ]},
+    {code: "MILK_SWAP", name: "奶基底", selectionMode: "SINGLE", values: [
+      {code: "REGULAR_MILK", name: "牛奶", displayOrder: 0, materialItemCodes: ["MILK-001"]},
+      {code: "OAT_MILK", name: "燕麦奶", displayOrder: 1, materialItemCodes: ["MILK-001", "OAT-MILK-001"]}
     ]}
   ],
   itemAssignments: [
@@ -1625,14 +1691,28 @@ const catalogDefinitionSeed = {
       {definitionCode: "ALLERGENS", textValue: null, optionNames: ["蛋类", "乳制品"]}
     ], orderOptions: [
       {definitionCode: "CAESAR_DRESSING", required: false, minSelectionCount: null, maxSelectionCount: null, values: [
-        {valueCode: "CLASSIC", defaultValue: true, extraPrice: 0, materialQuantities: [{materialItemCode: "DRESSING-001", actualQuantity: 30}]},
-        {valueCode: "LIGHT", defaultValue: false, extraPrice: 0, materialQuantities: []}
+        {valueCode: "CLASSIC", defaultValue: true, extraPrice: 0},
+        {valueCode: "LIGHT", defaultValue: false, extraPrice: 0}
       ]},
       {definitionCode: "CAESAR_TOPPINGS", required: false, minSelectionCount: 0, maxSelectionCount: 2, values: [
-        {valueCode: "BACON", defaultValue: false, extraPrice: 200, materialQuantities: [{materialItemCode: "BACON-001", actualQuantity: 20}]},
-        {valueCode: "EGG", defaultValue: false, extraPrice: 100, materialQuantities: [{materialItemCode: "EGG-001", actualQuantity: 1}]},
-        {valueCode: "CHICKEN", defaultValue: false, extraPrice: 300, materialQuantities: [{materialItemCode: "CHICKEN-001", actualQuantity: 80}]}
+        {valueCode: "BACON", defaultValue: false, extraPrice: 200},
+        {valueCode: "EGG", defaultValue: false, extraPrice: 100},
+        {valueCode: "CHICKEN", defaultValue: false, extraPrice: 300}
       ]}
+    ], optionValueBoms: [
+      {valueCode: "CLASSIC", lines: [{materialItemCode: "DRESSING-001", lineSign: "POSITIVE", quantity: 30}]},
+      {valueCode: "BACON", lines: [{materialItemCode: "BACON-001", lineSign: "POSITIVE", quantity: 20}]},
+      {valueCode: "EGG", lines: [{materialItemCode: "EGG-001", lineSign: "POSITIVE", quantity: 1}]},
+      {valueCode: "CHICKEN", lines: [{materialItemCode: "CHICKEN-001", lineSign: "POSITIVE", quantity: 80}]}
+    ]},
+    {itemCode: "MILK-TEA-001", tagCodes: [], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: [
+      {definitionCode: "MILK_SWAP", required: false, minSelectionCount: null, maxSelectionCount: null, values: [
+        {valueCode: "REGULAR_MILK", defaultValue: true, extraPrice: 0},
+        {valueCode: "OAT_MILK", defaultValue: false, extraPrice: 100}
+      ]}
+    ], optionValueBoms: [
+      {valueCode: "REGULAR_MILK", lines: [{materialItemCode: "MILK-001", lineSign: "POSITIVE", quantity: 200}]},
+      {valueCode: "OAT_MILK", lines: [{materialItemCode: "MILK-001", lineSign: "NEGATIVE", quantity: 200}, {materialItemCode: "OAT-MILK-001", lineSign: "POSITIVE", quantity: 200}]}
     ]},
     {itemCode: "LATTE-001", tagCodes: ["SEASONAL"], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [
       {skuCode: "LATTE-SKU-S", salesUnitCode: "DISABLED_EACH", baseMeasureUnitCode: "MILLILITER", clearAfterReadback: true},
@@ -1651,7 +1731,9 @@ const catalogDefinitionSeed = {
     {itemCode: "BEAN-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
     {itemCode: "BOX-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
     {itemCode: "LETTUCE-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "CUTLERY-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []}
+    {itemCode: "CUTLERY-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "MILK-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "OAT-MILK-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []}
   ]
 };
 
@@ -1666,7 +1748,7 @@ function assertCatalogDefinitionSeed(seed) {
   uniqueCodes(seed.orderOptionDefinitions, "ORDER_OPTION");
   const attributeTypes = seed.attributeDefinitions.map((entry) => entry.valueType).sort();
   if (JSON.stringify(attributeTypes) !== JSON.stringify(["MULTI_SELECT", "SINGLE_SELECT", "TEXT"])) throw new Error("P1_CATALOG_DEFINITION_SEED_ATTRIBUTE_TYPES_INVALID");
-  const selectionModes = seed.orderOptionDefinitions.map((entry) => entry.selectionMode).sort();
+  const selectionModes = [...new Set(seed.orderOptionDefinitions.map((entry) => entry.selectionMode))].sort();
   if (JSON.stringify(selectionModes) !== JSON.stringify(["MULTIPLE", "SINGLE"])) throw new Error("P1_CATALOG_DEFINITION_SEED_SELECTION_MODES_INVALID");
   const materials = new Set(seed.materialItemCodes);
   const stockTargetItems = new Set(seedDatasets.flatMap((dataset) => dataset.entities.stockTargets || []).map((target) => target.productCode));
@@ -1680,13 +1762,42 @@ function assertCatalogDefinitionSeed(seed) {
   const assignments = new Map(seed.itemAssignments.map((entry) => [entry.itemCode, entry]));
   const caesar = assignments.get("CAESAR-001");
   if (!caesar || caesar.attributes.length !== 3 || caesar.orderOptions.length !== 2 || !caesar.orderOptions.some((entry) => entry.definitionCode === "CAESAR_TOPPINGS" && entry.maxSelectionCount === 2)) throw new Error("P1_CATALOG_DEFINITION_SEED_ITEM_ASSIGNMENTS_INVALID");
-  if (assignments.size !== seed.itemAssignments.length || !seed.itemAssignments.every((assignment) => (assignment.salesUnitCode === null || units.has(assignment.salesUnitCode)) && units.has(assignment.baseMeasureUnitCode) && (assignment.skuUnitOverrides || []).every((override) => (override.salesUnitCode === null || units.has(override.salesUnitCode)) && (override.baseMeasureUnitCode === null || units.has(override.baseMeasureUnitCode))) && assignment.tagCodes.every((code) => tags.has(code)) && assignment.attributes.every((assignmentAttribute) => {
-    const definition = attributes.get(assignmentAttribute.definitionCode);
-    return definition && (definition.valueType === "TEXT" ? typeof assignmentAttribute.textValue === "string" && assignmentAttribute.optionNames.length === 0 : assignmentAttribute.textValue === null && assignmentAttribute.optionNames.length > 0 && assignmentAttribute.optionNames.every((name) => definition.options.some((option) => option.name === name)));
-  }) && assignment.orderOptions.every((assignmentOption) => {
-    const definition = orderOptions.get(assignmentOption.definitionCode);
-    return definition && (definition.selectionMode === "MULTIPLE" ? Number.isInteger(assignmentOption.minSelectionCount) && Number.isInteger(assignmentOption.maxSelectionCount) && assignmentOption.minSelectionCount >= 0 && assignmentOption.minSelectionCount <= assignmentOption.maxSelectionCount : assignmentOption.minSelectionCount === null && assignmentOption.maxSelectionCount === null) && assignmentOption.values.every((assignmentValue) => definition.values.some((value) => value.code === assignmentValue.valueCode) && assignmentValue.materialQuantities.every((material) => materials.has(material.materialItemCode) && typeof material.actualQuantity === "number" && material.actualQuantity > 0));
-  }))) throw new Error("P1_CATALOG_DEFINITION_SEED_ASSIGNMENT_REFERENCES_INVALID");
+  const assignmentValid = seed.itemAssignments.every((assignment) => {
+    if ((assignment.salesUnitCode !== null && !units.has(assignment.salesUnitCode))
+        || !units.has(assignment.baseMeasureUnitCode)
+        || (assignment.skuUnitOverrides || []).some((override) =>
+          (override.salesUnitCode !== null && !units.has(override.salesUnitCode))
+          || (override.baseMeasureUnitCode !== null && !units.has(override.baseMeasureUnitCode)))
+        || assignment.tagCodes.some((code) => !tags.has(code))) return false;
+    if (assignment.attributes.some((assignmentAttribute) => {
+      const definition = attributes.get(assignmentAttribute.definitionCode);
+      return !definition || (definition.valueType === "TEXT"
+        ? typeof assignmentAttribute.textValue !== "string" || assignmentAttribute.optionNames.length !== 0
+        : assignmentAttribute.textValue !== null
+          || assignmentAttribute.optionNames.length === 0
+          || assignmentAttribute.optionNames.some((name) => !definition.options.some((option) => option.name === name)));
+    })) return false;
+    if (assignment.orderOptions.some((assignmentOption) => {
+      const definition = orderOptions.get(assignmentOption.definitionCode);
+      return !definition
+        || (definition.selectionMode === "MULTIPLE"
+          ? !Number.isInteger(assignmentOption.minSelectionCount)
+            || !Number.isInteger(assignmentOption.maxSelectionCount)
+            || assignmentOption.minSelectionCount < 0
+            || assignmentOption.maxSelectionCount < assignmentOption.minSelectionCount
+          : assignmentOption.minSelectionCount !== null || assignmentOption.maxSelectionCount !== null)
+        || assignmentOption.values.some((assignmentValue) => !definition.values.some((value) => value.code === assignmentValue.valueCode));
+    })) return false;
+    const optionValues = new Map(assignment.orderOptions.flatMap((option) => option.values).map((value) => [value.valueCode, value]));
+    return (assignment.optionValueBoms || []).every((bom) => {
+      const value = optionValues.get(bom.valueCode);
+      return value && bom.lines?.length > 0 && bom.lines.every((line) => materials.has(line.materialItemCode)
+        && ["POSITIVE", "NEGATIVE"].includes(line.lineSign)
+        && typeof line.quantity === "number" && Number.isFinite(line.quantity) && line.quantity > 0);
+    });
+  });
+  if (assignments.size !== seed.itemAssignments.length || !assignmentValid)
+    throw new Error("P1_CATALOG_DEFINITION_SEED_ASSIGNMENT_REFERENCES_INVALID");
 }
 assertCatalogDefinitionSeed(catalogDefinitionSeed);
 
@@ -1873,7 +1984,7 @@ const fixtureSchema = {
     attributeDefinitionSeed: fixtureObject({code: stringField("attribute definition code"), name: stringField("attribute definition name"), valueType: {type: "string", enum: ["TEXT", "SINGLE_SELECT", "MULTI_SELECT"]}, options: {type: "array", items: fixtureObject({name: stringField("attribute choice name"), displayOrder: integerField("attribute choice display order")}, ["name", "displayOrder"])}}, ["code", "name", "valueType", "options"]),
     orderOptionDefinitionSeed: fixtureObject({code: stringField("ordering option definition code"), name: stringField("ordering option definition name"), selectionMode: {type: "string", enum: ["SINGLE", "MULTIPLE"]}, values: {type: "array", minItems: 1, items: fixtureObject({code: stringField("ordering option value code"), name: stringField("ordering option value name"), displayOrder: integerField("customer display order"), materialItemCodes: {type: "array", items: {type: "string"}}}, ["code", "name", "displayOrder", "materialItemCodes"])}}, ["code", "name", "selectionMode", "values"]),
     unitDefinitionSeed: fixtureObject({code: stringField("unit definition code"), name: stringField("unit definition name"), unitDimension: {type: "string", enum: ["COUNT", "WEIGHT", "VOLUME", "SERVICE_DURATION", "PACKAGE"]}, precision: {type: "integer", minimum: 0}, disableAfterCreate: {type: "boolean"}}, ["code", "name", "unitDimension", "precision"]),
-    itemDefinitionAssignment: fixtureObject({itemCode: stringField("catalog item code"), tagCodes: {type: "array", items: {type: "string"}}, salesUnitCode: {type: ["string", "null"]}, baseMeasureUnitCode: {type: "string"}, skuUnitOverrides: {type: "array", items: fixtureObject({skuCode: stringField("SKU code"), salesUnitCode: {type: ["string", "null"]}, baseMeasureUnitCode: {type: ["string", "null"]}, clearAfterReadback: {type: "boolean"}}, ["skuCode", "salesUnitCode", "baseMeasureUnitCode", "clearAfterReadback"])}, attributes: {type: "array", items: fixtureObject({definitionCode: stringField("attribute definition code"), textValue: {type: ["string", "null"]}, optionNames: {type: "array", items: {type: "string"}}}, ["definitionCode", "textValue", "optionNames"])}, orderOptions: {type: "array", items: fixtureObject({definitionCode: stringField("ordering option definition code"), required: booleanField("whether a customer must choose"), minSelectionCount: {type: ["integer", "null"]}, maxSelectionCount: {type: ["integer", "null"]}, values: {type: "array", items: fixtureObject({valueCode: stringField("ordering option value code"), defaultValue: booleanField("default selected value"), extraPrice: {type: "number"}, materialQuantities: {type: "array", items: fixtureObject({materialItemCode: stringField("material catalog item code"), actualQuantity: {type: "number"}}, ["materialItemCode", "actualQuantity"])}}, ["valueCode", "defaultValue", "extraPrice", "materialQuantities"])}}, ["definitionCode", "required", "minSelectionCount", "maxSelectionCount", "values"])}}, ["itemCode", "tagCodes", "salesUnitCode", "baseMeasureUnitCode", "skuUnitOverrides", "attributes", "orderOptions"]),
+    itemDefinitionAssignment: fixtureObject({itemCode: stringField("catalog item code"), tagCodes: {type: "array", items: {type: "string"}}, salesUnitCode: {type: ["string", "null"]}, baseMeasureUnitCode: {type: "string"}, skuUnitOverrides: {type: "array", items: fixtureObject({skuCode: stringField("SKU code"), salesUnitCode: {type: ["string", "null"]}, baseMeasureUnitCode: {type: ["string", "null"]}, clearAfterReadback: {type: "boolean"}}, ["skuCode", "salesUnitCode", "baseMeasureUnitCode", "clearAfterReadback"])}, attributes: {type: "array", items: fixtureObject({definitionCode: stringField("attribute definition code"), textValue: {type: ["string", "null"]}, optionNames: {type: "array", items: {type: "string"}}}, ["definitionCode", "textValue", "optionNames"])}, orderOptions: {type: "array", items: fixtureObject({definitionCode: stringField("ordering option definition code"), required: booleanField("whether a customer must choose"), minSelectionCount: {type: ["integer", "null"]}, maxSelectionCount: {type: ["integer", "null"]}, values: {type: "array", items: fixtureObject({valueCode: stringField("ordering option value code"), defaultValue: booleanField("default selected value"), extraPrice: {type: "number"}}, ["valueCode", "defaultValue", "extraPrice"])}}, ["definitionCode", "required", "minSelectionCount", "maxSelectionCount", "values"])}, optionValueBoms: {type: "array", items: fixtureObject({valueCode: stringField("ordering option value code"), lines: {type: "array", minItems: 1, items: fixtureObject({materialItemCode: stringField("material catalog item code"), lineSign: {type: "string", enum: ["POSITIVE", "NEGATIVE"]}, quantity: {type: "number", exclusiveMinimum: 0}}, ["materialItemCode", "lineSign", "quantity"])}}, ["valueCode", "lines"])}}, ["itemCode", "tagCodes", "salesUnitCode", "baseMeasureUnitCode", "skuUnitOverrides", "attributes", "orderOptions"]),
     mediaAsset: fixtureObject({mediaAssetKey: stringField("media asset key"), fileName: stringField("asset file name"), contentType: stringField("asset content type"), sha256: stringField("asset digest"), sourceName: stringField("source name"), sourceLicense: stringField("source license"), sourceProvider: stringField("source provider")}, ["mediaAssetKey", "fileName", "contentType", "sha256"]),
     ownerScope: fixtureObject({scopeKind: stringField("scope kind"), headCompanyRef: {type: ["string", "null"]}, storeRef: {type: ["string", "null"]}, projectRef: {type: ["string", "null"]}, brandRef: {type: "string"}, balanceAndLedgerExpected: {type: ["integer", "string"]}}, ["scopeKind", "brandRef"]),
     object: fixtureObject({type: stringField("object type"), code: stringField("object code"), scenarioId: stringField("scenario identifier"), name: stringField("object name"), mediaAssetKey: stringField("media asset key"), status: stringField("object status"), version: integerField("object version"), shapeKey: stringField("shape"), materialRole: stringField("material role"), attributes: {type: "object", additionalProperties: {type: "string"}}, attributeValues: {type: "object", additionalProperties: {type: "string"}}, groupCode: stringField("option group"), skuCode: stringField("SKU code"), ownerCode: stringField("owner code"), ownerKind: stringField("owner kind"), componentCode: stringField("component code"), targetRef: stringField("target reference"), ref: stringField("asset reference"), refCode: stringField("referenced code"), quantity: integerField("quantity"), productCode: stringField("product code"), salesUnitCode: {type: ["string", "null"], description: "catalog seed sales-unit code"}, baseMeasureUnitCode: {type: ["string", "null"], description: "catalog seed base-unit code"}, countingUnitCode: {type: ["string", "null"], description: "catalog seed counting-unit code"}, allowNegative: booleanField("negative inventory flag"), balance: integerField("balance"), references: integerField("reference count"), source: stringField("source"), externalIdentity: fixtureObject({sourceOrderRef: stringField("external order reference"), sourceRecordRef: stringField("external record reference"), sourceItemRef: stringField("external item reference"), snapshot: fixtureObject({name: stringField("snapshot name"), specification: stringField("snapshot specification"), price: centsField("snapshot price")})}), deniedFields: arrayField("denied fields")}, []),
@@ -2253,7 +2364,8 @@ const typedReadOperationIds = new Set([
   "getOperationsCatalogItem",
   "listOperationsCatalogAttributeDefinitions",
   "listOperationsCatalogOrderOptionDefinitions",
-  "listOperationsCatalogUnits"
+  "listOperationsCatalogUnits",
+  "getOperationsInventoryConsumptionTargetCandidates"
 ]);
 const catalogCommandOperations = operationMetadata.filter((entry) => entry.mutation || typedReadOperationIds.has(entry.operationId));
 if (catalogCommandOperations.length === 0) throw new Error("P1_BACKEND_WIRE_CATALOG_OPERATION_TYPES_EMPTY");

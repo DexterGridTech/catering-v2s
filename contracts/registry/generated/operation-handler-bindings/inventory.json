@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "inventory",
-  "operationCount": 11,
-  "readCount": 7,
+  "operationCount": 12,
+  "readCount": 8,
   "commandCount": 4,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
@@ -184,6 +184,22 @@
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND",
       "dispatchMethod": "updateOperationsInventoryTargetConfiguration"
+    },
+    {
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "method": "GET",
+      "path": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "normalizedPath": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.inventory.application.GetOperationsInventoryConsumptionTargetCandidatesOperation",
+      "wireRequest": "InventoryConsumptionTargetCandidateQuery",
+      "wireResponse": "InventoryConsumptionTargetCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getOperationsInventoryConsumptionTargetCandidates"
     }
   ],
   "commandContextGroups": {

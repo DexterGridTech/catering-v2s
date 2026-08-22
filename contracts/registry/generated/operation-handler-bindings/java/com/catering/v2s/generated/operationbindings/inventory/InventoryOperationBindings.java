@@ -21,6 +21,7 @@ public final class InventoryOperationBindings {
     OperationBindingTypes.Wire.InventoryWriteReadback increaseOperationsInventoryTarget(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.InventoryIncreaseRequest request);
     OperationBindingTypes.Wire.InventoryWriteReadback adjustOperationsInventoryTarget(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.InventoryAdjustmentRequest request);
     OperationBindingTypes.Wire.InventoryTargetCurrentView updateOperationsInventoryTargetConfiguration(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.InventoryTargetConfigurationRequest request);
+    OperationBindingTypes.Wire.InventoryConsumptionTargetCandidatePage getOperationsInventoryConsumptionTargetCandidates(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.InventoryConsumptionTargetCandidateQuery request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -40,6 +41,7 @@ public final class InventoryOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor INCREASE_OPERATIONS_INVENTORY_TARGET_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("increaseOperationsInventoryTarget", "inventory", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor ADJUST_OPERATIONS_INVENTORY_TARGET_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("adjustOperationsInventoryTarget", "inventory", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsInventoryTargetConfiguration", "inventory", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsInventoryConsumptionTargetCandidates", "inventory", "catalog-inventory");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -51,6 +53,7 @@ public final class InventoryOperationBindings {
       case "getOperationsInventoryTargetConsumptionReferences" -> { if (descriptor != GET_OPERATIONS_INVENTORY_TARGET_CONSUMPTION_REFERENCES_DESCRIPTOR || !"inventory".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsInventoryTargetLedger" -> { if (descriptor != GET_OPERATIONS_INVENTORY_TARGET_LEDGER_DESCRIPTOR || !"inventory".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsInventoryTargetDiagnostics" -> { if (descriptor != GET_OPERATIONS_INVENTORY_TARGET_DIAGNOSTICS_DESCRIPTOR || !"inventory".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsInventoryConsumptionTargetCandidates" -> { if (descriptor != GET_OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES_DESCRIPTOR || !"inventory".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -66,6 +69,7 @@ public final class InventoryOperationBindings {
       case "getOperationsInventoryTargetConsumptionReferences" -> adapters.getOperationsInventoryTargetConsumptionReferences(GET_OPERATIONS_INVENTORY_TARGET_CONSUMPTION_REFERENCES_DESCRIPTOR, context, (OperationBindingTypes.Wire.InventoryReferencePageQuery) request);
       case "getOperationsInventoryTargetLedger" -> adapters.getOperationsInventoryTargetLedger(GET_OPERATIONS_INVENTORY_TARGET_LEDGER_DESCRIPTOR, context, (OperationBindingTypes.Wire.InventoryLedgerPageQuery) request);
       case "getOperationsInventoryTargetDiagnostics" -> adapters.getOperationsInventoryTargetDiagnostics(GET_OPERATIONS_INVENTORY_TARGET_DIAGNOSTICS_DESCRIPTOR, context, (OperationBindingTypes.Wire.InventoryDiagnosticsQuery) request);
+      case "getOperationsInventoryConsumptionTargetCandidates" -> adapters.getOperationsInventoryConsumptionTargetCandidates(GET_OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.InventoryConsumptionTargetCandidateQuery) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -94,6 +96,751 @@ final class CatalogAcceptanceScenarios {
     }
 
     @AcceptanceScenario(
+            id = "catalog.inventory-rule-admission-matrix",
+            module = "CATALOG",
+            operation = "saveOperationsCatalogItem")
+    void inventoryRuleAdmissionMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+        JsonNode component = createInventoryBackedMaterialItem(context, fixture, session, "matrix-component-" + suffix);
+        String componentTargetRef = inventoryRuleNodes(component)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
+        assertFalse(componentTargetRef.isBlank(), "BUSINESS: matrix fixture has a real component StockTarget");
+
+        List<String> shapes = List.of(
+                "STANDARD_SALE_COUNTED",
+                "STANDARD_SALE_WEIGHED",
+                "SKU_VARIANT_SALE_COUNTED",
+                "MATERIAL",
+                "COMPOSITE",
+                "SERVICE",
+                "BENEFIT_SHELL");
+        List<String> ownerTypes = List.of("ITEM", "SKU", "OPTION_VALUE");
+        List<String> modes = List.of("NONE", "DIRECT", "BOM");
+        int executed = 0;
+        for (String shape : shapes) {
+            for (String ownerType : ownerTypes) {
+                for (String mode : modes) {
+                    executed++;
+                    String code = "ACC-MATRIX-" + suffix + "-" + executed;
+                    if ("BENEFIT_SHELL".equals(shape)) {
+                        Response rejectedShape = context.post(
+                                OPERATIONS_CATALOG_ITEM_CREATE,
+                                "/api/operations/catalog-inventory/items",
+                                session.cookie(),
+                                itemCreateBody(
+                                        fixture.storeId().toString(),
+                                        code,
+                                        "admission " + shape + " " + ownerType + " " + mode,
+                                        shape,
+                                        null),
+                                Set.of(422));
+                        assertEquals(
+                                "VALIDATION_ERROR",
+                                rejectedShape.problemCode(),
+                                "BUSINESS: disabled BENEFIT_SHELL is rejected before inventory owner admission");
+                        continue;
+                    }
+                    CreatedItem created = createItemWithShape(
+                            context,
+                            fixture,
+                            session,
+                            fixture.storeId().toString(),
+                            code,
+                            "admission " + shape + " " + ownerType + " " + mode,
+                            Map.of(),
+                            Map.of(),
+                            shape);
+                    String optionValueRef = null;
+                    String optionValueCode = null;
+                    long currentVersion = created.version();
+                    if (("STANDARD_SALE_COUNTED".equals(shape) || "STANDARD_SALE_WEIGHED".equals(shape))
+                            && "OPTION_VALUE".equals(ownerType)) {
+                        Map<String, Object> optionValue = new LinkedHashMap<>();
+                        optionValue.put("name", "矩阵选项");
+                        optionValue.put("displayOrder", 0);
+                        optionValue.put(
+                                "materials",
+                                List.of(Map.of(
+                                        "materialItemRef",
+                                        component.path("itemRef").asText())));
+                        JsonNode definition = createOrderOptionDefinition(
+                                context, fixture, session, "矩阵选项-" + executed, "SINGLE", List.of(optionValue));
+                        currentVersion = saveTypedItemFacts(
+                                context,
+                                fixture,
+                                session,
+                                code,
+                                currentVersion,
+                                List.of(),
+                                List.of(orderOptionConfig(
+                                        definition.path("definitionRef").asText(),
+                                        false,
+                                        null,
+                                        null,
+                                        List.of(optionOverride(
+                                                definition
+                                                        .path("values")
+                                                        .get(0)
+                                                        .path("valueRef")
+                                                        .asText(),
+                                                false,
+                                                null,
+                                                0L,
+                                                List.of())))));
+                        JsonNode configured = readItem(context, fixture, session, code);
+                        JsonNode value = configured
+                                .path("orderOptionConfigs")
+                                .get(0)
+                                .path("values")
+                                .get(0);
+                        optionValueRef = value.path("definitionValueRef").asText();
+                        optionValueCode = value.path("valueCode")
+                                .asText(value.path("name").asText());
+                    }
+
+                    boolean allowed = admissionCaseAllowed(shape, ownerType, mode);
+                    Map<String, Object> rule;
+                    if ("SKU".equals(ownerType)) {
+                        String skuCode = "MATRIX-SKU-" + executed;
+                        if (allowed) {
+                            JsonNode saved = saveSkuVariantMode(
+                                    context, fixture, session, code, currentVersion, skuCode, mode, componentTargetRef);
+                            assertEquals(
+                                    mode,
+                                    inventoryRuleForSku(saved, inventoryRuleForSkuRef(saved, skuCode))
+                                            .path("mode")
+                                            .asText(),
+                                    "BUSINESS: legal SKU owner persists the requested mode");
+                            continue;
+                        }
+                        rule = inventoryRuleForMode(
+                                ownerType,
+                                UUID.randomUUID().toString(),
+                                null,
+                                code,
+                                skuCode,
+                                mode,
+                                componentTargetRef,
+                                null,
+                                null);
+                    } else if ("OPTION_VALUE".equals(ownerType)) {
+                        rule = inventoryRuleForMode(
+                                ownerType,
+                                readItem(context, fixture, session, code)
+                                        .path("itemRef")
+                                        .asText(),
+                                optionValueRef == null ? UUID.randomUUID().toString() : optionValueRef,
+                                code,
+                                optionValueCode,
+                                mode,
+                                componentTargetRef,
+                                null,
+                                null);
+                    } else {
+                        rule = inventoryRuleForMode(
+                                ownerType,
+                                readItem(context, fixture, session, code)
+                                        .path("itemRef")
+                                        .asText(),
+                                null,
+                                code,
+                                null,
+                                mode,
+                                componentTargetRef,
+                                null,
+                                null);
+                    }
+
+                    JsonNode before = readItem(context, fixture, session, code);
+                    Response response = saveInventoryNodes(
+                            context,
+                            fixture,
+                            session,
+                            code,
+                            before.path("version").asLong(),
+                            List.of(rule),
+                            allowed ? Set.of(200) : Set.of(409, 422));
+                    if (allowed) {
+                        assertEquals(
+                                200,
+                                response.status(),
+                                "BUSINESS: legal matrix case saves through whole catalog command");
+                        JsonNode after = readItem(context, fixture, session, code);
+                        JsonNode owner = findInventoryOwner(
+                                after, ownerType, after.path("itemRef").asText(), optionValueRef, null);
+                        assertEquals(mode, owner.path("mode").asText(), "BUSINESS: legal matrix mode is read back");
+                    } else {
+                        assertTrue(
+                                Set.of("REFERENCE_MAPPING_UNRESOLVED", "INVENTORY_DEDUCTION_MODE_NOT_ALLOWED")
+                                        .contains(response.problemCode()),
+                                "BUSINESS: illegal matrix request is rejected by an owner typed problem");
+                        JsonNode after = readItem(context, fixture, session, code);
+                        assertEquals(
+                                before.path("version").asLong(),
+                                after.path("version").asLong(),
+                                "BUSINESS: illegal matrix request leaves catalog version unchanged");
+                    }
+                }
+            }
+        }
+        assertEquals(63, executed, "BUSINESS: admission matrix executes all 7x3x3 cases");
+
+        // Sentinel case after the 7x3x3 matrix: BOM is an admitted mode for a
+        // standard item, but an empty active line set is not a configured BOM.
+        String emptyBomCode = "ACC-MATRIX-" + suffix + "-EMPTY-BOM";
+        CreatedItem emptyBomItem = createItemWithShape(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                emptyBomCode,
+                "admission empty BOM",
+                Map.of(),
+                Map.of(),
+                "STANDARD_SALE_COUNTED");
+        JsonNode emptyBomBefore = readItem(context, fixture, session, emptyBomCode);
+        Map<String, Object> emptyBomRule = bomInventoryRule(
+                "ITEM", emptyBomBefore.path("itemRef").asText(), null, emptyBomCode, null, null, List.of());
+        Response emptyBomResponse = saveInventoryNodes(
+                context, fixture, session, emptyBomCode, emptyBomItem.version(), List.of(emptyBomRule), Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_EMPTY",
+                emptyBomResponse.problemCode(),
+                "BUSINESS: the admission matrix sentinel rejects BOM with zero active lines");
+        JsonNode emptyBomAfter = readItem(context, fixture, session, emptyBomCode);
+        assertEquals(
+                emptyBomBefore.path("version").asLong(),
+                emptyBomAfter.path("version").asLong(),
+                "BUSINESS: empty BOM rejection leaves catalog version unchanged");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.inventory-component-option-and-unit-semantics",
+            module = "CATALOG",
+            operation = "getOperationsInventoryConsumptionTargetCandidates")
+    void inventoryComponentOptionAndUnitSemantics(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+        List<String> eligibleTargets = new ArrayList<>();
+        JsonNode firstMaterial = createInventoryBackedMaterialItem(context, fixture, session, "candidate-0-" + suffix);
+        String componentTargetRef = inventoryTargetRef(firstMaterial);
+        eligibleTargets.add(componentTargetRef);
+        String sharedBaseUnitRef = firstMaterial.path("baseMeasureUnitRef").asText();
+        for (int index = 1; index < 101; index++) {
+            JsonNode material = createInventoryBackedMaterialItem(
+                    context, fixture, session, "candidate-" + index + "-" + suffix, sharedBaseUnitRef);
+            eligibleTargets.add(inventoryTargetRef(material));
+        }
+        Response firstPage = context.get(
+                OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES,
+                "/api/operations/catalog-inventory/inventory-consumption-target-candidates?dataNodeRef="
+                        + fixture.storeId()
+                        + "&pageSize=100",
+                session.cookie(),
+                Set.of(200));
+        JsonNode firstData = firstPage.json().path("data");
+        assertEquals(101, firstData.path("total").asInt(), "BUSINESS: candidate total is the complete 101-row set");
+        assertEquals(100, firstData.path("items").size(), "BUSINESS: first candidate page is bounded at 100");
+        String nextCursor = firstData.path("nextCursor").asText();
+        assertFalse(
+                nextCursor.isBlank() || "null".equals(nextCursor),
+                "BUSINESS: candidate page exposes a continuation cursor");
+        Response secondPage = context.get(
+                OPERATIONS_INVENTORY_CONSUMPTION_TARGET_CANDIDATES,
+                "/api/operations/catalog-inventory/inventory-consumption-target-candidates?dataNodeRef="
+                        + fixture.storeId()
+                        + "&pageSize=100&cursor="
+                        + nextCursor,
+                session.cookie(),
+                Set.of(200));
+        JsonNode secondData = secondPage.json().path("data");
+        assertEquals(
+                1,
+                secondData.path("items").size(),
+                "BUSINESS: second candidate page contains the one remaining target");
+        Set<String> observed = new LinkedHashSet<>();
+        firstData
+                .path("items")
+                .forEach(item -> observed.add(item.path("targetRef").asText()));
+        secondData
+                .path("items")
+                .forEach(item -> observed.add(item.path("targetRef").asText()));
+        assertEquals(
+                new LinkedHashSet<>(eligibleTargets),
+                observed,
+                "BUSINESS: candidate pages have no overlap or omission");
+
+        Fixture foreignFixture =
+                host.siblingStoreFixture(fixture, Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, foreignFixture);
+        Session foreignSession = host.login(context, foreignFixture);
+        JsonNode foreignMaterial =
+                createInventoryBackedMaterialItem(context, foreignFixture, foreignSession, "foreign-" + suffix);
+        String foreignTargetRef = inventoryTargetRef(foreignMaterial);
+        CreatedItem crossScopeOwner = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-CROSS-SCOPE-" + suffix, "cross scope component", Map.of());
+        Response crossScope = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-CROSS-SCOPE-" + suffix,
+                crossScopeOwner.version(),
+                List.of(itemBomRuleForExistingItem(
+                        context, fixture, session, "ACC-COMPONENT-CROSS-SCOPE-" + suffix, foreignTargetRef)),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                crossScope.problemCode(),
+                "BUSINESS: cross-scope component is rejected");
+
+        JsonNode unavailableMaterial =
+                createInventoryBackedMaterialItem(context, fixture, session, "unavailable-" + suffix);
+        String unavailableCode = unavailableMaterial.path("code").asText();
+        String unavailableTarget = inventoryTargetRef(unavailableMaterial);
+        saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                unavailableCode,
+                unavailableMaterial.path("version").asLong(),
+                List.of(noneInventoryRule(
+                        "ITEM", unavailableMaterial.path("itemRef").asText(), null, unavailableCode, null)),
+                Set.of(200));
+        CreatedItem unavailableOwner = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-UNAVAILABLE-" + suffix, "unavailable component", Map.of());
+        Response unavailable = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                unavailableOwnerCode(unavailableOwner, "ACC-COMPONENT-UNAVAILABLE-" + suffix),
+                unavailableOwner.version(),
+                List.of(itemBomRuleForExistingItem(
+                        context, fixture, session, "ACC-COMPONENT-UNAVAILABLE-" + suffix, unavailableTarget)),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                unavailable.problemCode(),
+                "BUSINESS: disabled target is rejected");
+
+        CreatedItem nonComponent = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-CAPABILITY-" + suffix, "non component", Map.of());
+        saveDirectItem(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-CAPABILITY-" + suffix,
+                nonComponent.version(),
+                "non-component");
+        JsonNode nonComponentRead = readItem(context, fixture, session, "ACC-COMPONENT-CAPABILITY-" + suffix);
+        String nonComponentTarget = inventoryTargetRef(nonComponentRead);
+        CreatedItem capabilityOwner = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-CAPABILITY-OWNER-" + suffix, "capability owner", Map.of());
+        Response capability = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-CAPABILITY-OWNER-" + suffix,
+                capabilityOwner.version(),
+                List.of(itemBomRuleForExistingItem(
+                        context, fixture, session, "ACC-COMPONENT-CAPABILITY-OWNER-" + suffix, nonComponentTarget)),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                capability.problemCode(),
+                "BUSINESS: non-BOM_COMPONENT target is rejected");
+
+        CreatedItem noTarget = createMaterialItem(
+                context, fixture, session, "ACC-COMPONENT-NO-TARGET-" + suffix, "no target material");
+        JsonNode noTargetRead = readItem(context, fixture, session, "ACC-COMPONENT-NO-TARGET-" + suffix);
+        assertTrue(
+                inventoryRuleNodes(noTargetRead).isEmpty()
+                        || inventoryRuleNodes(noTargetRead)
+                                .get(0)
+                                .path("mode")
+                                .asText()
+                                .equals("NONE"),
+                "BUSINESS: material can exist with a base unit but without a StockTarget");
+        CreatedItem noTargetOwner = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-NO-TARGET-OWNER-" + suffix, "no target owner", Map.of());
+        Response noTargetResponse = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-NO-TARGET-OWNER-" + suffix,
+                noTargetOwner.version(),
+                List.of(itemBomRuleForExistingItem(
+                        context,
+                        fixture,
+                        session,
+                        "ACC-COMPONENT-NO-TARGET-OWNER-" + suffix,
+                        inventoryTargetRefOrMissing(noTargetRead))),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                noTargetResponse.problemCode(),
+                "BUSINESS: a material without StockTarget is rejected");
+
+        JsonNode grams =
+                createAcceptanceUnit(context, fixture, session, "ACC-COMPONENT-GRAM-" + suffix, "克", "WEIGHT", 0);
+        JsonNode kilograms =
+                createAcceptanceUnit(context, fixture, session, "ACC-COMPONENT-KG-" + suffix, "千克", "WEIGHT", 3);
+        String gramsRef = grams.path("result").path("unit").path("unitRef").asText();
+        String kilogramsRef =
+                kilograms.path("result").path("unit").path("unitRef").asText();
+        CreatedItem incomplete = createMaterialItem(
+                context, fixture, session, "ACC-COMPONENT-INCOMPLETE-" + suffix, "incomplete unit target");
+        UUID incompleteTargetRef = UUID.randomUUID();
+        host.insertInventoryTargetFixture(
+                fixture.storeId(),
+                fixture.brandId(),
+                incompleteTargetRef,
+                incomplete.itemRef(),
+                "ACC-COMPONENT-INCOMPLETE-" + suffix,
+                null,
+                null,
+                null,
+                null,
+                true);
+        CreatedItem incompleteOwner = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-INCOMPLETE-OWNER-" + suffix, "incomplete owner", Map.of());
+        Response incompleteResponse = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-INCOMPLETE-OWNER-" + suffix,
+                incompleteOwner.version(),
+                List.of(itemBomRuleForExistingItem(
+                        context,
+                        fixture,
+                        session,
+                        "ACC-COMPONENT-INCOMPLETE-OWNER-" + suffix,
+                        incompleteTargetRef.toString())),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+                incompleteResponse.problemCode(),
+                "BUSINESS: incomplete unit snapshot is rejected");
+
+        CreatedItem self = createItemWithShape(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                "ACC-COMPONENT-SELF-" + suffix,
+                "self component",
+                Map.of(),
+                Map.of(),
+                "STANDARD_SALE_COUNTED",
+                gramsRef);
+        JsonNode selfRead = readItem(context, fixture, session, "ACC-COMPONENT-SELF-" + suffix);
+        String selfTargetRef = UUID.randomUUID().toString();
+        host.insertInventoryTargetFixture(
+                fixture.storeId(),
+                fixture.brandId(),
+                UUID.fromString(selfTargetRef),
+                self.itemRef(),
+                "ACC-COMPONENT-SELF-" + suffix,
+                gramsRef,
+                "ACC-COMPONENT-GRAM-" + suffix,
+                "克",
+                "WEIGHT",
+                true);
+        Response selfResponse = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-SELF-" + suffix,
+                selfRead.path("version").asLong(),
+                List.of(itemBomRuleForExistingItem(
+                        context, fixture, session, "ACC-COMPONENT-SELF-" + suffix, selfTargetRef)),
+                Set.of(422));
+        assertEquals(
+                "INVENTORY_BOM_SELF_REFERENCE",
+                selfResponse.problemCode(),
+                "BUSINESS: self-referencing BOM is rejected after candidate eligibility");
+
+        Map<String, Object> positiveValue = new LinkedHashMap<>();
+        positiveValue.put("name", "加珍珠");
+        positiveValue.put("displayOrder", 0);
+        positiveValue.put(
+                "materials",
+                List.of(Map.of("materialItemRef", firstMaterial.path("itemRef").asText())));
+        Map<String, Object> replacementValue = new LinkedHashMap<>();
+        replacementValue.put("name", "换燕麦奶");
+        replacementValue.put("displayOrder", 1);
+        replacementValue.put(
+                "materials",
+                List.of(Map.of("materialItemRef", firstMaterial.path("itemRef").asText())));
+        List<Map<String, Object>> optionBomValues = List.of(positiveValue, replacementValue);
+        String optionName = "加料与替换-" + suffix;
+        JsonNode optionDefinition =
+                createOrderOptionDefinition(context, fixture, session, optionName, "MULTIPLE", optionBomValues);
+        CreatedItem optionItem = createItemWithAttributes(
+                context, fixture, session, "ACC-COMPONENT-OPTION-" + suffix, "option component product", Map.of());
+        List<Map<String, Object>> configuredValues = new ArrayList<>();
+        for (JsonNode value : optionDefinition.path("values"))
+            configuredValues.add(optionOverride(value.path("valueRef").asText(), false, null, 0L, List.of()));
+        long optionVersion = saveTypedItemFacts(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-OPTION-" + suffix,
+                optionItem.version(),
+                List.of(),
+                List.of(orderOptionConfig(
+                        optionDefinition.path("definitionRef").asText(), false, 0, 2, configuredValues)));
+        JsonNode optionRead = readItem(context, fixture, session, "ACC-COMPONENT-OPTION-" + suffix);
+        JsonNode optionValues = optionRead.path("orderOptionConfigs").get(0).path("values");
+        String positiveRef = optionValues.get(0).path("definitionValueRef").asText();
+        String negativeRef = optionValues.get(1).path("definitionValueRef").asText();
+        JsonNode replacementMaterial =
+                createInventoryBackedMaterialItem(context, fixture, session, "replacement-" + suffix);
+        String replacementTargetRef = inventoryTargetRef(replacementMaterial);
+        optionVersion = saveOptionValueBomLines(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-OPTION-" + suffix,
+                optionVersion,
+                positiveRef,
+                "加珍珠",
+                List.of(bomLine(componentTargetRef, "POSITIVE", "1.25")));
+        saveOptionValueBomLines(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-OPTION-" + suffix,
+                optionVersion,
+                negativeRef,
+                "换燕麦奶",
+                List.of(
+                        bomLine(componentTargetRef, "NEGATIVE", "0.50"),
+                        bomLine(replacementTargetRef, "POSITIVE", "0.75")));
+        JsonNode optionAfter = readItem(context, fixture, session, "ACC-COMPONENT-OPTION-" + suffix);
+        assertOptionBomLines(optionAfter, positiveRef, "POSITIVE", "1.25");
+        assertOptionBomLines(optionAfter, negativeRef, "NEGATIVE", "0.50");
+        assertOptionBomLines(optionAfter, negativeRef, "POSITIVE", "0.75");
+
+        CreatedItem decimalItem = createMaterialItem(
+                context, fixture, session, "ACC-COMPONENT-DECIMAL-" + suffix, "decimal material", kilogramsRef);
+        saveDirectItemWithUnits(
+                context,
+                fixture,
+                session,
+                "ACC-COMPONENT-DECIMAL-" + suffix,
+                decimalItem.version(),
+                null,
+                kilogramsRef,
+                null,
+                "1");
+        JsonNode decimalRead = readItem(context, fixture, session, "ACC-COMPONENT-DECIMAL-" + suffix);
+        String decimalTarget = inventoryTargetRef(decimalRead);
+        Response decimalCurrent = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                "/api/operations/catalog-inventory/inventory-targets/"
+                        + decimalTarget
+                        + "?dataNodeRef="
+                        + fixture.storeId(),
+                session.cookie(),
+                Set.of(200));
+        Map<String, Object> decimalCountRequest = new LinkedHashMap<>();
+        decimalCountRequest.put("dataNodeRef", fixture.storeId().toString());
+        decimalCountRequest.put("targetRef", decimalTarget);
+        decimalCountRequest.put(
+                "expectedVersion", decimalCurrent.json().path("version").asLong());
+        decimalCountRequest.put("countedQuantity", "2.5");
+        decimalCountRequest.put("countingUnitRef", null);
+        decimalCountRequest.put("zeroConfirmation", false);
+        Response decimalCount = context.post(
+                OPERATIONS_INVENTORY_TARGET_COUNT,
+                "/api/operations/catalog-inventory/inventory-targets/" + decimalTarget + "/count",
+                session.cookie(),
+                decimalCountRequest,
+                idempotencyHeaders("component-decimal-count"),
+                Set.of(200));
+        assertEquals(
+                "2.5",
+                decimalCount.json().path("result").path("after").asText(),
+                "BUSINESS: no counting unit falls back to consumption precision");
+
+        long gramsVersion = grams.path("result").path("unit").path("version").asLong();
+        context.patch(
+                OPERATIONS_CATALOG_UNIT_UPDATE,
+                "/api/operations/catalog-inventory/units/" + gramsRef,
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "unitRef",
+                        gramsRef,
+                        "expectedVersion",
+                        gramsVersion,
+                        "name",
+                        "克（历史）"),
+                idempotencyHeaders("component-unit-rename"),
+                Set.of(200));
+        JsonNode gramsAfterRename = context.get(
+                        OPERATIONS_CATALOG_UNIT_LIST,
+                        "/api/operations/catalog-inventory/units?dataNodeRef="
+                                + fixture.storeId()
+                                + "&includeInactive=true",
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("data")
+                .path("units");
+        JsonNode renamed = StreamSupport.stream(gramsAfterRename.spliterator(), false)
+                .filter(unit -> gramsRef.equals(unit.path("unitRef").asText()))
+                .findFirst()
+                .orElseThrow();
+        context.post(
+                OPERATIONS_CATALOG_UNIT_DISABLE,
+                "/api/operations/catalog-inventory/units/" + gramsRef + "/disable",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "unitRef", gramsRef,
+                        "expectedVersion", renamed.path("version").asLong()),
+                idempotencyHeaders("component-unit-disable"),
+                Set.of(200));
+        JsonNode decimalTargetAfter = context.get(
+                        OPERATIONS_INVENTORY_TARGET_READ,
+                        "/api/operations/catalog-inventory/inventory-targets/"
+                                + decimalTarget
+                                + "?dataNodeRef="
+                                + fixture.storeId(),
+                        session.cookie(),
+                        Set.of(200))
+                .json()
+                .path("target");
+        assertEquals(
+                kilogramsRef,
+                decimalTargetAfter
+                        .path("consumptionUnitSnapshot")
+                        .path("unitRef")
+                        .asText(),
+                "BUSINESS: later unit lifecycle changes do not reinterpret the target snapshot");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.inventory-mode-switch-guard",
+            module = "CATALOG",
+            operation = "saveOperationsCatalogItem")
+    void inventoryModeSwitchGuard(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        JsonNode component = createInventoryBackedMaterialItem(context, fixture, session, "switch-component-" + suffix);
+        String componentTargetRef = inventoryTargetRef(component);
+
+        for (String kind :
+                List.of("BALANCE_ABSENT", "LEDGER_ABSENT", "BOM_REFERENCE_ABSENT", "HISTORICAL_DEFINITION_ABSENT")) {
+            String itemCode = "ACC-SWITCH-POSITIVE-" + kind + "-" + suffix;
+            CreatedItem created =
+                    createItemWithAttributes(context, fixture, session, itemCode, "switch positive " + kind, Map.of());
+            saveDirectItem(context, fixture, session, itemCode, created.version(), "switch-positive");
+            JsonNode before = readItem(context, fixture, session, itemCode);
+            JsonNode switched = saveItemInventoryMode(
+                    context, fixture, session, itemCode, before.path("version").asLong(), "BOM", componentTargetRef);
+            assertEquals(
+                    "BOM",
+                    findInventoryOwner(
+                                    switched, "ITEM", switched.path("itemRef").asText(), null, null)
+                            .path("mode")
+                            .asText(),
+                    "BUSINESS: first switch succeeds when " + kind + " is absent");
+        }
+
+        List<String> blockers = List.of("BALANCE", "LEDGER", "BOM_REFERENCE", "HISTORICAL_DEFINITION");
+        for (String blocker : blockers) {
+            String itemCode = "ACC-SWITCH-REJECT-" + blocker + "-" + suffix;
+            CreatedItem created =
+                    createItemWithAttributes(context, fixture, session, itemCode, "switch reject " + blocker, Map.of());
+            saveDirectItem(context, fixture, session, itemCode, created.version(), "switch-reject");
+            JsonNode direct = readItem(context, fixture, session, itemCode);
+            String targetRef = inventoryTargetRef(direct);
+            if ("BALANCE".equals(blocker)) {
+                countTarget(context, fixture, session, targetRef, "1", false, "switch-balance");
+            } else if ("LEDGER".equals(blocker)) {
+                countTarget(context, fixture, session, targetRef, "1", false, "switch-ledger-increase");
+                countTarget(context, fixture, session, targetRef, "0", true, "switch-ledger-zero");
+            } else if ("BOM_REFERENCE".equals(blocker)) {
+                host.insertInventoryBomFixture(
+                        fixture.storeId(),
+                        fixture.brandId(),
+                        UUID.randomUUID(),
+                        null,
+                        "ACC-SWITCH-REFERENCE-" + blocker,
+                        null,
+                        List.of(bomLine(targetRef, "POSITIVE", "1")));
+            } else {
+                JsonNode switched = saveItemInventoryMode(
+                        context,
+                        fixture,
+                        session,
+                        itemCode,
+                        direct.path("version").asLong(),
+                        "BOM",
+                        componentTargetRef);
+                assertEquals(
+                        "BOM",
+                        findInventoryOwner(
+                                        switched,
+                                        "ITEM",
+                                        switched.path("itemRef").asText(),
+                                        null,
+                                        null)
+                                .path("mode")
+                                .asText());
+                direct = readItem(context, fixture, session, itemCode);
+            }
+            JsonNode beforeReject = readItem(context, fixture, session, itemCode);
+            long catalogVersion = beforeReject.path("version").asLong();
+            Map<String, Object> rejectedRule = "HISTORICAL_DEFINITION".equals(blocker)
+                    ? itemDirectRuleForExistingItem(context, fixture, session, itemCode)
+                    : itemBomRuleForExistingItem(context, fixture, session, itemCode, componentTargetRef);
+            Response rejected = saveInventoryNodes(
+                    context, fixture, session, itemCode, catalogVersion, List.of(rejectedRule), Set.of(409));
+            assertEquals(
+                    "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED",
+                    rejected.problemCode(),
+                    "BUSINESS: blocker " + blocker + " rejects mode switch");
+            Set<String> expectedBlockingKinds =
+                    "BALANCE".equals(blocker) ? Set.of("BALANCE", "LEDGER") : Set.of(blocker);
+            assertBlockingFacts(rejected.json(), expectedBlockingKinds);
+            JsonNode afterReject = readItem(context, fixture, session, itemCode);
+            assertEquals(
+                    catalogVersion,
+                    afterReject.path("version").asLong(),
+                    "BUSINESS: rejected switch leaves catalog version unchanged");
+            if ("HISTORICAL_DEFINITION".equals(blocker)) {
+                assertEquals(
+                        "BOM",
+                        findInventoryOwner(
+                                        afterReject,
+                                        "ITEM",
+                                        afterReject.path("itemRef").asText(),
+                                        null,
+                                        null)
+                                .path("mode")
+                                .asText(),
+                        "BUSINESS: historical blocker leaves the existing BOM definition active");
+            }
+        }
+    }
+
+    @AcceptanceScenario(
             id = "catalog.unit-list-boolean-query-and-status-filter",
             module = "CATALOG",
             operation = "listOperationsCatalogUnits")
@@ -170,19 +917,14 @@ final class CatalogAcceptanceScenarios {
         String itemCode = "ACC-TRUNCATE-" + suffix;
         CreatedItem created =
                 createItemWithAttributes(context, fixture, session, itemCode, "truncate quantity", Map.of());
-        saveIndependentSkuWithUnits(
-                context,
-                fixture,
-                session,
-                itemCode,
-                created.version(),
-                gramsRef,
-                gramsRef,
-                kilogramsRef,
-                "1000",
-                "ACC-TRUNCATE-SKU-" + suffix);
+        saveDirectItemWithUnits(
+                context, fixture, session, itemCode, created.version(), gramsRef, gramsRef, kilogramsRef, "1000");
         JsonNode item = readItem(context, fixture, session, itemCode);
-        String targetRef = item.path("inventoryBom").get(0).path("targetRef").asText();
+        String targetRef = inventoryRuleNodes(item)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         Response current = context.get(
                 OPERATIONS_INVENTORY_TARGET_READ,
                 "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "?dataNodeRef="
@@ -304,20 +1046,15 @@ final class CatalogAcceptanceScenarios {
         String itemCode = "ACC-NO-COUNTING-PRECISION-" + suffix;
         CreatedItem created =
                 createItemWithAttributes(context, fixture, session, itemCode, "no counting precision", Map.of());
-        saveIndependentSkuWithUnits(
-                context,
-                fixture,
-                session,
-                itemCode,
-                created.version(),
-                kilogramsRef,
-                kilogramsRef,
-                null,
-                "1",
-                "ACC-NO-COUNTING-SKU-" + suffix);
+        saveDirectItemWithUnits(
+                context, fixture, session, itemCode, created.version(), kilogramsRef, kilogramsRef, null, "1");
 
         JsonNode item = readItem(context, fixture, session, itemCode);
-        String targetRef = item.path("inventoryBom").get(0).path("targetRef").asText();
+        String targetRef = inventoryRuleNodes(item)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         Response current = context.get(
                 OPERATIONS_INVENTORY_TARGET_READ,
                 "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "?dataNodeRef="
@@ -400,11 +1137,15 @@ final class CatalogAcceptanceScenarios {
         String itemCode = "ACC-BASE-UNIT-BLOCK-" + suffix;
         CreatedItem created =
                 createItemWithAttributes(context, fixture, session, itemCode, "base unit guard", Map.of());
-        saveIndependentSku(context, fixture, session, itemCode, created.version(), null, "ACC-BASE-UNIT-SKU-" + suffix);
+        saveDirectItem(context, fixture, session, itemCode, created.version(), "ACC-BASE-UNIT-SKU-" + suffix);
 
         JsonNode before = readItem(context, fixture, session, itemCode);
         String oldBaseUnitRef = before.path("baseMeasureUnitRef").asText();
-        String targetRef = before.path("inventoryBom").get(0).path("targetRef").asText();
+        String targetRef = inventoryRuleNodes(before)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         JsonNode targetBefore = context.get(
                         OPERATIONS_INVENTORY_TARGET_READ,
                         "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "?dataNodeRef="
@@ -425,8 +1166,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", catalogVersion);
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
-        sections.put("expectedInventoryVersions", List.of());
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         Response rejected = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -1330,12 +2070,19 @@ final class CatalogAcceptanceScenarios {
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
         String code = "ACC-SKU-GUARD-" + UUID.randomUUID().toString().substring(0, 8);
-        long createdVersion = createItem(context, fixture, session, code, "inventory guarded SKU");
-        long savedVersion = saveIndependentSku(context, fixture, session, code, createdVersion, null, "ACC-SKU-1");
+        JsonNode bomComponent =
+                createInventoryBackedMaterialItem(context, fixture, session, "sku-removal-component-" + code);
+        String bomComponentTargetRef = inventoryTargetRef(bomComponent);
+        long createdVersion = createSkuVariantItem(context, fixture, session, code, "inventory guarded SKU")
+                .version();
+        long savedVersion = saveSkuVariantDirect(context, fixture, session, code, createdVersion, null, "ACC-SKU-1");
         JsonNode before = readItem(context, fixture, session, code);
         JsonNode sku = before.path("skus").get(0);
         String skuRef = sku.path("productSkuRef").asText();
-        String targetRef = before.path("inventoryBom").get(0).path("targetRef").asText();
+        String targetRef = inventoryRuleForSku(before, skuRef)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         assertTrue(
                 skuRef.matches("[0-9a-f-]{36}")
                         && targetRef.matches("[0-9a-f-]{36}")
@@ -1396,9 +2143,9 @@ final class CatalogAcceptanceScenarios {
 
         String compositeBlockedCode =
                 "ACC-SKU-COMPOSITE-" + UUID.randomUUID().toString().substring(0, 8);
-        CreatedItem compositeBlocked = createItemWithAttributes(
-                context, fixture, session, compositeBlockedCode, "catalog composite guarded SKU", Map.of());
-        long compositeVersion = saveIndependentSku(
+        CreatedItem compositeBlocked =
+                createSkuVariantItem(context, fixture, session, compositeBlockedCode, "catalog composite guarded SKU");
+        long compositeVersion = saveSkuVariantDirect(
                 context, fixture, session, compositeBlockedCode, compositeBlocked.version(), null, "ACC-SKU-COMPOSITE");
         JsonNode compositeSku = readItem(context, fixture, session, compositeBlockedCode)
                 .path("skus")
@@ -1428,6 +2175,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> compositeSections = new LinkedHashMap<>();
         compositeSections.put("expectedCatalogVersion", compositeOwner.version());
         compositeSections.put("catalogDraft", Map.of("compositeGroups", List.of(compositeGroup)));
+        compositeSections.put("inventoryRules", Map.of("nodes", List.of()));
         Response compositeSaved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(compositeOwnerCode),
@@ -1444,14 +2192,14 @@ final class CatalogAcceptanceScenarios {
                 context, fixture, session, compositeBlockedCode, compositeVersion, compositeSkuRef, "catalog facts");
 
         String bomBlockedCode = "ACC-SKU-BOM-" + UUID.randomUUID().toString().substring(0, 8);
-        CreatedItem bomBlocked =
-                createItemWithAttributes(context, fixture, session, bomBlockedCode, "BOM guarded SKU", Map.of());
-        long bomVersion = saveIndependentSku(
+        CreatedItem bomBlocked = createSkuVariantItem(context, fixture, session, bomBlockedCode, "BOM guarded SKU");
+        long bomVersion = saveSkuVariantDirect(
                 context, fixture, session, bomBlockedCode, bomBlocked.version(), null, "ACC-SKU-BOM");
         JsonNode bomSku =
                 readItem(context, fixture, session, bomBlockedCode).path("skus").get(0);
         String bomSkuRef = bomSku.path("productSkuRef").asText();
-        bomVersion = saveSkuBom(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, targetRef);
+        bomVersion =
+                saveSkuBom(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, bomComponentTargetRef);
         assertSkuRemovalBlocked(context, fixture, session, bomBlockedCode, bomVersion, bomSkuRef, "BOM");
     }
 
@@ -1506,6 +2254,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedCatalogVersion);
         sections.put("catalogDraft", draft);
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         Map<String, Object> transition = new LinkedHashMap<>();
         transition.put("skuRef", skuRef);
         transition.put("targetStatus", "VOIDED");
@@ -1523,19 +2272,22 @@ final class CatalogAcceptanceScenarios {
             String targetRef)
             throws Exception {
         JsonNode item = readItem(context, fixture, session, itemCode);
-        Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put("mode", "BOM");
-        entry.put("itemRef", item.path("itemRef").asText());
-        entry.put("itemCode", itemCode);
-        entry.put("productSkuRef", skuRef);
-        entry.put("skuCode", item.path("skus").get(0).path("skuCode").asText());
-        entry.put("targetRef", targetRef);
-        entry.put("quantity", "1");
-        entry.put("unit", "EA");
-        entry.put("lineSign", "POSITIVE");
+        String skuCode = item.path("skus").get(0).path("skuCode").asText();
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("catalogDraft", Map.of("inventoryBom", List.of(entry)));
+        sections.put("catalogDraft", itemDraft(context, fixture, session, itemCode));
+        sections.put(
+                "inventoryRules",
+                Map.of(
+                        "nodes",
+                        List.of(bomInventoryRule(
+                                "SKU",
+                                item.path("itemRef").asText(),
+                                skuRef,
+                                itemCode,
+                                skuCode,
+                                null,
+                                List.of(bomLine(targetRef, "POSITIVE", "1"))))));
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -1557,12 +2309,16 @@ final class CatalogAcceptanceScenarios {
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
         String code = "ACC-SKU-RENAME-" + UUID.randomUUID().toString().substring(0, 8);
-        long createdVersion = createItem(context, fixture, session, code, "renamed inventory SKU");
-        long savedVersion = saveIndependentSku(context, fixture, session, code, createdVersion, null, "ACC-SKU-OLD");
+        long createdVersion = createSkuVariantItem(context, fixture, session, code, "renamed inventory SKU")
+                .version();
+        long savedVersion = saveSkuVariantDirect(context, fixture, session, code, createdVersion, null, "ACC-SKU-OLD");
         JsonNode before = readItem(context, fixture, session, code);
         String skuRef = before.path("skus").get(0).path("productSkuRef").asText();
-        String targetRef = before.path("inventoryBom").get(0).path("targetRef").asText();
-        saveIndependentSku(context, fixture, session, code, savedVersion, skuRef, "ACC-SKU-NEW");
+        String targetRef = inventoryRuleForSku(before, skuRef)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
+        saveSkuVariantDirect(context, fixture, session, code, savedVersion, skuRef, "ACC-SKU-NEW");
         JsonNode after = readItem(context, fixture, session, code);
         assertEquals(
                 "ACC-SKU-NEW",
@@ -1598,27 +2354,25 @@ final class CatalogAcceptanceScenarios {
 
         String targetCode = "ACC-REF-TARGET-" + suffix;
         long targetVersion = createItem(context, fixture, session, targetCode, "reference target");
-        saveIndependentSku(context, fixture, session, targetCode, targetVersion, null, "ACC-REF-TARGET-SKU");
-        String targetRef = readItem(context, fixture, session, targetCode)
-                .path("inventoryBom")
+        saveDirectItem(context, fixture, session, targetCode, targetVersion, "ACC-REF-TARGET-SKU");
+        String targetRef = inventoryRuleNodes(readItem(context, fixture, session, targetCode))
                 .get(0)
+                .path("directConfiguration")
                 .path("targetRef")
                 .asText();
 
         String otherTargetCode = "ACC-REF-OTHER-TARGET-" + suffix;
         long otherTargetVersion = createItem(context, fixture, session, otherTargetCode, "other target");
-        saveIndependentSku(
-                context, fixture, session, otherTargetCode, otherTargetVersion, null, "ACC-REF-OTHER-TARGET-SKU");
-        String otherTargetRef = readItem(context, fixture, session, otherTargetCode)
-                .path("inventoryBom")
+        saveDirectItem(context, fixture, session, otherTargetCode, otherTargetVersion, "ACC-REF-OTHER-TARGET-SKU");
+        String otherTargetRef = inventoryRuleNodes(readItem(context, fixture, session, otherTargetCode))
                 .get(0)
+                .path("directConfiguration")
                 .path("targetRef")
                 .asText();
 
         String sourceACode = "ACC-REF-SOURCE-A-" + suffix;
-        CreatedItem sourceA =
-                createItemWithAttributes(context, fixture, session, sourceACode, "reference source A", Map.of());
-        long sourceAVersion = saveIndependentSku(
+        CreatedItem sourceA = createSkuVariantItem(context, fixture, session, sourceACode, "reference source A");
+        long sourceAVersion = saveSkuVariantDirect(
                 context, fixture, session, sourceACode, sourceA.version(), null, "ACC-REF-SOURCE-A-SKU");
         JsonNode sourceARead = readItem(context, fixture, session, sourceACode);
         host.insertInventoryBomFixture(
@@ -1633,9 +2387,8 @@ final class CatalogAcceptanceScenarios {
         assertTrue(sourceAVersion > 0, "BUSINESS: source A is created through the real catalog command");
 
         String sourceBCode = "ACC-REF-SOURCE-B-" + suffix;
-        CreatedItem sourceB =
-                createItemWithAttributes(context, fixture, session, sourceBCode, "reference source B", Map.of());
-        long sourceBVersion = saveIndependentSku(
+        CreatedItem sourceB = createSkuVariantItem(context, fixture, session, sourceBCode, "reference source B");
+        long sourceBVersion = saveSkuVariantDirect(
                 context, fixture, session, sourceBCode, sourceB.version(), null, "ACC-REF-SOURCE-B-SKU");
         JsonNode sourceBRead = readItem(context, fixture, session, sourceBCode);
         host.insertInventoryBomFixture(
@@ -1650,9 +2403,8 @@ final class CatalogAcceptanceScenarios {
         assertTrue(sourceBVersion > 0, "BUSINESS: source B is created through the real catalog command");
 
         String sourceCCode = "ACC-REF-SOURCE-C-" + suffix;
-        CreatedItem sourceC =
-                createItemWithAttributes(context, fixture, session, sourceCCode, "reference source C", Map.of());
-        long sourceCVersion = saveIndependentSku(
+        CreatedItem sourceC = createSkuVariantItem(context, fixture, session, sourceCCode, "reference source C");
+        long sourceCVersion = saveSkuVariantDirect(
                 context, fixture, session, sourceCCode, sourceC.version(), null, "ACC-REF-SOURCE-C-SKU");
         JsonNode sourceCRead = readItem(context, fixture, session, sourceCCode);
         host.insertInventoryBomFixture(
@@ -1668,8 +2420,8 @@ final class CatalogAcceptanceScenarios {
 
         String distractorCode = "ACC-REF-DISTRACTOR-" + suffix;
         CreatedItem distractor =
-                createItemWithAttributes(context, fixture, session, distractorCode, "reference distractor", Map.of());
-        long distractorVersion = saveIndependentSku(
+                createSkuVariantItem(context, fixture, session, distractorCode, "reference distractor");
+        long distractorVersion = saveSkuVariantDirect(
                 context, fixture, session, distractorCode, distractor.version(), null, "ACC-REF-DISTRACTOR-SKU");
         JsonNode distractorRead = readItem(context, fixture, session, distractorCode);
         host.insertInventoryBomFixture(
@@ -1687,9 +2439,17 @@ final class CatalogAcceptanceScenarios {
         host.completeInvitation(context, crossScope);
         Session crossSession = host.login(context, crossScope);
         String crossCode = "ACC-REF-CROSS-" + suffix;
-        CreatedItem crossSource =
-                createItemWithAttributes(context, crossScope, crossSession, crossCode, "cross scope source", Map.of());
-        saveIndependentSku(
+        CreatedItem crossSource = createItemWithShape(
+                context,
+                crossScope,
+                crossSession,
+                crossScope.storeId().toString(),
+                crossCode,
+                "cross scope source",
+                Map.of(),
+                Map.of(),
+                "SKU_VARIANT_SALE_COUNTED");
+        saveSkuVariantDirect(
                 context, crossScope, crossSession, crossCode, crossSource.version(), null, "ACC-REF-CROSS-SKU");
         JsonNode crossRead = readItem(context, crossScope, crossSession, crossCode);
         host.insertInventoryBomFixture(
@@ -1754,15 +2514,21 @@ final class CatalogAcceptanceScenarios {
         String firstCode = "ACC-PAGE-" + suffix + "-A";
         String secondCode = "ACC-PAGE-" + suffix + "-B";
         long firstVersion = createItem(context, fixture, session, firstCode, "inventory page first");
-        saveIndependentSku(context, fixture, session, firstCode, firstVersion, null, "ACC-PAGE-SKU-A");
+        saveDirectItem(context, fixture, session, firstCode, firstVersion, "ACC-PAGE-SKU-A");
         long secondVersion = createItem(context, fixture, session, secondCode, "inventory page second");
-        saveIndependentSku(context, fixture, session, secondCode, secondVersion, null, "ACC-PAGE-SKU-B");
+        saveDirectItem(context, fixture, session, secondCode, secondVersion, "ACC-PAGE-SKU-B");
         JsonNode first = readItem(context, fixture, session, firstCode);
         JsonNode second = readItem(context, fixture, session, secondCode);
-        String firstTargetRef =
-                first.path("inventoryBom").get(0).path("targetRef").asText();
-        String secondTargetRef =
-                second.path("inventoryBom").get(0).path("targetRef").asText();
+        String firstTargetRef = inventoryRuleNodes(first)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
+        String secondTargetRef = inventoryRuleNodes(second)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         assertTrue(
                 firstTargetRef.matches("[0-9a-f-]{36}") && secondTargetRef.matches("[0-9a-f-]{36}"),
                 "BUSINESS: fixture creates two typed inventory target identities");
@@ -1825,9 +2591,18 @@ final class CatalogAcceptanceScenarios {
         Session session = host.login(context, fixture);
         String code = "ACC-INVENTORY-CURRENT-" + UUID.randomUUID().toString().substring(0, 8);
         long createdVersion = createItem(context, fixture, session, code, "current readback target");
-        saveIndependentSku(context, fixture, session, code, createdVersion, null, "ACC-INVENTORY-SKU");
+        JsonNode created = readItem(context, fixture, session, code);
+        String unitRef = created.path("baseMeasureUnitRef").asText("");
+        assertFalse(unitRef.isBlank(), "BUSINESS: current readback fixture obtains a catalog unit");
+        // Preserve the pre-existing scenario fact: this lazy-zone readback path exercises a configured
+        // counting unit. The separate no-counting-unit precision scenario covers the nullable branch.
+        saveDirectItemWithUnits(context, fixture, session, code, createdVersion, unitRef, unitRef, unitRef, "1");
         JsonNode item = readItem(context, fixture, session, code);
-        String targetRef = item.path("inventoryBom").get(0).path("targetRef").asText();
+        String targetRef = inventoryRuleNodes(item)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
         String path = "/api/operations/catalog-inventory/inventory-targets/" + targetRef;
         Response current = context.get(
                 OPERATIONS_INVENTORY_TARGET_READ,
@@ -2204,8 +2979,7 @@ final class CatalogAcceptanceScenarios {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String sourceCode = "ACC-LOCAL-SOURCE-" + suffix;
         long sourceVersion = createItem(context, fixture, session, sourceCode, "Local copy source " + suffix);
-        sourceVersion =
-                saveIndependentSku(context, fixture, session, sourceCode, sourceVersion, null, "LOCAL-SKU-" + suffix);
+        sourceVersion = saveDirectItem(context, fixture, session, sourceCode, sourceVersion, "LOCAL-SKU-" + suffix);
         JsonNode material = createInventoryBackedMaterialItem(context, fixture, session, "local-" + suffix);
         JsonNode optionDefinition = createOrderOptionDefinition(
                 context,
@@ -2245,6 +3019,21 @@ final class CatalogAcceptanceScenarios {
                                         optionMaterial.path("materialRef").asText(),
                                         "actualQuantity",
                                         7)))))));
+        String materialTargetRef = inventoryRuleNodes(material)
+                .get(0)
+                .path("directConfiguration")
+                .path("targetRef")
+                .asText();
+        sourceVersion = saveOptionValueBom(
+                context,
+                fixture,
+                session,
+                sourceCode,
+                sourceVersion,
+                optionValue.path("valueRef").asText(),
+                optionValue.path("code").asText(optionValue.path("name").asText()),
+                materialTargetRef,
+                "7");
         JsonNode savedOptionValue = readItem(context, fixture, session, sourceCode)
                 .path("orderOptionConfigs")
                 .get(0)
@@ -2268,8 +3057,12 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", sourceVersion);
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
-        sections.put("expectedInventoryVersions", List.of());
+        JsonNode sourceWithInventoryFacts = readItem(context, fixture, session, sourceCode);
+        List<Map<String, Object>> preservedInventoryRules = StreamSupport.stream(
+                        inventoryRuleNodes(sourceWithInventoryFacts).spliterator(), false)
+                .map(CatalogAcceptanceScenarios::inventoryRuleDraftFromReadback)
+                .toList();
+        sections.put("inventoryRules", Map.of("nodes", preservedInventoryRules));
         Response sourceSaved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(sourceCode),
@@ -2292,6 +3085,26 @@ final class CatalogAcceptanceScenarios {
                 "ITEM_BOM")) {
             String targetCode = "ACC-LOCAL-" + section + "-" + suffix;
             long targetVersion = createItem(context, fixture, session, targetCode, "target before " + section);
+            if ("OPTION_VALUE_BOM".equals(section)) {
+                // An option-value BOM is an inventory owner only for an option value that the target
+                // catalog item actually configures.  Establish that catalog prerequisite before
+                // copying the inventory section; an orphan owner would be deliberately hidden by
+                // the shape-derived detail readback.
+                targetVersion = saveTypedItemFacts(
+                        context,
+                        fixture,
+                        session,
+                        targetCode,
+                        targetVersion,
+                        List.of(),
+                        List.of(orderOptionConfig(
+                                optionDefinition.path("definitionRef").asText(),
+                                false,
+                                null,
+                                null,
+                                List.of(optionOverride(
+                                        optionValue.path("valueRef").asText(), true, null, 0L, List.of())))));
+            }
             JsonNode result =
                     localCopy(context, fixture, session, sourceCode, targetCode, sourceVersion, targetVersion, section);
             JsonNode target = readItem(context, fixture, session, targetCode);
@@ -2300,14 +3113,12 @@ final class CatalogAcceptanceScenarios {
                         "Local copy source " + suffix,
                         target.path("name").asText(),
                         "BUSINESS: BASIC_INFO copies the catalog column fact, not a nonexistent JSON key");
-                case "SKU_STRUCTURE" -> assertFalse(
-                        target.path("skus").isEmpty(),
-                        "BUSINESS: SKU_STRUCTURE copies the persisted SKU relation facts");
+                case "SKU_STRUCTURE" -> assertTrue(
+                        hasSkippedSourceAbsent(result, section),
+                        "BUSINESS: ordinary product shape has no SKU structure to copy");
                 case "ORDER_OPTIONS" -> {
                     JsonNode copiedConfig = target.path("orderOptionConfigs").get(0);
                     JsonNode copiedValue = copiedConfig.path("values").get(0);
-                    JsonNode copiedQuantity =
-                            copiedValue.path("materialQuantities").get(0);
                     assertEquals(
                             optionDefinition.path("definitionRef").asText(),
                             copiedConfig.path("definitionRef").asText(),
@@ -2318,15 +3129,9 @@ final class CatalogAcceptanceScenarios {
                             copiedValue.path("definitionValueRef").asText(),
                             "BUSINESS: local ORDER_OPTIONS copy retains the stable library value relation rather th"
                                     + "an a name/code surrogate");
-                    assertEquals(
-                            optionMaterial.path("materialRef").asText(),
-                            copiedQuantity.path("materialRef").asText(),
-                            "BUSINESS: local ORDER_OPTIONS copy preserves the definition-material opaque relation");
-                    assertEquals(
-                            7,
-                            copiedQuantity.path("actualQuantity").asInt(),
-                            "BUSINESS: local ORDER_OPTIONS copy preserves the option-value BOM quantity, not merely"
-                                    + " a nonempty config");
+                    assertFalse(
+                            copiedValue.has("bom"),
+                            "CONTRACT: local ORDER_OPTIONS copy keeps component usage in inventoryRules");
                     assertTrue(
                             copiedValue.path("defaultValue").asBoolean(),
                             "BUSINESS: local ORDER_OPTIONS copy keeps the persisted default selection through owner"
@@ -2339,18 +3144,30 @@ final class CatalogAcceptanceScenarios {
                         target.path("compositeGroups").isEmpty(),
                         "BUSINESS: PACKAGE_STRUCTURE copies the persisted package relations");
                 case "OPTION_VALUE_BOM" -> {
-                    JsonNode copiedOptionBom = array(target.path("inventoryBom")).stream()
+                    JsonNode copiedOptionBom = StreamSupport.stream(
+                                    inventoryRuleNodes(target).spliterator(), false)
                             .filter(row -> optionValue
                                     .path("valueRef")
                                     .asText()
-                                    .equals(row.path("optionValueRef").asText()))
+                                    .equals(row.path("owner")
+                                            .path("optionValueRef")
+                                            .asText()))
                             .findFirst()
                             .orElseThrow(() -> new AssertionError(
                                     "BUSINESS: OPTION_VALUE_BOM copies the persisted option-value inventory owner"));
                     assertEquals(
                             target.path("itemRef").asText(),
-                            copiedOptionBom.path("itemRef").asText(),
+                            copiedOptionBom.path("owner").path("itemRef").asText(),
                             "BUSINESS: OPTION_VALUE_BOM belongs to the target product");
+                    assertEquals(
+                            "7",
+                            copiedOptionBom
+                                    .path("bom")
+                                    .path("lines")
+                                    .get(0)
+                                    .path("quantity")
+                                    .asText(),
+                            "BUSINESS: copied option-value BOM preserves actual component quantity in inventory owner");
                 }
                 default -> assertTrue(
                         hasSkippedSourceAbsent(result, section),
@@ -2383,31 +3200,31 @@ final class CatalogAcceptanceScenarios {
                 optionValue.path("valueRef").asText(),
                 closureValue.path("definitionValueRef").asText(),
                 "BUSINESS: combined local copy maps the option-value relation without a display-code lookup");
-        assertEquals(
-                optionMaterial.path("materialRef").asText(),
-                closureValue
-                        .path("materialQuantities")
-                        .get(0)
-                        .path("materialRef")
-                        .asText(),
-                "BUSINESS: combined local copy carries the material-template relation into the target item config");
-        JsonNode optionBom = array(closureTarget.path("inventoryBom")).stream()
+        assertFalse(
+                closureValue.has("bom"),
+                "CONTRACT: combined local copy keeps option component usage out of catalog option configuration");
+        JsonNode optionBom = StreamSupport.stream(
+                        inventoryRuleNodes(closureTarget).spliterator(), false)
                 .filter(row -> optionValue
                         .path("valueRef")
                         .asText()
-                        .equals(row.path("optionValueRef").asText()))
+                        .equals(row.path("owner").path("optionValueRef").asText()))
                 .findFirst()
                 .orElseThrow(() ->
                         new AssertionError("BUSINESS: combined local copy creates the target option-value BOM owner"));
         assertEquals(
                 closureTarget.path("itemRef").asText(),
-                optionBom.path("itemRef").asText(),
+                optionBom.path("owner").path("itemRef").asText(),
                 "BUSINESS: copied option-value BOM belongs to the target product, not the source product");
         assertEquals(
-                "OPTION_VALUE_BOM",
-                optionBom.path("nodeType").asText(),
-                "BUSINESS: an opaque option-value BOM remains classified by its owner ref even when its display cod"
-                        + "e is absent");
+                "7",
+                optionBom.path("bom").path("lines").get(0).path("quantity").asText(),
+                "BUSINESS: combined local copy preserves actual option component quantity in inventory owner");
+        assertEquals(
+                "OPTION_VALUE",
+                optionBom.path("owner").path("ownerType").asText(),
+                "BUSINESS: an opaque option-value BOM remains classified by its owner identity even when its display "
+                        + "code is absent");
         assertEquals(
                 optionValue.path("code").asText(),
                 optionBom.path("optionValueCode").asText(),
@@ -3558,13 +4375,12 @@ final class CatalogAcceptanceScenarios {
             boolean defaultValue,
             Object extraPrice,
             long expectedBomVersion,
-            List<Map<String, Object>> materialQuantities) {
+            List<Map<String, Object>> ignoredTemplates) {
         Map<String, Object> override = new LinkedHashMap<>();
         override.put("definitionValueRef", definitionValueRef);
         override.put("defaultValue", defaultValue);
         override.put("extraPrice", extraPrice);
         override.put("expectedBomVersion", expectedBomVersion);
-        override.put("materialQuantities", materialQuantities);
         return override;
     }
 
@@ -3667,20 +4483,6 @@ final class CatalogAcceptanceScenarios {
                                     : value.path("extraPrice").asLong());
                     savedValue.put(
                             "expectedBomVersion", value.path("bomVersion").asLong(0));
-                    List<Map<String, Object>> quantities = new ArrayList<>();
-                    if (value.path("materialQuantities").isArray())
-                        for (JsonNode quantity : value.path("materialQuantities")) {
-                            Map<String, Object> savedQuantity = new LinkedHashMap<>();
-                            savedQuantity.put(
-                                    "materialRef", quantity.path("materialRef").asText());
-                            savedQuantity.put(
-                                    "actualQuantity",
-                                    quantity.path("actualQuantity").isNull()
-                                            ? null
-                                            : quantity.path("actualQuantity").decimalValue());
-                            quantities.add(savedQuantity);
-                        }
-                    savedValue.put("materialQuantities", quantities);
                     values.add(savedValue);
                 }
             savedConfig.put("values", values);
@@ -3703,9 +4505,8 @@ final class CatalogAcceptanceScenarios {
         draft.put("orderOptionConfigs", orderOptionConfigs);
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("expectedInventoryVersions", List.of());
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -3797,9 +4598,8 @@ final class CatalogAcceptanceScenarios {
         draft.put("orderOptionConfigs", List.of());
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("expectedInventoryVersions", List.of());
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -3838,9 +4638,8 @@ final class CatalogAcceptanceScenarios {
                         List.of(optionOverride(valueRef, false, null, 0L, List.of())))));
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("expectedInventoryVersions", List.of());
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -3927,13 +4726,30 @@ final class CatalogAcceptanceScenarios {
     private JsonNode createInventoryBackedMaterialItem(
             BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String suffix)
             throws Exception {
+        return createInventoryBackedMaterialItem(context, fixture, session, suffix, null);
+    }
+
+    private JsonNode createInventoryBackedMaterialItem(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String suffix,
+            String sharedBaseUnitRef)
+            throws Exception {
         String code = "ACC-OPTION-MATERIAL-" + suffix;
-        long createdVersion = createItem(context, fixture, session, code, "option material " + suffix);
-        saveIndependentSku(context, fixture, session, code, createdVersion, null, "ACC-MATERIAL-SKU-" + suffix);
+        CreatedItem created =
+                createMaterialItem(context, fixture, session, code, "option material " + suffix, sharedBaseUnitRef);
+        JsonNode createdItem = readItem(context, fixture, session, code);
+        String baseUnitRef = createdItem.path("baseMeasureUnitRef").asText();
+        saveDirectItemWithUnits(context, fixture, session, code, created.version(), null, baseUnitRef, null, "1");
         JsonNode material = readItem(context, fixture, session, code);
         assertTrue(
-                material.path("inventoryBom").isArray()
-                        && !material.path("inventoryBom").isEmpty(),
+                !inventoryRuleNodes(material).isEmpty()
+                        && "DIRECT"
+                                .equals(inventoryRuleNodes(material)
+                                        .get(0)
+                                        .path("mode")
+                                        .asText()),
                 "BUSINESS: material fixture has an inventory-owned StockTarget before the library command");
         return material;
     }
@@ -4049,6 +4865,12 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", createdVersion);
         sections.put("catalogDraft", Map.of("images", List.of(assetRef)));
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        List<Map<String, Object>> preservedInventoryRules = StreamSupport.stream(
+                        inventoryRuleNodes(current).spliterator(), false)
+                .map(CatalogAcceptanceScenarios::inventoryRuleDraftFromReadback)
+                .toList();
+        sections.put("inventoryRules", Map.of("nodes", preservedInventoryRules));
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -4109,6 +4931,37 @@ final class CatalogAcceptanceScenarios {
             Map<String, Object> attributes,
             Map<String, String> headers)
             throws Exception {
+        return createItemWithShape(
+                context, fixture, session, dataNodeRef, code, name, attributes, headers, "STANDARD_SALE_COUNTED");
+    }
+
+    private CreatedItem createItemWithShape(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String dataNodeRef,
+            String code,
+            String name,
+            Map<String, Object> attributes,
+            Map<String, String> headers,
+            String shapeKey)
+            throws Exception {
+        return createItemWithShape(
+                context, fixture, session, dataNodeRef, code, name, attributes, headers, shapeKey, null);
+    }
+
+    private CreatedItem createItemWithShape(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String dataNodeRef,
+            String code,
+            String name,
+            Map<String, Object> attributes,
+            Map<String, String> headers,
+            String shapeKey,
+            String sharedBaseUnitRef)
+            throws Exception {
         // The remaining callers retain this fixture helper name while legacy scenarios are
         // migrated.  The current create contract intentionally accepts only the first-step
         // identity/category/shape facts; product attributes belong to the typed save command.
@@ -4116,7 +4969,7 @@ final class CatalogAcceptanceScenarios {
                 OPERATIONS_CATALOG_ITEM_CREATE,
                 "/api/operations/catalog-inventory/items",
                 session.cookie(),
-                itemCreateBody(dataNodeRef, code, name, "STANDARD_SALE_COUNTED", null),
+                itemCreateBody(dataNodeRef, code, name, shapeKey, null),
                 headers,
                 Set.of(200));
         JsonNode result = created.json().path("result");
@@ -4125,26 +4978,31 @@ final class CatalogAcceptanceScenarios {
         assertTrue(
                 version > 0 && !resourceRef.isBlank(),
                 "BUSINESS: catalog item creation exposes an opaque, versioned owner fact");
-        JsonNode defaultUnit = createAcceptanceUnitAtDataNode(
-                context,
-                fixture,
-                session,
-                dataNodeRef,
-                "ACC-UNIT-DEFAULT-" + UUID.randomUUID().toString().substring(0, 8),
-                "个",
-                "COUNT",
-                0,
-                headers);
-        String unitRef = defaultUnit.path("result").path("unit").path("unitRef").asText();
-        assertFalse(unitRef.isBlank(), "BUSINESS: standard item fixture obtains a default sales/base unit");
+        boolean inventorylessShape =
+                Set.of("COMPOSITE", "SERVICE", "BENEFIT_SHELL").contains(shapeKey);
+        String unitRef = sharedBaseUnitRef;
+        if (unitRef == null || unitRef.isBlank()) {
+            JsonNode defaultUnit = createAcceptanceUnitAtDataNode(
+                    context,
+                    fixture,
+                    session,
+                    dataNodeRef,
+                    "ACC-UNIT-DEFAULT-" + UUID.randomUUID().toString().substring(0, 8),
+                    "个",
+                    "COUNT",
+                    0,
+                    headers);
+            unitRef = defaultUnit.path("result").path("unit").path("unitRef").asText();
+        }
+        assertFalse(unitRef.isBlank(), "BUSINESS: sellable item fixture obtains a default sales unit");
         Map<String, Object> draft = new LinkedHashMap<>();
         draft.put("name", name);
-        draft.put("shapeKey", "STANDARD_SALE_COUNTED");
+        draft.put("shapeKey", shapeKey);
         draft.put("images", List.of());
         draft.put("productionTagRefs", List.of());
         draft.put("categoryRef", null);
         draft.put("salesUnitRef", unitRef);
-        draft.put("baseMeasureUnitRef", unitRef);
+        draft.put("baseMeasureUnitRef", inventorylessShape ? null : unitRef);
         draft.put("skus", List.of());
         draft.put("skuVariantDimensions", List.of());
         draft.put("attributeAssignments", List.of());
@@ -4152,9 +5010,8 @@ final class CatalogAcceptanceScenarios {
         draft.put("compositeGroups", List.of());
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         sections.put("expectedCatalogVersion", version);
-        sections.put("expectedInventoryVersions", List.of());
         Response initialized = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(code),
@@ -4164,9 +5021,51 @@ final class CatalogAcceptanceScenarios {
                 Set.of(200));
         long initializedVersion = initialized.json().path("version").asLong();
         assertTrue(
-                initializedVersion > version,
-                "BUSINESS: standard item fixture persists default sales/base units before later scenario edits");
+                initialized.status() == 200 && initializedVersion > version,
+                "BUSINESS: item fixture persists its effective sales/base units shape=" + shapeKey);
         return new CreatedItem(UUID.fromString(resourceRef), initializedVersion);
+    }
+
+    private CreatedItem createSkuVariantItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        return createItemWithShape(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                code,
+                name,
+                Map.of(),
+                Map.of(),
+                "SKU_VARIANT_SALE_COUNTED");
+    }
+
+    private CreatedItem createMaterialItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        return createMaterialItem(context, fixture, session, code, name, null);
+    }
+
+    private CreatedItem createMaterialItem(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String code,
+            String name,
+            String sharedBaseUnitRef)
+            throws Exception {
+        return createItemWithShape(
+                context,
+                fixture,
+                session,
+                fixture.storeId().toString(),
+                code,
+                name,
+                Map.of(),
+                Map.of(),
+                "MATERIAL",
+                sharedBaseUnitRef);
     }
 
     private static Map<String, Object> itemCreateBody(
@@ -4204,6 +5103,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedVersion);
         sections.put("catalogDraft", Map.of("images", assetRefs));
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         Map<String, String> headers = bindGrant == null
                 ? Map.of()
                 : Map.of("X-Catalog-Asset-Bind-Grants", "{\"" + assetRefs.get(0) + "\":\"" + bindGrant + "\"}");
@@ -4232,8 +5132,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
         draft.put("categoryRef", categoryRef);
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
-        sections.put("expectedInventoryVersions", List.of());
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -4258,8 +5157,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
         draft.put("tagRefs", tagRefs);
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of()));
-        sections.put("expectedInventoryVersions", List.of());
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -4278,7 +5176,641 @@ final class CatalogAcceptanceScenarios {
                 .orElseThrow(() -> new AssertionError("BUSINESS: expected catalog tag is present in navigation"));
     }
 
-    private long saveIndependentSku(
+    private static JsonNode inventoryRuleNodes(JsonNode item) {
+        JsonNode nodes = item.path("inventoryRules").path("nodes");
+        if (!nodes.isArray()) throw new AssertionError("BUSINESS: catalog readback must expose inventoryRules.nodes");
+        return nodes;
+    }
+
+    private static JsonNode inventoryRuleForSku(JsonNode item, String skuRef) {
+        return StreamSupport.stream(inventoryRuleNodes(item).spliterator(), false)
+                .filter(node ->
+                        "SKU".equals(node.path("owner").path("ownerType").asText()))
+                .filter(node ->
+                        skuRef.equals(node.path("owner").path("productSkuRef").asText()))
+                .findFirst()
+                .orElseThrow(() ->
+                        new AssertionError("BUSINESS: catalog readback must expose the requested SKU inventory owner"));
+    }
+
+    private static String inventoryRuleForSkuRef(JsonNode item, String skuCode) {
+        return StreamSupport.stream(inventoryRuleNodes(item).spliterator(), false)
+                .filter(node ->
+                        "SKU".equals(node.path("owner").path("ownerType").asText()))
+                .filter(node ->
+                        skuCode.equals(node.path("owner").path("skuCode").asText()))
+                .map(node -> node.path("owner").path("productSkuRef").asText())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: SKU fixture must expose the created productSkuRef"));
+    }
+
+    private static String inventoryTargetRef(JsonNode item) {
+        return StreamSupport.stream(inventoryRuleNodes(item).spliterator(), false)
+                .map(node -> node.path("directConfiguration").path("targetRef").asText(""))
+                .filter(ref -> !ref.isBlank())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: item fixture must expose a direct inventory target"));
+    }
+
+    private static String inventoryTargetRefOrMissing(JsonNode item) {
+        return StreamSupport.stream(inventoryRuleNodes(item).spliterator(), false)
+                .map(node -> node.path("directConfiguration").path("targetRef").asText(""))
+                .filter(ref -> !ref.isBlank())
+                .findFirst()
+                .orElse(UUID.randomUUID().toString());
+    }
+
+    private static String unavailableOwnerCode(CreatedItem ignored, String code) {
+        return code;
+    }
+
+    private static boolean admissionCaseAllowed(String shape, String ownerType, String mode) {
+        if ("STANDARD_SALE_COUNTED".equals(shape) || "STANDARD_SALE_WEIGHED".equals(shape))
+            return ("ITEM".equals(ownerType) && Set.of("NONE", "DIRECT", "BOM").contains(mode))
+                    || ("OPTION_VALUE".equals(ownerType)
+                            && Set.of("NONE", "BOM").contains(mode));
+        if ("SKU_VARIANT_SALE_COUNTED".equals(shape))
+            return ("SKU".equals(ownerType) && Set.of("NONE", "DIRECT", "BOM").contains(mode))
+                    || ("ITEM".equals(ownerType) && "NONE".equals(mode));
+        if ("MATERIAL".equals(shape))
+            return "ITEM".equals(ownerType) && Set.of("NONE", "DIRECT").contains(mode);
+        return false;
+    }
+
+    private static JsonNode findInventoryOwner(
+            JsonNode item, String ownerType, String itemRef, String optionValueRef, String productSkuRef) {
+        return StreamSupport.stream(inventoryRuleNodes(item).spliterator(), false)
+                .filter(node ->
+                        ownerType.equals(node.path("owner").path("ownerType").asText()))
+                .filter(node ->
+                        itemRef.equals(node.path("owner").path("itemRef").asText()))
+                .filter(node -> optionValueRef == null
+                        || optionValueRef.equals(
+                                node.path("owner").path("optionValueRef").asText()))
+                .filter(node -> productSkuRef == null
+                        || productSkuRef.equals(
+                                node.path("owner").path("productSkuRef").asText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BUSINESS: requested inventory owner is present in readback"));
+    }
+
+    private static Map<String, Object> noneInventoryRule(
+            String ownerType, String itemRef, String referenceRef, String itemCode, String displayCode) {
+        Map<String, Object> rule = new LinkedHashMap<>();
+        rule.put(
+                "owner",
+                inventoryOwner(
+                        ownerType,
+                        itemRef,
+                        "SKU".equals(ownerType) ? referenceRef : null,
+                        "OPTION_VALUE".equals(ownerType) ? referenceRef : null,
+                        itemCode,
+                        displayCode));
+        rule.put("mode", "NONE");
+        rule.put("consumptionUnitSnapshot", null);
+        rule.put("expectedTargetVersion", null);
+        rule.put("expectedBomVersion", null);
+        rule.put("directConfiguration", null);
+        rule.put("bom", null);
+        return rule;
+    }
+
+    private static Map<String, Object> inventoryRuleForMode(
+            String ownerType,
+            String itemRef,
+            String referenceRef,
+            String itemCode,
+            String displayCode,
+            String mode,
+            String componentTargetRef,
+            Long expectedTargetVersion,
+            Long expectedBomVersion) {
+        if ("NONE".equals(mode)) return noneInventoryRule(ownerType, itemRef, referenceRef, itemCode, displayCode);
+        if ("DIRECT".equals(mode))
+            return directInventoryRule(
+                    ownerType,
+                    itemRef,
+                    "SKU".equals(ownerType) ? referenceRef : null,
+                    itemCode,
+                    "SKU".equals(ownerType) ? displayCode : null,
+                    expectedTargetVersion,
+                    null,
+                    "1");
+        List<Map<String, Object>> lines = List.of(bomLine(componentTargetRef, "POSITIVE", "1"));
+        if ("OPTION_VALUE".equals(ownerType))
+            return optionValueBomInventoryRule(itemRef, referenceRef, itemCode, displayCode, expectedBomVersion, lines);
+        return bomInventoryRule(
+                ownerType,
+                itemRef,
+                "SKU".equals(ownerType) ? referenceRef : null,
+                itemCode,
+                "SKU".equals(ownerType) ? displayCode : null,
+                expectedBomVersion,
+                lines);
+    }
+
+    private Map<String, Object> itemBomRuleForExistingItem(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            String componentTargetRef)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        return inventoryRuleForMode(
+                "ITEM", current.path("itemRef").asText(), null, itemCode, null, "BOM", componentTargetRef, null, null);
+    }
+
+    private Map<String, Object> itemDirectRuleForExistingItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String itemCode)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        return inventoryRuleForMode(
+                "ITEM", current.path("itemRef").asText(), null, itemCode, null, "DIRECT", null, null, null);
+    }
+
+    private Response saveInventoryNodes(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedCatalogVersion,
+            List<Map<String, Object>> nodes,
+            Set<Integer> expectedStatuses)
+            throws Exception {
+        return saveInventoryNodes(
+                context, fixture, session, itemCode, expectedCatalogVersion, nodes, draft -> {}, expectedStatuses);
+    }
+
+    private Response saveInventoryNodes(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedCatalogVersion,
+            List<Map<String, Object>> nodes,
+            Consumer<Map<String, Object>> draftCustomizer,
+            Set<Integer> expectedStatuses)
+            throws Exception {
+        Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
+        draftCustomizer.accept(draft);
+        Map<String, Object> sections = new LinkedHashMap<>();
+        sections.put("expectedCatalogVersion", expectedCatalogVersion);
+        sections.put("catalogDraft", draft);
+        sections.put("inventoryRules", Map.of("nodes", nodes));
+        return context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
+                idempotencyHeaders("inventory-rule-save-" + itemCode),
+                expectedStatuses);
+    }
+
+    private JsonNode saveItemInventoryMode(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedCatalogVersion,
+            String mode,
+            String componentTargetRef)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        Map<String, Object> rule = inventoryRuleForMode(
+                "ITEM", current.path("itemRef").asText(), null, itemCode, null, mode, componentTargetRef, null, null);
+        Response saved = saveInventoryNodes(
+                context, fixture, session, itemCode, expectedCatalogVersion, List.of(rule), Set.of(200));
+        assertEquals(200, saved.status(), "BUSINESS: item inventory mode whole-save succeeds");
+        return readItem(context, fixture, session, itemCode);
+    }
+
+    private JsonNode saveSkuVariantMode(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedCatalogVersion,
+            String skuCode,
+            String mode,
+            String componentTargetRef)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        String itemRef = current.path("itemRef").asText();
+        String unitRef = current.path("baseMeasureUnitRef").asText();
+        Map<String, Object> sku = new LinkedHashMap<>();
+        sku.put("productSkuRef", null);
+        sku.put("skuCode", skuCode);
+        sku.put("skuName", skuCode);
+        sku.put("displayOrder", 0);
+        sku.put("attributeValueRefs", List.of());
+        sku.put("skuBarcode", "");
+        sku.put("isDefault", true);
+        sku.put("status", "ENABLED");
+        sku.put("mediaRefs", List.of());
+        sku.put("salesUnitOverrideRef", unitRef);
+        sku.put("baseMeasureUnitOverrideRef", unitRef);
+        Map<String, Object> rule =
+                inventoryRuleForMode("SKU", itemRef, null, itemCode, skuCode, mode, componentTargetRef, null, null);
+        Response saved = saveInventoryNodes(
+                context,
+                fixture,
+                session,
+                itemCode,
+                expectedCatalogVersion,
+                List.of(rule),
+                draft -> draft.put("skus", List.of(sku)),
+                Set.of(200));
+        assertEquals(200, saved.status(), "BUSINESS: SKU inventory mode whole-save succeeds");
+        return readItem(context, fixture, session, itemCode);
+    }
+
+    private void countTarget(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String targetRef,
+            String quantity,
+            boolean zeroConfirmation,
+            String operation)
+            throws Exception {
+        Response current = context.get(
+                OPERATIONS_INVENTORY_TARGET_READ,
+                "/api/operations/catalog-inventory/inventory-targets/"
+                        + targetRef
+                        + "?dataNodeRef="
+                        + fixture.storeId(),
+                session.cookie(),
+                Set.of(200));
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("dataNodeRef", fixture.storeId().toString());
+        request.put("targetRef", targetRef);
+        request.put("expectedVersion", current.json().path("version").asLong());
+        request.put("countedQuantity", quantity);
+        request.put("countingUnitRef", null);
+        request.put("zeroConfirmation", zeroConfirmation);
+        context.post(
+                OPERATIONS_INVENTORY_TARGET_COUNT,
+                "/api/operations/catalog-inventory/inventory-targets/" + targetRef + "/count",
+                session.cookie(),
+                request,
+                idempotencyHeaders(operation),
+                Set.of(200));
+    }
+
+    private static void assertBlockingFacts(JsonNode response, Set<String> expectedKinds) {
+        JsonNode facts = response.path("details").path("blockingFacts");
+        if (!facts.isArray()) facts = response.path("problem").path("details").path("blockingFacts");
+        String observed = StreamSupport.stream(facts.spliterator(), false)
+                .map(fact ->
+                        fact.path("kind").asText() + "=" + fact.path("count").asLong())
+                .collect(Collectors.joining(","));
+        assertEquals(
+                4,
+                facts.size(),
+                "BUSINESS: mode-switch problem exposes the four fixed blocking facts observed=" + observed);
+        Set<String> kinds = new LinkedHashSet<>();
+        for (JsonNode fact : facts) {
+            kinds.add(fact.path("kind").asText());
+            long count = fact.path("count").asLong();
+            if (expectedKinds.contains(fact.path("kind").asText()))
+                assertTrue(count > 0, "BUSINESS: named blocker has a positive count");
+            else
+                assertEquals(
+                        0,
+                        count,
+                        "BUSINESS: unrelated blocker remains absent expected=" + expectedKinds + " observed="
+                                + observed);
+        }
+        assertEquals(
+                Set.of("BALANCE", "LEDGER", "BOM_REFERENCE", "HISTORICAL_DEFINITION"),
+                kinds,
+                "BUSINESS: blockingFacts kinds are closed and stable");
+    }
+
+    private static void assertOptionBomLines(JsonNode item, String optionValueRef, String sign, String quantity) {
+        JsonNode node =
+                findInventoryOwner(item, "OPTION_VALUE", item.path("itemRef").asText(), optionValueRef, null);
+        BigDecimal expectedQuantity = new BigDecimal(quantity);
+        assertTrue(
+                StreamSupport.stream(node.path("bom").path("lines").spliterator(), false)
+                        .anyMatch(line -> sign.equals(line.path("lineSign").asText())
+                                && expectedQuantity.compareTo(new BigDecimal(
+                                                line.path("quantity").asText()))
+                                        == 0),
+                "BUSINESS: option-value BOM preserves its sign and actual quantity");
+    }
+
+    private static Map<String, Object> inventoryOwner(
+            String ownerType,
+            String itemRef,
+            String productSkuRef,
+            String optionValueRef,
+            String itemCode,
+            String skuCode) {
+        Map<String, Object> owner = new LinkedHashMap<>();
+        owner.put("ownerType", ownerType);
+        owner.put("itemRef", itemRef);
+        owner.put("productSkuRef", productSkuRef);
+        owner.put("optionValueRef", optionValueRef);
+        if (itemCode != null) owner.put("itemCode", itemCode);
+        if ("OPTION_VALUE".equals(ownerType) && skuCode != null) owner.put("optionValueCode", skuCode);
+        else if (skuCode != null) owner.put("skuCode", skuCode);
+        return owner;
+    }
+
+    private static Map<String, Object> directInventoryRule(
+            String ownerType,
+            String itemRef,
+            String productSkuRef,
+            String itemCode,
+            String skuCode,
+            Long expectedTargetVersion,
+            String countingUnitRef,
+            String conversionFactor) {
+        Map<String, Object> rule = new LinkedHashMap<>();
+        rule.put("owner", inventoryOwner(ownerType, itemRef, productSkuRef, null, itemCode, skuCode));
+        rule.put("mode", "DIRECT");
+        rule.put("consumptionUnitSnapshot", null);
+        rule.put("expectedTargetVersion", expectedTargetVersion);
+        rule.put("expectedBomVersion", null);
+        Map<String, Object> configuration = new LinkedHashMap<>();
+        configuration.put("allowNegative", false);
+        configuration.put("lowStockThreshold", null);
+        configuration.put("countingUnitRef", countingUnitRef);
+        configuration.put("conversionFactor", conversionFactor == null ? "1" : conversionFactor);
+        rule.put("directConfiguration", configuration);
+        rule.put("bom", null);
+        return rule;
+    }
+
+    private static Map<String, Object> bomInventoryRule(
+            String ownerType,
+            String itemRef,
+            String productSkuRef,
+            String itemCode,
+            String skuCode,
+            Long expectedBomVersion,
+            List<Map<String, Object>> lines) {
+        Map<String, Object> rule = new LinkedHashMap<>();
+        rule.put("owner", inventoryOwner(ownerType, itemRef, productSkuRef, null, itemCode, skuCode));
+        rule.put("mode", "BOM");
+        rule.put("consumptionUnitSnapshot", null);
+        rule.put("expectedTargetVersion", null);
+        rule.put("expectedBomVersion", expectedBomVersion);
+        rule.put("directConfiguration", null);
+        rule.put("bom", Map.of("lines", lines));
+        return rule;
+    }
+
+    private static Map<String, Object> optionValueBomInventoryRule(
+            String itemRef,
+            String optionValueRef,
+            String itemCode,
+            String optionValueCode,
+            Long expectedBomVersion,
+            List<Map<String, Object>> lines) {
+        Map<String, Object> rule = new LinkedHashMap<>();
+        rule.put("owner", inventoryOwner("OPTION_VALUE", itemRef, null, optionValueRef, itemCode, optionValueCode));
+        rule.put("mode", "BOM");
+        rule.put("consumptionUnitSnapshot", null);
+        rule.put("expectedTargetVersion", null);
+        rule.put("expectedBomVersion", expectedBomVersion);
+        rule.put("directConfiguration", null);
+        rule.put("bom", Map.of("lines", lines));
+        return rule;
+    }
+
+    private static Map<String, Object> inventoryRuleDraftFromReadback(JsonNode node) {
+        Map<String, Object> draft = new LinkedHashMap<>();
+        Map<String, Object> owner = new LinkedHashMap<>();
+        JsonNode readbackOwner = node.path("owner");
+        for (String field : List.of(
+                "ownerType", "itemRef", "productSkuRef", "optionValueRef", "itemCode", "skuCode", "optionValueCode"))
+            owner.put(
+                    field,
+                    readbackOwner.path(field).isMissingNode()
+                                    || readbackOwner.path(field).isNull()
+                            ? null
+                            : readbackOwner.path(field).asText());
+        draft.put("owner", owner);
+        draft.put("mode", node.path("mode").asText("NONE"));
+        JsonNode direct = node.path("directConfiguration");
+        JsonNode consumption = direct.path("consumptionUnitSnapshot");
+        draft.put("consumptionUnitSnapshot", consumption.isObject() ? consumption : null);
+        draft.put(
+                "expectedTargetVersion",
+                direct.path("version").isIntegralNumber()
+                        ? direct.path("version").asLong()
+                        : null);
+        JsonNode bom = node.path("bom");
+        draft.put(
+                "expectedBomVersion",
+                bom.path("version").isIntegralNumber() ? bom.path("version").asLong() : null);
+        if ("DIRECT".equals(node.path("mode").asText())) {
+            Map<String, Object> configuration = new LinkedHashMap<>();
+            configuration.put("allowNegative", direct.path("allowNegative").asBoolean(false));
+            configuration.put(
+                    "lowStockThreshold",
+                    direct.path("lowStockThreshold").isNull()
+                                    || direct.path("lowStockThreshold").isMissingNode()
+                            ? null
+                            : direct.path("lowStockThreshold").asText());
+            JsonNode counting = direct.path("countingUnitSnapshot");
+            configuration.put(
+                    "countingUnitRef",
+                    counting.isObject() ? counting.path("unitRef").asText() : null);
+            configuration.put(
+                    "conversionFactor",
+                    direct.path("conversionFactor").isNull()
+                                    || direct.path("conversionFactor").isMissingNode()
+                            ? null
+                            : direct.path("conversionFactor").asText());
+            draft.put("directConfiguration", configuration);
+        } else draft.put("directConfiguration", null);
+        if ("BOM".equals(node.path("mode").asText())) {
+            List<Map<String, Object>> lines = new ArrayList<>();
+            if (bom.path("lines").isArray())
+                for (JsonNode line : bom.path("lines"))
+                    lines.add(bomLine(
+                            line.path("targetRef").asText(),
+                            line.path("lineSign").asText("POSITIVE"),
+                            line.path("quantity").asText()));
+            draft.put("bom", Map.of("lines", lines));
+        } else draft.put("bom", null);
+        return draft;
+    }
+
+    private long saveOptionValueBom(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            String optionValueRef,
+            String optionValueCode,
+            String componentTargetRef,
+            String quantity)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        JsonNode existing = null;
+        for (JsonNode node : inventoryRuleNodes(current)) {
+            if (optionValueRef.equals(node.path("owner").path("optionValueRef").asText())) existing = node;
+            else nodes.add(inventoryRuleDraftFromReadback(node));
+        }
+        Long expectedBomVersion =
+                existing == null || existing.path("bom").path("version").isNull()
+                        ? null
+                        : existing.path("bom").path("version").asLong();
+        nodes.add(optionValueBomInventoryRule(
+                current.path("itemRef").asText(),
+                optionValueRef,
+                itemCode,
+                optionValueCode,
+                expectedBomVersion,
+                List.of(bomLine(componentTargetRef, "POSITIVE", quantity))));
+        Map<String, Object> sections = new LinkedHashMap<>();
+        sections.put("expectedCatalogVersion", expectedVersion);
+        sections.put("catalogDraft", itemDraft(context, fixture, session, itemCode));
+        sections.put("inventoryRules", Map.of("nodes", nodes));
+        Response saved = context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
+                idempotencyHeaders("option-value-bom-" + itemCode),
+                Set.of(200));
+        long version = saved.json().path("version").asLong();
+        assertTrue(version > expectedVersion, "BUSINESS: option-value BOM fixture advances the catalog version");
+        return version;
+    }
+
+    private long saveOptionValueBomLines(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            String optionValueRef,
+            String optionValueCode,
+            List<Map<String, Object>> lines)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        JsonNode existing = null;
+        for (JsonNode node : inventoryRuleNodes(current)) {
+            if (optionValueRef.equals(node.path("owner").path("optionValueRef").asText())) existing = node;
+            else nodes.add(inventoryRuleDraftFromReadback(node));
+        }
+        Long expectedBomVersion =
+                existing == null || existing.path("bom").path("version").isNull()
+                        ? null
+                        : existing.path("bom").path("version").asLong();
+        nodes.add(optionValueBomInventoryRule(
+                current.path("itemRef").asText(),
+                optionValueRef,
+                itemCode,
+                optionValueCode,
+                expectedBomVersion,
+                lines));
+        Map<String, Object> sections = new LinkedHashMap<>();
+        sections.put("expectedCatalogVersion", expectedVersion);
+        sections.put("catalogDraft", itemDraft(context, fixture, session, itemCode));
+        sections.put("inventoryRules", Map.of("nodes", nodes));
+        Response saved = context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
+                idempotencyHeaders("option-value-bom-lines-" + itemCode + "-" + optionValueRef),
+                Set.of(200));
+        long version = saved.json().path("version").asLong();
+        assertTrue(version > expectedVersion, "BUSINESS: option BOM line aggregate advances the catalog version");
+        return version;
+    }
+
+    private static Map<String, Object> bomLine(String targetRef, String lineSign, String quantity) {
+        return Map.of("targetRef", targetRef, "lineSign", lineSign, "quantity", quantity);
+    }
+
+    private long saveDirectItemWithUnits(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            String salesUnitRef,
+            String baseMeasureUnitRef,
+            String countingUnitRef,
+            String conversionFactor)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        String itemRef = current.path("itemRef").asText();
+        JsonNode existing = StreamSupport.stream(inventoryRuleNodes(current).spliterator(), false)
+                .filter(node ->
+                        "ITEM".equals(node.path("owner").path("ownerType").asText()))
+                .findFirst()
+                .orElse(null);
+        Long expectedTargetVersion = existing == null
+                        || existing.path("directConfiguration").path("version").isNull()
+                ? null
+                : existing.path("directConfiguration").path("version").asLong();
+        Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
+        draft.put("salesUnitRef", salesUnitRef);
+        draft.put("baseMeasureUnitRef", baseMeasureUnitRef);
+        Map<String, Object> sections = new LinkedHashMap<>();
+        sections.put("expectedCatalogVersion", expectedVersion);
+        sections.put("catalogDraft", draft);
+        sections.put(
+                "inventoryRules",
+                Map.of(
+                        "nodes",
+                        List.of(directInventoryRule(
+                                "ITEM",
+                                itemRef,
+                                null,
+                                itemCode,
+                                null,
+                                expectedTargetVersion,
+                                countingUnitRef,
+                                conversionFactor))));
+        Response saved = context.patch(
+                OPERATIONS_CATALOG_ITEM_SAVE,
+                itemPath(itemCode),
+                session.cookie(),
+                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
+                idempotencyHeaders("direct-item-save-" + itemCode),
+                Set.of(200));
+        long version = saved.json().path("version").asLong();
+        assertTrue(version > expectedVersion, "BUSINESS: direct item inventory fixture advances the catalog version");
+        return version;
+    }
+
+    private long saveDirectItem(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String itemCode,
+            long expectedVersion,
+            String fixtureLabel)
+            throws Exception {
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        String baseUnitRef = current.path("baseMeasureUnitRef").asText("");
+        assertFalse(baseUnitRef.isBlank(), "BUSINESS: direct item fixture has a base measurement unit");
+        return saveDirectItemWithUnits(
+                context,
+                fixture,
+                session,
+                itemCode,
+                expectedVersion,
+                current.path("salesUnitRef").asText(null),
+                baseUnitRef,
+                null,
+                "1");
+    }
+
+    private long saveSkuVariantDirect(
             BackendAcceptanceTest.ScenarioContext context,
             Fixture fixture,
             Session session,
@@ -4287,22 +5819,20 @@ final class CatalogAcceptanceScenarios {
             String skuRef,
             String skuCode)
             throws Exception {
-        JsonNode current = skuRef == null ? null : readItem(context, fixture, session, itemCode);
-        String unitRef;
-        if (current == null) {
-            JsonNode unit = createAcceptanceUnit(
-                    context,
-                    fixture,
-                    session,
-                    "ACC-UNIT-" + UUID.randomUUID().toString().substring(0, 8));
-            unitRef = unit.path("result").path("unit").path("unitRef").asText();
-        } else {
-            // A SKU-code edit is a relational identity change only. Reuse the already
-            // effective base/counting unit so the fixture does not accidentally express
-            // the separately guarded base-unit transition.
-            unitRef = current.path("baseMeasureUnitRef").asText("");
-        }
+        JsonNode current = readItem(context, fixture, session, itemCode);
+        String unitRef = current.path("baseMeasureUnitRef").asText("");
         assertFalse(unitRef.isBlank(), "BUSINESS: acceptance fixture obtains a catalog unit opaque reference");
+        JsonNode existing = skuRef == null
+                ? null
+                : StreamSupport.stream(inventoryRuleNodes(current).spliterator(), false)
+                        .filter(node -> skuRef.equals(
+                                node.path("owner").path("productSkuRef").asText()))
+                        .findFirst()
+                        .orElse(null);
+        Long expectedTargetVersion = existing == null
+                        || existing.path("directConfiguration").path("version").isNull()
+                ? null
+                : existing.path("directConfiguration").path("version").asLong();
         Map<String, Object> sku = new LinkedHashMap<>();
         if (skuRef != null) sku.put("productSkuRef", skuRef);
         sku.put("skuCode", skuCode);
@@ -4313,22 +5843,28 @@ final class CatalogAcceptanceScenarios {
         sku.put("isDefault", true);
         sku.put("status", "ENABLED");
         sku.put("mediaRefs", List.of());
-        Map<String, Object> inventoryNode = new LinkedHashMap<>();
-        inventoryNode.put("nodeType", "SKU");
-        inventoryNode.put("mode", "INDEPENDENT_STOCK");
-        inventoryNode.put("skuCode", skuCode);
-        inventoryNode.put(
-                "configuration", Map.of("allowNegative", false, "countingUnitRef", unitRef, "conversionFactor", "1"));
-        if (skuRef != null) inventoryNode.put("productSkuRef", skuRef);
+        sku.put("salesUnitOverrideRef", unitRef);
+        sku.put("baseMeasureUnitOverrideRef", unitRef);
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("expectedInventoryVersions", List.of());
         Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
         draft.put("salesUnitRef", unitRef);
         draft.put("baseMeasureUnitRef", unitRef);
         draft.put("skus", List.of(sku));
         sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of(inventoryNode)));
+        sections.put(
+                "inventoryRules",
+                Map.of(
+                        "nodes",
+                        List.of(directInventoryRule(
+                                "SKU",
+                                current.path("itemRef").asText(),
+                                skuRef,
+                                itemCode,
+                                skuCode,
+                                expectedTargetVersion,
+                                null,
+                                "1"))));
         Response saved = context.patch(
                 OPERATIONS_CATALOG_ITEM_SAVE,
                 itemPath(itemCode),
@@ -4406,57 +5942,6 @@ final class CatalogAcceptanceScenarios {
         return merged;
     }
 
-    private long saveIndependentSkuWithUnits(
-            BackendAcceptanceTest.ScenarioContext context,
-            Fixture fixture,
-            Session session,
-            String itemCode,
-            long expectedVersion,
-            String salesUnitRef,
-            String baseMeasureUnitRef,
-            String countingUnitRef,
-            String conversionFactor,
-            String skuCode)
-            throws Exception {
-        Map<String, Object> sku = new LinkedHashMap<>();
-        sku.put("skuCode", skuCode);
-        sku.put("skuName", skuCode);
-        sku.put("displayOrder", 0);
-        sku.put("attributeValueRefs", List.of());
-        sku.put("skuBarcode", "");
-        sku.put("isDefault", true);
-        sku.put("status", "ENABLED");
-        sku.put("mediaRefs", List.of());
-        Map<String, Object> inventoryNode = new LinkedHashMap<>();
-        inventoryNode.put("nodeType", "SKU");
-        inventoryNode.put("mode", "INDEPENDENT_STOCK");
-        inventoryNode.put("skuCode", skuCode);
-        Map<String, Object> configuration = new LinkedHashMap<>();
-        configuration.put("allowNegative", false);
-        configuration.put("countingUnitRef", countingUnitRef);
-        configuration.put("conversionFactor", conversionFactor);
-        inventoryNode.put("configuration", configuration);
-        Map<String, Object> draft = itemDraft(context, fixture, session, itemCode);
-        draft.put("salesUnitRef", salesUnitRef);
-        draft.put("baseMeasureUnitRef", baseMeasureUnitRef);
-        draft.put("skus", List.of(sku));
-        Map<String, Object> sections = new LinkedHashMap<>();
-        sections.put("expectedCatalogVersion", expectedVersion);
-        sections.put("expectedInventoryVersions", List.of());
-        sections.put("catalogDraft", draft);
-        sections.put("inventoryConfiguration", Map.of("nodes", List.of(inventoryNode)));
-        Response saved = context.patch(
-                OPERATIONS_CATALOG_ITEM_SAVE,
-                itemPath(itemCode),
-                session.cookie(),
-                Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections),
-                idempotencyHeaders("unitful-item-save-" + itemCode),
-                Set.of(200));
-        long version = saved.json().path("version").asLong();
-        assertTrue(version > expectedVersion, "BUSINESS: unitful SKU fixture advances the catalog version");
-        return version;
-    }
-
     private Map<String, Object> matrixSaveBody(
             Fixture fixture,
             String itemCode,
@@ -4483,6 +5968,7 @@ final class CatalogAcceptanceScenarios {
         Map<String, Object> sections = new LinkedHashMap<>();
         sections.put("expectedCatalogVersion", expectedVersion);
         sections.put("catalogDraft", draft);
+        sections.put("inventoryRules", Map.of("nodes", List.of()));
         return Map.of("dataNodeRef", fixture.storeId().toString(), "itemCode", itemCode, "sections", sections);
     }
 

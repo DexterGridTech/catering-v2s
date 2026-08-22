@@ -192,7 +192,6 @@ export type CatalogDetail = {
     skus: CatalogSkuRow[];
     skuSummary: {enabledCount: number; nonArchivedCount: number; totalCount: number; dimensions: string[]};
     compositeGroups: CatalogCompositeGroup[];
-    inventoryBom: CatalogInventoryBomEntry[];
     productionProfiles: {
       item: Record<string, JsonValue>;
       sku: Record<string, JsonValue>;
@@ -203,7 +202,7 @@ export type CatalogDetail = {
   };
   tabs: Array<{tabKey: string; visible: boolean; disabled: boolean; reason?: string}>;
   references: Array<{referenceKind: string; referenceRef: Uuid; code: string; direction: string}>;
-  inventoryBom: CatalogInventoryBomEntry[];
+  inventoryRules: CatalogInventoryRules;
   productionTags: Array<{code: string; tagRef: Uuid; name: string; owner: string}>;
   compositeGroups: CatalogCompositeGroup[];
   actionAvailability: {
@@ -246,14 +245,6 @@ export type CatalogOrderOptionConfig = {
     defaultValue: boolean;
     extraPrice: number | null;
     bomVersion: number | null;
-    materialQuantities: Array<{
-      materialRef: Uuid;
-      materialItemRef: Uuid;
-      materialItemName: string;
-      stockTargetRef: Uuid;
-      consumptionUnitSnapshot: CatalogUnitSnapshot;
-      actualQuantity: number | null;
-    }>;
   }>;
 };
 export type CatalogCompositeComponent = {
@@ -277,28 +268,6 @@ export type CatalogCompositeGroup = {
   displayOrder: number;
   components: CatalogCompositeComponent[];
 };
-export type CatalogInventoryConfiguration = {
-  allowNegative?: boolean;
-  lowStockThreshold?: string | null;
-  countingUnitSnapshot?: CatalogUnitSnapshot | null;
-  conversionFactor?: string | null;
-};
-export type CatalogInventoryBomEntry = {
-  nodeType: string;
-  mode: string;
-  targetRef: Uuid;
-  quantity: string;
-  consumptionUnitSnapshot?: CatalogUnitSnapshot;
-  itemCode?: string;
-  itemRef?: Uuid;
-  productSkuRef?: Uuid | null;
-  skuCode?: string | null;
-  optionValueRef?: Uuid | null;
-  optionValueCode?: string | null;
-  version?: number;
-  lineSign?: string;
-  configuration?: CatalogInventoryConfiguration;
-};
 export type CatalogUnitDimension = 'COUNT' | 'WEIGHT' | 'VOLUME' | 'SERVICE_DURATION' | 'PACKAGE';
 export type CatalogUnitSnapshot = {
   unitRef: Uuid;
@@ -311,6 +280,53 @@ export type CatalogUnitAssignment = CatalogUnitSnapshot & {
   status: 'ENABLED' | 'DISABLED';
   inheritanceSource: 'ITEM_DEFAULT' | 'SKU_OVERRIDE';
 };
+export type CatalogInventoryRuleMode = 'NONE' | 'DIRECT' | 'BOM';
+export type CatalogInventoryRuleOwner = {
+  ownerType: 'ITEM' | 'SKU' | 'OPTION_VALUE';
+  itemRef: Uuid;
+  productSkuRef: Uuid | null;
+  optionValueRef: Uuid | null;
+  itemCode?: string | null;
+  skuCode?: string | null;
+  optionValueCode?: string | null;
+};
+export type CatalogInventoryRuleNode = {
+  owner: CatalogInventoryRuleOwner;
+  itemCode: string;
+  itemName: string;
+  skuCode: string | null;
+  optionValueCode: string | null;
+  allowedModes: CatalogInventoryRuleMode[];
+  defaultMode: CatalogInventoryRuleMode;
+  disabledReason: string | null;
+  mode: CatalogInventoryRuleMode;
+  directConfiguration: {
+    targetRef: Uuid | null;
+    allowNegative: boolean | null;
+    lowStockThreshold: string | null;
+    consumptionUnitSnapshot: CatalogUnitSnapshot | null;
+    countingUnitSnapshot: CatalogUnitSnapshot | null;
+    conversionFactor: string | null;
+    version: number | null;
+  } | null;
+  bom: {
+    version: number | null;
+    lines: Array<{
+      targetRef: Uuid;
+      itemRef: Uuid;
+      productSkuRef: Uuid | null;
+      itemCode: string;
+      skuCode: string | null;
+      itemName: string;
+      skuName: string | null;
+      lineSign: 'POSITIVE' | 'NEGATIVE';
+      quantity: string;
+      consumptionUnitSnapshot: CatalogUnitSnapshot;
+    }>;
+  } | null;
+};
+export type CatalogInventoryRules = {nodes: CatalogInventoryRuleNode[]};
+export type CatalogInventoryRuleDraftNode = CatalogItemSaveRequest['sections']['inventoryRules']['nodes'][number];
 export type CatalogSkuAttributeValueRef = {
   attributeRef: Uuid;
   attributeCode: string;
@@ -398,6 +414,7 @@ export function buildCatalogSkuVoidRequest(
   dataNodeRef: Uuid,
   itemCode: string,
   sku: Pick<CatalogSkuRow, 'productSkuRef' | 'version'>,
+  inventoryRules: CatalogInventoryRules = {nodes: []},
 ): CatalogItemSaveRequest {
   return {
     dataNodeRef,
@@ -423,18 +440,13 @@ export function buildCatalogSkuVoidRequest(
             defaultValue: value.defaultValue,
             extraPrice: value.extraPrice,
             expectedBomVersion: value.bomVersion ?? 0,
-            materialQuantities: value.materialQuantities.map(material => ({
-              materialRef: material.materialRef,
-              actualQuantity: material.actualQuantity,
-            })),
           })),
         })),
         images: item.images,
         productionTagRefs: item.productionTagRefs,
       },
-      inventoryConfiguration: {nodes: []},
       expectedCatalogVersion: item.version,
-      expectedInventoryVersions: [],
+      inventoryRules: {nodes: inventoryRules.nodes.map(catalogInventoryRuleToDraft)},
     },
   };
 }
@@ -506,10 +518,39 @@ export function buildCatalogBatchSaveRequest(
       // The generated editor envelope models the full draft as required, but
       // the catalog owner intentionally merges omitted unchanged draft facts.
       catalogDraft: catalogDraft as CatalogItemSaveRequest['sections']['catalogDraft'],
-      inventoryConfiguration: {nodes: []},
       expectedCatalogVersion: row.version,
-      expectedInventoryVersions: [],
+      inventoryRules: {nodes: []},
     },
+  };
+}
+
+/** Convert an owner-confirmed detail node into the generated whole-save branch. */
+export function catalogInventoryRuleToDraft(node: CatalogInventoryRuleNode): CatalogInventoryRuleDraftNode {
+  return {
+    owner: {...node.owner},
+    mode: node.mode,
+    consumptionUnitSnapshot: node.directConfiguration?.consumptionUnitSnapshot ?? null,
+    expectedTargetVersion: node.directConfiguration?.version ?? null,
+    expectedBomVersion: node.bom?.version ?? null,
+    directConfiguration:
+      node.mode === 'DIRECT' && node.directConfiguration
+        ? {
+            allowNegative: node.directConfiguration.allowNegative ?? false,
+            lowStockThreshold: node.directConfiguration.lowStockThreshold,
+            countingUnitRef: node.directConfiguration.countingUnitSnapshot?.unitRef ?? null,
+            conversionFactor: node.directConfiguration.conversionFactor,
+          }
+        : null,
+    bom:
+      node.mode === 'BOM' && node.bom
+        ? {
+            lines: node.bom.lines.map(line => ({
+              targetRef: line.targetRef,
+              lineSign: line.lineSign,
+              quantity: line.quantity,
+            })),
+          }
+        : null,
   };
 }
 
@@ -1018,6 +1059,13 @@ export function catalogFormValidationIssue(error: unknown): {tabKey: 'basic'; me
   return {tabKey: 'basic', message: errors[0] ?? '请先修正当前页签中的字段。'};
 }
 
+/** Keep typed inventory failures on the tab that owns the submitted facts. */
+export function catalogInventoryProblemTab(errorCode: string): 'basic' | 'inventory-bom' | undefined {
+  if (errorCode === 'CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED') return 'basic';
+  if (errorCode === 'CONSUMPTION_UNIT_INCOMPATIBLE' || errorCode.startsWith('INVENTORY_')) return 'inventory-bom';
+  return undefined;
+}
+
 export function decodeDetail(envelope: CatalogDataEnvelope | undefined): CatalogDetail | undefined {
   const root = envelopeData(envelope);
   const item = asRecord(root?.item);
@@ -1025,9 +1073,8 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
   const action = asRecord(root.actionAvailability) ?? {};
   const governance = asRecord(root.governance) ?? {};
   const rootCompositeGroups = decodeCompositeGroups(root.compositeGroups);
-  const rootInventoryBom = decodeInventoryBom(root.inventoryBom);
   const itemCompositeGroups = decodeCompositeGroups(item.compositeGroups);
-  const itemInventoryBom = decodeInventoryBom(item.inventoryBom);
+  const inventoryRules = decodeInventoryRules(root.inventoryRules);
   const itemSkuDimensions = decodeSkuVariantDimensions(item.skuVariantDimensions);
   const itemSkus = decodeSkuRows(item.skus);
   const skuSummary = decodeSkuSummary(item.skuSummary);
@@ -1090,14 +1137,6 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
           defaultValue: truth(value.defaultValue),
           extraPrice: optionalNumber(value.extraPrice) ?? null,
           bomVersion: optionalNumber(value.bomVersion) ?? null,
-          materialQuantities: recordArray(value.materialQuantities).map(material => ({
-            materialRef: readUuid(material.materialRef),
-            materialItemRef: readUuid(material.materialItemRef),
-            materialItemName: text(material.materialItemName),
-            stockTargetRef: readUuid(material.stockTargetRef),
-            consumptionUnitSnapshot: requireUnitSnapshot(material.consumptionUnitSnapshot, 'order-option-material'),
-            actualQuantity: optionalNumber(material.actualQuantity) ?? null,
-          })),
         })),
       })),
       identifiers: recordArray(item.identifiers).map(row => ({
@@ -1109,7 +1148,6 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       skus: itemSkus,
       skuSummary,
       compositeGroups: itemCompositeGroups.length ? itemCompositeGroups : rootCompositeGroups,
-      inventoryBom: itemInventoryBom.length ? itemInventoryBom : rootInventoryBom,
       productionProfiles: {
         item: asRecord(asRecord(item.productionProfiles)?.item) ?? {},
         sku: asRecord(asRecord(item.productionProfiles)?.sku) ?? {},
@@ -1134,7 +1172,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       code: text(row.code),
       direction: text(row.direction),
     })),
-    inventoryBom: rootInventoryBom,
+    inventoryRules,
     productionTags: recordArray(root.productionTags).map(row => ({
       code: text(row.code),
       tagRef: readUuid(row.tagRef),
@@ -1484,34 +1522,63 @@ function decodeCompositeGroups(value: JsonValue | undefined): CatalogCompositeGr
     })),
   }));
 }
-function decodeInventoryBom(value: JsonValue | undefined): CatalogInventoryBomEntry[] {
-  return recordArray(value).map(row => {
-    const entry: CatalogInventoryBomEntry = {
-      nodeType: text(row.nodeType),
-      mode: text(row.mode),
-      targetRef: readUuid(row.targetRef),
-      quantity: text(row.quantity),
-      consumptionUnitSnapshot: requireUnitSnapshot(row.consumptionUnitSnapshot, 'inventory-bom'),
-      itemCode: optionalText(row.itemCode),
-      itemRef: readOptionalUuid(row.itemRef),
-      productSkuRef: readOptionalUuid(row.productSkuRef) ?? null,
-      skuCode: optionalText(row.skuCode) ?? null,
-      optionValueRef: readOptionalUuid(row.optionValueRef) ?? null,
-      version: optionalInteger(row.version),
-      optionValueCode: optionalText(row.optionValueCode) ?? null,
-      lineSign: optionalText(row.lineSign),
-    };
-    const configuration = asRecord(row.configuration);
-    if (configuration)
-      entry.configuration = {
-        allowNegative: typeof configuration.allowNegative === 'boolean' ? configuration.allowNegative : undefined,
-        lowStockThreshold:
-          configuration.lowStockThreshold === null ? null : optionalText(configuration.lowStockThreshold),
-        countingUnitSnapshot: decodeUnitSnapshot(configuration.countingUnitSnapshot),
-        conversionFactor: optionalText(configuration.conversionFactor),
+function decodeInventoryRules(value: JsonValue | undefined): CatalogInventoryRules {
+  return {
+    nodes: recordArray(asRecord(value)?.nodes).map(row => {
+      const owner = asRecord(row.owner) ?? {};
+      const direct = asRecord(row.directConfiguration);
+      const bom = asRecord(row.bom);
+      return {
+        owner: {
+          ownerType: text(owner.ownerType) as CatalogInventoryRuleOwner['ownerType'],
+          itemRef: readUuid(owner.itemRef),
+          productSkuRef: readOptionalUuid(owner.productSkuRef) ?? null,
+          optionValueRef: readOptionalUuid(owner.optionValueRef) ?? null,
+          itemCode: optionalText(owner.itemCode) ?? null,
+          skuCode: optionalText(owner.skuCode) ?? null,
+          optionValueCode: optionalText(owner.optionValueCode) ?? null,
+        },
+        itemCode: text(row.itemCode),
+        itemName: text(row.itemName),
+        skuCode: optionalText(row.skuCode) ?? null,
+        optionValueCode: optionalText(row.optionValueCode) ?? null,
+        allowedModes: textArray(row.allowedModes) as CatalogInventoryRuleMode[],
+        defaultMode: text(row.defaultMode) as CatalogInventoryRuleMode,
+        disabledReason: optionalText(row.disabledReason) ?? null,
+        mode: text(row.mode) as CatalogInventoryRuleMode,
+        directConfiguration: direct
+          ? {
+              targetRef: readOptionalUuid(direct.targetRef) ?? null,
+              allowNegative: typeof direct.allowNegative === 'boolean' ? direct.allowNegative : null,
+              lowStockThreshold:
+                direct.lowStockThreshold === null ? null : (optionalText(direct.lowStockThreshold) ?? null),
+              consumptionUnitSnapshot: decodeUnitSnapshot(direct.consumptionUnitSnapshot),
+              countingUnitSnapshot: decodeUnitSnapshot(direct.countingUnitSnapshot),
+              conversionFactor:
+                direct.conversionFactor === null ? null : (optionalText(direct.conversionFactor) ?? null),
+              version: optionalInteger(direct.version) ?? null,
+            }
+          : null,
+        bom: bom
+          ? {
+              version: optionalInteger(bom.version) ?? null,
+              lines: recordArray(bom.lines).map(line => ({
+                targetRef: readUuid(line.targetRef),
+                itemRef: readUuid(line.itemRef),
+                productSkuRef: readOptionalUuid(line.productSkuRef) ?? null,
+                itemCode: text(line.itemCode),
+                skuCode: optionalText(line.skuCode) ?? null,
+                itemName: text(line.itemName),
+                skuName: optionalText(line.skuName) ?? null,
+                lineSign: text(line.lineSign) as 'POSITIVE' | 'NEGATIVE',
+                quantity: text(line.quantity),
+                consumptionUnitSnapshot: requireUnitSnapshot(line.consumptionUnitSnapshot, 'inventory-rule-bom-line'),
+              })),
+            }
+          : null,
       };
-    return entry;
-  });
+    }),
+  };
 }
 function truth(value: JsonValue | undefined): boolean {
   return value === true;

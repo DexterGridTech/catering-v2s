@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <style>
+      .bg{fill:#f3f6fb}.panel{fill:#fff;stroke:#c7d2e3;stroke-width:2}.bar{fill:#f8fafc}.line{stroke:#d9e2ef;stroke-width:1}
+      .title{font:700 24px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#172033}
+      .h{font:700 18px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#172033}
+      .text{font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#334155}
+      .small{font:13px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#64748b}
+      .label{font:600 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#334155}
+      .btn{fill:#1677ff}.btnText{font:600 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#fff}
+      .ghost{fill:#fff;stroke:#cbd5e1}.ghostText{font:600 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#334155}
+      .select{fill:#fff;stroke:#94a3b8}.warn{fill:#fff7e6;stroke:#ffd591}.warnText{font:600 15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#ad6800}
+      .ok{fill:#f0f9eb;stroke:#b7eb8f}.okText{font:700 15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#237804}
+      .bad{fill:#fff2f0;stroke:#ffccc7}.badText{font:600 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#cf1322}
+      .tag{fill:#fff1f0;stroke:#ffa39e}.tagText{font:600 12px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#cf1322}
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+  <text class="title" x="70" y="58">批量商品状态 · 低保真交互</text>
+  <text class="small" x="70" y="86">保留当前同步 Modal；提交后不自动关闭。左：确认态　右：部分失败结果态</text>
+
+  <rect class="panel" x="70" y="120" rx="10" width="580" height="650"/>
+  <rect class="bar" x="71" y="121" rx="10" width="578" height="62"/>
+  <text class="h" x="96" y="159">批量改状态</text>
+  <line class="line" x1="70" y1="183" x2="650" y2="183"/>
+  <text class="text" x="96" y="225">将对已选择的 20 个商品逐项处理。</text>
+  <text class="small" x="96" y="251">个别商品失败不会撤销其他已成功商品。</text>
+  <text class="label" x="96" y="305">目标状态</text>
+  <rect class="select" x="96" y="322" rx="6" width="500" height="46"/>
+  <text class="text" x="114" y="351">启用</text>
+  <text class="text" x="565" y="351">⌄</text>
+  <rect class="warn" x="96" y="402" rx="8" width="500" height="88"/>
+  <text class="warnText" x="116" y="433">执行前确认</text>
+  <text class="small" x="116" y="460">系统会按每个商品的当前状态、版本和依赖分别判断。</text>
+  <line class="line" x1="70" y1="690" x2="650" y2="690"/>
+  <rect class="ghost" x="425" y="713" rx="6" width="82" height="38"/>
+  <text class="ghostText" x="452" y="738">取消</text>
+  <rect class="btn" x="518" y="713" rx="6" width="78" height="38"/>
+  <text class="btnText" x="544" y="738">执行</text>
+  <text class="small" x="70" y="803">提交态：目标状态、取消、关闭和重复执行全部锁定；显示“正在处理，请稍候…”</text>
+
+  <rect class="panel" x="790" y="120" rx="10" width="580" height="650"/>
+  <rect class="bar" x="791" y="121" rx="10" width="578" height="62"/>
+  <text class="h" x="816" y="159">批量操作完成</text>
+  <line class="line" x1="790" y1="183" x2="1370" y2="183"/>
+  <rect class="ok" x="816" y="208" rx="8" width="528" height="70"/>
+  <text class="okText" x="838" y="238">成功 17 项，失败 3 项</text>
+  <text class="small" x="838" y="261">成功商品已经生效；以下商品需要处理后重新选择。</text>
+  <text class="label" x="816" y="318">以下 3 个商品未处理成功</text>
+  <rect class="bar" x="816" y="338" width="528" height="42"/>
+  <text class="label" x="836" y="365">商品编码</text>
+  <text class="label" x="1010" y="365">失败原因</text>
+  <line class="line" x1="816" y1="380" x2="1344" y2="380"/>
+  <text class="text" x="836" y="417">DRINK-018</text>
+  <text class="text" x="1010" y="407">商品版本已变化。</text>
+  <text class="small" x="1010" y="429">请刷新后重新选择。</text>
+  <line class="line" x1="816" y1="447" x2="1344" y2="447"/>
+  <text class="text" x="836" y="484">MEAL-006</text>
+  <text class="text" x="1010" y="474">启用前请补齐商品标准价。</text>
+  <text class="small" x="1010" y="496">补齐资料后可重新选择并执行。</text>
+  <line class="line" x1="816" y1="514" x2="1344" y2="514"/>
+  <text class="text" x="836" y="551">SNACK-031</text>
+  <text class="text" x="1010" y="541">结果暂时无法确认，</text>
+  <text class="small" x="1010" y="563">请刷新商品状态后再决定是否重试。</text>
+  <rect class="bad" x="816" y="592" rx="6" width="528" height="54"/>
+  <text class="badText" x="836" y="625">失败原因由商品服务返回；不显示异常栈或技术编码。</text>
+  <line class="line" x1="790" y1="690" x2="1370" y2="690"/>
+  <rect class="btn" x="1260" y="713" rx="6" width="84" height="38"/>
+  <text class="btnText" x="1288" y="738">关闭</text>
+  <text class="small" x="790" y="803">全成功态：只显示“成功 N 项，失败 0 项”，不渲染空失败表格。</text>
+
+  <rect x="70" y="835" width="1300" height="1" class="line"/>
+  <text class="small" x="70" y="868">待 Dexter 裁决：推荐不引入无业务条件的 SKIPPED；逐项尽力只产生 SUCCEEDED / FAILED。</text>
+</svg>

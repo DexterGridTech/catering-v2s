@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "accc7b46d5bc15f22381e364abf6750d29b73c470e16c6d110412eeae34f4aaf",
-      "contentSha256": "13b937637f731d513ad35b9a613ad36fc380a8ae13eb46d923baf806eb03a73d"
+      "contractDigest": "22fccbdf1db5e8ba59421fa0e4d9457c15a8327ac3fbe89237c15bba49b9aaef",
+      "contentSha256": "229f68d29285d8d64b80bd2acb22672c219c0fb6d5026c72b399f79d97b77d1b"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -30,13 +30,13 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 237,
-  "readCount": 99,
+  "operationCount": 238,
+  "readCount": 100,
   "commandCount": 138,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
-    "READ_CONTEXT": 99,
+    "READ_CONTEXT": 100,
     "WORKSPACE_EXECUTION_CONTEXT": 88,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
@@ -3832,10 +3832,26 @@
       "transactionMode": "REQUIRED",
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsInventoryConsumptionTargetCandidates",
+      "owner": "inventory",
+      "routeRegistry": "catalog-inventory",
+      "path": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "normalizedPath": "/operations/catalog-inventory/inventory-consumption-target-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.inventory.application.GetOperationsInventoryConsumptionTargetCandidatesOperation",
+      "wireRequest": "InventoryConsumptionTargetCandidateQuery",
+      "wireResponse": "InventoryConsumptionTargetCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
     }
   ],
   "commandBoundaryCounts": {
-    "NOT_APPLICABLE": 99,
+    "NOT_APPLICABLE": 100,
     "OWNER_COMMAND": 113,
     "PROTOCOL": 25
   }

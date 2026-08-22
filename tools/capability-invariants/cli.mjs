@@ -28,7 +28,7 @@ const CATALOG_INVENTORY_OWNER_AUTHORIZATION = Object.freeze({
   asset: {ownerRecheckId: "OWNER_RECHECK_ASSET", typedProblemMappingId: "PROBLEM_ASSET_TYPED_OWNER_EXCEPTION"},
 });
 const CATALOG_SAVE_OPERATION_ID = "saveOperationsCatalogItem";
-const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["ensureCatalogInventoryTarget", "saveCatalogProductBom", "deleteCatalogOptionValueBoms"];
+const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = ["replaceCatalogInventoryRules"];
 const CATALOG_ORDER_OPTION_DEFINITION_COMMANDS = Object.freeze({
   createOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget"],
   updateOperationsCatalogOrderOptionDefinition: ["resolveCatalogOrderOptionMaterialTarget", "deleteCatalogOrderOptionValueBoms"],
@@ -46,7 +46,7 @@ function catalogInventoryDefinitionCommands(operationId) {
 const DIRECT_INVENTORY_CONFIGURATION_OPERATION_ID = "updateOperationsInventoryTargetConfiguration";
 const CATALOG_SHAPE_MANIFEST_OPERATION_ID = "getOperationsCatalogShapeManifest";
 const CATALOG_DUAL_SCOPE_READ_DATA_NODE_TYPES = ["HEAD_COMPANY", "STORE"];
-const CATALOG_DUAL_SCOPE_READ_COUNT = 10;
+const CATALOG_DUAL_SCOPE_READ_COUNT = 11;
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUTHENTICATED_MODE = "AUTHENTICATED_WORKSPACE";
 const PLATFORM_SUPER_ADMIN_MODE = "AUTHENTICATED_PLATFORM_SUPER_ADMIN";
@@ -507,7 +507,7 @@ function exactStringList(left, right) {
 function catalogInventoryContractOperations(root) {
   if (!fs.existsSync(path.join(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH))) return new Map();
   const contract = json(root, CATALOG_INVENTORY_EDGE_CONTRACT_PATH, "CATALOG_INVENTORY_CONTRACT_INVALID");
-  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 56) {
+  if (contract.kind !== "catalog-inventory-edge-contract" || !Array.isArray(contract.operations) || contract.operations.length !== 57) {
     fail("CATALOG_INVENTORY_CONTRACT_OPERATION_COUNT_INVALID");
   }
   const rows = new Map();
@@ -563,7 +563,7 @@ function catalogInventoryContractOperations(root) {
     }
     rows.set(identity, operation);
   }
-  if (mutations !== 37 || reads !== 19) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
+  if (mutations !== 37 || reads !== 20) fail(`CATALOG_INVENTORY_CONTRACT_WRITE_READ_DENOMINATOR_DRIFT:${mutations}/${reads}`);
   return rows;
 }
 

@@ -7,7 +7,7 @@
     "designHeading": "### 3.4 读模型一次定全",
     "designSha256": "58be478cdef5423b6fa682d7a2cc75ffabbc587285b418db2387315eda56ab38"
   },
-  "requiredModelCount": 25,
+  "requiredModelCount": 26,
   "rows": [
     {
       "model": "CatalogWorkbenchContext",
@@ -424,7 +424,7 @@
         "item",
         "tabs",
         "references",
-        "inventoryBom",
+        "inventoryRules",
         "productionTags",
         "compositeGroups",
         "governance",
@@ -663,7 +663,8 @@
         },
         {
           "path": "item.skus[].salesUnit.precision",
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         {
           "path": "item.skus[].salesUnit.status",
@@ -715,7 +716,8 @@
         },
         {
           "path": "item.skus[].baseMeasureUnit.precision",
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         {
           "path": "item.skus[].baseMeasureUnit.status",
@@ -794,7 +796,8 @@
         },
         {
           "path": "item.salesUnit.precision",
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         {
           "path": "item.salesUnit.status",
@@ -845,7 +848,8 @@
         },
         {
           "path": "item.baseMeasureUnit.precision",
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         {
           "path": "item.baseMeasureUnit.status",
@@ -1066,163 +1070,8 @@
           "type": "integer"
         },
         {
-          "path": "item.inventoryBom",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "item.inventoryBom[].nodeType",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].mode",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].targetRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].quantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot",
-          "type": "object"
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot.unitRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot.code",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot.name",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot.unitDimension",
-          "type": "string",
-          "enum": [
-            "COUNT",
-            "WEIGHT",
-            "VOLUME",
-            "SERVICE_DURATION",
-            "PACKAGE"
-          ]
-        },
-        {
-          "path": "item.inventoryBom[].consumptionUnitSnapshot.precision",
-          "type": "integer"
-        },
-        {
-          "path": "item.inventoryBom[].configuration",
-          "type": "object"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.allowNegative",
-          "type": "boolean"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.lowStockThreshold",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "decimal"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot",
-          "type": [
-            "object",
-            "null"
-          ]
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot.unitRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot.code",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot.name",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot.unitDimension",
-          "type": "string",
-          "enum": [
-            "COUNT",
-            "WEIGHT",
-            "VOLUME",
-            "SERVICE_DURATION",
-            "PACKAGE"
-          ]
-        },
-        {
-          "path": "item.inventoryBom[].configuration.countingUnitSnapshot.precision",
-          "type": "integer"
-        },
-        {
-          "path": "item.inventoryBom[].configuration.conversionFactor",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "item.inventoryBom[].version",
-          "type": "integer"
-        },
-        {
-          "path": "item.inventoryBom[].itemCode",
-          "type": "string"
-        },
-        {
-          "path": "item.inventoryBom[].itemRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].productSkuRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].optionValueRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "item.inventoryBom[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "path": "item.inventoryBom[].optionValueCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
           "path": "item.productionProfiles",
-          "type": "object",
-          "additionalProperties": true
+          "type": "object"
         },
         {
           "path": "item.productionProfiles.item",
@@ -1439,70 +1288,8 @@
           "type": [
             "integer",
             "null"
-          ]
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].materialRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].materialItemRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].materialItemName",
-          "type": "string"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].stockTargetRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot",
-          "type": "object"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot.unitRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot.code",
-          "type": "string"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot.name",
-          "type": "string"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot.unitDimension",
-          "type": "string",
-          "enum": [
-            "COUNT",
-            "WEIGHT",
-            "VOLUME",
-            "SERVICE_DURATION",
-            "PACKAGE"
-          ]
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].consumptionUnitSnapshot.precision",
-          "type": "integer"
-        },
-        {
-          "path": "item.orderOptionConfigs[].values[].materialQuantities[].actualQuantity",
-          "type": [
-            "number",
-            "null"
-          ]
+          ],
+          "minimum": 0
         },
         {
           "path": "tabs",
@@ -1549,160 +1336,6 @@
         {
           "path": "references[].direction",
           "type": "string"
-        },
-        {
-          "path": "inventoryBom",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "inventoryBom[].nodeType",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].mode",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].targetRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].quantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot",
-          "type": "object"
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot.unitRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot.code",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot.name",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot.unitDimension",
-          "type": "string",
-          "enum": [
-            "COUNT",
-            "WEIGHT",
-            "VOLUME",
-            "SERVICE_DURATION",
-            "PACKAGE"
-          ]
-        },
-        {
-          "path": "inventoryBom[].consumptionUnitSnapshot.precision",
-          "type": "integer"
-        },
-        {
-          "path": "inventoryBom[].configuration",
-          "type": "object"
-        },
-        {
-          "path": "inventoryBom[].configuration.allowNegative",
-          "type": "boolean"
-        },
-        {
-          "path": "inventoryBom[].configuration.lowStockThreshold",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "decimal"
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot",
-          "type": [
-            "object",
-            "null"
-          ]
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot.unitRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot.code",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot.name",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot.unitDimension",
-          "type": "string",
-          "enum": [
-            "COUNT",
-            "WEIGHT",
-            "VOLUME",
-            "SERVICE_DURATION",
-            "PACKAGE"
-          ]
-        },
-        {
-          "path": "inventoryBom[].configuration.countingUnitSnapshot.precision",
-          "type": "integer"
-        },
-        {
-          "path": "inventoryBom[].configuration.conversionFactor",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "inventoryBom[].version",
-          "type": "integer"
-        },
-        {
-          "path": "inventoryBom[].itemCode",
-          "type": "string"
-        },
-        {
-          "path": "inventoryBom[].itemRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].productSkuRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].optionValueRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "inventoryBom[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "path": "inventoryBom[].optionValueCode",
-          "type": [
-            "string",
-            "null"
-          ]
         },
         {
           "path": "compositeGroups",
@@ -1965,6 +1598,349 @@
         {
           "path": "queryIdentity.generation",
           "type": "string"
+        },
+        {
+          "path": "inventoryRules",
+          "type": "object"
+        },
+        {
+          "path": "inventoryRules.nodes",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "inventoryRules.nodes[].owner",
+          "type": "object"
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.ownerType",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU",
+            "OPTION_VALUE"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.itemRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.productSkuRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.optionValueRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.itemCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.skuCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "inventoryRules.nodes[].owner.optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "inventoryRules.nodes[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].itemName",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].allowedModes",
+          "type": "array",
+          "itemType": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].defaultMode",
+          "type": "string",
+          "enum": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].disabledReason",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].mode",
+          "type": "string",
+          "enum": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.targetRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.allowNegative",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.lowStockThreshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.consumptionUnitSnapshot.precision",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.countingUnitSnapshot.precision",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.conversionFactor",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "inventoryRules.nodes[].directConfiguration.version",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        {
+          "path": "inventoryRules.nodes[].bom",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.version",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].targetRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].itemRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].productSkuRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].itemName",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].skuName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].lineSign",
+          "type": "string",
+          "enum": [
+            "POSITIVE",
+            "NEGATIVE"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].quantity",
+          "type": "string",
+          "format": "decimal"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot",
+          "type": "object"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "inventoryRules.nodes[].bom.lines[].consumptionUnitSnapshot.precision",
+          "type": "integer",
+          "minimum": 0
         }
       ]
     },
@@ -4568,6 +4544,121 @@
       ]
     },
     {
+      "model": "InventoryConsumptionTargetCandidatePage",
+      "required": [
+        "items",
+        "total",
+        "cursor",
+        "nextCursor"
+      ],
+      "fields": [
+        {
+          "path": "items",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "items[].targetRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].itemRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].productSkuRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "items[].itemCode",
+          "type": "string"
+        },
+        {
+          "path": "items[].skuCode",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].itemName",
+          "type": "string"
+        },
+        {
+          "path": "items[].skuName",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "items[].status",
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED"
+          ]
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot",
+          "type": "object"
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "items[].consumptionUnitSnapshot.precision",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "path": "total",
+          "type": "integer"
+        },
+        {
+          "path": "cursor",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "path": "nextCursor",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      ]
+    },
+    {
       "model": "StagedCatalogAsset",
       "required": [
         "revision",
@@ -5649,7 +5740,6 @@
         {
           "path": "sections.catalogDraft.productionProfiles",
           "type": "object",
-          "additionalProperties": true,
           "required": false
         },
         {
@@ -5666,73 +5756,6 @@
           "path": "sections.catalogDraft.productionProfiles.optionValue",
           "type": "object",
           "additionalProperties": true
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom",
-          "type": "array",
-          "itemType": "object",
-          "required": false
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].nodeType",
-          "type": "string"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].mode",
-          "type": "string"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].targetRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].quantity",
-          "type": "string",
-          "format": "decimal"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].itemCode",
-          "type": "string"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].itemRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].productSkuRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].optionValueRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].optionValueCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "path": "sections.catalogDraft.inventoryBom[].version",
-          "type": "integer"
         },
         {
           "path": "sections.catalogDraft.name",
@@ -5867,120 +5890,205 @@
         },
         {
           "path": "sections.catalogDraft.orderOptionConfigs[].values[].expectedBomVersion",
-          "type": "integer"
-        },
-        {
-          "path": "sections.catalogDraft.orderOptionConfigs[].values[].materialQuantities",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "sections.catalogDraft.orderOptionConfigs[].values[].materialQuantities[].materialRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "sections.catalogDraft.orderOptionConfigs[].values[].materialQuantities[].actualQuantity",
-          "type": [
-            "number",
-            "null"
-          ]
-        },
-        {
-          "path": "sections.inventoryConfiguration",
-          "type": "object"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes",
-          "type": "array",
-          "itemType": "object"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].nodeType",
-          "type": "string"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].mode",
-          "type": "string"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].targetRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].itemCode",
-          "type": "string"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].itemRef",
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].skuCode",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].productSkuRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].configuration",
-          "type": "object"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].configuration.allowNegative",
-          "type": "boolean"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].configuration.lowStockThreshold",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "decimal"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].configuration.countingUnitRef",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        {
-          "path": "sections.inventoryConfiguration.nodes[].configuration.conversionFactor",
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "decimal"
+          "type": "integer",
+          "minimum": 0
         },
         {
           "path": "sections.expectedCatalogVersion",
           "type": "integer"
         },
         {
-          "path": "sections.expectedInventoryVersions",
+          "path": "sections.inventoryRules",
+          "type": "object"
+        },
+        {
+          "path": "sections.inventoryRules.nodes",
           "type": "array",
           "itemType": "object"
         },
         {
-          "path": "sections.expectedInventoryVersions[].targetRef",
+          "path": "sections.inventoryRules.nodes[].owner",
+          "type": "object"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.ownerType",
+          "type": "string",
+          "enum": [
+            "ITEM",
+            "SKU",
+            "OPTION_VALUE"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.itemRef",
           "type": "string",
           "format": "uuid"
         },
         {
-          "path": "sections.expectedInventoryVersions[].version",
-          "type": "integer"
+          "path": "sections.inventoryRules.nodes[].owner.productSkuRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.optionValueRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.itemCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.skuCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].owner.optionValueCode",
+          "type": [
+            "string",
+            "null"
+          ],
+          "required": false
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].mode",
+          "type": "string",
+          "enum": [
+            "NONE",
+            "DIRECT",
+            "BOM"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot.unitRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot.code",
+          "type": "string"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot.name",
+          "type": "string"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot.unitDimension",
+          "type": "string",
+          "enum": [
+            "COUNT",
+            "WEIGHT",
+            "VOLUME",
+            "SERVICE_DURATION",
+            "PACKAGE"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].consumptionUnitSnapshot.precision",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].expectedTargetVersion",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].expectedBomVersion",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].directConfiguration",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].directConfiguration.allowNegative",
+          "type": "boolean"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].directConfiguration.lowStockThreshold",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].directConfiguration.countingUnitRef",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].directConfiguration.conversionFactor",
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "decimal"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].bom",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].bom.lines",
+          "type": "array",
+          "itemType": "object"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].bom.lines[].targetRef",
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].bom.lines[].lineSign",
+          "type": "string",
+          "enum": [
+            "POSITIVE",
+            "NEGATIVE"
+          ]
+        },
+        {
+          "path": "sections.inventoryRules.nodes[].bom.lines[].quantity",
+          "type": "string",
+          "format": "decimal"
         },
         {
           "path": "dataNodeRef",
