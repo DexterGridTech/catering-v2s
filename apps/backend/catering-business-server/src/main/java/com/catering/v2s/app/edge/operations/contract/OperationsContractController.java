@@ -176,13 +176,10 @@ public final class OperationsContractController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreContractCreateRequest body) {
         WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
-        UUID scopedProjectId = scopedProject(session);
+        var selectedProject = user.resolveSelectedProjectScope(session, null);
+        UUID scopedProjectId = selectedProject.targetId();
         UUID storeId = uuid(body.storeId());
-        var context = entities.requireStoreContractContext(session.workspaceUuid(), groupWorkspaceKey, storeId);
-        if (!context.projectId().equals(scopedProjectId))
-            throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException(
-                    "store is outside selected project");
-        var grant = requireCapability(session, "REQ_CREATE_OPERATIONS_CONTRACT", scopedProjectId);
+        var grant = requireCapability(session, "REQ_CREATE_OPERATIONS_CONTRACT", scopedProjectId, selectedProject);
         var actor = sessions.actor(session);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ContractWireMapper.wire(
@@ -211,7 +208,7 @@ public final class OperationsContractController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreContractUpdateRequest body) {
         WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
-        var view = requireScopedView(session, groupWorkspaceKey, contractId);
+        var selectedProject = user.resolveSelectedProjectScope(session, null);
         var actor = sessions.actor(session);
         return ContractWireMapper.wire(
                 m1Bindings.bindUpdateOperationsContract(new OperationsStoreContractCommandApi.UpdateCommand(
@@ -230,7 +227,8 @@ public final class OperationsContractController {
                         requireCapability(
                                 session,
                                 "REQ_UPDATE_OPERATIONS_CONTRACT",
-                                view.project().id()))));
+                                selectedProject.targetId(),
+                                selectedProject))));
     }
 
     @PostMapping("/{contractId}/invalidate")
@@ -241,7 +239,7 @@ public final class OperationsContractController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreContractInvalidateRequest body) {
         WorkspaceSessionReadback session = session(request, groupWorkspaceKey);
-        var view = requireScopedView(session, groupWorkspaceKey, contractId);
+        var selectedProject = user.resolveSelectedProjectScope(session, null);
         var actor = sessions.actor(session);
         return ContractWireMapper.wire(
                 m1Bindings.bindInvalidateOperationsContract(new OperationsStoreContractCommandApi.InvalidateCommand(
@@ -254,7 +252,8 @@ public final class OperationsContractController {
                         requireCapability(
                                 session,
                                 "REQ_INVALIDATE_OPERATIONS_CONTRACT",
-                                view.project().id()))));
+                                selectedProject.targetId(),
+                                selectedProject))));
     }
 
     @GetMapping("/extension-definition")
@@ -322,32 +321,29 @@ public final class OperationsContractController {
         return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion);
     }
 
-    private UUID scopedProject(WorkspaceSessionReadback session) {
-        return user.resolveSelectedProjectScope(session, null).targetId();
-    }
-
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(
-            WorkspaceSessionReadback session, String requirementId, UUID projectId) {
-        var resolution = capabilityScopes.resolve(
+            WorkspaceSessionReadback session,
+            String requirementId,
+            UUID projectId,
+            com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPath resolvedProject) {
+        var resolution = capabilityScopes.resolveUsingResolvedTaskPath(
                 session,
                 requirementId,
-                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId));
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId),
+                resolvedProject);
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW)
             throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return resolution.ownerScopeGrant(requirementId);
+    }
+
+    private UUID scopedProject(WorkspaceSessionReadback session) {
+        return user.resolveSelectedProjectScope(session, null).targetId();
     }
 
     private ContractTaskReadService.StoreContractView requireScopedTaskView(
             WorkspaceSessionReadback session, String key, UUID contractId) {
         ContractTaskReadService.StoreContractView view =
                 reads.operationsTaskView(session.workspaceUuid(), key, contractId);
-        user.resolveSelectedProjectScope(session, view.project().id());
-        return view;
-    }
-
-    private ContractTaskReadService.StoreContractView requireScopedView(
-            WorkspaceSessionReadback session, String key, UUID contractId) {
-        ContractTaskReadService.StoreContractView view = reads.view(session.workspaceUuid(), key, contractId);
         user.resolveSelectedProjectScope(session, view.project().id());
         return view;
     }

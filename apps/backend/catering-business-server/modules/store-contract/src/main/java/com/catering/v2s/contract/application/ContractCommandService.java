@@ -96,21 +96,19 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         command.notes(),
                         command.items(),
                         command.extensionSubmission()),
-                () -> createSubmission(command));
+                () -> createSubmission(command, context));
     }
 
     @Override
     @Transactional
     public StoreContractReadback update(UpdateCommand command) {
-        StoreContractReadback existing =
-                require(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId());
+        ContractState existingState =
+                requireState(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId());
+        StoreContractReadback existing = existingState.readback();
+        var context = stores.requireStoreContractContext(
+                command.workspaceUuid(), command.groupWorkspaceKey(), existing.storeId());
         requireProjectGrant(
-                command.workspaceUuid(),
-                command.groupWorkspaceKey(),
-                stores.requireStoreContractContext(
-                                command.workspaceUuid(), command.groupWorkspaceKey(), existing.storeId())
-                        .projectId(),
-                command.ownerScopeGrant());
+                command.workspaceUuid(), command.groupWorkspaceKey(), context.projectId(), command.ownerScopeGrant());
         return receipts.execute(
                 command.workspaceUuid(),
                 command.idempotencyKey(),
@@ -126,7 +124,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         command.items(),
                         command.expectedVersion(),
                         command.extensionSubmission()),
-                () -> updateSubmission(command));
+                () -> updateSubmission(command, existing, existingState.extensionValuesJson(), context));
     }
 
     @Override
@@ -142,9 +140,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.ownerScopeGrant());
     }
 
-    private StoreContractReadback createSubmission(CreateCommand command) {
-        var context = stores.requireStoreContractContext(
-                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
+    private StoreContractReadback createSubmission(
+            CreateCommand command, StoreContractLookup.StoreContractContext context) {
         if (!context.projectId().equals(command.projectId())) throw new ContractValidationException();
         List<ItemInput> items = itemInputs(command.items());
         validateContract(
@@ -153,34 +150,54 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.phaseName(),
                 context.projectPhaseNames(),
                 items);
+        String contractNo = text(command.contractNo(), 120);
+        String phaseName = optional(command.phaseName(), 120);
+        String notes = optional(command.notes(), 2000);
+        String itemsJson = itemsJson(items);
+        ExtensionValues extensionValues = createExtensionValues(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.extensionSubmission());
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         try {
             jdbc.update(
                     "INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace_key, contract_no, "
                             + "store_id, tenant_id, effective_from, effective_to, phase_name_snapshot, notes, "
-                            + "items_json, "
+                            + "items_json, extension_values, extension_rule_revision, "
                             + "status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, "
                             + "?, "
-                            + "?, ?, ?, ?, ?, CAST(? AS JSONB), 'ACTIVE', 1, ?, ?)",
+                            + "?, ?, ?, ?, ?, CAST(? AS JSONB), CAST(? AS JSONB), ?, 'ACTIVE', 1, ?, ?)",
                     id,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
-                    text(command.contractNo(), 120),
+                    contractNo,
                     command.storeId(),
                     context.tenantId(),
                     command.effectiveFrom(),
                     command.effectiveTo(),
-                    optional(command.phaseName(), 120),
-                    optional(command.notes(), 2000),
-                    itemsJson(items),
+                    phaseName,
+                    notes,
+                    itemsJson,
+                    extensionValues.json(),
+                    extensionValues.revision(),
                     now,
                     now);
         } catch (DuplicateKeyException duplicate) {
             throw new ContractConflictException(duplicate);
         }
-        replaceValues(id, command.workspaceUuid(), command.groupWorkspaceKey(), command.extensionSubmission());
-        StoreContractReadback created = require(command.workspaceUuid(), command.groupWorkspaceKey(), id);
+        StoreContractReadback created = new StoreContractReadback(
+                id,
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                contractNo,
+                command.storeId(),
+                context.tenantId(),
+                command.effectiveFrom(),
+                command.effectiveTo(),
+                phaseName,
+                notes,
+                "ACTIVE",
+                1L,
+                readItems(itemsJson));
         audit(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -193,11 +210,11 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         return created;
     }
 
-    private StoreContractReadback updateSubmission(UpdateCommand command) {
-        StoreContractReadback existing =
-                require(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId());
-        var context = stores.requireStoreContractContext(
-                command.workspaceUuid(), command.groupWorkspaceKey(), existing.storeId());
+    private StoreContractReadback updateSubmission(
+            UpdateCommand command,
+            StoreContractReadback existing,
+            String currentExtensionValuesJson,
+            StoreContractLookup.StoreContractContext context) {
         List<ItemInput> items = itemInputs(command.items());
         validateContract(
                 command.effectiveFrom(),
@@ -226,9 +243,22 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 command.contractId(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
+                currentExtensionValuesJson,
                 command.extensionSubmission());
-        StoreContractReadback updated =
-                require(command.workspaceUuid(), command.groupWorkspaceKey(), command.contractId());
+        StoreContractReadback updated = new StoreContractReadback(
+                existing.id(),
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.contractNo(),
+                existing.storeId(),
+                existing.tenantId(),
+                command.effectiveFrom(),
+                command.effectiveTo(),
+                optional(command.phaseName(), 120),
+                optional(command.notes(), 2000),
+                existing.status(),
+                existing.version() + 1,
+                readItems(itemsJson(items)));
         audit(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -311,6 +341,36 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             Map<String, String> extensionValues,
             AuditActor actor) {
         var context = stores.requireStoreContractContext(workspaceUuid, key, storeId);
+        return create(
+                workspaceUuid,
+                key,
+                contractNo,
+                storeId,
+                projectId,
+                from,
+                to,
+                phaseName,
+                notes,
+                items,
+                extensionValues,
+                actor,
+                context);
+    }
+
+    private StoreContractReadback create(
+            UUID workspaceUuid,
+            String key,
+            String contractNo,
+            UUID storeId,
+            UUID projectId,
+            LocalDate from,
+            LocalDate to,
+            String phaseName,
+            String notes,
+            List<ItemInput> items,
+            Map<String, String> extensionValues,
+            AuditActor actor,
+            StoreContractLookup.StoreContractContext context) {
         if (!context.projectId().equals(projectId)) throw new ContractValidationException();
         validateContract(from, to, phaseName, context.projectPhaseNames(), items);
         validateValues(workspaceUuid, key, extensionValues);
@@ -470,7 +530,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         notes,
                         items,
                         extensionValues,
-                        actor));
+                        actor,
+                        context));
     }
 
     @Transactional
@@ -539,6 +600,36 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             AuditActor actor) {
         StoreContractReadback existing = require(workspaceUuid, key, contractId);
         var context = stores.requireStoreContractContext(workspaceUuid, key, existing.storeId());
+        return update(
+                workspaceUuid,
+                key,
+                contractId,
+                from,
+                to,
+                phaseName,
+                notes,
+                items,
+                expectedVersion,
+                extensionValues,
+                actor,
+                existing,
+                context);
+    }
+
+    private StoreContractReadback update(
+            UUID workspaceUuid,
+            String key,
+            UUID contractId,
+            LocalDate from,
+            LocalDate to,
+            String phaseName,
+            String notes,
+            List<ItemInput> items,
+            long expectedVersion,
+            Map<String, String> extensionValues,
+            AuditActor actor,
+            StoreContractReadback existing,
+            StoreContractLookup.StoreContractContext context) {
         validateContract(from, to, phaseName, context.projectPhaseNames(), items);
         validateValues(workspaceUuid, key, extensionValues);
         long now = time.currentEpochMillis();
@@ -660,12 +751,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         StoreContractReadback existing = require(workspaceUuid, key, contractId);
-        requireProjectGrant(
-                workspaceUuid,
-                key,
-                stores.requireStoreContractContext(workspaceUuid, key, existing.storeId())
-                        .projectId(),
-                ownerScopeGrant);
+        var context = stores.requireStoreContractContext(workspaceUuid, key, existing.storeId());
+        requireProjectGrant(workspaceUuid, key, context.projectId(), ownerScopeGrant);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -692,7 +779,9 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         items,
                         expectedVersion,
                         extensionValues,
-                        actor));
+                        actor,
+                        existing,
+                        context));
     }
 
     @Transactional
@@ -704,6 +793,16 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
     public StoreContractReadback invalidate(
             UUID workspaceUuid, String key, UUID contractId, long expectedVersion, AuditActor actor) {
         StoreContractReadback existing = require(workspaceUuid, key, contractId);
+        return invalidate(workspaceUuid, key, contractId, expectedVersion, actor, existing);
+    }
+
+    private StoreContractReadback invalidate(
+            UUID workspaceUuid,
+            String key,
+            UUID contractId,
+            long expectedVersion,
+            AuditActor actor,
+            StoreContractReadback existing) {
         long now = time.currentEpochMillis();
         if (jdbc.update(
                         "UPDATE contract.store_contract SET status='INVALID', invalidated_at_epoch_millis=?, "
@@ -716,7 +815,20 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                         key,
                         expectedVersion)
                 != 1) throw new ContractConflictException();
-        StoreContractReadback invalidated = require(workspaceUuid, key, contractId);
+        StoreContractReadback invalidated = new StoreContractReadback(
+                existing.id(),
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.contractNo(),
+                existing.storeId(),
+                existing.tenantId(),
+                existing.effectiveFrom(),
+                existing.effectiveTo(),
+                existing.phaseNameSnapshot(),
+                existing.notes(),
+                "INVALID",
+                existing.version() + 1,
+                existing.items());
         audit(
                 workspaceUuid,
                 key,
@@ -760,18 +872,15 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        StoreContractReadback existing = require(workspaceUuid, key, contractId);
-        requireProjectGrant(
-                workspaceUuid,
-                key,
-                stores.requireStoreContractContext(workspaceUuid, key, existing.storeId())
-                        .projectId(),
-                ownerScopeGrant);
+        StoreContractReadback existing =
+                requireState(workspaceUuid, key, contractId).readback();
+        var context = stores.requireStoreContractContext(workspaceUuid, key, existing.storeId());
+        requireProjectGrant(workspaceUuid, key, context.projectId(), ownerScopeGrant);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 canonical("invalidate", workspaceUuid, key, contractId, expectedVersion),
-                () -> invalidate(workspaceUuid, key, contractId, expectedVersion, actor));
+                () -> invalidate(workspaceUuid, key, contractId, expectedVersion, actor, existing));
     }
 
     @Transactional(readOnly = true)
@@ -788,6 +897,24 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 result -> {
                     if (!result.next()) throw new ContractNotFoundException();
                     return readback(result);
+                });
+    }
+
+    /** One owner read supplies both the command state and extension JSON needed by an update/replay path. */
+    private ContractState requireState(UUID workspaceUuid, String key, UUID contractId) {
+        return jdbc.query(
+                "SELECT id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, effective_from, "
+                        + "effective_to, phase_name_snapshot, notes, status, version, items_json::text, "
+                        + "extension_values::text FROM contract.store_contract WHERE id=? AND workspace_uuid=? AND "
+                        + "group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, contractId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, key);
+                },
+                result -> {
+                    if (!result.next()) throw new ContractNotFoundException();
+                    return new ContractState(readback(result), result.getString(14));
                 });
     }
 
@@ -882,6 +1009,20 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 throw new ContractValidationException();
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (!actual.isEmpty()) throw new ContractValidationException(absent);
+        }
+    }
+
+    private ExtensionValues createExtensionValues(UUID workspaceUuid, String key, ExtensionSubmission submission) {
+        try {
+            ExtensionDefinitionReadback definition =
+                    definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
+            return new ExtensionValues(
+                    ExtensionDefinitionService.mergeValues(definition, "{}", submission), definition.version());
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (submission != null && !submission.fields().isEmpty()) throw new ContractValidationException(absent);
+            return new ExtensionValues("{}", 0L);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new ContractValidationException(invalid);
         }
     }
 
@@ -985,6 +1126,11 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                     if (!result.next()) throw new ContractNotFoundException();
                     return result.getString(1);
                 });
+        replaceValues(id, workspaceUuid, key, current, submission);
+    }
+
+    private void replaceValues(
+            UUID id, UUID workspaceUuid, String key, String current, ExtensionSubmission submission) {
         ExtensionDefinitionReadback definition;
         try {
             definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
@@ -1108,6 +1254,10 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             return false;
         }
     }
+
+    private record ContractState(StoreContractReadback readback, String extensionValuesJson) {}
+
+    private record ExtensionValues(String json, long revision) {}
 
     public record ItemInput(String itemCode, String itemName) {}
 

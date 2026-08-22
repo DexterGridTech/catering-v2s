@@ -1,4 +1,7 @@
-import {existsSync, readFileSync, statSync} from 'node:fs';
+import {chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+import {isOwnedRemoteDevRoot} from './r5-remote-java.mjs';
 
 export class ManagedDiagnosticProtocolFailure extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -14,6 +17,13 @@ const headerName = (value) => {
   if (!/^[A-Za-z0-9-]{1,128}$/.test(name)) fail('SEED_DIAGNOSTIC_PROTOCOL_INVALID');
   return name;
 };
+
+const REMOTE_DIAGNOSTIC_KIND = 'REMOTE_SSH_PULL';
+const REMOTE_DIAGNOSTIC_FILES = Object.freeze({
+  seedEventsPath: 'seed-request-events.jsonl',
+  dbOperationsPath: 'db-operations.jsonl',
+  statementDictionaryPath: 'statement-dictionary.json',
+});
 
 function protocolFor(manifest) {
   const protocol = manifest?.diagnosticProtocol;
@@ -55,10 +65,67 @@ export function measurementMetadataForReport(manifest) {
   return Object.freeze({schemaVersion: measurement.schemaVersion, basis: measurement.basis});
 }
 
-export function readManagedDiagnosticEvents(manifest) {
-  const eventsPath = requiredString(manifest?.seedEventsPath, 'SEED_DIAGNOSTIC_EVENTS_PATH_REQUIRED');
+function remoteDiagnosticFor(manifest) {
+  const remote = manifest?.remoteDiagnostic;
+  if (!remote) return null;
+  if (remote.kind !== REMOTE_DIAGNOSTIC_KIND || !isOwnedRemoteDevRoot(remote.remoteRoot)) {
+    fail('SEED_DIAGNOSTIC_REMOTE_TRANSPORT_INVALID');
+  }
+  const host = manifest?.remoteHostTrust?.host;
+  if (typeof host !== 'string' || !/^[A-Za-z0-9._-]{3,128}$/.test(host)) {
+    fail('SEED_DIAGNOSTIC_REMOTE_HOST_INVALID');
+  }
+  return Object.freeze({kind: remote.kind, remoteRoot: remote.remoteRoot, host});
+}
+
+export function validateManagedDiagnosticTransport(manifest) {
+  return remoteDiagnosticFor(manifest);
+}
+
+function pullRemoteDiagnosticFile(manifest, key) {
+  const remote = remoteDiagnosticFor(manifest);
+  const fileName = REMOTE_DIAGNOSTIC_FILES[key];
+  if (!remote || !fileName) fail('SEED_DIAGNOSTIC_REMOTE_TRANSPORT_INVALID');
+  const localPath = requiredString(manifest?.[key], 'SEED_DIAGNOSTIC_EVENTS_PATH_REQUIRED');
+  const remotePath = `${remote.remoteRoot}/results/${fileName}`;
+  const result = spawnSync('ssh', [
+    '-o', 'BatchMode=yes',
+    '-o', 'ConnectTimeout=10',
+    remote.host,
+    'bash', '-s',
+  ], {
+    encoding: 'utf8',
+    input: [
+      'set -euo pipefail',
+      `root='${remote.remoteRoot.replaceAll("'", "'\\''")}'`,
+      `path='${remotePath.replaceAll("'", "'\\''")}'`,
+      'case "$path" in "$root"/results/*) ;; *) exit 64 ;; esac',
+      'if test -f "$path"; then cat -- "$path"; fi',
+    ].join('\n'),
+  });
+  if (result.status !== 0) fail('SEED_DIAGNOSTIC_REMOTE_PULL_FAILED');
+  mkdirSync(path.dirname(localPath), {recursive: true, mode: 0o700});
+  const temporaryPath = `${localPath}.${process.pid}.tmp`;
+  writeFileSync(temporaryPath, result.stdout ?? '', {mode: 0o600});
+  chmodSync(temporaryPath, 0o600);
+  renameSync(temporaryPath, localPath);
+  return localPath;
+}
+
+export function refreshManagedDiagnosticFiles(manifest, keys = Object.keys(REMOTE_DIAGNOSTIC_FILES)) {
+  if (!remoteDiagnosticFor(manifest)) return [];
+  return keys.map((key) => pullRemoteDiagnosticFile(manifest, key));
+}
+
+function readLocalDiagnosticEvents(eventsPath) {
   if (!existsSync(eventsPath) || !statSync(eventsPath).isFile()) fail('SEED_DIAGNOSTIC_EVENTS_PATH_REQUIRED');
   return readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).map((line, index) => {
     try { return JSON.parse(line); } catch { fail(`SEED_DIAGNOSTIC_EVENT_INVALID:${index + 1}`); }
   });
+}
+
+export function readManagedDiagnosticEvents(manifest) {
+  const eventsPath = requiredString(manifest?.seedEventsPath, 'SEED_DIAGNOSTIC_EVENTS_PATH_REQUIRED');
+  if (remoteDiagnosticFor(manifest)) pullRemoteDiagnosticFile(manifest, 'seedEventsPath');
+  return readLocalDiagnosticEvents(eventsPath);
 }

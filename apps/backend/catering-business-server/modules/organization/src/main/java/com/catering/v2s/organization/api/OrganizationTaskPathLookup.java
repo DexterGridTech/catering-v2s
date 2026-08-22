@@ -7,7 +7,21 @@ import java.util.UUID;
 
 /** Owner-owned task path and scope judgment for workspace-IAM access tasks. */
 public interface OrganizationTaskPathLookup {
+    /** One owner read for the logical group root, including its opaque ref and display path. */
+    default TaskPath requireGroupTaskPath(UUID workspaceUuid, String groupWorkspaceKey) {
+        throw new UnsupportedOperationException("group task path lookup is not implemented by this owner");
+    }
+
     TaskPath requireTaskPath(UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID targetId);
+
+    /**
+     * One bounded command projection for Store operations. It returns the Store's current immutable references together
+     * with the enabled Project task path; command owners still re-read and validate the Store in their own transaction.
+     */
+    default StoreProjectCommandFacts requireStoreProjectCommandFacts(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        throw new UnsupportedOperationException("store project command facts are not implemented by this owner");
+    }
 
     /**
      * Resolves the persisted target facts needed solely to authorize an owner status transition. This may include
@@ -86,8 +100,38 @@ public interface OrganizationTaskPathLookup {
     Map<TaskPathRef, String> describeTaskTargetLabels(
             UUID workspaceUuid, String groupWorkspaceKey, List<TaskPathRef> targets);
 
+    /**
+     * Invocation-local session composition facts. Production owners should load availability and labels from the same
+     * owner read pass; this fact must not be cached across requests and does not replace command-time rechecks.
+     */
+    default SessionTaskTargetFacts sessionTaskTargetFacts(
+            UUID workspaceUuid, String groupWorkspaceKey, List<TaskPathRef> targets) {
+        return new SessionTaskTargetFacts(
+                availableTaskTargets(workspaceUuid, groupWorkspaceKey, targets),
+                describeTaskTargetLabels(workspaceUuid, groupWorkspaceKey, targets));
+    }
+
     boolean isScopeAllowed(
             UUID workspaceUuid, String groupWorkspaceKey, String assignmentType, UUID assignmentId, TaskPath target);
+
+    /**
+     * Pure judgment over an organization-owned path that has already been loaded in this request. The path remains an
+     * owner fact; this helper only prevents a second transaction from re-reading the same path when a capability
+     * resolver consumes it. Command owners still re-check the persisted target in their own transaction.
+     */
+    static boolean scopeAllows(String assignmentType, UUID assignmentId, TaskPath target) {
+        if (assignmentType == null
+                || assignmentId == null
+                || target == null
+                || target.ancestorIds().isEmpty()
+                || !target.ancestorIds().contains(target.targetId())) return false;
+        return switch (assignmentType) {
+            case "GROUP", "REGION", "PROJECT" -> target.ancestorIds().contains(assignmentId);
+            case "HEAD_COMPANY", "STORE" -> assignmentType.equals(target.targetType())
+                    && assignmentId.equals(target.targetId());
+            default -> false;
+        };
+    }
 
     record TaskPath(String targetType, UUID targetId, List<UUID> ancestorIds, String displayPath) {
         public TaskPath {
@@ -98,4 +142,13 @@ public interface OrganizationTaskPathLookup {
     record TaskPathRef(String targetType, UUID targetId) {}
 
     record CommandTaskPathFacts(TaskPath taskPath, boolean assignmentScopeAllowed) {}
+
+    record StoreProjectCommandFacts(UUID projectId, UUID tenantId, UUID brandId, String code, TaskPath taskPath) {}
+
+    record SessionTaskTargetFacts(Set<TaskPathRef> availableTargets, Map<TaskPathRef, String> labels) {
+        public SessionTaskTargetFacts {
+            availableTargets = Set.copyOf(availableTargets);
+            labels = Map.copyOf(labels);
+        }
+    }
 }

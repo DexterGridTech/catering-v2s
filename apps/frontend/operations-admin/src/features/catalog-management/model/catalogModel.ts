@@ -47,9 +47,11 @@ export type CatalogBatchUpdateKind = 'CATEGORY' | 'TAG';
 export type CatalogBatchStatus = 'ENABLED' | 'DISABLED' | 'ARCHIVED';
 export type CatalogBatchResult = {
   itemRef: Uuid;
-  ok: boolean;
-  failureCode?: string | null;
-  version?: number | null;
+  itemCode: string;
+  outcome: 'SUCCEEDED' | 'FAILED';
+  problemCode: string | null;
+  reason: string | null;
+  version: number | null;
 };
 
 /** Keep batch selection and the execution snapshot on the same source lock. */
@@ -572,31 +574,57 @@ export function decodeCatalogBatchResults(
     | CatalogInventoryEnvelope<CatalogItemBatchStatusTransitionReadback>
     | CatalogItemBatchStatusTransitionReadback
     | undefined,
+  expectedItemRefs?: Uuid[],
 ): CatalogBatchResult[] {
   const root = asRecord(response);
-  if (!Array.isArray(root?.results)) return [];
-  return recordArray(root.results).map(row => ({
-    itemRef: readUuid(row.itemRef),
-    ok: row.ok === true,
-    failureCode: row.failureCode === null ? null : optionalText(row.failureCode),
-    version: typeof row.version === 'number' ? row.version : row.version === null ? null : undefined,
-  }));
-}
-
-export function alignCatalogBatchResults(
-  rows: Array<Pick<CatalogItemSummary, 'itemRef' | 'code'>>,
-  results: CatalogBatchResult[],
-): Array<CatalogBatchResult & {code: string}> {
-  const byRef = new Map(results.map(result => [result.itemRef, result]));
-  return rows.map(row => {
-    const result = byRef.get(row.itemRef);
-    return {
-      itemRef: row.itemRef,
-      code: row.code,
-      ok: result?.ok === true,
-      failureCode: result?.failureCode ?? (result ? null : 'RESULT_UNKNOWN'),
-      version: result?.version,
-    };
+  const invalid = (): never => {
+    throw new Error('CATALOG_BATCH_RESULT_PROTOCOL_INVALID');
+  };
+  const rawResults: JsonValue[] = Array.isArray(root?.results) ? root.results : invalid();
+  const expectedKeys = ['itemCode', 'itemRef', 'outcome', 'problemCode', 'reason', 'version'];
+  if (expectedItemRefs && rawResults.length !== expectedItemRefs.length) invalid();
+  const seen = new Set<string>();
+  return rawResults.map((value, index) => {
+    const row = asRecord(value);
+    const record = row && Object.keys(row).sort().join('|') === expectedKeys.join('|') ? row : invalid();
+    const itemRef = typeof record.itemRef === 'string' ? record.itemRef : '';
+    const itemCode = typeof record.itemCode === 'string' ? record.itemCode.trim() : '';
+    const outcome: CatalogBatchResult['outcome'] =
+      record.outcome === 'SUCCEEDED' || record.outcome === 'FAILED' ? record.outcome : invalid();
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemRef) ||
+      !itemCode ||
+      seen.has(itemRef) ||
+      (expectedItemRefs && expectedItemRefs[index] !== itemRef)
+    ) {
+      invalid();
+    }
+    seen.add(itemRef);
+    const problemCode =
+      record.problemCode === null
+        ? null
+        : typeof record.problemCode === 'string' && record.problemCode.trim()
+          ? record.problemCode
+          : invalid();
+    const reason =
+      record.reason === null
+        ? null
+        : typeof record.reason === 'string' && record.reason.trim()
+          ? record.reason
+          : invalid();
+    const version =
+      record.version === null
+        ? null
+        : typeof record.version === 'number' && Number.isInteger(record.version) && record.version > 0
+          ? record.version
+          : invalid();
+    if (
+      (outcome === 'SUCCEEDED' && (problemCode !== null || reason !== null || version === null)) ||
+      (outcome === 'FAILED' && (problemCode === null || reason === null || version !== null))
+    ) {
+      invalid();
+    }
+    return {itemRef: itemRef as Uuid, itemCode, outcome, problemCode, reason, version};
   });
 }
 

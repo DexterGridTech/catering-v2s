@@ -9,10 +9,12 @@ import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolve
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Collection-level catalog lifecycle command; each item is committed independently by the owner. */
 @Component
-public final class BatchTransitionOperationsCatalogItemStatusOperation {
+public class BatchTransitionOperationsCatalogItemStatusOperation {
     public static final String OPERATION_ID = "batchTransitionOperationsCatalogItemStatus";
     private final CommandExecutionContextResolver contexts;
     private final CatalogOwnerApi catalog;
@@ -23,6 +25,7 @@ public final class BatchTransitionOperationsCatalogItemStatusOperation {
         this.catalog = catalog;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
     public CatalogItemBatchStatusTransitionReadback execute(Invocation invocation) {
         CatalogItemBatchStatusTransitionRequest request = invocation.request();
         if (request == null || request.dataNodeRef() == null) {
@@ -54,7 +57,12 @@ public final class BatchTransitionOperationsCatalogItemStatusOperation {
                 invocation.idempotencyKey());
         List<CatalogItemBatchStatusTransitionReadback.ResultsItem> results = readback.results().stream()
                 .map(item -> new CatalogItemBatchStatusTransitionReadback.ResultsItem(
-                        item.itemRef(), item.ok(), item.failureCode(), item.version()))
+                        item.itemRef(),
+                        item.itemCode(),
+                        item.outcome().name(),
+                        item.problemCode(),
+                        item.reason(),
+                        item.version()))
                 .toList();
         return new CatalogItemBatchStatusTransitionReadback(readback.revision(), readback.requestId(), results);
     }

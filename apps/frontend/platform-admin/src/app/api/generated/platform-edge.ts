@@ -430,6 +430,863 @@ export const PLATFORM_ADMIN_OPERATIONS = [
   }
 ] as const;
 
+export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
+  "cancelWorkspaceInvitation": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "changeCurrentPlatformPassword": {
+    "kind": "FIXED",
+    "max": 0,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 0,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "completePlatformPasswordRecovery": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createPlatformAdmin": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createPlatformGroupWorkspace": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createPlatformOwnerBinding": {
+    "kind": "FIXED",
+    "max": 22,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 22,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createWorkspaceInvitation": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "createWorkspaceRole": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "deletePlatformOwnerBinding": {
+    "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getCurrentPlatformSession": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getExtensionEntityCatalog": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformAdminDetail": {
+    "kind": "FIXED",
+    "max": 5,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 5,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformAdminPage": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformContractOverviewDetail": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformContractOverviewPage": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformEntityAuditHistory": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformExternalCapabilityDictionary": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformExternalCollaborationTree": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformExternalSystemDetail": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformGroupWorkspaceDetail": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformOrganizationCandidates": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformOrganizationHierarchyTree": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformOrganizationOverviewDetail": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformOrganizationOverviewPage": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformOwnerBindingDetail": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformProviderProfileBindings": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformProviderProfileDetail": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceAccount": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceAccounts": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceInvitation": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceInvitationCandidates": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceInvitations": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceRole": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getWorkspaceRoles": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "initializeCommercialGroup": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "listPlatformGroupWorkspaces": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "platformLogout": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "platformPasswordLogin": {
+    "kind": "FIXED",
+    "max": 11,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "reissueWorkspaceInvitation": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "releasePlatformStagedAsset": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "replaceExtensionDefinition": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "requestWorkspaceCredentialReset": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "resetPlatformAdminCredential": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "revokePlatformWorkspaceAssignment": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "sendPlatformLoginOtp": {
+    "kind": "FIXED",
+    "max": 14,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 14,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "sendPlatformPasswordRecoveryOtp": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "stagePlatformAsset": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "startPlatformPasswordRecovery": {
+    "kind": "FIXED",
+    "max": 17,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 17,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionPlatformAdminStatus": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionPlatformExternalSystemStatus": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionPlatformGroupWorkspaceStatus": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionPlatformProviderProfileStatus": {
+    "kind": "FIXED",
+    "max": 20,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 20,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionWorkspaceAccountStatus": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "transitionWorkspaceRoleStatus": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updatePlatformAdminProfile": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updatePlatformGroupWorkspaceDisplay": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updatePlatformOwnerBinding": {
+    "kind": "FIXED",
+    "max": 24,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 24,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "updateWorkspaceRole": {
+    "kind": "FIXED",
+    "max": 15,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 15,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "verifyPlatformLoginOtp": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "verifyPlatformPasswordRecoveryOtp": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  }
+} as const;
+
 export const PLATFORM_ADMIN_OPERATION_IDS = {
   "cancelWorkspaceInvitation": "cancelWorkspaceInvitation",
   "changeCurrentPlatformPassword": "changeCurrentPlatformPassword",

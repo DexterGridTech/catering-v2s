@@ -37,6 +37,10 @@ public interface BusinessChannelReadApi {
 
     BusinessChannelReadback.Channel readChannel(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef);
 
+    /** Reads a channel and its template provider in one owner query for the external binding command edge. */
+    BusinessChannelReadback.ChannelWithTemplateProvider readChannelWithTemplateProvider(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef);
+
     /** Returns channels currently attached to a collaboration binding for an owner-side cascade. */
     List<BusinessChannelReadback.Channel> findChannelsForBinding(
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef);

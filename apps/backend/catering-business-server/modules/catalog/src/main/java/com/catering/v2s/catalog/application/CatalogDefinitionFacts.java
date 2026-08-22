@@ -176,7 +176,8 @@ final class CatalogDefinitionFacts {
                     command.selectionMode(),
                     now,
                     now);
-            replaceOrderOptionValues(scope, brand, ref, command.values());
+            // A new definition has no persisted values; avoid a guaranteed empty-set read before inserting them.
+            replaceOrderOptionValues(scope, brand, ref, Map.of(), command.values());
         } catch (DuplicateKeyException failure) {
             throw new CatalogOwnerApi.Problem("DUPLICATE_CODE", 409, "点单选项编码已存在", failure);
         }
@@ -214,7 +215,7 @@ final class CatalogDefinitionFacts {
                     /* format-wrap */
                     "点单选项定义版本已变化");
         try {
-            replaceOrderOptionValues(scope, brand, current.ref(), command.values());
+            replaceOrderOptionValues(scope, brand, current.ref(), existing, command.values());
         } catch (DuplicateKeyException failure) {
             throw new CatalogOwnerApi.Problem("DUPLICATE_CODE", 409, "点单选项编码已存在", failure);
         }
@@ -274,7 +275,7 @@ final class CatalogDefinitionFacts {
     }
 
     private CatalogOwnerApi.OrderOptionDefinitionReadback orderOptionReadback(OrderOptionRow row) {
-        List<CatalogOwnerApi.OrderOptionValueReadback> values = jdbc.query(
+        List<ValueReadbackRow> valueRows = jdbc.query(
                 "SELECT order_option_definition_value_ref,code,name,display_order FROM catalog.catalog_order_option"
                         +
                         /* format-wrap */
@@ -283,39 +284,70 @@ final class CatalogDefinitionFacts {
                         /* format-wrap */
                         "order_option_defi"
                         + "nition_value_ref",
-                (result, index) -> {
-                    UUID valueRef = result.getObject(1, UUID.class);
-                    return new CatalogOwnerApi.OrderOptionValueReadback(
-                            valueRef, result.getString(2), result.getString(3), result.getInt(4), materials(valueRef));
-                },
+                (result, index) -> new ValueReadbackRow(
+                        result.getObject(1, UUID.class), result.getString(2), result.getString(3), result.getInt(4)),
                 row.ref());
+        Map<UUID, List<CatalogOwnerApi.OrderOptionMaterialReadback>> materialsByValue = materialsByValueRefs(
+                valueRows.stream().map(ValueReadbackRow::ref).toList());
+        List<CatalogOwnerApi.OrderOptionValueReadback> values = valueRows.stream()
+                .map(value -> new CatalogOwnerApi.OrderOptionValueReadback(
+                        value.ref(),
+                        value.code(),
+                        value.name(),
+                        value.displayOrder(),
+                        materialsByValue.getOrDefault(value.ref(), List.of())))
+                .toList();
         return new CatalogOwnerApi.OrderOptionDefinitionReadback(
                 row.ref(), row.code(), row.name(), row.selectionMode(), values, row.version());
     }
 
     private List<CatalogOwnerApi.OrderOptionMaterialReadback> materials(UUID valueRef) {
-        return jdbc.query(
-                "SELECT material.order_option_definition_material_ref,material.material_item_ref,material_item.name"
-                        + ",material.stock_target_ref,"
+        return materialsByValueRefs(List.of(valueRef)).getOrDefault(valueRef, List.of());
+    }
+
+    private Map<UUID, List<CatalogOwnerApi.OrderOptionMaterialReadback>> materialsByValueRefs(
+            Collection<UUID> valueRefs) {
+        List<UUID> refs = valueRefs == null
+                ? List.of()
+                : valueRefs.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (refs.isEmpty()) return Map.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(refs.size(), "?"));
+        Map<UUID, List<CatalogOwnerApi.OrderOptionMaterialReadback>> result = new LinkedHashMap<>();
+        jdbc.query(
+                "SELECT material.order_option_definition_value_ref,material.order_option_definition_material_ref,"
+                        + "material.material_item_ref,material_item.name,material.stock_target_ref,"
                         + "material.consumption_unit_ref,material.consumption_unit_code,material.consumption_unit_name,"
                         + "material.consumption_unit_dimension,material.consumption_unit_precision "
-                        + "FROM catalog.catalog_order_option_definition_material material "
-                        + "JOIN catalog.catalog_item material_item ON material_item.item_ref=material.material_item"
-                        + "_ref "
-                        + "WHERE material.order_option_definition_value_ref=? ORDER BY material.order_option_defini"
-                        + "tion_material_ref",
-                (result, index) -> new CatalogOwnerApi.OrderOptionMaterialReadback(
-                        result.getObject(1, UUID.class),
-                        result.getObject(2, UUID.class),
-                        result.getString(3),
-                        result.getObject(4, UUID.class),
-                        new InventoryOwnerApi.UnitSnapshot(
-                                result.getObject(5, UUID.class),
-                                result.getString(6),
-                                result.getString(7),
-                                result.getString(8),
-                                result.getInt(9))),
-                valueRef);
+                        + "FROM catalog.catalog_order_option_definition_material material JOIN catalog.catalog_item "
+                        + "material_item ON material_item.item_ref=material.material_item_ref WHERE material."
+                        + "order_option_definition_value_ref IN (" + placeholders + ") ORDER BY "
+                        + "material.order_option_definition_value_ref,material.order_option_definition_material_ref",
+                statement -> {
+                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
+                },
+                rows -> {
+                    while (rows.next()) {
+                        UUID valueRef = rows.getObject(1, UUID.class);
+                        result.computeIfAbsent(valueRef, ignored -> new ArrayList<>())
+                                .add(new CatalogOwnerApi.OrderOptionMaterialReadback(
+                                        rows.getObject(2, UUID.class),
+                                        rows.getObject(3, UUID.class),
+                                        rows.getString(4),
+                                        rows.getObject(5, UUID.class),
+                                        new InventoryOwnerApi.UnitSnapshot(
+                                                rows.getObject(6, UUID.class),
+                                                rows.getString(7),
+                                                rows.getString(8),
+                                                rows.getString(9),
+                                                rows.getInt(10))));
+                    }
+                    return null;
+                });
+        result.replaceAll((ignored, materials) -> List.copyOf(materials));
+        return Map.copyOf(result);
     }
 
     private void replaceAttributeOptions(UUID definitionRef, List<CatalogOwnerApi.AttributeDefinitionOption> options) {
@@ -334,7 +366,15 @@ final class CatalogDefinitionFacts {
 
     private void replaceOrderOptionValues(
             String scope, String brand, UUID definitionRef, List<CatalogOwnerApi.OrderOptionValueCommand> submitted) {
-        Map<UUID, ValueRow> existing = valuesByRef(definitionRef);
+        replaceOrderOptionValues(scope, brand, definitionRef, valuesByRef(definitionRef), submitted);
+    }
+
+    private void replaceOrderOptionValues(
+            String scope,
+            String brand,
+            UUID definitionRef,
+            Map<UUID, ValueRow> existing,
+            List<CatalogOwnerApi.OrderOptionValueCommand> submitted) {
         LinkedHashSet<UUID> retained = new LinkedHashSet<>();
         for (CatalogOwnerApi.OrderOptionValueCommand value : submitted) {
             UUID ref = value.valueRef() == null ? UUID.randomUUID() : value.valueRef();
@@ -567,6 +607,8 @@ final class CatalogDefinitionFacts {
     private record AttributeRow(UUID ref, String code, String name, String valueType, long version) {}
 
     private record OrderOptionRow(UUID ref, String code, String name, String selectionMode, long version) {}
+
+    private record ValueReadbackRow(UUID ref, String code, String name, int displayOrder) {}
 
     private record ValueRow(UUID ref, String code, String name, int displayOrder) {}
 }

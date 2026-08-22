@@ -19,6 +19,25 @@ class AdvisoryLockTest {
         assertLegacyKey(0x43534156, 1114637361);
     }
 
+    @Test
+    void acquiresUuidSetInStableOrderWithOneQuery() {
+        RecordingJdbcTemplate jdbc = new RecordingJdbcTemplate();
+        UUID first = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+        UUID second = UUID.fromString("11234567-89ab-cdef-0123-456789abcdef");
+
+        AdvisoryLock.acquireAll(jdbc, 0x43534B55, List.of(second, first, second));
+
+        assertEquals("SELECT pg_advisory_xact_lock(?, ?),pg_advisory_xact_lock(?, ?)", jdbc.sql);
+        assertArrayEquals(
+                new Object[] {
+                    0x43534B55 ^ (int) (first.getMostSignificantBits() >>> 32),
+                    (int) first.getLeastSignificantBits(),
+                    0x43534B55 ^ (int) (second.getMostSignificantBits() >>> 32),
+                    (int) second.getLeastSignificantBits()
+                },
+                jdbc.arguments);
+    }
+
     private static void assertLegacyKey(int namespaceTag, int expectedFirstKey) {
         RecordingJdbcTemplate jdbc = new RecordingJdbcTemplate();
 

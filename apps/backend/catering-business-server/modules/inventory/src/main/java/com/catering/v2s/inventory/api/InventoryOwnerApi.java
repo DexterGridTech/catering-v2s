@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -236,7 +237,18 @@ public interface InventoryOwnerApi {
 
     record LocalCopyPreflightReadback(String preflightDigest, String canonicalJson) {}
 
+    /**
+     * Request-local, owner-created immutable preparation. Only the canonical readback crosses the boundary; the
+     * hydrated inventory closure remains private to the inventory owner and is consumed by the matching execute call.
+     */
+    interface CopyExecutionPreparation {
+        LocalCopyPreflightReadback preflight();
+    }
+
     LocalCopyPreflightReadback preflightLocalCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyPreflightCommand command);
+
+    CopyExecutionPreparation prepareLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyPreflightCommand command);
 
     record LocalCopyExecuteCommand(
@@ -256,6 +268,12 @@ public interface InventoryOwnerApi {
             LocalCopyExecuteCommand command,
             String idempotencyKey);
 
+    LocalCopyExecutionReadback executeLocalCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            LocalCopyExecuteCommand command,
+            String idempotencyKey,
+            CopyExecutionPreparation preparation);
+
     record BrandCopyPreflightCommand(
             java.util.List<String> selectedItemCodes, String targetDataNodeRef, String catalogReferencePlanJson) {}
 
@@ -268,10 +286,19 @@ public interface InventoryOwnerApi {
     LocalCopyPreflightReadback preflightBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
 
+    CopyExecutionPreparation prepareBrandCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
+
     LocalCopyExecutionReadback executeBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             BrandCopyExecuteCommand command,
             String idempotencyKey);
+
+    LocalCopyExecutionReadback executeBrandCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            BrandCopyExecuteCommand command,
+            String idempotencyKey,
+            CopyExecutionPreparation preparation);
 
     /**
      * Task-read used by the catalog detail surface. It returns only the definition graph (StockTarget configuration and
@@ -430,6 +457,16 @@ public interface InventoryOwnerApi {
 
     CatalogMaterialStockTargetReadback resolveCatalogMaterialStockTarget(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, UUID materialItemRef);
+
+    /** Resolves a material set under one inventory-owner read boundary; order follows the supplied refs. */
+    default List<CatalogMaterialStockTargetReadback> resolveCatalogMaterialStockTargets(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, Collection<UUID> materialItemRefs) {
+        if (materialItemRefs == null || materialItemRefs.isEmpty()) return List.of();
+        return materialItemRefs.stream()
+                .distinct()
+                .map(ref -> resolveCatalogMaterialStockTarget(context, ref))
+                .toList();
+    }
 
     /**
      * Catalog owns definition/value lifecycle. This command removes only inventory-owned BOM rows whose option-value

@@ -10,8 +10,9 @@ import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById, writeSeedReportPair} from "../test/seed-report.mjs";
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from "./managed-diagnostic-protocol.mjs";
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from "./managed-diagnostic-protocol.mjs";
 import {canonicalStartToken} from "./managed-process-tree.mjs";
+import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const fixturePath = path.join(root, "contracts/policy/catalog-inventory-fixture-catalog.json");
@@ -56,11 +57,18 @@ const loadManagedRun = () => {
   if (!fs.existsSync(manifestPath)) fail("SEED_MANAGED_RUN_MANIFEST_REQUIRED");
   const manifest = readJson(manifestPath);
   if (manifest.kind !== "r5-dev-run-manifest" || manifest.freshDatabase !== true) fail("SEED_MANAGED_RUN_INVALID");
+  if (typeof manifest.localHttpBaseUrl !== "string" || !/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(manifest.localHttpBaseUrl)) fail("SEED_MANAGED_HTTP_ENDPOINT_INVALID");
+  try {
+    validateRemoteJavaControl(manifest.remoteJava);
+    validateManagedDiagnosticTransport(manifest);
+  } catch {
+    fail("SEED_MANAGED_REMOTE_JAVA_BINDING_INVALID");
+  }
   for (const process of manifest.processes ?? []) {
     const probe = spawnSync("ps", ["-o", "lstart=", "-p", String(process.pid)], {encoding: "utf8"});
     if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) fail(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
   }
-  return {manifest, credentials: requiredCredentials(manifest)};
+  return {manifest, credentials: requiredCredentials(manifest), httpBaseUrl: manifest.localHttpBaseUrl};
 };
 
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
@@ -540,7 +548,8 @@ async function execute() {
     return;
   }
   const combined = registry;
-  const baseUrl = (process.env.CATALOG_INVENTORY_EDGE_BASE_URL || "http://127.0.0.1:8080").replace(/\/$/, "");
+  const baseUrl = manifest.localHttpBaseUrl.replace(/\/$/, "");
+  if (!/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(baseUrl)) fail("SEED_MANAGED_HTTP_ENDPOINT_INVALID");
   const cookies = (value) => value?.split(",").map((part) => part.split(";", 1)[0].trim()).filter(Boolean).join("; ") || null;
   const key = (stage) => `catalog-seed-${sha256(`${runId}:${stage}`).slice(0, 48)}`;
   const request = async (stage, operationId, pathParameters = {}, options = {}) => {

@@ -50,6 +50,12 @@ public class PlatformWorkspaceAdministrationTaskReadService {
     @Transactional(readOnly = true)
     public DetailReadback detail(String groupWorkspaceKey) {
         WorkspaceAdministrationReadback workspace = workspaces.require(groupWorkspaceKey);
+        return detailAfterCommand(workspace);
+    }
+
+    /** Builds the same detail projection from an owner command readback without re-reading the workspace row. */
+    @Transactional(readOnly = true)
+    public DetailReadback detailAfterCommand(WorkspaceAdministrationReadback workspace) {
         Optional<CommercialGroupReadback> commercialGroup =
                 initializationFacts.initializationFact(workspace.groupWorkspaceKey());
         Map<UUID, PlatformAssetService.PublicAssetReference> logos =

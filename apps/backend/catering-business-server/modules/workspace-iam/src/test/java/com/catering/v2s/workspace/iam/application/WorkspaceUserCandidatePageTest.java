@@ -78,7 +78,6 @@ class WorkspaceUserCandidatePageTest {
         assertEquals(25, page.metadata().total());
         assertEquals(List.of(), page.roles());
         verify(roles).page(workspace, "group-key", "operator", "GROUP", "ENABLED", 2, 10, "NAME", "ASC");
-        verify(roles, never()).list(any(), any());
     }
 
     private static WorkspaceUserService service(

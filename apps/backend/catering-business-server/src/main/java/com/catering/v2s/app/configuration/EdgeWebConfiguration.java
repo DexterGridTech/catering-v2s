@@ -3,6 +3,7 @@ package com.catering.v2s.app.configuration;
 import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityOperationRegistry;
+import com.catering.v2s.app.edge.diagnostic.ReadOnlyTaskConnectionScopeInterceptor;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticInterceptor;
 import com.catering.v2s.app.edge.session.EdgeRequestContextArgumentResolver;
 import com.catering.v2s.platform.foundation.diagnostic.SecurityDiagnosticRecorder;
@@ -15,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -24,14 +26,17 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class EdgeWebConfiguration implements WebMvcConfigurer {
     private final EdgeRequestContextArgumentResolver edgeRequestContextArgumentResolver;
     private final ObjectProvider<HttpRequestMetricsInterceptor> httpRequestMetricsInterceptor;
+    private final ObjectProvider<ReadOnlyTaskConnectionScopeInterceptor> readOnlyTaskConnectionScopeInterceptor;
     private final ObjectMapper objectMapper;
 
     public EdgeWebConfiguration(
             EdgeRequestContextArgumentResolver edgeRequestContextArgumentResolver,
             ObjectProvider<HttpRequestMetricsInterceptor> httpRequestMetricsInterceptor,
+            ObjectProvider<ReadOnlyTaskConnectionScopeInterceptor> readOnlyTaskConnectionScopeInterceptor,
             ObjectMapper objectMapper) {
         this.edgeRequestContextArgumentResolver = edgeRequestContextArgumentResolver;
         this.httpRequestMetricsInterceptor = httpRequestMetricsInterceptor;
+        this.readOnlyTaskConnectionScopeInterceptor = readOnlyTaskConnectionScopeInterceptor;
         this.objectMapper = objectMapper;
     }
 
@@ -43,6 +48,8 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(httpRequestMetricsInterceptor.getObject());
+        // Metrics must open before this scope so its first connection borrow is measured.
+        registry.addInterceptor(readOnlyTaskConnectionScopeInterceptor.getObject());
         // Metrics must complete after public-security diagnostics so its request-scoped tracker is still open.
         registry.addInterceptor(
                 publicSecurityDiagnosticInterceptor(publicSecurityOperationRegistry(), securityDiagnosticRecorder()));
@@ -68,6 +75,13 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
     @Bean
     HttpRequestMetricsInterceptor httpRequestMetricsInterceptor() {
         return new HttpRequestMetricsInterceptor(new ObjectMapper());
+    }
+
+    @Bean
+    ReadOnlyTaskConnectionScopeInterceptor readOnlyTaskConnectionScopeInterceptor(
+            PlatformTransactionManager transactions) {
+        return new ReadOnlyTaskConnectionScopeInterceptor(
+                com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry.loadExtended(objectMapper), transactions);
     }
 
     @Bean

@@ -345,12 +345,42 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
     @Transactional(readOnly = true)
     public OperationsStoreCommandApi.StoreOrganizationDetailReadback readStoreDetail(
             OperationsStoreCommandApi.StoreDetailQuery query) {
-        Item item = detail(query.workspaceUuid(), query.groupWorkspaceKey(), ServiceNodeTypes.STORE, query.storeId());
-        return new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
-                reference(item.project()),
-                reference(item.brand()),
-                reference(item.tenant()),
-                reference(item.headCompany()));
+        return jdbc.query(
+                "SELECT project.id, project.code, project.name, brand.id, brand.code, brand.name, "
+                        + "tenant.id, tenant.code, tenant.name, head.id, head.code, head.name "
+                        + "FROM organization.store store "
+                        + "JOIN organization.organization_node project ON project.id=store.project_id "
+                        + "AND project.workspace_uuid=store.workspace_uuid "
+                        + "AND project.group_workspace_key=store.group_workspace_key "
+                        + "JOIN organization.brand brand ON brand.id=store.brand_id "
+                        + "AND brand.workspace_uuid=store.workspace_uuid "
+                        + "AND brand.group_workspace_key=store.group_workspace_key "
+                        + "JOIN organization.tenant tenant ON tenant.id=store.tenant_id "
+                        + "AND tenant.workspace_uuid=store.workspace_uuid "
+                        + "AND tenant.group_workspace_key=store.group_workspace_key "
+                        + "LEFT JOIN organization.head_company head ON head.id=store.head_company_id "
+                        + "AND head.workspace_uuid=store.workspace_uuid "
+                        + "AND head.group_workspace_key=store.group_workspace_key "
+                        + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? AND store.id=?",
+                result -> {
+                    if (!result.next()) throw new BusinessEntityService.OrganizationNotFoundException();
+                    return new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
+                            new OperationsStoreCommandApi.Reference(
+                                    result.getObject(1, UUID.class), result.getString(2), result.getString(3)),
+                            new OperationsStoreCommandApi.Reference(
+                                    result.getObject(4, UUID.class), result.getString(5), result.getString(6)),
+                            new OperationsStoreCommandApi.Reference(
+                                    result.getObject(7, UUID.class), result.getString(8), result.getString(9)),
+                            result.getObject(10, UUID.class) == null
+                                    ? null
+                                    : new OperationsStoreCommandApi.Reference(
+                                            result.getObject(10, UUID.class),
+                                            result.getString(11),
+                                            result.getString(12)));
+                },
+                query.workspaceUuid(),
+                query.groupWorkspaceKey(),
+                query.storeId());
     }
 
     /**

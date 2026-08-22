@@ -120,7 +120,7 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
                 correlationId, requestId, resolved.operationId(), resolved.path(), resolved.owner());
         DatabaseOperationTracker.Scope scope = DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(
                         databaseCaptureActive ? databaseOperationHmacKey : null,
-                        databaseCaptureActive,
+                        scopeActive,
                         databaseCaptureActive && statementDictionaryPath != null)
                 .withCorrelationId(correlationId));
         ReadBudgetComponent.Scope readBudget = ReadBudgetComponent.open();
@@ -175,6 +175,10 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             event.put("databaseOperationCount", snapshot.count());
             event.put("logicalStatementCount", snapshot.logicalStatementCount());
             event.put("databaseDurationMillis", snapshot.durationMillis());
+            event.put("transactionBeginCount", snapshot.transactionBeginCount());
+            event.put("sqlOperationCount", snapshot.sqlOperationCount());
+            event.put("unclassifiedSqlOperationCount", snapshot.unclassifiedSqlOperationCount());
+            event.put("unclassifiedSqlRatio", snapshot.unclassifiedSqlRatio());
             event.put("logicalSectionCounts", sectionCounts(snapshot));
             // Keep the historical key during the measurement-schema transition; new consumers
             // must use the explicit logicalSectionCounts/kindCounts pair.
@@ -182,8 +186,18 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
             event.put("kindCounts", snapshot.kindCounts());
             event.put("kindDurationMillis", snapshot.kindDurationMillis());
             event.put("connectionBorrowCount", snapshot.connectionBorrowCount());
+            // The total count above intentionally remains a diagnostic aggregate. Session and
+            // scope resolution can borrow connections before the owner operation starts. The
+            // L2 connection budget is about the operation boundary, which is the explicit
+            // CONNECTION section already owned by the tracker; publish that boundary as a
+            // separate field instead of silently changing the historical aggregate's meaning.
+            event.put(
+                    "operationConnectionBorrowCount",
+                    snapshot.sectionCounts().getOrDefault(DatabaseOperationTracker.Section.CONNECTION, 0L));
             event.put("connectionAcquireMillis", snapshot.connectionAcquireMillis());
             event.put("batchStatementTotal", snapshot.batchStatementTotal());
+            Integer requestCardinality = state.lifecycle().requestCardinality();
+            if (requestCardinality != null) event.put("requestCardinality", requestCardinality);
             event.put("readBudgetComponents", readBudgetCounts(readBudget));
             event.put("readBudgetUnclassified", readBudget.unclassifiedCount());
             event.put("readBudgetLogicalStatementComponents", readBudgetLogicalStatementCounts(readBudget));
@@ -225,6 +239,11 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
     static RequestDiagnosticContext context(HttpServletRequest request) {
         Object value = request.getAttribute(STATE);
         return value instanceof State state ? state.context() : null;
+    }
+
+    /** Adds only the normalized collection size needed by a declared linear budget; never stores payload data. */
+    public static void recordRequestCardinality(Integer cardinality) {
+        RequestDiagnosticLifecycle.recordRequestCardinality(cardinality);
     }
 
     static boolean isManagedEventRequest(HttpServletRequest request) {

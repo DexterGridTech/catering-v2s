@@ -179,7 +179,9 @@ public class BusinessEntityService
                 command.idempotencyKey(),
                 command.actor(),
                 command.ownerScopeGrant());
-        return headCompanyReadback(command.workspaceUuid(), command.groupWorkspaceKey(), entity);
+        // A freshly inserted head company cannot have an authorization row in this transaction; avoid rereading the
+        // entity and join table solely to construct the known-empty relationship projection.
+        return new HeadCompanyCommandReadback(entity, List.of());
     }
 
     @Override
@@ -293,9 +295,13 @@ public class BusinessEntityService
     @Override
     @Transactional
     public OrganizationEntityReadback createStore(CreateStoreCommand command) {
-        UUID ownerProjectId =
-                requireProjectId(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectId());
-        requireOwnerGrant(
+        UUID ownerProjectId = resolvedOwnerTargetId(
+                command.ownerScopeGrant(),
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                ServiceNodeTypes.PROJECT);
+        if (!ownerProjectId.equals(command.projectId())) throw new OrganizationValidationException();
+        requireOwnerGrantForResolvedTarget(
                 command.ownerScopeGrant(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -322,9 +328,9 @@ public class BusinessEntityService
     @Override
     @Transactional
     public OrganizationEntityReadback updateStore(UpdateStoreCommand command) {
-        UUID ownerProjectId =
-                requireStoreProjectId(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
-        requireOwnerGrant(
+        StoreCommandFacts current = readStoreCommandFacts(command);
+        UUID ownerProjectId = current.projectId();
+        requireOwnerGrantForResolvedTarget(
                 command.ownerScopeGrant(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
@@ -348,7 +354,7 @@ public class BusinessEntityService
                         command.notes(),
                         command.expectedVersion(),
                         command.extensionSubmission()),
-                () -> updateStoreSubmission(command, ownerProjectId));
+                () -> updateStoreSubmission(command, current));
     }
 
     @Override
@@ -367,20 +373,13 @@ public class BusinessEntityService
     }
 
     private OrganizationEntityReadback createStoreSubmission(CreateStoreCommand command, UUID ownerProjectId) {
-        var project = nodes.requireNode(
-                command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, OrganizationNodeTypes.PROJECT);
-        if (!"ENABLED".equals(project.status())
-                || !enabled("tenant", command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId())
-                || !enabled("brand", command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId()))
-            throw new OrganizationValidationException();
-        if (command.headCompanyId() != null
-                && (!enabled(
-                                "head_company",
-                                command.workspaceUuid(),
-                                command.groupWorkspaceKey(),
-                                command.headCompanyId())
-                        || !authorized(command.headCompanyId(), command.brandId())))
-            throw new OrganizationValidationException();
+        validateStoreReferences(
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                ownerProjectId,
+                command.tenantId(),
+                command.brandId(),
+                command.headCompanyId());
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         try {
@@ -405,7 +404,7 @@ public class BusinessEntityService
         } catch (DataIntegrityViolationException exception) {
             throw new OrganizationConflictException(exception);
         }
-        replaceValues(
+        replaceNewValues(
                 "store",
                 id,
                 command.workspaceUuid(),
@@ -426,29 +425,16 @@ public class BusinessEntityService
         return created;
     }
 
-    private OrganizationEntityReadback updateStoreSubmission(UpdateStoreCommand command, UUID ownerProjectId) {
-        OrganizationEntityReadback before = requireEntity(
-                BusinessEntityTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId());
-        var project = nodes.requireNode(
-                command.workspaceUuid(), command.groupWorkspaceKey(), ownerProjectId, OrganizationNodeTypes.PROJECT);
-        if (!"ENABLED".equals(project.status())
-                || !enabled("tenant", command.workspaceUuid(), command.groupWorkspaceKey(), command.tenantId())
-                || !enabled("brand", command.workspaceUuid(), command.groupWorkspaceKey(), command.brandId())
-                || (command.headCompanyId() != null
-                        && (!enabled(
-                                        "head_company",
-                                        command.workspaceUuid(),
-                                        command.groupWorkspaceKey(),
-                                        command.headCompanyId())
-                                || !authorized(command.headCompanyId(), command.brandId()))))
-            throw new OrganizationValidationException();
+    private OrganizationEntityReadback updateStoreSubmission(UpdateStoreCommand command, StoreCommandFacts current) {
+        OrganizationEntityReadback before = current.before();
+        current.requireEnabledReferences();
         int changed;
         try {
             changed = jdbc.update(
                     "UPDATE organization.store SET project_id=?, tenant_id=?, brand_id=?, head_company_id=?, code=?, "
                             + "name=?, notes=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND "
                             + "workspace_uuid=? AND group_workspace_key=? AND version=?",
-                    ownerProjectId,
+                    current.projectId(),
                     command.tenantId(),
                     command.brandId(),
                     command.headCompanyId(),
@@ -470,6 +456,7 @@ public class BusinessEntityService
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
                 ExtensionHostTypes.STORE,
+                before.extensionValues(),
                 command.extensionSubmission());
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(() -> requireEntity(
                 BusinessEntityTypes.STORE, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeId()));
@@ -499,12 +486,12 @@ public class BusinessEntityService
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        requireOwnerGrant(
+        requireOwnerGrantForResolvedTarget(
                 ownerScopeGrant,
                 workspaceUuid,
                 groupWorkspaceKey,
                 ServiceNodeTypes.GROUP,
-                requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+                resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -586,7 +573,7 @@ public class BusinessEntityService
         } catch (DuplicateKeyException exception) {
             throw new OrganizationDuplicateException(exception);
         }
-        replaceValues(table, id, workspaceUuid, groupWorkspaceKey, type, submission);
+        replaceNewValues(table, id, workspaceUuid, groupWorkspaceKey, type, submission);
         OrganizationEntityReadback created =
                 OwnerOperationDiagnostics.readback(() -> requireEntity(type, workspaceUuid, groupWorkspaceKey, id));
         audit(workspaceUuid, groupWorkspaceKey, id, type, type + "_CREATED", now, actor, createdChanges(created));
@@ -613,12 +600,12 @@ public class BusinessEntityService
         if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
             requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, id);
         else
-            requireOwnerGrant(
+            requireOwnerGrantForResolvedTarget(
                     ownerScopeGrant,
                     workspaceUuid,
                     groupWorkspaceKey,
                     ServiceNodeTypes.GROUP,
-                    requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+                    resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP));
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
@@ -703,7 +690,7 @@ public class BusinessEntityService
                     expectedVersion
                 };
         if (jdbc.update(update, args) != 1) throw new OrganizationConflictException();
-        replaceValues(table, id, workspaceUuid, groupWorkspaceKey, type, submission);
+        replaceValues(table, id, workspaceUuid, groupWorkspaceKey, type, before.extensionValues(), submission);
         OrganizationEntityReadback updated =
                 OwnerOperationDiagnostics.readback(() -> requireEntity(type, workspaceUuid, groupWorkspaceKey, id));
         audit(
@@ -920,12 +907,12 @@ public class BusinessEntityService
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        requireOwnerGrant(
+        requireOwnerGrantForResolvedTarget(
                 ownerScopeGrant,
                 workspaceUuid,
                 groupWorkspaceKey,
                 ServiceNodeTypes.GROUP,
-                requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+                resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP));
         return createEntity(
                 entityType,
                 workspaceUuid,
@@ -1142,12 +1129,12 @@ public class BusinessEntityService
         if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
             requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, id);
         else
-            requireOwnerGrant(
+            requireOwnerGrantForResolvedTarget(
                     ownerScopeGrant,
                     workspaceUuid,
                     groupWorkspaceKey,
                     ServiceNodeTypes.GROUP,
-                    requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+                    resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP));
         return updateEntity(
                 type,
                 workspaceUuid,
@@ -1187,8 +1174,27 @@ public class BusinessEntityService
             long expectedVersion,
             AuditActor actor) {
         String type = ServiceNodeTypes.STORE.equals(entityType) ? ServiceNodeTypes.STORE : entityType(entityType);
+        return transitionEntityStatus(
+                type,
+                workspaceUuid,
+                groupWorkspaceKey,
+                id,
+                status,
+                expectedVersion,
+                actor,
+                requireEntity(type, workspaceUuid, groupWorkspaceKey, id));
+    }
+
+    private OrganizationEntityReadback transitionEntityStatus(
+            String type,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID id,
+            String status,
+            long expectedVersion,
+            AuditActor actor,
+            OrganizationEntityReadback before) {
         String table = table(type);
-        OrganizationEntityReadback before = requireEntity(type, workspaceUuid, groupWorkspaceKey, id);
         if (!Set.of("ENABLED", "DISABLED").contains(status)
                 || jdbc.update(
                                 "UPDATE organization." + table
@@ -1272,22 +1278,39 @@ public class BusinessEntityService
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         String type = ServiceNodeTypes.STORE.equals(entityType) ? ServiceNodeTypes.STORE : entityType(entityType);
-        if (ServiceNodeTypes.STORE.equals(type))
-            requireOwnerGrant(
-                    ownerScopeGrant,
+        if (ServiceNodeTypes.STORE.equals(type)) {
+            StoreStatusFacts current = readStoreStatusFacts(workspaceUuid, groupWorkspaceKey, id);
+            requireOwnerGrantForResolvedTarget(
+                    ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, current.projectId());
+            return receipts.execute(
                     workspaceUuid,
-                    groupWorkspaceKey,
-                    ServiceNodeTypes.PROJECT,
-                    requireStoreProjectId(workspaceUuid, groupWorkspaceKey, id));
-        else if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
+                    idempotencyKey,
+                    canonical(
+                            "transitionEntityStatus",
+                            entityType,
+                            workspaceUuid,
+                            groupWorkspaceKey,
+                            id,
+                            status,
+                            expectedVersion),
+                    () -> transitionEntityStatus(
+                            type,
+                            workspaceUuid,
+                            groupWorkspaceKey,
+                            id,
+                            status,
+                            expectedVersion,
+                            actor,
+                            current.before()));
+        } else if (ServiceNodeTypes.HEAD_COMPANY.equals(type))
             requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.HEAD_COMPANY, id);
         else
-            requireOwnerGrant(
+            requireOwnerGrantForResolvedTarget(
                     ownerScopeGrant,
                     workspaceUuid,
                     groupWorkspaceKey,
                     ServiceNodeTypes.GROUP,
-                    requireCommercialGroupId(workspaceUuid, groupWorkspaceKey));
+                    resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.GROUP));
         return transitionEntityStatus(
                 type, workspaceUuid, groupWorkspaceKey, id, status, expectedVersion, idempotencyKey, actor);
     }
@@ -1355,14 +1378,7 @@ public class BusinessEntityService
             String notes,
             Map<String, String> extensionValues,
             AuditActor actor) {
-        var project = nodes.requireNode(workspaceUuid, groupWorkspaceKey, projectId, OrganizationNodeTypes.PROJECT);
-        if (!"ENABLED".equals(project.status())
-                || !enabled("tenant", workspaceUuid, groupWorkspaceKey, tenantId)
-                || !enabled("brand", workspaceUuid, groupWorkspaceKey, brandId))
-            throw new OrganizationValidationException();
-        if (headCompanyId != null
-                && (!enabled("head_company", workspaceUuid, groupWorkspaceKey, headCompanyId)
-                        || !authorized(headCompanyId, brandId))) throw new OrganizationValidationException();
+        validateStoreReferences(workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId);
         validateValues(ExtensionHostTypes.STORE, workspaceUuid, groupWorkspaceKey, extensionValues);
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
@@ -1489,8 +1505,11 @@ public class BusinessEntityService
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        UUID ownerProjectId = requireProjectId(workspaceUuid, groupWorkspaceKey, projectId);
-        requireOwnerGrant(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, ownerProjectId);
+        UUID ownerProjectId =
+                resolvedOwnerTargetId(ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT);
+        if (!ownerProjectId.equals(projectId)) throw new OrganizationValidationException();
+        requireOwnerGrantForResolvedTarget(
+                ownerScopeGrant, workspaceUuid, groupWorkspaceKey, ServiceNodeTypes.PROJECT, ownerProjectId);
         return createStore(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -1553,13 +1572,7 @@ public class BusinessEntityService
             AuditActor actor) {
         OrganizationEntityReadback before =
                 requireEntity(BusinessEntityTypes.STORE, workspaceUuid, groupWorkspaceKey, id);
-        var project = nodes.requireNode(workspaceUuid, groupWorkspaceKey, projectId, OrganizationNodeTypes.PROJECT);
-        if (!"ENABLED".equals(project.status())
-                || !enabled("tenant", workspaceUuid, groupWorkspaceKey, tenantId)
-                || !enabled("brand", workspaceUuid, groupWorkspaceKey, brandId)
-                || (headCompanyId != null
-                        && (!enabled("head_company", workspaceUuid, groupWorkspaceKey, headCompanyId)
-                                || !authorized(headCompanyId, brandId)))) throw new OrganizationValidationException();
+        validateStoreReferences(workspaceUuid, groupWorkspaceKey, projectId, tenantId, brandId, headCompanyId);
         validateValues(ExtensionHostTypes.STORE, workspaceUuid, groupWorkspaceKey, extensionValues);
         int changed;
         try {
@@ -2099,9 +2112,10 @@ public class BusinessEntityService
     @Transactional(readOnly = true)
     public StoreContractContext requireStoreContractContext(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
-        StoreContractStore store = jdbc.query(
-                "SELECT tenant_id, project_id, status FROM organization.store WHERE id=? AND workspace_uuid=? AND "
-                        + "group_workspace_key=?",
+        return jdbc.query(
+                "SELECT s.tenant_id, s.project_id, s.status, phase.phase_name FROM organization.store s LEFT JOIN "
+                        + "organization.project_phase_name phase ON phase.project_id=s.project_id WHERE s.id=? AND "
+                        + "s.workspace_uuid=? AND s.group_workspace_key=? ORDER BY phase.display_order",
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -2109,14 +2123,16 @@ public class BusinessEntityService
                 },
                 result -> {
                     if (!result.next()) throw new OrganizationNotFoundException();
-                    return new StoreContractStore(
-                            result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3));
+                    UUID tenantId = result.getObject("tenant_id", UUID.class);
+                    UUID projectId = result.getObject("project_id", UUID.class);
+                    String status = result.getString("status");
+                    List<String> phases = new ArrayList<>();
+                    do {
+                        String phase = result.getString("phase_name");
+                        if (phase != null) phases.add(phase);
+                    } while (result.next());
+                    return new StoreContractContext(storeId, tenantId, projectId, status, phases);
                 });
-        List<String> phases = jdbc.query(
-                "SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order",
-                (row, index) -> row.getString(1),
-                store.projectId());
-        return new StoreContractContext(storeId, store.tenantId(), store.projectId(), store.status(), phases);
     }
 
     @Transactional(readOnly = true)
@@ -2169,7 +2185,6 @@ public class BusinessEntityService
     }
 
     /** Server-side project fact for an existing store write target; STORE is never a capability target. */
-    @Transactional(readOnly = true)
     public UUID requireStoreProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return jdbc.query(
                 "SELECT project_id FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
@@ -2183,6 +2198,156 @@ public class BusinessEntityService
                     return result.getObject(1, UUID.class);
                 });
     }
+
+    /**
+     * Authoritative store-command target fact. The store relation and project node type are checked together so the
+     * owner does not first read project_id and then issue a second project-node query for the same command target.
+     */
+    private UUID requireStoreOwnerProjectId(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc.query(
+                "SELECT store.project_id FROM organization.store store "
+                        + "JOIN organization.organization_node project ON project.id=store.project_id "
+                        + "AND project.workspace_uuid=store.workspace_uuid "
+                        + "AND project.group_workspace_key=store.group_workspace_key "
+                        + "AND project.node_type='PROJECT' "
+                        + "WHERE store.id=? AND store.workspace_uuid=? AND store.group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, storeId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationNotFoundException();
+                    return result.getObject(1, UUID.class);
+                });
+    }
+
+    /**
+     * One authoritative update projection. It carries the store before-image, the project target and the exact
+     * reference predicates that updateStoreSubmission must enforce. The projection is read before the idempotency
+     * receipt is claimed, just like the former target read; the reference decision itself remains inside the receipt
+     * callback so invalid commands retain the existing receipt/error ordering.
+     */
+    private StoreCommandFacts readStoreCommandFacts(UpdateStoreCommand command) {
+        return jdbc.query(
+                "WITH requested AS (SELECT ?::uuid AS workspace_uuid, ?::text AS group_workspace_key, ?::uuid AS"
+                        + " tenant_id, ?::uuid AS brand_id, ?::uuid AS head_company_id) SELECT store.id,"
+                        + " store.workspace_uuid, store.group_workspace_key, store.code, store.name, NULL::varchar AS"
+                        + " legal_name, NULL::varchar AS credit_code, NULL::varchar AS alias, NULL::varchar AS remark,"
+                        + " store.notes, store.status, store.version, store.extension_rule_revision,"
+                        + " store.created_at_epoch_millis, store.updated_at_epoch_millis, store.extension_values::text,"
+                        + " store.project_id, store.tenant_id, store.brand_id, store.head_company_id,"
+                        + " (project.status='ENABLED') AS project_enabled, EXISTS(SELECT 1 FROM organization.tenant"
+                        + " tenant, requested request WHERE tenant.id=request.tenant_id AND"
+                        + " tenant.workspace_uuid=request.workspace_uuid AND"
+                        + " tenant.group_workspace_key=request.group_workspace_key AND tenant.status='ENABLED') AS"
+                        + " tenant_enabled, EXISTS(SELECT 1 FROM organization.brand brand, requested request WHERE"
+                        + " brand.id=request.brand_id AND brand.workspace_uuid=request.workspace_uuid AND"
+                        + " brand.group_workspace_key=request.group_workspace_key AND brand.status='ENABLED') AS"
+                        + " brand_enabled, (request.head_company_id IS NULL OR EXISTS(SELECT 1 FROM"
+                        + " organization.head_company head_company WHERE head_company.id=request.head_company_id AND"
+                        + " head_company.workspace_uuid=request.workspace_uuid AND"
+                        + " head_company.group_workspace_key=request.group_workspace_key AND"
+                        + " head_company.status='ENABLED')) AS head_company_enabled, (request.head_company_id IS NULL"
+                        + " OR"
+                        + " EXISTS(SELECT 1 FROM organization.head_company_brand_authorization hba WHERE"
+                        + " hba.head_company_id=request.head_company_id AND hba.brand_id=request.brand_id)) AS"
+                        + " head_company_authorized FROM organization.store store JOIN organization.organization_node"
+                        + " project ON project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND"
+                        + " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' CROSS"
+                        + " JOIN requested request WHERE store.id=? AND store.workspace_uuid=? AND"
+                        + " store.group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, command.workspaceUuid());
+                    statement.setString(2, command.groupWorkspaceKey());
+                    statement.setObject(3, command.tenantId());
+                    statement.setObject(4, command.brandId());
+                    statement.setObject(5, command.headCompanyId());
+                    statement.setObject(6, command.storeId());
+                    statement.setObject(7, command.workspaceUuid());
+                    statement.setString(8, command.groupWorkspaceKey());
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationNotFoundException();
+                    OrganizationEntityReadback before = readEntity(ServiceNodeTypes.STORE, result);
+                    return new StoreCommandFacts(
+                            before,
+                            result.getObject(17, UUID.class),
+                            result.getObject(18, UUID.class),
+                            result.getObject(19, UUID.class),
+                            result.getObject(20, UUID.class),
+                            new StoreReferenceFacts(
+                                    result.getBoolean("project_enabled"),
+                                    result.getBoolean("tenant_enabled"),
+                                    result.getBoolean("brand_enabled"),
+                                    result.getBoolean("head_company_enabled"),
+                                    result.getBoolean("head_company_authorized")));
+                });
+    }
+
+    /** One owner projection for status transitions; it preserves the target type check and the before-image read. */
+    private StoreStatusFacts readStoreStatusFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc.query(
+                "SELECT store.id, store.workspace_uuid, store.group_workspace_key, store.code, store.name, "
+                        + "NULL::varchar AS legal_name, NULL::varchar AS credit_code, NULL::varchar AS alias, "
+                        + "NULL::varchar AS remark, store.notes, store.status, store.version, "
+                        + "store.extension_rule_revision, store.created_at_epoch_millis, "
+                        + "store.updated_at_epoch_millis, store.extension_values::text, store.project_id "
+                        + "FROM organization.store store "
+                        + "JOIN organization.organization_node project ON project.id=store.project_id "
+                        + "AND project.workspace_uuid=store.workspace_uuid "
+                        + "AND project.group_workspace_key=store.group_workspace_key "
+                        + "AND project.node_type='PROJECT' "
+                        + "WHERE store.id=? AND store.workspace_uuid=? AND store.group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, storeId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationNotFoundException();
+                    return new StoreStatusFacts(
+                            readEntity(ServiceNodeTypes.STORE, result), result.getObject(17, UUID.class));
+                });
+    }
+
+    private record StoreCommandFacts(
+            OrganizationEntityReadback before,
+            UUID projectId,
+            UUID tenantId,
+            UUID brandId,
+            UUID headCompanyId,
+            StoreReferenceFacts references) {
+        private void requireEnabledReferences() {
+            if (!references.allEnabled()) throw new OrganizationValidationException();
+        }
+    }
+
+    private record StoreStatusFacts(OrganizationEntityReadback before, UUID projectId) {}
+
+    /**
+     * Narrow immutable facts needed by the operations edge before the owner command performs its authoritative recheck.
+     */
+    public StoreUpdateFacts readStoreUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc.query(
+                "SELECT project_id, tenant_id, brand_id, code FROM organization.store "
+                        + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
+                statement -> {
+                    statement.setObject(1, storeId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationNotFoundException();
+                    return new StoreUpdateFacts(
+                            result.getObject(1, UUID.class),
+                            result.getObject(2, UUID.class),
+                            result.getObject(3, UUID.class),
+                            result.getString(4));
+                });
+    }
+
+    public record StoreUpdateFacts(UUID projectId, UUID tenantId, UUID brandId, String code) {}
 
     @Transactional(readOnly = true)
     public List<OrganizationEntityReadback> listEntities(
@@ -2483,6 +2648,31 @@ public class BusinessEntityService
         return value == null || value.isBlank() ? null : "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
     }
 
+    /**
+     * Checks the grant against a target already resolved by this owner in the current command. The resolver query is
+     * the command's fresh owner fact; repeating it here only adds a round trip.
+     */
+    private void requireOwnerGrantForResolvedTarget(
+            OperationsOwnerScopeGrant grant,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String targetType,
+            UUID targetId) {
+        if (grant == null || !grant.matches(workspaceUuid, groupWorkspaceKey, targetType, targetId))
+            throw new OrganizationAuthorizationException();
+    }
+
+    /** Uses the server-minted target fact already carried by the grant; do not reread the same owner row. */
+    private UUID resolvedOwnerTargetId(
+            OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, String targetType) {
+        if (grant == null
+                || !Objects.equals(grant.workspaceUuid(), workspaceUuid)
+                || !Objects.equals(grant.groupWorkspaceKey(), groupWorkspaceKey)
+                || !Objects.equals(grant.targetType(), targetType)
+                || grant.targetId() == null) throw new OrganizationAuthorizationException();
+        return grant.targetId();
+    }
+
     private void requireOwnerGrant(
             OperationsOwnerScopeGrant grant,
             UUID workspaceUuid,
@@ -2609,6 +2799,28 @@ public class BusinessEntityService
                     if (!result.next()) throw new OrganizationNotFoundException();
                     return result.getString(1);
                 });
+        replaceValuesWithCurrent(table, id, workspaceUuid, key, hostType, current, submission);
+    }
+
+    private void replaceValues(
+            String table,
+            UUID id,
+            UUID workspaceUuid,
+            String key,
+            String hostType,
+            Map<String, String> currentValues,
+            ExtensionSubmission submission) {
+        replaceValuesWithCurrent(table, id, workspaceUuid, key, hostType, extensionJson(currentValues), submission);
+    }
+
+    private void replaceValuesWithCurrent(
+            String table,
+            UUID id,
+            UUID workspaceUuid,
+            String key,
+            String hostType,
+            String current,
+            ExtensionSubmission submission) {
         ExtensionDefinitionReadback definition;
         try {
             definition = definitions.requireDefinition(workspaceUuid, key, hostType);
@@ -2636,6 +2848,30 @@ public class BusinessEntityService
                 id);
     }
 
+    /** New rows start with the schema's empty JSON object; do not reread that row just to merge extensions. */
+    private void replaceNewValues(
+            String table, UUID id, UUID workspaceUuid, String key, String hostType, ExtensionSubmission submission) {
+        ExtensionDefinitionReadback definition;
+        try {
+            definition = definitions.requireDefinition(workspaceUuid, key, hostType);
+        } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            if (submission != null && !submission.fields().isEmpty()) throw new OrganizationValidationException(absent);
+            return;
+        }
+        final String merged;
+        try {
+            merged = ExtensionDefinitionService.mergeValues(definition, "{}", submission);
+        } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
+            throw new OrganizationValidationException(invalid);
+        }
+        jdbc.update(
+                "UPDATE organization." + table
+                        + " SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
+                merged,
+                definition.version(),
+                id);
+    }
+
     private static Map<String, String> jsonObject(String source) {
         try {
             JsonNode node = JSON.readTree(source);
@@ -2648,6 +2884,23 @@ public class BusinessEntityService
         } catch (java.io.IOException failure) {
             throw new OrganizationValidationException(failure);
         }
+    }
+
+    private static String extensionJson(Map<String, String> values) {
+        ObjectNode object = JSON.createObjectNode();
+        if (values == null) return object.toString();
+        values.forEach((key, rawValue) -> {
+            try {
+                if (rawValue == null) {
+                    object.putNull(key);
+                } else {
+                    object.set(key, JSON.readTree(rawValue));
+                }
+            } catch (java.io.IOException failure) {
+                throw new OrganizationValidationException(failure);
+            }
+        });
+        return object.toString();
     }
 
     private boolean enabled(String table, UUID workspaceUuid, String key, UUID id) {
@@ -2664,32 +2917,96 @@ public class BusinessEntityService
 
     private record StorePathStore(UUID projectId, String code, String name) {}
 
-    private record StoreContractStore(UUID tenantId, UUID projectId, String status) {}
-
     private void ensureAvailable(
             String type, UUID workspaceUuid, String key, UUID currentId, String code, String name) {
         String table = table(type);
-        if (exists(table, workspaceUuid, key, currentId, "code", text(code, 64)))
-            throw new OrganizationCodeConflictException();
-        if (exists(
-                table,
-                workspaceUuid,
-                key,
-                currentId,
-                "lower(btrim(name))",
-                text(name, 120).toLowerCase(Locale.ROOT))) throw new OrganizationNameConflictException();
+        String codeValue = text(code, 64);
+        String nameValue = text(name, 120).toLowerCase(Locale.ROOT);
+        String exclusion = currentId == null ? "" : " AND id<>?";
+        String sql = "SELECT EXISTS(SELECT 1 FROM organization." + table
+                + " WHERE workspace_uuid=? AND group_workspace_key=? AND code=?" + exclusion
+                + ") AS code_conflict, EXISTS(SELECT 1 FROM organization." + table
+                + " WHERE workspace_uuid=? AND group_workspace_key=? AND lower(btrim(name))=?" + exclusion
+                + ") AS name_conflict";
+        Object[] args = currentId == null
+                ? new Object[] {workspaceUuid, key, codeValue, workspaceUuid, key, nameValue}
+                : new Object[] {workspaceUuid, key, codeValue, currentId, workspaceUuid, key, nameValue, currentId};
+        Boolean[] conflicts = jdbc.query(
+                sql,
+                statement -> {
+                    for (int index = 0; index < args.length; index++) statement.setObject(index + 1, args[index]);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationConflictException();
+                    return new Boolean[] {result.getBoolean("code_conflict"), result.getBoolean("name_conflict")};
+                });
+        if (conflicts[0]) throw new OrganizationCodeConflictException();
+        if (conflicts[1]) throw new OrganizationNameConflictException();
     }
 
-    private boolean exists(String table, UUID workspaceUuid, String key, UUID currentId, String column, String value) {
-        String sql = currentId == null
-                ? "SELECT 1 FROM organization." + table + " WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + column + "=?"
-                : "SELECT 1 FROM organization." + table + " WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + column + "=? AND id<>?";
-        Object[] values = currentId == null
-                ? new Object[] {workspaceUuid, key, value}
-                : new Object[] {workspaceUuid, key, value, currentId};
-        return !jdbc.queryForList(sql, values).isEmpty();
+    /**
+     * Store command validation is one organization-owner fact read. It preserves the prior individual predicates:
+     * project, tenant, and brand must be enabled; a supplied head company must be enabled and authorized for the
+     * selected brand. The command still reports the same generic validation problem for any failed reference.
+     */
+    private void validateStoreReferences(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID projectId,
+            UUID tenantId,
+            UUID brandId,
+            UUID headCompanyId) {
+        StoreReferenceFacts facts = jdbc.query(
+                "WITH requested AS (SELECT ?::uuid AS workspace_uuid, ?::text AS group_workspace_key, ?::uuid AS"
+                        + " project_id, ?::uuid AS tenant_id, ?::uuid AS brand_id, ?::uuid AS head_company_id) SELECT"
+                        + " EXISTS(SELECT 1 FROM organization.organization_node node, requested request WHERE"
+                        + " node.id=request.project_id AND node.workspace_uuid=request.workspace_uuid AND"
+                        + " node.group_workspace_key=request.group_workspace_key AND node.node_type='PROJECT' AND"
+                        + " node.status='ENABLED') AS project_enabled, EXISTS(SELECT 1 FROM organization.tenant tenant,"
+                        + " requested request WHERE tenant.id=request.tenant_id AND"
+                        + " tenant.workspace_uuid=request.workspace_uuid AND"
+                        + " tenant.group_workspace_key=request.group_workspace_key AND tenant.status='ENABLED') AS"
+                        + " tenant_enabled, EXISTS(SELECT 1 FROM organization.brand brand, requested request WHERE"
+                        + " brand.id=request.brand_id AND brand.workspace_uuid=request.workspace_uuid AND"
+                        + " brand.group_workspace_key=request.group_workspace_key AND brand.status='ENABLED') AS"
+                        + " brand_enabled, (request.head_company_id IS NULL OR EXISTS(SELECT 1 FROM"
+                        + " organization.head_company head_company WHERE head_company.id=request.head_company_id AND"
+                        + " head_company.workspace_uuid=request.workspace_uuid AND"
+                        + " head_company.group_workspace_key=request.group_workspace_key AND"
+                        + " head_company.status='ENABLED')) AS head_company_enabled, (request.head_company_id IS NULL"
+                        + " OR"
+                        + " EXISTS(SELECT 1 FROM organization.head_company_brand_authorization hba WHERE"
+                        + " hba.head_company_id=request.head_company_id AND hba.brand_id=request.brand_id)) AS"
+                        + " head_company_authorized FROM requested request",
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, projectId);
+                    statement.setObject(4, tenantId);
+                    statement.setObject(5, brandId);
+                    statement.setObject(6, headCompanyId);
+                },
+                result -> {
+                    if (!result.next()) throw new OrganizationValidationException();
+                    return new StoreReferenceFacts(
+                            result.getBoolean("project_enabled"),
+                            result.getBoolean("tenant_enabled"),
+                            result.getBoolean("brand_enabled"),
+                            result.getBoolean("head_company_enabled"),
+                            result.getBoolean("head_company_authorized"));
+                });
+        if (!facts.allEnabled()) throw new OrganizationValidationException();
+    }
+
+    private record StoreReferenceFacts(
+            boolean projectEnabled,
+            boolean tenantEnabled,
+            boolean brandEnabled,
+            boolean headCompanyEnabled,
+            boolean headCompanyAuthorized) {
+        boolean allEnabled() {
+            return projectEnabled && tenantEnabled && brandEnabled && headCompanyEnabled && headCompanyAuthorized;
+        }
     }
 
     private boolean authorized(UUID headCompanyId, UUID brandId) {

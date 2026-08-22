@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["backend", "platform", "contract", "frontend-platform", "product"]
 impacts: ["architecture", "database", "contract", "evidence"]
 triggers: ["task-start", "implementation", "review"]
-assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY", "BACKEND_NA_SPLIT_PACKAGE_SCOPE", "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE", "BACKEND_SOURCE_HASH_CHAIN_CLOSURE", "BACKEND_FORMATTING_GATE_SCOPE"]
-sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "doc/platform/backend-coding-standard.md", "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"]
+assertions: ["HTTP_OPERATION_DENOMINATOR_BEFORE_EFFICIENCY_CLAIM", "SET_BASED_COLLECTION_READS", "OWNER_LOCAL_EFFICIENCY_REPAIR", "EXPLICIT_EXTENSION_SUBMISSION_OWNER_BOUNDARY", "COMMAND_CORRECTNESS_COST_PRESERVED", "TASK_READ_BUDGET_REQUIRES_EXPLANATION", "MEASURED_PERFORMANCE_NOT_STATEMENT_COUNT", "CONTRACT_ROUTE_CLOSURE", "GENERATED_OPERATION_PATH_ONLY_FOR_CONSUMERS", "DIAGNOSTIC_SECRET_FLOW_EXPLICIT", "EXECUTION_EVIDENCE_TAXONOMY", "BACKEND_NA_SPLIT_PACKAGE_SCOPE", "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE", "BACKEND_SOURCE_HASH_CHAIN_CLOSURE", "BACKEND_FORMATTING_GATE_SCOPE", "PERFORMANCE_IS_TWO_MULTIPLIERS", "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM", "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE", "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS"]
+sourceRefs: ["PLATFORM-BLUEPRINT.md", "doc/decisions/2026-08-10-v2s-m1-extension-submission-and-command-readback-decision.md", "doc/decisions/2026-08-12-v2s-public-invitation-resumption-state-machine.md", "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md", "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md", "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md", "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md", "doc/platform/backend-coding-standard.md", "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md", "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"]
 ---
 
 # HTTP CRUD efficiency design redlines
@@ -28,6 +28,44 @@ is operation-specific, not a global performance threshold.
   the exact terminal readback. This applies only to persisted command readbacks; opaque credentials,
   audit payloads, and already-canonical Jackson receipts are counterexamples. Source:
   `doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md`, N-f.
+
+- `PERFORMANCE_IS_TWO_MULTIPLIERS`: backend request latency is `round-trip count × per-round-trip
+  cost`, and an optimization round that touches only one factor produces no user-visible gain. The
+  2026-08-22 measurement proved it: the same `saveOperationsCatalogItem` code took 102 DB operations
+  and 50.8ms with the database co-located (4.1ms of it in the database, 8% of the request), and 128
+  operations and 5608ms through the DEV SSH tunnel (5473ms in the database, 98% of the request) —
+  a 663–1074× amplification **per database operation**. Before proposing any repair, state which
+  factor it moves and by how much. Counterexample: a co-located deployment where per-operation cost
+  is already sub-millisecond makes round-trip count the only remaining factor. Source:
+  `doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md`, §1.
+
+- `MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM`: never compare two numbers until their basis is
+  read from the report header. Four confirmed traps: the seed report's third numeric column is
+  **database duration**, not server duration; `connectionBorrowCount` is a separate cost from
+  statement count and a read path can borrow one connection per statement; an unclassified-statement
+  ratio computed over all database operations can be diluted by CONNECTION/TRANSACTION entries, so
+  it must be computed over SQL executions only; raw `TRANSACTION` counts BEGIN and COMMIT as two
+  entries, so transaction count must be derived from `SET_AUTO_COMMIT(false)` rather than halving.
+  Source: `doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md`, §0.
+
+- `BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE`: a database-operation budget is set from the repaired
+  implementation, never from the current state. Take the maximum integer count across three runs of
+  one fixed fixture, and require it to be at or below the class threshold; a value above the
+  threshold means the repair is incomplete and must not be resolved by raising the budget. Budgets
+  move down freely and up only with an explicit Dexter decisionRef plus a red fixture proving an
+  undecided raise fails. Non-determinism across the three runs is fixed at the fixture, never by
+  adding random headroom. Source:
+  `doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md`, CP-02/CP-05.
+
+- `OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS`: an efficiency round is not closed without
+  same-workload before/after numbers in the closure document. Two prior rounds (2026-08-08 refactor,
+  2026-08-09 phase3/phase4 rebaseline) produced no measurable improvement and their closure carried
+  no comparison figures, so the loss was invisible: writes stayed at 26–44 operations, a read that
+  had been ruled to cost 7–10 statements grew to 59, and one list endpoint went from 13 to 26.75
+  across two seeds while three feature batches each added queries back. Closure must report avg and
+  p95, database operation count, and per-operation database duration for the same workload, and a
+  regression gate must exist before the round is declared done. Source:
+  `doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md`, §4.
 
 - `INDEX_RETIREMENT_NEEDS_PREDICATE_AND_PREFIX_PROOF`: an index is not dead because its name is
   absent from a grep or because a narrow acceptance workload did not touch its table. Before a

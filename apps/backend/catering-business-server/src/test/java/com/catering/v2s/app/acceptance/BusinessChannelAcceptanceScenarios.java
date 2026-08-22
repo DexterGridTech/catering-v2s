@@ -51,6 +51,9 @@ final class BusinessChannelAcceptanceScenarios {
     private static final RouteIdentity CHANNEL_CREATE = new RouteIdentity(
             "createOperationsBusinessChannel",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels");
+    private static final RouteIdentity CHANNEL_UPDATE = new RouteIdentity(
+            "updateOperationsBusinessChannel",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}");
     private static final RouteIdentity CHANNEL_DETAIL = new RouteIdentity(
             "getOperationsBusinessChannelDetail",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}");
@@ -62,6 +65,107 @@ final class BusinessChannelAcceptanceScenarios {
 
     BusinessChannelAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
+    }
+
+    /** CP-05 calibration bridge: creates a real externally-bound store channel for owner update/delete probes. */
+    JsonNode calibrationCreateExternalBinding(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session,
+            String providerCode)
+            throws Exception {
+        OperationsFixture operations = new OperationsFixture(fixture, session);
+        enableProvider(context, fixture, providerCode);
+        return createExternalStoreBinding(
+                        context,
+                        operations,
+                        operations,
+                        providerCode,
+                        "GROUP_BUY",
+                        "calibration-owner-" + UUID.randomUUID(),
+                        "Calibration external binding")
+                .json();
+    }
+
+    /** CP-05 calibration bridge: exercises the operations binding update and delete owners on a real binding. */
+    void calibrationUpdateAndDeleteExternalBinding(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session,
+            String providerCode,
+            Set<Integer> expectedStatuses)
+            throws Exception {
+        OperationsFixture operations = new OperationsFixture(fixture, session);
+        enableProvider(context, fixture, providerCode);
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(fixture, Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOperations =
+                new OperationsFixture(projectFixture, host.login(context, projectFixture));
+        BackendAcceptanceTest.Response template = createTemplate(
+                context,
+                projectOperations,
+                "Calibration binding update template",
+                "EXTERNAL",
+                "STORE",
+                "GROUP_BUY",
+                providerCode,
+                null);
+        BackendAcceptanceTest.Response channel = createChannel(
+                context,
+                operations,
+                template.json().path("templateRef").asText(),
+                "STORE",
+                fixture.storeId(),
+                "Calibration binding update channel");
+        UUID channelRef = UUID.fromString(channel.json().path("channelRef").asText());
+        Map<String, Object> channelUpdate = new LinkedHashMap<>();
+        channelUpdate.put("channelName", "Calibration binding update channel renamed");
+        channelUpdate.put("bindingRef", null);
+        channelUpdate.put("expectedVersion", channel.json().path("version").asLong());
+        context.patch(
+                CHANNEL_UPDATE,
+                channelPath(fixture, channelRef),
+                session.cookie(),
+                channelUpdate,
+                headers(),
+                expectedStatuses);
+        BackendAcceptanceTest.Response binding = createBinding(
+                context,
+                operations,
+                channelRef,
+                providerCode,
+                "GROUP_BUY",
+                "STORE",
+                fixture.storeId(),
+                "Calibration binding",
+                "calibration-binding-" + UUID.randomUUID());
+        BackendAcceptanceTest.RouteIdentity update = new BackendAcceptanceTest.RouteIdentity(
+                "updateOperationsOwnerBinding",
+                "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
+        BackendAcceptanceTest.RouteIdentity delete = new BackendAcceptanceTest.RouteIdentity(
+                "deleteOperationsOwnerBinding",
+                "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding");
+        BackendAcceptanceTest.Response updated = context.patch(
+                update,
+                channelPath(fixture, channelRef) + "/owner-binding",
+                session.cookie(),
+                Map.of(
+                        "bindingDisplayName", "Calibration binding updated",
+                        "externalOwnerId", "calibration-binding-updated",
+                        "expectedVersion", binding.json().path("version").asLong()),
+                headers(),
+                expectedStatuses);
+        context.delete(
+                delete,
+                channelPath(fixture, channelRef) + "/owner-binding",
+                session.cookie(),
+                Map.of(
+                        "bindingDisplayName",
+                        "Calibration binding deleted",
+                        "expectedVersion",
+                        updated.json().path("version").asLong()),
+                expectedStatuses);
     }
 
     @AcceptanceScenario(

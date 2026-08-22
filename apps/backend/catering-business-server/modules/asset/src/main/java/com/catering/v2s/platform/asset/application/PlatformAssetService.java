@@ -8,7 +8,6 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -77,12 +76,14 @@ public class PlatformAssetService
      * the workspace command before the object becomes public.
      */
     public StageReadback stageContent(String usage, String contentType, long declaredSizeBytes, InputStream content) {
-        return stageContent(usage, contentType, declaredSizeBytes, content, null);
+        return stageContentResult(usage, contentType, declaredSizeBytes, content, null, null, null)
+                .stage();
     }
 
     public StageReadback stageContent(
             String usage, String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey) {
-        return stageContent(usage, contentType, declaredSizeBytes, content, idempotencyKey, null, null);
+        return stageContentResult(usage, contentType, declaredSizeBytes, content, idempotencyKey, null, null)
+                .stage();
     }
 
     /** Catalog staging rechecks the target-scope grant before its asset receipt can replay. */
@@ -97,14 +98,15 @@ public class PlatformAssetService
             String idempotencyKey,
             OperationsOwnerScopeGrant ownerScopeGrant) {
         requireCatalogOwnerScopeGrant(workspaceUuid, groupWorkspaceKey, dataNodeRef, dataNodeType, ownerScopeGrant);
-        return stageContent(
-                "CATALOG_ITEM_IMAGE",
-                contentType,
-                declaredSizeBytes,
-                content,
-                idempotencyKey,
-                workspaceUuid,
-                groupWorkspaceKey);
+        return stageContentResult(
+                        "CATALOG_ITEM_IMAGE",
+                        contentType,
+                        declaredSizeBytes,
+                        content,
+                        idempotencyKey,
+                        workspaceUuid,
+                        groupWorkspaceKey)
+                .stage();
     }
 
     /**
@@ -118,14 +120,15 @@ public class PlatformAssetService
             InputStream content,
             String idempotencyKey) {
         requireCatalogContext(context, "asset", "stageOperationsCatalogAsset");
-        return stageContent(
-                "CATALOG_ITEM_IMAGE",
-                contentType,
-                declaredSizeBytes,
-                content,
-                idempotencyKey,
-                context.workspaceUuid(),
-                context.groupWorkspaceKey());
+        return stageContentResult(
+                        "CATALOG_ITEM_IMAGE",
+                        contentType,
+                        declaredSizeBytes,
+                        content,
+                        idempotencyKey,
+                        context.workspaceUuid(),
+                        context.groupWorkspaceKey())
+                .stage();
     }
 
     /** The only catalog multipart entry validates the declared digest owner-side without byte-array transport. */
@@ -140,7 +143,7 @@ public class PlatformAssetService
                 || !command.contentDigest().matches("[a-f0-9]{64}")) {
             throw new AssetInputInvalidException();
         }
-        StageReadback staged = stageContent(
+        StageResult staged = stageContentResult(
                 "CATALOG_ITEM_IMAGE",
                 command.mediaType(),
                 command.contentLength(),
@@ -149,17 +152,16 @@ public class PlatformAssetService
                 context.workspaceUuid(),
                 context.groupWorkspaceKey(),
                 command.contentDigest());
-        AssetReadback asset = require(staged.assetRef());
         return new CatalogAssetCommandApi.StageReadback(
-                staged.assetRef(),
-                staged.bindGrant(),
-                asset.status(),
-                staged.contentType(),
-                staged.sha256(),
-                asset.version());
+                staged.stage().assetRef(),
+                staged.stage().bindGrant(),
+                staged.asset().status(),
+                staged.stage().contentType(),
+                staged.stage().sha256(),
+                staged.asset().version());
     }
 
-    private StageReadback stageContent(
+    private StageResult stageContentResult(
             String usage,
             String contentType,
             long declaredSizeBytes,
@@ -167,11 +169,11 @@ public class PlatformAssetService
             String idempotencyKey,
             UUID workspaceUuid,
             String groupWorkspaceKey) {
-        return stageContent(
+        return stageContentResult(
                 usage, contentType, declaredSizeBytes, content, idempotencyKey, workspaceUuid, groupWorkspaceKey, null);
     }
 
-    private StageReadback stageContent(
+    private StageResult stageContentResult(
             String usage,
             String contentType,
             long declaredSizeBytes,
@@ -244,7 +246,7 @@ public class PlatformAssetService
         }
     }
 
-    private StageReadback writeStagedContent(
+    private StageResult writeStagedContent(
             String usage,
             String contentType,
             String idempotencyKey,
@@ -259,8 +261,7 @@ public class PlatformAssetService
             String grant,
             long now,
             long expires) {
-        try (var ignored = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             if (idempotencyKey != null) {
                 lockReceipt(receiptScope, idempotencyKey);
                 Replay replay = findReceipt(receiptScope, idempotencyKey);
@@ -289,13 +290,16 @@ public class PlatformAssetService
                         String renewed = secret();
                         long replayExpires = time.currentEpochMillis() + 15 * 60 * 1000L;
                         issueBindGrant(replay.assetRef(), renewed, replayExpires);
-                        return new StageReadback(
+                        return stageResult(
+                                usage,
                                 replay.assetRef(),
                                 renewed,
                                 replayExpires,
                                 replay.contentType(),
                                 replay.sizeBytes(),
-                                replay.sha256());
+                                replay.sha256(),
+                                replay.status(),
+                                replay.version());
                     }
                 }
             }
@@ -346,8 +350,16 @@ public class PlatformAssetService
                         materialized.sizeBytes(),
                         digest,
                         now);
-                return new StageReadback(
-                        existing.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
+                return stageResult(
+                        usage,
+                        existing.assetRef(),
+                        grant,
+                        expires,
+                        contentType,
+                        materialized.sizeBytes(),
+                        digest,
+                        existing.status(),
+                        existing.version());
             }
             try {
                 jdbc.update(
@@ -394,8 +406,16 @@ public class PlatformAssetService
                         materialized.sizeBytes(),
                         digest,
                         now);
-                return new StageReadback(
-                        winner.assetRef(), grant, expires, contentType, materialized.sizeBytes(), digest);
+                return stageResult(
+                        usage,
+                        winner.assetRef(),
+                        grant,
+                        expires,
+                        contentType,
+                        materialized.sizeBytes(),
+                        digest,
+                        winner.status(),
+                        winner.version());
             }
             issueBindGrant(assetRef, grant, expires);
             recordStageReceipt(
@@ -407,7 +427,8 @@ public class PlatformAssetService
                     materialized.sizeBytes(),
                     digest,
                     now);
-            return new StageReadback(assetRef, grant, expires, contentType, materialized.sizeBytes(), digest);
+            return stageResult(
+                    usage, assetRef, grant, expires, contentType, materialized.sizeBytes(), digest, "STAGED", 1L);
         }
     }
 
@@ -593,8 +614,7 @@ public class PlatformAssetService
                 throw new AssetIdempotencyConflictException();
             return require(assetRef);
         }
-        try (var command = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var command = OwnerOperationDiagnostics.beginCommand()) {
             AssetReadback released = releaseCatalogStaged(assetRef, expectedVersion, workspaceUuid, groupWorkspaceKey);
             recordReleaseReceipt(receiptScope, idempotencyKey, assetRef, requestHash, released);
             return released;
@@ -736,8 +756,7 @@ public class PlatformAssetService
             return requireCatalogAssetInWorkspace(assetRef, workspaceUuid);
         }
         AssetReadback current = requireCatalogAssetInWorkspace(assetRef, workspaceUuid);
-        try (var command = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var command = OwnerOperationDiagnostics.beginCommand()) {
             int changed = jdbc.update(
                     "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
                             + "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' "
@@ -767,8 +786,7 @@ public class PlatformAssetService
                 throw new AssetIdempotencyConflictException();
             return requireCatalogAssetInWorkspace(assetRef, workspaceUuid);
         }
-        try (var command = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var command = OwnerOperationDiagnostics.beginCommand()) {
             int changed = jdbc.update(
                     "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
                             + "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' "
@@ -1112,7 +1130,8 @@ public class PlatformAssetService
 
     private ExistingAsset findCatalogByStorageKey(UUID workspaceUuid, String objectKey) {
         return jdbc.query(
-                "SELECT asset_ref, usage, status, content_type, size_bytes, sha256 FROM platform_asset.staged_asset "
+                "SELECT asset_ref, usage, status, version, content_type, size_bytes, sha256 "
+                        + "FROM platform_asset.staged_asset "
                         + "WHERE workspace_uuid=? AND storage_key=? AND usage='CATALOG_ITEM_IMAGE'",
                 statement -> {
                     statement.setObject(1, workspaceUuid);
@@ -1123,6 +1142,7 @@ public class PlatformAssetService
                                 result.getObject("asset_ref", UUID.class),
                                 result.getString("usage"),
                                 result.getString("status"),
+                                result.getLong("version"),
                                 result.getString("content_type"),
                                 result.getLong("size_bytes"),
                                 result.getString("sha256"))
@@ -1164,6 +1184,7 @@ public class PlatformAssetService
                     released.assetRef(),
                     released.usage(),
                     "STAGED",
+                    released.version() + 1L,
                     released.contentType(),
                     released.sizeBytes(),
                     released.sha256());
@@ -1187,6 +1208,21 @@ public class PlatformAssetService
                 assetRef,
                 sha256(grant.getBytes(StandardCharsets.UTF_8)),
                 expiresAt);
+    }
+
+    private static StageResult stageResult(
+            String usage,
+            UUID assetRef,
+            String bindGrant,
+            long expiresAt,
+            String contentType,
+            long sizeBytes,
+            String sha256,
+            String status,
+            long version) {
+        return new StageResult(
+                new StageReadback(assetRef, bindGrant, expiresAt, contentType, sizeBytes, sha256),
+                new AssetReadback(assetRef, usage, status, version, sizeBytes));
     }
 
     private static void requireCatalogOwnerScopeGrant(
@@ -1241,7 +1277,8 @@ public class PlatformAssetService
 
     private Replay findReceipt(String receiptScope, String idempotencyKey) {
         return jdbc.query(
-                "SELECT receipt.request_hash, asset.asset_ref, asset.status, asset.content_type, asset.size_bytes, "
+                "SELECT receipt.request_hash, asset.asset_ref, asset.status, asset.version, asset.content_type, "
+                        + "asset.size_bytes, "
                         + "asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN "
                         + "platform_asset.staged_asset "
                         + "asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? AND "
@@ -1255,9 +1292,10 @@ public class PlatformAssetService
                                 result.getString(1),
                                 result.getObject(2, UUID.class),
                                 result.getString(3),
-                                result.getString(4),
-                                result.getLong(5),
-                                result.getString(6))
+                                result.getLong(4),
+                                result.getString(5),
+                                result.getLong(6),
+                                result.getString(7))
                         : null);
     }
 
@@ -1354,6 +1392,8 @@ public class PlatformAssetService
     public record StageReadback(
             UUID assetRef, String bindGrant, long expiresAt, String contentType, long sizeBytes, String sha256) {}
 
+    private record StageResult(StageReadback stage, AssetReadback asset) {}
+
     public record PublicAssetReference(String publicUrl, String contentType, String sha256) {}
 
     private record ActiveAsset(String objectKey, String contentType, String sha256) {}
@@ -1361,10 +1401,22 @@ public class PlatformAssetService
     private record MaterializedContent(Path path, long sizeBytes, String sha256) {}
 
     private record ExistingAsset(
-            UUID assetRef, String usage, String status, String contentType, long sizeBytes, String sha256) {}
+            UUID assetRef,
+            String usage,
+            String status,
+            long version,
+            String contentType,
+            long sizeBytes,
+            String sha256) {}
 
     private record Replay(
-            String requestHash, UUID assetRef, String status, String contentType, long sizeBytes, String sha256) {}
+            String requestHash,
+            UUID assetRef,
+            String status,
+            long version,
+            String contentType,
+            long sizeBytes,
+            String sha256) {}
 
     public static final class AssetInputInvalidException extends RuntimeException {}
 

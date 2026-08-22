@@ -49,6 +49,12 @@ public final class BusinessChannelReadback {
         }
     }
 
+    /**
+     * The operations binding edge needs the channel and its template provider as one owner projection. Keeping the
+     * provider in this typed readback prevents the edge from issuing a second template read for the same channel.
+     */
+    public record ChannelWithTemplateProvider(Channel channel, String providerCode) {}
+
     /** Bounded management read or cursor-backed candidate page, depending on the owning API method. */
     public record TemplatePage(List<Template> items, String nextCursor, long total) {
         public TemplatePage {

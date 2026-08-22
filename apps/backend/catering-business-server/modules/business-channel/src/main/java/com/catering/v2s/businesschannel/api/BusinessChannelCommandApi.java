@@ -1,6 +1,7 @@
 package com.catering.v2s.businesschannel.api;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import java.util.Objects;
 import java.util.UUID;
@@ -123,7 +124,35 @@ public interface BusinessChannelCommandApi {
             long contextVersion,
             String idempotencyKey,
             AuditActor actor,
-            OperationsOwnerScopeGrant ownerScopeGrant) {
+            OperationsOwnerScopeGrant ownerScopeGrant,
+            CollaborationReadback.OwnerBinding bindingReadback,
+            BusinessChannelReadback.Channel initialChannelReadback) {
+        public UpdateChannelCommand(
+                UUID workspaceUuid,
+                String groupWorkspaceKey,
+                UUID channelRef,
+                String channelName,
+                UUID bindingRef,
+                long expectedVersion,
+                long contextVersion,
+                String idempotencyKey,
+                AuditActor actor,
+                OperationsOwnerScopeGrant ownerScopeGrant) {
+            this(
+                    workspaceUuid,
+                    groupWorkspaceKey,
+                    channelRef,
+                    channelName,
+                    bindingRef,
+                    expectedVersion,
+                    contextVersion,
+                    idempotencyKey,
+                    actor,
+                    ownerScopeGrant,
+                    null,
+                    null);
+        }
+
         public UpdateChannelCommand {
             actor = Objects.requireNonNull(actor, "actor");
             ownerScopeGrant = Objects.requireNonNull(ownerScopeGrant, "ownerScopeGrant");

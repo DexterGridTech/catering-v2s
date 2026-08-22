@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.parallel.Execution;
@@ -389,6 +390,25 @@ class BackendAcceptanceTest {
                         definition.annotation().id() + " ["
                                 + definition.annotation().module() + "]",
                         () -> executeScenario(definition)));
+    }
+
+    /**
+     * Runs only when the managed CP-09 proof is explicitly requested. It is deliberately not an
+     * {@link AcceptanceScenario}: connection-scope probes must not change the product-business scenario denominator or
+     * be reported as a substitute for those scenarios.
+     */
+    @Test
+    @EnabledIfEnvironmentVariable(named = "V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF", matches = "true")
+    void p2ReadConnectionScopeProof() throws Exception {
+        requireRemoteExecution();
+        P2ReadConnectionScopeScenarios.run(this, new ScenarioContext(null));
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE", matches = "true")
+    void backendPerformanceOperationCoverage() throws Exception {
+        requireRemoteExecution();
+        BackendPerformanceOperationCoverage.run(this, new ScenarioContext(null));
     }
 
     private void executeScenario(ScenarioDefinition definition) throws Throwable {
@@ -1255,6 +1275,24 @@ class BackendAcceptanceTest {
                     expected);
         }
 
+        Response multipartPlatformAsset(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                String usage,
+                String fileName,
+                String mediaType,
+                byte[] bytes,
+                Set<Integer> expected)
+                throws Exception {
+            String boundary = "----backend-acceptance-" + UUID.randomUUID();
+            ByteArrayOutputStream content = new ByteArrayOutputStream();
+            writeTextPart(content, boundary, "usage", usage);
+            writePart(content, boundary, "file", fileName, mediaType, bytes);
+            content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            return send(route, "POST", path, cookie, content.toByteArray(), boundary, expected);
+        }
+
         private Response send(
                 RouteIdentity route,
                 String method,
@@ -1451,6 +1489,15 @@ class BackendAcceptanceTest {
                 .getBytes(StandardCharsets.UTF_8));
         output.write(("Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
         output.write(value);
+        output.write("\r\n".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void writeTextPart(ByteArrayOutputStream output, String boundary, String name, String value)
+            throws Exception {
+        output.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+        output.write(("Content-Disposition: form-data; name=\"" + name + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+        output.write("Content-Type: text/plain; charset=UTF-8\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+        output.write(value.getBytes(StandardCharsets.UTF_8));
         output.write("\r\n".getBytes(StandardCharsets.UTF_8));
     }
 

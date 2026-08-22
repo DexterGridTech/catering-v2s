@@ -27,18 +27,21 @@ public final class ContractCommandReceiptService {
         if (workspaceUuid == null || key == null || key.length() < 16 || key.length() > 128)
             throw new ContractCommandService.ContractValidationException();
         String hash = hash(canonicalRequest);
-        jdbc.queryForList(
-                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))",
-                workspaceUuid.toString(),
-                key);
         Receipt prior = jdbc.query(
-                "SELECT request_hash, response_json::text FROM contract.contract_command_receipt WHERE "
-                        + "workspace_uuid=? AND idempotency_key=?",
+                "SELECT receipt.request_hash, receipt.response_json::text FROM (SELECT "
+                        + "pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))) advisory "
+                        + "LEFT JOIN contract.contract_command_receipt receipt ON receipt.workspace_uuid=? "
+                        + "AND receipt.idempotency_key=?",
                 statement -> {
-                    statement.setObject(1, workspaceUuid);
+                    statement.setString(1, workspaceUuid.toString());
                     statement.setString(2, key);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
                 },
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+                result -> {
+                    if (!result.next() || result.getString(1) == null) return null;
+                    return new Receipt(result.getString(1), result.getString(2));
+                });
         if (prior != null) {
             if (!hash.equals(prior.hash())) throw new ContractIdempotencyConflictException();
             return read(prior.json());

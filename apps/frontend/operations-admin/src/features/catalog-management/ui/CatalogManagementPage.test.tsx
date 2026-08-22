@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {renderToStaticMarkup} from 'react-dom/server';
 import type {
   CatalogDictionaryView,
   CatalogInventoryEnvelope,
@@ -10,7 +11,6 @@ import {requireOperationsScopeRef} from '../../../app/routing/model';
 import {CATALOG_TAB_LABELS, catalogTabLabel} from '../model/catalogTabLabels';
 import {copyScopeTabKey} from './LocalCatalogCopyDrawer';
 import {
-  alignCatalogBatchResults,
   buildCatalogBatchSaveRequest,
   buildCatalogBatchStatusRequest,
   buildCatalogItemsQuery,
@@ -40,9 +40,11 @@ import {
   shapeHasVisibleTab,
   shortNameMatchesKeyword,
   shouldHydrateCatalogItemDraft,
+  type CatalogBatchResult,
   type CatalogNavigation,
   type CopyPreflight,
 } from '../model/catalogModel';
+import {CatalogBatchOutcome} from './CatalogBatchOutcome';
 
 const testUuid = (value: string) => value as unknown as Uuid;
 const skuUnitDefaults = {
@@ -51,6 +53,15 @@ const skuUnitDefaults = {
   salesUnit: null,
   baseMeasureUnit: null,
 };
+
+const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): CatalogBatchResult => ({
+  itemRef: testUuid(`item-${index}`),
+  itemCode: `ITEM-${index}`,
+  outcome,
+  problemCode: outcome === 'FAILED' ? 'VERSION_CONFLICT' : null,
+  reason: outcome === 'FAILED' ? '商品版本已变化' : null,
+  version: outcome === 'SUCCEEDED' ? index + 1 : null,
+});
 
 describe('catalog management runtime model contracts', () => {
   it('keeps the nine tab labels in one frontend source and uses the decided reference label', () => {
@@ -780,40 +791,156 @@ describe('catalog management runtime model contracts', () => {
     expect(request.sections.catalogDraft).not.toHaveProperty('categoryRef');
   });
 
-  it('keeps batch status versions and request order separate from response order', () => {
+  it('strictly decodes ordered batch outcomes with the owner item code and reason', () => {
     const rows = [
-      {itemRef: testUuid('item-a'), code: 'A', version: 4},
-      {itemRef: testUuid('item-b'), code: 'B', version: 9},
+      {itemRef: testUuid('00000000-0000-4000-8000-000000000001'), code: 'A', version: 4},
+      {itemRef: testUuid('00000000-0000-4000-8000-000000000002'), code: 'B', version: 9},
     ];
     expect(buildCatalogBatchStatusRequest(testUuid('node-1'), 'ARCHIVED', rows)).toEqual({
       dataNodeRef: 'node-1',
       targetStatus: 'ARCHIVED',
       items: [
-        {itemRef: 'item-a', expectedVersion: 4},
-        {itemRef: 'item-b', expectedVersion: 9},
+        {itemRef: '00000000-0000-4000-8000-000000000001', expectedVersion: 4},
+        {itemRef: '00000000-0000-4000-8000-000000000002', expectedVersion: 9},
       ],
     });
-    const results = decodeCatalogBatchResults({
-      revision: 'r',
-      requestId: 'q',
-      results: [
-        {itemRef: 'item-b', ok: false, failureCode: 'VERSION_CONFLICT', version: 10},
-        {itemRef: 'item-a', ok: true, failureCode: null, version: 5},
-      ],
-    } as never);
-    expect(alignCatalogBatchResults(rows, results)).toEqual([
-      {itemRef: 'item-a', code: 'A', ok: true, failureCode: null, version: 5},
-      {itemRef: 'item-b', code: 'B', ok: false, failureCode: 'VERSION_CONFLICT', version: 10},
+    const results = decodeCatalogBatchResults(
+      {
+        revision: 'r',
+        requestId: 'q',
+        results: [
+          {
+            itemRef: '00000000-0000-4000-8000-000000000001',
+            itemCode: 'A',
+            outcome: 'SUCCEEDED',
+            problemCode: null,
+            reason: null,
+            version: 5,
+          },
+          {
+            itemRef: '00000000-0000-4000-8000-000000000002',
+            itemCode: 'B',
+            outcome: 'FAILED',
+            problemCode: 'VERSION_CONFLICT',
+            reason: '商品版本已变化',
+            version: null,
+          },
+        ],
+      } as never,
+      rows.map(row => row.itemRef),
+    );
+    expect(results).toEqual([
+      {
+        itemRef: rows[0].itemRef,
+        itemCode: 'A',
+        outcome: 'SUCCEEDED',
+        problemCode: null,
+        reason: null,
+        version: 5,
+      },
+      {
+        itemRef: rows[1].itemRef,
+        itemCode: 'B',
+        outcome: 'FAILED',
+        problemCode: 'VERSION_CONFLICT',
+        reason: '商品版本已变化',
+        version: null,
+      },
     ]);
   });
 
-  it('fails closed when a batch response moves results below the root', () => {
-    const rows = [{itemRef: testUuid('item-a'), code: 'A', version: 4}];
-    const nested = decodeCatalogBatchResults({data: {results: [{itemRef: testUuid('item-a'), ok: true}]}} as never);
-    expect(nested).toEqual([]);
-    expect(alignCatalogBatchResults(rows, nested)).toEqual([
-      {itemRef: 'item-a', code: 'A', ok: false, failureCode: 'RESULT_UNKNOWN', version: undefined},
-    ]);
+  it('fails closed when the owner response is nested or reordered', () => {
+    const refs = [testUuid('00000000-0000-4000-8000-000000000001'), testUuid('00000000-0000-4000-8000-000000000002')];
+    expect(() => decodeCatalogBatchResults({data: {results: []}} as never, refs)).toThrow(
+      'CATALOG_BATCH_RESULT_PROTOCOL_INVALID',
+    );
+    expect(() =>
+      decodeCatalogBatchResults(
+        {
+          revision: 'r',
+          requestId: 'q',
+          results: [
+            {
+              itemRef: refs[1],
+              itemCode: 'B',
+              outcome: 'FAILED',
+              problemCode: 'VERSION_CONFLICT',
+              reason: 'stale',
+              version: null,
+            },
+            {itemRef: refs[0], itemCode: 'A', outcome: 'SUCCEEDED', problemCode: null, reason: null, version: 5},
+          ],
+        } as never,
+        refs,
+      ),
+    ).toThrow('CATALOG_BATCH_RESULT_PROTOCOL_INVALID');
+  });
+
+  it('renders the approved full-success result layer and close affordance', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogBatchOutcome results={[batchRow(1, 'SUCCEEDED'), batchRow(2, 'SUCCEEDED')]} onClose={() => undefined} />,
+    );
+    expect(markup).toContain('批量操作完成');
+    expect(markup).toContain('成功 2 项，失败 0 项');
+    expect(markup).toContain('data-testid="catalog-batch-outcome-summary"');
+    expect(markup).toContain('data-testid="catalog-batch-outcome-close"');
+    expect(markup).not.toContain('catalog-batch-outcome-failures');
+  });
+
+  it('renders partial failures with the approved heading and table columns', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogBatchOutcome results={[batchRow(1, 'SUCCEEDED'), batchRow(2, 'FAILED')]} onClose={() => undefined} />,
+    );
+    expect(markup).toContain('成功 1 项，失败 1 项');
+    expect(markup).toContain('以下 1 个商品未处理成功');
+    expect(markup).toContain('商品编码');
+    expect(markup).toContain('失败原因');
+    expect(markup).toContain('data-testid="catalog-batch-outcome-failures"');
+  });
+
+  it('keeps the 100-item failure result inside the bounded scroll container', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogBatchOutcome
+        results={Array.from({length: 100}, (_, index) => batchRow(index + 1, 'FAILED'))}
+        onClose={() => undefined}
+      />,
+    );
+    expect(markup).toContain('max-height:50vh');
+    expect(markup).toContain('overflow-y:auto');
+    expect(markup).toContain('以下 100 个商品未处理成功');
+  });
+
+  it('does not fabricate a result layer for an empty or protocol-invalid receipt', () => {
+    expect(renderToStaticMarkup(<CatalogBatchOutcome results={[]} onClose={() => undefined} />)).toBe('');
+  });
+
+  it('keeps a list refresh failure visible without changing the authoritative receipt', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogBatchOutcome
+        results={[batchRow(1, 'SUCCEEDED')]}
+        refreshProblem="列表刷新失败，请手动刷新"
+        onClose={() => undefined}
+      />,
+    );
+    expect(markup).toContain('批量操作完成');
+    expect(markup).toContain('列表刷新失败，请手动刷新');
+    expect(markup).toContain('成功 1 项，失败 0 项');
+  });
+
+  it('does not expose itemRef, problemCode, version, or raw exception as user fields', () => {
+    const result: CatalogBatchResult = {
+      ...batchRow(1, 'FAILED'),
+      itemRef: testUuid('hidden-item-ref'),
+      problemCode: 'INTERNAL_PROBLEM_CODE',
+      version: 42,
+      reason: '已脱敏的业务失败原因',
+    };
+    const markup = renderToStaticMarkup(<CatalogBatchOutcome results={[result]} onClose={() => undefined} />);
+    expect(markup).toContain('已脱敏的业务失败原因');
+    expect(markup).not.toContain('hidden-item-ref');
+    expect(markup).not.toContain('INTERNAL_PROBLEM_CODE');
+    expect(markup).not.toContain('>42<');
+    expect(markup).not.toContain('raw exception');
   });
 
   it('keeps brand-copy reference readbacks label-only after decoding', () => {

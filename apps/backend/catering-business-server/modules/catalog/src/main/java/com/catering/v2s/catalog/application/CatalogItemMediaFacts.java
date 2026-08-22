@@ -51,13 +51,12 @@ final class CatalogItemMediaFacts {
         List<UUID> assets = normalize(submitted, "images");
         validateCount(assets.size(), "images");
         jdbc.update("DELETE FROM catalog.catalog_item_image WHERE item_ref=?", itemRef);
-        for (int order = 0; order < assets.size(); order++) {
-            jdbc.update(
+        if (!assets.isEmpty())
+            jdbc.batchUpdate(
                     "INSERT INTO catalog.catalog_item_image(item_ref,asset_ref,display_order) VALUES(?,?,?)",
-                    itemRef,
-                    assets.get(order),
-                    order);
-        }
+                    assets.stream()
+                            .map(assetRef -> new Object[] {itemRef, assetRef, assets.indexOf(assetRef)})
+                            .toList());
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */

@@ -19,6 +19,7 @@ import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
@@ -119,7 +120,8 @@ public final class OperationsStoreManagementController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OrganizationStoreCreateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
-        UUID projectId = user.resolveSelectedProjectScope(session, null).targetId();
+        OrganizationTaskPathLookup.TaskPath projectPath = user.resolveSelectedProjectScope(session, null);
+        UUID projectId = projectPath.targetId();
         var result = m1Bindings.bindCreateOperationsOrganizationStore(new OperationsStoreCommandApi.CreateStoreCommand(
                 session.workspaceUuid(),
                 groupWorkspaceKey,
@@ -133,7 +135,7 @@ public final class OperationsStoreManagementController {
                 createSubmission(body.extensionValues()),
                 idempotencyKey,
                 actor(session),
-                requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", projectId)));
+                requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", projectPath)));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(StoreWireMapper.store(
                         result.store(), result.organizationDetail(), result.contractDerivedStatus()));
@@ -214,19 +216,18 @@ public final class OperationsStoreManagementController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OrganizationStoreUpdateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
-        UUID projectId = user.resolveSelectedProjectScope(
-                        session, entities.requireStoreProjectId(session.workspaceUuid(), groupWorkspaceKey, storeId))
-                .targetId();
-        var grant = requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_STORE", projectId);
-        OrganizationOverviewTaskReadService.Item current =
-                overview.detail(session.workspaceUuid(), groupWorkspaceKey, ServiceNodeTypes.STORE, storeId);
+        OrganizationTaskPathLookup.StoreProjectCommandFacts current =
+                user.resolveSelectedProjectScopeForStore(session, storeId);
+        OrganizationTaskPathLookup.TaskPath projectPath = current.taskPath();
+        UUID projectId = projectPath.targetId();
+        var grant = requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_STORE", projectPath);
         var result = m1Bindings.bindUpdateOperationsOrganizationStore(new OperationsStoreCommandApi.UpdateStoreCommand(
                 session.workspaceUuid(),
                 groupWorkspaceKey,
                 storeId,
                 projectId,
-                current.tenant().id(),
-                current.brand().id(),
+                current.tenantId(),
+                current.brandId(),
                 nullableUuid(body.headCompanyId()),
                 current.code(),
                 body.name(),
@@ -247,9 +248,9 @@ public final class OperationsStoreManagementController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OrganizationStoreStatusRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
-        UUID projectId = user.resolveSelectedProjectScope(
-                        session, entities.requireStoreProjectId(session.workspaceUuid(), groupWorkspaceKey, storeId))
-                .targetId();
+        OrganizationTaskPathLookup.StoreProjectCommandFacts current =
+                user.resolveSelectedProjectScopeForStore(session, storeId);
+        OrganizationTaskPathLookup.TaskPath projectPath = current.taskPath();
         if (body.targetStatus() == null) throw new InvalidEdgeRequestException("target status is required");
         var result = m1Bindings.bindTransitionOperationsOrganizationStoreStatus(
                 new OperationsStoreCommandApi.StoreStatusCommand(
@@ -261,7 +262,7 @@ public final class OperationsStoreManagementController {
                         idempotencyKey,
                         actor(session),
                         requireStatusTransitionCapability(
-                                session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS", projectId)));
+                                session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS", projectPath)));
         return StoreWireMapper.store(result.store(), result.organizationDetail(), result.contractDerivedStatus());
     }
 
@@ -296,22 +297,26 @@ public final class OperationsStoreManagementController {
     }
 
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(
-            WorkspaceSessionReadback session, String requirementId, UUID projectId) {
-        var resolution = capabilityScopes.resolve(
+            WorkspaceSessionReadback session, String requirementId, OrganizationTaskPathLookup.TaskPath projectPath) {
+        var resolution = capabilityScopes.resolveUsingResolvedTaskPath(
                 session,
                 requirementId,
-                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId));
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(
+                        ServiceNodeTypes.PROJECT, projectPath.targetId()),
+                projectPath);
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW)
             throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return resolution.ownerScopeGrant(requirementId);
     }
 
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireStatusTransitionCapability(
-            WorkspaceSessionReadback session, String requirementId, UUID projectId) {
-        var resolution = capabilityScopes.resolveStatusTransition(
+            WorkspaceSessionReadback session, String requirementId, OrganizationTaskPathLookup.TaskPath projectPath) {
+        var resolution = capabilityScopes.resolveStatusTransitionUsingResolvedTaskPath(
                 session,
                 requirementId,
-                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(ServiceNodeTypes.PROJECT, projectId));
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(
+                        ServiceNodeTypes.PROJECT, projectPath.targetId()),
+                projectPath);
         if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW)
             throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
         return resolution.ownerScopeGrant(requirementId);

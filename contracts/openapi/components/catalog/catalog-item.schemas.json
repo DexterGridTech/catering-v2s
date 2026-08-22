@@ -4110,7 +4110,11 @@
             "additionalProperties": false,
             "required": [
               "itemRef",
-              "ok"
+              "itemCode",
+              "outcome",
+              "problemCode",
+              "reason",
+              "version"
             ],
             "properties": {
               "itemRef": {
@@ -4118,11 +4122,19 @@
                 "format": "uuid",
                 "description": "catalog item opaque reference"
               },
-              "ok": {
-                "type": "boolean",
+              "itemCode": {
+                "type": "string",
+                "description": "authoritative catalog item business code"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "SUCCEEDED",
+                  "FAILED"
+                ],
                 "description": "whether this item reached the requested status"
               },
-              "failureCode": {
+              "problemCode": {
                 "type": [
                   "string",
                   "null"
@@ -4167,6 +4179,13 @@
                   null
                 ],
                 "description": "typed per-item failure code; null for success"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "owner-sanitized per-item reason; null for success"
               },
               "version": {
                 "type": [

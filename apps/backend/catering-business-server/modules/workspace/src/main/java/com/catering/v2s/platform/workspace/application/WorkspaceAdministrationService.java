@@ -271,11 +271,13 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         if ("REPLACE".equals(resolvedIntent))
             assets.claim(
                     targetLogo, current.workspaceUuid(), current.groupWorkspaceKey(), requiredGrant(logoBindGrant));
-        int changed = jdbc.update(
+        List<WorkspaceUpdateResult> updatedRows = jdbc.query(
                 "UPDATE platform_workspace.group_workspace SET name=?, name_normalized=?, operations_title=?, notes=?, "
                         + "logo_asset_ref=?, version=version+1, updated_at_epoch_millis=? WHERE group_workspace_key=? "
-                        + "AND "
-                        + "version=?",
+                        + "AND version=? RETURNING id, workspace_uuid, group_workspace_key, name, operations_title, "
+                        + "logo_asset_ref, notes, status, status_changed_at_epoch_millis, version, "
+                        + "created_at_epoch_millis, updated_at_epoch_millis",
+                (result, row) -> new WorkspaceUpdateResult(result.getLong("id"), map(result)),
                 name.trim(),
                 requiredName(name),
                 requiredTitle(operationsTitle, name),
@@ -284,15 +286,17 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
                 time.currentEpochMillis(),
                 requiredKey(key),
                 expectedVersion);
-        if (changed == 0) throw new WorkspaceVersionConflictException();
+        if (updatedRows.isEmpty()) throw new WorkspaceVersionConflictException();
+        WorkspaceUpdateResult updatedRow = updatedRows.getFirst();
         if (previousLogoAssetRef != null && !previousLogoAssetRef.equals(targetLogo))
             assets.release(previousLogoAssetRef, current.workspaceUuid());
-        WorkspaceAdministrationReadback updated = require(key);
+        WorkspaceAdministrationReadback updated = updatedRow.readback();
         audit(
                 updated,
                 "GROUP_WORKSPACE_UPDATED",
                 time.currentEpochMillis(),
                 actor,
+                updatedRow.legacyId(),
                 updateChanges(current, updated, resolvedIntent));
         return updated;
     }
@@ -357,6 +361,16 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
                 Long.class,
                 workspace.workspaceUuid(),
                 workspace.groupWorkspaceKey());
+        audit(workspace, action, occurredAt, actor, legacyId, changesJson);
+    }
+
+    private void audit(
+            WorkspaceAdministrationReadback workspace,
+            String action,
+            long occurredAt,
+            AuditActor actor,
+            long legacyId,
+            String changesJson) {
         jdbc.update(
                 "INSERT INTO platform_workspace.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
                         + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
@@ -429,6 +443,8 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     }
 
     private record PageRow(WorkspaceAdministrationReadback workspace, long total) {}
+
+    private record WorkspaceUpdateResult(long legacyId, WorkspaceAdministrationReadback readback) {}
 
     private static String orderBy(String sortKey, String sortDirection) {
         String column =

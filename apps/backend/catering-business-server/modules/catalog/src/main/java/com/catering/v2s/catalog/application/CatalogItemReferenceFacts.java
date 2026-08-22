@@ -53,8 +53,11 @@ final class CatalogItemReferenceFacts {
 
     void replace(UUID itemRef, JsonNode productionTagRefs, JsonNode tagRefs) {
         jdbc.update("DELETE FROM catalog.catalog_item_reference WHERE item_ref=?", itemRef);
-        insert(itemRef, PRODUCTION_TAG, normalize(productionTagRefs, "productionTagRefs"));
-        insert(itemRef, CATALOG_TAG, normalize(tagRefs, "tagRefs"));
+        List<Object[]> rows = new ArrayList<>();
+        addRows(rows, itemRef, PRODUCTION_TAG, normalize(productionTagRefs, "productionTagRefs"));
+        addRows(rows, itemRef, CATALOG_TAG, normalize(tagRefs, "tagRefs"));
+        if (!rows.isEmpty())
+            jdbc.batchUpdate("INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)", rows);
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */
@@ -104,12 +107,6 @@ final class CatalogItemReferenceFacts {
                         + placeholders + ")",
                 (rows, row) -> rows.getObject(1, UUID.class),
                 arguments.toArray()));
-    }
-
-    private void insert(UUID itemRef, String kind, List<UUID> refs) {
-        for (UUID ref : refs)
-            jdbc.update(
-                    "INSERT INTO catalog.catalog_item_reference(item_ref,kind,ref) VALUES(?,?,?)", itemRef, kind, ref);
     }
 
     private static void addRows(List<Object[]> rows, UUID itemRef, String kind, List<UUID> refs) {

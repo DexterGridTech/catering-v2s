@@ -6,6 +6,7 @@ import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,6 +36,20 @@ public interface CatalogOwnerApi {
 
     List<InventoryDisplayFact> readInventoryDisplayFacts(
             String dataNodeRef, String brandRef, List<UUID> orderedItemRefs);
+
+    /** Minimal catalog-owned display fact used to enrich one inventory target without hydrating a catalog item. */
+    record InventoryTargetDisplayFact(UUID itemRef, String itemName, String shapeKey, String skuName) {
+        public static InventoryTargetDisplayFact absent(UUID itemRef) {
+            return new InventoryTargetDisplayFact(itemRef, null, null, null);
+        }
+
+        public boolean present() {
+            return itemName != null;
+        }
+    }
+
+    InventoryTargetDisplayFact readInventoryTargetDisplayFact(
+            String dataNodeRef, String brandRef, UUID itemRef, UUID productSkuRef);
 
     JsonNode readItem(String dataNodeRef, String brandRef, String itemCode, String requestId);
 
@@ -252,7 +267,18 @@ public interface CatalogOwnerApi {
     record CatalogItemBatchStatusTransitionCommand(
             String targetStatus, List<CatalogItemBatchStatusTransitionItem> items) {}
 
-    record CatalogItemBatchStatusTransitionResult(UUID itemRef, boolean ok, String failureCode, Long version) {}
+    enum CatalogItemBatchStatusTransitionOutcome {
+        SUCCEEDED,
+        FAILED
+    }
+
+    record CatalogItemBatchStatusTransitionResult(
+            UUID itemRef,
+            String itemCode,
+            CatalogItemBatchStatusTransitionOutcome outcome,
+            String problemCode,
+            String reason,
+            Long version) {}
 
     record CatalogItemBatchStatusTransitionReadback(
             String revision, String requestId, List<CatalogItemBatchStatusTransitionResult> results) {}
@@ -291,7 +317,30 @@ public interface CatalogOwnerApi {
     /** Save keeps free form fields opaque until the catalog owner validates them. */
     record CatalogItemSaveCommand(String itemCode, String canonicalRequestJson) {}
 
-    record CatalogItemSaveReadback(String canonicalJson) {}
+    /** Internal post-save projection consumed by the catalog/inventory coordinator; never serialized on the wire. */
+    record CatalogItemSaveProjection(
+            UUID itemRef,
+            String itemCode,
+            String shapeKey,
+            String measureMode,
+            Map<String, String> productSkuRefs,
+            Map<String, String> optionValueRefs,
+            InventoryOwnerApi.UnitSnapshot itemBaseMeasureUnit,
+            Map<String, InventoryOwnerApi.UnitSnapshot> skuBaseMeasureUnits,
+            Set<String> previousAssetRefs) {
+        public CatalogItemSaveProjection {
+            productSkuRefs = productSkuRefs == null ? Map.of() : Map.copyOf(productSkuRefs);
+            optionValueRefs = optionValueRefs == null ? Map.of() : Map.copyOf(optionValueRefs);
+            skuBaseMeasureUnits = skuBaseMeasureUnits == null ? Map.of() : Map.copyOf(skuBaseMeasureUnits);
+            previousAssetRefs = previousAssetRefs == null ? Set.of() : Set.copyOf(previousAssetRefs);
+        }
+    }
+
+    record CatalogItemSaveReadback(String canonicalJson, CatalogItemSaveProjection projection) {
+        public CatalogItemSaveReadback(String canonicalJson) {
+            this(canonicalJson, null);
+        }
+    }
 
     record TemporaryPromotionItem(String code, String name, String shapeKey) {}
 
@@ -458,6 +507,20 @@ public interface CatalogOwnerApi {
             List<CompatibilityDisposition> compatibilityDispositions) {}
 
     record CopyPreflightReadback(String preflightDigest, String canonicalJson) {}
+
+    /**
+     * Request-local, owner-created immutable preparation. It exposes only the canonical preflight readback; the owner
+     * keeps its hydrated copy projection private and consumes this handle only in the matching execute command. It is
+     * not a cache or a serialized client token.
+     */
+    interface LocalCopyExecutionPreparation {
+        CopyPreflightReadback preflight();
+    }
+
+    /** Same typed preparation boundary for the brand-copy closure. */
+    interface BrandCopyExecutionPreparation {
+        CopyPreflightReadback preflight();
+    }
     /**
      * Owner-native copy execution contribution. This deliberately carries named business facts rather than a serialized
      * response: a coordinator must never decode an owner receipt after the owner has written.
@@ -490,10 +553,19 @@ public interface CatalogOwnerApi {
     CopyPreflightReadback preflightLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyPreflightCommand command);
 
+    LocalCopyExecutionPreparation prepareLocalCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, LocalCopyPreflightCommand command);
+
     CopyExecutionReadback executeLocalCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             LocalCopyExecuteCommand command,
             String idempotencyKey);
+
+    CopyExecutionReadback executeLocalCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            LocalCopyExecuteCommand command,
+            String idempotencyKey,
+            LocalCopyExecutionPreparation preparation);
 
     record BrandCopyPreflightCommand(List<String> selectedItemCodes, String targetDataNodeRef) {}
 
@@ -509,10 +581,19 @@ public interface CatalogOwnerApi {
     CopyPreflightReadback preflightBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
 
+    BrandCopyExecutionPreparation prepareBrandCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context, BrandCopyPreflightCommand command);
+
     CopyExecutionReadback executeBrandCopy(
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             BrandCopyExecuteCommand command,
             String idempotencyKey);
+
+    CopyExecutionReadback executeBrandCopy(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            BrandCopyExecuteCommand command,
+            String idempotencyKey,
+            BrandCopyExecutionPreparation preparation);
 
     /** Typed copy boundary; the source is resolved only from the context's static copy policy. */
     JsonNode copy(

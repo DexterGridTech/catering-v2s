@@ -939,6 +939,81 @@ class OrganizationOwnerServiceTest {
     }
 
     @Test
+    void hierarchyUpdateOnlyRewritesProjectPhasesWhenFactsChange() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        var region = hierarchy.create(
+                workspaceId, "organization-test", "REGION", null, "CP10-PHASE-R-" + suffix, "CP10 phase region");
+        var project = hierarchy.create(
+                workspaceId,
+                "organization-test",
+                "PROJECT",
+                region.id(),
+                "CP10-PHASE-P-" + suffix,
+                "CP10 phase project",
+                null,
+                List.of("Initial"));
+        long phaseRowsBefore = jdbc().queryForObject(
+                        "SELECT count(*) FROM organization.project_phase_name WHERE project_id=?",
+                        Long.class,
+                        project.id());
+        long auditRowsBefore = jdbc().queryForObject(
+                        "SELECT count(*) FROM organization.audit_event WHERE entity_ref_text=? AND action=?",
+                        Long.class,
+                        project.id().toString(),
+                        "ORGANIZATION_NODE_UPDATED");
+
+        var unchanged = hierarchy.update(
+                workspaceId,
+                "organization-test",
+                project.id(),
+                project.code(),
+                "CP10 phase project renamed",
+                region.id(),
+                null,
+                List.of("Initial"),
+                project.version(),
+                Map.of(),
+                AuditActor.system());
+
+        assertEquals(List.of("Initial"), unchanged.phaseNames());
+        assertEquals(
+                phaseRowsBefore,
+                jdbc().queryForObject(
+                                "SELECT count(*) FROM organization.project_phase_name WHERE project_id=?",
+                                Long.class,
+                                project.id()));
+        assertEquals(
+                auditRowsBefore + 1,
+                jdbc().queryForObject(
+                                "SELECT count(*) FROM organization.audit_event WHERE entity_ref_text=? AND action=?",
+                                Long.class,
+                                project.id().toString(),
+                                "ORGANIZATION_NODE_UPDATED"));
+
+        var changed = hierarchy.update(
+                workspaceId,
+                "organization-test",
+                project.id(),
+                unchanged.code(),
+                unchanged.name(),
+                region.id(),
+                null,
+                List.of("Changed"),
+                unchanged.version(),
+                Map.of(),
+                AuditActor.system());
+
+        assertEquals(List.of("Changed"), changed.phaseNames());
+        assertEquals(
+                List.of("Changed"),
+                jdbc().query(
+                                "SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY"
+                                        + " display_order",
+                                (row, index) -> row.getString(1),
+                                project.id()));
+    }
+
+    @Test
     void authorizationIsSingleActionIdempotentAndReferencedBrandCannotBeRemoved() {
         var region =
                 hierarchy.create(workspaceId, "organization-test", "REGION", null, "AUTH-R", "Authorization region");

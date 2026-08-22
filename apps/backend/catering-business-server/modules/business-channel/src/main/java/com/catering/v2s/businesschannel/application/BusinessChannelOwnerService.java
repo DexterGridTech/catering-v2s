@@ -319,6 +319,26 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
 
     @Override
     @Transactional(readOnly = true)
+    public BusinessChannelReadback.ChannelWithTemplateProvider readChannelWithTemplateProvider(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
+        requireScope(workspaceUuid, groupWorkspaceKey);
+        if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
+        return jdbc.query(
+                channelCommandSelect("WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?"),
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, channelRef);
+                },
+                result -> {
+                    if (!result.next()) throw problem("NOT_FOUND", 404, "channel was not found in the workspace");
+                    return new BusinessChannelReadback.ChannelWithTemplateProvider(
+                            channel(mapChannel(result)), result.getString("template_provider_code"));
+                });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<BusinessChannelReadback.Channel> findChannelsForBinding(
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
@@ -519,15 +539,12 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
         String targetStatus = BusinessChannelPolicy.requireEnum(
                 command.status(), "status", BusinessChannelPolicy.ENABLED, BusinessChannelPolicy.DISABLED);
-        TemplateRow initial =
-                readTemplateRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
-        requireOperationsGrant(
+        requireOperationsGrantTargetEnvelope(
                 command.ownerScopeGrant(),
                 command.contextVersion(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
                 BusinessChannelPolicy.PROJECT,
-                initial.projectRef().toString(),
                 REQ_TRANSITION_TEMPLATE);
         String request = canonical(
                 "transition-template-status",
@@ -547,7 +564,18 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 () -> {
                     TemplateRow current = readTemplateForUpdate(
                             command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
+                    // The row locked here is the authoritative relation between templateRef and projectRef. The
+                    // server-minted grant is checked again after the lock so a stale/mis-bound target cannot write.
+                    requireOperationsGrant(
+                            command.ownerScopeGrant(),
+                            command.contextVersion(),
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            BusinessChannelPolicy.PROJECT,
+                            current.projectRef().toString(),
+                            REQ_TRANSITION_TEMPLATE);
                     requireVersion(current.version(), command.expectedVersion());
+                    TemplateRow result = current;
                     if (!Objects.equals(current.status(), targetStatus)) {
                         long now = time.currentEpochMillis();
                         if (jdbc.update(
@@ -576,9 +604,9 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                                 List.of(
                                         change("status", current.status(), targetStatus),
                                         change("channelCount", null, channelCount)));
+                        result = templateAfterStatusTransition(current, targetStatus);
                     }
-                    return template(readTemplateRow(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef()));
+                    return template(result);
                 });
     }
 
@@ -597,13 +625,6 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 command.ownerNodeType(),
                 command.ownerNodeRef(),
                 REQ_CREATE_CHANNEL);
-        TemplateRow initial =
-                readTemplateRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
-        BusinessChannelPolicy.validateTemplateTarget(
-                initial.operatorKind(),
-                initial.projectRef().toString(),
-                command.ownerNodeType(),
-                command.ownerNodeRef());
         String request = canonical(
                 "create-channel",
                 command.workspaceUuid(),
@@ -699,7 +720,11 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
     public BusinessChannelReadback.Channel updateChannel(UpdateChannelCommand command) {
         requireScope(command.workspaceUuid(), command.groupWorkspaceKey());
         BusinessChannelPolicy.validateChannelName(command.channelName());
-        ChannelRow initial = readChannelRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef());
+        CommandChannelRow initialRead = command.initialChannelReadback() == null
+                ? readCommandChannelRow(
+                        command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef(), false)
+                : null;
+        ChannelRow initial = initialRead == null ? channelRow(command.initialChannelReadback()) : initialRead.channel();
         requireOperationsGrant(
                 command.ownerScopeGrant(),
                 command.contextVersion(),
@@ -709,10 +734,14 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 initial.ownerNodeRef(),
                 REQ_UPDATE_CHANNEL);
         requireEditable(initial.status());
-        TemplateRow initialTemplate =
-                readTemplateRow(command.workspaceUuid(), command.groupWorkspaceKey(), initial.templateRef());
-        if (command.bindingRef() == null && BusinessChannelPolicy.EXTERNAL.equals(initialTemplate.accessKind())) {
-            throw problem("BINDING_EDIT_NOT_ALLOWED", 403, "external binding can only be detached by the edge command");
+        if (command.bindingRef() == null) {
+            TemplateRow initialTemplate = initialRead == null
+                    ? readTemplateRow(command.workspaceUuid(), command.groupWorkspaceKey(), initial.templateRef())
+                    : initialRead.template();
+            if (BusinessChannelPolicy.EXTERNAL.equals(initialTemplate.accessKind())) {
+                throw problem(
+                        "BINDING_EDIT_NOT_ALLOWED", 403, "external binding can only be detached by the edge command");
+            }
         }
         String request = canonical(
                 "update-channel",
@@ -731,16 +760,19 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 request,
                 BusinessChannelReadback.Channel.class,
                 () -> {
-                    ChannelRow current = readChannelForUpdate(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef());
+                    CommandChannelRow currentRead = readCommandChannelRow(
+                            command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef(), true);
+                    ChannelRow current = currentRead.channel();
                     requireVersion(current.version(), command.expectedVersion());
                     requireEditable(current.status());
-                    TemplateRow template = readTemplateRow(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), current.templateRef());
+                    TemplateRow template = currentRead.template();
                     requireEditable(template.status());
                     CollaborationReadback.OwnerBinding binding = command.bindingRef() == null
                             ? null
-                            : readBinding(command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef());
+                            : command.bindingReadback() == null
+                                    ? readBinding(
+                                            command.workspaceUuid(), command.groupWorkspaceKey(), command.bindingRef())
+                                    : attachedBinding(command.bindingRef(), command.bindingReadback());
                     BusinessChannelPolicy.validateBinding(
                             template.accessKind(),
                             template.orderKind(),
@@ -771,8 +803,18 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                             List.of(
                                     change("channelName", current.channelName(), command.channelName()),
                                     change("bindingRef", current.bindingRef(), command.bindingRef())));
-                    return channel(
-                            readChannelRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef()));
+                    return channel(new ChannelRow(
+                            current.channelRef(),
+                            current.templateRef(),
+                            current.ownerNodeType(),
+                            current.ownerNodeRef(),
+                            current.channelCode(),
+                            command.channelName(),
+                            command.bindingRef(),
+                            bindingStatus(template.accessKind(), command.bindingRef()),
+                            current.status(),
+                            current.stopReasons(),
+                            current.version() + 1));
                 });
     }
 
@@ -786,14 +828,12 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 BusinessChannelPolicy.DRAFT,
                 BusinessChannelPolicy.EFFECTIVE,
                 BusinessChannelPolicy.DISABLED);
-        ChannelRow initial = readChannelRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef());
-        requireOperationsGrant(
+        requireOperationsGrantTargetEnvelope(
                 command.ownerScopeGrant(),
                 command.contextVersion(),
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
-                initial.ownerNodeType(),
-                initial.ownerNodeRef(),
+                null,
                 REQ_TRANSITION_CHANNEL);
         String request = canonical(
                 "transition-channel-status",
@@ -811,12 +851,22 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 request,
                 BusinessChannelReadback.Channel.class,
                 () -> {
-                    ChannelRow current = readChannelForUpdate(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef());
+                    CommandChannelRow currentRead = readCommandChannelRow(
+                            command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef(), true);
+                    ChannelRow current = currentRead.channel();
+                    // The locked channel row is the authoritative owner target. Recheck the grant against it before
+                    // any version check or write; the envelope check above keeps replay authorization pre-receipt.
+                    requireOperationsGrant(
+                            command.ownerScopeGrant(),
+                            command.contextVersion(),
+                            command.workspaceUuid(),
+                            command.groupWorkspaceKey(),
+                            current.ownerNodeType(),
+                            current.ownerNodeRef(),
+                            REQ_TRANSITION_CHANNEL);
                     requireVersion(current.version(), command.expectedVersion());
                     if (!BusinessChannelPolicy.DISABLED.equals(targetStatus)) requireEditable(current.status());
-                    TemplateRow template = readTemplateRow(
-                            command.workspaceUuid(), command.groupWorkspaceKey(), current.templateRef());
+                    TemplateRow template = currentRead.template();
                     if (!BusinessChannelPolicy.DISABLED.equals(targetStatus)) requireEditable(template.status());
                     if (BusinessChannelPolicy.EFFECTIVE.equals(targetStatus)) {
                         if (!current.stopReasons().isEmpty()) {
@@ -848,6 +898,7 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                             BusinessChannelPolicy.DISABLED.equals(targetStatus) ? BusinessChannelPolicy.MANUAL : null;
                     boolean needsWrite = !Objects.equals(current.status(), targetStatus)
                             || (reason != null && !current.stopReasons().contains(reason));
+                    ChannelRow result = current;
                     if (needsWrite) {
                         String reasonSql = reason == null
                                 ? "stop_reasons"
@@ -876,9 +927,9 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                                 List.of(
                                         change("status", current.status(), targetStatus),
                                         change("stopReason", null, reason)));
+                        result = channelAfterStatusTransition(current, targetStatus, reason);
                     }
-                    return channel(
-                            readChannelRow(command.workspaceUuid(), command.groupWorkspaceKey(), command.channelRef()));
+                    return channel(result);
                 });
     }
 
@@ -1024,6 +1075,14 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         return binding;
     }
 
+    private static CollaborationReadback.OwnerBinding attachedBinding(
+            UUID expectedBindingRef, CollaborationReadback.OwnerBinding binding) {
+        if (binding == null || !Objects.equals(expectedBindingRef, binding.bindingRef())) {
+            throw problem("BINDING_CONTEXT_MISMATCH", 409, "binding readback is not attached to the selected channel");
+        }
+        return binding;
+    }
+
     private void requireOperationsGrant(
             OperationsOwnerScopeGrant grant,
             long contextVersion,
@@ -1046,6 +1105,71 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                         workspaceUuid, groupWorkspaceKey, nodeType, targetId, requirementId, capability)) {
             throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
         }
+    }
+
+    private void requireOperationsGrantTargetEnvelope(
+            OperationsOwnerScopeGrant grant,
+            long contextVersion,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String expectedTargetType,
+            String requirementId) {
+        if (grant == null || grant.targetId() == null) {
+            throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
+        }
+        String targetType = grant.targetType();
+        if (expectedTargetType != null && !Objects.equals(expectedTargetType, targetType)) {
+            throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
+        }
+        if (expectedTargetType == null
+                && !BusinessChannelPolicy.PROJECT.equals(targetType)
+                && !BusinessChannelPolicy.STORE.equals(targetType)) {
+            throw problem("AUTHORIZATION_REQUIRED", 409, "operations owner grant does not match command context");
+        }
+        requireOperationsGrant(
+                grant,
+                contextVersion,
+                workspaceUuid,
+                groupWorkspaceKey,
+                targetType,
+                grant.targetId().toString(),
+                requirementId);
+    }
+
+    private static TemplateRow templateAfterStatusTransition(TemplateRow current, String targetStatus) {
+        return new TemplateRow(
+                current.templateRef(),
+                current.projectRef(),
+                current.templateName(),
+                current.templateCode(),
+                current.accessKind(),
+                current.operatorKind(),
+                current.orderKind(),
+                current.dineInForm(),
+                current.providerCode(),
+                targetStatus,
+                current.version() + 1);
+    }
+
+    private static ChannelRow channelAfterStatusTransition(ChannelRow current, String targetStatus, String reason) {
+        List<String> stopReasons = current.stopReasons();
+        if (reason != null && !stopReasons.contains(reason)) {
+            List<String> updatedReasons = new ArrayList<>(stopReasons);
+            updatedReasons.add(reason);
+            stopReasons = List.copyOf(updatedReasons);
+        }
+        return new ChannelRow(
+                current.channelRef(),
+                current.templateRef(),
+                current.ownerNodeType(),
+                current.ownerNodeRef(),
+                current.channelCode(),
+                current.channelName(),
+                current.bindingRef(),
+                current.bindingStatus(),
+                targetStatus,
+                stopReasons,
+                current.version() + 1);
     }
 
     private long cascadeTemplateStop(UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, long now) {
@@ -1107,6 +1231,22 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 result -> result.next() ? mapChannel(result) : notFound("channel"));
     }
 
+    private CommandChannelRow readCommandChannelRow(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef, boolean forUpdate) {
+        String suffix = "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?"
+                + (forUpdate ? " FOR UPDATE" : "");
+        return jdbc.query(
+                channelCommandSelect(suffix),
+                statement -> {
+                    statement.setObject(1, workspaceUuid);
+                    statement.setString(2, groupWorkspaceKey);
+                    statement.setObject(3, channelRef);
+                },
+                result -> result.next()
+                        ? new CommandChannelRow(mapChannel(result), mapJoinedTemplate(result))
+                        : notFound("channel"));
+    }
+
     private static String templateSelect(String suffix) {
         return "SELECT template_ref, project_ref, template_name, template_code, access_kind, operator_kind, order_k"
                 + "ind, "
@@ -1118,6 +1258,21 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
         return "SELECT c.channel_ref, c.template_ref, c.target_node_type, c.target_node_ref, c.channel_code, "
                 + "c.channel_name, c.binding_ref, t.access_kind AS template_access_kind, c.status, c.stop_reasons, "
                 + "c.version "
+                + "FROM business_channel.business_channel c "
+                + "JOIN business_channel.business_channel_template t "
+                + "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid "
+                + "AND t.group_workspace_key=c.group_workspace_key "
+                + suffix;
+    }
+
+    static String channelCommandSelect(String suffix) {
+        return "SELECT c.channel_ref, c.template_ref, c.target_node_type, c.target_node_ref, c.channel_code, "
+                + "c.channel_name, c.binding_ref, t.access_kind AS template_access_kind, c.status, c.stop_reasons, "
+                + "c.version, t.project_ref AS template_project_ref, t.template_name, t.template_code, "
+                + "t.operator_kind AS template_operator_kind, "
+                + "t.order_kind AS template_order_kind, t.dine_in_form AS template_dine_in_form, "
+                + "t.provider_code AS template_provider_code, t.status AS template_status, "
+                + "t.version AS template_version "
                 + "FROM business_channel.business_channel c "
                 + "JOIN business_channel.business_channel_template t "
                 + "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid "
@@ -1161,6 +1316,21 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 result.getString("status"),
                 reasons(result.getArray("stop_reasons")),
                 result.getLong("version"));
+    }
+
+    private TemplateRow mapJoinedTemplate(ResultSet result) throws SQLException {
+        return new TemplateRow(
+                result.getObject("template_ref", UUID.class),
+                result.getObject("template_project_ref", UUID.class),
+                result.getString("template_name"),
+                result.getString("template_code"),
+                result.getString("template_access_kind"),
+                result.getString("template_operator_kind"),
+                result.getString("template_order_kind"),
+                result.getString("template_dine_in_form"),
+                result.getString("template_provider_code"),
+                result.getString("template_status"),
+                result.getLong("template_version"));
     }
 
     private static List<String> reasons(Array array) throws SQLException {
@@ -1328,6 +1498,22 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
                 row.version());
     }
 
+    private static ChannelRow channelRow(BusinessChannelReadback.Channel value) {
+        if (value == null) throw problem("NOT_FOUND", 404, "channel was not found in the workspace");
+        return new ChannelRow(
+                value.channelRef(),
+                value.templateRef(),
+                value.ownerNodeType(),
+                value.ownerNodeRef(),
+                value.channelCode(),
+                value.channelName(),
+                value.bindingRef(),
+                value.bindingStatus(),
+                value.status(),
+                value.stopReasons(),
+                value.version());
+    }
+
     private static String bindingStatus(String accessKind, UUID bindingRef) {
         if (BusinessChannelPolicy.INTERNAL.equals(accessKind)) return "NOT_REQUIRED";
         return bindingRef == null ? "UNBOUND" : "BOUND";
@@ -1407,4 +1593,6 @@ public class BusinessChannelOwnerService implements BusinessChannelReadApi, Busi
             String status,
             List<String> stopReasons,
             long version) {}
+
+    private record CommandChannelRow(ChannelRow channel, TemplateRow template) {}
 }

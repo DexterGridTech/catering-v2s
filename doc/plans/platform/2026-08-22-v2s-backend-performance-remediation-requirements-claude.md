@@ -60,6 +60,7 @@ seed 报告第三个数值列的表头原文是「**DB ms(均/低/高)**」—�
 分母来源:`edge-route-face-registry`(181)+ `platform-route-face-registry`(3)+
 `catalog-inventory-edge-route-registry`(57),去重 **238**。
 其中 **144** 个有实测 DB 计数,**94** 个无任何证据。
+以下分类数字是 **2026-08-21 evidence 的基线快照**；实施期以 CP-05 对当前树重新测量并重分类的结果为准。
 
 | 类 | 判据 | 数量 | 隧道下量级 | 同侧量级 |
 |---|---|---:|---|---|
@@ -91,7 +92,7 @@ seed 报告第三个数值列的表头原文是「**DB ms(均/低/高)**」—�
 | # | 需求 | 验收标准(可证伪) |
 |---|---|---|
 | L1-01 | Java 服务在远端主机启动,与 PostgreSQL、MinIO 同侧 | 受管 manifest 记录服务 PID 属于远端主机;应用侧 JDBC URL 指向远端本地地址而非 `127.0.0.1:25433` 隧道端口 |
-| L1-02 | 本机只保留前端 dev server;隧道**不再转发 PostgreSQL 端口** | 隧道进程命令行中不再出现 `25433:127.0.0.1:5432`。⚠️ 隧道**仍需保留资产端口**(现 `29000`),因为浏览器可能直连资产服务下载/上传;是否可去掉需实施期核实浏览器是否走 presigned 直连 |
+| L1-02 | 本机只保留前端 dev server;隧道**不再转发 PostgreSQL 端口**,继续转发远端 Java HTTP 与资产端口 | 隧道进程命令行不再出现 PostgreSQL forward；源码亲验确认 asset owner 返回 MinIO public URL、前端 `<Image src>` 直接访问该 URL，当前不是 presigned/网关代理下载，因此资产端口必须保留；本机 Vite 的 `/api` proxy 指向 Java HTTP tunnel |
 | L1-03 | 前端热更新与调试能力不下降 | 本机改前端源码后浏览器可见变更;不需要重启远端服务 |
 | L1-06 | 会话 Cookie 与同源策略不受影响 | **既有设计已降低此风险**:`apps/frontend/operations-admin/vite.config.ts` 第 15 行已有 `proxy: {'/api': {target: gatewayProxyTarget, changeOrigin: false}}`,浏览器始终只见 `localhost:5175` 同源。L1 只需把 `gatewayProxyTarget` 指向隧道后的 HTTP 端口。验收:登录后 `SameSite=Strict` 的会话 Cookie 仍能随后续请求发出(`EdgeSessionCookieWriter` 第 16 行) |
 | L1-04 | 受管生命周期(start/stop/reset/seed)全部适配远端 | `scripts/dev/start` 与 `stop` 的 manifest/readiness/PID/start-token 证据仍完整;stop 后远端无残留进程 |
@@ -121,7 +122,7 @@ seed 报告第三个数值列的表头原文是「**DB ms(均/低/高)**」—�
 | L2-01 | 每个 operation 在契约生成源声明 `databaseOperationBudget` | 生成物中 238 个 operation 全部有预算值,无遗漏、无 `null` |
 | L2-02 | acceptance 断言实测 DB 计数 ≤ 预算 | 任一 operation 超预算 ⇒ 场景 FAIL 且给出 operationId、预算、实测 |
 | L2-03 | 借连接数单独设门:GET ≤ 1,写命令 ≤ 事务数 | 超出即 FAIL(P2 类整改的回归保护) |
-| L2-04 | 未分类语句占比设门 | `UNCLASSIFIED` 占比 > 20% 即 FAIL —— 见 §4.3 |
+| L2-04 | 未分类 SQL 占比设门 | `UNCLASSIFIED` SQL 占比 > 5% 即 FAIL —— 见 §4.3；分母只含 SQL execution，不用 CONNECTION/TRANSACTION 稀释 |
 | L2-05 | 预算只能调低不能调高,调高需 Dexter 明确裁定并记录理由 | 预算文件的调高变更在 review 中可被逐条指出 |
 
 ### 4.3 前置:45% 的语句"未分类",以及最好的解法(Dexter 2026-08-22 裁定按最优方案)
@@ -167,9 +168,12 @@ seed 报告第三个数值列的表头原文是「**DB ms(均/低/高)**」—�
 
 ### 5.1 P1 · 单请求 DB ≥ 100(4 个)
 
+> 本节表格中 `batchTransitionOperationsCatalogItemStatus` 的“整批原子”方案已被 Dexter 后续裁定
+> 覆盖；其唯一有效目标见 §5.8 的“逐项尽力 + 明确报告”。其余三个成员仍按本表执行。
+
 | operationId | DB/次 | 借连接 | 问题诊断 | 整改 | 验收标准 |
 |---|---:|---:|---|---|---|
-| `batchTransitionOperationsCatalogItemStatus` | **711** | 54 | **每个商品各开一个独立事务**:实测 `TRANSACTION`=108(=54 事务 × BEGIN/COMMIT)、`CONNECTION`=54、`OWNER_READ`=**539**(约 48 项 ⇒ 每项 ~11 次读)、`UPDATE`=48。⚠️ **同时是正确性问题**:批量流转不是原子的,中途失败会留下部分已改状态 —— 见 §5.8 | 整批一个事务一个连接;目标行一次 `IN` 载入,逐项校验在内存完成;写入批量语句 | DB/次 ≤ **40**;`TRANSACTION` = 2;借连接 = 1;**整批原子**(注入第 k 项失败 ⇒ 前 k-1 项状态回滚);流转语义与逐条审计不变 |
+| `batchTransitionOperationsCatalogItemStatus` | **711** | 54 | 每个商品各开一个独立事务；这是逐项尽力语义的必要形态，浪费在循环内重复读 | **见 §5.8**：循环前批量预载，保留每项独立事务并返回严格逐项结果 | **见 §5.8**：DB/次 ≤ `15 + 5 × N`，不设固定连接/事务上限 |
 | `executeOperationsBrandCatalogCopy` | 107 | 1 | 复制闭包逐对象查询(商品/SKU/引用/单位/BOM 各一轮) | 闭包按类型批量载入;复制写入批量化 | DB/次 ≤ **35**;复制结果逐字段与整改前一致 |
 | `executeOperationsLocalCatalogCopy` | 103.8 | 1 | 同上 | 同上 | DB/次 ≤ **35** |
 | `saveOperationsCatalogItem` | 102.2 | 1 | 45.2 OWNER_WRITE + 39 未分类 + 10 OWNER_READ;**保存后从零重查完整详情**(见 §5.5) | L5 回读复用 + 逐引用 `requireActive` 改批量 | DB/次 ≤ **45**;CAS/回执/审计/readback 字段全不变 |
@@ -204,7 +208,7 @@ seed 报告第三个数值列的表头原文是「**DB ms(均/低/高)**」—�
 
 **问题诊断**:这些接口的语句大部分没有被 read-budget 分类,无法判断是必要成本还是重复往返。
 **整改**:先分类(给语句打 section 标签),再按分类结果决定是否属于 P2/P3。
-**验收标准**:`UNCLASSIFIED` 占比 ≤ **20%**;分类后如落入 P2/P3 则按对应类整改。
+**验收标准**:`UNCLASSIFIED` SQL 占比 ≤ **5%**;分类后如落入 P2/P3 则按对应类整改。
 
 ### 5.5 L5 · 写命令的回读复用(专项)
 
@@ -233,10 +237,10 @@ CAS、回执、审计一条不少。
 |---|---|---|
 | B-01 | 目标行在进入逐项循环前一次批量载入 | `OWNER_READ` ≤ **10**(与批量大小无关);今为 539 |
 | B-02 | 预算按批量大小表达,而非固定值 | DB/次 ≤ **15 + 5 × N**(N=批内项数)。N=48 时 ≤255,今为 711 |
-| B-03 | **响应逐项报告结果** | readback 含每项 `{itemCode, outcome: SUCCEEDED\|FAILED\|SKIPPED, problemCode?, reason?}`;项数与请求项数**严格相等**,少一项即缺陷 |
-| B-04 | 部分失败是正常结果而非错误 | 20 项中第 13 项失败 ⇒ HTTP 仍为成功响应,body 中 12 项 `SUCCEEDED`、1 项 `FAILED` 带 problemCode、7 项按裁定语义标 `SUCCEEDED` 或 `SKIPPED`;**不返回整体 4xx/5xx 掩盖已成功项** |
+| B-03 | **响应逐项报告结果** | readback 含每项 `{itemCode, outcome: SUCCEEDED\|FAILED, problemCode?, reason?}`;项数、身份与请求项**严格同序相等**，重复、缺失、额外或乱序均为契约缺陷；合法同状态 no-op 归 `SUCCEEDED` |
+| B-04 | 部分失败是正常结果而非错误 | 20 项中第 13 项失败 ⇒ HTTP 仍为成功响应，body 中其余 19 项按真实执行结果为 `SUCCEEDED`，第 13 项为 `FAILED` 且带 `problemCode`/`reason`；**不返回整体 4xx/5xx 掩盖已成功项**。请求级前置条件失败仍返回整体 typed problem |
 | B-05 | 前端按逐项结果展示 | 用户可见"成功 N 项、失败 M 项"及失败项清单与原因;不显示笼统"操作失败" |
-| B-06 | 逐项审计不变 | 每项成功流转各留一条审计,失败项不留成功审计 |
+| B-06 | **不新增审计语义** | 保持单条/批量现状；验收成功项的状态与版本、失败项无成功写入。幂等 receipt 只用于重放结果，不得冒充审计；不新增审计表、事件、查询面或用户可见审计承诺 |
 
 ⚠️ B-03/B-04/B-05 是**产品功能新增**(响应契约与 UI 都要改),不是纯性能整改。
 它随本批交付是因为整改会改动这段事务边界,分开做会改两次。
@@ -286,6 +290,8 @@ L1 与 L2 可并行,都必须在 L3/L4/L5 之前完成:
 ---
 
 ## 8 · 分母全员清单(穷举)
+
+以下清单是 **2026-08-21 evidence 的基线快照**；实施期以 CP-05 对当前树重新测量并重分类的结果为准，不得按本节历史成员清单直接驱动整改。
 
 
 <details><summary><b>P1 全员清单(4 个,点击展开)</b></summary>

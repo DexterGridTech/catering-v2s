@@ -17,6 +17,10 @@ function databaseName(value) {
   return url.pathname.replace(/^\//, "");
 }
 function productionLike(value) { return /(?:^|[._/-])(?:prod|production)(?:$|[._/-])/i.test(value); }
+function validPort(value, code) {
+  if (!/^\d{4,5}$/.test(String(value ?? "")) || Number(value) < 1024 || Number(value) > 65535) fail(code);
+  return String(value);
+}
 function effectiveEnvironment(env) {
   const namespace = env.V2S_DEV_NAMESPACE ?? "v2s-dev-r5-full";
   const hostTrust = hostTrustEnvironment(env);
@@ -27,7 +31,11 @@ function effectiveEnvironment(env) {
     V2S_DEV_PROFILE: env.V2S_DEV_PROFILE ?? "r5-full",
     V2S_RUNTIME_ENVIRONMENT: env.V2S_RUNTIME_ENVIRONMENT ?? "non-production",
     ...hostTrust,
-    V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:25432/${expectedDatabase}`,
+    // DEV Java now runs beside PostgreSQL on the trusted remote host.  This is
+    // the Java-side URL; no local PostgreSQL tunnel is part of the topology.
+    V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:5432/${expectedDatabase}`,
+    V2S_DEV_REMOTE_HTTP_PORT: env.V2S_DEV_REMOTE_HTTP_PORT ?? "8080",
+    V2S_DEV_REMOTE_ASSET_PORT: env.V2S_DEV_REMOTE_ASSET_PORT ?? "19000",
     V2S_DEV_ASSET_ROOT: env.V2S_DEV_ASSET_ROOT ?? "s3://catering-v2s-r5-assets",
   };
 }
@@ -43,6 +51,12 @@ function validate(input, mode) {
   if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(expectedDatabase)) fail("R5_DEV_DATABASE_NAME_INVALID");
   const databaseUrl = env.V2S_DEV_DATABASE_URL ?? "";
   if (!databaseUrl || productionLike(databaseUrl) || databaseName(databaseUrl) !== expectedDatabase) fail("R5_DEV_DATABASE_URL_INVALID");
+  let parsedDatabaseUrl;
+  try { parsedDatabaseUrl = new URL(databaseUrl.replace(/^jdbc:/, "")); } catch { fail("R5_DEV_DATABASE_URL_INVALID"); }
+  if (parsedDatabaseUrl.hostname === "127.0.0.1" && [25432, 25433, 25434, 25435].includes(Number(parsedDatabaseUrl.port))) fail("R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN");
+  validPort(env.V2S_DEV_REMOTE_HTTP_PORT, "R5_DEV_REMOTE_HTTP_PORT_INVALID");
+  validPort(env.V2S_DEV_REMOTE_ASSET_PORT, "R5_DEV_REMOTE_ASSET_PORT_INVALID");
+  if (env.V2S_DEV_REMOTE_HTTP_PORT === env.V2S_DEV_REMOTE_ASSET_PORT) fail("R5_DEV_REMOTE_PORT_COLLISION");
   const assetRoot = env.V2S_DEV_ASSET_ROOT ?? "";
   if (!assetRoot || productionLike(assetRoot)) fail("R5_DEV_ASSET_ROOT_INVALID");
   if (mode === "seed" && requiredSecrets.some((name) => !env[name])) fail("R5_DEV_SEED_SECRET_MISSING");

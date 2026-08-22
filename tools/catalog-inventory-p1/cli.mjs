@@ -291,16 +291,16 @@ function validateOperationAuthorizationPolicy(edge, openapi) {
   }
 }
 
-function validateBatchFailureCodeTypedSet(openapi) {
+function validateBatchProblemCodeTypedSet(openapi) {
   const typedProblemCodes = openapi.components?.schemas?.TypedProblem?.properties?.code?.enum;
-  const failureCode = openapi.components?.schemas?.CatalogItemBatchStatusTransitionReadback
-    ?.properties?.results?.items?.properties?.failureCode;
+  const problemCode = openapi.components?.schemas?.CatalogItemBatchStatusTransitionReadback
+    ?.properties?.results?.items?.properties?.problemCode;
   expect(Array.isArray(typedProblemCodes) && typedProblemCodes.length > 0, "P1_TYPED_PROBLEM_CODE_ENUM");
-  expect(Array.isArray(failureCode?.type) && failureCode.type.includes("string") && failureCode.type.includes("null"), "P1_BATCH_FAILURE_CODE_TYPE");
-  expect(Array.isArray(failureCode?.enum) && failureCode.enum.includes(null), "P1_BATCH_FAILURE_CODE_ENUM");
-  const failureCodes = failureCode.enum.filter((code) => code !== null);
-  expect(failureCodes.every((code) => typeof code === "string") && new Set(failureCodes).size === failureCodes.length, "P1_BATCH_FAILURE_CODE_ENUM_SHAPE");
-  expect(failureCodes.every((code) => typedProblemCodes.includes(code)), "P1_BATCH_FAILURE_CODE_TYPED_SUBSET");
+  expect(Array.isArray(problemCode?.type) && problemCode.type.includes("string") && problemCode.type.includes("null"), "P1_BATCH_PROBLEM_CODE_TYPE");
+  expect(Array.isArray(problemCode?.enum) && problemCode.enum.includes(null), "P1_BATCH_PROBLEM_CODE_ENUM");
+  const problemCodes = problemCode.enum.filter((code) => code !== null);
+  expect(problemCodes.every((code) => typeof code === "string") && new Set(problemCodes).size === problemCodes.length, "P1_BATCH_PROBLEM_CODE_ENUM_SHAPE");
+  expect(problemCodes.every((code) => typedProblemCodes.includes(code)), "P1_BATCH_PROBLEM_CODE_TYPED_SUBSET");
 }
 
 const expectedCapabilities = ["SELLABLE", "STOCK_MANAGED", "BOM_COMPONENT", "PRODUCIBLE"];
@@ -573,7 +573,7 @@ function validate(root = ROOT) {
   expect(edge.revision === REVISION && edge.operationCount === 57 && edge.operations.length === 57, "P1_EDGE_OPERATION_COUNT");
   expect(edge.contractDigest === digest(edge, "contractDigest"), "P1_EDGE_DIGEST");
   expect(catalogRouteRegistry.schemaVersion === 1 && catalogRouteRegistry.kind === "catalog-inventory-edge-route-registry" && catalogRouteRegistry.revision === REVISION && catalogRouteRegistry.generatedFrom === EDGE_PATH && catalogRouteRegistry.contractDigest === edge.contractDigest, "P1_CATALOG_ROUTE_REGISTRY_BINDING");
-  const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces}));
+  const expectedCatalogRoutes = edge.operations.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, owner: entry.initiatingOwner, consumerFaces: entry.consumerFaces, databaseOperationBudget: entry.databaseOperationBudget}));
   expect(JSON.stringify(catalogRouteRegistry.operations) === JSON.stringify(expectedCatalogRoutes), "P1_CATALOG_ROUTE_REGISTRY_EXACT_PROJECTION");
   expect(!catalogRouteRegistry.operations.some((entry) => entry.operationId === "transitionOperationsCatalogCategoryStatus" || entry.path.includes("{categoryCode}")), "P1_CATALOG_ROUTE_REGISTRY_RETIRED_CATEGORY_OPERATION");
   expect(placement.placementDigest === digest(placement, "placementDigest"), "P1_PLACEMENT_DIGEST");
@@ -585,7 +585,7 @@ function validate(root = ROOT) {
   expect(edge.operations.every((entry) => exact(entry.consumerFaces, ["operations-admin"])), "P1_CONSUMER_FACE");
   expect(edge.operations.every((entry) => entry.path && entry.method && entry.requestComponent && entry.responseComponent), "P1_EDGE_ROUTE_SHAPE");
   validateOperationAuthorizationPolicy(edge, openapi);
-  validateBatchFailureCodeTypedSet(openapi);
+  validateBatchProblemCodeTypedSet(openapi);
   const rootOperations = [];
   for (const [route, pathItem] of Object.entries(openapi.paths || {})) {
     for (const [method, operation] of Object.entries(pathItem)) if (["get", "post", "patch", "put", "delete"].includes(method)) rootOperations.push(operation.operationId);
@@ -778,12 +778,12 @@ function selfTest() {
   expect(conditionRed, "SELF_TEST_PROBLEM_EXACT_SET");
   target.problemCodes = original;
   const root = readJson(OPENAPI_ROOT_PATH);
-  const redFailureCode = JSON.parse(JSON.stringify(root));
-  redFailureCode.components.schemas.CatalogItemBatchStatusTransitionReadback.properties.results.items.properties.failureCode.enum.push("UNREGISTERED_FAILURE");
-  let failureCodeRed = false;
-  try { validateBatchFailureCodeTypedSet(redFailureCode); }
-  catch (error) { failureCodeRed = error.message === "P1_BATCH_FAILURE_CODE_TYPED_SUBSET"; }
-  expect(failureCodeRed, "SELF_TEST_BATCH_FAILURE_CODE_NOT_RED");
+  const redProblemCode = JSON.parse(JSON.stringify(root));
+  redProblemCode.components.schemas.CatalogItemBatchStatusTransitionReadback.properties.results.items.properties.problemCode.enum.push("UNREGISTERED_PROBLEM");
+  let problemCodeRed = false;
+  try { validateBatchProblemCodeTypedSet(redProblemCode); }
+  catch (error) { problemCodeRed = error.message === "P1_BATCH_PROBLEM_CODE_TYPED_SUBSET"; }
+  expect(problemCodeRed, "SELF_TEST_BATCH_PROBLEM_CODE_NOT_RED");
   const rootIds = Object.values(root.paths).flatMap((pathItem) => Object.values(pathItem).filter((entry) => entry.operationId).map((entry) => entry.operationId));
   const redRouteIds = rootIds.slice(1);
   expectRed(redRouteIds.length === 57, "OPENAPI_REACHABILITY");

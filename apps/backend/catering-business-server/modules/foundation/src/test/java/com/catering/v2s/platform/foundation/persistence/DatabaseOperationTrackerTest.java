@@ -128,6 +128,22 @@ class DatabaseOperationTrackerTest {
     }
 
     @Test
+    void exposesTransactionStartsAndSqlOnlyUnclassifiedRatioSeparately() {
+        try (DatabaseOperationTracker.Scope ignored = DatabaseOperationTracker.open()) {
+            DatabaseOperationTracker.record("CONNECTION", "GET_CONNECTION", 1_000_000L, null, null, 1);
+            DatabaseOperationTracker.record("TRANSACTION", "SET_AUTO_COMMIT", 1_000_000L, null, null, 1);
+            DatabaseOperationTracker.record("TRANSACTION", "COMMIT", 1_000_000L, null, null, 1);
+            DatabaseOperationTracker.record("QUERY", "EXECUTE_QUERY", 1_000_000L, null, null, 1);
+
+            DatabaseOperationTracker.Snapshot snapshot = DatabaseOperationTracker.snapshot();
+            assertEquals(1L, snapshot.transactionBeginCount());
+            assertEquals(1L, snapshot.sqlOperationCount());
+            assertEquals(1L, snapshot.unclassifiedSqlOperationCount());
+            assertEquals(1d, snapshot.unclassifiedSqlRatio());
+        }
+    }
+
+    @Test
     void recordsOnlyRealOwnerCommandAndReadbackBoundaries() {
         try (DatabaseOperationTracker.Scope ignored =
                 DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(HMAC_KEY, false))) {

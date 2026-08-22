@@ -87,6 +87,177 @@ export const PUBLIC_OPERATIONS = [
   }
 ] as const;
 
+export const PUBLIC_DATABASE_OPERATION_BUDGETS = {
+  "acceptPublicInvitation": {
+    "kind": "FIXED",
+    "max": 6,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 6,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "completeOperationsPasswordRecovery": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "completePublicInvitation": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPublicAssetContent": {
+    "kind": "FIXED",
+    "max": 4,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 4,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPublicInvitationCompletion": {
+    "kind": "FIXED",
+    "max": 5,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 5,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPublicInvitationView": {
+    "kind": "FIXED",
+    "max": 8,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 8,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "savePublicInvitationCredentials": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "sendOperationsPasswordRecoveryOtp": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "sendPublicInvitationOtp": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "startOperationsPasswordRecovery": {
+    "kind": "FIXED",
+    "max": 18,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 18,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "verifyOperationsPasswordRecoveryOtp": {
+    "kind": "FIXED",
+    "max": 7,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 7,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "verifyPublicInvitationOtp": {
+    "kind": "FIXED",
+    "max": 13,
+    "measurementScenarioIds": [
+      "performance.operation-budget-exact-set"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 13,
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  }
+} as const;
+
 export const PUBLIC_OPERATION_IDS = {
   "acceptPublicInvitation": "acceptPublicInvitation",
   "completeOperationsPasswordRecovery": "completeOperationsPasswordRecovery",

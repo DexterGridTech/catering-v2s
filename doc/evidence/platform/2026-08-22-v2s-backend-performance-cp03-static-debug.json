@@ -1,0 +1,25 @@
+{
+  "skillUsed": "cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787",
+  "task": "CP-03/04",
+  "firstFailure": {
+    "code": "CP03_PARALLEL_GRADLE_ARTIFACT_RACE",
+    "command": "./gradlew --no-daemon :apps:backend:catering-business-server:test --tests com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptorTest",
+    "boundary": ":apps:backend:catering-business-server:modules:platform-admin-iam:compileJava",
+    "signal": "package com.catering.v2s.platform.foundation.persistence does not exist",
+    "coincidentCommand": "./gradlew --no-daemon :apps:backend:catering-business-server:compileJava"
+  },
+  "lastKnownGood": [
+    "./gradlew --no-daemon :apps:backend:catering-business-server:modules:foundation:test --tests com.catering.v2s.platform.foundation.persistence.DatabaseOperationTrackerTest",
+    "./gradlew --no-daemon :apps:backend:catering-business-server:compileJava"
+  ],
+  "hypothesis": "Two Gradle processes concurrently rewrote or consumed shared module build outputs; the missing foundation package was a build-output race, not a source or dependency declaration defect.",
+  "counterexamples": [
+    "Foundation focused test completed successfully in the same worktree.",
+    "The full application compile completed successfully after the competing process settled.",
+    "No Java source was changed between the failed interceptor task and the successful compile."
+  ],
+  "smallestRemedy": "Serialize Gradle invocations that share the workspace build tree; do not increase timeout or add a dependency fallback.",
+  "preventionDestination": "serial-plan §0 execution discipline and this CP evidence record",
+  "business": "NOT_APPLICABLE_STATIC_ONLY",
+  "cleanup": "NOT_APPLICABLE_STATIC_ONLY"
+}

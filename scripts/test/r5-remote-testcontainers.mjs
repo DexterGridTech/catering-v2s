@@ -18,6 +18,14 @@ import {
   resolveGradleHome as resolveSharedGradleHome,
   validateGradleHome as validateSharedGradleHome,
 } from '../lib/gradle-runtime.mjs';
+import {assertUnclassifiedSqlRatio, parseHttpRequestEvents} from './backend-performance-event-verifier.mjs';
+import {
+  assertPerformanceConnectionBudgets,
+  assertPerformanceOperationExactSet,
+  assertPerformanceOperationBudgets,
+  loadPerformanceOperationRegistry,
+  reconcilePerformanceOperationEvents,
+} from './backend-performance-operation-reconciliation.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -55,7 +63,16 @@ export const backendAcceptanceEnvironment = (runId, operation = 'all') =>
         'export V2S_BACKEND_ACCEPTANCE_SECRET="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
         'export V2S_BACKEND_ACCEPTANCE_EVENTS="$root/results/http-request-events.jsonl"',
         'export V2S_BACKEND_ACCEPTANCE_RESULT="$root/results/backend-acceptance-result.jsonl"',
+        'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operation-events.jsonl"',
+        'export V2S_DB_OPERATIONS_HMAC_KEY="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
+        'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
         `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(operation)}`,
+        ...(process.env.V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF === 'true'
+          ? ['export V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true']
+          : []),
+        ...(process.env.V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE === 'true'
+          ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true']
+          : []),
         'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
       ];
 
@@ -215,6 +232,12 @@ export const parseAndValidateRunManifest = manifest => {
   validateGradleDistribution(manifest.gradleDistribution);
   if (!['PASS', 'FAIL', 'NOT_RUN'].includes(manifest.testExecution.status))
     throw new Error('RUN_MANIFEST_TEST_EXECUTION_INVALID');
+  if (
+    manifest.measurementEvidence !== undefined &&
+    !['PASS', 'NOT_RUN'].includes(manifest.measurementEvidence.status)
+  ) {
+    throw new Error('RUN_MANIFEST_MEASUREMENT_EVIDENCE_INVALID');
+  }
   validateCleanupReceipt(manifest.cleanup);
   if (!['PASS', 'FAIL'].includes(manifest.status)) throw new Error('RUN_MANIFEST_STATUS_INVALID');
   return manifest;
@@ -247,6 +270,38 @@ const gradleDistributionSha256 = distributionHome => {
 
 const commandResult = (binary, args, options = {}) =>
   spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
+
+export const inspectManagedDevState = ({
+  manifestPath = path.join(runtime, 'run-manifest.json'),
+  exists = existsSync,
+  read = readFileSync,
+} = {}) => {
+  if (!exists(manifestPath)) return Object.freeze({wasRunning: false, runId: null});
+  let manifest;
+  try {
+    manifest = JSON.parse(read(manifestPath, 'utf8'));
+  } catch {
+    throw new Error('DEV_MANIFEST_INVALID');
+  }
+  if (
+    manifest?.kind !== 'r5-dev-run-manifest' ||
+    typeof manifest.runId !== 'string' ||
+    !Array.isArray(manifest.processes) ||
+    !manifest.remoteJava ||
+    typeof manifest.remoteHostTrust?.host !== 'string'
+  ) {
+    throw new Error('DEV_MANIFEST_INVALID');
+  }
+  return Object.freeze({wasRunning: true, runId: manifest.runId});
+};
+
+export const classifyManagedDevLifecycleCommand = (result, marker) => {
+  if (result?.status === 0 && String(result.stdout ?? '').split(/\r?\n/).some(line => line.startsWith(marker))) {
+    return Object.freeze({status: 'PASS'});
+  }
+  return Object.freeze({status: 'FAIL', reason: `${marker}_NOT_CONFIRMED`});
+};
+
 const remoteResult = body =>
   commandResult('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', remoteHost, 'bash', '-s'], {input: body});
 const remote = body => {
@@ -507,6 +562,8 @@ const execute = async () => {
       ? `backend-acceptance-${runId}`
       : null;
   const backendAcceptanceOperation = process.env.V2S_BACKEND_ACCEPTANCE_OPERATION ?? 'all';
+  const exactSetRequired = process.env.V2S_BACKEND_PERFORMANCE_EXACT_SET === 'true';
+  const performanceOperationRegistry = exactSetRequired ? loadPerformanceOperationRegistry({root}) : null;
   mkdirSync(directory, {recursive: true});
   const manifestPath = path.join(directory, 'run-manifest.json');
   const manifest = {
@@ -525,6 +582,7 @@ const execute = async () => {
     gradleDistribution: distribution,
     logPath: `${remoteResults}/gradle.log`,
     testExecution: {status: 'NOT_RUN'},
+    measurementEvidence: {status: 'NOT_RUN'},
     cleanup: {
       status: 'FAIL',
       remoteProcess: 'FAIL',
@@ -534,14 +592,35 @@ const execute = async () => {
     },
     status: 'FAIL',
     firstFailure: null,
+    devLifecycle: {
+      wasRunning: false,
+      managedDevRunId: null,
+      stop: {status: 'NOT_RUN'},
+      restore: {status: 'NOT_APPLICABLE'},
+      cleanup: 'NOT_APPLICABLE',
+    },
   };
   const persist = () => atomicWrite(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   let remotePrepared = false;
   let remoteRun;
   let failure;
   let backendAcceptanceResult;
+  let measurementEvidence;
+  let devState;
   runnerEvent('STARTED', {RUN_ID: runId, TASK: invocation.task, MODE: 'FOCUSED'});
   try {
+    devState = inspectManagedDevState();
+    manifest.devLifecycle.wasRunning = devState.wasRunning;
+    manifest.devLifecycle.managedDevRunId = devState.runId;
+    if (devState.wasRunning) {
+      const stopResult = commandResult(path.join(root, 'scripts/dev/stop'), [], {
+        env: {...process.env, V2S_RUNTIME_DIR: runtime},
+      });
+      manifest.devLifecycle.stop = classifyManagedDevLifecycleCommand(stopResult, 'R5_DEV_STOP=PASS');
+      if (manifest.devLifecycle.stop.status !== 'PASS') throw new Error('DEV_STOP_FAILED');
+      manifest.devLifecycle.cleanup = 'PENDING';
+    }
+    persist();
     const localBudget = commandResult(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
       path.join(root, '.runtime'),
     ]);
@@ -596,11 +675,44 @@ const execute = async () => {
         readFileSync(path.join(directory, 'backend-acceptance-result.jsonl'), 'utf8'),
       );
     }
+    if (backendAcceptanceRunId !== null && backendAcceptanceResult === undefined) {
+      throw new Error('BACKEND_ACCEPTANCE_RESULT_REQUIRED');
+    }
     if (actualExecution.status !== 'PASS') throw new Error(actualExecution.reason);
     if (remoteGradleStatus !== '0') throw new Error('REMOTE_GRADLE_EXIT_NONZERO');
     if (manifest.cleanup.status !== 'PASS') throw new Error('REMOTE_TESTCONTAINERS_RESOURCE_NOT_RECLAIMED');
     if (backendAcceptanceResult?.summary.stubOnly > 0) throw new Error('BACKEND_ACCEPTANCE_STUB_BUSINESS_NOT_ALLOWED');
     if (backendAcceptanceResult?.summary.directFailures > 0) throw new Error('BACKEND_ACCEPTANCE_SCENARIO_FAILURE');
+    if (backendAcceptanceRunId !== null) {
+      const eventsPath = path.join(directory, 'http-request-events.jsonl');
+      if (!existsSync(eventsPath)) throw new Error('HTTP_REQUEST_EVENTS_REQUIRED');
+      measurementEvidence = parseHttpRequestEvents(readFileSync(eventsPath, 'utf8'), backendAcceptanceRunId);
+      assertUnclassifiedSqlRatio(measurementEvidence);
+      const operationSet = exactSetRequired
+        ? reconcilePerformanceOperationEvents(performanceOperationRegistry, measurementEvidence.rows)
+        : null;
+      const budgetEvidence = exactSetRequired
+        ? assertPerformanceOperationBudgets(performanceOperationRegistry, measurementEvidence.rows)
+        : null;
+      const connectionBudgetEvidence = exactSetRequired
+        ? assertPerformanceConnectionBudgets(performanceOperationRegistry, measurementEvidence.rows)
+        : null;
+      manifest.measurementEvidence = {
+        status: 'PASS',
+        ...measurementEvidence.summary,
+        ...(operationSet ? {operationSet} : {}),
+        ...(budgetEvidence ? {budgetEvidence} : {}),
+        ...(connectionBudgetEvidence ? {connectionBudgetEvidence} : {}),
+      };
+      if (operationSet) {
+        try {
+          assertPerformanceOperationExactSet(operationSet);
+        } catch (error) {
+          manifest.measurementEvidence.status = 'FAIL';
+          throw error;
+        }
+      }
+    }
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));
     manifest.firstFailure = failure.message;
@@ -616,6 +728,23 @@ const execute = async () => {
       manifest.cleanup.remoteWorkspace = cleanupRemoteWorkspace(remoteRoot);
     }
     if (manifest.cleanup.remoteWorkspace !== 'PASS') manifest.cleanup.status = 'FAIL';
+    if (devState?.wasRunning) {
+      if (!failure && manifest.testExecution.status === 'PASS' && manifest.cleanup.status === 'PASS') {
+        const startResult = commandResult(path.join(root, 'scripts/dev/start'), [], {
+          env: {...process.env, V2S_RUNTIME_DIR: runtime},
+        });
+        manifest.devLifecycle.restore = classifyManagedDevLifecycleCommand(startResult, 'R5_DEV_START=PASS');
+        if (manifest.devLifecycle.restore.status === 'PASS') manifest.devLifecycle.cleanup = 'PASS';
+        else {
+          manifest.devLifecycle.cleanup = 'FAIL';
+          failure = new Error('DEV_RESTART_FAILED');
+          manifest.firstFailure ??= failure.message;
+        }
+      } else {
+        manifest.devLifecycle.restore = {status: 'NOT_RUN', reason: 'TEST_NOT_PASS'};
+        manifest.devLifecycle.cleanup = 'NOT_RUN';
+      }
+    }
     manifest.completedAt = now();
     manifest.status =
       !failure && manifest.testExecution.status === 'PASS' && manifest.cleanup.status === 'PASS' ? 'PASS' : 'FAIL';
@@ -632,6 +761,16 @@ const execute = async () => {
       process.stdout.write(
         `BACKEND_ACCEPTANCE_SUMMARY DISCOVERED=${backendAcceptanceResult.summary.discovered} SELECTED=${backendAcceptanceResult.summary.selected} HTTP_SUCCESS=${backendAcceptanceResult.summary.httpSuccess} REAL_BUSINESS_ASSERTIONS=${backendAcceptanceResult.summary.realBusinessAssertions} STUB_ONLY=${backendAcceptanceResult.summary.stubOnly} DIRECT_FAILURES=${backendAcceptanceResult.summary.directFailures}\n`,
       );
+    }
+    if (measurementEvidence) {
+      process.stdout.write(
+        `BACKEND_PERFORMANCE_MEASUREMENT DISCOVERED=${measurementEvidence.summary.discovered} SQL_OPERATIONS=${measurementEvidence.summary.sqlOperations} UNCLASSIFIED_SQL=${measurementEvidence.summary.unclassifiedSqlOperations} UNCLASSIFIED_SQL_RATIO=${measurementEvidence.summary.unclassifiedSqlRatio}\n`,
+      );
+      if (manifest.measurementEvidence.operationSet) {
+        process.stdout.write(
+          `BACKEND_PERFORMANCE_OPERATION_SET EXPECTED=${manifest.measurementEvidence.operationSet.expected} OBSERVED=${manifest.measurementEvidence.operationSet.observed} MISSING=${manifest.measurementEvidence.operationSet.missing.length} EXTRA=${manifest.measurementEvidence.operationSet.extra.length} DRIFT=${manifest.measurementEvidence.operationSet.drift.length}\n`,
+        );
+      }
     }
     process.stdout.write(
       `R5_REMOTE_TESTCONTAINERS=PASS; TASK=${invocation.task}; EVIDENCE=${path.relative(root, directory)}; RESOURCE_CLEANUP=PASS\n`,

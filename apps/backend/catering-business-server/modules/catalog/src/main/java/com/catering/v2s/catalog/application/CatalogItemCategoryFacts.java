@@ -47,12 +47,12 @@ final class CatalogItemCategoryFacts {
     void replace(UUID itemRef, ArrayNode categoryRefs) {
         List<UUID> normalized = normalize(categoryRefs);
         jdbc.update("DELETE FROM catalog.catalog_item_category WHERE item_ref=?", itemRef);
-        for (UUID categoryRef : normalized) {
-            jdbc.update(
+        if (!normalized.isEmpty())
+            jdbc.batchUpdate(
                     "INSERT INTO catalog.catalog_item_category(item_ref,category_ref) VALUES(?,?)",
-                    itemRef,
-                    categoryRef);
-        }
+                    normalized.stream()
+                            .map(categoryRef -> new Object[] {itemRef, categoryRef})
+                            .toList());
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */

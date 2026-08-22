@@ -62,7 +62,7 @@ All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-b
 2026-08-14 起，唯一公共入口是
 `scripts/test/backend-acceptance --operation all`（也可用同一参数聚焦单个 operation）。它在真实远端
 Testcontainers 中启动应用，经真实 HTTP 自动发现并串行运行当前 60 条手写 fixture/request/business
-assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和只供人工比较的 `DB_OPERATIONS`；结果还明确标记
+assertion，逐条分开打印 `CONTRACT`、`BUSINESS` 和场景内信息性 `DB_OPERATIONS`；结果还明确标记
 `businessMode=REAL`，桩断言不得通过。当前场景覆盖 IAM、ORG、商业合同、asset、catalog、audit、extension、
 collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱敏、读回和跨域业务规则；本批的绑定查询
 过滤/排序/分页、认证类型空值语义以及项目/门店经营渠道状态规则均由真实 HTTP 场景覆盖。原 196 个 provider 壳、
@@ -80,9 +80,11 @@ collaboration 与 business-channel 的权限、隔离、状态迁移、字段脱
 `BUSINESS` 必须是 `businessMode=REAL`。受管 Testcontainers 资源仍须 cleanup PASS，但 cleanup
 不是场景业务维度。
 
-PERFORMANCE/CLEANUP verdict、accepted-baseline、known-uncovered、自动发现/精确集合、lane/并行/
-心跳/work-stealing、calibration 与 correctnessCases 已退役。下一条 operation 仅复制这一条的真实
-fixture、HTTP request 与业务断言，不恢复全量迁移或预算门。
+旧 scenario-level PERFORMANCE verdict、accepted-baseline、known-uncovered、provider exact-set、
+lane/并行/心跳/work-stealing、scenario calibration 与 correctnessCases 继续退役。下一条业务
+scenario 只复制真实 fixture、HTTP request 与业务断言。Dexter 2026-08-22 恢复的 generated
+238-operation budget 由独立 run-level verifier 消费同一 HTTP completion events；不写进
+`@AcceptanceScenario`、不参与其 `CONTRACT`/`BUSINESS`，不复活旧 provider/性能 lane。
 
 Docker-backed Gradle `:test` tasks are never accepted from `FROM-CACHE`, `UP-TO-DATE`,
 `NO-SOURCE`, or `SKIPPED`: the build keeps compile/dependency preparation reusable but disables
@@ -115,29 +117,40 @@ endpoint 分组、API 调用数、HTTP/数据库 average/min/max、关联缺口�
 `node scripts/dev/r5-complete-seed-executor.mjs --render-existing <.../seed-report.json>` 重生成同目录
 Markdown，不会重新执行 seed。
 
-- **DEV**：本机启动 Spring Boot、`platform-admin` 与 `operations-admin` Web；只经受管 tunnel 使用远端非生产 PostgreSQL、对象存储等中间件。start/restart 可 additive Flyway，绝不 seed。
-- **当前受管浏览器 L2**：同样在本机启动 Spring Boot、两个 Web 和 Playwright；远端只承载每 run 隔离的中间件命名空间。runner 必须保留本机 PID/日志、tunnel identity、远端数据库/资产 namespace readback，并分别证明业务结果与两侧 cleanup。
+- **DEV**：受信远端非生产主机启动 Spring Boot，与 PostgreSQL/对象存储同侧；本机只启动 `platform-admin` 与 `operations-admin` Vite，经受管 tunnel 转发 Java HTTP 与资产端口。禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite/浏览器。start/restart 可 additive Flyway，绝不 seed。
+- **当前受管浏览器 L2**：不随 DEV L1 改造，仍在本机启动 Spring Boot、两个 Web 和 Playwright；远端只承载每 run 隔离的中间件命名空间。runner 必须保留本机 PID/日志、tunnel identity、远端数据库/资产 namespace readback，并分别证明业务结果与两侧 cleanup。
 - **后续 UAT**：仅在 Dexter 单独授权后，应用与浏览器执行面均部署并运行在远端；本机 runtime、DEV 数据库或静态检查不能替代 UAT。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。
+
+### Testcontainers 运行前后的 DEV 联动
+
+某次 `scripts/test/backend-acceptance` 或其他受管 Testcontainers 入口一经授权，runner/orchestrator 必须先读取 DEV manifest：
+
+- 若受管 DEV identity 有效，记录 `DEV_WAS_RUNNING=true`，经 `scripts/dev/stop` 关闭；只有 stop cleanup PASS 才继续测试；
+- 若没有 DEV，记录 `DEV_WAS_RUNNING=false`，不得按端口或进程名猜测并停止任何进程；
+- 只有 Testcontainers `business=PASS` 且 `cleanup=PASS`，并且 `DEV_WAS_RUNNING=true`，才经 `scripts/dev/start` 恢复 DEV，使其运行当前最新代码；
+- 测试失败不自动重启，原先没有 DEV 也不补启动；restart 不 seed，且 restart 自身的 business/cleanup/first-failure 证据必须单列。
+
+该隐含授权只覆盖受管 DEV stop/start，不覆盖 reset、seed、浏览器 L2、UAT 或任何数据动作。
 
 ### DEV 拓扑显式读回（必须先确认）
 
 DEV 的固定拓扑标记是：
 
 ```text
-TOPOLOGY=LOCAL_APPLICATIONS_REMOTE_NON_PRODUCTION_MIDDLEWARE
-APPLICATIONS=LOCAL_HOST
+TOPOLOGY=REMOTE_JAVA_LOCAL_VITE_REMOTE_NON_PRODUCTION_MIDDLEWARE
+JAVA_APPLICATION=REMOTE_TRUSTED_NON_PRODUCTION_HOST
+WEB_APPLICATIONS=LOCAL_HOST
 MIDDLEWARE=REMOTE_NON_PRODUCTION
-TRANSPORT=MANAGED_SSH_TUNNEL
+TRANSPORT=MANAGED_HTTP_AND_ASSET_SSH_TUNNEL
 ```
 
-具体映射由 `scripts/dev/r5-dev-runner.mjs` 的受管 runner 建立：本机
-`127.0.0.1:25432` 只是 SSH 转发入口，实际目标是远端非生产主机上的 PostgreSQL；本机
-`127.0.0.1:29000` 只是 SSH 转发入口，实际目标是远端非生产主机上的对象存储。因而
-`V2S_DEV_DATABASE_URL=jdbc:postgresql://127.0.0.1:25432/...` 不能解释为“本机数据库”，
-`CATERING_ASSET_OBJECT_STORAGE_ENDPOINT=http://127.0.0.1:29000` 也不能解释为“本机
-对象存储”。这两个本机地址只有在 manifest 中存在受管 tunnel identity 时才有效。
+具体映射由 `scripts/dev/r5-dev-runner.mjs` 的受管 runner 建立：Java 的 JDBC/对象存储 endpoint
+指向远端同机地址，不经过本机；本机只有 Java HTTP 与资产两个受管 forward，供 Vite proxy 和浏览器
+资产访问。manifest 必须记录远端 Java 的 trusted host、boot id、PID、start ticks、command digest、
+日志/readiness，以及本机两个 Vite 和 tunnel 的 PID/start token。若 runner 仍 spawn 本机 Gradle 或
+建立 PostgreSQL forward，start 必须以拓扑不匹配失败，不得 fallback。
 本段是执行入口约束；后续获批的 runner 变更还必须把上述四个字段、remote host binding
 与 tunnel identity 同时写入 run-scoped manifest 和启动 stdout，不能把本段文档存在误报成
 runtime 已经输出拓扑字段。

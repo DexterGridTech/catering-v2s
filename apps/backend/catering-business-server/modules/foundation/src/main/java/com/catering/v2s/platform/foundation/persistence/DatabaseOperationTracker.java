@@ -310,6 +310,35 @@ public final class DatabaseOperationTracker {
                     .count();
         }
 
+        /** Counts the transaction starts that actually enter manual transaction mode. */
+        public long transactionBeginCount() {
+            return operations.stream()
+                    .filter(operation -> "TRANSACTION".equals(operation.kind()))
+                    .filter(operation -> "SET_AUTO_COMMIT".equals(operation.action()))
+                    .count();
+        }
+
+        /** Counts SQL executions without allowing connection or transaction bookkeeping to dilute the ratio. */
+        public long sqlOperationCount() {
+            return operations.stream()
+                    .filter(DatabaseOperationTracker::isSqlExecution)
+                    .count();
+        }
+
+        /** Counts SQL executions that have no explicit semantic or owner layer attribution. */
+        public long unclassifiedSqlOperationCount() {
+            return operations.stream()
+                    .filter(DatabaseOperationTracker::isSqlExecution)
+                    .filter(operation -> operation.section() == Section.UNCLASSIFIED)
+                    .count();
+        }
+
+        /** Returns a stable zero value for requests without SQL and a fractional ratio otherwise. */
+        public double unclassifiedSqlRatio() {
+            long sqlCount = sqlOperationCount();
+            return sqlCount == 0 ? 0d : (double) unclassifiedSqlOperationCount() / sqlCount;
+        }
+
         public Map<Section, Long> logicalSectionCounts() {
             return sectionCounts;
         }
@@ -572,6 +601,10 @@ public final class DatabaseOperationTracker {
                     : Section.OWNER_READ;
         }
         return Section.UNCLASSIFIED;
+    }
+
+    private static boolean isSqlExecution(Operation operation) {
+        return !"CONNECTION".equals(operation.kind()) && !"TRANSACTION".equals(operation.kind());
     }
 
     private static boolean isOwnerImplementation(String callSite) {

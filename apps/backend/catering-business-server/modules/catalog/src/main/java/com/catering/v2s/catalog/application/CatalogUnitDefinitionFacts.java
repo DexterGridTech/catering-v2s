@@ -2,7 +2,14 @@ package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -161,10 +168,60 @@ final class CatalogUnitDefinitionFacts {
         return readback(row);
     }
 
+    /**
+     * Resolves the complete active unit set under deterministic locks. Save validation must not turn one unit
+     * assignment into one round trip per SKU; the returned map is the same owner fact that the write consumes.
+     */
+    Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> requireActiveAll(
+            String scope, String brand, Collection<UUID> refs) {
+        return requireAll(scope, brand, refs, true);
+    }
+
     /** Read an existing binding without treating a disabled definition as a missing fact. */
     CatalogOwnerApi.UnitDefinitionReadback requireInScope(String scope, String brand, UUID ref) {
         lock(ref);
         return readback(require(scope, brand, ref));
+    }
+
+    /** Resolves copied unit definitions in one scoped read after the batch insert. */
+    Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> requireInScopeAll(
+            String scope, String brand, Collection<UUID> refs) {
+        return requireAll(scope, brand, refs, false);
+    }
+
+    private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> requireAll(
+            String scope, String brand, Collection<UUID> refs, boolean activeOnly) {
+        List<UUID> ordered = refs == null
+                ? List.of()
+                : refs.stream().filter(Objects::nonNull).distinct().sorted().toList();
+        if (ordered.isEmpty()) return Map.of();
+        ordered.forEach(this::lock);
+        String placeholders = String.join(",", java.util.Collections.nCopies(ordered.size(), "?"));
+        List<Object> args = new ArrayList<>();
+        args.add(scope);
+        args.add(brand);
+        args.addAll(ordered);
+        List<UnitRow> rows = jdbc.query(
+                "SELECT unit_ref,code,name,dimension,precision,status,version FROM catalog.unit_definition "
+                        + "WHERE data_node_ref=? AND brand_ref=? AND unit_ref IN ("
+                        + placeholders + ")",
+                (result, row) -> row(result),
+                args.toArray());
+        Map<UUID, UnitRow> byRef = new LinkedHashMap<>();
+        rows.forEach(row -> byRef.put(row.ref(), row));
+        for (UUID ref : ordered) {
+            UnitRow row = byRef.get(ref);
+            if (row == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "单位定义不存在");
+            if (activeOnly && !"ENABLED".equals(row.status()))
+                throw new CatalogOwnerApi.Problem(
+                        "UNIT_NOT_ACTIVE",
+                        422,
+                        /* format-wrap */
+                        "基础计量单位必须是启用状态");
+        }
+        Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> result = new LinkedHashMap<>();
+        ordered.forEach(ref -> result.put(ref, readback(byRef.get(ref))));
+        return Map.copyOf(result);
     }
 
     private void lock(UUID unitRef) {
@@ -207,6 +264,36 @@ final class CatalogUnitDefinitionFacts {
                 ref,
                 ref,
                 ref));
+    }
+
+    Set<UUID> referencedRefs(Collection<UUID> refs) {
+        List<UUID> ordered = refs == null
+                ? List.of()
+                : new ArrayList<>(new LinkedHashSet<>(
+                        refs.stream().filter(Objects::nonNull).toList()));
+        if (ordered.isEmpty()) return Set.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(ordered.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.addAll(ordered);
+        arguments.addAll(ordered);
+        arguments.addAll(ordered);
+        arguments.addAll(ordered);
+        arguments.addAll(ordered);
+        return Set.copyOf(jdbc.query(
+                "SELECT ref FROM ("
+                        + "SELECT sales_unit_ref AS ref FROM catalog.catalog_item WHERE sales_unit_ref IN ("
+                        + placeholders + ") UNION SELECT base_measure_unit_ref FROM catalog.catalog_item WHERE "
+                        + "base_measure_unit_ref IN (" + placeholders + ") UNION SELECT sales_unit_override_ref FROM "
+                        + "catalog.catalog_sku WHERE sales_unit_override_ref IN (" + placeholders
+                        + ") UNION SELECT base_measure_unit_override_ref FROM catalog.catalog_sku WHERE "
+                        + "base_measure_unit_override_ref IN (" + placeholders
+                        + ") UNION SELECT consumption_unit_ref FROM catalog.catalog_order_option_definition_material "
+                        + "WHERE consumption_unit_ref IN (" + placeholders + ")) referenced WHERE ref IS NOT NULL",
+                statement -> {
+                    for (int index = 0; index < arguments.size(); index++)
+                        statement.setObject(index + 1, arguments.get(index));
+                },
+                (result, rowNumber) -> result.getObject(1, UUID.class)));
     }
 
     private CatalogOwnerApi.UnitDefinitionReadback readback(UnitRow row) {

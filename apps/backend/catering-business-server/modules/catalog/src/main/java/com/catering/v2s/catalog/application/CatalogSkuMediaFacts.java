@@ -29,20 +29,27 @@ final class CatalogSkuMediaFacts {
 
     void replace(ArrayNode skus) {
         if (skus == null) return;
+        List<Object[]> rows = new ArrayList<>();
+        List<UUID> skuRefs = new ArrayList<>();
         for (JsonNode node : skus) {
             if (!node.isObject()) throw problem("skus must contain objects");
             UUID skuRef = uuid(node.path("productSkuRef"), "productSkuRef");
+            skuRefs.add(skuRef);
             List<UUID> assets = normalize(node.path("mediaRefs"));
             validateCount(assets.size());
-            jdbc.update("DELETE FROM catalog.catalog_sku_media WHERE product_sku_ref=?", skuRef);
             for (int order = 0; order < assets.size(); order++) {
-                jdbc.update(
-                        "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)",
-                        skuRef,
-                        assets.get(order),
-                        order);
+                rows.add(new Object[] {skuRef, assets.get(order), order});
             }
         }
+        if (skuRefs.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(skuRefs.size(), "?"));
+        jdbc.update(
+                "DELETE FROM catalog.catalog_sku_media WHERE product_sku_ref IN (" + placeholders + ")",
+                skuRefs.toArray());
+        if (!rows.isEmpty())
+            jdbc.batchUpdate(
+                    "INSERT INTO catalog.catalog_sku_media(product_sku_ref,asset_ref,display_order) VALUES(?,?,?)",
+                    rows);
     }
 
     /** Inserts facts for freshly-created copy targets in one owner-local JDBC batch. */

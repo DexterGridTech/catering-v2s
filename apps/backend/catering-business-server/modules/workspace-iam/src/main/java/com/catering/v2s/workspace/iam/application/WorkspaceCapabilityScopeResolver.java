@@ -83,6 +83,56 @@ public class WorkspaceCapabilityScopeResolver {
         return resolve(session, requirementId, target);
     }
 
+    /**
+     * Consumes an organization-owned path already resolved earlier in the same edge request. This is deliberately a
+     * normal enabled-target path only: the caller must provide the exact target path returned by the owner, and the
+     * command owner still rechecks its persisted scope/CAS facts in its write transaction.
+     */
+    public ScopeResolution resolveUsingResolvedTaskPath(
+            WorkspaceSessionReadback session,
+            String requirementId,
+            ServerResolvedResource target,
+            OrganizationTaskPathLookup.TaskPath resolvedTaskPath) {
+        var requirement =
+                WorkspaceCapabilityRequirementCatalog.requirement(requirementId).orElse(null);
+        if (requirement == null
+                || !AUTHENTICATED_WORKSPACE.equals(requirement.authorizationMode())
+                || !AUTHENTICATED_WORKSPACE_TARGET_SCOPE.equals(requirement.resolverId())
+                || target == null
+                || resolvedTaskPath == null
+                || !target.resourceType().equals(resolvedTaskPath.targetType())
+                || !target.resourceId().equals(resolvedTaskPath.targetId())) {
+            return ScopeResolution.deny();
+        }
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
+                        requirement.requirementId(), target.resourceType())
+                .orElse(null);
+        return resolveWithResolvedTaskPath(session, requirementId, capability, target, resolvedTaskPath);
+    }
+
+    /** Same-path status-transition variant; the caller supplies the owner-resolved transition path. */
+    public ScopeResolution resolveStatusTransitionUsingResolvedTaskPath(
+            WorkspaceSessionReadback session,
+            String requirementId,
+            ServerResolvedResource target,
+            OrganizationTaskPathLookup.TaskPath resolvedTaskPath) {
+        var requirement =
+                WorkspaceCapabilityRequirementCatalog.requirement(requirementId).orElse(null);
+        if (requirement == null
+                || !AUTHENTICATED_WORKSPACE.equals(requirement.authorizationMode())
+                || !AUTHENTICATED_WORKSPACE_TARGET_SCOPE.equals(requirement.resolverId())
+                || target == null
+                || resolvedTaskPath == null
+                || !target.resourceType().equals(resolvedTaskPath.targetType())
+                || !target.resourceId().equals(resolvedTaskPath.targetId())) {
+            return ScopeResolution.deny();
+        }
+        String capability = WorkspaceCapabilityRequirementCatalog.resolveCapabilityKey(
+                        requirement.requirementId(), target.resourceType())
+                .orElse(null);
+        return resolveWithResolvedTaskPath(session, requirementId, capability, target, resolvedTaskPath);
+    }
+
     private ScopeResolution resolve(
             WorkspaceSessionReadback session,
             String requirementId,
@@ -162,6 +212,57 @@ public class WorkspaceCapabilityScopeResolver {
                     || !taskPath.targetType().equals(target.resourceType())
                     || !taskPath.targetId().equals(target.resourceId())
                     || !(pathFacts.assignmentScopeAllowed()
+                            || allowsHeadCompanyToCreateHeadCompany(capability, assignment, taskPath))) {
+                return ScopeResolution.deny();
+            }
+            return ScopeResolution.allow(
+                    capability,
+                    new FirstOwnerQueryPredicate(
+                            session.workspaceUuid(),
+                            session.groupWorkspaceKey(),
+                            target.resourceType(),
+                            target.resourceId(),
+                            assignment.serviceNodeType(),
+                            assignment.serviceNodeId(),
+                            taskPath.ancestorIds(),
+                            session.contextVersion()));
+        } finally {
+            DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.SCOPE_RESOLVED);
+        }
+    }
+
+    private ScopeResolution resolveWithResolvedTaskPath(
+            WorkspaceSessionReadback session,
+            String requirementId,
+            String capability,
+            ServerResolvedResource target,
+            OrganizationTaskPathLookup.TaskPath taskPath) {
+        try (var scopeSection = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.SCOPE)) {
+            if (session == null
+                    || session.currentAssignmentId() == null
+                    || target == null
+                    || target.resourceType() == null
+                    || target.resourceId() == null
+                    || requirementId == null
+                    || requirementId.isBlank()
+                    || capability == null
+                    || capability.isBlank()) {
+                return ScopeResolution.deny();
+            }
+            WorkspaceAssignmentScopeLookup.AssignmentScope assignment;
+            try {
+                assignment = loadWorkspaceCommandAuthorizationFacts(session, capability)
+                        .assignmentScope();
+            } catch (RuntimeException ignored) {
+                return ScopeResolution.deny();
+            }
+            if (assignment == null
+                    || assignment.serviceNodeType() == null
+                    || assignment.serviceNodeId() == null
+                    || !taskPath.targetType().equals(target.resourceType())
+                    || !taskPath.targetId().equals(target.resourceId())
+                    || !(OrganizationTaskPathLookup.scopeAllows(
+                                    assignment.serviceNodeType(), assignment.serviceNodeId(), taskPath)
                             || allowsHeadCompanyToCreateHeadCompany(capability, assignment, taskPath))) {
                 return ScopeResolution.deny();
             }

@@ -87,7 +87,6 @@ class PlatformWorkspaceAdministrationControllerTest {
                 new PlatformSessionResolver(authentication),
                 workspaces,
                 mock(GroupWorkspaceTaskQuery.class),
-                assets,
                 taskReads);
         EdgeRequestContext request = new EdgeRequestContext(
                 "test-fingerprint",

@@ -35,6 +35,14 @@ public final class RequestDiagnosticLifecycle {
         }
     }
 
+    static void recordRequestCardinality(Integer cardinality) {
+        if (cardinality == null || cardinality < 0) {
+            throw new IllegalArgumentException("invalid request cardinality");
+        }
+        Lifecycle lifecycle = CURRENT.get();
+        if (lifecycle != null) lifecycle.recordRequestCardinality(cardinality);
+    }
+
     public enum Phase {
         EDGE_IN,
         SESSION_RESOLVED,
@@ -50,6 +58,7 @@ public final class RequestDiagnosticLifecycle {
         private final RequestDiagnosticContext context;
         private final String consumerFace;
         private final Lifecycle previous;
+        private Integer requestCardinality;
 
         private Lifecycle(RequestDiagnosticContext context, String consumerFace, Lifecycle previous) {
             this.context = Objects.requireNonNull(context, "context");
@@ -70,6 +79,14 @@ public final class RequestDiagnosticLifecycle {
 
         Lifecycle previous() {
             return previous;
+        }
+
+        void recordRequestCardinality(Integer cardinality) {
+            this.requestCardinality = cardinality;
+        }
+
+        Integer requestCardinality() {
+            return requestCardinality;
         }
     }
 }

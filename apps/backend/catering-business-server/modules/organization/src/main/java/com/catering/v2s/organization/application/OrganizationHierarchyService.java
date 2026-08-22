@@ -252,7 +252,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 now,
                 extensions.json(),
                 extensions.revision());
-        replacePhases(id, phases);
+        // A newly inserted node has no child phase rows; only the required project rows need to be inserted.
+        insertPhases(id, phases);
         OrganizationNodeReadback created = requireNode(workspaceUuid, groupWorkspaceKey, id, type);
         audit(
                 workspaceUuid,
@@ -328,7 +329,8 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 now,
                 extensions.json(),
                 extensions.revision());
-        replacePhases(id, phases);
+        // A newly inserted node has no child phase rows; only the required project rows need to be inserted.
+        insertPhases(id, phases);
         OrganizationNodeReadback created = requireNode(workspaceUuid, groupWorkspaceKey, id, type);
         audit(
                 workspaceUuid,
@@ -787,6 +789,20 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String status,
             AuditActor actor) {
         OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
+        return transitionStatusFromCurrent(
+                current, workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor);
+    }
+
+    private OrganizationNodeReadback transitionStatusFromCurrent(
+            OrganizationNodeReadback current,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID nodeId,
+            long expectedVersion,
+            String status,
+            AuditActor actor) {
+        // The owner-bound command already performed the grant-bound read before receipt replay.
+        // Keep the post-write readback fresh; only the pre-write fact is transferred.
         if (!List.of("ENABLED", "DISABLED").contains(status)
                 || current.version() != expectedVersion
                 || jdbc.update(
@@ -854,12 +870,13 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String idempotencyKey,
             AuditActor actor,
             OperationsOwnerScopeGrant ownerScopeGrant) {
-        requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null, ownerScopeGrant);
+        OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null, ownerScopeGrant);
         return receipts.execute(
                 workspaceUuid,
                 idempotencyKey,
                 canonical("transitionStatus", workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status),
-                () -> transitionStatus(workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor));
+                () -> transitionStatusFromCurrent(
+                        current, workspaceUuid, groupWorkspaceKey, nodeId, expectedVersion, status, actor));
     }
 
     @Transactional
@@ -942,12 +959,9 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             Map<String, String> extensionValues,
             AuditActor actor) {
         OrganizationNodeReadback current = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
-        ExtensionValues extensions = extensionValues(
-                workspaceUuid,
-                groupWorkspaceKey,
-                current.nodeType(),
-                valuesJson(current.extensionValues()),
-                extensionValues);
+        ExtensionValues extensions =
+                extensionValues(workspaceUuid, groupWorkspaceKey, current.nodeType(), current, extensionValues);
+        List<String> phases = normalizedPhases(current.nodeType(), phaseNames);
         if (!Objects.equals(current.parentId(), parentId)
                 || current.version() != expectedVersion
                 || jdbc.update(
@@ -967,7 +981,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                                 groupWorkspaceKey,
                                 expectedVersion)
                         != 1) throw new OrganizationConflictException();
-        replacePhases(nodeId, normalizedPhases(current.nodeType(), phaseNames));
+        if (!current.phaseNames().equals(phases)) replacePhases(nodeId, phases);
         OrganizationNodeReadback updated = requireNode(workspaceUuid, groupWorkspaceKey, nodeId, null);
         audit(
                 workspaceUuid,
@@ -986,8 +1000,9 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
                 current.nodeType(),
-                valuesJson(current.extensionValues()),
+                current,
                 command.extensionSubmission());
+        List<String> phases = normalizedPhases(current.nodeType(), command.phaseNames());
         if (!Objects.equals(current.parentId(), command.parentId())
                 || current.version() != command.expectedVersion()
                 || jdbc.update(
@@ -1007,7 +1022,7 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                                 command.groupWorkspaceKey(),
                                 command.expectedVersion())
                         != 1) throw new OrganizationConflictException();
-        replacePhases(command.nodeId(), normalizedPhases(current.nodeType(), command.phaseNames()));
+        if (!current.phaseNames().equals(phases)) replacePhases(command.nodeId(), phases);
         OrganizationNodeReadback updated =
                 requireNode(command.workspaceUuid(), command.groupWorkspaceKey(), command.nodeId(), null);
         audit(
@@ -1193,12 +1208,18 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
     @Transactional(readOnly = true)
     public OrganizationNodeReadback requireNode(
             UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
-        OrganizationNodeReadback node = jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, parent_id, node_type, code, name, notes, status, "
-                        + "version, created_at_epoch_millis, updated_at_epoch_millis, extension_values::text, "
-                        + "extension_rule_revision FROM organization.organization_node WHERE id=? AND workspace_uuid=? "
-                        + "AND "
-                        + "group_workspace_key=?",
+        return jdbc.query(
+                "SELECT n.id, n.workspace_uuid, n.group_workspace_key, n.parent_id, n.node_type, n.code, n.name,"
+                        + " n.notes, n.status, n.version, n.created_at_epoch_millis, n.updated_at_epoch_millis,"
+                        + " n.extension_values::text, n.extension_rule_revision, COALESCE(array_agg(p.phase_name"
+                        + " ORDER BY p.display_order) FILTER (WHERE p.phase_name IS NOT NULL), ARRAY[]::text[]) AS"
+                        + " phase_names FROM"
+                        + " organization.organization_node n LEFT JOIN organization.project_phase_name p ON"
+                        + " p.project_id=n.id AND n.node_type='PROJECT' WHERE n.id=? AND n.workspace_uuid=? AND"
+                        + " n.group_workspace_key=? GROUP BY n.id, n.workspace_uuid, n.group_workspace_key,"
+                        + " n.parent_id,"
+                        + " n.node_type, n.code, n.name, n.notes, n.status, n.version, n.created_at_epoch_millis,"
+                        + " n.updated_at_epoch_millis, n.extension_values, n.extension_rule_revision",
                 statement -> {
                     statement.setObject(1, nodeId);
                     statement.setObject(2, workspaceUuid);
@@ -1209,6 +1230,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                     String actualType = result.getString("node_type");
                     if (requiredType != null && !requiredType.equals(actualType))
                         throw new OrganizationValidationException();
+                    java.sql.Array phaseArray = result.getArray("phase_names");
+                    Object[] phaseValues = phaseArray == null ? new Object[0] : (Object[]) phaseArray.getArray();
+                    List<String> phases = new ArrayList<>(phaseValues.length);
+                    for (Object phase : phaseValues) phases.add((String) phase);
                     return new OrganizationNodeReadback(
                             result.getObject("id", UUID.class),
                             result.getObject("workspace_uuid", UUID.class),
@@ -1222,30 +1247,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                             result.getLong("version"),
                             result.getLong("created_at_epoch_millis"),
                             result.getLong("updated_at_epoch_millis"),
-                            List.of(),
+                            phases,
                             ExtensionDefinitionService.readValues(result.getString("extension_values")),
                             result.getLong("extension_rule_revision"));
                 });
-        List<String> phases = jdbc.query(
-                "SELECT phase_name FROM organization.project_phase_name WHERE project_id=? ORDER BY display_order",
-                (rs, row) -> rs.getString(1),
-                node.id());
-        return new OrganizationNodeReadback(
-                node.id(),
-                node.workspaceUuid(),
-                node.groupWorkspaceKey(),
-                node.parentId(),
-                node.nodeType(),
-                node.code(),
-                node.name(),
-                node.notes(),
-                node.status(),
-                node.version(),
-                node.createdAtEpochMillis(),
-                node.updatedAtEpochMillis(),
-                phases,
-                node.extensionValues(),
-                node.extensionRuleRevision());
     }
 
     private OrganizationNodeReadback requireNode(
@@ -1458,8 +1463,9 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String currentValuesJson,
             Map<String, String> requestedValues) {
         Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
+        // Empty submission means no extension fact is being changed; definition lookup is unnecessary.
+        if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
         if (definitions == null) {
-            if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
             throw new OrganizationValidationException();
         }
         try {
@@ -1469,7 +1475,6 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                     ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested),
                     definition.version());
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
-            if (requested.isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
             throw new OrganizationValidationException(absent);
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new OrganizationValidationException(invalid);
@@ -1483,8 +1488,9 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
             String currentValuesJson,
             ExtensionSubmission submission) {
         ExtensionSubmission requested = submission == null ? new ExtensionSubmission(List.of()) : submission;
+        // Empty submission means no extension fact is being changed; definition lookup is unnecessary.
+        if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
         if (definitions == null) {
-            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
             throw new OrganizationValidationException();
         }
         try {
@@ -1494,11 +1500,36 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
                     ExtensionDefinitionService.mergeValues(definition, currentValuesJson, requested),
                     definition.version());
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
-            if (requested.fields().isEmpty()) return new ExtensionValues(currentValuesJson, 0L);
             throw new OrganizationValidationException(absent);
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new OrganizationValidationException(invalid);
         }
+    }
+
+    private ExtensionValues extensionValues(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String hostType,
+            OrganizationNodeReadback current,
+            Map<String, String> requestedValues) {
+        Map<String, String> requested = requestedValues == null ? Map.of() : requestedValues;
+        if (requested.isEmpty())
+            return new ExtensionValues(valuesJson(current.extensionValues()), current.extensionRuleRevision());
+        return extensionValues(
+                workspaceUuid, groupWorkspaceKey, hostType, valuesJson(current.extensionValues()), requested);
+    }
+
+    private ExtensionValues extensionValues(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String hostType,
+            OrganizationNodeReadback current,
+            ExtensionSubmission submission) {
+        ExtensionSubmission requested = submission == null ? new ExtensionSubmission(List.of()) : submission;
+        if (requested.fields().isEmpty())
+            return new ExtensionValues(valuesJson(current.extensionValues()), current.extensionRuleRevision());
+        return extensionValues(
+                workspaceUuid, groupWorkspaceKey, hostType, valuesJson(current.extensionValues()), requested);
     }
 
     private static String valuesJson(Map<String, String> values) {
@@ -1586,6 +1617,10 @@ public class OrganizationHierarchyService implements OrganizationNodeLookup, Ope
 
     private void replacePhases(UUID projectId, List<String> phases) {
         jdbc.update("DELETE FROM organization.project_phase_name WHERE project_id=?", projectId);
+        insertPhases(projectId, phases);
+    }
+
+    private void insertPhases(UUID projectId, List<String> phases) {
         if (phases.isEmpty()) return;
         jdbc.batchUpdate(
                 "INSERT INTO organization.project_phase_name (project_id, phase_name, display_order) VALUES (?, ?, ?)",

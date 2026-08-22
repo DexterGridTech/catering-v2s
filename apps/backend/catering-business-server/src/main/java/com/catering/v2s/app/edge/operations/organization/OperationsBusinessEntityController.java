@@ -29,6 +29,7 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.organization.api.OperationsBusinessEntityCommandApi;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.organization.application.operations.CreateOperationsOrganizationBrandOperation;
@@ -66,6 +67,7 @@ public final class OperationsBusinessEntityController {
     private final OperationsSessionResolver sessions;
     private final BusinessEntityService entities;
     private final WorkspaceCapabilityScopeResolver capabilityScopes;
+    private final OrganizationTaskPathLookup taskPaths;
     private final OperationsOrganizationTaskReadService reads;
     private final CreateOperationsOrganizationBrandOperation createBrandOperation;
     private final UpdateOperationsOrganizationBrandOperation updateBrandOperation;
@@ -87,6 +89,7 @@ public final class OperationsBusinessEntityController {
                 sessions,
                 entities,
                 capabilityScopes,
+                null,
                 new OperationsOrganizationTaskReadService(entities, null),
                 new CreateOperationsOrganizationBrandOperation(entities),
                 new UpdateOperationsOrganizationBrandOperation(entities),
@@ -114,6 +117,7 @@ public final class OperationsBusinessEntityController {
             OperationsSessionResolver sessions,
             BusinessEntityService entities,
             WorkspaceCapabilityScopeResolver capabilityScopes,
+            OrganizationTaskPathLookup taskPaths,
             OperationsOrganizationTaskReadService reads,
             CreateOperationsOrganizationBrandOperation createBrandOperation,
             UpdateOperationsOrganizationBrandOperation updateBrandOperation,
@@ -128,6 +132,7 @@ public final class OperationsBusinessEntityController {
         this.sessions = sessions;
         this.entities = entities;
         this.capabilityScopes = capabilityScopes;
+        this.taskPaths = taskPaths;
         this.reads = reads;
         this.createBrandOperation = createBrandOperation;
         this.updateBrandOperation = updateBrandOperation;
@@ -148,6 +153,7 @@ public final class OperationsBusinessEntityController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody BrandCreateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationTaskPathLookup.TaskPath groupPath = groupTaskPath(session, groupWorkspaceKey);
         OrganizationEntityReadback result = m1Bindings.bindCreateOperationsOrganizationBrand(
                 new OperationsBusinessEntityCommandApi.BrandCreateCommand(
                         session.workspaceUuid(),
@@ -159,11 +165,7 @@ public final class OperationsBusinessEntityController {
                         brandCreateSubmission(body.extensionValues()),
                         idempotencyKey,
                         actor(session),
-                        requireCapability(
-                                session,
-                                "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND",
-                                ServiceNodeTypes.GROUP,
-                                entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey))));
+                        requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_BRAND", groupPath)));
         return ResponseEntity.status(HttpStatus.CREATED).body(BusinessEntityWireMapper.brand(result));
     }
 
@@ -370,6 +372,7 @@ public final class OperationsBusinessEntityController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody BrandUpdateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        OrganizationTaskPathLookup.TaskPath groupPath = groupTaskPath(session, groupWorkspaceKey);
         return BusinessEntityWireMapper.brand(m1Bindings.bindUpdateOperationsOrganizationBrand(
                 new OperationsBusinessEntityCommandApi.BrandUpdateCommand(
                         session.workspaceUuid(),
@@ -383,11 +386,7 @@ public final class OperationsBusinessEntityController {
                         brandUpdateSubmission(body.extensionValues()),
                         idempotencyKey,
                         actor(session),
-                        requireCapability(
-                                session,
-                                "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND",
-                                ServiceNodeTypes.GROUP,
-                                entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey)))));
+                        requireCapability(session, "REQ_UPDATE_OPERATIONS_ORGANIZATION_BRAND", groupPath))));
     }
 
     @PatchMapping("/tenants/{tenantId}")
@@ -560,6 +559,26 @@ public final class OperationsBusinessEntityController {
 
     private WorkspaceSessionReadback context(EdgeRequestContext request, String key, long expectedContextVersion) {
         return sessions.requireWorkspaceReadAtContextVersion(request, key, expectedContextVersion);
+    }
+
+    private OrganizationTaskPathLookup.TaskPath groupTaskPath(
+            WorkspaceSessionReadback session, String groupWorkspaceKey) {
+        if (taskPaths != null) return taskPaths.requireGroupTaskPath(session.workspaceUuid(), groupWorkspaceKey);
+        UUID groupId = entities.requireCommercialGroupId(session.workspaceUuid(), groupWorkspaceKey);
+        return new OrganizationTaskPathLookup.TaskPath(ServiceNodeTypes.GROUP, groupId, List.of(groupId), "");
+    }
+
+    private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(
+            WorkspaceSessionReadback session, String requirementId, OrganizationTaskPathLookup.TaskPath groupPath) {
+        var resolution = capabilityScopes.resolveUsingResolvedTaskPath(
+                session,
+                requirementId,
+                new WorkspaceCapabilityScopeResolver.ServerResolvedResource(
+                        groupPath.targetType(), groupPath.targetId()),
+                groupPath);
+        if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW)
+            throw new WorkspaceCommandAuthorizationService.AuthorizationDeniedException();
+        return resolution.ownerScopeGrant(requirementId);
     }
 
     private com.catering.v2s.organization.api.OperationsOwnerScopeGrant requireCapability(

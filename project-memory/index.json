@@ -257,7 +257,11 @@
         "BACKEND_NA_SPLIT_PACKAGE_SCOPE",
         "BACKEND_PUBLIC_INVITATION_CONTRACT_GENERATED_CLOSURE",
         "BACKEND_SOURCE_HASH_CHAIN_CLOSURE",
-        "BACKEND_FORMATTING_GATE_SCOPE"
+        "BACKEND_FORMATTING_GATE_SCOPE",
+        "PERFORMANCE_IS_TWO_MULTIPLIERS",
+        "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM",
+        "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE",
+        "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS"
       ],
       "assertionSources": [
         {
@@ -334,6 +338,26 @@
           "assertionKey": "BACKEND_FORMATTING_GATE_SCOPE",
           "path": "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
           "anchor": "### 第 13 步 · M-B + 门三 · Spotless 引入 + 全量重排 + 接门"
+        },
+        {
+          "assertionKey": "PERFORMANCE_IS_TWO_MULTIPLIERS",
+          "path": "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md",
+          "anchor": "## 1 · 三个测量事实(先于一切解释)"
+        },
+        {
+          "assertionKey": "MEASUREMENT_BASIS_BEFORE_MEASUREMENT_CLAIM",
+          "path": "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md",
+          "anchor": "## 0 · 方案合理性"
+        },
+        {
+          "assertionKey": "BUDGET_CALIBRATED_AFTER_REPAIR_NOT_BEFORE",
+          "path": "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
+          "anchor": "### CP-05 · P0 与初始预算"
+        },
+        {
+          "assertionKey": "OPTIMIZATION_CLOSURE_NEEDS_BEFORE_AFTER_NUMBERS",
+          "path": "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md",
+          "anchor": "## 4 · 为什么历次专项优化没有用(四条,全部可证)"
         }
       ],
       "sourceRefs": [
@@ -343,8 +367,11 @@
         "doc/evidence/platform/rm1/p6/rm1p6-extension-hosts-u26-implementation-amendment.md",
         "doc/evidence/platform/rm1/p6/rm1p6-u13-all-http-crud-efficiency-remediation-design.md",
         "doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md",
+        "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
         "doc/platform/backend-coding-standard.md",
-        "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md"
+        "doc/review/platform/2026-08-16-v2s-backend-standards-conformance-review-claude.md",
+        "doc/review/platform/2026-08-22-v2s-backend-performance-remediation-design-review-claude.md",
+        "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"
       ]
     },
     {
@@ -1223,22 +1250,22 @@
         {
           "assertionKey": "LOCAL_EXECUTION_REMOTE_MIDDLEWARE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "CURRENT_L2_LOCAL_EXECUTION_ISOLATED_REMOTE_CLEANUP",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "UAT_ALL_REMOTE_EXECUTION",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "REMOTE_TESTCONTAINERS_NOT_BROWSER_L2",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "ROUTINE_RUNTIME_COMMANDS_NOT_IMPLEMENTATION",
@@ -1465,7 +1492,7 @@
         {
           "assertionKey": "ENVIRONMENT_TOPOLOGY_MUST_COME_FROM_GOVERNING_SOURCE",
           "path": "AGENTS.md",
-          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 与当前受管浏览器 L2 都在本机执行 Spring Boot、platform-admin、operations-admin 与 Playwright；它们只能经受管 tunnel 连接远端非生产 PostgreSQL/对象存储等中间件，不得在远端启动应用、Vite 或浏览器 runner。DEV 可长期运行但不得 seed；当前 L2 必须是一次性隔离命名空间、run-scoped manifest、本机进程/隧道回收和远端数据库/资产回收均有证据。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用本机 runtime 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。"
+          "anchor": "- **环境执行矩阵（Dexter 裁决，强制）**：DEV 的 Spring Boot 在受信远端非生产主机运行，与 PostgreSQL/对象存储同侧；本机只运行 platform-admin、operations-admin 两个 Vite，并经受管 tunnel 转发远端 Java HTTP 与浏览器直连所需的资产端口，禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite 或远端浏览器。DEV 可长期运行但不得 seed。当前受管浏览器 L2 **不随 DEV L1 改造**：仍在本机执行 Spring Boot、两个 Web 与 Playwright，经受管 tunnel 使用每 run 隔离的远端非生产中间件命名空间，并分别证明本机进程/隧道及远端数据库/资产 cleanup。只有后续获得单独授权的 UAT 才全量远端部署与执行；不得用 DEV/L2 冒充 UAT，也不得把远端 Testcontainers 技术验证误称浏览器 L2。若受管 DEV runner 尚未实现本段 AFTER 拓扑，DEV start/restart 必须 fail closed，不得继续使用已退役的本机 Java + PostgreSQL tunnel 形态。"
         },
         {
           "assertionKey": "RETIRED_CONSUMER_REQUIRES_RETAINED_CAPABILITY_DENOMINATOR",
@@ -3147,6 +3174,87 @@
       ]
     },
     {
+      "id": "practices.drawer-form-lifecycle",
+      "path": "project-memory/practices/drawer-form-lifecycle.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "assertions": [
+        "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
+        "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
+        "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
+        "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
+        "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
+        "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
+          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+          "anchor": "export function useDrawerFormLifecycle({"
+        },
+        {
+          "assertionKey": "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
+        },
+        {
+          "assertionKey": "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "### 3-F · 该回 foundation 的必须回去"
+        },
+        {
+          "assertionKey": "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
+          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+          "anchor": "  readonly closedSessionKey: number;"
+        },
+        {
+          "assertionKey": "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
+          "path": "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
+          "anchor": "export function useDirtyFormLock(dirty?: boolean): boolean {"
+        },
+        {
+          "assertionKey": "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP",
+          "path": "project-memory/practices/frontend-capability-lookup.md",
+          "anchor": "| 抽屉表单生命周期 | `useDrawerFormLifecycle` / `useSubmissionLifecycle` | 含脏表单锁 `useDirtyFormLock` |"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md",
+        "doc/platform/frontend-coding-standard.md",
+        "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
+        "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
+        "project-memory/practices/frontend-capability-lookup.md"
+      ]
+    },
+    {
       "id": "practices.external-collaboration-readback-display-and-detail-surface",
       "path": "project-memory/practices/external-collaboration-readback-display-and-detail-surface.md",
       "layer": "routed",
@@ -3300,87 +3408,6 @@
       ]
     },
     {
-      "id": "practices.drawer-form-lifecycle",
-      "path": "project-memory/practices/drawer-form-lifecycle.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review",
-          "testing"
-        ],
-        "domains": [
-          "admin-ui",
-          "platform"
-        ],
-        "consumerFaces": [
-          "platform-admin",
-          "operations-admin"
-        ],
-        "owners": [
-          "frontend-platform"
-        ],
-        "impacts": [
-          "architecture",
-          "governance"
-        ],
-        "triggers": [
-          "task-start",
-          "implementation",
-          "review",
-          "failure"
-        ]
-      },
-      "assertions": [
-        "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
-        "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
-        "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
-        "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
-        "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
-        "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "EDITABLE_DRAWER_USES_FOUNDATION_LIFECYCLE",
-          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
-          "anchor": "export function useDrawerFormLifecycle({"
-        },
-        {
-          "assertionKey": "DRAWER_CLOSE_INTENTS_SHARE_ONE_LIFECYCLE",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 1-K · 描述任何机制行为之前,先查它是不是已经有了"
-        },
-        {
-          "assertionKey": "DRAWER_MASK_AND_KEYBOARD_FOLLOW_SUBMITTING",
-          "path": "doc/platform/frontend-coding-standard.md",
-          "anchor": "### 3-F · 该回 foundation 的必须回去"
-        },
-        {
-          "assertionKey": "DRAWER_CLOSE_CLEARS_LOCAL_DRAFT",
-          "path": "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
-          "anchor": "  readonly closedSessionKey: number;"
-        },
-        {
-          "assertionKey": "DRAWER_OVERLAY_LOCK_IS_FOUNDATION_OWNED",
-          "path": "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
-          "anchor": "export function useDirtyFormLock(dirty?: boolean): boolean {"
-        },
-        {
-          "assertionKey": "DRAWER_LIFECYCLE_IS_NOT_REIMPLEMENTED_IN_APP",
-          "path": "project-memory/practices/frontend-capability-lookup.md",
-          "anchor": "| 抽屉表单生命周期 | `useDrawerFormLifecycle` / `useSubmissionLifecycle` | 含脏表单锁 `useDirtyFormLock` |"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md",
-        "doc/platform/frontend-coding-standard.md",
-        "libraries/frontend/admin-ui-foundation/src/behavior/useDrawerFormLifecycle.ts",
-        "libraries/frontend/admin-ui-foundation/src/overlay/overlayLock.tsx",
-        "project-memory/practices/frontend-capability-lookup.md"
-      ]
-    },
-    {
       "id": "practices.gate-four-pieces",
       "path": "project-memory/practices/gate-four-pieces.md",
       "layer": "routed",
@@ -3514,6 +3541,75 @@
       ],
       "sourceRefs": [
         "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
+      "id": "practices.module-call-boundary-ownership",
+      "path": "project-memory/practices/module-call-boundary-ownership.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "platform",
+          "contract"
+        ],
+        "consumerFaces": [
+          "operations-admin",
+          "platform-admin"
+        ],
+        "owners": [
+          "backend",
+          "platform",
+          "contract"
+        ],
+        "impacts": [
+          "architecture",
+          "database",
+          "evidence"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "REQUEST_BOUNDARY_HAS_ONE_OWNER",
+        "MODULE_ATTRIBUTION_IS_STRUCTURAL",
+        "WRITE_TRANSACTION_OWNS_ITS_READBACK",
+        "PER_ITEM_BOUNDARY_IS_A_SEMANTIC_CHOICE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "REQUEST_BOUNDARY_HAS_ONE_OWNER",
+          "path": "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-requirements-claude.md",
+          "anchor": "### 5.2 P2 · GET 每请求借多次连接(57 个)—— **单一根因,单一修法**"
+        },
+        {
+          "assertionKey": "MODULE_ATTRIBUTION_IS_STRUCTURAL",
+          "path": "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
+          "anchor": "### CP-03/04 · 测量与分类原子组 D"
+        },
+        {
+          "assertionKey": "WRITE_TRANSACTION_OWNS_ITS_READBACK",
+          "path": "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md",
+          "anchor": "## 5 · Top1 举例:saveOperationsCatalogItem 全链时序"
+        },
+        {
+          "assertionKey": "PER_ITEM_BOUNDARY_IS_A_SEMANTIC_CHOICE",
+          "path": "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
+          "anchor": "### CP-06 · 批量状态原子组 C"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-implementation-design-codex.md",
+        "doc/plans/platform/2026-08-22-v2s-backend-performance-remediation-requirements-claude.md",
+        "doc/review/platform/2026-08-22-v2s-backend-performance-root-cause-analysis-claude.md"
       ]
     },
     {
@@ -3696,6 +3792,51 @@
       ]
     },
     {
+      "id": "practices.set-interaction-not-n-times-single",
+      "path": "project-memory/practices/set-interaction-not-n-times-single.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review"
+        ],
+        "domains": [
+          "backend",
+          "admin-ui",
+          "contract",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "all"
+        ],
+        "impacts": [
+          "architecture",
+          "contract"
+        ],
+        "triggers": [
+          "implementation",
+          "review"
+        ]
+      },
+      "assertions": [
+        "SET_INTERACTION_NOT_N_TIMES_SINGLE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "SET_INTERACTION_NOT_N_TIMES_SINGLE",
+          "path": "doc/platform/foundation-charter.md",
+          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/foundation-charter.md"
+      ]
+    },
+    {
       "id": "practices.ui-visible-business-language-and-dynamic-aggregate-layout",
       "path": "project-memory/practices/ui-visible-business-language-and-dynamic-aggregate-layout.md",
       "layer": "routed",
@@ -3750,51 +3891,6 @@
       "sourceRefs": [
         "doc/decisions/templates/ui-interaction-design-template.md",
         "project-memory/decisions/confirmed-business-language-corpus.md"
-      ]
-    },
-    {
-      "id": "practices.set-interaction-not-n-times-single",
-      "path": "project-memory/practices/set-interaction-not-n-times-single.md",
-      "layer": "routed",
-      "route": {
-        "taskKinds": [
-          "design",
-          "implementation",
-          "review"
-        ],
-        "domains": [
-          "backend",
-          "admin-ui",
-          "contract",
-          "platform"
-        ],
-        "consumerFaces": [
-          "all"
-        ],
-        "owners": [
-          "all"
-        ],
-        "impacts": [
-          "architecture",
-          "contract"
-        ],
-        "triggers": [
-          "implementation",
-          "review"
-        ]
-      },
-      "assertions": [
-        "SET_INTERACTION_NOT_N_TIMES_SINGLE"
-      ],
-      "assertionSources": [
-        {
-          "assertionKey": "SET_INTERACTION_NOT_N_TIMES_SINGLE",
-          "path": "doc/platform/foundation-charter.md",
-          "anchor": "### 1-H · 读取粒度按业务任务的事实闭集,不按已有大对象"
-        }
-      ],
-      "sourceRefs": [
-        "doc/platform/foundation-charter.md"
       ]
     }
   ]

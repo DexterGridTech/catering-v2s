@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport} from './managed-diagnostic-protocol.mjs';
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
 import {normalizeEdgePath} from '../test/seed-report.mjs';
 
 const syntheticRoute = normalizeEdgePath('/things');
@@ -33,4 +33,23 @@ test('derives seed diagnostic headers solely from the managed manifest and 0600 
 test('refuses incomplete protocol metadata and never substitutes literal header names', () => {
   assert.throws(() => buildManagedDiagnosticHeaders({manifest: {...manifest, diagnosticProtocol: {...manifest.diagnosticProtocol, secretHeader: undefined}}, credentials: {V2S_SEED_REPORT_SECRET: 'x'.repeat(32)}, operationId: 'createThing', routeTemplate: syntheticRoute, correlationId: 'correlation-12345678'}), /SEED_DIAGNOSTIC_PROTOCOL_INVALID/);
   assert.throws(() => buildManagedDiagnosticHeaders({manifest, credentials: {}, operationId: 'createThing', routeTemplate: syntheticRoute, correlationId: 'correlation-12345678'}), /SEED_DIAGNOSTIC_CREDENTIAL_REQUIRED/);
+});
+
+test('remote diagnostic transport is explicit and bound to the managed run root', () => {
+  const remoteManifest = {
+    ...manifest,
+    seedEventsPath: '/tmp/v2s-runtime/evidence/seed-request-events.jsonl',
+    remoteHostTrust: {host: 'dev-host-01'},
+    remoteDiagnostic: {
+      kind: 'REMOTE_SSH_PULL',
+      remoteRoot: '/tmp/r5-dev-1724320000000-12345-01234567-89ab-cdef-0123-456789abcdef',
+    },
+  };
+  assert.deepEqual(validateManagedDiagnosticTransport(remoteManifest), {
+    kind: 'REMOTE_SSH_PULL',
+    remoteRoot: remoteManifest.remoteDiagnostic.remoteRoot,
+    host: 'dev-host-01',
+  });
+  assert.throws(() => validateManagedDiagnosticTransport({...remoteManifest, remoteDiagnostic: {...remoteManifest.remoteDiagnostic, remoteRoot: '/tmp/unknown'}}), /SEED_DIAGNOSTIC_REMOTE_TRANSPORT_INVALID/);
+  assert.throws(() => validateManagedDiagnosticTransport({...remoteManifest, remoteHostTrust: {host: 'bad host'}}), /SEED_DIAGNOSTIC_REMOTE_HOST_INVALID/);
 });

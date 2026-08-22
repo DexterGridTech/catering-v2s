@@ -1,0 +1,36 @@
+{
+  "kind": "backend-performance-cp05-calibration-run",
+  "runId": "r5-tc-1787376289318-76297",
+  "sourceManifest": ".runtime/r5/evidence/remote-testcontainers/r5-tc-1787376289318-76297/run-manifest.json",
+  "firstFailure": null,
+  "lastKnownGood": "remote Gradle BUILD SUCCESSFUL; acceptance 80/80; Testcontainers and remote workspace cleanup PASS",
+  "brokenBoundary": "existing acceptance workload does not yet close the 238 operation measurement set",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "acceptance": {
+    "discovered": 80,
+    "selected": 80,
+    "results": 80,
+    "contractPass": 80,
+    "businessPass": 80,
+    "realBusinessAssertions": 80,
+    "directFailures": 0
+  },
+  "measurement": {
+    "events": 4160,
+    "uniqueOperations": 130,
+    "expectedOperations": 238,
+    "missingOperations": 108,
+    "extraOperations": 0,
+    "routeOwnerFaceDrift": 0,
+    "sqlOperations": 127929,
+    "unclassifiedSqlOperations": 0,
+    "unclassifiedSqlRatio": 0
+  },
+  "devLifecycle": {
+    "devWasRunning": false,
+    "stop": "NOT_RUN",
+    "restore": "NOT_APPLICABLE"
+  },
+  "next": "Add minimal real HTTP calibration recipes for the 108 missing operationIds, then rerun the current-tree exact-set measurement."
+}

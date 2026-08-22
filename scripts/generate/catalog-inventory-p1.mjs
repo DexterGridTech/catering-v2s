@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import {readCatalogInventoryOpenApi} from "../lib/catalog-inventory-openapi.mjs";
+import {BATCH_OPERATION_ID, EXPECTED_OPERATION_COUNT, LINEAR_REQUEST_CARDINALITY_BUDGET, validateBudgetChange, validateDatabaseOperationBudget, validateBudgetRegistry} from "./backend-performance-budget.mjs";
 
 const ROOT = process.cwd();
 const REVISION = "CATALOG_INVENTORY_P1_20260806";
@@ -18,6 +19,88 @@ const L2_CASE_BLUEPRINT_PATH = "contracts/policy/catalog-inventory-l2-case-bluep
 const MEDIA_ASSET_DIR = "contracts/policy/catalog-inventory-p1-media";
 const BACKEND_WIRE_SOURCE_ROOT = "apps/backend/catering-business-server/build/generated/sources/catalog-inventory-p1/main/java";
 const BACKEND_WIRE_PACKAGE = "com.catering.v2s.app.edge.generated.wire";
+const BUDGET_MEASUREMENT_SCENARIO_IDS = Object.freeze(["performance.operation-budget-exact-set"]);
+const CATALOG_DATABASE_OPERATION_MAX = Object.freeze({
+  adjustOperationsInventoryTarget: 3,
+  batchTransitionOperationsCatalogItemStatus: 110,
+  countOperationsInventoryTarget: 14,
+  createOperationsCatalogAttributeDefinition: 13,
+  createOperationsCatalogCategory: 17,
+  createOperationsCatalogDictionaryEntry: 14,
+  createOperationsCatalogItem: 15,
+  createOperationsCatalogOrderOptionDefinition: 19,
+  createOperationsCatalogUnit: 11,
+  createOperationsProductionTag: 12,
+  deleteOperationsCatalogAttributeDefinition: 13,
+  deleteOperationsCatalogCategory: 15,
+  deleteOperationsCatalogOrderOptionDefinition: 18,
+  deleteOperationsCatalogUnit: 0,
+  disableOperationsCatalogUnit: 15,
+  executeOperationsBrandCatalogCopy: 23,
+  executeOperationsLocalCatalogCopy: 33,
+  executeOperationsTemporaryCatalogItemPromotion: 7,
+  getOperationsBrandCatalogCopyCandidates: 13,
+  getOperationsCatalogDictionary: 9,
+  getOperationsCatalogItem: 21,
+  getOperationsCatalogItems: 20,
+  getOperationsCatalogNavigation: 12,
+  getOperationsCatalogShapeManifest: 7,
+  getOperationsCatalogWorkbenchContext: 8,
+  getOperationsInventoryConsumptionTargetCandidates: 8,
+  getOperationsInventoryTarget: 10,
+  getOperationsInventoryTargetBusinessHistory: 8,
+  getOperationsInventoryTargetChangeSummary: 8,
+  getOperationsInventoryTargetConsumptionReferences: 19,
+  getOperationsInventoryTargetDiagnostics: 7,
+  getOperationsInventoryTargetLedger: 9,
+  getOperationsInventoryTargets: 12,
+  getOperationsLocalCatalogCopyCandidates: 9,
+  getOperationsProductionTags: 8,
+  increaseOperationsInventoryTarget: 3,
+  listOperationsCatalogAttributeDefinitions: 8,
+  listOperationsCatalogOrderOptionDefinitions: 10,
+  listOperationsCatalogUnits: 9,
+  moveOperationsCatalogCategory: 7,
+  preflightOperationsBrandCatalogCopy: 23,
+  preflightOperationsLocalCatalogCopy: 16,
+  preflightOperationsTemporaryCatalogItemPromotion: 7,
+  releaseOperationsCatalogStagedAsset: 14,
+  reorderOperationsCatalogDictionaryEntry: 7,
+  saveOperationsCatalogItem: 43,
+  stageOperationsCatalogAsset: 23,
+  transitionOperationsCatalogDictionaryEntryStatus: 17,
+  transitionOperationsCatalogItemStatus: 16,
+  transitionOperationsProductionTagStatus: 7,
+  updateOperationsCatalogAttributeDefinition: 12,
+  updateOperationsCatalogCategory: 8,
+  updateOperationsCatalogDictionaryEntry: 15,
+  updateOperationsCatalogOrderOptionDefinition: 22,
+  updateOperationsCatalogUnit: 17,
+  updateOperationsInventoryTargetConfiguration: 20,
+  updateOperationsProductionTag: 7,
+});
+function databaseOperationBudget(operationId) {
+  const max = CATALOG_DATABASE_OPERATION_MAX[operationId];
+  if (!Number.isInteger(max)) throw new Error(`P1_DATABASE_OPERATION_BUDGET_MISSING:${operationId}`);
+  if (operationId === BATCH_OPERATION_ID) {
+    return {
+      ...LINEAR_REQUEST_CARDINALITY_BUDGET,
+      measurementScenarioIds: [...BUDGET_MEASUREMENT_SCENARIO_IDS],
+      history: [{from: null, to: 20, reason: "approved batch cardinality budget"}],
+    };
+  }
+  return {
+    kind: "FIXED",
+    max,
+    measurementScenarioIds: [...BUDGET_MEASUREMENT_SCENARIO_IDS],
+    history: [{from: null, to: max, reason: "CP-05 maximum database operation count across three runs"}],
+  };
+}
+function withDatabaseOperationBudget(entry) {
+  const budget = databaseOperationBudget(entry.operationId);
+  validateDatabaseOperationBudget(budget, {operationId: entry.operationId});
+  return {...entry, databaseOperationBudget: budget};
+}
 // The media catalog retains the historical P1 representative-seed marker; the
 // final full-parity delivery obligation is owned by the P4 acceptance package.
 const FULL_CATALOG_PARITY_DELIVERY_PHASE = "P4";
@@ -611,7 +694,34 @@ const operationMetadata = [
   catalogLibraryOperation({ordinal: 55, operationId: "disableOperationsCatalogUnit", method: "POST", path: "/operations/catalog-inventory/units/{unitRef}/disable", requestComponent: "CatalogUnitDisableRequest", responseComponent: "CatalogUnitReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]}),
   catalogLibraryOperation({ordinal: 56, operationId: "deleteOperationsCatalogUnit", method: "DELETE", path: "/operations/catalog-inventory/units/{unitRef}", requestComponent: "CatalogUnitDeleteRequest", responseComponent: "CatalogUnitDeleteReadback", problemCodes: unitMutationProblems, coordinatedOwners: ["inventory"], coordinatedInventoryDefinitionCommands: ["validateCatalogUnitLifecycle"]}),
   catalogLibraryOperation({ordinal: 57, operationId: "getOperationsInventoryConsumptionTargetCandidates", method: "GET", path: "/operations/catalog-inventory/inventory-consumption-target-candidates", requestComponent: "InventoryConsumptionTargetCandidateQuery", responseComponent: "InventoryConsumptionTargetCandidatePage", problemCodes: ["VALIDATION_ERROR", "SCOPE_FORBIDDEN"], initiatingOwner: "inventory"})
-];
+].map(withDatabaseOperationBudget);
+
+function budgetGeneratorSelfTest() {
+  const canonical = readJson("doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json");
+  const allOperations = [...canonical.operations, ...operationMetadata].map((entry) => ({
+    operationId: entry.operationId,
+    databaseOperationBudget: entry.databaseOperationBudget,
+  }));
+  if (canonical.operations.length !== 181 || operationMetadata.length !== 57) throw new Error("P1_BUDGET_SOURCE_DENOMINATOR_INVALID");
+  validateBudgetRegistry({operations: allOperations}, {expectedOperationIds: allOperations.map((entry) => entry.operationId)});
+  const fixed = operationMetadata.find((entry) => entry.databaseOperationBudget.kind === "FIXED");
+  const raised = {
+    ...fixed.databaseOperationBudget,
+    max: fixed.databaseOperationBudget.max + 1,
+    history: [{from: fixed.databaseOperationBudget.max, to: fixed.databaseOperationBudget.max + 1, reason: "unapproved increase"}],
+  };
+  try {
+    validateBudgetChange({operationId: fixed.operationId, from: fixed.databaseOperationBudget, to: raised});
+    throw new Error("P1_BUDGET_INCREASE_WITHOUT_DECISION_REF_RED_NOT_DETECTED");
+  } catch (error) {
+    if (!["BUDGET_HISTORY_INCREASE_DECISION_REF_REQUIRED", "BUDGET_INCREASE_DECISION_REF_REQUIRED"].includes(error.code)) throw error;
+  }
+  process.stdout.write("CATALOG_INVENTORY_P1_BUDGET_SELF_TEST=PASS\nBUDGET_OPERATION_EXACT_SET=PASS\nRED_INCREASE_WITHOUT_DECISION_REF=PASS\n");
+}
+if (process.argv[2] === "--self-test") {
+  budgetGeneratorSelfTest();
+  process.exit(0);
+}
 
 const edgeContract = {
   schemaVersion: 1, kind: "catalog-inventory-edge-contract", revision: REVISION,
@@ -647,7 +757,8 @@ writeJson(catalogRouteRegistryPath, {
     method: entry.method,
     path: entry.path,
     owner: entry.initiatingOwner,
-    consumerFaces: entry.consumerFaces
+    consumerFaces: entry.consumerFaces,
+    databaseOperationBudget: entry.databaseOperationBudget
   }))
 });
 
@@ -1230,10 +1341,12 @@ const responseFieldMap = {
     requestId: stringField("request correlation"),
     results: arrayField("ordered result for each requested item", typedEntry({
       itemRef: uuidField("catalog item opaque reference"),
-      ok: booleanField("whether this item reached the requested status"),
-      failureCode: {type: ["string", "null"], enum: [...edgeContractWithDigest.typedProblemCodes, null], description: "typed per-item failure code; null for success"},
+      itemCode: stringField("authoritative catalog item business code"),
+      outcome: {type: "string", enum: ["SUCCEEDED", "FAILED"], description: "whether this item reached the requested status"},
+      problemCode: {type: ["string", "null"], enum: [...edgeContractWithDigest.typedProblemCodes, null], description: "typed per-item failure code; null for success"},
+      reason: {type: ["string", "null"], description: "owner-sanitized per-item reason; null for success"},
       version: {type: ["integer", "null"], description: "owner version after success; null for failure"}
-    }, ["itemRef", "ok"]))
+    }, ["itemRef", "itemCode", "outcome", "problemCode", "reason", "version"]))
   }
 };
 
@@ -1434,6 +1547,7 @@ for (const entry of operationMetadata) {
     ...(entry.coordinatedInventoryDefinitionCommands ? {"x-coordinated-inventory-definition-commands": entry.coordinatedInventoryDefinitionCommands} : {}),
     ...(entry.mutation ? {"x-required-capability": entry.authorizationRequirementId} : {}),
     "x-mutation": entry.mutation,
+    "x-database-operation-budget": entry.databaseOperationBudget,
     responses: {
       "200": {description: "Typed readback", content: {"application/json": {schema: {$ref: "#/components/schemas/" + entry.responseComponent}}}},
       "4XX": {description: "Typed problem", content: {"application/problem+json": {schema: {$ref: "#/components/schemas/TypedProblem"}}}}
@@ -2230,7 +2344,7 @@ const assertionMatrix = {
       ...(entry.coordinatedInventoryDefinitionCommands ? {coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands} : {}),
       request: {component: entry.requestComponent, method: entry.method, path: entry.path}, response: {component: entry.responseComponent},
       problemCodes: entry.problemCodes, logicSteps: entry.logicSteps, callChain: entry.callChain, conditionToProblem: entry.conditionToProblem,
-      normalPathDbOperations: entry.normalPathDbOperations, assertions: assertionsByOperation.get(entry.operationId)
+      normalPathDbOperations: entry.normalPathDbOperations, databaseOperationBudget: entry.databaseOperationBudget, assertions: assertionsByOperation.get(entry.operationId)
     };
   })
 };
@@ -2242,7 +2356,7 @@ const inventoryReferenceDeclarationsPath = "apps/backend/catering-business-serve
 const javaEscape = (value) => value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\r?\n/g, "\\n");
 const manifestWireJson = JSON.stringify(shapeManifestWithDigest);
 const designFieldDigest = hash(JSON.stringify({rows: designCoverage.rows, requestRows: designCoverage.requestRows || [], closedFindingRows: designCoverage.closedFindingRows || [], typeConventions: designCoverage.typeConventions || []}));
-const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes, mutation: entry.mutation, authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes, coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands || []}))});
+const edgeWireJson = JSON.stringify({revision: REVISION, operationCount: operationMetadata.length, readModelCount: readModels.models.length, designCoverageHash, designFieldDigest, operations: operationMetadata.map((entry) => ({operationId: entry.operationId, method: entry.method, path: entry.path, requestComponent: entry.requestComponent, responseComponent: entry.responseComponent, problemCodes: entry.problemCodes, mutation: entry.mutation, authorizationRequirementId: entry.authorizationRequirementId, capabilityByDataNodeType: entry.capabilityByDataNodeType, allowedDataNodeTypes: entry.allowedDataNodeTypes, coordinatedInventoryDefinitionCommands: entry.coordinatedInventoryDefinitionCommands || [], databaseOperationBudget: entry.databaseOperationBudget}))});
 const javaShapeEnum = (value) => value.replace(/[^A-Za-z0-9_]/g, "_");
 const javaShapeRules = shapes.map((shape) => "    new ShapeRule(ShapeKey." + shape.key + ", \"" + javaEscape(enumLabels.shapeKey[shape.key]) + "\", \"" + javaEscape(shape.itemKind) + "\", \"" + shape.measureMode + "\", \"" + shape.skuPolicy.skuMode + "\", \"" + shape.skuPolicy.priceGranularity + "\", List.of(" + shape.usageCapabilities.map((capability) => "Capability." + capability).join(", ") + "), " + (!shape.disabledReason) + ", " + Boolean(shape.disabledReason) + ", " + (shape.disabledReason ? "\"" + javaEscape(shape.disabledReason) + "\"" : "null") + ")").join(",\n");
 const javaModeRules = modeRules.map((rule) => {

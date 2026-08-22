@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.diagnostic.PublicSecurityDiagnosticInterceptor;
+import com.catering.v2s.app.edge.diagnostic.ReadOnlyTaskConnectionScopeInterceptor;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticInterceptor;
 import com.catering.v2s.app.edge.session.EdgeRequestContextArgumentResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,17 +24,21 @@ class EdgeWebConfigurationTest {
         HttpRequestMetricsInterceptor metrics = mock(HttpRequestMetricsInterceptor.class);
         ObjectProvider<HttpRequestMetricsInterceptor> provider = mock(ObjectProvider.class);
         when(provider.getObject()).thenReturn(metrics);
-        EdgeWebConfiguration configuration =
-                new EdgeWebConfiguration(mock(EdgeRequestContextArgumentResolver.class), provider, new ObjectMapper());
+        ReadOnlyTaskConnectionScopeInterceptor readScope = mock(ReadOnlyTaskConnectionScopeInterceptor.class);
+        ObjectProvider<ReadOnlyTaskConnectionScopeInterceptor> readScopeProvider = mock(ObjectProvider.class);
+        when(readScopeProvider.getObject()).thenReturn(readScope);
+        EdgeWebConfiguration configuration = new EdgeWebConfiguration(
+                mock(EdgeRequestContextArgumentResolver.class), provider, readScopeProvider, new ObjectMapper());
         CapturingRegistry registry = new CapturingRegistry();
 
         configuration.addInterceptors(registry);
 
         List<HandlerInterceptor> interceptors = registry.values();
-        assertEquals(3, interceptors.size());
+        assertEquals(4, interceptors.size());
         assertTrue(interceptors.get(0) == metrics);
-        assertTrue(interceptors.get(1) instanceof PublicSecurityDiagnosticInterceptor);
-        assertTrue(interceptors.get(2) instanceof RequestCompletionDiagnosticInterceptor);
+        assertTrue(interceptors.get(1) == readScope);
+        assertTrue(interceptors.get(2) instanceof PublicSecurityDiagnosticInterceptor);
+        assertTrue(interceptors.get(3) instanceof RequestCompletionDiagnosticInterceptor);
     }
 
     private static final class CapturingRegistry extends InterceptorRegistry {

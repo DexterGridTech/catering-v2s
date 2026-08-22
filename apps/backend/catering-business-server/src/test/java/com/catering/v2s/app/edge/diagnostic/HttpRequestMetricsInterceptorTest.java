@@ -58,6 +58,7 @@ class HttpRequestMetricsInterceptorTest {
         request.addHeader("X-Seed-Report-Secret", "012345678901234567890123");
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertTrue(interceptor.preHandle(request, response, new Object()));
+        HttpRequestMetricsInterceptor.recordRequestCardinality(20);
         interceptor.afterCompletion(request, response, new Object(), null);
         String event = Files.readString(events);
         assertTrue(event.contains("\"operationId\":\"getPlatformAdminPage\""));
@@ -67,6 +68,12 @@ class HttpRequestMetricsInterceptorTest {
         assertTrue(event.contains("\"measurementBasis\":\"JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH\""));
         assertTrue(event.contains("\"logicalSectionCounts\""));
         assertTrue(event.contains("\"kindCounts\""));
+        assertTrue(event.contains("\"transactionBeginCount\":0"));
+        assertTrue(event.contains("\"sqlOperationCount\":0"));
+        assertTrue(event.contains("\"unclassifiedSqlOperationCount\":0"));
+        assertTrue(event.contains("\"unclassifiedSqlRatio\":0.0"));
+        assertTrue(event.contains("\"operationConnectionBorrowCount\":0"));
+        assertTrue(event.contains("\"requestCardinality\":20"));
     }
 
     @Test
@@ -234,6 +241,9 @@ class HttpRequestMetricsInterceptorTest {
                 dbOperation.path("correlationId").asText());
         assertEquals(
                 event.path("requestId").asText(), dbOperation.path("requestId").asText());
+        assertEquals(1, event.path("sqlOperationCount").asInt());
+        assertEquals(1, event.path("unclassifiedSqlOperationCount").asInt());
+        assertEquals(1.0, event.path("unclassifiedSqlRatio").asDouble());
         assertTrue(Files.exists(dictionary));
     }
 

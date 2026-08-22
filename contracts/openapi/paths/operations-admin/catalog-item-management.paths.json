@@ -40,6 +40,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_CATALOG_ITEM",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 15,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 15,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -116,6 +130,20 @@
         ],
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_SAVE_OPERATIONS_CATALOG_ITEM",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 43,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 43,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -206,6 +234,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 16,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 16,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -284,6 +326,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 7,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 7,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -362,6 +418,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 7,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 7,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -440,6 +510,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_STAGE_OPERATIONS_CATALOG_ASSET",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 23,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 23,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -512,6 +596,20 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_RELEASE_OPERATIONS_CATALOG_STAGED_ASSET",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 14,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 14,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -593,6 +691,22 @@
         "x-authorization-requirement-id": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-required-capability": "CATALOG_INVENTORY_OPERATION_BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS",
         "x-mutation": true,
+        "x-database-operation-budget": {
+          "kind": "LINEAR_REQUEST_CARDINALITY",
+          "base": 15,
+          "perItem": 5,
+          "cardinalityPath": "$.items",
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 20,
+              "reason": "approved batch cardinality budget"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",

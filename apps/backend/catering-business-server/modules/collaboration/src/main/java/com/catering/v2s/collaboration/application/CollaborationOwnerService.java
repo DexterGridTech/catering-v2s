@@ -716,27 +716,30 @@ public class CollaborationOwnerService
             AuditActor actor) {
         UUID bindingRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
-        jdbc.update(
+        BindingRow created = jdbc.query(
                 "INSERT INTO collaboration.owner_binding (binding_ref, workspace_uuid, group_workspace_key, "
                         + "external_system_code, provider_code, capability_class, node_type, node_ref, "
                         + "binding_display_name, external_owner_id, authorization_ref, status, version, "
                         + "created_at_epoch_millis, status_changed_at_epoch_millis, updated_at_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 1, ?, ?, ?)",
-                bindingRef,
-                workspaceUuid,
-                groupWorkspaceKey,
-                provider.externalSystemCode(),
-                provider.providerCode(),
-                shape.capabilityClass(),
-                shape.nodeType(),
-                shape.nodeRef(),
-                CollaborationBindingPolicy.optional(bindingDisplayName),
-                shape.externalOwnerId(),
-                shape.initialStatus(),
-                now,
-                now,
-                now);
-        BindingRow created = readBindingRow(workspaceUuid, groupWorkspaceKey, bindingRef);
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 1, ?, ?, ?) RETURNING "
+                        + bindingColumns(),
+                statement -> {
+                    statement.setObject(1, bindingRef);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                    statement.setString(4, provider.externalSystemCode());
+                    statement.setString(5, provider.providerCode());
+                    statement.setString(6, shape.capabilityClass());
+                    statement.setString(7, shape.nodeType());
+                    statement.setString(8, shape.nodeRef());
+                    statement.setString(9, CollaborationBindingPolicy.optional(bindingDisplayName));
+                    statement.setString(10, shape.externalOwnerId());
+                    statement.setString(11, shape.initialStatus());
+                    statement.setLong(12, now);
+                    statement.setLong(13, now);
+                    statement.setLong(14, now);
+                },
+                result -> result.next() ? mapBinding(result) : notFound("binding"));
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -813,22 +816,25 @@ public class CollaborationOwnerService
             throw problem("ADAPTER_UNBIND_REQUIRED", 409, "adapter revocation is required before deletion");
         }
         long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE collaboration.owner_binding SET status=?, deleted_at_epoch_millis=?, "
-                                + "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE binding_ref=? "
-                                + "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>?",
-                        DELETED,
-                        now,
-                        now,
-                        now,
-                        current.bindingRef(),
-                        current.workspaceUuid(),
-                        current.groupWorkspaceKey(),
-                        expectedVersion,
-                        DELETED)
-                != 1) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
-        BindingRow deleted = readBindingRow(current.workspaceUuid(), current.groupWorkspaceKey(), current.bindingRef());
+        BindingRow deleted = jdbc.query(
+                "UPDATE collaboration.owner_binding SET status=?, deleted_at_epoch_millis=?, "
+                        + "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? "
+                        + "WHERE binding_ref=? "
+                        + "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>? RETURNING "
+                        + bindingColumns(),
+                statement -> {
+                    statement.setString(1, DELETED);
+                    statement.setLong(2, now);
+                    statement.setLong(3, now);
+                    statement.setLong(4, now);
+                    statement.setObject(5, current.bindingRef());
+                    statement.setObject(6, current.workspaceUuid());
+                    statement.setString(7, current.groupWorkspaceKey());
+                    statement.setLong(8, expectedVersion);
+                    statement.setString(9, DELETED);
+                },
+                result -> result.next() ? mapBinding(result) : null);
+        if (deleted == null) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         audit(
                 current.workspaceUuid(),
                 current.groupWorkspaceKey(),
@@ -985,12 +991,15 @@ public class CollaborationOwnerService
     }
 
     private static String bindingSelect(String predicate) {
-        return "SELECT binding_ref, workspace_uuid, group_workspace_key, external_system_code, provider_code, "
+        return "SELECT " + bindingColumns() + " FROM collaboration.owner_binding " + predicate;
+    }
+
+    private static String bindingColumns() {
+        return "binding_ref, workspace_uuid, group_workspace_key, external_system_code, provider_code, "
                 + "capability_class, node_type, node_ref, binding_display_name, external_owner_id, authorization_ref, "
                 + "status, unbind_requested_at_epoch_millis, external_revoked_at_epoch_millis, "
                 + "deleted_at_epoch_millis, version, created_at_epoch_millis, status_changed_at_epoch_millis, "
-                + "updated_at_epoch_millis "
-                + "FROM collaboration.owner_binding " + predicate;
+                + "updated_at_epoch_millis";
     }
 
     private BindingRow mapBinding(ResultSet result) throws SQLException {

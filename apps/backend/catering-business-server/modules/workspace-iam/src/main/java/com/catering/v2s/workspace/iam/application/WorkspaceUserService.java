@@ -143,6 +143,28 @@ public class WorkspaceUserService {
         return facts.taskPath();
     }
 
+    /**
+     * Store commands need the selected Project path and the Store's immutable update facts. The organization owner
+     * supplies both in one read; this edge helper only applies the already-loaded session selection and assignment
+     * scope judgment, so it deliberately does not open a second transaction.
+     */
+    public OrganizationTaskPathLookup.StoreProjectCommandFacts resolveSelectedProjectScopeForStore(
+            WorkspaceSessionReadback session, UUID storeId) {
+        if (session == null || session.currentAssignmentId() == null || assignments == null || taskPaths == null)
+            throw new WorkspaceAuthenticationService.SessionInvalidException();
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
+        var selected =
+                session.scopeContext() == null ? null : session.scopeContext().selectionFor(ServiceNodeTypes.PROJECT);
+        if (selected == null) throw new TaskScopeDeniedException();
+        OrganizationTaskPathLookup.StoreProjectCommandFacts facts = taskPaths.requireStoreProjectCommandFacts(
+                session.workspaceUuid(), session.groupWorkspaceKey(), storeId);
+        if (!selected.dataNodeId().equals(facts.projectId())
+                || !OrganizationTaskPathLookup.scopeAllows(
+                        assignment.serviceNodeType(), assignment.serviceNodeId(), facts.taskPath()))
+            throw new TaskScopeDeniedException();
+        return facts;
+    }
+
     /** Resolves a command target from the explicit target selected in the approved form. */
     @Transactional(readOnly = true)
     public OrganizationTaskPathLookup.TaskPath resolveCommandTarget(
@@ -156,6 +178,32 @@ public class WorkspaceUserService {
         WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
         OrganizationTaskPathLookup.CommandTaskPathFacts facts =
                 commandTaskPathFacts(session, assignment, expectedTargetType, requestedTargetRef);
+        if (!facts.assignmentScopeAllowed()) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        return facts.taskPath();
+    }
+
+    /**
+     * Same command target projection for the narrowly approved business-channel case where a Store target may already
+     * be disabled. The target type guard remains in the organization owner API; this method does not broaden ordinary
+     * command authority.
+     */
+    @Transactional(readOnly = true)
+    public OrganizationTaskPathLookup.TaskPath resolveCommandTargetAllowingDisabledStore(
+            WorkspaceSessionReadback session, String expectedTargetType, UUID requestedTargetRef) {
+        if (session == null
+                || session.currentAssignmentId() == null
+                || assignments == null
+                || taskPaths == null
+                || !ServiceNodeTypes.STORE.equals(expectedTargetType)
+                || requestedTargetRef == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        WorkspaceAssignmentScopeLookup.AssignmentScope assignment = assignmentScope(session);
+        OrganizationTaskPathLookup.CommandTaskPathFacts facts = taskPaths.commandTaskPathFactsAllowingDisabledTarget(
+                session.workspaceUuid(),
+                session.groupWorkspaceKey(),
+                assignment.serviceNodeType(),
+                assignment.serviceNodeId(),
+                expectedTargetType,
+                requestedTargetRef);
         if (!facts.assignmentScopeAllowed()) throw new WorkspaceAuthenticationService.SessionInvalidException();
         return facts.taskPath();
     }

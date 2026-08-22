@@ -29,8 +29,31 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
 
     @Override
     @Transactional(readOnly = true)
+    public TaskPath requireGroupTaskPath(UUID workspaceUuid, String key) {
+        if (workspaceUuid == null || key == null) throw new TaskPathNotFoundException();
+        return jdbc.query(
+                "SELECT commercial_group_uuid,commercial_group_code,commercial_group_name FROM "
+                        + "organization.commercial_group WHERE group_workspace_key=?",
+                statement -> statement.setString(1, key),
+                result -> {
+                    if (!result.next()) throw new TaskPathNotFoundException();
+                    String code = result.getString(2);
+                    String name = result.getString(3);
+                    return new TaskPath(
+                            ServiceNodeTypes.GROUP,
+                            result.getObject(1, UUID.class),
+                            List.of(result.getObject(1, UUID.class)),
+                            code + " " + name);
+                });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public TaskPath requireTaskPath(UUID workspaceUuid, String key, String targetType, UUID targetId) {
         if (workspaceUuid == null || key == null || targetId == null) throw new TaskPathNotFoundException();
+        if (ServiceNodeTypes.PROJECT.equals(targetType)) {
+            return requireEnabledProjectTaskPath(workspaceUuid, key, targetId);
+        }
         UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
         return switch (targetType) {
             case ServiceNodeTypes.GROUP -> groupPath(workspaceUuid, key, groupId, targetId);
@@ -40,6 +63,120 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
             case ServiceNodeTypes.STORE -> storePath(workspaceUuid, key, groupId, targetId);
             default -> throw new TaskPathNotFoundException();
         };
+    }
+
+    /** One non-transactional owner statement for the Store edge's project scope and immutable update facts. */
+    @Override
+    public StoreProjectCommandFacts requireStoreProjectCommandFacts(UUID workspaceUuid, String key, UUID storeId) {
+        if (workspaceUuid == null || key == null || storeId == null) throw new TaskPathNotFoundException();
+        return jdbc.query(
+                "WITH RECURSIVE group_fact AS (SELECT commercial_group_uuid AS group_id FROM"
+                        + " organization.commercial_group WHERE group_workspace_key=?), store_fact AS (SELECT"
+                        + " store.project_id, store.tenant_id, store.brand_id, store.code, group_fact.group_id FROM"
+                        + " organization.store store JOIN organization.organization_node project ON"
+                        + " project.id=store.project_id AND project.workspace_uuid=store.workspace_uuid AND"
+                        + " project.group_workspace_key=store.group_workspace_key AND project.node_type='PROJECT' AND"
+                        + " project.status='ENABLED' CROSS JOIN group_fact WHERE store.id=? AND"
+                        + " store.workspace_uuid=? AND"
+                        + " store.group_workspace_key=?), ancestry AS (SELECT store_fact.project_id AS target_id,"
+                        + " node.id,"
+                        + " node.parent_id, node.node_type, node.code, node.name, 0 AS depth FROM store_fact JOIN"
+                        + " organization.organization_node node ON node.id=store_fact.project_id AND"
+                        + " node.workspace_uuid=?"
+                        + " AND node.group_workspace_key=? AND node.status='ENABLED' UNION ALL SELECT"
+                        + " ancestry.target_id,"
+                        + " parent.id, parent.parent_id, parent.node_type, parent.code, parent.name, ancestry.depth+1"
+                        + " FROM"
+                        + " organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id WHERE"
+                        + " parent.workspace_uuid=? AND parent.group_workspace_key=? AND parent.status='ENABLED')"
+                        + " SELECT"
+                        + " store_fact.project_id, store_fact.tenant_id, store_fact.brand_id, store_fact.code,"
+                        + " ancestry.target_id, max(ancestry.node_type) FILTER (WHERE ancestry.depth=0) AS target_type,"
+                        + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS ancestor_ids,"
+                        + " string_agg(ancestry.code"
+                        + " || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC) AS display_path,"
+                        + " store_fact.group_id FROM store_fact JOIN ancestry ON"
+                        + " ancestry.target_id=store_fact.project_id"
+                        + " GROUP BY store_fact.project_id, store_fact.tenant_id, store_fact.brand_id, store_fact.code,"
+                        + " ancestry.target_id, store_fact.group_id",
+                statement -> {
+                    statement.setString(1, key);
+                    statement.setObject(2, storeId);
+                    statement.setObject(3, workspaceUuid);
+                    statement.setString(4, key);
+                    statement.setObject(5, workspaceUuid);
+                    statement.setString(6, key);
+                    statement.setObject(7, workspaceUuid);
+                    statement.setString(8, key);
+                },
+                result -> {
+                    if (!result.next() || !ServiceNodeTypes.PROJECT.equals(result.getString("target_type")))
+                        throw new TaskPathNotFoundException();
+                    Array array = result.getArray("ancestor_ids");
+                    Object[] pathIds = (Object[]) array.getArray();
+                    List<UUID> ancestors = new ArrayList<>(pathIds.length + 1);
+                    ancestors.add(result.getObject("group_id", UUID.class));
+                    for (Object value : pathIds) ancestors.add((UUID) value);
+                    return new StoreProjectCommandFacts(
+                            result.getObject("project_id", UUID.class),
+                            result.getObject("tenant_id", UUID.class),
+                            result.getObject("brand_id", UUID.class),
+                            result.getString("code"),
+                            new TaskPath(
+                                    ServiceNodeTypes.PROJECT,
+                                    result.getObject("target_id", UUID.class),
+                                    ancestors,
+                                    result.getString("display_path")));
+                });
+    }
+
+    /**
+     * Project scope is the hot command-path projection. The generic resolver first borrowed the commercial-group fact
+     * and then queried the recursive node path even though both facts are immutable inputs to one TaskPath. Keep the
+     * same enabled target/ancestor and type checks, but obtain the closed projection in one owner statement.
+     */
+    private TaskPath requireEnabledProjectTaskPath(UUID workspaceUuid, String key, UUID targetId) {
+        return jdbc.query(
+                "WITH RECURSIVE group_fact AS (SELECT commercial_group_uuid AS group_id FROM"
+                        + " organization.commercial_group WHERE group_workspace_key=?), params AS (SELECT ?::uuid AS"
+                        + " workspace_uuid, ?::text AS group_workspace_key, ?::uuid AS target_id, group_fact.group_id"
+                        + " FROM"
+                        + " group_fact), ancestry AS (SELECT node.id AS target_id, node.id, node.parent_id,"
+                        + " node.node_type, node.code, node.name, 0 AS depth FROM organization.organization_node node"
+                        + " CROSS JOIN params WHERE node.workspace_uuid=params.workspace_uuid AND"
+                        + " node.group_workspace_key=params.group_workspace_key AND node.status='ENABLED' AND"
+                        + " node.id=params.target_id UNION ALL SELECT ancestry.target_id, parent.id, parent.parent_id,"
+                        + " parent.node_type, parent.code, parent.name, ancestry.depth+1 FROM"
+                        + " organization.organization_node parent JOIN ancestry ON ancestry.parent_id=parent.id"
+                        + " CROSS JOIN"
+                        + " params WHERE parent.workspace_uuid=params.workspace_uuid AND"
+                        + " parent.group_workspace_key=params.group_workspace_key AND parent.status='ENABLED') SELECT"
+                        + " ancestry.target_id, max(ancestry.node_type) FILTER (WHERE ancestry.depth=0) AS target_type,"
+                        + " array_agg(ancestry.id ORDER BY ancestry.depth DESC) AS ancestor_ids,"
+                        + " string_agg(ancestry.code"
+                        + " || ' ' || ancestry.name, ' / ' ORDER BY ancestry.depth DESC) AS display_path,"
+                        + " params.group_id"
+                        + " AS group_id FROM ancestry CROSS JOIN params GROUP BY ancestry.target_id, params.group_id",
+                statement -> {
+                    statement.setString(1, key);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, key);
+                    statement.setObject(4, targetId);
+                },
+                result -> {
+                    if (!result.next() || !ServiceNodeTypes.PROJECT.equals(result.getString("target_type")))
+                        throw new TaskPathNotFoundException();
+                    Array array = result.getArray("ancestor_ids");
+                    Object[] pathIds = (Object[]) array.getArray();
+                    List<UUID> ancestors = new ArrayList<>(pathIds.length + 1);
+                    ancestors.add(result.getObject("group_id", UUID.class));
+                    for (Object value : pathIds) ancestors.add((UUID) value);
+                    return new TaskPath(
+                            ServiceNodeTypes.PROJECT,
+                            result.getObject("target_id", UUID.class),
+                            ancestors,
+                            result.getString("display_path"));
+                });
     }
 
     /**
@@ -405,6 +542,104 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return Map.copyOf(labels);
     }
 
+    /**
+     * One owner-local read pass for session-entry composition. Availability and labels are derived from the same
+     * enabled organization facts; this is deliberately invocation-local and is not an authorization cache.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public SessionTaskTargetFacts sessionTaskTargetFacts(UUID workspaceUuid, String key, List<TaskPathRef> targets) {
+        if (workspaceUuid == null || key == null || targets == null) {
+            return new SessionTaskTargetFacts(Set.of(), Map.of());
+        }
+        LinkedHashSet<TaskPathRef> requested = new LinkedHashSet<>(targets);
+        if (requested.isEmpty()) return new SessionTaskTargetFacts(Set.of(), Map.of());
+        if (requested.stream()
+                .anyMatch(target ->
+                        target == null || target.targetId() == null || !supportedTargetType(target.targetType()))) {
+            return new SessionTaskTargetFacts(Set.of(), Map.of());
+        }
+
+        LinkedHashSet<TaskPathRef> available = new LinkedHashSet<>();
+        for (TaskPathRef group : requested.stream()
+                .filter(target -> ServiceNodeTypes.GROUP.equals(target.targetType()))
+                .toList()) {
+            if (groups.isEnterableCommercialGroup(workspaceUuid, key, group.targetId())) available.add(group);
+        }
+
+        Set<UUID> nodeIds = new LinkedHashSet<>();
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.REGION));
+        nodeIds.addAll(idsFor(requested, ServiceNodeTypes.PROJECT));
+        List<Node> nodeFacts = nodeIds.isEmpty()
+                ? List.of()
+                : jdbc.query(
+                        "SELECT id, parent_id, node_type, code, name FROM organization.organization_node WHERE "
+                                + "workspace_uuid=? AND group_workspace_key=? AND status='ENABLED' AND id IN ("
+                                + placeholders(nodeIds.size()) + ")",
+                        (row, index) -> new Node(
+                                row.getObject(1, UUID.class),
+                                row.getObject(2, UUID.class),
+                                row.getString(3),
+                                row.getString(4),
+                                row.getString(5)),
+                        arguments(workspaceUuid, key, nodeIds));
+        nodeFacts.stream().map(node -> new TaskPathRef(node.type(), node.id())).forEach(available::add);
+
+        Set<UUID> headCompanyIds = idsFor(requested, ServiceNodeTypes.HEAD_COMPANY);
+        Map<UUID, Entity> headCompanyFacts = headCompanies(workspaceUuid, key, headCompanyIds, false);
+        headCompanyFacts.keySet().stream()
+                .map(id -> new TaskPathRef(ServiceNodeTypes.HEAD_COMPANY, id))
+                .forEach(available::add);
+
+        Set<UUID> storeIds = idsFor(requested, ServiceNodeTypes.STORE);
+        Map<UUID, Store> storeFacts = stores(workspaceUuid, key, storeIds, false);
+        storeFacts.keySet().stream()
+                .map(id -> new TaskPathRef(ServiceNodeTypes.STORE, id))
+                .forEach(available::add);
+
+        Set<TaskPathRef> labelTargets = available.stream()
+                .filter(requested::contains)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (labelTargets.isEmpty()) return new SessionTaskTargetFacts(available, Map.of());
+
+        // Preserve the existing label path's group initialization check even when no GROUP assignment is present.
+        UUID groupId = groups.requireCommercialGroupRef(workspaceUuid, key);
+        LinkedHashMap<TaskPathRef, String> labels = new LinkedHashMap<>();
+        for (TaskPathRef group : labelTargets.stream()
+                .filter(target -> ServiceNodeTypes.GROUP.equals(target.targetType()))
+                .toList()) {
+            if (!groupId.equals(group.targetId())) throw new TaskPathNotFoundException();
+            labels.put(group, groups.describeCommercialGroup(workspaceUuid, key, groupId));
+        }
+        for (Node node : nodeFacts) {
+            TaskPathRef ref = new TaskPathRef(node.type(), node.id());
+            if (labelTargets.contains(ref)) labels.put(ref, nameCode(node.name(), node.code()));
+        }
+        for (Entity entity : headCompanyFacts.values()) {
+            TaskPathRef ref = new TaskPathRef(ServiceNodeTypes.HEAD_COMPANY, entity.id());
+            if (labelTargets.contains(ref)) labels.put(ref, nameCode(entity.name(), entity.code()));
+        }
+        Map<UUID, NodePath> projects = nodePaths(
+                workspaceUuid,
+                key,
+                groupId,
+                storeFacts.values().stream()
+                        .filter(store -> labelTargets.contains(new TaskPathRef(ServiceNodeTypes.STORE, store.id())))
+                        .map(Store::projectId)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
+                false);
+        for (Store store : storeFacts.values()) {
+            TaskPathRef ref = new TaskPathRef(ServiceNodeTypes.STORE, store.id());
+            if (!labelTargets.contains(ref)) continue;
+            NodePath project = projects.get(store.projectId());
+            if (project == null || !OrganizationNodeTypes.PROJECT.equals(project.type()))
+                throw new TaskPathNotFoundException();
+            labels.put(ref, nameCode(store.name(), store.code()));
+        }
+        if (labels.size() != labelTargets.size()) throw new TaskPathNotFoundException();
+        return new SessionTaskTargetFacts(available, labels);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public boolean isScopeAllowed(
@@ -430,18 +665,7 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     private static boolean scopeAllowed(String assignmentType, UUID assignmentId, TaskPath target) {
-        if (assignmentType == null
-                || assignmentId == null
-                || target == null
-                || target.ancestorIds().isEmpty()
-                || !target.ancestorIds().contains(target.targetId())) return false;
-        return switch (assignmentType) {
-            case ServiceNodeTypes.GROUP, ServiceNodeTypes.REGION, ServiceNodeTypes.PROJECT -> target.ancestorIds()
-                    .contains(assignmentId);
-            case ServiceNodeTypes.HEAD_COMPANY, ServiceNodeTypes.STORE -> assignmentType.equals(target.targetType())
-                    && assignmentId.equals(target.targetId());
-            default -> false;
-        };
+        return OrganizationTaskPathLookup.scopeAllows(assignmentType, assignmentId, target);
     }
 
     private TaskPath groupPath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
@@ -480,29 +704,38 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     }
 
     private TaskPath storePath(UUID workspaceUuid, String key, UUID groupId, UUID targetId) {
-        Store target = jdbc.query(
-                "SELECT id, project_id, code, name FROM organization.store WHERE id=? AND workspace_uuid=? AND "
-                        + "group_workspace_key=? AND status='ENABLED'",
+        StorePathRow target = jdbc.query(
+                "SELECT s.id, s.project_id, s.code, s.name, p.id, p.parent_id, p.code, p.name, r.id, r.code, r.name "
+                        + "FROM organization.store s JOIN organization.organization_node p ON p.id=s.project_id "
+                        + "AND p.workspace_uuid=s.workspace_uuid AND p.group_workspace_key=s.group_workspace_key "
+                        + "AND p.node_type='PROJECT' AND p.status='ENABLED' JOIN organization.organization_node r "
+                        + "ON r.id=p.parent_id AND r.workspace_uuid=p.workspace_uuid AND r.group_workspace_key="
+                        + "p.group_workspace_key AND r.node_type='REGION' AND r.status='ENABLED' WHERE s.id=? AND "
+                        + "s.workspace_uuid=? AND s.group_workspace_key=? AND s.status='ENABLED'",
                 statement -> {
                     statement.setObject(1, targetId);
                     statement.setObject(2, workspaceUuid);
                     statement.setString(3, key);
                 },
                 result -> result.next()
-                        ? new Store(
+                        ? new StorePathRow(
                                 result.getObject(1, UUID.class),
                                 result.getObject(2, UUID.class),
                                 result.getString(3),
-                                result.getString(4))
+                                result.getString(4),
+                                result.getObject(9, UUID.class),
+                                result.getString(7),
+                                result.getString(8),
+                                result.getString(10),
+                                result.getString(11))
                         : null);
         if (target == null) throw new TaskPathNotFoundException();
-        Node project = node(workspaceUuid, key, target.projectId(), ServiceNodeTypes.PROJECT);
-        Node region = node(workspaceUuid, key, project.parentId(), ServiceNodeTypes.REGION);
         return new TaskPath(
                 ServiceNodeTypes.STORE,
                 target.id(),
-                List.of(groupId, region.id(), project.id(), target.id()),
-                region.code() + " " + region.name() + " / " + project.code() + " " + project.name() + " / "
+                List.of(groupId, target.regionId(), target.projectId(), target.id()),
+                target.regionCode() + " " + target.regionName() + " / " + target.projectCode() + " "
+                        + target.projectName() + " / "
                         + target.code() + " " + target.name());
     }
 
@@ -623,6 +856,16 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
         return name + "（" + code + "）";
     }
 
+    private static boolean supportedTargetType(String targetType) {
+        return Set.of(
+                        ServiceNodeTypes.GROUP,
+                        ServiceNodeTypes.REGION,
+                        ServiceNodeTypes.PROJECT,
+                        ServiceNodeTypes.HEAD_COMPANY,
+                        ServiceNodeTypes.STORE)
+                .contains(targetType);
+    }
+
     private static String enabledOnly(boolean includeDisabledFacts) {
         return includeDisabledFacts ? "" : " AND status='ENABLED'";
     }
@@ -695,6 +938,17 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     private record Node(UUID id, UUID parentId, String type, String code, String name) {}
 
     private record Store(UUID id, UUID projectId, String code, String name) {}
+
+    private record StorePathRow(
+            UUID id,
+            UUID projectId,
+            String code,
+            String name,
+            UUID regionId,
+            String projectCode,
+            String projectName,
+            String regionCode,
+            String regionName) {}
 
     private record Entity(UUID id, String code, String name) {}
 

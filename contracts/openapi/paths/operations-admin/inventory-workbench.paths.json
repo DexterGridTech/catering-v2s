@@ -32,6 +32,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 12,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 12,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -142,6 +156,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 10,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 10,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -195,6 +223,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 8,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 8,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -257,6 +299,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 8,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 8,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -330,6 +386,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 19,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 19,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -401,6 +471,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 9,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 9,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -472,6 +556,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 7,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 7,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",
@@ -526,6 +624,20 @@
         ],
         "x-authorization-requirement-id": null,
         "x-mutation": false,
+        "x-database-operation-budget": {
+          "kind": "FIXED",
+          "max": 8,
+          "measurementScenarioIds": [
+            "performance.operation-budget-exact-set"
+          ],
+          "history": [
+            {
+              "from": null,
+              "to": 8,
+              "reason": "CP-05 maximum database operation count across three runs"
+            }
+          ]
+        },
         "responses": {
           "200": {
             "description": "Typed readback",

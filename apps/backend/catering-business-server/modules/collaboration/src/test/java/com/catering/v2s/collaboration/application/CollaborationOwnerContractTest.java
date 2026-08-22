@@ -191,10 +191,10 @@ class CollaborationOwnerContractTest {
         verify(statement).setString(14, "workspace-key");
         verify(statement).setObject(15, workspace);
         verify(statement).setString(16, "workspace-key");
-        verify(statement).setString(17, "%needle%");
+        verify(statement).setString(17, "needle");
         verify(statement).setString(18, "%needle%");
-        verify(statement).setString(19, "%needle%");
-        verify(statement).setString(20, "%needle%");
+        verify(statement).setString(19, null);
+        verify(statement).setString(20, null);
         verify(statement).setInt(21, 5);
         verify(statement).setLong(22, 5L);
     }

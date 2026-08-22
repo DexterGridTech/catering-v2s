@@ -118,13 +118,16 @@ public final class OperationsCatalogAuthenticationController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody WorkspaceSelectDataNodeRequest body) {
         String token = sessionResolver.token(request);
-        sessionResolver.requireWorkspace(request, groupWorkspaceKey);
         key(idempotencyKey);
         if (body.dataNodeType() == null)
             throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("missing data node type");
         return WorkspaceSessionWireMapper.wire(
                 sessions.selectDataNode(
-                        token, body.dataNodeType(), body.dataNodeRef(), requiredVersion(body.requiredContextVersion())),
+                        token,
+                        groupWorkspaceKey,
+                        body.dataNodeType(),
+                        body.dataNodeRef(),
+                        requiredVersion(body.requiredContextVersion())),
                 assets);
     }
 

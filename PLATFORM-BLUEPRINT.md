@@ -46,7 +46,9 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 模块 owner 独占事实写入与最终授权复核。Flyway 是唯一 schema history；DEV start/restart 只做 additive migration，绝不 seed。reset 和 seed 必须是单独、显式、可审计的破坏性动作。
 
-环境执行面固定为三类：**DEV** 在本机启动 Spring Boot 与两个管理端 Web，通过受管 tunnel 使用远端非生产中间件；**当前受管浏览器 L2** 复用本机执行面，但每次必须隔离远端数据库/资产命名空间并分别证明业务与本机/远端 cleanup；**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。
+环境执行面固定为三类：**DEV** 在受信远端非生产主机启动 Spring Boot，与 PostgreSQL/对象存储同侧，本机只启动两个管理端 Vite，并通过受管 tunnel 转发 Java HTTP 与资产端口；禁止 PostgreSQL tunnel、本机 Java fallback、远端 Vite/浏览器。**当前受管浏览器 L2** 不随 DEV L1 改造，仍在本机启动 Spring Boot、两个 Web 与 Playwright，但每次必须隔离远端数据库/资产命名空间并分别证明业务与本机/远端 cleanup。**后续 UAT** 仅在获得单独授权后全量远端部署、远端执行。远端 Testcontainers 只是 JVM 与 Docker 同平面的技术验证，不替代任一浏览器 L2 或 UAT。受管 DEV runner 若尚未实现该 AFTER 拓扑，start/restart 必须 fail closed，不得继续旧本机 Java + PostgreSQL tunnel。
+
+受管 Testcontainers/backend-acceptance 的运行授权隐含一条窄的 DEV 生命周期授权：若运行前受管 DEV 正在运行，先按其 manifest/identity 执行 `scripts/dev/stop`，stop cleanup PASS 后才跑测试；测试 business 与 cleanup 都 PASS 后，且仅在 `DEV_WAS_RUNNING=true` 时执行 `scripts/dev/start`，让 DEV 加载当前最新代码。原先没有 DEV 不补启动，测试失败不自动重启。该规则不扩张到 reset、seed、L2、UAT 或未知进程，start 仍不 seed；stop/test/start 三段证据分别判定。
 
 ## Backend acceptance 设计红线
 
@@ -56,7 +58,11 @@ fixture/request/business assertion 结构；必须能区分 HTTP 成功与业务
 断言成功，不能以 `response.ok`、路径字符串或“不抛异常”代替业务真值。
 
 PERFORMANCE/CLEANUP verdict、baseline、known-uncovered、自动精确分母、lane/并行、校准和
-package/hash 记账均已退役。DB 调用数只用于人工观察，不设预算门或准入拦截。
+package/hash 记账与旧 scenario-level performanceCriterion 均已退役。业务 scenario 内 DB 调用数不参与
+`CONTRACT`/`BUSINESS`；Dexter 2026-08-22 已另行恢复 generated 238-operation budget 与独立 run-level
+verifier，消费 production HTTP completion events，判 DB/connection/transaction-begin/section ceiling。
+该 verifier 不复活 provider 壳、旧 scenario registry、accepted-baseline 或性能 lane，也不得把性能
+PASS 冒充业务 scenario PASS。
 
 ## AI-first 与证据
 

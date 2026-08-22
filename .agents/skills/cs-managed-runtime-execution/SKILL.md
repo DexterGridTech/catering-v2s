@@ -37,13 +37,16 @@ provider/registry and historical interface-count denominator are retired.
 Before a scenario is added, its design and code must have non-empty `identity`, `fixture`, `request`,
 and `businessOracle` intent. The oracle names real business fields or side effects and covers the
 applicable permission, isolation, state, masking, write/readback, no-write, or idempotency fact.
-`performanceCriterion`, scenario-level `cleanup`, `correctnessCases`, accepted baselines and
-performance gates are retired and must not be added. A status-only, `response.ok`, no-exception, or
+`performanceCriterion`, scenario-level `cleanup`, `correctnessCases`, accepted baselines and the
+old scenario performance gates are retired and must not be added. Dexter's 2026-08-22 ruling restores
+a separate generated-operation run-level budget verifier over production HTTP completion events;
+it must not become a scenario field or affect scenario CONTRACT/BUSINESS. A status-only, `response.ok`, no-exception, or
 path-string declaration is not a business oracle.
 
-Each run selects one catalog-discovered scenario or `all` and executes serially in the managed
-remote Testcontainers environment. There is no package-exit, P0/W0/P1, lane, exact-set or
-performance-baseline admission step. The scenario limit is 80; do not reduce business assertions
+Each business run selects one catalog-discovered scenario or `all` and executes serially in the managed
+remote Testcontainers environment. There is no package-exit, P0/W0/P1, lane, scenario exact-set or
+accepted-baseline admission step. The independent operation-budget verifier may join run-scoped
+events to the generated operation registry only under its approved performance design. The scenario limit is 80; do not reduce business assertions
 to meet a runtime target.
 
 Each scenario reports two business dimensions, `CONTRACT` and `BUSINESS`, plus informational
@@ -74,20 +77,32 @@ plane from a loopback URL, an absent local tool, a historical runner, or an old 
 | Requested action | Correct boundary | Never substitute |
 | --- | --- | --- |
 | `reset` | Explicit destructive action through its managed runner. Validate the prior manifest, exact non-production namespace and remote host binding; stop only a runner-owned DEV tree; terminate connections, drop the exact database, then read back absence. | Bare local `psql`, local Docker, a self-made tunnel, guessed database names, or a manual SQL sequence. |
-| DEV `start` / `restart` | Local Spring Boot, `platform-admin`, and `operations-admin`; managed tunnel to remote non-production middleware; additive Flyway is allowed only when the approved runner does it. | Remote app/Vite/browser execution, treating `127.0.0.1` tunnel ingress as local middleware, or implicit seed. |
+| DEV `start` / `restart` | Spring Boot on the trusted remote non-production host beside PostgreSQL/object storage; local `platform-admin` and `operations-admin` Vite; managed local forwards for Java HTTP and browser asset access. Additive Flyway is allowed only when the approved remote-Java runner does it. | A PostgreSQL tunnel, local Java fallback, remote Vite/browser execution, implicit seed, or running the retired topology while the runner is incomplete. |
 | `seed --profile r5-full` | Separate, explicitly authorized destructive action after the required reset/start readiness. Use owner HTTP commands and owner readbacks; only the explicitly approved bootstrap/terminal-fixture exception may use the managed control plane. | Seed-on-start, generic SQL data writes, invented default accounts, or declaring fixture completion without per-scenario readback. |
 | `backend-acceptance` | The repository's single managed remote JVM/Docker backend acceptance runner, with catalog-discovered real business scenarios and separate CONTRACT/BUSINESS plus informational DB operations. | Local Docker/Colima probing, a local Docker fallback, response.ok-only checks, a split performance lane, or describing it as browser L2/UAT. |
-| Managed browser L2 | Local app processes and local Playwright, one isolated remote database/asset namespace per run, run-scoped manifest/logs and both-side cleanup. | Persistent DEV data, a remote browser, a static/type result, or Testcontainers technical proof. |
+| Managed browser L2 | Local Spring Boot, local Web apps and local Playwright, one isolated remote database/asset namespace per run, run-scoped manifest/logs and both-side cleanup. This does not inherit the DEV remote-Java topology. | Persistent DEV data, a remote browser, a static/type result, or Testcontainers technical proof. |
 | UAT | Fully remote application and browser execution, and only under separate Dexter authorization. | Local DEV, local browser L2, or an unapproved deployment. |
 
 Record the expected topology before starting. For current DEV it must be:
 
 ```text
-TOPOLOGY=LOCAL_APPLICATIONS_REMOTE_NON_PRODUCTION_MIDDLEWARE
-APPLICATIONS=LOCAL_HOST
+TOPOLOGY=REMOTE_JAVA_LOCAL_VITE_REMOTE_NON_PRODUCTION_MIDDLEWARE
+JAVA_APPLICATION=REMOTE_TRUSTED_NON_PRODUCTION_HOST
+WEB_APPLICATIONS=LOCAL_HOST
 MIDDLEWARE=REMOTE_NON_PRODUCTION
-TRANSPORT=MANAGED_SSH_TUNNEL
+TRANSPORT=MANAGED_HTTP_AND_ASSET_SSH_TUNNEL
 ```
+
+If the managed DEV runner still starts local Java or opens a PostgreSQL forward, fail closed; the
+retired topology is not a fallback. Remote Java ownership requires trusted host, boot id, PID,
+start ticks and command digest; local Vite/tunnel ownership still requires PID and OS start token.
+
+An authorized managed Testcontainers/backend-acceptance run implicitly authorizes one narrow DEV
+lifecycle sequence. If a valid managed DEV manifest exists, record `DEV_WAS_RUNNING=true` and run
+managed DEV stop before the test; the test may start only after stop cleanup PASS. Restart DEV only
+when Testcontainers business and cleanup both PASS and `DEV_WAS_RUNNING=true`. Do not start DEV when
+it was absent, and do not restart after a failed test. This does not authorize reset, seed, browser
+L2, UAT, data actions, or stopping identities not owned by the manifest.
 
 ## 2. Preflight and launch discipline
 

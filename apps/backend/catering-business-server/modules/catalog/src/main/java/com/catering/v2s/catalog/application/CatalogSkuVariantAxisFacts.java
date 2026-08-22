@@ -81,19 +81,25 @@ final class CatalogSkuVariantAxisFacts {
     }
 
     void replace(UUID itemRef, ArrayNode submitted) {
+        replace(itemRef, submitted, null);
+    }
+
+    void replace(UUID itemRef, ArrayNode submitted, Map<UUID, ExistingAxis> preloadedExisting) {
         List<Axis> axes = normalize(submitted);
-        Map<UUID, ExistingAxis> existing = jdbc.query(
-                "SELECT attribute_ref,sku_variant_axis_ref,display_order FROM catalog.catalog_sku_variant_axis WHERE "
-                        + "item_ref=?",
-                rows -> {
-                    Map<UUID, ExistingAxis> result = new LinkedHashMap<>();
-                    while (rows.next())
-                        result.put(
-                                rows.getObject(1, UUID.class),
-                                new ExistingAxis(rows.getObject(2, UUID.class), rows.getInt(3)));
-                    return result;
-                },
-                itemRef);
+        Map<UUID, ExistingAxis> existing = preloadedExisting == null
+                ? jdbc.query(
+                        "SELECT attribute_ref,sku_variant_axis_ref,display_order FROM catalog.catalog_sku_variant_axis"
+                                + " WHERE item_ref=?",
+                        rows -> {
+                            Map<UUID, ExistingAxis> result = new LinkedHashMap<>();
+                            while (rows.next())
+                                result.put(
+                                        rows.getObject(1, UUID.class),
+                                        new ExistingAxis(rows.getObject(2, UUID.class), rows.getInt(3), Set.of()));
+                            return result;
+                        },
+                        itemRef)
+                : preloadedExisting;
         boolean shift = axes.stream()
                 .anyMatch(axis -> existing.entrySet().stream()
                                 .anyMatch(entry -> entry.getValue().displayOrder() == axis.displayOrder()
@@ -105,45 +111,57 @@ final class CatalogSkuVariantAxisFacts {
                     "UPDATE catalog.catalog_sku_variant_axis SET display_order=display_order+1000000 WHERE item_ref=?",
                     itemRef);
         LinkedHashSet<UUID> retained = new LinkedHashSet<>();
+        List<Object[]> axisInserts = new ArrayList<>();
+        List<Object[]> axisUpdates = new ArrayList<>();
+        List<Object[]> valueInserts = new ArrayList<>();
         for (Axis axis : axes) {
             retained.add(axis.attributeRef());
-            UUID axisRef = existing.containsKey(axis.attributeRef())
-                    ? existing.get(axis.attributeRef()).ref()
-                    : UUID.randomUUID();
-            if (!existing.containsKey(axis.attributeRef()))
-                jdbc.update(
-                        "INSERT INTO "
-                                + "catalog.catalog_sku_variant_axis(sku_variant_axis_ref,item_ref,attribute_ref,display"
-                                + "_ord"
-                                + "er) VALUES(?,?,?,?)",
-                        axisRef,
-                        itemRef,
-                        axis.attributeRef(),
-                        axis.displayOrder());
-            else
-                jdbc.update(
-                        "UPDATE catalog.catalog_sku_variant_axis SET display_order=? WHERE sku_variant_axis_ref=?",
-                        axis.displayOrder(),
-                        axisRef);
-            jdbc.update("DELETE FROM catalog.catalog_sku_variant_axis_value WHERE sku_variant_axis_ref=?", axisRef);
+            boolean isNew = !existing.containsKey(axis.attributeRef());
+            UUID axisRef = isNew
+                    ? UUID.randomUUID()
+                    : existing.get(axis.attributeRef()).ref();
+            if (isNew) axisInserts.add(new Object[] {axisRef, itemRef, axis.attributeRef(), axis.displayOrder()});
+            else axisUpdates.add(new Object[] {axis.displayOrder(), axisRef});
             for (Value value : axis.values())
-                jdbc.update(
-                        "INSERT INTO "
-                                + "catalog.catalog_sku_variant_axis_value(sku_variant_axis_ref,value_ref,display_order)"
-                                + " "
-                                + "VALUES(?,?,?)",
-                        axisRef,
-                        value.ref(),
-                        value.displayOrder());
+                valueInserts.add(new Object[] {axisRef, value.ref(), value.displayOrder()});
         }
-        existing.entrySet().stream()
+        List<UUID> retainedAxisRefs = axes.stream()
+                .map(axis -> existing.get(axis.attributeRef()))
+                .filter(java.util.Objects::nonNull)
+                .map(ExistingAxis::ref)
+                .toList();
+        List<UUID> removedAxisRefs = existing.entrySet().stream()
                 .filter(entry -> !retained.contains(entry.getKey()))
                 .map(entry -> entry.getValue().ref())
-                .forEach(axisRef -> {
-                    jdbc.update(
-                            "DELETE FROM catalog.catalog_sku_variant_axis_value WHERE sku_variant_axis_ref=?", axisRef);
-                    jdbc.update("DELETE FROM catalog.catalog_sku_variant_axis WHERE sku_variant_axis_ref=?", axisRef);
-                });
+                .toList();
+        List<UUID> axisRefsRequiringValueDelete = new ArrayList<>(retainedAxisRefs);
+        axisRefsRequiringValueDelete.addAll(removedAxisRefs);
+        if (!axisRefsRequiringValueDelete.isEmpty())
+            jdbc.update(
+                    "DELETE FROM catalog.catalog_sku_variant_axis_value WHERE sku_variant_axis_ref IN ("
+                            + placeholders(axisRefsRequiringValueDelete)
+                            + ")",
+                    axisRefsRequiringValueDelete.toArray());
+        if (!removedAxisRefs.isEmpty())
+            jdbc.update(
+                    "DELETE FROM catalog.catalog_sku_variant_axis WHERE sku_variant_axis_ref IN ("
+                            + placeholders(removedAxisRefs)
+                            + ")",
+                    removedAxisRefs.toArray());
+        if (!axisInserts.isEmpty())
+            jdbc.batchUpdate(
+                    "INSERT INTO catalog.catalog_sku_variant_axis(sku_variant_axis_ref,item_ref,attribute_ref,"
+                            + "display_order) VALUES(?,?,?,?)",
+                    axisInserts);
+        if (!axisUpdates.isEmpty())
+            jdbc.batchUpdate(
+                    "UPDATE catalog.catalog_sku_variant_axis SET display_order=? WHERE sku_variant_axis_ref=?",
+                    axisUpdates);
+        if (!valueInserts.isEmpty())
+            jdbc.batchUpdate(
+                    "INSERT INTO catalog.catalog_sku_variant_axis_value(sku_variant_axis_ref,value_ref,"
+                            + "display_order) VALUES(?,?,?)",
+                    valueInserts);
     }
 
     /** Inserts variant-axis facts for freshly-created copy targets in two owner-local batches. */
@@ -175,20 +193,28 @@ final class CatalogSkuVariantAxisFacts {
                     valueRows);
     }
 
-    void validateRetirements(UUID itemRef, ArrayNode submitted, ArrayNode candidateSkus) {
+    Map<UUID, ExistingAxis> validateRetirements(UUID itemRef, ArrayNode submitted, ArrayNode candidateSkus) {
         List<Axis> next = normalize(submitted);
-        Map<UUID, Set<UUID>> existing = jdbc.query(
-                "SELECT axis.attribute_ref, value.value_ref FROM catalog.catalog_sku_variant_axis axis LEFT JOIN "
+        Map<UUID, ExistingAxis> existing = jdbc.query(
+                "SELECT axis.attribute_ref, value.value_ref, axis.sku_variant_axis_ref, axis.display_order FROM "
+                        + "catalog.catalog_sku_variant_axis axis LEFT JOIN "
                         + "catalog.catalog_sku_variant_axis_value value ON "
                         + "value.sku_variant_axis_ref=axis.sku_variant_axis_ref WHERE axis.item_ref=?",
                 rows -> {
-                    Map<UUID, Set<UUID>> result = new LinkedHashMap<>();
+                    Map<UUID, ExistingAxisBuilder> builders = new LinkedHashMap<>();
                     while (rows.next()) {
                         UUID attributeRef = rows.getObject(1, UUID.class);
                         UUID valueRef = rows.getObject(2, UUID.class);
-                        result.computeIfAbsent(attributeRef, ignored -> new LinkedHashSet<>());
-                        if (valueRef != null) result.get(attributeRef).add(valueRef);
+                        UUID axisRef = rows.getObject(3, UUID.class);
+                        int displayOrder = rows.getInt(4);
+                        ExistingAxisBuilder builder = builders.computeIfAbsent(
+                                attributeRef, ignored -> new ExistingAxisBuilder(axisRef, displayOrder));
+                        if (valueRef != null) builder.values.add(valueRef);
                     }
+                    Map<UUID, ExistingAxis> result = new LinkedHashMap<>();
+                    builders.forEach((attributeRef, builder) -> result.put(
+                            attributeRef,
+                            new ExistingAxis(builder.ref, builder.displayOrder, Set.copyOf(builder.values))));
                     return result;
                 },
                 itemRef);
@@ -203,9 +229,10 @@ final class CatalogSkuVariantAxisFacts {
                             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
         }
         Set<String> blocked = new LinkedHashSet<>();
-        for (Map.Entry<UUID, Set<UUID>> existingAxis : existing.entrySet()) {
+        for (Map.Entry<UUID, ExistingAxis> existingAxis : existing.entrySet()) {
             boolean axisRemoved = !retainedAttributes.contains(existingAxis.getKey());
-            Set<UUID> removedValues = new LinkedHashSet<>(existingAxis.getValue());
+            Set<UUID> removedValues =
+                    new LinkedHashSet<>(existingAxis.getValue().values());
             if (!axisRemoved) removedValues.removeAll(retainedValues.getOrDefault(existingAxis.getKey(), Set.of()));
             if (!axisRemoved && removedValues.isEmpty()) continue;
             if (candidateSkus == null) continue;
@@ -227,6 +254,7 @@ final class CatalogSkuVariantAxisFacts {
         if (!blocked.isEmpty())
             throw new CatalogOwnerApi.Problem(
                     "REFERENCE_BLOCKS_VOID", 422, "规格轴或值仍被 SKU 引用: " + String.join(", ", blocked));
+        return existing;
     }
 
     private static List<Axis> normalize(ArrayNode submitted) {
@@ -287,7 +315,22 @@ final class CatalogSkuVariantAxisFacts {
         return new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, detail, cause);
     }
 
-    private record ExistingAxis(UUID ref, int displayOrder) {}
+    private static String placeholders(Collection<?> values) {
+        return String.join(",", Collections.nCopies(values.size(), "?"));
+    }
+
+    private static final class ExistingAxisBuilder {
+        private final UUID ref;
+        private final int displayOrder;
+        private final Set<UUID> values = new LinkedHashSet<>();
+
+        private ExistingAxisBuilder(UUID ref, int displayOrder) {
+            this.ref = ref;
+            this.displayOrder = displayOrder;
+        }
+    }
+
+    record ExistingAxis(UUID ref, int displayOrder, Set<UUID> values) {}
 
     private record Axis(UUID attributeRef, int displayOrder, List<Value> values) {}
 

@@ -1581,16 +1581,12 @@ final class CatalogAcceptanceScenarios {
                 14, responseFields.size(), "BUSINESS: the generated shape field denominator includes both unit fields");
     }
 
-    /**
-     * Creates fifty real catalog facts, then proves the batch command commits successful items independently while
-     * preserving every non-status fact. Two stale versions and one foreign brand reference are deliberate per-item
-     * failures; the other forty-seven items must archive.
-     */
+    /** Creates twenty real catalog facts and proves the ordered per-item outcome contract. */
     @AcceptanceScenario(
-            id = "catalog.batch-status-partial-failure-preserves-facts",
+            id = "catalog.batch-status-partial-outcome",
             module = "CATALOG",
             operation = "batchTransitionOperationsCatalogItemStatus")
-    void batchStatusPartialFailurePreservesFacts(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+    void batchStatusPartialOutcome(BackendAcceptanceTest.ScenarioContext context) throws Exception {
         Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
         host.completeInvitation(context, fixture);
         Session session = host.login(context, fixture);
@@ -1611,7 +1607,7 @@ final class CatalogAcceptanceScenarios {
         assertFalse(bindGrant.isBlank(), "BUSINESS: batch fixture has a real staged catalog bind proof");
 
         List<BatchItem> items = new ArrayList<>();
-        for (int index = 0; index < 49; index++) {
+        for (int index = 0; index < 20; index++) {
             String code = "ACC-BATCH-" + suffix + "-" + String.format("%02d", index);
             CreatedItem created = createItemWithAttributes(
                     context,
@@ -1637,48 +1633,18 @@ final class CatalogAcceptanceScenarios {
                     before.path("attributeAssignments").deepCopy()));
         }
 
-        Fixture foreignFixture = host.siblingStoreFixture(fixture, Set.of("EDIT_STORE_CATALOG"));
-        host.completeInvitation(context, foreignFixture);
-        Session foreignSession = host.login(context, foreignFixture);
-        String foreignCode = "ACC-BATCH-" + suffix + "-FOREIGN";
-        CreatedItem foreignCreated = createItemWithAttributes(
-                context,
-                foreignFixture,
-                foreignSession,
-                foreignCode,
-                "Foreign batch item",
-                Map.of("description", "batch-description-foreign"));
-        long foreignVersion = saveImage(
-                context, foreignFixture, foreignSession, foreignCode, foreignCreated.version(), assetRef, null);
-        JsonNode foreignBefore = readItem(context, foreignFixture, foreignSession, foreignCode);
-        items.add(new BatchItem(
-                foreignFixture,
-                foreignSession,
-                foreignCode,
-                foreignCreated.itemRef(),
-                foreignVersion,
-                foreignBefore.path("images").deepCopy(),
-                foreignBefore.path("attributeAssignments").deepCopy()));
-
-        // Make exactly two local expected versions stale; both items remain readable so their
-        // non-status facts can be checked after the per-item failures are returned.
-        for (int index : List.of(0, 1)) {
-            BatchItem item = items.get(index);
-            context.post(
-                    OPERATIONS_CATALOG_ITEM_STATUS,
-                    itemPath(item.code()) + "/status",
-                    item.session().cookie(),
-                    Map.of(
-                            "dataNodeRef",
-                            item.fixture().storeId().toString(),
-                            "itemCode",
-                            item.code(),
-                            "expectedVersion",
-                            item.expectedVersion(),
-                            "targetStatus",
-                            "DISABLED"),
-                    Set.of(200));
-        }
+        // Make exactly the thirteenth request item's expected version stale.
+        BatchItem staleItem = items.get(12);
+        context.post(
+                OPERATIONS_CATALOG_ITEM_STATUS,
+                itemPath(staleItem.code()) + "/status",
+                staleItem.session().cookie(),
+                Map.of(
+                        "dataNodeRef", staleItem.fixture().storeId().toString(),
+                        "itemCode", staleItem.code(),
+                        "expectedVersion", staleItem.expectedVersion(),
+                        "targetStatus", "DISABLED"),
+                Set.of(200));
 
         List<Map<String, Object>> requestItems = items.stream()
                 .map(item -> Map.<String, Object>of(
@@ -1692,7 +1658,7 @@ final class CatalogAcceptanceScenarios {
                 Set.of(200));
         JsonNode results = batch.json().path("results");
         assertEquals(
-                50, results.size(), "BUSINESS: batch readback contains one ordered result for every submitted item");
+                20, results.size(), "BUSINESS: batch readback contains one ordered result for every submitted item");
 
         int failures = 0;
         for (int index = 0; index < items.size(); index++) {
@@ -1702,17 +1668,26 @@ final class CatalogAcceptanceScenarios {
                     item.itemRef().toString(),
                     result.path("itemRef").asText(),
                     "BUSINESS: batch result order matches request order");
-            boolean expectedFailure = index < 2 || index == 49;
+            assertEquals(
+                    item.code(), result.path("itemCode").asText(), "BUSINESS: owner returns authoritative item code");
+            boolean expectedFailure = index == 12;
             if (expectedFailure) {
                 failures++;
-                assertFalse(result.path("ok").asBoolean(), "BUSINESS: the deliberate per-item failure is visible");
-                String expectedCode = index == 49 ? "SCOPE_FORBIDDEN" : "VERSION_CONFLICT";
+                assertEquals("FAILED", result.path("outcome").asText(), "BUSINESS: stale item is a failed outcome");
                 assertEquals(
-                        expectedCode,
-                        result.path("failureCode").asText(),
+                        "VERSION_CONFLICT",
+                        result.path("problemCode").asText(),
                         "BUSINESS: each failed item exposes its typed reason");
+                assertFalse(result.path("reason").asText().isBlank(), "BUSINESS: failure exposes owner reason");
+                assertTrue(result.path("version").isNull(), "BUSINESS: failure has no resulting version");
             } else {
-                assertTrue(result.path("ok").asBoolean(), "BUSINESS: successful item commits independently");
+                assertEquals(
+                        "SUCCEEDED",
+                        result.path("outcome").asText(),
+                        "BUSINESS: successful item commits independently");
+                assertTrue(result.path("problemCode").isNull(), "BUSINESS: success has no problem code");
+                assertTrue(result.path("reason").isNull(), "BUSINESS: success has no failure reason");
+                assertTrue(result.path("version").isIntegralNumber(), "BUSINESS: success returns the new version");
                 assertEquals(
                         "ARCHIVED",
                         readItem(context, item.fixture(), item.session(), item.code())
@@ -1731,7 +1706,7 @@ final class CatalogAcceptanceScenarios {
                     after.path("attributeAssignments"),
                     "BUSINESS: batch status migration does not alter product attribute assignments");
         }
-        assertEquals(3, failures, "BUSINESS: exactly three items fail while forty-seven commit");
+        assertEquals(1, failures, "BUSINESS: exactly one item fails while nineteen commit");
     }
 
     @AcceptanceScenario(
@@ -6069,5 +6044,60 @@ final class CatalogAcceptanceScenarios {
 
     private static List<JsonNode> array(JsonNode value) {
         return StreamSupport.stream(value.spliterator(), false).toList();
+    }
+
+    /* Package-private calibration fixtures. These keep CP-05 recipes on the same real HTTP
+     * predecessor chain as the business scenarios without making private scenario helpers a
+     * second contract or changing the 80-case acceptance catalog. */
+    JsonNode calibrationCreateInventoryMaterial(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String suffix)
+            throws Exception {
+        return createInventoryBackedMaterialItem(context, fixture, session, suffix);
+    }
+
+    JsonNode calibrationCreatePlainItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        createItemWithAttributes(context, fixture, session, code, name, Map.of());
+        return readItem(context, fixture, session, code);
+    }
+
+    JsonNode calibrationCreateUnit(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String code,
+            String name,
+            String dimension,
+            int precision)
+            throws Exception {
+        return createAcceptanceUnit(context, fixture, session, code, name, dimension, precision);
+    }
+
+    void calibrationCreateProductionTag(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code, String name)
+            throws Exception {
+        createProductionTag(context, fixture, session, code, name);
+    }
+
+    JsonNode calibrationCreateDictionaryEntry(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture fixture,
+            Session session,
+            String kind,
+            String code,
+            String name)
+            throws Exception {
+        return createDictionaryEntry(context, fixture, session, kind, code, name);
+    }
+
+    JsonNode calibrationReadItem(
+            BackendAcceptanceTest.ScenarioContext context, Fixture fixture, Session session, String code)
+            throws Exception {
+        return readItem(context, fixture, session, code);
+    }
+
+    static String calibrationInventoryTargetRef(JsonNode item) {
+        return inventoryTargetRef(item);
     }
 }

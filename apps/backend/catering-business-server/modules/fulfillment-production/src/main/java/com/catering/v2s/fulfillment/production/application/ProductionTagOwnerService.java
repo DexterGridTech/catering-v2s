@@ -8,7 +8,6 @@ import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
-import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -237,14 +236,13 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         String dataNodeRef = scope.dataNodeId().toString();
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
-        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckCreateTagBeforeReceipt(dataNodeRef, scope.brandRef(), command);
-        }
+
+        recheckCreateTagBeforeReceipt(dataNodeRef, scope.brandRef(), command);
+
         ProductionTagCommandReadback replay =
                 replayTyped(dataNodeRef, key, "createOperationsProductionTag", receiptRequest);
         if (replay != null) return replay;
-        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             ProductionTagCommandReadback result = createTypedTag(dataNodeRef, scope.brandRef(), command);
             saveTypedReceipt(dataNodeRef, key, "createOperationsProductionTag", receiptRequest, result);
             return result;
@@ -263,15 +261,13 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateUpdateTagBeforeReceipt(command);
-        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckExistingTagBeforeReceipt(
-                    dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
-        }
+
+        recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
+
         ProductionTagCommandReadback replay =
                 replayTyped(dataNodeRef, key, "updateOperationsProductionTag", receiptRequest);
         if (replay != null) return replay;
-        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             ProductionTagCommandReadback result = updateTypedTag(dataNodeRef, scope.brandRef(), command);
             saveTypedReceipt(dataNodeRef, key, "updateOperationsProductionTag", receiptRequest, result);
             return result;
@@ -290,15 +286,13 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(dataNodeRef, scope.brandRef());
         JsonNode receiptRequest = typedReceiptRequest(command, dataNodeRef, scope.brandRef());
         validateTransitionTagBeforeReceipt(command);
-        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckExistingTagBeforeReceipt(
-                    dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
-        }
+
+        recheckExistingTagBeforeReceipt(dataNodeRef, scope.brandRef(), command.tagCode(), command.expectedVersion());
+
         ProductionTagCommandReadback replay =
                 replayTyped(dataNodeRef, key, "transitionOperationsProductionTagStatus", receiptRequest);
         if (replay != null) return replay;
-        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var ownerCommand = OwnerOperationDiagnostics.beginCommand()) {
             ProductionTagCommandReadback result = transitionTypedTag(dataNodeRef, scope.brandRef(), command);
             saveTypedReceipt(dataNodeRef, key, "transitionOperationsProductionTagStatus", receiptRequest, result);
             return result;
@@ -477,14 +471,13 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(dataNodeRef, brandRef);
         authorization.run();
         String key = requireIdempotencyKey(idempotencyKey);
-        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckWriteFactsBeforeReceipt(operationId, dataNodeRef, brandRef, request);
-        }
+
+        recheckWriteFactsBeforeReceipt(operationId, dataNodeRef, brandRef, request);
+
         JsonNode receiptRequest = receiptRequest(request, brandRef);
         JsonNode replay = replay(dataNodeRef, key, operationId, receiptRequest);
         if (replay != null) return replay;
-        try (var command = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var command = OwnerOperationDiagnostics.beginCommand()) {
             JsonNode result =
                     switch (operationId) {
                         case "createOperationsProductionTag" -> create(dataNodeRef, brandRef, requestId, request);
@@ -649,10 +642,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         requireScope(targetDataNodeRef, brandRef);
         authorization.run();
         JsonNode judgement;
-        try (var read = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_READ)) {
-            recheckCopySourceFactsBeforeReceipt(sourceDataNodeRef, brandRef, request);
-            judgement = preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization);
-        }
+
+        recheckCopySourceFactsBeforeReceipt(sourceDataNodeRef, brandRef, request);
+        judgement = preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization);
+
         String currentFingerprint = judgement.path("digest").asText();
         String blocker = judgement.path("firstBlockingProblem").asText("");
         if (!blocker.isBlank()) {
@@ -664,8 +657,7 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                     replay(targetDataNodeRef, receiptKey, "coordinatedCopy", receiptRequest(request, brandRef));
             if (replay != null) return replayCopyIfCurrent(replay, currentFingerprint);
         }
-        try (var command = OwnerOperationDiagnostics.beginCommand();
-                var write = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.OWNER_WRITE)) {
+        try (var command = OwnerOperationDiagnostics.beginCommand()) {
             if (request.hasNonNull("productionPreflightDigest")) {
                 if (!request.path("productionPreflightDigest").asText().equals(currentFingerprint)) {
                     throw new ProductionTagOwnerApi.Problem(

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${CATERING_BUSINESS_DB_URL:jdbc:postgresql://127.0.0.1:25432/catering_v2s}
+    url: ${CATERING_BUSINESS_DB_URL}
     username: ${CATERING_BUSINESS_DB_USERNAME:}
     password: ${CATERING_BUSINESS_DB_PASSWORD:}
   servlet:

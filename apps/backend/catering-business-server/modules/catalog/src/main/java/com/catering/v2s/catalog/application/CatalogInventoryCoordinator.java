@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -447,37 +448,41 @@ public class CatalogInventoryCoordinator {
             String idempotencyKey) {
         ObjectNode request = canonicalSaveRequest(command.canonicalRequestJson());
         CatalogAuthorizationScope scope = context.ownerScope();
-        Set<String> previousAssetRefs = catalogItemAssetRefs(
-                scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId());
         CatalogOwnerApi.CatalogItemSaveCommand normalizedCommand =
                 new CatalogOwnerApi.CatalogItemSaveCommand(command.itemCode(), canonicalLocalJson(request));
         CatalogOwnerApi.CatalogItemSaveReadback readback =
                 catalog.saveCatalogItem(context, normalizedCommand, idempotencyKey);
-        coordinateReplaceInventoryRules(context, request, idempotencyKey);
+        Set<String> previousAssetRefs = readback.projection() == null
+                ? catalogItemAssetRefs(
+                        scope.dataNodeId().toString(), scope.brandRef(), command.itemCode(), context.requestId())
+                : readback.projection().previousAssetRefs();
+        CatalogInventoryProjection projection = readback.projection() == null
+                ? catalogInventoryProjection(
+                        scope.dataNodeId().toString(),
+                        scope.brandRef(),
+                        request.path("itemCode").asText(),
+                        context.requestId())
+                : catalogInventoryProjection(scope.dataNodeId().toString(), scope.brandRef(), readback.projection());
+        JsonNode inventoryReadback = coordinateReplaceInventoryRules(context, request, projection, idempotencyKey);
         settleWorkspaceCatalogAssets(context, request, previousAssetRefs, idempotencyKey, submittedBindings);
-        return mergeInventorySaveReadback(readback, context, request, idempotencyKey);
+        return mergeInventorySaveReadback(readback, inventoryReadback);
     }
 
     private CatalogOwnerApi.CatalogItemSaveReadback mergeInventorySaveReadback(
-            CatalogOwnerApi.CatalogItemSaveReadback catalogReadback,
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
-            ObjectNode request,
-            String idempotencyKey) {
+            CatalogOwnerApi.CatalogItemSaveReadback catalogReadback, JsonNode inventoryReadback) {
         try {
             ObjectNode root = (ObjectNode) mapper.readTree(catalogReadback.canonicalJson());
-            JsonNode detail = readCatalogItem(
-                    context.ownerScope().dataNodeId().toString(),
-                    context.ownerScope().brandRef(),
-                    request.path("itemCode").asText(),
-                    mapper.createObjectNode(),
-                    context.requestId());
-            JsonNode inventoryRules = detail.path("data").path("inventoryRules");
-            if (!inventoryRules.isObject())
+            JsonNode inventoryRules = inventoryReadback == null ? null : inventoryReadback.path("inventoryRules");
+            if (inventoryRules == null || !inventoryRules.isObject())
+                inventoryRules = inventoryReadback == null
+                        ? null
+                        : inventoryReadback.path("data").path("inventoryRules");
+            if (inventoryRules == null || !inventoryRules.isObject())
                 inventoryRules = mapper.createObjectNode().putArray("nodes");
             if (root.path("result") instanceof ObjectNode result) {
                 result.set("inventoryRules", inventoryRules.deepCopy());
             } else throw new IllegalStateException("catalog save readback result is not an object");
-            return new CatalogOwnerApi.CatalogItemSaveReadback(canonicalLocalJson(root));
+            return new CatalogOwnerApi.CatalogItemSaveReadback(canonicalLocalJson(root), catalogReadback.projection());
         } catch (Exception failure) {
             throw inventoryRulesReadbackProblem(failure);
         }
@@ -513,8 +518,9 @@ public class CatalogInventoryCoordinator {
             String idempotencyKey) {
         CatalogOwnerApi.LocalCopyPreflightCommand current = new CatalogOwnerApi.LocalCopyPreflightCommand(
                 command.sourceItemCode(), command.targetItemCode(), command.selectedSections());
+        CatalogOwnerApi.LocalCopyExecutionPreparation catalogPreparation = catalog.prepareLocalCopy(context, current);
         JsonNode catalogPreflight =
-                parseLocalCopyJson(catalog.preflightLocalCopy(context, current).canonicalJson());
+                parseLocalCopyJson(catalogPreparation.preflight().canonicalJson());
         // mergeCopyPreflight mutates the catalog envelope in place by appending
         // owner facts. Preserve the catalog-only compatibility boundary before
         // that merge so catalog never receives an inventory disposition.
@@ -544,7 +550,8 @@ public class CatalogInventoryCoordinator {
                         command.expectedTargetVersion(),
                         canonicalReferencePlan(plan),
                         catalogDispositions),
-                idempotencyKey);
+                idempotencyKey,
+                catalogPreparation);
         java.util.ArrayList<CatalogOwnerApi.CopyOwnerReadback> ownerReadbacks =
                 new java.util.ArrayList<>(catalogReadback.ownerReadbacks());
         List<CatalogOwnerApi.CopySkippedReadback> skipped = new java.util.ArrayList<>(catalogReadback.skipped());
@@ -557,7 +564,8 @@ public class CatalogInventoryCoordinator {
                             command.selectedSections(),
                             owners.inventoryDigest(),
                             canonicalReferencePlan(executionPlan)),
-                    idempotencyKey);
+                    idempotencyKey,
+                    owners.inventoryPreparation());
             ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(
                     inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
             inventoryReadback
@@ -582,14 +590,15 @@ public class CatalogInventoryCoordinator {
             CopyReferencePlan plan) {
         if (!containsInventorySection(
                 mapper.valueToTree(command.selectedSections() == null ? List.of() : command.selectedSections()))) {
-            return new OwnerPreflight("", "", null, null);
+            return new OwnerPreflight("", "", null, null, null);
         }
-        InventoryOwnerApi.LocalCopyPreflightReadback readback = inventory.preflightLocalCopy(
+        InventoryOwnerApi.CopyExecutionPreparation preparation = inventory.prepareLocalCopy(
                 context,
                 new InventoryOwnerApi.LocalCopyPreflightCommand(
                         command.targetItemCode(), command.selectedSections(), canonicalReferencePlan(plan)));
+        InventoryOwnerApi.LocalCopyPreflightReadback readback = preparation.preflight();
         JsonNode judgement = parseLocalCopyJson(readback.canonicalJson());
-        return new OwnerPreflight(readback.preflightDigest(), "", judgement, null);
+        return new OwnerPreflight(readback.preflightDigest(), "", judgement, null, preparation);
     }
 
     /**
@@ -631,8 +640,9 @@ public class CatalogInventoryCoordinator {
             String testFailurePoint) {
         CatalogOwnerApi.BrandCopyPreflightCommand current =
                 new CatalogOwnerApi.BrandCopyPreflightCommand(command.selectedItemCodes(), command.targetDataNodeRef());
+        CatalogOwnerApi.BrandCopyExecutionPreparation catalogPreparation = catalog.prepareBrandCopy(context, current);
         JsonNode catalogPreflight =
-                parseLocalCopyJson(catalog.preflightBrandCopy(context, current).canonicalJson());
+                parseLocalCopyJson(catalogPreparation.preflight().canonicalJson());
         // The merged envelope is mutable; retain the catalog-only rows before
         // owner compatibility facts are appended for the catalog command.
         JsonNode catalogCompatibilityResults =
@@ -663,7 +673,8 @@ public class CatalogInventoryCoordinator {
                         command.expectedTargetVersion(),
                         canonicalReferencePlan(executionPlan),
                         catalogDispositions),
-                idempotencyKey);
+                idempotencyKey,
+                catalogPreparation);
         failForManagedTestPoint(
                 testFailurePoint,
                 "owner-failure",
@@ -680,7 +691,8 @@ public class CatalogInventoryCoordinator {
                         command.targetDataNodeRef(),
                         owners.inventoryDigest(),
                         canonicalReferencePlan(executionPlan)),
-                idempotencyKey);
+                idempotencyKey,
+                owners.inventoryPreparation());
         ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(
                 inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
         ProductionTagOwnerApi.BrandCopyExecutionReadback productionReadback = production.executeBrandCopy(
@@ -701,10 +713,11 @@ public class CatalogInventoryCoordinator {
             CatalogOwnerApi.BrandCopyPreflightCommand command,
             CopyReferencePlan catalogPlan) {
         String plan = canonicalReferencePlan(catalogPlan);
-        InventoryOwnerApi.LocalCopyPreflightReadback inventoryReadback = inventory.preflightBrandCopy(
+        InventoryOwnerApi.CopyExecutionPreparation inventoryPreparation = inventory.prepareBrandCopy(
                 context,
                 new InventoryOwnerApi.BrandCopyPreflightCommand(
                         command.selectedItemCodes(), command.targetDataNodeRef(), plan));
+        InventoryOwnerApi.LocalCopyPreflightReadback inventoryReadback = inventoryPreparation.preflight();
         ProductionTagOwnerApi.BrandCopyPreflightReadback productionReadback = production.preflightBrandCopy(
                 context,
                 new ProductionTagOwnerApi.BrandCopyPreflightCommand(
@@ -713,7 +726,8 @@ public class CatalogInventoryCoordinator {
                 inventoryReadback.preflightDigest(),
                 productionReadback.preflightDigest(),
                 parseLocalCopyJson(inventoryReadback.canonicalJson()),
-                parseLocalCopyJson(productionReadback.canonicalJson()));
+                parseLocalCopyJson(productionReadback.canonicalJson()),
+                inventoryPreparation);
     }
 
     public record BrandCopyPreflightReadback(String canonicalJson) {}
@@ -753,19 +767,18 @@ public class CatalogInventoryCoordinator {
      * evidence to validate; the command sent to inventory uses this derived set so the UI cannot create a second owner
      * grain or pair a SKU/option with the wrong item.
      */
-    private void coordinateReplaceInventoryRules(
-            WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request, String idempotencyKey) {
-        CatalogAuthorizationScope scope = context.ownerScope();
-        CatalogInventoryProjection projection = catalogInventoryProjection(
-                scope.dataNodeId().toString(),
-                scope.brandRef(),
-                request.path("itemCode").asText(),
-                context.requestId());
+    private JsonNode coordinateReplaceInventoryRules(
+            WorkspaceExecutionContext<CatalogAuthorizationScope> context,
+            ObjectNode request,
+            CatalogInventoryProjection projection,
+            String idempotencyKey) {
         JsonNode submitted = request.path("sections").path("inventoryRules").path("nodes");
         if (!submitted.isArray()) {
             String detail = "商品库存规则必须为 owner 节点列表";
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, detail);
         }
+        Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> countingUnits =
+                countingUnitDefinitions(projection.dataNodeRef(), projection.brandRef(), submitted);
         ObjectNode command = mapper.createObjectNode()
                 .put("itemRef", projection.itemRef())
                 .put("itemCode", projection.itemCode())
@@ -774,17 +787,25 @@ public class CatalogInventoryCoordinator {
         Set<String> consumedSubmitted = new java.util.HashSet<>();
         String shape = projection.shapeKey();
         if (!Set.of("COMPOSITE", "SERVICE", "BENEFIT_SHELL").contains(shape)) {
-            appendDerivedInventoryRule(derived, submitted, consumedSubmitted, projection, "ITEM", null, null);
+            appendDerivedInventoryRule(
+                    derived, submitted, consumedSubmitted, projection, countingUnits, "ITEM", null, null);
         }
         if ("SKU_VARIANT_SALE_COUNTED".equals(shape)) {
             for (Map.Entry<String, String> sku : projection.productSkuRefs().entrySet())
                 appendDerivedInventoryRule(
-                        derived, submitted, consumedSubmitted, projection, "SKU", sku.getKey(), null);
+                        derived, submitted, consumedSubmitted, projection, countingUnits, "SKU", sku.getKey(), null);
         }
         if (Set.of("STANDARD_SALE_COUNTED", "STANDARD_SALE_WEIGHED").contains(shape)) {
             for (Map.Entry<String, String> option : projection.optionValueRefs().entrySet())
                 appendDerivedInventoryRule(
-                        derived, submitted, consumedSubmitted, projection, "OPTION_VALUE", null, option.getKey());
+                        derived,
+                        submitted,
+                        consumedSubmitted,
+                        projection,
+                        countingUnits,
+                        "OPTION_VALUE",
+                        null,
+                        option.getKey());
         }
         for (JsonNode raw : submitted) {
             String key = submittedOwnerKey(raw.path("owner"));
@@ -793,10 +814,15 @@ public class CatalogInventoryCoordinator {
                 throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, detail);
             }
         }
-        inventory.replaceCatalogInventoryRules(
+        InventoryOwnerApi.CatalogItemSaveReadback inventoryReadback = inventory.replaceCatalogInventoryRules(
                 context,
                 new InventoryOwnerApi.CatalogInventoryRulesReplaceCommand(canonicalLocalJson(command)),
                 idempotencyKey + ":inventory-rules");
+        try {
+            return mapper.readTree(inventoryReadback.canonicalJson());
+        } catch (Exception failure) {
+            throw inventoryRulesReadbackProblem(failure);
+        }
     }
 
     private void appendDerivedInventoryRule(
@@ -804,6 +830,7 @@ public class CatalogInventoryCoordinator {
             JsonNode submitted,
             Set<String> consumedSubmitted,
             CatalogInventoryProjection projection,
+            Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> countingUnits,
             String ownerType,
             String skuCode,
             String optionValueCode) {
@@ -847,8 +874,10 @@ public class CatalogInventoryCoordinator {
         copyNullable(source, node, "expectedTargetVersion");
         copyNullable(source, node, "expectedBomVersion");
         if (source != null && source.path("directConfiguration").isObject())
-            node.set("directConfiguration", enrichCountingUnitSnapshot(projection, (ObjectNode)
-                    source.path("directConfiguration")));
+            node.set(
+                    "directConfiguration",
+                    enrichCountingUnitSnapshot(
+                            projection, (ObjectNode) source.path("directConfiguration"), countingUnits));
         else node.putNull("directConfiguration");
         if (source != null && source.path("bom").isObject())
             node.set("bom", source.path("bom").deepCopy());
@@ -883,7 +912,9 @@ public class CatalogInventoryCoordinator {
     }
 
     private ObjectNode enrichCountingUnitSnapshot(
-            CatalogInventoryProjection projection, ObjectNode sourceConfiguration) {
+            CatalogInventoryProjection projection,
+            ObjectNode sourceConfiguration,
+            Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> countingUnits) {
         ObjectNode configuration = sourceConfiguration.deepCopy();
         String countingUnitRef = configuration.path("countingUnitRef").asText("");
         if (countingUnitRef.isBlank()) {
@@ -896,17 +927,11 @@ public class CatalogInventoryCoordinator {
         } catch (IllegalArgumentException failure) {
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "盘点单位引用无效", failure);
         }
-        CatalogOwnerApi.UnitDefinitionReadback unit =
-                catalog
-                        .listUnitDefinitions(projection.dataNodeRef(), projection.brandRef(), true, null)
-                        .units()
-                        .stream()
-                        .filter(candidate -> ref.equals(candidate.unitRef()))
-                        .findFirst()
-                        .orElseThrow(() -> {
-                            String detail = "盘点单位不存在";
-                            return new CatalogOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, detail);
-                        });
+        CatalogOwnerApi.UnitDefinitionReadback unit = countingUnits.get(ref);
+        if (unit == null) {
+            String detail = "盘点单位不存在";
+            throw new CatalogOwnerApi.Problem("UNIT_SNAPSHOT_REQUIRED", 422, detail);
+        }
         ObjectNode snapshot = mapper.createObjectNode()
                 .put("unitRef", unit.unitRef().toString())
                 .put("code", unit.code())
@@ -915,6 +940,29 @@ public class CatalogInventoryCoordinator {
                 .put("precision", unit.precision());
         configuration.set("countingUnitSnapshot", snapshot);
         return configuration;
+    }
+
+    private Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> countingUnitDefinitions(
+            String dataNodeRef, String brandRef, JsonNode submitted) {
+        Set<UUID> refs = new java.util.LinkedHashSet<>();
+        for (JsonNode node : submitted) {
+            JsonNode configuration = node.path("directConfiguration");
+            String rawRef = configuration.path("countingUnitRef").asText("").trim();
+            if (rawRef.isBlank()) continue;
+            try {
+                refs.add(UUID.fromString(rawRef));
+            } catch (IllegalArgumentException failure) {
+                throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "盘点单位引用无效", failure);
+            }
+        }
+        if (refs.isEmpty()) return Map.of();
+        return catalog.listUnitDefinitions(dataNodeRef, brandRef, true, null).units().stream()
+                .filter(unit -> refs.contains(unit.unitRef()))
+                .collect(java.util.stream.Collectors.toMap(
+                        CatalogOwnerApi.UnitDefinitionReadback::unitRef,
+                        unit -> unit,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new));
     }
 
     private String submittedOwnerKey(JsonNode owner) {
@@ -953,11 +1001,19 @@ public class CatalogInventoryCoordinator {
             WorkspaceExecutionContext<CatalogAuthorizationScope> context,
             List<CatalogOwnerApi.OrderOptionValueCommand> values) {
         List<CatalogOwnerApi.OrderOptionValueCommand> resolved = new ArrayList<>();
+        Map<UUID, InventoryOwnerApi.CatalogMaterialStockTargetReadback> targetsByMaterialRef = new LinkedHashMap<>();
+        List<UUID> materialRefs = values.stream()
+                .flatMap(value -> value.materials().stream())
+                .map(CatalogOwnerApi.OrderOptionMaterialTemplate::materialItemRef)
+                .toList();
+        inventory
+                .resolveCatalogMaterialStockTargets(context, materialRefs)
+                .forEach(target -> targetsByMaterialRef.put(target.materialItemRef(), target));
         for (CatalogOwnerApi.OrderOptionValueCommand value : values) {
             List<CatalogOwnerApi.OrderOptionMaterialTemplate> materials = new ArrayList<>();
             for (CatalogOwnerApi.OrderOptionMaterialTemplate material : value.materials()) {
                 InventoryOwnerApi.CatalogMaterialStockTargetReadback target =
-                        inventory.resolveCatalogMaterialStockTarget(context, material.materialItemRef());
+                        targetsByMaterialRef.get(material.materialItemRef());
                 materials.add(new CatalogOwnerApi.OrderOptionMaterialTemplate(
                         target.materialItemRef(), target.stockTargetRef(), target.consumptionUnitSnapshot()));
             }
@@ -1580,7 +1636,8 @@ public class CatalogInventoryCoordinator {
             String inventoryDigest,
             String productionDigest,
             JsonNode inventoryJudgement,
-            JsonNode productionJudgement) {}
+            JsonNode productionJudgement,
+            InventoryOwnerApi.CopyExecutionPreparation inventoryPreparation) {}
 
     record CopyReferencePlan(ArrayNode closureItemRefs, ArrayNode productionTagRefs, ArrayNode referenceMappings) {
         static CopyReferencePlan empty(ObjectMapper mapper) {
@@ -1982,30 +2039,27 @@ public class CatalogInventoryCoordinator {
         ObjectNode target = (ObjectNode) current.path("target");
         String itemRef = target.path("itemRef").asText("");
         if (itemRef.isBlank()) return;
-        ObjectNode lookup = mapper.createObjectNode();
-        lookup.putArray("itemRefs").add(itemRef);
-        JsonNode item = catalog.readItems(dataNodeRef, brandRef, lookup, requestId)
-                .path("data")
-                .path("items")
-                .path(0);
-        if (item.isObject()) {
-            target.put(
-                    "productName",
-                    item.path("name").asText(target.path("productName").asText()));
-            target.put(
-                    "productShape",
-                    item.path("shapeKey").asText(target.path("productShape").asText()));
-            String skuRef = target.path("productSkuRef").asText("");
-            if (!skuRef.isBlank() && item.path("skus").isArray()) {
-                item.path("skus").forEach(sku -> {
-                    if (skuRef.equals(sku.path("productSkuRef").asText()))
-                        target.put(
-                                "skuName",
-                                sku.path("skuName")
-                                        .asText(target.path("skuName").asText()));
-                });
+        UUID itemUuid;
+        try {
+            itemUuid = UUID.fromString(itemRef);
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        String skuRef = target.path("productSkuRef").asText("");
+        UUID skuUuid = null;
+        if (!skuRef.isBlank()) {
+            try {
+                skuUuid = UUID.fromString(skuRef);
+            } catch (IllegalArgumentException ignored) {
+                return;
             }
         }
+        CatalogOwnerApi.InventoryTargetDisplayFact fact =
+                catalog.readInventoryTargetDisplayFact(dataNodeRef, brandRef, itemUuid, skuUuid);
+        if (!fact.present()) return;
+        target.put("productName", fact.itemName());
+        if (fact.shapeKey() != null) target.put("productShape", fact.shapeKey());
+        if (skuUuid != null && fact.skuName() != null) target.put("skuName", fact.skuName());
     }
 
     /**
@@ -2150,6 +2204,36 @@ public class CatalogInventoryCoordinator {
                 Map.copyOf(optionValueRefs),
                 itemBaseMeasureUnit,
                 Map.copyOf(skuBaseMeasureUnits));
+    }
+
+    private CatalogInventoryProjection catalogInventoryProjection(
+            String dataNodeRef, String brandRef, CatalogOwnerApi.CatalogItemSaveProjection projection) {
+        String measureMode = projection.measureMode();
+        if (measureMode == null || measureMode.isBlank())
+            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品缺少 measureMode");
+        Map<String, JsonNode> skuBaseMeasureUnits = new java.util.LinkedHashMap<>();
+        projection.skuBaseMeasureUnits().forEach((code, unit) -> skuBaseMeasureUnits.put(code, unitSnapshotJson(unit)));
+        return new CatalogInventoryProjection(
+                dataNodeRef,
+                brandRef,
+                projection.itemRef().toString(),
+                projection.itemCode(),
+                projection.shapeKey(),
+                measureMode,
+                Map.copyOf(projection.productSkuRefs()),
+                Map.copyOf(projection.optionValueRefs()),
+                unitSnapshotJson(projection.itemBaseMeasureUnit()),
+                Map.copyOf(skuBaseMeasureUnits));
+    }
+
+    private JsonNode unitSnapshotJson(InventoryOwnerApi.UnitSnapshot snapshot) {
+        if (snapshot == null) return null;
+        return mapper.createObjectNode()
+                .put("unitRef", snapshot.unitRef().toString())
+                .put("code", snapshot.code())
+                .put("name", snapshot.name())
+                .put("unitDimension", snapshot.unitDimension())
+                .put("precision", snapshot.precision());
     }
 
     private record CatalogInventoryProjection(

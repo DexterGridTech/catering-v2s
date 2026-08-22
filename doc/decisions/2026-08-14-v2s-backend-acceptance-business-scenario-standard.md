@@ -20,8 +20,11 @@
 
 - `CONTRACT`：真实 HTTP 调用、状态码和通用响应/Problem 形状是否符合预期；
 - `BUSINESS`：手写的、面向当前 operation 业务语义的真值断言是否通过；
-- `DB_OPERATIONS`：生产 interceptor 统计的数据库调用数，只作为报告中的人工观察项，不设基线、
-  棘轮或准入门。
+- `DB_OPERATIONS`：生产 interceptor 统计的数据库调用数；在单条业务 scenario 内仍只作信息项，
+  不参与 `CONTRACT`/`BUSINESS` verdict。Dexter 2026-08-22 另行恢复的是**独立 run-level operation
+  budget verifier**：它消费同一 production interceptor 的 run-scoped completion events，对 generated
+  operation registry 全集判 DB/connection/transaction-begin/section 预算；不得把该 verifier 塞回
+  scenario 的 `performanceCriterion`，也不得改变业务 scenario 的 80 条上限与真实 oracle 义务。
 
 `CLEANUP` 不再是场景业务维度，也不需要为每条 scenario 编写 cleanup oracle；但受管 runner
 仍必须回收它实际创建的 JVM、Testcontainers 容器、卷和临时工作区，并将资源回收作为运行安全
@@ -103,17 +106,19 @@ oracle 保留在对应 domain group，防止业务知识重新集中化。
 
 ## 5. 明确退役的规则
 
-当前新增业务测试不得引入以下旧机制：
+当前新增业务 scenario 不得引入以下旧机制：
 
-- `performanceCriterion`、accepted-baseline、棘轮、QUERY/CONNECTION/TRANSACTION 准入预算；
+- scenario 字段 `performanceCriterion`、accepted-baseline 与旧 QUERY/CONNECTION/TRANSACTION criterion；
 - scenario-level `CLEANUP` oracle、calibration、correctnessCases；
 - provider/registry、196/197 壳、自动发现分母、双向 exact-set、lane/并行/heartbeat/work
   stealing；
 - package entry/exit、P0/W0/P1、receipt、hash-chain、六类 source 分母或 remediation-compliance
   台账。
 
-这些资产已经退役。数据库调用数仍免费进入报告，但它是 `DB_OPERATIONS` 观察值，不是机器门。
-真正的业务质量只由真实 HTTP 的 `CONTRACT` 与真实业务真值的 `BUSINESS` 共同表达。
+这些旧 scenario/provider 资产继续退役。2026-08-22 恢复的 generated operation budget 与独立
+run-level verifier 不是它们的兼容层：它不新增业务 scenario，不参与单场景 `CONTRACT`/`BUSINESS`，
+也不把性能 PASS 写成业务 PASS。真正的业务质量仍只由真实 HTTP 的 `CONTRACT` 与真实业务真值的
+`BUSINESS` 共同表达；性能门另报 run-level business/cleanup evidence。
 
 ## 6. 最低完成口径
 

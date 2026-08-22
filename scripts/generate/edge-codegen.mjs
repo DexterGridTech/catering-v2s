@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCapabilityInvariants } from "../../tools/capability-invariants/cli.mjs";
 import { projectEdgeCatalog } from "./edge-operation-projections.mjs";
+import { validateBudgetChange, validateDatabaseOperationBudget } from "./backend-performance-budget.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
@@ -15,6 +16,7 @@ const adminCatalogPath = "contracts/catalog/admin-catalog.json";
 const frontendManifestPath = "contracts/policy/frontend-asset-carryover-manifest.json";
 const reportPath = "doc/evidence/platform/r5-u01-edge-placement-resolution.json";
 const problemComponentPath = "contracts/openapi/components/common/problem.schemas.json";
+const canonicalOperationCount = 181;
 const targets = {
   errorsJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/EdgeProblemCode.java",
   r3CompatibilityJava: "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/generated/CommercialGroupProblemCode.java",
@@ -38,6 +40,16 @@ const targets = {
 function fail(code, detail = "") { const error = new Error(`${code}${detail ? `:${detail}` : ""}`); error.code = code; throw error; }
 function read(relative, base = root) { return JSON.parse(fs.readFileSync(path.join(base, relative), "utf8")); }
 function normalized(value) { return JSON.stringify(value, null, 2) + "\n"; }
+function assertCanonicalBudgets(catalog) {
+  if (catalog.operations.length !== canonicalOperationCount) fail("R5_EDGE_BUDGET_OPERATION_COUNT", catalog.operations.length);
+  const seen = new Set();
+  for (const operation of catalog.operations) {
+    if (seen.has(operation.operationId)) fail("R5_EDGE_BUDGET_OPERATION_DUPLICATE", operation.operationId);
+    seen.add(operation.operationId);
+    try { validateDatabaseOperationBudget(operation.databaseOperationBudget, {operationId: operation.operationId}); }
+    catch (error) { fail("R5_EDGE_BUDGET_INVALID", `${operation.operationId}:${error.code || error.message}`); }
+  }
+}
 function activeCodes(errors) {
   const codes = [
     ...errors.heritageCodes.filter((row) => row.target).map((row) => row.target),
@@ -182,6 +194,7 @@ function load(base = root) {
   const errors = read(errorsPath, base);
   const expectedOperationCount = catalog.denominator?.operations;
   if (!Number.isInteger(expectedOperationCount) || catalog.operations.length !== expectedOperationCount || report.operations.length !== expectedOperationCount) fail("R5_EDGE_CODEGEN_OPERATION_COUNT");
+  assertCanonicalBudgets(catalog);
   const byId = new Map(catalog.operations.map((operation) => [operation.operationId, operation]));
   for (const row of report.operations) {
     const operation = byId.get(row.operationId);
@@ -641,6 +654,15 @@ function tsFace(face, operations, codes, components) {
     : "";
   return `// Generated from accepted R5 edge catalog; do not edit.\n\nexport const ${operationSymbol} = ${normalized(selected.map((operation) => ({operationId: operation.operationId, method: operation.method, path: operation.path, owner: operation.owner, requiresSession: operation.openApi.requiresSession}))).trim()} as const;\n\nexport const ${operationIdsSymbol} = ${normalized(Object.fromEntries(selected.map(({operationId}) => [operationId, operationId]))).trim()} as const;\n\nexport const EDGE_PROBLEM_CODES = ${normalized(codes).trim()} as const;\nexport type EdgeProblemCode = (typeof EDGE_PROBLEM_CODES)[number];\nexport type ${operationIdType} = (typeof ${operationSymbol})[number]["operationId"];\n\n${jsonValueType}\n\n${componentTypes}\n\nexport type FaceOperationContracts = {\n${operationContracts}\n};\n\ntype RequestPart<I extends ${operationIdType}> = FaceOperationContracts[I]["requestRequired"] extends true\n  ? {body: FaceOperationContracts[I]["request"]}\n  : {body?: never};\ntype QueryPart<I extends ${operationIdType}> = FaceOperationContracts[I]["queryRequired"] extends true\n  ? {query: FaceOperationContracts[I]["query"]}\n  : {query?: FaceOperationContracts[I]["query"]};\ntype HeaderPart<I extends ${operationIdType}> = FaceOperationContracts[I]["headersRequired"] extends true\n  ? {headers: FaceOperationContracts[I]["headers"]}\n  : {headers?: never};\nexport type FaceOperationOptions<I extends ${operationIdType}> = RequestPart<I> & QueryPart<I> & HeaderPart<I>;\nexport type FaceOperationRequest<I extends ${operationIdType}> = FaceOperationOptions<I> & {\n  operationId: I;\n  method: (typeof ${operationSymbol})[number]["method"];\n  path: (typeof ${operationSymbol})[number]["path"];\n  pathParameters: FaceOperationContracts[I]["path"];\n  requiresSession: FaceOperationContracts[I]["requiresSession"];\n};\nexport type FaceExecutor = <I extends ${operationIdType}>(request: FaceOperationRequest<I>) => Promise<FaceOperationContracts[I]["response"]>;\n\nexport function ${clientFactory}(execute: FaceExecutor) {\n  return {\n${clientMethods}\n  } as const;\n}\n`;
 }
+function tsFaceWithBudget(face, operations, codes, components) {
+  const source = tsFace(face, operations, codes, components);
+  const selected = operations.filter((operation) => operation.face === face);
+  const operationSymbol = `${face.replaceAll("-", "_").toUpperCase()}_OPERATIONS`;
+  const operationIdsSymbol = `${face.replaceAll("-", "_").toUpperCase()}_OPERATION_IDS`;
+  const budgetSymbol = `${face.replaceAll("-", "_").toUpperCase()}_DATABASE_OPERATION_BUDGETS`;
+  const budgetExport = `\n\nexport const ${budgetSymbol} = ${normalized(Object.fromEntries(selected.map((operation) => [operation.operationId, operation.databaseOperationBudget]))).trim()} as const;`;
+  return source.replace(`\n\nexport const ${operationIdsSymbol}`, `${budgetExport}\n\nexport const ${operationIdsSymbol}`);
+}
 /**
  * Emits the only RTK endpoint inventory that an app may bind.  Features receive
  * a generated operation client, but RTK needs named endpoint definitions in
@@ -817,10 +839,10 @@ function expected(base = root) {
   return new Map([
     [targets.errorsJava, javaErrors(codes)],
     [targets.r3CompatibilityJava, r3CompatibilityErrors()],
-    [targets.routeRegistry, normalized({ schemaVersion: 2, generatedFrom: [catalogPath, reportPath], closure: { operations: expectedOperationCount, faceCounts }, operations: operations.map(({ operationId, method, path: route, face, owner }) => ({ operationId, method, path: route, consumerFaces: [face], owner })) })],
-    [targets.platformTs, tsFace("platform-admin", operations, codesByFace["platform-admin"], components)],
-    [targets.operationsTs, tsFace("operations-admin", operations, codesByFace["operations-admin"], components)],
-    [targets.publicTs, tsFace("public", operations, codesByFace.public, components)],
+    [targets.routeRegistry, normalized({ schemaVersion: 2, generatedFrom: [catalogPath, reportPath], closure: { operations: expectedOperationCount, faceCounts }, operations: operations.map(({ operationId, method, path: route, face, owner, databaseOperationBudget }) => ({ operationId, method, path: route, consumerFaces: [face], owner, databaseOperationBudget })) })],
+    [targets.platformTs, tsFaceWithBudget("platform-admin", operations, codesByFace["platform-admin"], components)],
+    [targets.operationsTs, tsFaceWithBudget("operations-admin", operations, codesByFace["operations-admin"], components)],
+    [targets.publicTs, tsFaceWithBudget("public", operations, codesByFace.public, components)],
     [targets.platformRtkTs, tsRtkFaceWithFlexibleTagTypes("platform-admin", operations)],
     [targets.operationsRtkTs, tsRtkFaceWithFlexibleTagTypes("operations-admin", operations)],
     [targets.publicRtkTs, tsRtkFaceWithFlexibleTagTypes("public", operations)],
@@ -912,6 +934,18 @@ function selfTest() {
   try {
     fs.cpSync(root, scratch, { recursive: true, filter: (source) => !source.includes("/build") && !source.includes("/dist") && !source.includes("/.git") });
     writeOutputs(scratch);
+    const budgetOperation = load(scratch).operations.find((operation) => operation.databaseOperationBudget.kind === "FIXED");
+    const raisedBudget = {
+      ...budgetOperation.databaseOperationBudget,
+      max: budgetOperation.databaseOperationBudget.max + 1,
+      history: [{from: budgetOperation.databaseOperationBudget.max, to: budgetOperation.databaseOperationBudget.max + 1, reason: "unapproved increase"}],
+    };
+    try {
+      validateBudgetChange({operationId: budgetOperation.operationId, from: budgetOperation.databaseOperationBudget, to: raisedBudget});
+      fail("R5_EDGE_BUDGET_INCREASE_WITHOUT_DECISION_REF_RED_NOT_DETECTED");
+    } catch (error) {
+      if (!["BUDGET_HISTORY_INCREASE_DECISION_REF_REQUIRED", "BUDGET_INCREASE_DECISION_REF_REQUIRED"].includes(error.code)) throw error;
+    }
     const capabilityRequirementCatalogSource = fs.readFileSync(path.join(scratch, targets.workspaceCapabilityRequirementCatalogJava), "utf8");
     for (const capability of ["EDIT_HEAD_COMPANY_CATALOG", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"]) {
       if (!capabilityRequirementCatalogSource.includes(`WorkspaceAuthorizationCatalog.CapabilityKeys.${capability}`)) {

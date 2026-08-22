@@ -1,5 +1,6 @@
 package com.catering.v2s.app.edge.operations.cataloginventory;
 
+import com.catering.v2s.app.edge.diagnostic.HttpRequestMetricsInterceptor;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyPreflight;
 import com.catering.v2s.app.edge.generated.wire.BrandCatalogCopyReadback;
@@ -442,6 +443,9 @@ public final class OperationsCatalogInventoryController {
             @RequestBody CatalogItemBatchStatusTransitionRequest r,
             @RequestHeader(value = "Idempotency-Key", required = false) String k) {
         requireIdempotencyKey(k);
+        if (r != null && r.items() != null) {
+            HttpRequestMetricsInterceptor.recordRequestCardinality(r.items().size());
+        }
         return ResponseEntity.ok(m1Bindings.bindBatchTransitionOperationsCatalogItemStatus(
                 r, sessions.token(c), c.requestedBrandRef(), c.correlationId(), c.requestId(), k));
     }

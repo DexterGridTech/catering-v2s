@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -87,6 +86,45 @@ class CatalogBatchStatusTransitionIntegrationTest {
     }
 
     @Test
+    void unknownItemFailureEscapesWithoutCreatingReceiptButKeepsEarlierItemCommit() {
+        JsonNode committed = create(BRAND, "BATCH-UNKNOWN-FIRST");
+        JsonNode broken = create(BRAND, "BATCH-UNKNOWN-SECOND");
+        UUID committedRef = UUID.fromString(committed.path("resourceRef").asText());
+        UUID brokenRef = UUID.fromString(broken.path("resourceRef").asText());
+        jdbc.update(
+                "UPDATE catalog.catalog_item SET sections='{" + "\"standardSalePrice\":100"
+                        + "}'::jsonb WHERE item_ref=?",
+                committedRef);
+        // JSON null is a persisted malformed owner fact. Enabling it reaches the owner JSON decoder and
+        // produces RESULT_UNKNOWN, which is a request-level failure rather than an item business outcome.
+        jdbc.update("UPDATE catalog.catalog_item SET sections='null'::jsonb WHERE item_ref=?", brokenRef);
+        String key = "batch-unknown-item-key";
+
+        CatalogOwnerApi.Problem failure = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> batch(
+                        BRAND,
+                        "ENABLED",
+                        List.of(
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(committedRef, 1L),
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(brokenRef, 1L)),
+                        key));
+
+        assertEquals("RESULT_UNKNOWN", failure.code());
+        assertEquals("ENABLED", status(committedRef));
+        assertEquals(2L, version(committedRef));
+        assertEquals("DRAFT", status(brokenRef));
+        assertEquals(1L, version(brokenRef));
+        assertEquals(
+                0L,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM catalog.command_receipt WHERE data_node_ref=? AND idempotency_key=?",
+                        Long.class,
+                        SCOPE.toString(),
+                        key));
+    }
+
+    @Test
     void partialFailureCommitsSuccessfulItemsAndPreservesUntouchedSections() {
         JsonNode first = create(BRAND, "BATCH-PARTIAL-FIRST");
         JsonNode second = create(BRAND, "BATCH-PARTIAL-SECOND");
@@ -109,10 +147,20 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 readback.results().stream()
                         .map(CatalogOwnerApi.CatalogItemBatchStatusTransitionResult::itemRef)
                         .toList());
-        assertTrue(readback.results().get(0).ok());
+        assertEquals("BATCH-PARTIAL-FIRST", readback.results().get(0).itemCode());
+        assertEquals(
+                CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.SUCCEEDED,
+                readback.results().get(0).outcome());
+        assertEquals(null, readback.results().get(0).problemCode());
+        assertEquals(null, readback.results().get(0).reason());
         assertEquals(2L, readback.results().get(0).version());
-        assertFalse(readback.results().get(1).ok());
-        assertEquals("VERSION_CONFLICT", readback.results().get(1).failureCode());
+        assertEquals("BATCH-PARTIAL-SECOND", readback.results().get(1).itemCode());
+        assertEquals(
+                CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.FAILED,
+                readback.results().get(1).outcome());
+        assertEquals("VERSION_CONFLICT", readback.results().get(1).problemCode());
+        assertFalse(readback.results().get(1).reason().isBlank());
+        assertEquals(null, readback.results().get(1).version());
         assertEquals("ARCHIVED", status(firstRef));
         assertEquals("DRAFT", status(secondRef));
         assertEquals(
@@ -166,7 +214,9 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(targetRef, 1L)),
                 "batch-archive-reference-key");
 
-        assertTrue(readback.results().get(0).ok());
+        assertEquals(
+                CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.SUCCEEDED,
+                readback.results().get(0).outcome());
         assertEquals("ARCHIVED", status(targetRef));
     }
 
@@ -181,8 +231,13 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(foreignRef, 1L)),
                 "batch-scope-key");
 
-        assertFalse(readback.results().get(0).ok());
-        assertEquals("SCOPE_FORBIDDEN", readback.results().get(0).failureCode());
+        assertEquals("BATCH-FOREIGN", readback.results().get(0).itemCode());
+        assertEquals(
+                CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.FAILED,
+                readback.results().get(0).outcome());
+        assertEquals("SCOPE_FORBIDDEN", readback.results().get(0).problemCode());
+        assertFalse(readback.results().get(0).reason().isBlank());
+        assertEquals(null, readback.results().get(0).version());
         assertEquals("DRAFT", status(foreignRef));
     }
 
@@ -232,6 +287,34 @@ class CatalogBatchStatusTransitionIntegrationTest {
     }
 
     @Test
+    void sameIdempotencyKeyWithDifferentItemOrderIsRejected() {
+        JsonNode first = create(BRAND, "BATCH-ORDER-FIRST");
+        JsonNode second = create(BRAND, "BATCH-ORDER-SECOND");
+        UUID firstRef = UUID.fromString(first.path("resourceRef").asText());
+        UUID secondRef = UUID.fromString(second.path("resourceRef").asText());
+        String key = "batch-order-mismatch-key";
+
+        batch(
+                BRAND,
+                "ARCHIVED",
+                List.of(
+                        new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L),
+                        new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L)),
+                key);
+
+        CatalogOwnerApi.Problem mismatch = assertThrows(
+                CatalogOwnerApi.Problem.class,
+                () -> batch(
+                        BRAND,
+                        "ARCHIVED",
+                        List.of(
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(secondRef, 1L),
+                                new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(firstRef, 1L)),
+                        key));
+        assertEquals("IDEMPOTENCY_MISMATCH", mismatch.code());
+    }
+
+    @Test
     void sameTargetIsSuccessfulNoOpWithoutVersionIncrement() {
         JsonNode item = create(BRAND, "BATCH-NOOP");
         UUID itemRef = UUID.fromString(item.path("resourceRef").asText());
@@ -241,7 +324,9 @@ class CatalogBatchStatusTransitionIntegrationTest {
                 List.of(new CatalogOwnerApi.CatalogItemBatchStatusTransitionItem(itemRef, 1L)),
                 "batch-noop-key");
 
-        assertTrue(readback.results().get(0).ok());
+        assertEquals(
+                CatalogOwnerApi.CatalogItemBatchStatusTransitionOutcome.SUCCEEDED,
+                readback.results().get(0).outcome());
         assertEquals(1L, readback.results().get(0).version());
         assertEquals(1L, version(itemRef));
     }

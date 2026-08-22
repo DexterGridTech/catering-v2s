@@ -285,10 +285,11 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 scopedProjectId,
                 List.of(scopedProjectId));
         selectedProject(fixture, scopedProjectId);
-        when(fixture.capabilityScopes.resolve(
+        when(fixture.capabilityScopes.resolveUsingResolvedTaskPath(
                         fixture.session,
                         "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE",
-                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId)))
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId),
+                        projectPath(scopedProjectId)))
                 .thenReturn(new WorkspaceCapabilityScopeResolver.ScopeResolution(
                         WorkspaceCapabilityScopeResolver.Decision.ALLOW,
                         "BC-ORG-STORE-CREATE",
@@ -394,10 +395,11 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         assertEquals(scopedProjectId.toString(), response.getBody().project().id());
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.capabilityScopes)
-                .resolve(
+                .resolveUsingResolvedTaskPath(
                         fixture.session,
                         "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE",
-                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId));
+                        new WorkspaceCapabilityScopeResolver.ServerResolvedResource("PROJECT", scopedProjectId),
+                        projectPath(scopedProjectId));
         verify(fixture.entities)
                 .createStore(new OperationsStoreCommandApi.CreateStoreCommand(
                         fixture.workspaceId,

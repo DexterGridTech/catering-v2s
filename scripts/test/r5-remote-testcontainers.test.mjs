@@ -5,6 +5,8 @@ import {resolveGradleCommand} from '../lib/gradle-runtime.mjs';
 import {
   backendAcceptanceEnvironment,
   classifyGradleTestExecution,
+  classifyManagedDevLifecycleCommand,
+  inspectManagedDevState,
   managedGradleHomeScript,
   parseAndValidateRunManifest,
   parseBackendAcceptanceResult,
@@ -59,11 +61,45 @@ test('backend acceptance supplies every non-production server prerequisite and s
     'V2S_BACKEND_ACCEPTANCE_SECRET=',
     'V2S_BACKEND_ACCEPTANCE_EVENTS=',
     'V2S_BACKEND_ACCEPTANCE_RESULT=',
+    'V2S_DB_OPERATIONS_EVENTS=',
+    'V2S_DB_OPERATIONS_HMAC_KEY=',
+    'V2S_DB_STATEMENT_DICTIONARY=',
     'V2S_BACKEND_ACCEPTANCE_OPERATION=',
     'CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
   ]) {
     assert.match(environment, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
+});
+
+test('managed Testcontainers lifecycle only stops a valid owned DEV manifest and confirms markers', () => {
+  const manifest = JSON.stringify({
+    kind: 'r5-dev-run-manifest',
+    runId: 'r5-dev-1786638000000-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    processes: [{name: 'remote-java', pid: 123}],
+    remoteJava: {pid: 123},
+    remoteHostTrust: {host: 'development-host'},
+  });
+  assert.deepEqual(
+    inspectManagedDevState({
+      manifestPath: '/managed/run-manifest.json',
+      exists: () => true,
+      read: () => manifest,
+    }),
+    {wasRunning: true, runId: 'r5-dev-1786638000000-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'},
+  );
+  assert.deepEqual(
+    inspectManagedDevState({manifestPath: '/managed/run-manifest.json', exists: () => false}),
+    {wasRunning: false, runId: null},
+  );
+  assert.throws(
+    () => inspectManagedDevState({manifestPath: '/managed/run-manifest.json', exists: () => true, read: () => '{}'}),
+    /DEV_MANIFEST_INVALID/,
+  );
+  assert.deepEqual(classifyManagedDevLifecycleCommand({status: 0, stdout: 'R5_DEV_STOP=PASS;'}, 'R5_DEV_STOP=PASS'), {status: 'PASS'});
+  assert.equal(
+    classifyManagedDevLifecycleCommand({status: 1, stdout: 'R5_DEV_STOP=PASS;'}, 'R5_DEV_STOP=PASS').status,
+    'FAIL',
+  );
 });
 
 test('backend acceptance result keeps discovery, contract, business, and DB observations separate', () => {
@@ -126,6 +162,15 @@ test('manifest requires proof that the focused process, workspace, containers, a
   assert.throws(
     () => parseAndValidateRunManifest({...manifest, cleanup: {...manifest.cleanup, remoteWorkspace: 'FAIL'}}),
     /RESOURCE_CLEANUP_COMPONENT_NOT_PASS:remoteWorkspace/,
+  );
+});
+
+test('manifest keeps run-level performance measurement independent from scenario results', () => {
+  const manifest = {...validManifest(), measurementEvidence: {status: 'PASS', discovered: 238, sqlOperations: 900}};
+  assert.deepEqual(parseAndValidateRunManifest(manifest), manifest);
+  assert.throws(
+    () => parseAndValidateRunManifest({...manifest, measurementEvidence: {status: 'FAIL'}}),
+    /RUN_MANIFEST_MEASUREMENT_EVIDENCE_INVALID/,
   );
 });
 

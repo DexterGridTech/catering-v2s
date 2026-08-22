@@ -350,7 +350,24 @@ public class WorkspaceAuthenticationService {
     @Transactional
     public WorkspaceSessionEntryReadback selectDataNode(
             String rawToken, String dataNodeType, UUID scopeNodeId, long expectedContextVersion) {
+        return selectDataNode(rawToken, null, dataNodeType, scopeNodeId, expectedContextVersion);
+    }
+
+    /**
+     * Selects a data node while checking the edge workspace key in the same owner transaction. The explicit key avoids
+     * a separate edge session projection; the owner still performs the complete assignment and visibility checks before
+     * changing the session context.
+     */
+    @Transactional
+    public WorkspaceSessionEntryReadback selectDataNode(
+            String rawToken,
+            String expectedGroupWorkspaceKey,
+            String dataNodeType,
+            UUID scopeNodeId,
+            long expectedContextVersion) {
         SessionRow current = requireNormal(rawToken);
+        if (expectedGroupWorkspaceKey != null && !expectedGroupWorkspaceKey.equals(current.key()))
+            throw new SessionInvalidException();
         if (current.contextVersion() != expectedContextVersion || current.assignmentId() == null)
             throw new SessionConflictException();
         Assignment assignment = requireAssignment(current, current.assignmentId());
@@ -381,7 +398,31 @@ public class WorkspaceAuthenticationService {
                         expectedContextVersion)
                 != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
-        return sessionEntry(require(rawToken), withScopeSelection(visibleFacts, next));
+        SessionRow readback = require(rawToken);
+        List<Assignment> activeAssignments = activeAssignments(readback);
+        OrganizationTaskPathLookup.SessionTaskTargetFacts taskTargetFacts = taskPaths == null
+                ? null
+                : taskPaths.sessionTaskTargetFacts(
+                        readback.workspaceUuid(),
+                        readback.key(),
+                        activeAssignments.stream()
+                                .map(candidateAssignment -> new OrganizationTaskPathLookup.TaskPathRef(
+                                        candidateAssignment.nodeType(), candidateAssignment.nodeId()))
+                                .toList());
+        List<Assignment> enterableAssignments = taskTargetFacts == null
+                ? availableAssignments(readback, activeAssignments)
+                : activeAssignments.stream()
+                        .filter(candidateAssignment -> taskTargetFacts
+                                .availableTargets()
+                                .contains(new OrganizationTaskPathLookup.TaskPathRef(
+                                        candidateAssignment.nodeType(), candidateAssignment.nodeId())))
+                        .toList();
+        Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
+                readback.workspaceUuid(),
+                readback.key(),
+                enterableAssignments.stream().map(Assignment::roleId).toList());
+        return sessionEntry(
+                readback, withScopeSelection(visibleFacts, next), enterableAssignments, rolesById, taskTargetFacts);
     }
 
     @Transactional(readOnly = true)
@@ -575,11 +616,27 @@ public class WorkspaceAuthenticationService {
     }
 
     private WorkspaceSessionEntryReadback sessionEntry(SessionRow row) {
-        return sessionEntry(row, null);
+        return sessionEntry(row, null, null, null, null);
     }
 
     private WorkspaceSessionEntryReadback sessionEntry(
             SessionRow row, OrganizationVisibilityLookup.VisibleOrganizationFacts suppliedVisibleFacts) {
+        return sessionEntry(row, suppliedVisibleFacts, null, null, null);
+    }
+
+    private WorkspaceSessionEntryReadback sessionEntry(
+            SessionRow row,
+            OrganizationVisibilityLookup.VisibleOrganizationFacts suppliedVisibleFacts,
+            List<Assignment> suppliedEnterableAssignments) {
+        return sessionEntry(row, suppliedVisibleFacts, suppliedEnterableAssignments, null, null);
+    }
+
+    private WorkspaceSessionEntryReadback sessionEntry(
+            SessionRow row,
+            OrganizationVisibilityLookup.VisibleOrganizationFacts suppliedVisibleFacts,
+            List<Assignment> suppliedEnterableAssignments,
+            Map<UUID, WorkspaceRoleReadback> suppliedRolesById,
+            OrganizationTaskPathLookup.SessionTaskTargetFacts suppliedTaskTargetFacts) {
         if (row.passwordChangeRequired()) {
             return new WorkspaceSessionEntryReadback(
                     row.key(),
@@ -597,20 +654,26 @@ public class WorkspaceAuthenticationService {
                     null,
                     null);
         }
-        List<Assignment> enterableAssignments = availableAssignments(row, activeAssignments(row));
-        Map<UUID, WorkspaceRoleReadback> rolesById = roles.requireAll(
-                row.workspaceUuid(),
-                row.key(),
-                enterableAssignments.stream().map(Assignment::roleId).toList());
-        Map<OrganizationTaskPathLookup.TaskPathRef, String> labels = taskPaths == null
-                ? Map.of()
-                : taskPaths.describeTaskTargetLabels(
+        List<Assignment> enterableAssignments = suppliedEnterableAssignments == null
+                ? availableAssignments(row, activeAssignments(row))
+                : suppliedEnterableAssignments;
+        Map<UUID, WorkspaceRoleReadback> rolesById = suppliedRolesById == null
+                ? roles.requireAll(
                         row.workspaceUuid(),
                         row.key(),
-                        enterableAssignments.stream()
-                                .map(assignment -> new OrganizationTaskPathLookup.TaskPathRef(
-                                        assignment.nodeType(), assignment.nodeId()))
-                                .toList());
+                        enterableAssignments.stream().map(Assignment::roleId).toList())
+                : suppliedRolesById;
+        Map<OrganizationTaskPathLookup.TaskPathRef, String> labels = taskPaths == null
+                ? Map.of()
+                : suppliedTaskTargetFacts == null
+                        ? taskPaths.describeTaskTargetLabels(
+                                row.workspaceUuid(),
+                                row.key(),
+                                enterableAssignments.stream()
+                                        .map(assignment -> new OrganizationTaskPathLookup.TaskPathRef(
+                                                assignment.nodeType(), assignment.nodeId()))
+                                        .toList())
+                        : suppliedTaskTargetFacts.labels();
         List<WorkspaceSessionEntryReadback.RoleAssignmentCandidate> candidates = enterableAssignments.stream()
                 .map(assignment -> candidate(row, assignment, rolesById.get(assignment.roleId()), labels))
                 .sorted(Comparator.comparing(WorkspaceSessionEntryReadback.RoleAssignmentCandidate::roleName)
@@ -812,7 +875,10 @@ public class WorkspaceAuthenticationService {
 
     private LoginEntryResult createSessionEntry(Account account) {
         CreatedSession created = createRawSession(account);
-        return new LoginEntryResult(created.rawToken(), sessionEntry(created.rawToken(), account.key()));
+        SessionRow session = require(created.rawToken());
+        if (!session.key().equals(account.key())) throw new SessionInvalidException();
+        return new LoginEntryResult(
+                created.rawToken(), sessionEntry(session, created.visibleFacts(), created.enterableAssignments()));
     }
 
     private CreatedSession createRawSession(Account account) {
@@ -861,7 +927,7 @@ public class WorkspaceAuthenticationService {
                 account.key(),
                 account.id(),
                 now);
-        return new CreatedSession(raw, sessionId, selected, locked.visibleFacts());
+        return new CreatedSession(raw, sessionId, selected, locked.visibleFacts(), enterable);
     }
 
     private Account accountByMobile(String groupWorkspaceKey, String mobile) {
@@ -1403,7 +1469,8 @@ public class WorkspaceAuthenticationService {
             String rawToken,
             UUID sessionId,
             Assignment selectedAssignment,
-            OrganizationVisibilityLookup.VisibleOrganizationFacts visibleFacts) {}
+            OrganizationVisibilityLookup.VisibleOrganizationFacts visibleFacts,
+            List<Assignment> enterableAssignments) {}
 
     private record Assignment(UUID id, UUID roleId, String nodeType, UUID nodeId) {}
 

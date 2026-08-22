@@ -58,7 +58,6 @@ public final class OperationsBusinessChannelController {
     private static final String REQ_CREATE_CHANNEL = "REQ_CREATE_OPERATIONS_BUSINESS_CHANNEL";
     private static final String REQ_UPDATE_CHANNEL = "REQ_UPDATE_OPERATIONS_BUSINESS_CHANNEL";
     private static final String REQ_TRANSITION_CHANNEL = "REQ_TRANSITION_OPERATIONS_BUSINESS_CHANNEL_STATUS";
-    private static final String REQ_BINDING_CREATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_CREATE";
     private static final String REQ_BINDING_UPDATE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_UPDATE";
     private static final String REQ_BINDING_DELETE = "REQ_OPERATIONS_BUSINESS_CHANNEL_BINDING_DELETE";
 
@@ -345,42 +344,20 @@ public final class OperationsBusinessChannelController {
             @PathVariable UUID channelRef,
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OwnerBindingCreateRequest body) {
-        WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
         if (body == null || body.nodeRef() == null) throw new InvalidEdgeRequestException("nodeRef is required");
-        BusinessChannelReadback.Channel channel = readChannel(session, channelRef);
-        assertChannelNode(channel, body.nodeType(), body.nodeRef());
-        String providerCode = templateProvider(session, channel);
-        if (!Objects.equals(providerCode, required(body.providerCode(), "providerCode"))) {
-            throw new InvalidEdgeRequestException("providerCode does not match channel template");
-        }
         String key = idempotencyKey(idempotencyKey);
-        String nodeType = ownerNodeType(channel.ownerNodeType());
         return ExternalCollaborationWireMapper.binding(coordinator.createOperationsBinding(
-                new CollaborationCommandApi.CreateOperationsBindingCommand(
-                        session.workspaceUuid(),
-                        session.groupWorkspaceKey(),
-                        providerCode,
-                        ExternalCollaborationWireMapper.optionalText(body.capabilityClass(), "capabilityClass"),
-                        nodeType,
-                        channel.ownerNodeRef(),
-                        ExternalCollaborationWireMapper.optionalText(body.bindingDisplayName(), "bindingDisplayName"),
-                        ExternalCollaborationWireMapper.optionalText(body.externalOwnerId(), "externalOwnerId"),
-                        session.contextVersion(),
-                        key,
-                        sessions.actor(session),
-                        grant(
-                                session,
-                                REQ_BINDING_CREATE,
-                                nodeType,
-                                ownerNodeId(channel.ownerNodeRef()),
-                                ServiceNodeTypes.STORE.equals(nodeType))),
+                request,
+                groupWorkspaceKey,
                 channelRef,
-                grant(
-                        session,
-                        REQ_UPDATE_CHANNEL,
-                        nodeType,
-                        ownerNodeId(channel.ownerNodeRef()),
-                        ServiceNodeTypes.STORE.equals(nodeType))));
+                new ExternalCollaborationBusinessChannelCoordinator.BindingRequest(
+                        body.providerCode(),
+                        ExternalCollaborationWireMapper.optionalText(body.capabilityClass(), "capabilityClass"),
+                        body.nodeType(),
+                        body.nodeRef(),
+                        ExternalCollaborationWireMapper.optionalText(body.bindingDisplayName(), "bindingDisplayName"),
+                        ExternalCollaborationWireMapper.optionalText(body.externalOwnerId(), "externalOwnerId")),
+                key));
     }
 
     @PatchMapping("/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding")
@@ -509,12 +486,6 @@ public final class OperationsBusinessChannelController {
 
     private BusinessChannelReadback.Channel readChannel(WorkspaceSessionReadback session, UUID channelRef) {
         return businessChannels.readChannel(session.workspaceUuid(), session.groupWorkspaceKey(), channelRef);
-    }
-
-    private String templateProvider(WorkspaceSessionReadback session, BusinessChannelReadback.Channel channel) {
-        return businessChannels
-                .readTemplate(session.workspaceUuid(), session.groupWorkspaceKey(), channel.templateRef())
-                .providerCode();
     }
 
     private OperationsOwnerScopeGrant grant(

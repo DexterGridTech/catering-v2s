@@ -11,8 +11,9 @@ import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from '../test/seed-report.mjs';
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from './managed-diagnostic-protocol.mjs';
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
 import {canonicalStartToken} from './managed-process-tree.mjs';
+import {validateRemoteJavaControl} from './r5-remote-java.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
@@ -167,6 +168,12 @@ function managedRuntime() {
   if (!existsSync(manifestPath)) throw new FormalSeedFailure('SEED_MANAGED_RUN_MANIFEST_REQUIRED');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true || manifest.otpDebugExposure !== true) throw new FormalSeedFailure('SEED_MANAGED_RUN_INVALID');
+  try {
+    validateRemoteJavaControl(manifest.remoteJava);
+    validateManagedDiagnosticTransport(manifest);
+  } catch {
+    throw new FormalSeedFailure('SEED_MANAGED_REMOTE_JAVA_BINDING_INVALID');
+  }
   for (const process of manifest.processes ?? []) {
     const probe = spawnSync('ps', ['-o', 'lstart=', '-p', String(process.pid)], {encoding: 'utf8'});
     if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) throw new FormalSeedFailure(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
@@ -184,8 +191,14 @@ function databaseName(databaseUrl) {
     fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
   }
 }
+function managedHttpBaseUrl(manifest) {
+  const value = manifest?.localHttpBaseUrl;
+  if (typeof value !== 'string' || !/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(value)) fail('SEED_MANAGED_HTTP_ENDPOINT_INVALID');
+  return value;
+}
 export function managedSeedEnvironment(manifest, credentials) {
   const database = requireValue(manifest?.database, 'SEED_MANAGED_DATABASE_BINDING_INVALID');
+  const httpBaseUrl = managedHttpBaseUrl(manifest);
   const name = databaseName(database);
   const match = name.match(/^catering_v2s_dev_([a-z0-9_]{3,32})$/);
   if (!match) fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
@@ -201,6 +214,7 @@ export function managedSeedEnvironment(manifest, credentials) {
     ...credentials,
     V2S_RUNTIME_DIR: runtimeRoot,
     V2S_DEV_DATABASE_URL: database,
+    V2S_DEV_HTTP_BASE_URL: httpBaseUrl,
     V2S_DEV_NAMESPACE: namespace,
     V2S_DEV_PROFILE: 'r5-full',
     V2S_RUNTIME_ENVIRONMENT: 'non-production',
@@ -347,7 +361,7 @@ async function executeFormalSeed() {
     let payload;
     if (form) payload = form; else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
     let response;
-    try { response = await fetch(`http://127.0.0.1:8080${pathname}`, {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
+    try { response = await fetch(`${managedEnvironment.V2S_DEV_HTTP_BASE_URL}${pathname}`, {method: operation.method, headers, body: payload, signal: AbortSignal.timeout(15_000)}); }
     catch { firstFailure ??= `${stage}_NETWORK`; calls.push({stageId: stage, managedDevRunId: manifest.runId, owner: operation.owner, consumerFace: operation.consumerFaces?.join(',') ?? null, operationId: operation.operationId, method: operation.method, routeTemplate: operation.path, durationMs: Date.now() - started, status: 0, outcome: 'FAILED', correlationId, requestId: null}); phase(stage, 'FAIL', {operationId: operation.operationId, httpStatus: 0}); throw new FormalSeedFailure(firstFailure); }
     const text = await response.text(); let json; try { json = text ? JSON.parse(text) : null; } catch { json = null; }
     const accepted = expected.includes(response.status);
@@ -574,10 +588,12 @@ function selfTest() {
   const plan = resolveInvitationCreationPlan(fixture);
   if (plan.length !== 2 || plan[0].targetOrganizationType !== 'STORE') throw new Error('SELF_TEST_PLAN_RESOLUTION_FAILED');
   const managedEnvironment = managedSeedEnvironment({
-    database: 'jdbc:postgresql://127.0.0.1:25433/catering_v2s_dev_r5_full',
+    database: 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full',
+    localHttpBaseUrl: 'http://127.0.0.1:28080',
     remoteHostTrust: {host: 'catering-remote-dev', fingerprint: 'a'.repeat(64), allowlistVersion: 'r5-test-v1', maintainer: 'Dexter', rotatedAt: '2026-08-05'},
   }, {V2S_SEED_PLATFORM_ROOT_PASSWORD: 'test-only'});
-  if (managedEnvironment.V2S_DEV_DATABASE_URL !== 'jdbc:postgresql://127.0.0.1:25433/catering_v2s_dev_r5_full'
+  if (managedEnvironment.V2S_DEV_DATABASE_URL !== 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full'
+    || managedEnvironment.V2S_DEV_HTTP_BASE_URL !== 'http://127.0.0.1:28080'
     || managedEnvironment.V2S_DEV_NAMESPACE !== 'v2s-dev-r5-full'
     || managedEnvironment.V2S_RUNTIME_DIR !== runtimeRoot) throw new Error('SELF_TEST_MANAGED_ENVIRONMENT_BINDING_FAILED');
   expect('SEED_MANAGED_DATABASE_BINDING_INVALID', () => managedSeedEnvironment({...managedEnvironment, database: 'jdbc:postgresql://127.0.0.1:25432/not-allowlisted'}, {}));

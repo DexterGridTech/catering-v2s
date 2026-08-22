@@ -19,7 +19,6 @@ import {
   Dropdown,
   Form,
   Input,
-  List,
   Modal,
   Segmented,
   Select,
@@ -69,7 +68,6 @@ import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageProps} from '../../../app/routing/model';
 import {
-  alignCatalogBatchResults,
   buildCatalogBatchSaveRequest,
   buildCatalogBatchStatusRequest,
   buildCatalogItemsQuery,
@@ -95,13 +93,14 @@ import {CatalogItemDrawer} from './CatalogItemDrawer';
 import {CatalogItemCreateDrawer} from './CatalogItemCreateDrawer';
 import {CatalogDictionaryDrawer} from './CatalogDictionaryDrawer';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
+import {CatalogBatchOutcome} from './CatalogBatchOutcome';
 
 type CatalogSurface = 'store' | 'brand';
 type CatalogDictionaryKind = 'TAG' | 'UNIT' | 'SKU_ATTRIBUTE' | 'SKU_ATTRIBUTE_VALUE' | 'PRODUCTION_TAG';
 type TreeSelection = {kind: 'SMART' | 'SHAPE' | 'CATEGORY' | 'TAG' | 'UNCATEGORIZED'; ref: string; label: string};
 type CatalogFilters = {keyword?: string; status?: string; source?: string};
 type CatalogBatchAction = 'CATEGORY' | 'TAG' | 'STATUS' | 'ARCHIVE';
-type CatalogBatchRowResult = CatalogBatchResult & {code: string};
+type CatalogBatchRowResult = CatalogBatchResult;
 type TagDictionaryEntry = ReturnType<typeof decodeCatalogDictionaryLabels>[number];
 type CategoryAction = {
   mode: 'CREATE' | 'RENAME' | 'REPARENT' | 'MOVE_UP' | 'MOVE_DOWN' | 'DELETE';
@@ -109,6 +108,10 @@ type CategoryAction = {
 };
 type CatalogTreeNode = {key: string; title: ReactNode; selectable?: boolean; children?: CatalogTreeNode[]};
 const defaultCatalogTreeExpandedKeys: Key[] = ['smart-root', 'shape-root', 'tag-root', 'category-root'];
+
+function queryRefetchFailed(value: unknown): boolean {
+  return Boolean(value && typeof value === 'object' && 'error' in value && (value as {error?: unknown}).error);
+}
 
 type CatalogTreeLineProps = {
   label: string;
@@ -270,6 +273,7 @@ function CatalogWorkbenchPage({
   const [batchTagRefs, setBatchTagRefs] = useState<string[]>([]);
   const [batchResults, setBatchResults] = useState<CatalogBatchRowResult[]>([]);
   const [batchProblem, setBatchProblem] = useState<string>();
+  const [batchRefreshProblem, setBatchRefreshProblem] = useState<string>();
   const [batchSubmitting, setBatchSubmitting] = useState(false);
   const detail = useDetailDrawer<string>();
   const detailTriggerRef = useRef<HTMLElement | null>(null);
@@ -612,6 +616,17 @@ function CatalogWorkbenchPage({
     surface,
     tagDictionaryQuery,
   ]);
+  const refreshAfterBatch = useCallback(async () => {
+    if (!scopeReady) return;
+    listRequestGeneration.current = generation.begin();
+    setBatchRefreshProblem(undefined);
+    try {
+      const results = await Promise.all([itemsQuery.refetch(), navigationQuery.refetch()]);
+      if (results.some(queryRefetchFailed)) setBatchRefreshProblem('列表刷新失败，请手动刷新');
+    } catch {
+      setBatchRefreshProblem('列表刷新失败，请手动刷新');
+    }
+  }, [generation, itemsQuery, navigationQuery, scopeReady]);
   const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
   useEffect(() => {
     if (contentTabRefreshVersion === lastContentTabRefreshVersion.current) return;
@@ -623,6 +638,7 @@ function CatalogWorkbenchPage({
     setBatchAction(undefined);
     setBatchResults([]);
     setBatchProblem(undefined);
+    setBatchRefreshProblem(undefined);
   }, [batchSubmitting]);
   const openDetail = useCallback(
     (itemCode: string, trigger: HTMLElement) => {
@@ -643,6 +659,7 @@ function CatalogWorkbenchPage({
     setBatchAction(next);
     setBatchResults([]);
     setBatchProblem(undefined);
+    setBatchRefreshProblem(undefined);
     if (next === 'CATEGORY') setBatchCategoryRefs([]);
     if (next === 'TAG') setBatchTagRefs([]);
     if (next === 'STATUS') setBatchStatus('ENABLED');
@@ -651,6 +668,7 @@ function CatalogWorkbenchPage({
     if (!batchAction || selectedItemRows.length === 0) return;
     setBatchSubmitting(true);
     setBatchProblem(undefined);
+    setBatchRefreshProblem(undefined);
     const dataNodeRef = requireOperationsScopeRef(queryContext);
     try {
       if (batchAction === 'STATUS' || batchAction === 'ARCHIVE') {
@@ -664,7 +682,12 @@ function CatalogWorkbenchPage({
           {},
           {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
         );
-        setBatchResults(alignCatalogBatchResults(selectedItemRows, decodeCatalogBatchResults(response)));
+        setBatchResults(
+          decodeCatalogBatchResults(
+            response,
+            body.items.map(item => item.itemRef),
+          ),
+        );
       } else {
         const updateKind: CatalogBatchUpdateKind = batchAction;
         const refs = (batchAction === 'CATEGORY' ? batchCategoryRefs : batchTagRefs) as CatalogItemSummary['tagRefs'];
@@ -680,20 +703,30 @@ function CatalogWorkbenchPage({
                 {itemCode: row.code},
                 {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
               );
-              return {itemRef: row.itemRef, code: row.code, ok: true, failureCode: null};
+              return {
+                itemRef: row.itemRef,
+                itemCode: row.code,
+                outcome: 'SUCCEEDED',
+                problemCode: null,
+                reason: null,
+                version: null,
+              };
             } catch (error) {
               const problem = operationsProblemOf(error);
               return {
                 itemRef: row.itemRef,
-                code: row.code,
-                ok: false,
-                failureCode: problem.errorCode === 'NETWORK_ERROR' ? 'RESULT_UNKNOWN' : problem.errorCode,
+                itemCode: row.code,
+                outcome: 'FAILED',
+                problemCode: problem.errorCode,
+                reason: problem.detail || '批量操作项执行失败。',
+                version: null,
               };
             }
           }),
         );
         setBatchResults(results);
       }
+      await refreshAfterBatch();
       setSelectedRows([]);
     } catch (error) {
       const problem = operationsProblemOf(error);
@@ -701,7 +734,16 @@ function CatalogWorkbenchPage({
     } finally {
       setBatchSubmitting(false);
     }
-  }, [batchAction, batchCategoryRefs, batchStatus, batchTagRefs, headers, queryContext, selectedItemRows]);
+  }, [
+    batchAction,
+    batchCategoryRefs,
+    batchStatus,
+    batchTagRefs,
+    headers,
+    queryContext,
+    refreshAfterBatch,
+    selectedItemRows,
+  ]);
   const treeData = useMemo<CatalogTreeNode[]>(() => {
     const match = treeSearch.trim().toLocaleLowerCase();
     const categoryByParent = new Map<string, CatalogNavigation['tree']>();
@@ -1363,102 +1405,93 @@ function CatalogWorkbenchPage({
         }}
         maskClosable={!batchSubmitting}
         keyboard={!batchSubmitting}
-        okText={batchResults.length ? '关闭' : '执行'}
+        footer={batchResults.length ? null : undefined}
+        okText="执行"
         cancelText="取消"
         confirmLoading={batchSubmitting}
-        okButtonProps={{disabled: batchSubmitting || selectedItemRows.length === 0}}
+        okButtonProps={{disabled: batchSubmitting || (!batchResults.length && selectedItemRows.length === 0)}}
+        cancelButtonProps={{disabled: batchSubmitting}}
         destroyOnHidden
         {...testId('catalog-inventory-batch-modal')}
       >
-        {batchProblem && (
-          <Alert
-            type="error"
-            showIcon
-            title="批量操作未完成"
-            description={batchProblem}
-            style={{marginBottom: 12}}
-            {...testId('catalog-inventory-batch-problem')}
-          />
-        )}
-        {!batchResults.length && batchAction === 'CATEGORY' && (
-          <Form.Item label="目标分类" extra="提交后会替换所选商品的分类关系；清空即取消全部分类">
-            <Select
-              mode="multiple"
-              allowClear
-              value={batchCategoryRefs}
-              options={categoryOptions}
-              onChange={setBatchCategoryRefs}
-              placeholder="请选择分类"
-              {...testId('catalog-inventory-batch-category')}
-            />
-          </Form.Item>
-        )}
-        {!batchResults.length && batchAction === 'TAG' && (
-          <Form.Item label="目标标签" extra="提交后会替换所选商品的标签关系；清空即取消全部标签">
-            <Select
-              mode="multiple"
-              allowClear
-              value={batchTagRefs}
-              options={tagOptions}
-              loading={tagDictionaryQuery.isLoading || tagDictionaryQuery.isFetching}
-              onPopupScroll={event => tagDictionaryState.onPopupScroll(event, tagDictionaryQuery.isFetching)}
-              onChange={setBatchTagRefs}
-              placeholder="请选择标签"
-              {...testId('catalog-inventory-batch-tag')}
-            />
-          </Form.Item>
-        )}
-        {!batchResults.length && batchAction === 'STATUS' && (
-          <Form.Item label="目标状态">
-            <Select
-              value={batchStatus}
-              options={[
-                {value: 'ENABLED', label: '启用'},
-                {value: 'DISABLED', label: '停用'},
-              ]}
-              onChange={setBatchStatus}
-              {...testId('catalog-inventory-batch-status')}
-            />
-          </Form.Item>
-        )}
-        {!batchResults.length && batchAction === 'ARCHIVE' && (
-          <Alert
-            type="warning"
-            showIcon
-            title={`将归档 ${selectedItemRows.length} 个商品`}
-            description="归档只修改状态与版本，不会清空图片、属性或其他商品事实。每条结果会单独返回。"
-          />
-        )}
-        {batchResults.length > 0 && (
-          <Space direction="vertical" size={12} style={{display: 'flex'}}>
+        <div aria-busy={batchSubmitting}>
+          {batchSubmitting && (
             <Alert
-              type={batchResults.every(result => result.ok) ? 'success' : 'warning'}
+              type="info"
               showIcon
-              title={[
-                `已处理 ${batchResults.length} 条，`,
-                `成功 ${batchResults.filter(result => result.ok).length} 条，`,
-                `失败 ${batchResults.filter(result => !result.ok).length} 条`,
-              ].join('')}
+              title="正在处理，请稍候…"
+              style={{marginBottom: 12}}
+              {...testId('catalog-batch-submitting')}
             />
-            <List
-              bordered
-              size="small"
-              dataSource={batchResults}
-              renderItem={result => (
-                <List.Item>
-                  <Space>
-                    <Typography.Text>{result.code}</Typography.Text>
-                    {result.ok ? (
-                      <Tag color="green">成功</Tag>
-                    ) : (
-                      <Tag color="red">失败 · {result.failureCode ?? 'RESULT_UNKNOWN'}</Tag>
-                    )}
-                  </Space>
-                </List.Item>
-              )}
+          )}
+          {batchProblem && (
+            <Alert
+              type="error"
+              showIcon
+              title="批量操作未执行"
+              description={batchProblem}
+              style={{marginBottom: 12}}
+              {...testId('catalog-inventory-batch-problem')}
             />
-          </Space>
-        )}
+          )}
+          {!batchResults.length && batchAction === 'CATEGORY' && (
+            <Form.Item label="目标分类" extra="提交后会替换所选商品的分类关系；清空即取消全部分类">
+              <Select
+                mode="multiple"
+                allowClear
+                value={batchCategoryRefs}
+                options={categoryOptions}
+                onChange={setBatchCategoryRefs}
+                placeholder="请选择分类"
+                {...testId('catalog-inventory-batch-category')}
+              />
+            </Form.Item>
+          )}
+          {!batchResults.length && batchAction === 'TAG' && (
+            <Form.Item label="目标标签" extra="提交后会替换所选商品的标签关系；清空即取消全部标签">
+              <Select
+                mode="multiple"
+                allowClear
+                value={batchTagRefs}
+                options={tagOptions}
+                loading={tagDictionaryQuery.isLoading || tagDictionaryQuery.isFetching}
+                onPopupScroll={event => tagDictionaryState.onPopupScroll(event, tagDictionaryQuery.isFetching)}
+                onChange={setBatchTagRefs}
+                placeholder="请选择标签"
+                {...testId('catalog-inventory-batch-tag')}
+              />
+            </Form.Item>
+          )}
+          {!batchResults.length && batchAction === 'STATUS' && (
+            <Form.Item label="目标状态">
+              <Select
+                value={batchStatus}
+                options={[
+                  {value: 'ENABLED', label: '启用'},
+                  {value: 'DISABLED', label: '停用'},
+                ]}
+                onChange={setBatchStatus}
+                placeholder="请选择目标状态"
+                {...testId('catalog-inventory-batch-status')}
+              />
+            </Form.Item>
+          )}
+          {!batchResults.length && batchAction === 'ARCHIVE' && (
+            <Alert
+              type="warning"
+              showIcon
+              title={`将归档 ${selectedItemRows.length} 个商品`}
+              description="归档只修改状态与版本，不会清空图片、属性或其他商品事实。每条结果会单独返回。"
+            />
+          )}
+          {batchResults.length > 0 && (
+            <CatalogBatchOutcome
+              results={batchResults}
+              refreshProblem={batchRefreshProblem}
+              onClose={closeBatchAction}
+            />
+          )}
+        </div>
       </Modal>
       <CatalogItemDrawer
         itemCode={detail.target}
