@@ -8,15 +8,15 @@ consumerFaces: ["all"]
 owners: ["all"]
 impacts: ["all"]
 triggers: ["task-start","implementation","review"]
-assertions: ["BUSINESS_CORPUS_G01_G12_ACCEPTED","BUSINESS_CORPUS_READ_POLICY"]
-sourceRefs: ["doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"]
+assertions: ["BUSINESS_CORPUS_G01_G12_ACCEPTED","BUSINESS_CORPUS_CIPG01_ACCEPTED","BUSINESS_CORPUS_CIPG01_USER_LANGUAGE","BUSINESS_CORPUS_CIPG01_SINGLE_PRODUCTION_TAG","BUSINESS_CORPUS_CIPG01_CONSTRAINT_SPLIT","BUSINESS_CORPUS_READ_POLICY"]
+sourceRefs: ["doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md","doc/plans/platform/2026-08-23-v2s-catalog-identification-production-guidance-formal-requirements-codex.md","doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md","doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-ia-design-codex.md","doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-interaction-design-codex.md"]
 ---
 
 # Confirmed business language corpus
 
 ## Authority and use
 
-This is the current canonical business-language anchor for G-01 to G-12 only.
+This is the current canonical business-language anchor for G-01 to G-12 plus CIPG-01 only.
 It is not an implementation specification, schema, API contract, Journey approval, or runtime
 authorization. When a related task begins, use the index below to locate candidate entries, then
 read the whole entry and its stated `不得推导` boundary. An index miss never proves that a task has
@@ -33,6 +33,7 @@ no business meaning.
 | G-08/G-09 | 已启用、已停用、合同、货号、经营中、待开业、未经营、已停业、`StoreLeaseContract` |
 | G-10 | 集团空间编码、运营管理后台、运维管理后台、URL、路由 |
 | G-11/G-12 | 商品、商品目录、菜单、销售集合、销售项、发布、可售、库存、BOM、沽清、SKU、选项、`CatalogItem`、`ProductCatalog`、`SalesCollection`、`StockTarget` |
+| CIPG-01 | 条码与标识、识别码、条码、称重键码（PLU）、助记码、商品编码、规格、规格编码、制作信息、生产标签、制作单显示名称、预计制作时长、制作说明、商品默认、单独设置、制作变化 |
 
 ## G-01 集团空间与商业集团
 
@@ -219,8 +220,53 @@ SKU、选项值；无 BOM 不阻断销售。消耗单位是库存真相单位，
 `group_workspace_id` 是历史同义异名，v2s 未来统一且不得并用；`is_key_material_for_sales_stock_view`
 只作历史参考。
 
+## CIPG-01 商品识别与制作信息
+
+用户可见主叫法固定为“条码与标识”和“制作信息”，不再称“条码与识别”或“生产提
+示”。“识别码”是条码、称重键码（PLU）和助记码的统称；“商品编码”与“规格编
+码”是商品和具体规格自身的业务编码，不作为识别码重复维护。按规格管理的商品在具
+体“规格”行维护识别码，用户界面称“规格”和“规格编码”，不显示 `SKU`、引用值或
+内部枚举。服务与费用商品只支持助记码；条码和称重键码不适用于此类商品。
+
+制作字段的用户叫法固定为“生产标签”“制作单显示名称”“预计制作时长（秒）”
+和“制作说明”。不得再用“制作处理标签”或“打印名称”代替；“制作单显示名称”只表示制作
+人员看到的名称，不推导打印机、打印模板、打印规则、KDS、队列或工作台能力。商品维
+护至多一个生产标签，允许不设置；具体规格只选择“使用商品默认”或“单独设置”制作单显示名称、
+预计制作时长和制作说明，不得单独设置生产标签。单独设置是这三项的整套覆盖，不在用户
+界面解释为 profile、override、source 或逐字段继承。停用生产标签不进入新候选，既有商品
+绑定继续显示并可清除。
+
+点单选项对制作信息的用户叫法固定为“制作变化（可选）”：只允许“增加制作时长
+（秒）”和“追加制作说明”。点单选项不得增加、移除或替换生产标签，也不得提供“减少
+时长”；多项制作说明按点单选项在页面中的业务顺序依次呈现。改变生产去向不由制作变化
+或具体规格表达，未来确有生产路由 Journey 时必须重开需求。
+
+识别码去除首尾空白后至少 1 个、最多 160 个字符，且不得包含不可见控制字符。条码
+与称重键码保留原值和前导零并区分大小写；助记码在重复判断时不区分大小写，但界面
+仍按用户录入形式展示。“制作单显示名称”最多 120 个字符，“制作说明”和“追加制作
+说明”分别最多 1000 个字符；制作时长只允许为空或零及正整数，不设置业务上限。
+
+用户界面只显示上述业务语言、业务原因和可恢复动作。`shape`、`dataNodeRef`、
+`brandRef`、`itemRef`、`skuRef`、`owner`、`scope`、`contract`、`profile`、`effect`、
+`source`、`readback`、`payload`、`problem code`、`capability`、`grant`、`UUID`、内部枚举
+和 raw exception 均不得作为可见文案。机器字段、类型、范围、准入、唯一域和稳定错误
+定位由 contract 声明，owner 在真实事实边界最终复核；界面只负责业务文案、控件、草稿
+和即时提示。隐藏、禁用或即时校验不得被解释为业务防线，错误码也不得直接展示给用户。
+
+不得由“识别码用于扫码、称重键码或快速检索”推导本批建设扫码枪、标签秤、设备协
+议或销售解析入口；本批不新增识别码解析 HTTP 接口，真实销售/扫码 Journey 出现后须
+携带品牌上下文另行设计；不得由“制作单显示名称”推导打印能力；不得由生产标签推导本期已实现
+生产路由、生产工作台、队列、KDS、打印、营销标签、过敏原或物料角色。生产标签只作为商品级
+0..1 稳定业务分类，未来生产链可在新专题中显式消费。历史订单与工作单仍按已冻结快照解释，移除识别码只影响后
+续新识别，不重解释历史。
+
 ## Provenance
 
-Canonical content is promoted from `doc/review/platform/2026-07-24-v2s-cross-generation-business-corpus-draft.md`
-§7.1–§7.12 under the 2026-07-25 Dexter decision. The detailed source ledger and cross-generation
-conflict records remain in that review draft; they are not duplicated here as independent truth.
+G-01–G-12 are promoted from
+`doc/review/platform/2026-07-24-v2s-cross-generation-business-corpus-draft.md` §7.1–§7.12 under the
+2026-07-25 Dexter decision. CIPG-01 was first promoted from the 2026-08-23 identifier/preparation design;
+its production-tag terminology, cardinality and target semantics were superseded on 2026-08-24 by the
+Dexter-accepted catalog workbench formal requirement, Journey, interaction and IA listed in `sourceRefs`.
+Those sources also require user surfaces to use only business language and keep contract, UI and owner constraints separate. Detailed source ledgers and
+cross-generation conflict records remain in their owning documents; they are not duplicated here as
+independent truth.

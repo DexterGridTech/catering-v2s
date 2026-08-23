@@ -30,17 +30,17 @@ class CatalogJsonDocumentSizePolicyTest {
     }
 
     @Test
-    void validatesAttributesAndEachProductionProfileWithTheirOwnFieldName() {
+    void validatesTheTypedPreparationProfileWithItsOwnFieldName() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode request = mapper.createObjectNode();
         request.putObject("sections")
                 .putObject("catalogDraft")
-                .putObject("productionProfiles")
-                .put("item", "x".repeat(CatalogJsonDocumentSizePolicy.MAX_BYTES + 1));
+                .putObject("preparationProfile")
+                .put("preparationNotes", "x".repeat(CatalogJsonDocumentSizePolicy.MAX_BYTES + 1));
 
         CatalogOwnerApi.Problem failure = assertThrows(
                 CatalogOwnerApi.Problem.class, () -> CatalogJsonDocumentSizePolicy.validateCatalogDraft(request));
-        assertTrue(failure.getMessage().contains("sections.catalogDraft.productionProfiles.item"));
+        assertTrue(failure.getMessage().contains("sections.catalogDraft.preparationProfile"));
     }
 
     @Test
@@ -49,8 +49,8 @@ class CatalogJsonDocumentSizePolicyTest {
         ObjectNode request = mapper.createObjectNode();
         request.putObject("sections")
                 .putObject("catalogDraft")
-                .putObject("productionProfiles")
-                .put("item", "x".repeat(CatalogJsonDocumentSizePolicy.MAX_BYTES + 1));
+                .putObject("preparationProfile")
+                .put("preparationNotes", "x".repeat(CatalogJsonDocumentSizePolicy.MAX_BYTES + 1));
         CatalogInventoryCoordinator coordinator =
                 new CatalogInventoryCoordinator(null, null, null, null, mapper, null, null);
 
@@ -62,7 +62,7 @@ class CatalogJsonDocumentSizePolicyTest {
                         List.of(),
                         "idempotency-key-001"));
 
-        assertTrue(failure.getMessage().contains("sections.catalogDraft.productionProfiles.item"));
+        assertTrue(failure.getMessage().contains("sections.catalogDraft.preparationProfile"));
         assertTrue(failure.getMessage().contains("actual="));
         assertTrue(failure.getMessage().contains("by "));
     }

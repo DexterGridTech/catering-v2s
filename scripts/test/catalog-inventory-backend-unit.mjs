@@ -8,7 +8,7 @@
  * repository's managed remote Testcontainers runner.
  */
 import {createHash} from 'node:crypto';
-import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {mkdirSync, rmSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
@@ -23,10 +23,48 @@ const remoteApplicationTests = [
   'com.catering.v2s.app.edge.operations.cataloginventory.OperationsCatalogInventoryControllerRouteTest',
   'com.catering.v2s.app.application.cataloginventory.CatalogCopySourceAuthorityTest',
 ];
+const childOutputBudgetBytes = 32 * 1024 * 1024;
+const phases = [];
+let firstFailure = null;
+let lastKnownGood = null;
+let brokenBoundary = null;
 const fail = (code) => { const error = new Error(`CATALOG_INVENTORY_BACKEND_UNIT=${code}`); error.code = code; throw error; };
-const command = (binary, args) => spawnSync(binary, args, {cwd: root, encoding: 'utf8'});
+const command = (binary, args) => spawnSync(binary, args, {
+  cwd: root,
+  encoding: 'utf8',
+  maxBuffer: childOutputBudgetBytes,
+});
 const digest = (value) => createHash('sha256').update(value).digest('hex');
-const summarize = (result) => ({status: result.status, signal: result.signal, stdoutBytes: Buffer.byteLength(result.stdout || ''), stderrBytes: Buffer.byteLength(result.stderr || ''), outputSha256: digest(`${result.stdout || ''}\n${result.stderr || ''}`)});
+const summarize = (result) => ({
+  status: result.status,
+  signal: result.signal,
+  error: result.error ? {code: result.error.code, message: result.error.message} : null,
+  stdoutBytes: Buffer.byteLength(result.stdout || ''),
+  stderrBytes: Buffer.byteLength(result.stderr || ''),
+  outputSha256: digest(`${result.stdout || ''}\n${result.stderr || ''}`),
+});
+const evidenceDirectory = (result) => {
+  const match = `${result.stdout || ''}\n${result.stderr || ''}`.match(/EVIDENCE=([^\s;]+)/);
+  return match ? match[1] : null;
+};
+
+function writeReport(status) {
+  mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700});
+  const report = {
+    schemaVersion: 1,
+    kind: 'catalog-inventory-backend-unit-tests',
+    status,
+    seedRuntimeInput: false,
+    apiHttpCasesNotRunHere: true,
+    firstFailure,
+    lastKnownGood,
+    brokenBoundary,
+    business: phases.length === 0 ? 'NOT_RUN' : phases.every((phase) => phase.status === 'PASS') ? 'PASS' : 'FAIL',
+    cleanup: phases.length === 0 ? 'NOT_RUN' : 'DELEGATED_TO_MANAGED_RUN_MANIFESTS',
+    phases,
+  };
+  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
+}
 
 function selfTest() {
   if (remoteModuleTasks.length !== 2 || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:catalog:test') || !remoteModuleTasks.includes(':apps:backend:catering-business-server:modules:inventory:test')) fail('REMOTE_MODULE_TASK_DENOMINATOR_INVALID');
@@ -36,31 +74,41 @@ function selfTest() {
 
 function execute() {
   if (process.argv.includes('--self-test')) return selfTest();
-  const phases = [];
   mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700});
   rmSync(reportPath, {force: true});
 
   for (const task of remoteModuleTasks) {
     const remoteModule = command(process.execPath, [path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), task]);
-    phases.push({name: 'REMOTE_OWNER_MODULE_TESTS', task, ...summarize(remoteModule), status: remoteModule.status === 0 ? 'PASS' : 'FAIL'});
-    if (remoteModule.status !== 0) fail('REMOTE_OWNER_MODULE_TESTS_FAILED');
+    const phase = {name: 'REMOTE_OWNER_MODULE_TESTS', task, evidence: evidenceDirectory(remoteModule), ...summarize(remoteModule), status: remoteModule.status === 0 ? 'PASS' : 'FAIL'};
+    phases.push(phase);
+    if (phase.status !== 'PASS') {
+      firstFailure = 'REMOTE_OWNER_MODULE_TESTS_FAILED';
+      brokenBoundary = task;
+      writeReport('FAIL');
+      fail(firstFailure);
+    }
+    lastKnownGood = task;
   }
 
   const remoteArgs = [path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), ':apps:backend:catering-business-server:test'];
   for (const testName of remoteApplicationTests) remoteArgs.push('--tests', testName);
   const remote = command(process.execPath, remoteArgs);
-  phases.push({name: 'REMOTE_APPLICATION_TESTS', ...summarize(remote), status: remote.status === 0 ? 'PASS' : 'FAIL'});
-  const report = {schemaVersion: 1, kind: 'catalog-inventory-backend-unit-tests', status: phases.every((phase) => phase.status === 'PASS') ? 'PASS' : 'FAIL', seedRuntimeInput: false, apiHttpCasesNotRunHere: true, phases};
-  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
-  if (remote.status !== 0) fail('REMOTE_APPLICATION_TESTS_FAILED');
+  const phase = {name: 'REMOTE_APPLICATION_TESTS', evidence: evidenceDirectory(remote), ...summarize(remote), status: remote.status === 0 ? 'PASS' : 'FAIL'};
+  phases.push(phase);
+  if (phase.status !== 'PASS') {
+    firstFailure = 'REMOTE_APPLICATION_TESTS_FAILED';
+    brokenBoundary = ':apps:backend:catering-business-server:test';
+    writeReport('FAIL');
+    fail(firstFailure);
+  }
+  lastKnownGood = 'REMOTE_APPLICATION_TESTS';
+  writeReport('PASS');
   process.stdout.write(`CATALOG_INVENTORY_BACKEND_UNIT_TESTS=PASS; REPORT=${reportPath}\n`);
 }
 
 try { execute(); } catch (error) {
-  if (!existsSync(reportPath)) {
-    mkdirSync(path.dirname(reportPath), {recursive: true, mode: 0o700});
-    writeFileSync(reportPath, `${JSON.stringify({schemaVersion: 1, kind: 'catalog-inventory-backend-unit-tests', status: 'FAIL', seedRuntimeInput: false, firstFailure: error.code || error.message}, null, 2)}\n`, {mode: 0o600});
-  }
+  firstFailure ??= error.code || error.message;
+  writeReport('FAIL');
   process.stderr.write(`${error.code || error.message}\n`);
   process.exitCode = 2;
 }

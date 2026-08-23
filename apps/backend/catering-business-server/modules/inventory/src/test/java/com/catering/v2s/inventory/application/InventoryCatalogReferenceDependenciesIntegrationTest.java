@@ -259,47 +259,41 @@ class InventoryCatalogReferenceDependenciesIntegrationTest {
     }
 
     private static void insertTarget(UUID scope, String brand, UUID itemRef, UUID skuRef) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                jdbc,
                 UUID.randomUUID(),
-                scope.toString(),
+                scope,
                 brand,
                 itemRef,
                 skuRef,
                 "ITEM",
-                "SKU");
+                "SKU",
+                java.math.BigDecimal.ZERO,
+                1L);
     }
 
     private static void insertTarget(
             UUID targetRef, UUID scope, String brand, UUID itemRef, UUID skuRef, String itemCode, String skuCode) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                jdbc,
                 targetRef,
-                scope.toString(),
+                scope,
                 brand,
                 itemRef,
                 skuRef,
                 itemCode,
-                skuCode);
+                skuCode,
+                java.math.BigDecimal.ZERO,
+                1L);
     }
 
     private static void insertCatalogItem(UUID itemRef, String code, String name) {
         jdbc.update(
                 "INSERT INTO "
-                        + "catalog.catalog_item(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,"
+                        + "catalog.catalog_item(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
                         + "sect"
                         + "ions,version,created_at_epoch_millis,updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,'MATERIAL','ENABLED','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                        + "VALUES(?,?,?,?,?,'MATERIAL','ENABLED','{}'::jsonb,1,1,1)",
                 itemRef,
                 SCOPE.toString(),
                 BRAND,

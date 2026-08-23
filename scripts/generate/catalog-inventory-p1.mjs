@@ -317,7 +317,6 @@ const commonFieldRules = [
   {field: "measureMode", visible: true, required: true, readonly: true, readonlyWhen: {create: true, update: true, view: true}},
   {field: "usageCapabilities", visible: true, required: false, readonly: true, readonlyWhen: {create: true, update: true, view: true}},
   {field: "images", visible: true, required: false, readonly: false, readonlyWhen: {create: false, update: false, view: true}, valueType: "asset-ref[]"},
-  {field: "productionTagRefs", visible: true, required: false, readonly: false, readonlyWhen: {create: false, update: false, view: true}, quickManage: "production-tag-owner"}
 ];
 const tabRulesByShape = {
   STANDARD_SALE_COUNTED: ["basic", "identifiers", "order-options", "attributes", "production-prompts", "inventory-bom", "governance"],
@@ -419,11 +418,6 @@ const fieldDescriptors = [
     optionSourceRef: endpointSource({operationId: "getOperationsCatalogItem", path: {itemCode: {context: "compositeGroups[].components[].itemCode"}}, itemsPath: "data.item.skus", valueField: "productSkuRef", labelParts: ["skuCode", "skuName"], disabledWhen: null})
   },
   {
-    fieldKey: "productionTagRefs", dataPath: "productionTagRefs[]", label: "生产标签", controlKind: "multiSelect", tabKey: "production-prompts",
-    admittedShapes: ["STANDARD_SALE_COUNTED", "SKU_VARIANT_SALE_COUNTED", "STANDARD_SALE_WEIGHED"], helpText: "生产标签描述制作处理方式，不代表岗位、设备或队列。",
-    optionSourceRef: endpointSource({operationId: "getOperationsProductionTags", query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "tagRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
-  },
-  {
     fieldKey: "tagRefs", dataPath: "tagRefs[]", label: "商品标签", controlKind: "multiSelect", tabKey: "basic",
     admittedShapes: allShapeKeys, helpText: "选择用于检索和归类商品的标签。",
     optionSourceRef: endpointSource({operationId: "getOperationsCatalogDictionary", path: {dictionaryKind: "TAG"}, query: {dataNodeRef: scopeBinding("scope.dataNodeRef")}, itemsPath: "data.entries", valueField: "entryRef", labelField: "name", disabledWhen: "status<>\"ENABLED\""})
@@ -444,8 +438,76 @@ const fieldDescriptors = [
   }
 ];
 const fieldDescriptorByKey = new Map(fieldDescriptors.map((field) => [field.fieldKey, field]));
-if (fieldDescriptors.length !== 14 || new Set(fieldDescriptors.map((field) => field.fieldKey)).size !== 14) throw new Error("P1_B3_FIELD_DESCRIPTOR_DENOMINATOR_INVALID");
+if (fieldDescriptors.length !== 13 || new Set(fieldDescriptors.map((field) => field.fieldKey)).size !== 13) throw new Error("P1_B3_FIELD_DESCRIPTOR_DENOMINATOR_INVALID");
 if (controlKindValues.length !== 16 || new Set(controlKindValues).size !== 16) throw new Error("P1_B3_CONTROL_KIND_DENOMINATOR_INVALID");
+
+const identifierTypes = ["BARCODE", "PLU", "MNEMONIC"];
+const identifierOwnerTypes = ["CATALOG_ITEM", "SKU"];
+const preparationTargetKinds = ["ITEM", "SKU", "OPTION_VALUE"];
+const preparationOverrideModes = ["INHERIT_ITEM", "OVERRIDE"];
+const preparationSources = ["ITEM_DEFAULT", "SKU_OVERRIDE"];
+const identifierAdmissionExpected = {
+  STANDARD_SALE_COUNTED: {
+    CATALOG_ITEM: {BARCODE: true, PLU: false, MNEMONIC: true},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  },
+  SKU_VARIANT_SALE_COUNTED: {
+    CATALOG_ITEM: {BARCODE: false, PLU: false, MNEMONIC: false},
+    SKU: {BARCODE: true, PLU: false, MNEMONIC: true}
+  },
+  STANDARD_SALE_WEIGHED: {
+    CATALOG_ITEM: {BARCODE: true, PLU: true, MNEMONIC: true},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  },
+  MATERIAL: {
+    CATALOG_ITEM: {BARCODE: true, PLU: false, MNEMONIC: true},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  },
+  COMPOSITE: {
+    CATALOG_ITEM: {BARCODE: true, PLU: false, MNEMONIC: true},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  },
+  SERVICE: {
+    CATALOG_ITEM: {BARCODE: false, PLU: false, MNEMONIC: true},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  },
+  BENEFIT_SHELL: {
+    CATALOG_ITEM: {BARCODE: false, PLU: false, MNEMONIC: false},
+    SKU: {BARCODE: false, PLU: false, MNEMONIC: false}
+  }
+};
+const preparationAdmissionExpected = {
+  STANDARD_SALE_COUNTED: {ITEM: true, SKU: false, OPTION_VALUE: true},
+  SKU_VARIANT_SALE_COUNTED: {ITEM: true, SKU: true, OPTION_VALUE: false},
+  STANDARD_SALE_WEIGHED: {ITEM: true, SKU: false, OPTION_VALUE: true},
+  MATERIAL: {ITEM: false, SKU: false, OPTION_VALUE: false},
+  COMPOSITE: {ITEM: false, SKU: false, OPTION_VALUE: false},
+  SERVICE: {ITEM: false, SKU: false, OPTION_VALUE: false},
+  BENEFIT_SHELL: {ITEM: false, SKU: false, OPTION_VALUE: false}
+};
+const identifierRules = {
+  types: identifierTypes,
+  ownerTypes: identifierOwnerTypes,
+  uniqueScope: ["dataNodeRef", "brandRef", "identifierType", "normalizedValue"],
+  value: {
+    trim: true,
+    minLength: 1,
+    maxLength: 160,
+    rejectUnicodeControlCharacters: true,
+    caseSensitiveTypes: ["BARCODE", "PLU"],
+    caseInsensitiveTypes: ["MNEMONIC"]
+  },
+  admission: identifierAdmissionExpected
+};
+const preparationRules = {
+  targetKinds: preparationTargetKinds,
+  overrideModes: preparationOverrideModes,
+  sources: preparationSources,
+  profile: {displayNameMaxLength: 120, notesMaxLength: 1000, secondsMinimum: 0, secondsIsInteger: true},
+  effect: {instructionMaxLength: 1000, secondsDeltaMinimum: 0, secondsDeltaIsInteger: true, tagOperation: "ADD_ONLY"},
+  admission: preparationAdmissionExpected,
+  instructionOrder: ["optionGroupDisplayOrder", "optionValueDisplayOrder", "definitionValueRef"]
+};
 const shapeNodeAdmission = {
   STANDARD_SALE_COUNTED: {
     ownerGrain: "ITEM",
@@ -550,7 +612,8 @@ const shapeManifest = {
   controlKinds: controlKindValues, fields: fieldDescriptors,
   shapes: shapes, modeRules: modeRules, shapeRules: shapeRules, fieldRules: fieldRules, tabRules: tabRules,
   linkageRules: linkageRules, typeEffects: typeEffects, saveSections: saveSections, detailSections: detailSections,
-  contractSurfaceKeys: ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields"],
+  identifierRules, preparationRules,
+  contractSurfaceKeys: ["shapeRules", "fieldRules", "tabRules", "linkageRules", "typeEffects", "saveSections", "detailSections", "modeRules", "controlKinds", "fields", "identifierRules", "preparationRules"],
   readModelNames: readModelNames, readModelRequirements: readModelRequired, manifestDigest: ""
 };
 const shapeManifestWithDigest = writeDigested("contracts/catalog/catalog-item-editor-manifest.json", shapeManifest, "manifestDigest");
@@ -676,9 +739,37 @@ const inventoryRuleConditions = [
   "A BOM line points back to its own owner.",
   "A BOM component fails the scoped status, capability, target or consumption-unit eligibility checks."
 ].map((conditions, index) => ({precedence: index + 10, problemCode: inventoryRuleProblems[index], conditions: [conditions]}));
+const identificationPreparationProblems = [
+  "CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED",
+  "CATALOG_IDENTIFIER_VALUE_INVALID",
+  "CATALOG_IDENTIFIER_DUPLICATE",
+  "CATALOG_IDENTIFIER_OWNER_MISMATCH",
+  "CATALOG_PREPARATION_NOT_ALLOWED",
+  "CATALOG_PREPARATION_TARGET_MISMATCH",
+  "PRODUCTION_TAG_NOT_BINDABLE",
+  "CATALOG_PREPARATION_DURATION_INVALID",
+  "CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED",
+  "CATALOG_PREPARATION_UNKNOWN_FIELD"
+];
+const identificationPreparationConditions = [
+  "The identifier type is outside the closed set or is not admitted for the current shape and owner grain.",
+  "The trimmed identifier value is empty, contains a Unicode control character or exceeds the declared length.",
+  "The normalized identifier value is already owned in the same data-node and brand scope.",
+  "The submitted identifier target does not belong to the current item or SKU grain.",
+  "The current shape does not admit the submitted preparation target.",
+  "The submitted SKU or option value target is missing, inactive or belongs to another item.",
+  "A newly bound production tag is missing, disabled or outside the current owner scope.",
+  "A preparation duration is not an integer or is negative.",
+  "An option preparation change attempts to remove a tag, reduce duration or submit a complete profile.",
+  "The request contains a retired free field or an unknown preparation field."
+].map((conditions, index) => ({precedence: index + 20, problemCode: identificationPreparationProblems[index], conditions: [conditions]}));
 const operationMetadata = [
   ...legacyOperationMetadata.map((entry) => entry.operationId === "saveOperationsCatalogItem"
-    ? {...entry, problemCodes: Array.from(new Set([...entry.problemCodes, ...inventoryRuleProblems])), conditionToProblem: [...entry.conditionToProblem, ...inventoryRuleConditions]}
+    ? {
+      ...entry,
+      problemCodes: Array.from(new Set([...entry.problemCodes, ...inventoryRuleProblems, ...identificationPreparationProblems])),
+      conditionToProblem: [...entry.conditionToProblem, ...inventoryRuleConditions, ...identificationPreparationConditions]
+    }
     : entry),
   catalogLibraryOperation({ordinal: 44, operationId: "listOperationsCatalogAttributeDefinitions", method: "GET", path: "/operations/catalog-inventory/attribute-definitions", requestComponent: "CatalogAttributeDefinitionListQuery", responseComponent: "CatalogAttributeDefinitionList", problemCodes: definitionLimitProblems}),
   catalogLibraryOperation({ordinal: 45, operationId: "createOperationsCatalogAttributeDefinition", method: "POST", path: "/operations/catalog-inventory/attribute-definitions", requestComponent: "CatalogAttributeDefinitionCreateRequest", responseComponent: "CatalogAttributeDefinitionReadback", problemCodes: attributeMutationProblems}),
@@ -718,11 +809,6 @@ function budgetGeneratorSelfTest() {
   }
   process.stdout.write("CATALOG_INVENTORY_P1_BUDGET_SELF_TEST=PASS\nBUDGET_OPERATION_EXACT_SET=PASS\nRED_INCREASE_WITHOUT_DECISION_REF=PASS\n");
 }
-if (process.argv[2] === "--self-test") {
-  budgetGeneratorSelfTest();
-  process.exit(0);
-}
-
 const edgeContract = {
   schemaVersion: 1, kind: "catalog-inventory-edge-contract", revision: REVISION,
   consumerFaces: ["operations-admin"],
@@ -834,6 +920,92 @@ const fieldSchema = (model, field) => {
   return stringField("P1 typed field " + model + "." + field);
 };
 const typedEntry = (properties, required = []) => ({type: "object", additionalProperties: false, required, properties});
+const identifierValueSchema = {
+  type: "string",
+  minLength: 1,
+  maxLength: 160,
+  pattern: "^(?!.*[\\u0000-\\u001F\\u007F-\\u009F])[\\s\\S]+$",
+  "x-trim": true,
+  "x-rejectUnicodeControlCharacters": true,
+  description: "trimmed identifier value; owner preserves the submitted display value"
+};
+const identifierTypeSchema = {type: "string", enum: identifierTypes, description: "closed identifier type"};
+const identifierOwnerTypeSchema = {type: "string", enum: identifierOwnerTypes, description: "derived identifier owner grain"};
+const identifierSaveSchema = typedEntry({
+  identifierType: identifierTypeSchema,
+  identifierValue: identifierValueSchema
+}, ["identifierType", "identifierValue"]);
+const identifierReadbackSchema = typedEntry({
+  identifierRef: uuidField("identifier opaque reference"),
+  ownerType: identifierOwnerTypeSchema,
+  ownerRef: uuidField("derived catalog item or SKU reference"),
+  identifierType: identifierTypeSchema,
+  identifierValue: identifierValueSchema,
+  normalizedValue: {...identifierValueSchema, description: "owner-derived normalized value; not a user editing field"},
+  displayOrder: {type: "integer", minimum: 0, description: "stable edit and readback order"}
+}, ["identifierRef", "ownerType", "ownerRef", "identifierType", "identifierValue", "normalizedValue", "displayOrder"]);
+const preparationProfileProperties = {
+  productionTagRefs: arrayField("production processing tag references", uuidField("production processing tag reference")),
+  productionDisplayName: {type: ["string", "null"], maxLength: 120, description: "optional display name for a production ticket"},
+  estimatedPreparationSeconds: {type: ["integer", "null"], minimum: 0, description: "optional non-negative estimated preparation seconds"},
+  preparationNotes: {type: ["string", "null"], maxLength: 1000, description: "optional preparation notes"}
+};
+const preparationProfileSaveSchema = typedEntry(preparationProfileProperties, ["productionTagRefs"]);
+const preparationProfileReadbackSchema = typedEntry(preparationProfileProperties, ["productionTagRefs"]);
+const nullablePreparationProfileSaveSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  properties: preparationProfileSaveSchema.properties,
+  required: preparationProfileSaveSchema.required,
+  description: "null means no item default profile is configured"
+};
+const nullablePreparationProfileReadbackSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  properties: preparationProfileReadbackSchema.properties,
+  required: preparationProfileReadbackSchema.required,
+  description: "null means no effective preparation profile is configured"
+};
+const preparationOverrideSchema = {
+  ...typedEntry({
+  mode: {type: "string", enum: preparationOverrideModes, description: "SKU preparation inheritance mode"},
+    profile: {...nullablePreparationProfileSaveSchema, description: "complete profile when mode is OVERRIDE; null when inheriting"}
+  }, ["mode", "profile"]),
+  "x-profileRequiredWhen": "OVERRIDE"
+};
+const preparationOverrideReadbackSchema = typedEntry({
+  mode: {type: "string", enum: preparationOverrideModes, description: "SKU preparation inheritance mode"},
+  profile: {...nullablePreparationProfileReadbackSchema, description: "complete profile when mode is OVERRIDE; null when inheriting"}
+}, ["mode", "profile"]);
+const optionValuePreparationEffectSaveSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  properties: {
+    addProductionTagRefs: arrayField("production processing tags added by this option value", uuidField("production processing tag reference")),
+    instruction: {type: ["string", "null"], maxLength: 1000, description: "optional additional preparation instruction"},
+    preparationSecondsDelta: {type: ["integer", "null"], minimum: 0, description: "optional non-negative added preparation seconds"}
+  },
+  required: ["addProductionTagRefs"],
+  "x-tagOperation": "ADD_ONLY",
+  "x-noNegativeDuration": true,
+  description: "optional additive preparation change for one option value"
+};
+const optionValuePreparationEffectReadbackObject = typedEntry({
+  definitionValueRef: uuidField("option value reference"),
+  optionGroupDisplayOrder: {type: "integer", description: "option group business display order"},
+  optionValueDisplayOrder: {type: "integer", description: "option value business display order"},
+  addProductionTagRefs: arrayField("production processing tags added by this option value", uuidField("production processing tag reference")),
+  instruction: {type: ["string", "null"], maxLength: 1000, description: "optional additional preparation instruction"},
+  preparationSecondsDelta: {type: ["integer", "null"], minimum: 0, description: "optional non-negative added preparation seconds"}
+}, ["definitionValueRef", "optionGroupDisplayOrder", "optionValueDisplayOrder", "addProductionTagRefs"]);
+const optionValuePreparationEffectReadbackSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  properties: optionValuePreparationEffectReadbackObject.properties,
+  required: optionValuePreparationEffectReadbackObject.required,
+  description: "optional additive preparation change readback"
+};
+const preparationSourceSchema = {type: "string", enum: preparationSources, description: "derived effective preparation source"};
 // Copy plans are identity plans.  A code can remain a label in the returned
 // mapping, but it must never be used as the edge identity or replay input.
 const copyReferenceMappingSchema = typedEntry({
@@ -980,7 +1152,7 @@ const requestFieldMap = {
   CatalogDictionaryEntryUpdateRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), name: stringField("entry name")},
   CatalogDictionaryEntryReorderRequest: {dictionaryKind: stringField("dictionary kind"), orderedCodes: arrayField("same-level ordered codes")},
   CatalogDictionaryEntryTransitionRequest: {dictionaryKind: stringField("dictionary kind"), entryCode: stringField("entry code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
-  ProductionTagQuery: {dataNodeRef: uuidField("selected data node"), cursor: stringField("cursor"), pageSize: integerField("page size")},
+  ProductionTagQuery: {dataNodeRef: uuidField("selected data node"), usage: {type: "string", enum: ["MANAGEMENT", "BINDABLE_CANDIDATE"], description: "tag list purpose"}, query: stringField("server-side tag search"), cursor: stringField("cursor"), pageSize: integerField("page size")},
   ProductionTagCreateRequest: {dataNodeRef: uuidField("selected data node"), code: stringField("immutable tag code"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "closed production tag kind"}, name: stringField("tag name")},
   ProductionTagUpdateRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), tagKind: {type: "string", enum: ["PRODUCTION", "PACKAGE", "LABEL", "HANDOFF", "REVIEW", "OTHER"], description: "immutable production tag kind"}, name: stringField("tag name")},
   ProductionTagTransitionRequest: {tagCode: stringField("tag code"), expectedVersion: integerField("expected version"), targetStatus: stringField("target lifecycle status")},
@@ -1015,7 +1187,8 @@ const optionalRequestFields = {
   InventoryCountRequest: new Set(["countingUnitRef"]),
   InventoryIncreaseRequest: new Set(["countingUnitRef"]),
   InventoryAdjustmentRequest: new Set(["countingUnitRef"]),
-  InventoryConsumptionTargetCandidateQuery: new Set(["keyword", "cursor", "pageSize"])
+  InventoryConsumptionTargetCandidateQuery: new Set(["keyword", "cursor", "pageSize"]),
+  ProductionTagQuery: new Set(["usage", "query", "cursor", "pageSize"])
 };
 const unitSnapshotSchema = typedEntry({
   unitRef: uuidField("unit definition reference"),
@@ -1121,6 +1294,7 @@ const orderOptionConfigSchema = typedEntry({
   definitionRef: uuidField("ordering option definition reference"),
   name: stringField("ordering option name"),
   selectionMode: {type: "string", enum: ["SINGLE", "MULTIPLE"], description: "customer selection mode"},
+  displayOrder: integerField("option group business display order"),
   required: booleanField("whether a customer must choose"),
   minSelectionCount: {type: ["integer", "null"], description: "minimum selections for a multiple-choice option"},
   maxSelectionCount: {type: ["integer", "null"], description: "maximum selections for a multiple-choice option"},
@@ -1130,9 +1304,10 @@ const orderOptionConfigSchema = typedEntry({
     displayOrder: integerField("customer display order"),
     defaultValue: booleanField("default selected value"),
     extraPrice: {type: ["number", "null"], description: "extra price"},
-    bomVersion: {type: ["integer", "null"], minimum: 0, description: "inventory BOM version for the option value"}
-  }, ["definitionValueRef", "name", "displayOrder", "defaultValue", "extraPrice", "bomVersion"]))
-}, ["definitionRef", "name", "selectionMode", "required", "minSelectionCount", "maxSelectionCount", "values"]);
+    bomVersion: {type: ["integer", "null"], minimum: 0, description: "inventory BOM version for the option value"},
+    preparationEffect: optionValuePreparationEffectReadbackSchema
+  }, ["definitionValueRef", "name", "displayOrder", "defaultValue", "extraPrice", "bomVersion", "preparationEffect"]))
+}, ["definitionRef", "name", "selectionMode", "displayOrder", "required", "minSelectionCount", "maxSelectionCount", "values"]);
 const attributeAssignmentSaveSchema = typedEntry({
   definitionRef: uuidField("attribute definition reference"),
   textValue: {type: ["string", "null"], description: "text value for a text attribute"},
@@ -1140,6 +1315,7 @@ const attributeAssignmentSaveSchema = typedEntry({
 }, ["definitionRef", "optionRefs"]);
 const orderOptionConfigSaveSchema = typedEntry({
   definitionRef: uuidField("ordering option definition reference"),
+  displayOrder: integerField("option group business display order"),
   required: booleanField("whether a customer must choose"),
   minSelectionCount: {type: ["integer", "null"], description: "minimum selections for a multiple-choice option"},
   maxSelectionCount: {type: ["integer", "null"], description: "maximum selections for a multiple-choice option"},
@@ -1147,9 +1323,10 @@ const orderOptionConfigSaveSchema = typedEntry({
     definitionValueRef: uuidField("ordering option value reference"),
     defaultValue: booleanField("default selected value"),
     extraPrice: {type: ["number", "null"], description: "extra price"},
-    expectedBomVersion: {type: "integer", minimum: 0, description: "inventory BOM version observed in item detail"}
-  }, ["definitionValueRef", "defaultValue", "expectedBomVersion"]))
-}, ["definitionRef", "required", "values"]);
+    expectedBomVersion: {type: "integer", minimum: 0, description: "inventory BOM version observed in item detail"},
+    preparationEffect: optionValuePreparationEffectSaveSchema
+  }, ["definitionValueRef", "defaultValue", "expectedBomVersion", "preparationEffect"]))
+}, ["definitionRef", "displayOrder", "required", "values"]);
 const responseFieldMap = {
   CatalogAttributeDefinitionList: {
     revision: stringField("contract revision"),
@@ -1369,29 +1546,48 @@ const applyDefinitionFactsToCatalogItemDetail = (detailSchema) => {
   const data = detailSchema?.properties?.data;
   const item = data?.properties?.item;
   if (!data || !item) throw new Error("P1_CATALOG_ITEM_DETAIL_SCHEMA_MISSING");
+  data.properties.productionTags = arrayField(
+    "production tags referenced by item, SKU, or option preparation facts",
+    typedEntry({
+      tagRef: uuidField("production tag reference"),
+      code: stringField("production tag code"),
+      name: stringField("production tag name"),
+      status: stringField("production tag status"),
+      owner: stringField("production tag owner")
+    }, ["tagRef", "code", "name", "status", "owner"])
+  );
   delete item.properties.categoryRefs;
   delete item.properties.attributes;
   delete item.properties.orderOptions;
   delete item.properties.salesUnitRefs;
   delete item.properties.inventoryBom;
+  delete item.properties.productionTagRefs;
+  delete item.properties.productionProfiles;
   item.properties.categoryRef = {type: ["string", "null"], format: "uuid", description: "one optional catalog category"};
   item.properties.salesUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional sales unit"};
   item.properties.baseMeasureUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"};
   item.properties.salesUnit = catalogUnitAssignmentSchema;
   item.properties.baseMeasureUnit = catalogUnitAssignmentSchema;
+  item.properties.identifiers = arrayField("catalog item identifiers", identifierReadbackSchema);
+  item.properties.preparationProfile = nullablePreparationProfileReadbackSchema;
   item.properties.attributeAssignments = arrayField("product attribute assignments", attributeAssignmentSchema);
   item.properties.orderOptionConfigs = arrayField("product ordering option settings", orderOptionConfigSchema);
   const skuItems = item.properties.skus?.items;
   if (skuItems?.properties) {
+    delete skuItems.properties.skuBarcode;
     skuItems.properties.salesUnitOverrideRef = {type: ["string", "null"], format: "uuid", description: "SKU sales unit override; null inherits item setting"};
     skuItems.properties.baseMeasureUnitOverrideRef = {type: ["string", "null"], format: "uuid", description: "SKU base measure unit override; null inherits item setting"};
     skuItems.properties.salesUnit = catalogUnitAssignmentSchema;
     skuItems.properties.baseMeasureUnit = catalogUnitAssignmentSchema;
-    skuItems.required = Array.from(new Set([...(skuItems.required || []), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef"]));
+    skuItems.properties.identifiers = arrayField("SKU identifiers", identifierReadbackSchema);
+    skuItems.properties.preparationOverride = preparationOverrideReadbackSchema;
+    skuItems.properties.effectivePreparation = nullablePreparationProfileReadbackSchema;
+    skuItems.properties.preparationSource = preparationSourceSchema;
+    skuItems.required = Array.from(new Set([...(skuItems.required || []).filter((field) => field !== "skuBarcode"), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef", "identifiers", "preparationOverride", "effectivePreparation", "preparationSource"]));
   }
-  item.required = (item.required || []).filter((field) => !["categoryRefs", "attributes", "orderOptions", "salesUnitRefs", "inventoryBom"].includes(field));
+  item.required = (item.required || []).filter((field) => !["categoryRefs", "attributes", "orderOptions", "salesUnitRefs", "inventoryBom", "productionTagRefs", "productionProfiles"].includes(field));
   item.required.push(
-    "categoryRef", "salesUnitRef", "baseMeasureUnitRef", "salesUnit", "baseMeasureUnit", "attributeAssignments", "orderOptionConfigs"
+    "categoryRef", "salesUnitRef", "baseMeasureUnitRef", "salesUnit", "baseMeasureUnit", "identifiers", "preparationProfile", "attributeAssignments", "orderOptionConfigs"
   );
   delete data.properties.orderOptions;
   delete data.properties.orderOptionConfigs;
@@ -1452,22 +1648,253 @@ const applyDefinitionFactsToCatalogItemSaveRequest = (saveSchema) => {
   draft.properties.categoryRef = {type: ["string", "null"], format: "uuid", description: "one optional catalog category"};
   draft.properties.salesUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional sales unit"};
   draft.properties.baseMeasureUnitRef = {type: ["string", "null"], format: "uuid", description: "one optional base measure unit"};
+  draft.properties.materialRole = {type: ["string", "null"], description: "optional material role; required by the MATERIAL shape"};
+  delete draft.properties.productionTagRefs;
+  delete draft.properties.productionProfiles;
+  draft.properties.identifiers = arrayField("catalog item identifier edits", identifierSaveSchema);
+  draft.properties.preparationProfile = nullablePreparationProfileSaveSchema;
   draft.properties.attributeAssignments = arrayField("typed product attribute assignments", attributeAssignmentSaveSchema);
   draft.properties.orderOptionConfigs = arrayField("typed product ordering option settings", orderOptionConfigSaveSchema);
   delete draft.properties.inventoryBom;
   const skuItems = draft.properties.skus?.items;
   if (skuItems?.properties) {
+    delete skuItems.properties.skuBarcode;
     skuItems.properties.salesUnitOverrideRef = {type: ["string", "null"], format: "uuid", description: "SKU sales unit override; null inherits item setting"};
     skuItems.properties.baseMeasureUnitOverrideRef = {type: ["string", "null"], format: "uuid", description: "SKU base measure unit override; null inherits item setting"};
-    skuItems.required = Array.from(new Set([...(skuItems.required || []), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef"]));
+    skuItems.properties.identifiers = arrayField("SKU identifier edits", identifierSaveSchema);
+    skuItems.properties.preparationOverride = preparationOverrideSchema;
+    skuItems.required = Array.from(new Set([...(skuItems.required || []).filter((field) => field !== "skuBarcode"), "salesUnitOverrideRef", "baseMeasureUnitOverrideRef", "identifiers", "preparationOverride"]));
   }
-  draft.required = (draft.required || []).filter((field) => !["attributes", "categoryRefs", "orderOptions", "salesUnitRefs"].includes(field));
+  draft.required = (draft.required || []).filter((field) => !["attributes", "categoryRefs", "orderOptions", "salesUnitRefs", "productionTagRefs", "productionProfiles"].includes(field));
   delete sections.properties.inventoryConfiguration;
   delete sections.properties.expectedInventoryVersions;
   sections.properties.inventoryRules = inventoryRulesSaveSchema;
   sections.required = Array.from(new Set([...(sections.required || []).filter((field) => !["inventoryConfiguration", "expectedInventoryVersions"].includes(field)), "inventoryRules"]));
 };
 applyDefinitionFactsToCatalogItemSaveRequest(componentSchemas.CatalogItemSaveRequest);
+
+const applyIdentificationPreparationToCatalogItemSaveReadback = (readbackSchema) => {
+  const item = readbackSchema?.properties?.result?.properties?.item;
+  if (!item) throw new Error("P1_CATALOG_ITEM_SAVE_READBACK_ITEM_SCHEMA_MISSING");
+  item.properties.identifiers = arrayField("saved catalog item identifiers", identifierReadbackSchema);
+  item.properties.preparationProfile = nullablePreparationProfileReadbackSchema;
+  item.required = Array.from(new Set([...(item.required || []), "identifiers", "preparationProfile"]));
+};
+applyIdentificationPreparationToCatalogItemSaveReadback(componentSchemas.CatalogItemSaveReadback);
+
+const cloneJson = (value) => JSON.parse(JSON.stringify(value));
+const sameKeys = (value, expected) => value && Object.keys(value).sort().join("|") === [...expected].sort().join("|");
+const expectSelfTestFailure = (label, callback) => {
+  try {
+    callback();
+  } catch {
+    return;
+  }
+  throw new Error(`P1_CIPG_RED_MUTATION_NOT_DETECTED:${label}`);
+};
+const validateIdentifierRulesForSelfTest = (rules) => {
+  if (!sameKeys(rules, ["types", "ownerTypes", "uniqueScope", "value", "admission"])) throw new Error("P1_CIPG_IDENTIFIER_RULE_KEYS_INVALID");
+  if (JSON.stringify(rules.types) !== JSON.stringify(identifierTypes)) throw new Error("P1_CIPG_IDENTIFIER_TYPES_INVALID");
+  if (JSON.stringify(rules.ownerTypes) !== JSON.stringify(identifierOwnerTypes)) throw new Error("P1_CIPG_IDENTIFIER_OWNER_TYPES_INVALID");
+  if (JSON.stringify(rules.uniqueScope) !== JSON.stringify(["dataNodeRef", "brandRef", "identifierType", "normalizedValue"])) throw new Error("P1_CIPG_IDENTIFIER_UNIQUE_SCOPE_INVALID");
+  if (rules.value?.trim !== true || rules.value?.minLength !== 1 || rules.value?.maxLength !== 160 || rules.value?.rejectUnicodeControlCharacters !== true) throw new Error("P1_CIPG_IDENTIFIER_VALUE_RULES_INVALID");
+  if (JSON.stringify(rules.value.caseSensitiveTypes) !== JSON.stringify(["BARCODE", "PLU"]) || JSON.stringify(rules.value.caseInsensitiveTypes) !== JSON.stringify(["MNEMONIC"])) throw new Error("P1_CIPG_IDENTIFIER_CASE_RULES_INVALID");
+  for (const shape of Object.keys(identifierAdmissionExpected)) {
+    if (!sameKeys(rules.admission?.[shape], identifierOwnerTypes)) throw new Error(`P1_CIPG_IDENTIFIER_ADMISSION_GRAINS_INVALID:${shape}`);
+    for (const ownerType of identifierOwnerTypes) {
+      if (!sameKeys(rules.admission[shape][ownerType], identifierTypes)) throw new Error(`P1_CIPG_IDENTIFIER_ADMISSION_TYPES_INVALID:${shape}:${ownerType}`);
+      for (const type of identifierTypes) {
+        if (rules.admission[shape][ownerType][type] !== identifierAdmissionExpected[shape][ownerType][type]) throw new Error(`P1_CIPG_IDENTIFIER_ADMISSION_INVALID:${shape}:${ownerType}:${type}`);
+      }
+    }
+  }
+}
+const validatePreparationRulesForSelfTest = (rules) => {
+  if (!sameKeys(rules, ["targetKinds", "overrideModes", "sources", "profile", "effect", "admission", "instructionOrder"])) throw new Error("P1_CIPG_PREPARATION_RULE_KEYS_INVALID");
+  if (JSON.stringify(rules.targetKinds) !== JSON.stringify(preparationTargetKinds) || JSON.stringify(rules.overrideModes) !== JSON.stringify(preparationOverrideModes) || JSON.stringify(rules.sources) !== JSON.stringify(preparationSources)) throw new Error("P1_CIPG_PREPARATION_ENUMS_INVALID");
+  if (rules.profile?.displayNameMaxLength !== 120 || rules.profile?.notesMaxLength !== 1000 || rules.profile?.secondsMinimum !== 0 || rules.profile?.secondsIsInteger !== true) throw new Error("P1_CIPG_PREPARATION_PROFILE_RULES_INVALID");
+  if (rules.effect?.instructionMaxLength !== 1000 || rules.effect?.secondsDeltaMinimum !== 0 || rules.effect?.secondsDeltaIsInteger !== true || rules.effect?.tagOperation !== "ADD_ONLY") throw new Error("P1_CIPG_PREPARATION_EFFECT_RULES_INVALID");
+  if (JSON.stringify(rules.instructionOrder) !== JSON.stringify(["optionGroupDisplayOrder", "optionValueDisplayOrder", "definitionValueRef"])) throw new Error("P1_CIPG_PREPARATION_ORDER_INVALID");
+  let cells = 0;
+  for (const shape of Object.keys(preparationAdmissionExpected)) {
+    if (!sameKeys(rules.admission?.[shape], preparationTargetKinds)) throw new Error(`P1_CIPG_PREPARATION_ADMISSION_TARGETS_INVALID:${shape}`);
+    for (const targetKind of preparationTargetKinds) {
+      if (rules.admission[shape][targetKind] !== preparationAdmissionExpected[shape][targetKind]) throw new Error(`P1_CIPG_PREPARATION_ADMISSION_INVALID:${shape}:${targetKind}`);
+      cells += 1;
+    }
+  }
+  if (cells !== 21) throw new Error(`P1_CIPG_PREPARATION_ADMISSION_CARDINALITY_INVALID:${cells}`);
+}
+const validateOptionEffectSchemaForSelfTest = (schema) => {
+  if (schema.additionalProperties !== false || !Array.isArray(schema.type) || !schema.type.includes("object") || !schema.type.includes("null")) throw new Error("P1_CIPG_OPTION_EFFECT_CLOSED_SCHEMA_INVALID");
+  if (!sameKeys(schema.properties, ["addProductionTagRefs", "instruction", "preparationSecondsDelta"])) throw new Error("P1_CIPG_OPTION_EFFECT_FIELDS_INVALID");
+  if (schema.properties.preparationSecondsDelta.minimum !== 0 || schema.properties.instruction.maxLength !== 1000) throw new Error("P1_CIPG_OPTION_EFFECT_CONSTRAINTS_INVALID");
+  if (schema["x-tagOperation"] !== "ADD_ONLY" || schema["x-noNegativeDuration"] !== true) throw new Error("P1_CIPG_OPTION_EFFECT_SEMANTICS_INVALID");
+};
+const validatePreparationProfileSchemaForSelfTest = (schema) => {
+  if (schema.additionalProperties !== false || !sameKeys(schema.properties, ["productionTagRefs", "productionDisplayName", "estimatedPreparationSeconds", "preparationNotes"])) throw new Error("P1_CIPG_PROFILE_CLOSED_SCHEMA_INVALID");
+  if (schema.properties.productionDisplayName.maxLength !== 120 || schema.properties.preparationNotes.maxLength !== 1000 || schema.properties.estimatedPreparationSeconds.minimum !== 0) throw new Error("P1_CIPG_PROFILE_CONSTRAINTS_INVALID");
+};
+const assertNoSchemaProperty = (schema, property, label) => {
+  if (schema?.properties && Object.hasOwn(schema.properties, property)) throw new Error(`P1_CIPG_RETIRED_FIELD_PRESENT:${label}:${property}`);
+};
+const assertSchemaPropertyPresent = (schema, property, label) => {
+  if (!schema?.properties || !Object.hasOwn(schema.properties, property)) throw new Error(`P1_CIPG_REQUIRED_FIELD_MISSING:${label}:${property}`);
+};
+const compactJavaSource = (source) => source.replace(/\s+/g, "");
+const sourceBetween = (source, startMarker, endMarker) => {
+  const start = source.indexOf(startMarker);
+  if (start < 0) throw new Error(`P1_CIPG_SOURCE_ANCHOR_MISSING:${startMarker}`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  if (end < 0) throw new Error(`P1_CIPG_SOURCE_ANCHOR_MISSING:${endMarker}`);
+  return source.slice(start, end);
+};
+const javaStringLiterals = (value) => [...value.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+const parseJavaOwnerIdentifierAdmission = (source) => {
+  const method = compactJavaSource(sourceBetween(
+    source,
+    "private boolean identifierAllowed(",
+    "private boolean preparationAllowed(",
+  ));
+  const actual = Object.fromEntries(Object.keys(identifierAdmissionExpected).map((shape) => [
+    shape,
+    Object.fromEntries(identifierOwnerTypes.map((ownerType) => [
+      ownerType,
+      Object.fromEntries(identifierTypes.map((type) => [type, false])),
+    ])),
+  ]));
+  const cases = [...method.matchAll(/case((?:"[^"]+",?)+)->([^;]+);/g)];
+  if (cases.length !== 5) throw new Error(`P1_CIPG_OWNER_IDENTIFIER_CASE_COUNT_INVALID:${cases.length}`);
+  for (const [, shapeText, expression] of cases) {
+    const shapes = javaStringLiterals(shapeText);
+    if (expression === "false") continue;
+    const owner = expression.match(/^"([^"]+)"\.equals\(ownerType\)&&(.+)$/)?.[1];
+    if (!owner || !identifierOwnerTypes.includes(owner)) throw new Error(`P1_CIPG_OWNER_IDENTIFIER_EXPRESSION_INVALID:${expression}`);
+    const typeExpression = expression.match(/Set\.of\(([^)]*)\)\.contains\(type\)/)?.[1];
+    const allowedTypes = typeExpression
+      ? javaStringLiterals(typeExpression)
+      : expression.match(/&&"([^"]+)"\.equals\(type\)$/)?.[1]
+        ? [expression.match(/&&"([^"]+)"\.equals\(type\)$/)[1]]
+        : null;
+    if (!allowedTypes) throw new Error(`P1_CIPG_OWNER_IDENTIFIER_TYPES_INVALID:${expression}`);
+    for (const shape of shapes) {
+      if (!Object.hasOwn(actual, shape)) throw new Error(`P1_CIPG_OWNER_IDENTIFIER_SHAPE_INVALID:${shape}`);
+      for (const type of identifierTypes) actual[shape][owner][type] = allowedTypes.includes(type);
+    }
+  }
+  return actual;
+};
+const parseJavaOwnerPreparationAdmission = (source) => {
+  const method = compactJavaSource(sourceBetween(
+    source,
+    "private boolean preparationAllowed(",
+    "private ArrayNode preparationTagRefs(",
+  ));
+  const actual = Object.fromEntries(Object.keys(preparationAdmissionExpected).map((shape) => [
+    shape,
+    Object.fromEntries(preparationTargetKinds.map((targetKind) => [targetKind, false])),
+  ]));
+  const cases = [...method.matchAll(/case((?:"[^"]+",?)+)->([^;]+);/g)];
+  if (cases.length !== 2) throw new Error(`P1_CIPG_OWNER_PREPARATION_CASE_COUNT_INVALID:${cases.length}`);
+  for (const [, shapeText, expression] of cases) {
+    const shapes = javaStringLiterals(shapeText);
+    const setExpression = expression.match(/Set\.of\(([^)]*)\)\.contains\(targetKind\)/)?.[1];
+    const allowedTargets = setExpression
+      ? javaStringLiterals(setExpression)
+      : [...expression.matchAll(/"([^"]+)"\.equals\(targetKind\)/g)].map((match) => match[1]);
+    if (!allowedTargets.length) throw new Error(`P1_CIPG_OWNER_PREPARATION_TARGETS_INVALID:${expression}`);
+    for (const shape of shapes) {
+      if (!Object.hasOwn(actual, shape)) throw new Error(`P1_CIPG_OWNER_PREPARATION_SHAPE_INVALID:${shape}`);
+      for (const targetKind of preparationTargetKinds) actual[shape][targetKind] = allowedTargets.includes(targetKind);
+    }
+  }
+  return actual;
+};
+const assertOwnerAdmissionSourcesMatchGenerated = (ownerSource) => {
+  const actualIdentifierAdmission = parseJavaOwnerIdentifierAdmission(ownerSource);
+  const actualPreparationAdmission = parseJavaOwnerPreparationAdmission(ownerSource);
+  if (JSON.stringify(actualIdentifierAdmission) !== JSON.stringify(identifierAdmissionExpected))
+    throw new Error("P1_CIPG_OWNER_IDENTIFIER_ADMISSION_DRIFT");
+  if (JSON.stringify(actualPreparationAdmission) !== JSON.stringify(preparationAdmissionExpected))
+    throw new Error("P1_CIPG_OWNER_PREPARATION_ADMISSION_DRIFT");
+};
+const validateOwnerAdmissionSourcesForSelfTest = () => {
+  const ownerPath = "apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java";
+  const ownerSource = fs.readFileSync(abs(ownerPath), "utf8");
+  assertOwnerAdmissionSourcesMatchGenerated(ownerSource);
+  const mutationMarker = 'Set.of("BARCODE", "MNEMONIC").contains(type);';
+  const mutatedOwnerSource = ownerSource.replace(mutationMarker, 'Set.of("BARCODE").contains(type);');
+  if (mutatedOwnerSource === ownerSource) throw new Error("P1_CIPG_OWNER_ADMISSION_RED_MUTATION_NOT_APPLIED");
+  expectSelfTestFailure("owner-admission-single-cell-drift", () =>
+    assertOwnerAdmissionSourcesMatchGenerated(mutatedOwnerSource));
+  process.stdout.write("OWNER_ADMISSION_MATRIX=PASS\nRED_OWNER_ADMISSION_DRIFT=PASS\n");
+};
+const catalogDefinitionSelfTest = () => {
+  validateIdentifierRulesForSelfTest(identifierRules);
+  validatePreparationRulesForSelfTest(preparationRules);
+  validateOwnerAdmissionSourcesForSelfTest();
+  validatePreparationProfileSchemaForSelfTest(preparationProfileSaveSchema);
+  validatePreparationProfileSchemaForSelfTest(preparationProfileReadbackSchema);
+  validateOptionEffectSchemaForSelfTest(optionValuePreparationEffectSaveSchema);
+  const detailItem = componentSchemas.CatalogItemDetail.properties.data.properties.item;
+  const detailSku = detailItem.properties.skus.items;
+  const saveDraft = componentSchemas.CatalogItemSaveRequest.properties.sections.properties.catalogDraft;
+  const saveSku = saveDraft.properties.skus.items;
+  const saveReadbackItem = componentSchemas.CatalogItemSaveReadback.properties.result.properties.item;
+  for (const [schema, label] of [[detailItem, "detail.item"], [saveDraft, "save.catalogDraft"]]) {
+    assertNoSchemaProperty(schema, "productionProfiles", label);
+    assertNoSchemaProperty(schema, "productionTagRefs", label);
+    if (!schema.properties.identifiers || schema.properties.identifiers.items !== identifierReadbackSchema && label === "detail.item") throw new Error(`P1_CIPG_IDENTIFIER_READBACK_MISSING:${label}`);
+    if (!schema.properties.preparationProfile) throw new Error(`P1_CIPG_PREPARATION_PROFILE_MISSING:${label}`);
+  }
+  assertSchemaPropertyPresent(saveDraft, "materialRole", "save.catalogDraft");
+  assertNoSchemaProperty(detailSku, "skuBarcode", "detail.sku");
+  assertNoSchemaProperty(saveSku, "skuBarcode", "save.sku");
+  if (!detailSku.properties.identifiers || !detailSku.properties.preparationOverride || !detailSku.properties.effectivePreparation || !detailSku.properties.preparationSource) throw new Error("P1_CIPG_SKU_DETAIL_FACTS_MISSING");
+  if (!saveSku.properties.identifiers || !saveSku.properties.preparationOverride) throw new Error("P1_CIPG_SKU_SAVE_FACTS_MISSING");
+  if (!saveReadbackItem.properties.identifiers || !saveReadbackItem.properties.preparationProfile) throw new Error("P1_CIPG_SAVE_READBACK_FACTS_MISSING");
+  const optionValue = orderOptionConfigSaveSchema.properties.values.items;
+  if (!optionValue.properties.preparationEffect || optionValue.properties.preparationEffect.properties?.profile) throw new Error("P1_CIPG_OPTION_EFFECT_WIRE_INVALID");
+  const saveOperation = operationMetadata.find((entry) => entry.operationId === "saveOperationsCatalogItem");
+  if (!saveOperation || identificationPreparationProblems.some((problem) => !saveOperation.problemCodes.includes(problem))) throw new Error("P1_CIPG_SAVE_PROBLEM_SET_INCOMPLETE");
+  let matrixCells = 0;
+  for (const shape of Object.keys(identifierAdmissionExpected)) for (const ownerType of identifierOwnerTypes) for (const type of identifierTypes) matrixCells += 1;
+  if (matrixCells !== 42) throw new Error(`P1_CIPG_IDENTIFIER_ADMISSION_CARDINALITY_INVALID:${matrixCells}`);
+
+  const serviceBarcodeMutation = cloneJson(identifierRules);
+  serviceBarcodeMutation.admission.SERVICE.CATALOG_ITEM.BARCODE = true;
+  expectSelfTestFailure("service-barcode-admission", () => validateIdentifierRulesForSelfTest(serviceBarcodeMutation));
+  const optionRemoveMutation = cloneJson(optionValuePreparationEffectSaveSchema);
+  optionRemoveMutation.properties.removeProductionTagRefs = arrayField("red mutation");
+  expectSelfTestFailure("option-remove-tag", () => validateOptionEffectSchemaForSelfTest(optionRemoveMutation));
+  const optionNegativeMutation = cloneJson(optionValuePreparationEffectSaveSchema);
+  optionNegativeMutation.properties.preparationSecondsDelta.minimum = -1;
+  expectSelfTestFailure("option-negative-duration", () => validateOptionEffectSchemaForSelfTest(optionNegativeMutation));
+  const optionProfileMutation = cloneJson(optionValuePreparationEffectSaveSchema);
+  optionProfileMutation.properties.profile = typedEntry({}, []);
+  expectSelfTestFailure("option-complete-profile", () => validateOptionEffectSchemaForSelfTest(optionProfileMutation));
+  const additionalPropertiesMutation = cloneJson(preparationProfileSaveSchema);
+  additionalPropertiesMutation.additionalProperties = true;
+  expectSelfTestFailure("profile-additional-properties", () => validatePreparationProfileSchemaForSelfTest(additionalPropertiesMutation));
+  const skuBarcodeMutation = cloneJson(detailSku);
+  skuBarcodeMutation.properties.skuBarcode = stringField("red mutation");
+  expectSelfTestFailure("sku-barcode-retirement", () => assertNoSchemaProperty(skuBarcodeMutation, "skuBarcode", "detail.sku"));
+  const materialRoleMutation = cloneJson(saveDraft);
+  delete materialRoleMutation.properties.materialRole;
+  expectSelfTestFailure("catalog-draft-material-role-transport", () => assertSchemaPropertyPresent(materialRoleMutation, "materialRole", "save.catalogDraft"));
+
+  const canonical = readJson("doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json");
+  const budgets = [...canonical.operations, ...operationMetadata].map((entry) => ({operationId: entry.operationId, databaseOperationBudget: entry.databaseOperationBudget}));
+  const nullBudgetMutation = cloneJson(budgets);
+  nullBudgetMutation[0].databaseOperationBudget = null;
+  expectSelfTestFailure("null-budget", () => validateBudgetRegistry({operations: nullBudgetMutation}, {expectedOperationIds: budgets.map((entry) => entry.operationId)}));
+  process.stdout.write("CATALOG_INVENTORY_P1_CIPG_CONTRACT_SELF_TEST=PASS\nIDENTIFIER_ADMISSION_42_CELLS=PASS\nPREPARATION_ADMISSION_21_CELLS=PASS\nRED_CIPG_MUTATIONS=PASS\n");
+};
+if (process.argv[2] === "--self-test") {
+  budgetGeneratorSelfTest();
+  catalogDefinitionSelfTest();
+  process.exit(0);
+}
 
 const renameRequiredField = (schema, from, to, replacement) => {
   if (!schema?.properties) throw new Error(`P1_SCHEMA_FIELD_PARENT_MISSING:${from}`);
@@ -1533,6 +1960,15 @@ for (const requestName of ["InventoryCountRequest", "InventoryIncreaseRequest", 
   request.required = (request.required || []).filter((field) => field !== "unit" && field !== "countingUnitRef");
 }
 componentSchemas.CatalogShapeManifestView = schemaFromCoverageRow(designCoverageByModel.get("CatalogShapeManifestView"));
+componentSchemas.CatalogShapeManifestView.properties.identifierRules = objectField(
+  "identifier admission and normalization rules", true);
+componentSchemas.CatalogShapeManifestView.properties.preparationRules = objectField(
+  "preparation target and merge rules", true);
+componentSchemas.CatalogShapeManifestView.required = [...new Set([
+  ...(componentSchemas.CatalogShapeManifestView.required || []),
+  "identifierRules",
+  "preparationRules"
+])];
 componentSchemas.TypedProblem = {type: "object", additionalProperties: false, required: ["code", "message", "requestId"], properties: {code: {type: "string", enum: edgeContractWithDigest.typedProblemCodes}, message: stringField("safe problem message"), requestId: stringField("request correlation"), details: objectField("typed problem details")}};
 
 const paths = {};
@@ -1575,7 +2011,7 @@ const componentShardGroups = {
   "components/inventory/inventory-common.schemas.json": ["InventoryTargetPage", "InventoryTargetCurrentView"],
   "components/inventory/inventory-workbench.schemas.json": ["InventoryChangeSummaryView", "InventoryBusinessHistoryPage", "InventoryConsumptionReferencePage", "InventoryLedgerPage", "InventoryDiagnosticsView", "InventoryConsumptionTargetCandidatePage"],
   "components/inventory/inventory-command.schemas.json": ["InventoryWriteReadback", "InventoryCountRequest", "InventoryIncreaseRequest", "InventoryAdjustmentRequest", "InventoryTargetConfigurationRequest"],
-  "components/fulfillment-production/production-tag.schemas.json": ["ProductionTagPage", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
+  "components/fulfillment-production/production-tag.schemas.json": ["ProductionTagPage", "ProductionTagQuery", "ProductionTagCreateRequest", "ProductionTagUpdateRequest", "ProductionTagReadback"]
 };
 const schemaShardForOrdinal = (ordinal) => ordinal >= 44 && ordinal <= 56 ? "components/catalog/catalog-dictionary.schemas.json" : ordinal === 57 ? "components/inventory/inventory-workbench.schemas.json" : ordinal === 43 ? "components/catalog/catalog-item.schemas.json" :
   ordinal >= 29 && ordinal <= 35 ? "components/inventory/inventory-workbench.schemas.json" :
@@ -1708,7 +2144,7 @@ const seedBusinessLabels = {
     APPETIZER: "前菜", SALAD: "沙拉", SOUP: "汤品", PASTA_RICE: "意面与饭", MAIN: "主菜", PIZZA: "披萨",
     DESSERT: "甜品", BEVERAGE: "饮品", COMBO: "套餐", MATERIAL: "物料", SERVICE: "服务", BENEFIT: "权益"
   },
-  productionTags: {SIGNATURE: "招牌推荐", LUNCH: "午餐常用", DINNER: "晚餐常用", TAKEOUT: "适合外卖"},
+  productionTags: {HOT_KITCHEN: "热厨制作", COLD_DISH: "冷菜制作", BEVERAGE: "饮品制作", PACKING: "打包处理"},
   dictionary: {
     SKU_ATTRIBUTE: {SIZE: "杯型", PORTION_SIZE: "份量", DONENESS: "熟度", PIZZA_SIZE: "尺寸", DRINK_SIZE: "杯型"},
     SKU_ATTRIBUTE_VALUE: {
@@ -1755,7 +2191,17 @@ const seedBusinessLabels = {
 const catalogDefinitionSeed = {
   tagDefinitions: [
     {code: "RECOMMENDED", name: "推荐商品"},
-    {code: "SEASONAL", name: "当季推荐"}
+    {code: "SEASONAL", name: "当季推荐"},
+    {code: "SIGNATURE", name: "招牌推荐"},
+    {code: "LUNCH", name: "午餐常用"},
+    {code: "DINNER", name: "晚餐常用"},
+    {code: "TAKEOUT", name: "适合外卖"}
+  ],
+  productionTagDefinitions: [
+    {code: "HOT_KITCHEN", name: "热厨制作"},
+    {code: "COLD_DISH", name: "冷菜制作"},
+    {code: "BEVERAGE", name: "饮品制作"},
+    {code: "PACKING", name: "打包处理"}
   ],
   unitDefinitions: [
     {code: "SERVING", name: "份", unitDimension: "COUNT", precision: 0},
@@ -1799,7 +2245,13 @@ const catalogDefinitionSeed = {
     ]}
   ],
   itemAssignments: [
-    {itemCode: "CAESAR-001", tagCodes: ["RECOMMENDED"], salesUnitCode: "SERVING", baseMeasureUnitCode: "SERVING", skuUnitOverrides: [], attributes: [
+    {itemCode: "CAESAR-001", tagCodes: ["RECOMMENDED"], identifiers: [
+      {identifierType: "BARCODE", identifierValue: "690100000001"},
+      {identifierType: "MNEMONIC", identifierValue: "CAESAR"}
+    ], preparationProfile: {productionTagCodes: ["COLD_DISH"], productionDisplayName: "凯撒沙拉", estimatedPreparationSeconds: 180, preparationNotes: "出餐前拌匀并装盘"}, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [
+      {valueCode: "BACON", addProductionTagCodes: ["HOT_KITCHEN"], preparationSecondsDelta: 20, instruction: "加培根"},
+      {valueCode: "CHICKEN", addProductionTagCodes: ["HOT_KITCHEN"], preparationSecondsDelta: 30, instruction: "加鸡胸肉"}
+    ], salesUnitCode: "SERVING", baseMeasureUnitCode: "SERVING", skuUnitOverrides: [], attributes: [
       {definitionCode: "SHELF_LIFE", textValue: "当天制作", optionNames: []},
       {definitionCode: "SPICINESS", textValue: null, optionNames: ["微辣"]},
       {definitionCode: "ALLERGENS", textValue: null, optionNames: ["蛋类", "乳制品"]}
@@ -1819,7 +2271,9 @@ const catalogDefinitionSeed = {
       {valueCode: "EGG", lines: [{materialItemCode: "EGG-001", lineSign: "POSITIVE", quantity: 1}]},
       {valueCode: "CHICKEN", lines: [{materialItemCode: "CHICKEN-001", lineSign: "POSITIVE", quantity: 80}]}
     ]},
-    {itemCode: "MILK-TEA-001", tagCodes: [], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: [
+    {itemCode: "MILK-TEA-001", tagCodes: [], identifiers: [{identifierType: "BARCODE", identifierValue: "690100000002"}], preparationProfile: {productionTagCodes: ["BEVERAGE"], productionDisplayName: "奶茶", estimatedPreparationSeconds: 120, preparationNotes: "按选择的奶基底制作"}, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [
+      {valueCode: "OAT_MILK", addProductionTagCodes: ["BEVERAGE"], preparationSecondsDelta: 15, instruction: "使用燕麦奶"}
+    ], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: [
       {definitionCode: "MILK_SWAP", required: false, minSelectionCount: null, maxSelectionCount: null, values: [
         {valueCode: "REGULAR_MILK", defaultValue: true, extraPrice: 0},
         {valueCode: "OAT_MILK", defaultValue: false, extraPrice: 100}
@@ -1828,7 +2282,13 @@ const catalogDefinitionSeed = {
       {valueCode: "REGULAR_MILK", lines: [{materialItemCode: "MILK-001", lineSign: "POSITIVE", quantity: 200}]},
       {valueCode: "OAT_MILK", lines: [{materialItemCode: "MILK-001", lineSign: "NEGATIVE", quantity: 200}, {materialItemCode: "OAT-MILK-001", lineSign: "POSITIVE", quantity: 200}]}
     ]},
-    {itemCode: "LATTE-001", tagCodes: ["SEASONAL"], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [
+    {itemCode: "LATTE-001", tagCodes: ["SEASONAL"], identifiers: [], preparationProfile: {productionTagCodes: ["BEVERAGE"], productionDisplayName: "拿铁咖啡", estimatedPreparationSeconds: 90, preparationNotes: "按规格制作并完成拉花"}, skuIdentifiers: [
+      {skuCode: "LATTE-SKU-S", identifiers: [{identifierType: "BARCODE", identifierValue: "690100000101"}, {identifierType: "BARCODE", identifierValue: "690100000104"}]},
+      {skuCode: "LATTE-SKU-M", identifiers: [{identifierType: "BARCODE", identifierValue: "690100000102"}]},
+      {skuCode: "LATTE-SKU-L", identifiers: [{identifierType: "BARCODE", identifierValue: "690100000103"}]}
+    ], salesUnitCode: "CUP", baseMeasureUnitCode: "MILLILITER", skuPreparationOverrides: [
+      {skuCode: "LATTE-SKU-S", mode: "OVERRIDE", clearAfterReadback: true, profile: {productionTagCodes: ["BEVERAGE"], productionDisplayName: "小杯拿铁", estimatedPreparationSeconds: 75, preparationNotes: "小杯少量奶泡"}}
+    ], optionPreparationEffects: [], skuUnitOverrides: [
       {skuCode: "LATTE-SKU-S", salesUnitCode: "DISABLED_EACH", baseMeasureUnitCode: "MILLILITER", clearAfterReadback: true},
       {skuCode: "LATTE-SKU-M", salesUnitCode: null, baseMeasureUnitCode: null, clearAfterReadback: false}
     ], attributes: [
@@ -1836,18 +2296,25 @@ const catalogDefinitionSeed = {
       {definitionCode: "SPICINESS", textValue: null, optionNames: ["不辣"]},
       {definitionCode: "ALLERGENS", textValue: null, optionNames: ["乳制品"]}
     ], orderOptions: []},
-    {itemCode: "DINNER-SET-001", tagCodes: [], salesUnitCode: "SET", baseMeasureUnitCode: "SET", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "PORK-WEIGHT-001", tagCodes: [], salesUnitCode: "KILOGRAM", baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "DRESSING-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "BACON-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "EGG-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "EACH", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "CHICKEN-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "BEAN-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "BOX-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "LETTUCE-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "CUTLERY-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "MILK-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []},
-    {itemCode: "OAT-MILK-001", tagCodes: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []}
+    {itemCode: "DINNER-SET-001", tagCodes: [], identifiers: [{identifierType: "BARCODE", identifierValue: "690100000401"}], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: "SET", baseMeasureUnitCode: "SET", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "PORK-WEIGHT-001", tagCodes: [], identifiers: [{identifierType: "BARCODE", identifierValue: "690100000201"}, {identifierType: "PLU", identifierValue: "82001"}], preparationProfile: {productionTagCodes: ["HOT_KITCHEN"], productionDisplayName: "称重猪排", estimatedPreparationSeconds: 300, preparationNotes: "按实际称重份量制作"}, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: "KILOGRAM", baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "DRESSING-001", tagCodes: [], identifiers: [{identifierType: "BARCODE", identifierValue: "690100000301"}], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "BACON-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "EGG-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "EACH", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "CHICKEN-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "BEAN-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "BOX-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "LETTUCE-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "GRAM", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "CUTLERY-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "BOX", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "MILK-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []},
+    {itemCode: "OAT-MILK-001", tagCodes: [], identifiers: [], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: [], salesUnitCode: null, baseMeasureUnitCode: "MILLILITER", skuUnitOverrides: [], attributes: [], orderOptions: []}
+  ],
+  sourceItemAssignments: [
+    {itemCode: "FEE-PACKAGING-001", identifiers: [{identifierType: "MNEMONIC", identifierValue: "PACKING_SERVICE"}], preparationProfile: null, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: []},
+    {itemCode: "BEV-POUROVER-001", identifiers: [{identifierType: "BARCODE", identifierValue: "690100000501"}], preparationProfile: {productionTagCodes: ["BEVERAGE"], productionDisplayName: "手冲咖啡", estimatedPreparationSeconds: 240, preparationNotes: "按选定豆种与出品方式制作"}, skuIdentifiers: [], skuPreparationOverrides: [], optionPreparationEffects: []},
+    {itemCode: "MAIN-STEAK-SIRLOIN-001", identifiers: [], preparationProfile: {productionTagCodes: ["HOT_KITCHEN"], productionDisplayName: "黑椒西冷牛排", estimatedPreparationSeconds: 720, preparationNotes: "按熟度煎制，出餐前淋黑椒汁"}, skuIdentifiers: [], skuPreparationOverrides: [
+      {skuCode: "STEAK-MEDIUM", mode: "OVERRIDE", clearAfterReadback: false, profile: {productionTagCodes: ["HOT_KITCHEN"], productionDisplayName: "七分熟西冷牛排", estimatedPreparationSeconds: 780, preparationNotes: "七分熟出餐"}}
+    ], optionPreparationEffects: []}
   ]
 };
 
@@ -1857,6 +2324,7 @@ function assertCatalogDefinitionSeed(seed) {
     if (new Set(codes).size !== codes.length) throw new Error("P1_CATALOG_DEFINITION_SEED_" + label + "_CODES_DUPLICATE");
   };
   uniqueCodes(seed.tagDefinitions, "TAG");
+  uniqueCodes(seed.productionTagDefinitions, "PRODUCTION_TAG");
   uniqueCodes(seed.unitDefinitions, "UNIT");
   uniqueCodes(seed.attributeDefinitions, "ATTRIBUTE");
   uniqueCodes(seed.orderOptionDefinitions, "ORDER_OPTION");
@@ -1868,12 +2336,38 @@ function assertCatalogDefinitionSeed(seed) {
   const stockTargetItems = new Set(seedDatasets.flatMap((dataset) => dataset.entities.stockTargets || []).map((target) => target.productCode));
   if (materials.size !== seed.materialItemCodes.length || ![...materials].every((code) => stockTargetItems.has(code)) || !seed.orderOptionDefinitions.flatMap((definition) => definition.values).flatMap((value) => value.materialItemCodes).every((code) => materials.has(code))) throw new Error("P1_CATALOG_DEFINITION_SEED_MATERIAL_CODES_INVALID");
   const tags = new Set(seed.tagDefinitions.map((entry) => entry.code));
+  const productionTags = new Set(seed.productionTagDefinitions.map((entry) => entry.code));
   const units = new Map(seed.unitDefinitions.map((entry) => [entry.code, entry]));
   if (seed.unitDefinitions.length < 10 || seed.unitDefinitions.length > 99) throw new Error("P1_CATALOG_DEFINITION_SEED_UNIT_COUNT_INVALID");
   if (seed.unitDefinitions.some((entry) => !Number.isInteger(entry.precision) || entry.precision < 0 || !["COUNT", "WEIGHT", "VOLUME", "SERVICE_DURATION", "PACKAGE"].includes(entry.unitDimension))) throw new Error("P1_CATALOG_DEFINITION_SEED_UNIT_FACTS_INVALID");
   const attributes = new Map(seed.attributeDefinitions.map((entry) => [entry.code, entry]));
   const orderOptions = new Map(seed.orderOptionDefinitions.map((entry) => [entry.code, entry]));
   const assignments = new Map(seed.itemAssignments.map((entry) => [entry.itemCode, entry]));
+  const identifierTypes = new Set(["BARCODE", "PLU", "MNEMONIC"]);
+  const validateProfile = (profile) => profile === null || (profile && Array.isArray(profile.productionTagCodes)
+    && profile.productionTagCodes.every((code) => productionTags.has(code))
+    && (profile.productionDisplayName == null || (typeof profile.productionDisplayName === "string" && profile.productionDisplayName.length <= 120))
+    && (profile.preparationNotes == null || (typeof profile.preparationNotes === "string" && profile.preparationNotes.length <= 1000))
+    && (profile.estimatedPreparationSeconds == null || (Number.isInteger(profile.estimatedPreparationSeconds) && profile.estimatedPreparationSeconds >= 0)));
+  const validatePreparationFacts = (assignment) => {
+    if (!Array.isArray(assignment.identifiers) || assignment.identifiers.some((entry) =>
+      !identifierTypes.has(entry.identifierType) || typeof entry.identifierValue !== "string"
+      || entry.identifierValue.length < 1 || entry.identifierValue.length > 160
+      || /[\u0000-\u001F\u007F-\u009F]/.test(entry.identifierValue))) return false;
+    if (!validateProfile(assignment.preparationProfile)) return false;
+    const skuCodes = new Set((assignment.skuIdentifiers || []).map((entry) => entry.skuCode));
+    if (skuCodes.size !== (assignment.skuIdentifiers || []).length
+        || (assignment.skuIdentifiers || []).some((entry) => entry.identifiers.some((identifier) =>
+          !identifierTypes.has(identifier.identifierType) || typeof identifier.identifierValue !== "string"
+          || identifier.identifierValue.length < 1 || identifier.identifierValue.length > 160
+          || /[\u0000-\u001F\u007F-\u009F]/.test(identifier.identifierValue)))) return false;
+    if ((assignment.skuPreparationOverrides || []).some((entry) => entry.mode !== "OVERRIDE"
+        || !validateProfile(entry.profile) || typeof entry.clearAfterReadback !== "boolean")) return false;
+    return (assignment.optionPreparationEffects || []).every((effect) =>
+      Array.isArray(effect.addProductionTagCodes) && effect.addProductionTagCodes.every((code) => productionTags.has(code))
+      && (effect.instruction == null || (typeof effect.instruction === "string" && effect.instruction.length <= 1000))
+      && (effect.preparationSecondsDelta == null || (Number.isInteger(effect.preparationSecondsDelta) && effect.preparationSecondsDelta >= 0)));
+  };
   const caesar = assignments.get("CAESAR-001");
   if (!caesar || caesar.attributes.length !== 3 || caesar.orderOptions.length !== 2 || !caesar.orderOptions.some((entry) => entry.definitionCode === "CAESAR_TOPPINGS" && entry.maxSelectionCount === 2)) throw new Error("P1_CATALOG_DEFINITION_SEED_ITEM_ASSIGNMENTS_INVALID");
   const assignmentValid = seed.itemAssignments.every((assignment) => {
@@ -1882,7 +2376,8 @@ function assertCatalogDefinitionSeed(seed) {
         || (assignment.skuUnitOverrides || []).some((override) =>
           (override.salesUnitCode !== null && !units.has(override.salesUnitCode))
           || (override.baseMeasureUnitCode !== null && !units.has(override.baseMeasureUnitCode)))
-        || assignment.tagCodes.some((code) => !tags.has(code))) return false;
+        || assignment.tagCodes.some((code) => !tags.has(code))
+        || !validatePreparationFacts(assignment)) return false;
     if (assignment.attributes.some((assignmentAttribute) => {
       const definition = attributes.get(assignmentAttribute.definitionCode);
       return !definition || (definition.valueType === "TEXT"
@@ -1912,6 +2407,10 @@ function assertCatalogDefinitionSeed(seed) {
   });
   if (assignments.size !== seed.itemAssignments.length || !assignmentValid)
     throw new Error("P1_CATALOG_DEFINITION_SEED_ASSIGNMENT_REFERENCES_INVALID");
+  const sourceAssignments = seed.sourceItemAssignments || [];
+  if (new Set(sourceAssignments.map((entry) => entry.itemCode)).size !== sourceAssignments.length
+      || sourceAssignments.some((assignment) => !validatePreparationFacts(assignment)))
+    throw new Error("P1_CATALOG_DEFINITION_SEED_SOURCE_FACTS_INVALID");
 }
 assertCatalogDefinitionSeed(catalogDefinitionSeed);
 
@@ -2078,12 +2577,14 @@ const fixtureSchema = {
     },
     catalogDefinitionSeed: fixtureObject({
       tagDefinitions: {type: "array", minItems: 1, items: {$ref: "#/$defs/codeName"}},
+      productionTagDefinitions: {type: "array", minItems: 1, items: {$ref: "#/$defs/codeName"}},
       unitDefinitions: {type: "array", minItems: 10, maxItems: 99, items: {$ref: "#/$defs/unitDefinitionSeed"}},
       materialItemCodes: {type: "array", minItems: 1, items: {type: "string"}},
       attributeDefinitions: {type: "array", minItems: 3, items: {$ref: "#/$defs/attributeDefinitionSeed"}},
       orderOptionDefinitions: {type: "array", minItems: 2, items: {$ref: "#/$defs/orderOptionDefinitionSeed"}},
-      itemAssignments: {type: "array", minItems: 1, items: {$ref: "#/$defs/itemDefinitionAssignment"}}
-    }, ["tagDefinitions", "unitDefinitions", "materialItemCodes", "attributeDefinitions", "orderOptionDefinitions", "itemAssignments"]),
+      itemAssignments: {type: "array", minItems: 1, items: {$ref: "#/$defs/itemDefinitionAssignment"}},
+      sourceItemAssignments: {type: "array", items: {$ref: "#/$defs/itemIdentificationPreparationAssignment"}}
+    }, ["tagDefinitions", "productionTagDefinitions", "unitDefinitions", "materialItemCodes", "attributeDefinitions", "orderOptionDefinitions", "itemAssignments", "sourceItemAssignments"]),
     scenarioCatalog: fixtureObject({api: stringField("API scenario catalog path"), l2: stringField("L2 scenario catalog path")}, ["api", "l2"]),
     denominators: fixtureObject({seed: integerField("seed count"), test: integerField("test count"), apiDefinitions: integerField("API definitions"), apiCases: integerField("API cases"), l2Definitions: integerField("L2 definitions"), l2Cases: integerField("L2 cases")}, ["seed", "test", "apiDefinitions", "apiCases", "l2Definitions", "l2Cases"]),
     seedDatasets: {type: "array", minItems: 5, items: {$ref: "#/$defs/dataset"}},
@@ -2108,6 +2609,65 @@ const fixtureSchema = {
     }}
   }
 };
+const identifierSeedSchema = fixtureObject({
+  identifierType: {type: "string", enum: ["BARCODE", "PLU", "MNEMONIC"]},
+  identifierValue: {type: "string", minLength: 1, maxLength: 160}
+}, ["identifierType", "identifierValue"]);
+const preparationProfileSeedSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  properties: {
+    productionTagCodes: {type: "array", items: {type: "string"}},
+    productionDisplayName: {type: ["string", "null"], maxLength: 120},
+    estimatedPreparationSeconds: {type: ["integer", "null"], minimum: 0},
+    preparationNotes: {type: ["string", "null"], maxLength: 1000}
+  },
+  required: ["productionTagCodes"]
+};
+const skuIdentifierSeedSchema = fixtureObject({
+  skuCode: stringField("SKU code"),
+  identifiers: {type: "array", items: identifierSeedSchema}
+}, ["skuCode", "identifiers"]);
+const skuPreparationOverrideSeedSchema = fixtureObject({
+  skuCode: stringField("SKU code"),
+  mode: {const: "OVERRIDE"},
+  clearAfterReadback: {type: "boolean"},
+  profile: {
+    ...preparationProfileSeedSchema,
+    type: "object"
+  }
+}, ["skuCode", "mode", "clearAfterReadback", "profile"]);
+const optionPreparationEffectSeedSchema = fixtureObject({
+  valueCode: stringField("ordering option value code"),
+  addProductionTagCodes: {type: "array", items: {type: "string"}},
+  preparationSecondsDelta: {type: ["integer", "null"], minimum: 0},
+  instruction: {type: ["string", "null"], maxLength: 1000}
+}, ["valueCode", "addProductionTagCodes"]);
+fixtureSchema.$defs.identifierSeed = identifierSeedSchema;
+fixtureSchema.$defs.preparationProfileSeed = preparationProfileSeedSchema;
+fixtureSchema.$defs.skuIdentifierSeed = skuIdentifierSeedSchema;
+fixtureSchema.$defs.skuPreparationOverrideSeed = skuPreparationOverrideSeedSchema;
+fixtureSchema.$defs.optionPreparationEffectSeed = optionPreparationEffectSeedSchema;
+const itemDefinitionAssignmentSchema = fixtureSchema.$defs.itemDefinitionAssignment;
+Object.assign(itemDefinitionAssignmentSchema.properties, {
+  identifiers: {type: "array", items: {$ref: "#/$defs/identifierSeed"}},
+  preparationProfile: {$ref: "#/$defs/preparationProfileSeed"},
+  skuIdentifiers: {type: "array", items: {$ref: "#/$defs/skuIdentifierSeed"}},
+  skuPreparationOverrides: {type: "array", items: {$ref: "#/$defs/skuPreparationOverrideSeed"}},
+  optionPreparationEffects: {type: "array", items: {$ref: "#/$defs/optionPreparationEffectSeed"}}
+});
+itemDefinitionAssignmentSchema.required = Array.from(new Set([
+  ...itemDefinitionAssignmentSchema.required,
+  "identifiers", "preparationProfile", "skuIdentifiers", "skuPreparationOverrides", "optionPreparationEffects"
+]));
+fixtureSchema.$defs.itemIdentificationPreparationAssignment = fixtureObject({
+  itemCode: stringField("catalog item code"),
+  identifiers: {type: "array", items: {$ref: "#/$defs/identifierSeed"}},
+  preparationProfile: {$ref: "#/$defs/preparationProfileSeed"},
+  skuIdentifiers: {type: "array", items: {$ref: "#/$defs/skuIdentifierSeed"}},
+  skuPreparationOverrides: {type: "array", items: {$ref: "#/$defs/skuPreparationOverrideSeed"}},
+  optionPreparationEffects: {type: "array", items: {$ref: "#/$defs/optionPreparationEffectSeed"}}
+}, ["itemCode", "identifiers", "preparationProfile", "skuIdentifiers", "skuPreparationOverrides", "optionPreparationEffects"]);
 fixtureSchema.$defs.dataset.properties.executionApplicability = {type: "string", enum: ["NOT_APPLICABLE_WITH_REASON"], description: "execution applicability disposition"};
 fixtureSchema.$defs.dataset.properties.notApplicableReason = stringField("reason why this fixture is not applicable to the current execution plane");
 fixtureSchema.properties.seedExecutionPlan.properties.cleanup = fixtureObject({

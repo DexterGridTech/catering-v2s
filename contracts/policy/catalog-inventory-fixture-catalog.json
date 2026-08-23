@@ -837,10 +837,10 @@
       "BENEFIT": "权益"
     },
     "productionTags": {
-      "SIGNATURE": "招牌推荐",
-      "LUNCH": "午餐常用",
-      "DINNER": "晚餐常用",
-      "TAKEOUT": "适合外卖"
+      "HOT_KITCHEN": "热厨制作",
+      "COLD_DISH": "冷菜制作",
+      "BEVERAGE": "饮品制作",
+      "PACKING": "打包处理"
     },
     "dictionary": {
       "SKU_ATTRIBUTE": {
@@ -942,6 +942,40 @@
       {
         "code": "SEASONAL",
         "name": "当季推荐"
+      },
+      {
+        "code": "SIGNATURE",
+        "name": "招牌推荐"
+      },
+      {
+        "code": "LUNCH",
+        "name": "午餐常用"
+      },
+      {
+        "code": "DINNER",
+        "name": "晚餐常用"
+      },
+      {
+        "code": "TAKEOUT",
+        "name": "适合外卖"
+      }
+    ],
+    "productionTagDefinitions": [
+      {
+        "code": "HOT_KITCHEN",
+        "name": "热厨制作"
+      },
+      {
+        "code": "COLD_DISH",
+        "name": "冷菜制作"
+      },
+      {
+        "code": "BEVERAGE",
+        "name": "饮品制作"
+      },
+      {
+        "code": "PACKING",
+        "name": "打包处理"
       }
     ],
     "unitDefinitions": [
@@ -1169,6 +1203,44 @@
         "tagCodes": [
           "RECOMMENDED"
         ],
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000001"
+          },
+          {
+            "identifierType": "MNEMONIC",
+            "identifierValue": "CAESAR"
+          }
+        ],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "COLD_DISH"
+          ],
+          "productionDisplayName": "凯撒沙拉",
+          "estimatedPreparationSeconds": 180,
+          "preparationNotes": "出餐前拌匀并装盘"
+        },
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [
+          {
+            "valueCode": "BACON",
+            "addProductionTagCodes": [
+              "HOT_KITCHEN"
+            ],
+            "preparationSecondsDelta": 20,
+            "instruction": "加培根"
+          },
+          {
+            "valueCode": "CHICKEN",
+            "addProductionTagCodes": [
+              "HOT_KITCHEN"
+            ],
+            "preparationSecondsDelta": 30,
+            "instruction": "加鸡胸肉"
+          }
+        ],
         "salesUnitCode": "SERVING",
         "baseMeasureUnitCode": "SERVING",
         "skuUnitOverrides": [],
@@ -1283,6 +1355,32 @@
       {
         "itemCode": "MILK-TEA-001",
         "tagCodes": [],
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000002"
+          }
+        ],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "BEVERAGE"
+          ],
+          "productionDisplayName": "奶茶",
+          "estimatedPreparationSeconds": 120,
+          "preparationNotes": "按选择的奶基底制作"
+        },
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [
+          {
+            "valueCode": "OAT_MILK",
+            "addProductionTagCodes": [
+              "BEVERAGE"
+            ],
+            "preparationSecondsDelta": 15,
+            "instruction": "使用燕麦奶"
+          }
+        ],
         "salesUnitCode": "CUP",
         "baseMeasureUnitCode": "MILLILITER",
         "skuUnitOverrides": [],
@@ -1340,8 +1438,66 @@
         "tagCodes": [
           "SEASONAL"
         ],
+        "identifiers": [],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "BEVERAGE"
+          ],
+          "productionDisplayName": "拿铁咖啡",
+          "estimatedPreparationSeconds": 90,
+          "preparationNotes": "按规格制作并完成拉花"
+        },
+        "skuIdentifiers": [
+          {
+            "skuCode": "LATTE-SKU-S",
+            "identifiers": [
+              {
+                "identifierType": "BARCODE",
+                "identifierValue": "690100000101"
+              },
+              {
+                "identifierType": "BARCODE",
+                "identifierValue": "690100000104"
+              }
+            ]
+          },
+          {
+            "skuCode": "LATTE-SKU-M",
+            "identifiers": [
+              {
+                "identifierType": "BARCODE",
+                "identifierValue": "690100000102"
+              }
+            ]
+          },
+          {
+            "skuCode": "LATTE-SKU-L",
+            "identifiers": [
+              {
+                "identifierType": "BARCODE",
+                "identifierValue": "690100000103"
+              }
+            ]
+          }
+        ],
         "salesUnitCode": "CUP",
         "baseMeasureUnitCode": "MILLILITER",
+        "skuPreparationOverrides": [
+          {
+            "skuCode": "LATTE-SKU-S",
+            "mode": "OVERRIDE",
+            "clearAfterReadback": true,
+            "profile": {
+              "productionTagCodes": [
+                "BEVERAGE"
+              ],
+              "productionDisplayName": "小杯拿铁",
+              "estimatedPreparationSeconds": 75,
+              "preparationNotes": "小杯少量奶泡"
+            }
+          }
+        ],
+        "optionPreparationEffects": [],
         "skuUnitOverrides": [
           {
             "skuCode": "LATTE-SKU-S",
@@ -1382,6 +1538,16 @@
       {
         "itemCode": "DINNER-SET-001",
         "tagCodes": [],
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000401"
+          }
+        ],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": "SET",
         "baseMeasureUnitCode": "SET",
         "skuUnitOverrides": [],
@@ -1391,6 +1557,27 @@
       {
         "itemCode": "PORK-WEIGHT-001",
         "tagCodes": [],
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000201"
+          },
+          {
+            "identifierType": "PLU",
+            "identifierValue": "82001"
+          }
+        ],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "HOT_KITCHEN"
+          ],
+          "productionDisplayName": "称重猪排",
+          "estimatedPreparationSeconds": 300,
+          "preparationNotes": "按实际称重份量制作"
+        },
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": "KILOGRAM",
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1400,6 +1587,16 @@
       {
         "itemCode": "DRESSING-001",
         "tagCodes": [],
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000301"
+          }
+        ],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1409,6 +1606,11 @@
       {
         "itemCode": "BACON-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1418,6 +1620,11 @@
       {
         "itemCode": "EGG-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "EACH",
         "skuUnitOverrides": [],
@@ -1427,6 +1634,11 @@
       {
         "itemCode": "CHICKEN-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1436,6 +1648,11 @@
       {
         "itemCode": "BEAN-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1445,6 +1662,11 @@
       {
         "itemCode": "BOX-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "BOX",
         "skuUnitOverrides": [],
@@ -1454,6 +1676,11 @@
       {
         "itemCode": "LETTUCE-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "GRAM",
         "skuUnitOverrides": [],
@@ -1463,6 +1690,11 @@
       {
         "itemCode": "CUTLERY-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "BOX",
         "skuUnitOverrides": [],
@@ -1472,6 +1704,11 @@
       {
         "itemCode": "MILK-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "MILLILITER",
         "skuUnitOverrides": [],
@@ -1481,11 +1718,80 @@
       {
         "itemCode": "OAT-MILK-001",
         "tagCodes": [],
+        "identifiers": [],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": [],
         "salesUnitCode": null,
         "baseMeasureUnitCode": "MILLILITER",
         "skuUnitOverrides": [],
         "attributes": [],
         "orderOptions": []
+      }
+    ],
+    "sourceItemAssignments": [
+      {
+        "itemCode": "FEE-PACKAGING-001",
+        "identifiers": [
+          {
+            "identifierType": "MNEMONIC",
+            "identifierValue": "PACKING_SERVICE"
+          }
+        ],
+        "preparationProfile": null,
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": []
+      },
+      {
+        "itemCode": "BEV-POUROVER-001",
+        "identifiers": [
+          {
+            "identifierType": "BARCODE",
+            "identifierValue": "690100000501"
+          }
+        ],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "BEVERAGE"
+          ],
+          "productionDisplayName": "手冲咖啡",
+          "estimatedPreparationSeconds": 240,
+          "preparationNotes": "按选定豆种与出品方式制作"
+        },
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [],
+        "optionPreparationEffects": []
+      },
+      {
+        "itemCode": "MAIN-STEAK-SIRLOIN-001",
+        "identifiers": [],
+        "preparationProfile": {
+          "productionTagCodes": [
+            "HOT_KITCHEN"
+          ],
+          "productionDisplayName": "黑椒西冷牛排",
+          "estimatedPreparationSeconds": 720,
+          "preparationNotes": "按熟度煎制，出餐前淋黑椒汁"
+        },
+        "skuIdentifiers": [],
+        "skuPreparationOverrides": [
+          {
+            "skuCode": "STEAK-MEDIUM",
+            "mode": "OVERRIDE",
+            "clearAfterReadback": false,
+            "profile": {
+              "productionTagCodes": [
+                "HOT_KITCHEN"
+              ],
+              "productionDisplayName": "七分熟西冷牛排",
+              "estimatedPreparationSeconds": 780,
+              "preparationNotes": "七分熟出餐"
+            }
+          }
+        ],
+        "optionPreparationEffects": []
       }
     ]
   },
@@ -4867,5 +5173,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "d49040bd976d504881be88477e3a67840a21954a94d7d42c7a86a06c21bea95d"
+  "fixtureDigest": "ca5a053f74c92ec7b568a22d3a737dc01c74af92df05aa4e5a62b02df6802151"
 }

@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -1092,16 +1093,18 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     .map(value -> value > 0 ? value : 0)
                     .sum();
             Map<UUID, UUID> targetRefs = new java.util.LinkedHashMap<>();
-            Map<TargetIdentity, TargetRow> targetsByIdentity = targetRowsByIdentities(
-                    targetDataNodeRef,
-                    brandRef,
-                    plannedTargets.stream()
-                            .map(target -> new TargetIdentity(
-                                    target.itemMapping().targetRef(),
-                                    target.skuMapping() == null
-                                            ? null
-                                            : target.skuMapping().targetRef()))
-                            .toList());
+            Map<TargetIdentity, TargetRow> targetsByIdentity = prepared == null
+                    ? targetRowsByIdentities(
+                            targetDataNodeRef,
+                            brandRef,
+                            plannedTargets.stream()
+                                    .map(target -> new TargetIdentity(
+                                            target.itemMapping().targetRef(),
+                                            target.skuMapping() == null
+                                                    ? null
+                                                    : target.skuMapping().targetRef()))
+                                    .toList())
+                    : postInsertTargetRows(plannedTargets, prepared.preflightTargetRows(), mappings);
             for (PlannedTarget planned : plannedTargets) {
                 TargetRow target = targetsByIdentity.get(new TargetIdentity(
                         planned.itemMapping().targetRef(),
@@ -1203,7 +1206,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                     .put("reasonCode", entry.reasonCode()));
             result.put(
                     "receiptObjectFingerprint",
-                    preflightCopyCore(
+                    preflightCopyCoreWithState(
                                     sourceDataNodeRef,
                                     targetDataNodeRef,
                                     brandRef,
@@ -1211,6 +1214,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                                     authorization,
                                     sourceClosure,
                                     targetsByIdentity)
+                            .judgement()
                             .path("digest")
                             .asText());
             if (!receiptKey.isBlank())
@@ -1501,13 +1505,15 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         LocalCopySectionPlan localSections = localCopySectionPlan(request);
         SourceCopyClosure sourceClosure =
                 sourceCopyClosure(sourceDataNodeRef, brandRef, closureItemRefs, localSections);
-        JsonNode judgement = preflightCopyCore(
+        PreflightCopyResult computed = preflightCopyCoreWithState(
                 sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization, sourceClosure, null);
+        JsonNode judgement = computed.judgement();
         ObjectNode envelope = envelope(requestId, judgement);
         try {
             return new PreparedCopy(
                     sourceClosure,
                     judgement,
+                    computed.targetRows(),
                     new InventoryOwnerApi.LocalCopyPreflightReadback(
                             envelope.path("data").path("digest").asText(), mapper.writeValueAsString(envelope)));
         } catch (Exception failure) {
@@ -1555,10 +1561,11 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             String brandRef,
             ObjectNode request,
             Runnable authorization) {
-        return preflightCopyCore(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization, null, null);
+        return preflightCopyCoreWithState(sourceDataNodeRef, targetDataNodeRef, brandRef, request, authorization, null, null)
+                .judgement();
     }
 
-    private JsonNode preflightCopyCore(
+    private PreflightCopyResult preflightCopyCoreWithState(
             String sourceDataNodeRef,
             String targetDataNodeRef,
             String brandRef,
@@ -1786,7 +1793,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         result.set("compatibilityResults", compatibility);
         result.set("referenceRewritePreview", rewrites);
         result.set("skipped", skipped.deepCopy());
-        return result;
+        return new PreflightCopyResult(result, existingTargetsByIdentity);
     }
 
     @Override
@@ -2913,8 +2920,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             JsonNode node) {
         InventoryOwnerApi.UnitSnapshot supplied =
                 requiredUnitSnapshot(node.path("consumptionUnitSnapshot"), "consumptionUnitSnapshot");
-        ObjectNode configuration = ((ObjectNode) node.path("directConfiguration")).deepCopy();
-        configuration.put("mode", "DIRECT");
+        ObjectNode configuration = normalizedDirectConfiguration(node.path("directConfiguration"));
         InventoryOwnerApi.UnitSnapshot consumption =
                 current != null && current.consumptionUnit() != null ? current.consumptionUnit() : supplied;
         boolean componentEligible = node.path("componentEligible").asBoolean(false);
@@ -2922,6 +2928,16 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         writeCountingConfiguration(configuration, counting);
         String skuCode = owner.productSkuRef() == null ? null : owner.skuCode();
         if (current != null && current.enabled()) {
+            boolean unchanged = Objects.equals(current.measureMode(), measureMode)
+                    && current.componentEligible() == componentEligible
+                    && Objects.equals(current.consumptionUnit(), consumption)
+                    && Objects.equals(current.countingUnit(), counting.countingUnitSnapshot())
+                    && (current.countingFactor() == null
+                            ? counting.conversionFactor() == null
+                            : counting.conversionFactor() != null
+                                    && current.countingFactor().compareTo(counting.conversionFactor()) == 0)
+                    && canonicalDirectConfiguration(json(current.configuration()), consumption).equals(configuration);
+            if (unchanged) return;
             long next = current.version() + 1L;
             InventoryOwnerApi.UnitSnapshot stored =
                     current.consumptionUnit() == null ? consumption : current.consumptionUnit();
@@ -2999,6 +3015,7 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         String skuCode = owner.productSkuRef() == null ? null : owner.skuCode();
         String optionCode = owner.optionValueRef() == null ? null : owner.optionValueCode();
         if (current != null && current.enabled()) {
+            if (current.rows() != null && current.rows().equals(normalized)) return;
             jdbc.update(
                     "UPDATE inventory.stock_bom SET rows=CAST(? AS JSONB),version=?,updated_at_epoch_millis=? "
                             + "WHERE bom_ref=? AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'",
@@ -3119,7 +3136,8 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                 "SELECT target_ref,item_ref,product_sku_ref,version,balance,configuration::text,definition_status,"
                         + "consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,"
                         + "consumption_unit_precision,counting_unit_ref,counting_unit_code,counting_unit_name,"
-                        + "counting_unit_dimension,counting_unit_precision,counting_unit_conversion_factor "
+                        + "counting_unit_dimension,counting_unit_precision,counting_unit_conversion_factor,"
+                        + "measure_mode,component_eligible "
                         + "FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
                         + "ORDER BY product_sku_ref NULLS FIRST,target_ref FOR UPDATE",
                 (result, rowNumber) -> {
@@ -3142,7 +3160,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                             unitSnapshot(result, 13),
                             result.getBigDecimal(18),
                             null,
-                            false);
+                            false,
+                            result.getString(19),
+                            result.getBoolean(20));
                 },
                 scope,
                 brand,
@@ -3176,7 +3196,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
                             null,
                             null,
                             json(result.getString(6)),
-                            true);
+                            true,
+                            null,
+                            false);
                 },
                 scope,
                 brand,
@@ -3219,7 +3241,9 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             InventoryOwnerApi.UnitSnapshot countingUnit,
             BigDecimal countingFactor,
             JsonNode rows,
-            boolean bom) {
+            boolean bom,
+            String measureMode,
+            boolean componentEligible) {
         boolean enabled() {
             return "ENABLED".equals(definitionStatus);
         }
@@ -3490,6 +3514,57 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         return result;
     }
 
+    /**
+     * The prepared copy already read target identities during preflight.  After the INSERT, reuse those immutable
+     * rows and synthesize only the rows whose target identity was absent.  The INSERT shape is deterministic for a
+     * newly-created target, so a second full target SELECT would only re-read facts already owned by this command.
+     */
+    private Map<TargetIdentity, TargetRow> postInsertTargetRows(
+            List<PlannedTarget> plannedTargets,
+            Map<TargetIdentity, TargetRow> preflightTargetRows,
+            Map<UUID, ReferenceMapping> mappings) {
+        Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
+        for (PlannedTarget planned : plannedTargets) {
+            TargetIdentity identity = new TargetIdentity(
+                    planned.itemMapping().targetRef(),
+                    planned.skuMapping() == null ? null : planned.skuMapping().targetRef());
+            TargetRow existing = preflightTargetRows.get(identity);
+            result.put(
+                    identity,
+                    existing == null ? insertedTargetRow(planned, mappings) : existing);
+        }
+        return result;
+    }
+
+    private TargetRow insertedTargetRow(PlannedTarget planned, Map<UUID, ReferenceMapping> mappings) {
+        TargetRow source = planned.source();
+        ReferenceMapping sku = planned.skuMapping();
+        InventoryOwnerApi.UnitSnapshot consumption = mappedUnitSnapshot(source.consumptionUnitSnapshot(), mappings);
+        InventoryConfiguration sourceConfiguration = configurationReadback(json(source.configuration()));
+        InventoryOwnerApi.UnitSnapshot counting = mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappings);
+        String inventoryMode = json(source.configuration()).path("mode").asText("");
+        if (inventoryMode.isBlank())
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象缺少 inventory mode");
+        return new TargetRow(
+                planned.targetMapping().targetRef(),
+                planned.itemMapping().targetRef(),
+                sku == null ? null : sku.targetRef(),
+                requiredLabel(planned.itemMapping().targetCode(), "CATALOG_ITEM targetCode"),
+                sku == null ? null : requiredLabel(sku.targetSkuCode(), "PRODUCT_SKU targetSkuCode"),
+                source.measureMode(),
+                BigDecimal.ZERO,
+                mappedConfiguration(
+                        source.configuration(), inventoryMode, counting, sourceConfiguration.conversionFactor()),
+                1L,
+                time.currentEpochMillis(),
+                consumption,
+                counting,
+                sourceConfiguration.conversionFactor(),
+                "ENABLED",
+                inventoryMode,
+                source.componentEligible());
+    }
+
     private List<TargetRow> loadTargetsByItemRef(String scope, String brand, UUID itemRef) {
         return jdbc.query(
                 "SELECT "
@@ -3645,6 +3720,26 @@ public class InventoryOwnerService implements InventoryOwnerApi {
         setNullableSnapshot(result, "countingUnitSnapshot", configuration.countingUnitSnapshot());
         result.put("conversionFactor", decimal(configuration.conversionFactor()));
         return result;
+    }
+
+    private ObjectNode normalizedDirectConfiguration(JsonNode raw) {
+        if (raw == null || !raw.isObject())
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "directConfiguration must be an object");
+        ObjectNode normalized = (ObjectNode) raw.deepCopy();
+        normalized.remove("targetRef");
+        normalized.remove("version");
+        normalized.remove("consumptionUnitSnapshot");
+        normalized.put("mode", "DIRECT");
+        return normalized;
+    }
+
+    private ObjectNode canonicalDirectConfiguration(
+            JsonNode raw, InventoryOwnerApi.UnitSnapshot consumptionUnit) {
+        ObjectNode normalized = normalizedDirectConfiguration(raw);
+        InventoryOwnerApi.CountingUnitConfiguration counting =
+                countingUnitConfiguration(normalized, consumptionUnit);
+        writeCountingConfiguration(normalized, counting);
+        return normalized;
     }
 
     private String requiredInventoryMode(String configurationJson) {
@@ -5849,8 +5944,13 @@ public class InventoryOwnerService implements InventoryOwnerApi {
             List<BomOwnerRow> bomOwners,
             List<InventoryOwnerApi.LocalCopySkippedReadback> skipped) {}
 
+    private record PreflightCopyResult(JsonNode judgement, Map<TargetIdentity, TargetRow> targetRows) {}
+
     private record PreparedCopy(
-            SourceCopyClosure sourceClosure, JsonNode judgement, InventoryOwnerApi.LocalCopyPreflightReadback readback)
+            SourceCopyClosure sourceClosure,
+            JsonNode judgement,
+            Map<TargetIdentity, TargetRow> preflightTargetRows,
+            InventoryOwnerApi.LocalCopyPreflightReadback readback)
             implements InventoryOwnerApi.CopyExecutionPreparation {
         @Override
         public InventoryOwnerApi.LocalCopyPreflightReadback preflight() {

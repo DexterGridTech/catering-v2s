@@ -52,6 +52,10 @@ const skuUnitDefaults = {
   baseMeasureUnitOverrideRef: null,
   salesUnit: null,
   baseMeasureUnit: null,
+  identifiers: [],
+  preparationOverride: {mode: 'INHERIT_ITEM' as const, profile: null},
+  effectivePreparation: null,
+  preparationSource: 'ITEM_DEFAULT' as const,
 };
 
 const batchRow = (index: number, outcome: CatalogBatchResult['outcome']): CatalogBatchResult => ({
@@ -183,7 +187,6 @@ describe('catalog management runtime model contracts', () => {
         displayOrder: 0,
         variantCombinationDigest: 'digest-1',
         attributeValueRefs: [],
-        skuBarcode: '',
         standardSalePrice: 1280,
         isDefault: false,
         status: 'ENABLED',
@@ -198,7 +201,6 @@ describe('catalog management runtime model contracts', () => {
         displayOrder: 1,
         variantCombinationDigest: 'digest-2',
         attributeValueRefs: [],
-        skuBarcode: '',
         standardSalePrice: 980,
         isDefault: false,
         status: 'ENABLED',
@@ -248,7 +250,8 @@ describe('catalog management runtime model contracts', () => {
         name: '拿铁',
         shapeKey: 'STANDARD_SALE_COUNTED',
         images: [],
-        productionTagRefs: [],
+        identifiers: [],
+        preparationProfile: null,
         categoryRef: null,
         attributeAssignments: [],
         orderOptionConfigs: [],
@@ -268,7 +271,7 @@ describe('catalog management runtime model contracts', () => {
       name: '拿铁',
       shapeKey: 'STANDARD_SALE_COUNTED',
       images: [],
-      productionTagRefs: [],
+      preparationProfile: null,
       categoryRef: null,
     });
     expect(request.sections.catalogDraft).not.toHaveProperty('skus');
@@ -529,7 +532,6 @@ describe('catalog management runtime model contracts', () => {
           status: 'ENABLED',
         },
       ],
-      skuBarcode: '690000000001',
       standardSalePrice: 1280,
       isDefault: true,
       status: 'ENABLED',
@@ -632,7 +634,6 @@ describe('catalog management runtime model contracts', () => {
       displayOrder: 0,
       variantCombinationDigest: '',
       attributeValueRefs: [],
-      skuBarcode: '',
       standardSalePrice: null,
       isDefault: false,
       status: 'ENABLED',
@@ -715,7 +716,6 @@ describe('catalog management runtime model contracts', () => {
           displayOrder: 0,
           variantCombinationDigest: 'digest',
           attributeValueRefs: [],
-          skuBarcode: '',
           standardSalePrice: 100,
           isDefault: false,
           status: 'ENABLED',
@@ -730,7 +730,6 @@ describe('catalog management runtime model contracts', () => {
           displayOrder: 1,
           variantCombinationDigest: '',
           attributeValueRefs: [],
-          skuBarcode: '',
           standardSalePrice: null,
           isDefault: false,
           status: 'ENABLED',
@@ -747,7 +746,7 @@ describe('catalog management runtime model contracts', () => {
     expect(requestRows[1]).not.toHaveProperty('productSkuRef');
   });
 
-  it('keeps production-tag quick-create identity as tagRef and fails closed without it', () => {
+  it('keeps production-tag readback identity as tagRef and fails closed without it', () => {
     const candidate = productionTagCandidateFromReadback(
       {tagRef: 'tag-ref', code: 'HOT', name: '热', status: 'ENABLED'},
       {code: 'HOT', name: '热', tagKind: 'PRODUCTION'},

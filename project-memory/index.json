@@ -33,6 +33,10 @@
       },
       "assertions": [
         "BUSINESS_CORPUS_G01_G12_ACCEPTED",
+        "BUSINESS_CORPUS_CIPG01_ACCEPTED",
+        "BUSINESS_CORPUS_CIPG01_USER_LANGUAGE",
+        "BUSINESS_CORPUS_CIPG01_SINGLE_PRODUCTION_TAG",
+        "BUSINESS_CORPUS_CIPG01_CONSTRAINT_SPLIT",
         "BUSINESS_CORPUS_READ_POLICY"
       ],
       "assertionSources": [
@@ -42,13 +46,37 @@
           "anchor": "## 已接受集合与内容基准"
         },
         {
+          "assertionKey": "BUSINESS_CORPUS_CIPG01_ACCEPTED",
+          "path": "doc/plans/platform/2026-08-23-v2s-catalog-identification-production-guidance-formal-requirements-codex.md",
+          "anchor": "## 0. 用户任务与成功判据"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_CIPG01_USER_LANGUAGE",
+          "path": "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-interaction-design-codex.md",
+          "anchor": "### Screen `CATUI-EDIT` · 超宽商品编辑抽屉"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_CIPG01_SINGLE_PRODUCTION_TAG",
+          "path": "doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md",
+          "anchor": "### 4.2.2 单一生产标签业务模型"
+        },
+        {
+          "assertionKey": "BUSINESS_CORPUS_CIPG01_CONSTRAINT_SPLIT",
+          "path": "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-ia-design-codex.md",
+          "anchor": "## 3. 控件级联与状态控制矩阵"
+        },
+        {
           "assertionKey": "BUSINESS_CORPUS_READ_POLICY",
           "path": "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
           "anchor": "## 使用纪律"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md"
+        "doc/decisions/2026-07-25-v2s-confirmed-business-corpus-memory-adoption.md",
+        "doc/plans/platform/2026-08-23-v2s-catalog-identification-production-guidance-formal-requirements-codex.md",
+        "doc/plans/platform/2026-08-23-v2s-catalog-library-ui-experience-formal-requirements-codex.md",
+        "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-ia-design-codex.md",
+        "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-interaction-design-codex.md"
       ]
     },
     {

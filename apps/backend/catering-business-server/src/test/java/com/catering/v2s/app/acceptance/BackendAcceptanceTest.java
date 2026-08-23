@@ -225,6 +225,8 @@ class BackendAcceptanceTest {
             new RouteIdentity("getOperationsProductionTags", "/api/operations/catalog-inventory/production-tags");
     static final RouteIdentity OPERATIONS_PRODUCTION_TAG_CREATE =
             new RouteIdentity("createOperationsProductionTag", "/api/operations/catalog-inventory/production-tags");
+    static final RouteIdentity OPERATIONS_PRODUCTION_TAG_STATUS = new RouteIdentity(
+            "transitionOperationsProductionTagStatus", "/api/operations/catalog-inventory/production-tags/{tagCode}/status");
     static final RouteIdentity OPERATIONS_CATALOG_DICTIONARY_CREATE = new RouteIdentity(
             "createOperationsCatalogDictionaryEntry",
             "/api/operations/catalog-inventory/dictionaries/{dictionaryKind}/entries");

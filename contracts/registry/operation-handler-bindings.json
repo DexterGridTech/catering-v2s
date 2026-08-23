@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "22fccbdf1db5e8ba59421fa0e4d9457c15a8327ac3fbe89237c15bba49b9aaef",
-      "contentSha256": "229f68d29285d8d64b80bd2acb22672c219c0fb6d5026c72b399f79d97b77d1b"
+      "contractDigest": "6108f8e23d59ba334c8c98f4674cd6cab9d5e4ac9c52e6057734e331295861eb",
+      "contentSha256": "48b0d7235f349bcb50115b3c83bbd1115e8c9de90aab2f48afbcbe727d7ef609"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "7c61bc3f69a87cb70dde97d23e02f3d94f2e9969cc1f488c5edef38da687213f"
+      "contentSha256": "cba1313905f6f3b200709f2d19d54c88ca02ae0461184b079c697d0510de1de1"
     }
   },
   "runtimeIntegration": {

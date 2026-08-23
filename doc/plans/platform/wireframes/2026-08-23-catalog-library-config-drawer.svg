@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <style>
+    .bg{fill:#eef2f7}.surface{fill:#fff}.panel{fill:#f8fafc;stroke:#cbd5e1}.line{stroke:#dbe3ee}.primary{fill:#1d4ed8}.muted{fill:#f1f5f9}.selected{fill:#e8f0ff}.danger{fill:#fff1f0;stroke:#ffccc7}.h1{font:700 24px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#162033}.h2{font:700 17px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#24324a}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#334155}.s{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#64748b}.white{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#fff}.note{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#7c3aed}.btn{fill:#fff;stroke:#94a3b8}.tag{fill:#dcfce7}.tagtext{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#166534}
+  </style>
+  <rect class="bg" width="1600" height="900"/>
+  <rect class="surface" x="34" y="28" width="1532" height="844" rx="10"/>
+  <text class="h1" x="66" y="72">商品元数据</text><text class="s" x="66" y="98">在商品工作台内维护常用配置；关闭后回到原来的商品列表位置</text>
+  <rect class="btn" x="1478" y="48" width="56" height="34" rx="6"/><text class="t" x="1498" y="70">关闭</text>
+  <line class="line" x1="34" y1="118" x2="1566" y2="118"/>
+  <rect class="panel" x="58" y="142" width="230" height="690" rx="8"/>
+  <text class="h2" x="82" y="180">配置分类</text>
+  <rect class="selected" x="70" y="200" width="206" height="46" rx="6"/><text class="t" x="90" y="229">商品标签</text>
+  <text class="t" x="90" y="278">计量单位</text><text class="t" x="90" y="330">规格维度</text><text class="t" x="90" y="382">商品处理标签</text><text class="t" x="90" y="434">商品属性库</text><text class="t" x="90" y="486">点单选项库</text>
+  <text class="s" x="82" y="790">右侧完成查看与维护</text><text class="s" x="82" y="812">不会再叠加新的抽屉</text>
+  <rect class="panel" x="310" y="142" width="836" height="690" rx="8"/>
+  <text class="h2" x="338" y="182">商品标签</text><text class="s" x="338" y="208">为商品补充业务特征，方便筛选和运营管理。</text>
+  <rect class="panel" x="338" y="230" width="312" height="38" rx="6"/><text class="s" x="354" y="254">搜索名称或编码</text>
+  <rect class="primary" x="1000" y="230" width="116" height="38" rx="6"/><text class="white" x="1020" y="254">新建商品标签</text>
+  <rect class="muted" x="338" y="290" width="778" height="42"/><text class="s" x="354" y="316">名称</text><text class="s" x="602" y="316">编码</text><text class="s" x="806" y="316">状态</text><text class="s" x="900" y="316">正在使用</text><text class="s" x="1018" y="316">操作</text>
+  <text class="t" x="354" y="364">招牌推荐</text><text class="t" x="602" y="364">SIGNATURE</text><rect class="tag" x="806" y="345" width="48" height="26" rx="13"/><text class="tagtext" x="818" y="363">启用</text><text class="t" x="916" y="364">30 个商品</text><text class="t" x="1018" y="364">编辑　停用</text>
+  <line class="line" x1="338" y1="386" x2="1116" y2="386"/>
+  <text class="t" x="354" y="424">午餐常用</text><text class="t" x="602" y="424">LUNCH</text><rect class="tag" x="806" y="405" width="48" height="26" rx="13"/><text class="tagtext" x="818" y="423">启用</text><text class="t" x="916" y="424">4 个商品</text><text class="t" x="1018" y="424">编辑　停用</text>
+  <line class="line" x1="338" y1="446" x2="1116" y2="446"/>
+  <text class="t" x="354" y="484">外卖适用</text><text class="t" x="602" y="484">TAKEOUT</text><rect class="tag" x="806" y="465" width="48" height="26" rx="13"/><text class="tagtext" x="818" y="483">启用</text><text class="t" x="916" y="484">2 个商品</text><text class="t" x="1018" y="484">编辑　停用</text>
+  <rect class="selected" x="338" y="540" width="778" height="102" rx="7"/><text class="h2" x="358" y="571">列表就是详情</text><text class="t" x="358" y="600">用户可以直接比较名称、编码、状态与使用情况。</text><text class="t" x="358" y="625">只有新建、编辑或确认动作使用一层小弹窗。</text>
+  <text class="s" x="338" y="788">当前库加载失败时只在右栏显示重试，不清空左侧选择</text>
+  <rect class="panel" x="1170" y="142" width="362" height="212" rx="8"/>
+  <text class="note" x="1194" y="174">切换至“规格维度”后</text>
+  <rect class="muted" x="1194" y="192" width="116" height="138" rx="6"/><text class="t" x="1214" y="220">杯型</text><text class="t" x="1214" y="254">辣度</text><text class="t" x="1214" y="288">份量</text>
+  <text class="h2" x="1332" y="218">杯型</text><text class="s" x="1332" y="244">小杯　中杯　大杯</text><text class="t" x="1332" y="286">同一右栏内主从两列</text><text class="s" x="1332" y="312">不打开第二个抽屉</text>
+  <rect class="panel" x="1170" y="378" width="362" height="250" rx="8"/>
+  <text class="note" x="1194" y="410">切换至“点单选项库”后</text>
+  <rect class="muted" x="1194" y="430" width="314" height="44" rx="6"/><text class="t" x="1212" y="458">加料　多选　3 个可选项</text>
+  <rect class="selected" x="1194" y="486" width="314" height="114" rx="6"/><text class="h2" x="1212" y="516">加料</text><text class="t" x="1212" y="546">培根　鸡蛋　鸡胸肉</text><text class="t" x="1212" y="574">编辑定义　停用</text>
+  <text class="s" x="1194" y="652">复杂定义仍在右栏内切换列表与编辑</text>
+  <text class="note" x="1170" y="704">设计注释：右侧两个缩略框表示同一抽屉的其它导航状态，</text><text class="note" x="1170" y="728">不是同时叠加的界面，也不是用户可见文案。</text>
+</svg>

@@ -39,7 +39,7 @@ final class CatalogSkuFacts {
         String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, LinkedHashMap<UUID, ObjectNode>> rows = new LinkedHashMap<>();
         jdbc.query(
-                "SELECT sku.item_ref, sku.product_sku_ref, sku.sku_code, sku.sku_name, sku.sku_barcode,"
+                "SELECT sku.item_ref, sku.product_sku_ref, sku.sku_code, sku.sku_name,"
                         + " sku.standard_sale_price, sku.is_default, sku.status, sku.version, sku.display_order,"
                         + " sku.variant_combination_digest, sku.sales_unit_override_ref,"
                         + " sku.base_measure_unit_override_ref, sku.sales_unit_ref, sku.sales_unit_code,"
@@ -78,19 +78,19 @@ final class CatalogSkuFacts {
                             sku = skuNode(result);
                             itemSkus.put(skuRef, sku);
                         }
-                        UUID attributeRef = result.getObject(24, UUID.class);
+                        UUID attributeRef = result.getObject(23, UUID.class);
                         if (attributeRef == null) continue;
                         ObjectNode value = sku.withArray("attributeValueRefs").addObject();
                         value.put("attributeRef", attributeRef.toString());
-                        value.put("attributeCode", result.getString(25));
-                        value.put("attributeName", result.getString(26));
+                        value.put("attributeCode", result.getString(24));
+                        value.put("attributeName", result.getString(25));
                         value.put(
                                 "attributeValueRef",
-                                result.getObject(27, UUID.class).toString());
-                        value.put("valueCode", result.getString(28));
-                        value.put("valueLabel", result.getString(29));
-                        value.put("displayOrder", result.getInt(31));
-                        value.put("status", result.getString(30));
+                                result.getObject(26, UUID.class).toString());
+                        value.put("valueCode", result.getString(27));
+                        value.put("valueLabel", result.getString(28));
+                        value.put("displayOrder", result.getInt(30));
+                        value.put("status", result.getString(29));
                     }
                     return null;
                 });
@@ -202,7 +202,6 @@ final class CatalogSkuFacts {
                 sku.itemRef(),
                 sku.skuCode(),
                 sku.skuName(),
-                sku.barcode(),
                 sku.price(),
                 sku.defaultSku(),
                 sku.status(),
@@ -217,12 +216,12 @@ final class CatalogSkuFacts {
         try {
             int[] changed = jdbc.batchUpdate(
                     "INSERT INTO "
-                            + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,sku_barcode,standard_sale"
+                            + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale"
                             + "_price,is_default,status,display_order,variant_combination_digest,"
                             + "sales_unit_override_ref,"
                             + "base_measure_unit_override_ref)"
-                            + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(product_sku_ref) DO UPDATE SET "
-                            + "sku_code=EXCLUDED.sku_code,sku_name=EXCLUDED.sku_name,sku_barcode=EXCLUDED.sku_barcode,"
+                            + " VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(product_sku_ref) DO UPDATE SET "
+                            + "sku_code=EXCLUDED.sku_code,sku_name=EXCLUDED.sku_name,"
                             + "standard_sale_price=EXCLUDED.standard_sale_price,is_default=EXCLUDED.is_default,status="
                             + "EXCLUDED.status,display_order=EXCLUDED.display_order,variant_combination_digest="
                             + "EXCLUDED.variant_combination_digest,"
@@ -283,7 +282,6 @@ final class CatalogSkuFacts {
                 sku.itemRef(),
                 sku.skuCode(),
                 sku.skuName(),
-                sku.barcode(),
                 sku.price(),
                 sku.defaultSku(),
                 sku.status(),
@@ -296,10 +294,10 @@ final class CatalogSkuFacts {
         try {
             jdbc.batchUpdate(
                     "INSERT INTO "
-                            + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,sku_barcode,standard_sale"
+                            + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,standard_sale"
                             + "_pri"
                             + "ce,is_default,status,display_order,variant_combination_digest) "
-                            + "VALUES(?,?,?,?,?,?,?,?,?,?) "
+                            + "VALUES(?,?,?,?,?,?,?,?,?) "
                             + "ON CONFLICT(product_sku_ref) DO NOTHING",
                     skuRows);
         } catch (DuplicateKeyException failure) {
@@ -343,7 +341,8 @@ final class CatalogSkuFacts {
         Long price = node.path("standardSalePrice").isIntegralNumber()
                 ? node.path("standardSalePrice").asLong()
                 : null;
-        String barcode = node.hasNonNull("skuBarcode") ? node.path("skuBarcode").asText() : null;
+        if (node.has("skuBarcode"))
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "skuBarcode 已退役，请使用规格识别信息");
         UUID salesUnitOverrideRef = optionalUuid(node, "salesUnitOverrideRef");
         UUID baseMeasureUnitOverrideRef = optionalUuid(node, "baseMeasureUnitOverrideRef");
         List<AttributeValue> attributes = new ArrayList<>();
@@ -361,7 +360,6 @@ final class CatalogSkuFacts {
                 skuRef,
                 skuCode,
                 skuName,
-                barcode,
                 price,
                 node.path("isDefault").asBoolean(false),
                 status,
@@ -377,26 +375,24 @@ final class CatalogSkuFacts {
         sku.put("productSkuRef", result.getObject(2, UUID.class).toString());
         sku.put("skuCode", result.getString(3));
         sku.put("skuName", result.getString(4));
-        if (result.getString(5) == null) sku.put("skuBarcode", "");
-        else sku.put("skuBarcode", result.getString(5));
-        if (result.getObject(6) == null) sku.putNull("standardSalePrice");
-        else sku.put("standardSalePrice", result.getLong(6));
-        sku.put("isDefault", result.getBoolean(7));
-        sku.put("status", result.getString(8));
-        sku.put("version", result.getLong(9));
-        sku.put("displayOrder", result.getInt(10));
-        sku.put("variantCombinationDigest", result.getString(11));
-        if (result.getObject(12, UUID.class) == null) sku.putNull("salesUnitOverrideRef");
-        else sku.put("salesUnitOverrideRef", result.getObject(12, UUID.class).toString());
-        if (result.getObject(13, UUID.class) == null) sku.putNull("baseMeasureUnitOverrideRef");
+        if (result.getObject(5) == null) sku.putNull("standardSalePrice");
+        else sku.put("standardSalePrice", result.getLong(5));
+        sku.put("isDefault", result.getBoolean(6));
+        sku.put("status", result.getString(7));
+        sku.put("version", result.getLong(8));
+        sku.put("displayOrder", result.getInt(9));
+        sku.put("variantCombinationDigest", result.getString(10));
+        if (result.getObject(11, UUID.class) == null) sku.putNull("salesUnitOverrideRef");
+        else sku.put("salesUnitOverrideRef", result.getObject(11, UUID.class).toString());
+        if (result.getObject(12, UUID.class) == null) sku.putNull("baseMeasureUnitOverrideRef");
         else
             sku.put(
                     "baseMeasureUnitOverrideRef",
-                    result.getObject(13, UUID.class).toString());
-        putUnitSnapshot(sku, "salesUnitSnapshot", result, 14, 15, 16, 17, 18);
-        putUnitSnapshot(sku, "baseMeasureUnitSnapshot", result, 19, 20, 21, 22, 23);
+                    result.getObject(12, UUID.class).toString());
+        putUnitSnapshot(sku, "salesUnitSnapshot", result, 13, 14, 15, 16, 17);
+        putUnitSnapshot(sku, "baseMeasureUnitSnapshot", result, 18, 19, 20, 21, 22);
         ArrayNode mediaRefs = sku.putArray("mediaRefs");
-        String media = result.getString(32);
+        String media = result.getString(31);
         if (media != null && !media.isBlank()) for (String assetRef : media.split(",")) mediaRefs.add(assetRef);
         sku.putArray("attributeValueRefs");
         return sku;
@@ -456,7 +452,6 @@ final class CatalogSkuFacts {
             UUID skuRef,
             String skuCode,
             String skuName,
-            String barcode,
             Long price,
             boolean defaultSku,
             String status,

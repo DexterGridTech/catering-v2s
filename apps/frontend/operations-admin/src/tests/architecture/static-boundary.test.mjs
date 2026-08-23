@@ -446,8 +446,9 @@ test('editable catalog rows use UI-stable keys and preserve only definition-back
   );
   assert.match(
     source,
-    /catalogDraft\.identifiers = identifierDraft\.map\(\(\{editorId: _editorId, \.\.\.entry\}\) => entry\)/,
+    /catalogDraft\.identifiers = identifierDraft\.map\(entry => \(\{\s*identifierType: entry\.identifierType,\s*identifierValue: entry\.identifierValue,/s,
   );
+  assert.doesNotMatch(source, /catalogDraft\.identifiers[\s\S]{0,500}(?:identifierRef|ownerType|ownerRef|normalizedValue|displayOrder)/);
   assert.match(source, /serializeSkuRowsForSave\(skusDraft\.map\(\(\{editorId: _editorId, \.\.\.row\}\) => row\)\)/);
   assert.match(source, /orderOptionConfigs: orderOptionConfigsDraft\.map\(config => \(\{/);
   assert.match(source, /definitionRef: wireUuid\(config\.definitionRef\)/);

@@ -262,20 +262,17 @@ class InventoryTypedMutationCasIntegrationTest {
 
     private static UUID insertTarget() {
         UUID targetRef = UUID.randomUUID();
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,100,5,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                jdbc,
                 targetRef,
-                SCOPE.toString(),
+                SCOPE,
                 "BRAND",
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "ITEM-" + targetRef,
-                "SKU-" + targetRef);
+                "SKU-" + targetRef,
+                new BigDecimal("100"),
+                5L);
         return targetRef;
     }
 

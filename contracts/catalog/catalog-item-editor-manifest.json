@@ -465,34 +465,6 @@
       }
     },
     {
-      "fieldKey": "productionTagRefs",
-      "dataPath": "productionTagRefs[]",
-      "label": "生产标签",
-      "controlKind": "multiSelect",
-      "tabKey": "production-prompts",
-      "admittedShapes": [
-        "STANDARD_SALE_COUNTED",
-        "SKU_VARIANT_SALE_COUNTED",
-        "STANDARD_SALE_WEIGHED"
-      ],
-      "helpText": "生产标签描述制作处理方式，不代表岗位、设备或队列。",
-      "optionSourceRef": {
-        "kind": "endpoint",
-        "operationId": "getOperationsProductionTags",
-        "path": {},
-        "query": {
-          "dataNodeRef": {
-            "context": "scope.dataNodeRef"
-          }
-        },
-        "headers": {},
-        "itemsPath": "data.entries",
-        "valueField": "tagRef",
-        "labelField": "name",
-        "disabledWhen": "status<>\"ENABLED\""
-      }
-    },
-    {
       "fieldKey": "tagRefs",
       "dataPath": "tagRefs[]",
       "label": "商品标签",
@@ -1045,18 +1017,6 @@
         "valueType": "asset-ref[]"
       },
       {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
-      },
-      {
         "field": "categoryRef",
         "visible": true,
         "required": false,
@@ -1223,18 +1183,6 @@
           "view": true
         },
         "valueType": "asset-ref[]"
-      },
-      {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
       },
       {
         "field": "categoryRef",
@@ -1438,18 +1386,6 @@
         "valueType": "asset-ref[]"
       },
       {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
-      },
-      {
         "field": "categoryRef",
         "visible": true,
         "required": false,
@@ -1618,18 +1554,6 @@
         "valueType": "asset-ref[]"
       },
       {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
-      },
-      {
         "field": "categoryRef",
         "visible": true,
         "required": false,
@@ -1774,18 +1698,6 @@
           "view": true
         },
         "valueType": "asset-ref[]"
-      },
-      {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
       },
       {
         "field": "categoryRef",
@@ -1934,18 +1846,6 @@
         "valueType": "asset-ref[]"
       },
       {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
-      },
-      {
         "field": "categoryRef",
         "visible": true,
         "required": false,
@@ -2079,18 +1979,6 @@
           "view": true
         },
         "valueType": "asset-ref[]"
-      },
-      {
-        "field": "productionTagRefs",
-        "visible": true,
-        "required": false,
-        "readonly": false,
-        "readonlyWhen": {
-          "create": false,
-          "update": false,
-          "view": true
-        },
-        "quickManage": "production-tag-owner"
       },
       {
         "field": "categoryRef",
@@ -2980,6 +2868,191 @@
       "advancedDiagnostics"
     ]
   },
+  "identifierRules": {
+    "types": [
+      "BARCODE",
+      "PLU",
+      "MNEMONIC"
+    ],
+    "ownerTypes": [
+      "CATALOG_ITEM",
+      "SKU"
+    ],
+    "uniqueScope": [
+      "dataNodeRef",
+      "brandRef",
+      "identifierType",
+      "normalizedValue"
+    ],
+    "value": {
+      "trim": true,
+      "minLength": 1,
+      "maxLength": 160,
+      "rejectUnicodeControlCharacters": true,
+      "caseSensitiveTypes": [
+        "BARCODE",
+        "PLU"
+      ],
+      "caseInsensitiveTypes": [
+        "MNEMONIC"
+      ]
+    },
+    "admission": {
+      "STANDARD_SALE_COUNTED": {
+        "CATALOG_ITEM": {
+          "BARCODE": true,
+          "PLU": false,
+          "MNEMONIC": true
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      },
+      "SKU_VARIANT_SALE_COUNTED": {
+        "CATALOG_ITEM": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        },
+        "SKU": {
+          "BARCODE": true,
+          "PLU": false,
+          "MNEMONIC": true
+        }
+      },
+      "STANDARD_SALE_WEIGHED": {
+        "CATALOG_ITEM": {
+          "BARCODE": true,
+          "PLU": true,
+          "MNEMONIC": true
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      },
+      "MATERIAL": {
+        "CATALOG_ITEM": {
+          "BARCODE": true,
+          "PLU": false,
+          "MNEMONIC": true
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      },
+      "COMPOSITE": {
+        "CATALOG_ITEM": {
+          "BARCODE": true,
+          "PLU": false,
+          "MNEMONIC": true
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      },
+      "SERVICE": {
+        "CATALOG_ITEM": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": true
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      },
+      "BENEFIT_SHELL": {
+        "CATALOG_ITEM": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        },
+        "SKU": {
+          "BARCODE": false,
+          "PLU": false,
+          "MNEMONIC": false
+        }
+      }
+    }
+  },
+  "preparationRules": {
+    "targetKinds": [
+      "ITEM",
+      "SKU",
+      "OPTION_VALUE"
+    ],
+    "overrideModes": [
+      "INHERIT_ITEM",
+      "OVERRIDE"
+    ],
+    "sources": [
+      "ITEM_DEFAULT",
+      "SKU_OVERRIDE"
+    ],
+    "profile": {
+      "displayNameMaxLength": 120,
+      "notesMaxLength": 1000,
+      "secondsMinimum": 0,
+      "secondsIsInteger": true
+    },
+    "effect": {
+      "instructionMaxLength": 1000,
+      "secondsDeltaMinimum": 0,
+      "secondsDeltaIsInteger": true,
+      "tagOperation": "ADD_ONLY"
+    },
+    "admission": {
+      "STANDARD_SALE_COUNTED": {
+        "ITEM": true,
+        "SKU": false,
+        "OPTION_VALUE": true
+      },
+      "SKU_VARIANT_SALE_COUNTED": {
+        "ITEM": true,
+        "SKU": true,
+        "OPTION_VALUE": false
+      },
+      "STANDARD_SALE_WEIGHED": {
+        "ITEM": true,
+        "SKU": false,
+        "OPTION_VALUE": true
+      },
+      "MATERIAL": {
+        "ITEM": false,
+        "SKU": false,
+        "OPTION_VALUE": false
+      },
+      "COMPOSITE": {
+        "ITEM": false,
+        "SKU": false,
+        "OPTION_VALUE": false
+      },
+      "SERVICE": {
+        "ITEM": false,
+        "SKU": false,
+        "OPTION_VALUE": false
+      },
+      "BENEFIT_SHELL": {
+        "ITEM": false,
+        "SKU": false,
+        "OPTION_VALUE": false
+      }
+    },
+    "instructionOrder": [
+      "optionGroupDisplayOrder",
+      "optionValueDisplayOrder",
+      "definitionValueRef"
+    ]
+  },
   "contractSurfaceKeys": [
     "shapeRules",
     "fieldRules",
@@ -2990,7 +3063,9 @@
     "detailSections",
     "modeRules",
     "controlKinds",
-    "fields"
+    "fields",
+    "identifierRules",
+    "preparationRules"
   ],
   "readModelNames": [
     "CatalogWorkbenchContext",
@@ -3224,5 +3299,5 @@
       "data"
     ]
   },
-  "manifestDigest": "e81e5d4ea76ed3043edfd6fcb83e9d9b62769c4a7becfd4efe64861693854d10"
+  "manifestDigest": "380eb845bb54e379ae4bf849935b734072ceae456fc549fe5e5cc4c63305a35f"
 }

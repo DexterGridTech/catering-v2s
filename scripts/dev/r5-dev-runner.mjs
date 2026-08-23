@@ -94,7 +94,7 @@ async function syncRemoteSource(host, remoteRoot) {
   return {remoteRoot, workspace: `${remoteRoot}/workspace`};
 }
 const remoteEnvLine = (name, value) => `${name}=${String(value ?? '')}`;
-async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalogTestFaultsAdmitted}) {
+async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalogTestFaultsAdmitted, assetPublicBaseUrl}) {
   remoteRootGuard(remoteRoot);
   const remoteWorkspace = `${remoteRoot}/workspace`;
   const remoteResults = `${remoteRoot}/results`;
@@ -127,7 +127,10 @@ async function startRemoteJava(host, {runId, remoteRoot, env, credential, catalo
     CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: credential.values.CATERING_ASSET_S3_ACCESS_KEY,
     CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: credential.values.CATERING_ASSET_S3_SECRET_KEY,
     CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets',
-    CATERING_ASSET_PUBLIC_BASE_URL: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_ASSET_PORT}`,
+    // Object storage is remote-only, but this URL is consumed by the browser.
+    // It must therefore be the selected local asset ingress, not the remote
+    // MinIO port which is intentionally unreachable from the developer host.
+    CATERING_ASSET_PUBLIC_BASE_URL: assetPublicBaseUrl,
     CATERING_ASSET_OBJECT_STORAGE_OBJECT_PREFIX: `catering-v2s/dev/${env.namespace}/`,
   };
   const envLines = Object.entries(values).map(([name, value]) => quote(remoteEnvLine(name, value))).join(' ');
@@ -442,9 +445,18 @@ async function waitForLocalViteReady(processValue, port, expectedName) {
   while (Date.now() < deadline) {
     attempts += 1;
     const identity = listenerPids(port).length === 1 ? readListeningProcessIdentity(port, expectedName, /vite|node/i) : null;
-    const owned = identity && processValue.tree?.some((entry) => entry.pid === identity.pid);
-    appendFileSync(readinessProgressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'LOCAL_VITE_READINESS_PROBE', attempt: attempts, port, listenerPid: identity?.pid ?? null, identityValid: Boolean(owned)})}\n`, {mode: 0o600});
-    if (owned) return identity;
+    // yarn starts Vite as a child after the root process is spawned.  The
+    // initial manifest snapshot can therefore legitimately predate the
+    // listener.  Re-read the exact root identity and process tree for every
+    // probe; ownership still requires the same PID group and start token, so
+    // this does not fall back to trusting a port.
+    const currentTree = snapshotProcessTree(processIdentity(processValue), readProcessTable());
+    const owned = identity && currentTree.some((entry) => entry.pid === identity.pid && entry.ownershipUnverified !== true);
+    appendFileSync(readinessProgressPath, `${JSON.stringify({at: new Date().toISOString(), phase: 'LOCAL_VITE_READINESS_PROBE', attempt: attempts, port, listenerPid: identity?.pid ?? null, ownedTreePids: currentTree.map((entry) => entry.pid), identityValid: Boolean(owned)})}\n`, {mode: 0o600});
+    if (owned) {
+      processValue.tree = currentTree;
+      return identity;
+    }
     await delay(500);
   }
   fail(`LOCAL_VITE_READINESS_TIMEOUT:${port}`);
@@ -505,21 +517,35 @@ async function start() {
   const provision = provisionRemote(env, credential.values, requireFreshDatabase);
   if (requireFreshDatabase && !provision.freshDatabase) fail('FRESH_DATABASE_PROOF_MISSING');
   const objectStorage = provisionObjectStorage(env, credential.values);
+  // An existing managed MinIO container owns the authoritative credentials.
+  // `provisionObjectStorage` reads them back, so propagate that readback into
+  // both the persisted credential file and the remote Java environment.  The
+  // previous path only returned the values and then continued using stale
+  // local credentials, producing InvalidAccessKeyId during seed asset upload.
+  credential.values.CATERING_ASSET_S3_ACCESS_KEY = objectStorage.access;
+  credential.values.CATERING_ASSET_S3_SECRET_KEY = objectStorage.secretKey;
+  writeFileSync(credential.target, `${Object.entries(credential.values).map(([name, value]) => `${name}=${value}`).join('\n')}\n`, {mode: 0o600});
+  chmodSync(credential.target, 0o600);
   const portLock = acquirePortLock();
   let processes = [];
   let remoteJava = null;
   let remoteJavaLogPath = null;
   try {
   await syncRemoteSource(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+  // The remote JVM only needs the public asset URL to build browser-facing
+  // readbacks.  Establish the managed local ingress first so the selected
+  // port (including alternate-port runs) is available to that configuration.
+  const tunnel = await openTunnel(env, tunnelPorts);
+  processes = [tunnel];
   remoteJava = await startRemoteJava(env.environment.V2S_DEV_REMOTE_HOST, {
     runId,
     remoteRoot,
     env,
     credential,
     catalogTestFaultsAdmitted,
+    assetPublicBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`,
   });
   if (remoteJava.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_START');
-  const tunnel = await openTunnel(env, tunnelPorts);
   const commands = [
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], port: 5174, env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${tunnelPorts.http}`}},
     {name: 'operations-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/operations-admin'), 'vite', '--host', '0.0.0.0'], port: 5175, env: {VITE_OPERATIONS_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${tunnelPorts.http}`}},
@@ -548,6 +574,16 @@ async function start() {
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     let cleanupStatus = 'PASS';
+    let remoteJavaLogStatus = remoteJava ? 'PENDING' : 'NOT_APPLICABLE';
+    if (remoteJava) {
+      remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
+      try {
+        collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, remoteJavaLogPath);
+        remoteJavaLogStatus = 'PASS';
+      } catch {
+        remoteJavaLogStatus = 'FAIL';
+      }
+    }
     for (const value of [...processes].reverse()) {
       if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
         try { await stopOwnedProcess(value); } catch { cleanupStatus = 'FAIL'; }
@@ -558,7 +594,7 @@ async function start() {
     }
     try { cleanupRemoteJavaRoot(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot); } catch { cleanupStatus = 'FAIL'; }
     const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, remoteJava, remoteJavaLogPath, processes}, {
-      firstFailure: safeFailure(error), lastKnownGood: processes.length > 0 ? 'PROCESS_IDENTITIES' : 'REMOTE_SOURCE_SYNC', brokenBoundary: 'START', business: {status: 'FAIL'}, cleanup: {status: cleanupStatus, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL'},
+      firstFailure: safeFailure(error), lastKnownGood: processes.length > 0 ? 'PROCESS_IDENTITIES' : 'REMOTE_SOURCE_SYNC', brokenBoundary: 'START', business: {status: 'FAIL'}, cleanup: {status: cleanupStatus, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL'}, diagnostics: {remoteJavaLogStatus, remoteJavaLogPath},
     });
     releasePortLock(portLock); throw error;
   }
@@ -602,6 +638,9 @@ if (mode === '--self-test') {
   const syntheticManifest = {kind: 'r5-dev-run-manifest', firstFailure: null, lastKnownGood: 'TREE_SNAPSHOT', brokenBoundary: null, business: 'PASS', cleanup: 'PENDING', processes: [{pid: 10, pgid: 10, startToken: 'root', tree: [{pid: 10, pgid: 10}, {pid: 11, pgid: 10}]}]};
   if (cleanupStatusFromTree(syntheticManifest.processes[0].tree) !== 'FAIL' || cleanupStatusFromTree([]) !== 'PASS') fail('R5_DEV_RUNNER_CLEANUP_TREE_RED_NOT_DETECTED');
   const processTable = [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}, {pid: 11, ppid: 10, pgid: 10, startToken: 'child', command: 'child'}];
+  const initialProcessTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'root'}, [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}]);
+  const refreshedProcessTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'root'}, processTable);
+  if (initialProcessTree.some((value) => value.pid === 11) || !refreshedProcessTree.some((value) => value.pid === 11)) fail('R5_DEV_RUNNER_LATE_CHILD_REFRESH_RED_NOT_DETECTED');
   const deadLeaderTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'reused'}, processTable);
   if (cleanupStatusFromTree(deadLeaderTree) !== 'FAIL' || !deadLeaderTree.every((value) => value.ownershipUnverified === true)) fail('R5_DEV_RUNNER_PRODUCTION_RED_NOT_DETECTED');
   const legacyManifestIdentity = {pid: 10, pgid: 10, startToken: 'Sun Aug  9 11:09:26 2026'};

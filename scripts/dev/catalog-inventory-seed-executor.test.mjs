@@ -27,3 +27,15 @@ test('catalog BOM readback compares unit snapshot facts instead of JSONB key ord
   assert.match(source, /sameUnitSnapshot\(line\.consumptionUnitSnapshot, expectedLine\.consumptionUnitSnapshot\)/);
   assert.doesNotMatch(source, /JSON\.stringify\(line\.consumptionUnitSnapshot\)/);
 });
+
+test('catalog seed retains order-option value codes for option BOM attachment', async () => {
+  const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(source, /values\.set\(value\.code, \{code: value\.code, definitionValueRef:/);
+  assert.match(source, /find\(\(value\) => value\.code === optionBom\.valueCode\)/);
+});
+
+test('catalog seed creates a first option-value BOM owner and replaces it on readback', async () => {
+  const source = await readFile(new URL('./catalog-inventory-seed-executor.mjs', import.meta.url), 'utf8');
+  assert.match(source, /if \(ruleIndex < 0\) inventoryRules\.nodes\.push\(rule\);\s*else inventoryRules\.nodes\[ruleIndex\] = rule;/);
+  assert.doesNotMatch(source, /if \(ruleIndex < 0\) fail\(`SEED_ORDER_OPTION_BOM_OWNER_MISSING/);
+});

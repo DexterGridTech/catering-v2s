@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <style>
+    .bg{fill:#e9edf2}.panel{fill:#fff;stroke:#bcc6d0}.muted{fill:#f6f8fa;stroke:#d8dee5}.primary{fill:#eef4ff;stroke:#5b8def}.error{fill:#fff2f0;stroke:#d96c63}
+    .t{font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#263238}.s{font:12px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#697681}.h{font:600 18px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#1f2933}.h2{font:600 15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#25313c}
+    .btn{fill:#fff;stroke:#8fa0b2}.pbtn{fill:#1f5bd8;stroke:#1f5bd8}.white{font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#fff}.line{stroke:#d8dee5}.dirty{fill:#faad14}.bad{fill:#d4380d}.note{font:12px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:#7c3aed}
+  </style>
+  <rect class="bg" width="1600" height="900"/>
+  <rect x="26" y="24" width="1548" height="852" rx="10" fill="#dde3e9"/>
+  <text class="note" x="54" y="62">设计注释：保留商品库背景上下文；同一时间只打开一个主抽屉</text>
+  <rect class="panel" x="366" y="24" width="1208" height="852" rx="10" stroke="#2f6feb" stroke-width="2"/>
+  <text class="h" x="394" y="64">拿铁咖啡 · 编辑商品</text><text class="s" x="394" y="88">BEV-LATTE-001　·　草稿　·　上次保存 10:32</text>
+  <rect class="primary" x="1096" y="44" width="270" height="42" rx="6"/><text class="t" x="1114" y="70">检测到未保存内容：已恢复到制作信息</text>
+  <line class="line" x1="390" y1="108" x2="1550" y2="108"/>
+
+  <rect class="muted" x="390" y="126" width="206" height="664" rx="8"/>
+  <text class="h2" x="410" y="158">编辑区段</text>
+  <rect class="primary" x="406" y="178" width="174" height="42" rx="6"/><text class="t" x="422" y="204">基础资料</text><circle class="dirty" cx="558" cy="198" r="5"/>
+  <text class="t" x="422" y="250">条码与标识</text>
+  <text class="t" x="422" y="294">规格与价格</text><circle class="bad" cx="558" cy="289" r="7"/><text class="white" x="555" y="293">1</text>
+  <text class="t" x="422" y="338">点单选项</text>
+  <text class="t" x="422" y="382">商品属性</text>
+  <text class="t" x="422" y="426">制作信息</text><circle class="dirty" cx="558" cy="421" r="5"/>
+  <text class="t" x="422" y="470">库存扣减与用料</text>
+  <text class="t" x="422" y="514">套餐内容</text>
+  <text class="t" x="422" y="558">引用关系</text>
+  <line class="line" x1="406" y1="594" x2="580" y2="594"/>
+  <text class="s" x="422" y="622">● 未保存　● 有错误</text>
+  <rect class="btn" x="406" y="652" width="174" height="36" rx="6"/><text class="t" x="432" y="675">去商品元数据</text>
+
+  <text class="h" x="628" y="154">基础资料</text><text class="s" x="628" y="180">编辑商品身份、分类标签、计量、价格和图片</text>
+  <text class="t" x="628" y="224">商品名称 *</text><rect class="panel" x="628" y="238" width="320" height="38" rx="5"/><text class="t" x="644" y="262">拿铁咖啡</text>
+  <text class="t" x="980" y="224">商品编码</text><text class="t" x="980" y="260">BEV-LATTE-001</text><text class="s" x="980" y="280">创建后不可修改</text>
+  <text class="t" x="628" y="318">商品分类</text><rect class="panel" x="628" y="332" width="320" height="38" rx="5"/><text class="t" x="644" y="356">餐饮商品 / 饮品　⌄</text>
+  <text class="t" x="980" y="318">商品标签</text><rect class="panel" x="980" y="332" width="450" height="38" rx="5"/><text class="t" x="996" y="356">招牌推荐　下午茶</text>
+  <text class="h" x="628" y="420">规格与价格</text>
+  <rect class="error" x="628" y="438" width="802" height="54" rx="6"/><text class="t" x="646" y="462">大杯拿铁缺少标准价</text><text class="s" x="646" y="482">打开该规格补充价格后再保存商品</text>
+  <rect class="muted" x="628" y="510" width="802" height="48" rx="5"/><text class="t" x="646" y="540">小杯拿铁　¥28.00　　编辑规格</text>
+  <rect class="muted" x="628" y="566" width="802" height="48" rx="5"/><text class="t" x="646" y="596">中杯拿铁　¥32.00　默认　　编辑规格</text>
+  <rect class="error" x="628" y="622" width="802" height="48" rx="5"/><text class="t" x="646" y="652">大杯拿铁　缺少价格　　编辑规格</text>
+
+  <rect x="604" y="702" width="968" height="88" fill="#fff" stroke="#aeb8c2"/>
+  <text class="s" x="632" y="738">已修改 2 个区段　·　保存会一次提交整单商品</text>
+  <rect class="btn" x="1340" y="720" width="88" height="38" rx="6"/><text class="t" x="1370" y="744">取消</text>
+  <rect class="pbtn" x="1440" y="720" width="104" height="38" rx="6"/><text class="white" x="1464" y="744">保存商品</text>
+
+  <rect x="780" y="232" width="680" height="430" rx="10" fill="#fff" stroke="#2f6feb" stroke-width="2"/>
+  <text class="h" x="808" y="270">大杯拿铁 · 编辑规格</text><text class="s" x="808" y="294">这里的修改会随商品一起保存</text>
+  <line class="line" x1="804" y1="312" x2="1436" y2="312"/>
+  <text class="t" x="808" y="350">规格名称 *</text><rect class="panel" x="808" y="364" width="320" height="38" rx="5"/><text class="t" x="824" y="388">大杯拿铁</text>
+  <text class="t" x="1154" y="350">规格编码</text><text class="t" x="1154" y="388">LATTE-LARGE</text>
+  <text class="t" x="808" y="434">标准价 *</text><rect class="error" x="808" y="448" width="160" height="38" rx="5"/><text class="s" x="824" y="472">请输入价格</text>
+  <text class="t" x="1000" y="434">销售单位</text><rect class="panel" x="1000" y="448" width="160" height="38" rx="5"/><text class="t" x="1016" y="472">杯</text>
+  <text class="t" x="808" y="532">搜索和已选内容都在这里完成，不会离开当前商品</text>
+  <line class="line" x1="804" y1="572" x2="1436" y2="572"/>
+  <rect class="btn" x="1242" y="594" width="88" height="38" rx="6"/><text class="t" x="1272" y="618">取消</text>
+  <rect class="pbtn" x="1342" y="594" width="94" height="38" rx="6"/><text class="white" x="1356" y="618">应用到草稿</text>
+</svg>

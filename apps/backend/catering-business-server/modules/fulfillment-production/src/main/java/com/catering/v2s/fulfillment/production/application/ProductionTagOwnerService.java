@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Locale;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -58,8 +59,17 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     @Override
     public JsonNode readTags(String dataNodeRef, String brandRef, ObjectNode request, String requestId) {
         requireScope(dataNodeRef, brandRef);
+        String usage = optional(request, "usage");
+        usage = usage == null || usage.isBlank() ? "MANAGEMENT" : usage;
+        if (!Set.of("MANAGEMENT", "BINDABLE_CANDIDATE").contains(usage))
+            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, "usage is invalid");
+        String normalizedQuery = optional(request, "query");
+        normalizedQuery = normalizedQuery == null ? "" : normalizedQuery.trim().toLowerCase(Locale.ROOT);
+        final String selectedUsage = usage;
+        final String selectedQuery = normalizedQuery;
         int pageSize = parsePageSize(request, "pageSize", 20);
-        String queryIdentity = cursorIdentity("production-tags", dataNodeRef, brandRef, Integer.toString(pageSize));
+        String queryIdentity = cursorIdentity(
+                "production-tags", dataNodeRef, brandRef, selectedUsage, selectedQuery, Integer.toString(pageSize));
         OpaqueCollectionCursor.Position cursor;
         try {
             cursor = OpaqueCollectionCursor.decode(optional(request, "cursor"), queryIdentity);
@@ -70,7 +80,9 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
         ArrayNode entries = data.putArray("entries");
         String cursorPredicate = cursor == null ? "" : " WHERE code > ? OR (code = ? AND tag_ref > ?)";
         String sql = "WITH matching AS (SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis FROM "
-                + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=?), "
+                + "fulfillment_production.production_tag_definition WHERE data_node_ref=? AND brand_ref=? "
+                + "AND (? = 'MANAGEMENT' OR status='ENABLED') "
+                + "AND (? = '' OR (code || chr(1) || name) ILIKE '%' || ? || '%')), "
                 + "aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS "
                 + "(SELECT tag_ref,code,tag_kind,name,status,version,updated_at_epoch_millis "
                 + "FROM matching"
@@ -83,7 +95,10 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
                 s -> {
                     s.setString(1, dataNodeRef);
                     s.setString(2, brandRef);
-                    int index = 3;
+                    s.setString(3, selectedUsage);
+                    s.setString(4, selectedQuery);
+                    s.setString(5, selectedQuery);
+                    int index = 6;
                     if (cursor != null) {
                         s.setString(index++, cursor.sortKey());
                         s.setString(index++, cursor.sortKey());

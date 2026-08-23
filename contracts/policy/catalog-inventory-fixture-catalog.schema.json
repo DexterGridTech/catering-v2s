@@ -182,14 +182,23 @@
       "additionalProperties": false,
       "required": [
         "tagDefinitions",
+        "productionTagDefinitions",
         "unitDefinitions",
         "materialItemCodes",
         "attributeDefinitions",
         "orderOptionDefinitions",
-        "itemAssignments"
+        "itemAssignments",
+        "sourceItemAssignments"
       ],
       "properties": {
         "tagDefinitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/codeName"
+          }
+        },
+        "productionTagDefinitions": {
           "type": "array",
           "minItems": 1,
           "items": {
@@ -230,6 +239,12 @@
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/itemDefinitionAssignment"
+          }
+        },
+        "sourceItemAssignments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/itemIdentificationPreparationAssignment"
           }
         }
       }
@@ -815,7 +830,12 @@
         "baseMeasureUnitCode",
         "skuUnitOverrides",
         "attributes",
-        "orderOptions"
+        "orderOptions",
+        "identifiers",
+        "preparationProfile",
+        "skuIdentifiers",
+        "skuPreparationOverrides",
+        "optionPreparationEffects"
       ],
       "properties": {
         "itemCode": {
@@ -1007,6 +1027,33 @@
                 }
               }
             }
+          }
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifierSeed"
+          }
+        },
+        "preparationProfile": {
+          "$ref": "#/$defs/preparationProfileSeed"
+        },
+        "skuIdentifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skuIdentifierSeed"
+          }
+        },
+        "skuPreparationOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skuPreparationOverrideSeed"
+          }
+        },
+        "optionPreparationEffects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/optionPreparationEffectSeed"
           }
         }
       }
@@ -1766,6 +1813,245 @@
         "notApplicableReason": {
           "type": "string",
           "description": "reason why this fixture is not applicable to the current execution plane"
+        }
+      }
+    },
+    "identifierSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identifierType",
+        "identifierValue"
+      ],
+      "properties": {
+        "identifierType": {
+          "type": "string",
+          "enum": [
+            "BARCODE",
+            "PLU",
+            "MNEMONIC"
+          ]
+        },
+        "identifierValue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "preparationProfileSeed": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "productionTagCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "productionDisplayName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 120
+        },
+        "estimatedPreparationSeconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "preparationNotes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "productionTagCodes"
+      ]
+    },
+    "skuIdentifierSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skuCode",
+        "identifiers"
+      ],
+      "properties": {
+        "skuCode": {
+          "type": "string",
+          "description": "SKU code"
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "identifierType",
+              "identifierValue"
+            ],
+            "properties": {
+              "identifierType": {
+                "type": "string",
+                "enum": [
+                  "BARCODE",
+                  "PLU",
+                  "MNEMONIC"
+                ]
+              },
+              "identifierValue": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              }
+            }
+          }
+        }
+      }
+    },
+    "skuPreparationOverrideSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skuCode",
+        "mode",
+        "clearAfterReadback",
+        "profile"
+      ],
+      "properties": {
+        "skuCode": {
+          "type": "string",
+          "description": "SKU code"
+        },
+        "mode": {
+          "const": "OVERRIDE"
+        },
+        "clearAfterReadback": {
+          "type": "boolean"
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "productionTagCodes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "productionDisplayName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 120
+            },
+            "estimatedPreparationSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "preparationNotes": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "productionTagCodes"
+          ]
+        }
+      }
+    },
+    "optionPreparationEffectSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valueCode",
+        "addProductionTagCodes"
+      ],
+      "properties": {
+        "valueCode": {
+          "type": "string",
+          "description": "ordering option value code"
+        },
+        "addProductionTagCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preparationSecondsDelta": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "instruction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "itemIdentificationPreparationAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemCode",
+        "identifiers",
+        "preparationProfile",
+        "skuIdentifiers",
+        "skuPreparationOverrides",
+        "optionPreparationEffects"
+      ],
+      "properties": {
+        "itemCode": {
+          "type": "string",
+          "description": "catalog item code"
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifierSeed"
+          }
+        },
+        "preparationProfile": {
+          "$ref": "#/$defs/preparationProfileSeed"
+        },
+        "skuIdentifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skuIdentifierSeed"
+          }
+        },
+        "skuPreparationOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skuPreparationOverrideSeed"
+          }
+        },
+        "optionPreparationEffects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/optionPreparationEffectSeed"
+          }
         }
       }
     }

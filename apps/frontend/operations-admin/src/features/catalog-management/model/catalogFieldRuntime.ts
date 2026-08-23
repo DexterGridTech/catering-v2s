@@ -245,6 +245,7 @@ async function executeCatalogEndpoint(source: EndpointSource, context: CatalogFi
           {
             query: {
               dataNodeRef: context.scope.dataNodeRef,
+              usage: 'BINDABLE_CANDIDATE',
               ...(cursor ? {cursor} : {}),
               pageSize,
             },

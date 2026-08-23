@@ -1315,7 +1315,17 @@
         "INVENTORY_DEDUCTION_MODE_CHANGE_BLOCKED",
         "INVENTORY_BOM_EMPTY",
         "INVENTORY_BOM_SELF_REFERENCE",
-        "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE"
+        "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
+        "CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED",
+        "CATALOG_IDENTIFIER_VALUE_INVALID",
+        "CATALOG_IDENTIFIER_DUPLICATE",
+        "CATALOG_IDENTIFIER_OWNER_MISMATCH",
+        "CATALOG_PREPARATION_NOT_ALLOWED",
+        "CATALOG_PREPARATION_TARGET_MISMATCH",
+        "PRODUCTION_TAG_NOT_BINDABLE",
+        "CATALOG_PREPARATION_DURATION_INVALID",
+        "CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED",
+        "CATALOG_PREPARATION_UNKNOWN_FIELD"
       ],
       "logicSteps": [
         {
@@ -1472,6 +1482,76 @@
           "problemCode": "INVENTORY_BOM_COMPONENT_NOT_ELIGIBLE",
           "conditions": [
             "A BOM component fails the scoped status, capability, target or consumption-unit eligibility checks."
+          ]
+        },
+        {
+          "precedence": 20,
+          "problemCode": "CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED",
+          "conditions": [
+            "The identifier type is outside the closed set or is not admitted for the current shape and owner grain."
+          ]
+        },
+        {
+          "precedence": 21,
+          "problemCode": "CATALOG_IDENTIFIER_VALUE_INVALID",
+          "conditions": [
+            "The trimmed identifier value is empty, contains a Unicode control character or exceeds the declared length."
+          ]
+        },
+        {
+          "precedence": 22,
+          "problemCode": "CATALOG_IDENTIFIER_DUPLICATE",
+          "conditions": [
+            "The normalized identifier value is already owned in the same data-node and brand scope."
+          ]
+        },
+        {
+          "precedence": 23,
+          "problemCode": "CATALOG_IDENTIFIER_OWNER_MISMATCH",
+          "conditions": [
+            "The submitted identifier target does not belong to the current item or SKU grain."
+          ]
+        },
+        {
+          "precedence": 24,
+          "problemCode": "CATALOG_PREPARATION_NOT_ALLOWED",
+          "conditions": [
+            "The current shape does not admit the submitted preparation target."
+          ]
+        },
+        {
+          "precedence": 25,
+          "problemCode": "CATALOG_PREPARATION_TARGET_MISMATCH",
+          "conditions": [
+            "The submitted SKU or option value target is missing, inactive or belongs to another item."
+          ]
+        },
+        {
+          "precedence": 26,
+          "problemCode": "PRODUCTION_TAG_NOT_BINDABLE",
+          "conditions": [
+            "A newly bound production tag is missing, disabled or outside the current owner scope."
+          ]
+        },
+        {
+          "precedence": 27,
+          "problemCode": "CATALOG_PREPARATION_DURATION_INVALID",
+          "conditions": [
+            "A preparation duration is not an integer or is negative."
+          ]
+        },
+        {
+          "precedence": 28,
+          "problemCode": "CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED",
+          "conditions": [
+            "An option preparation change attempts to remove a tag, reduce duration or submit a complete profile."
+          ]
+        },
+        {
+          "precedence": 29,
+          "problemCode": "CATALOG_PREPARATION_UNKNOWN_FIELD",
+          "conditions": [
+            "The request contains a retired free field or an unknown preparation field."
           ]
         }
       ],

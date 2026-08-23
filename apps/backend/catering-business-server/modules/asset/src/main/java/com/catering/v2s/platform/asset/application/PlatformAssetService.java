@@ -52,6 +52,7 @@ public class PlatformAssetService
     private static final long MAX_VIDEO_BYTES = 512L * 1024 * 1024;
 
     private static final String GLOBAL_RECEIPT_SCOPE = "global";
+    private static final Object CATALOG_ASSET_LOCK_RESOURCE_KEY = new Object();
     private final JdbcTemplate jdbc;
     private final TimeProvider time;
     private final AssetObjectStorage objects;
@@ -515,18 +516,28 @@ public class PlatformAssetService
                 now,
                 proof);
         if (consumed != 1) throw new AssetClaimRejectedException();
-        int changed = jdbc.update(
+        AssetReadback activated = jdbc.query(
                 "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', "
                         + "claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND "
                         + "usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND "
-                        + "group_workspace_key=?",
-                assetRef,
-                now,
-                assetRef,
-                workspaceUuid,
-                groupWorkspaceKey);
-        if (changed != 1) throw new AssetClaimRejectedException();
-        return require(assetRef);
+                        + "group_workspace_key=? RETURNING asset_ref, usage, status, version, size_bytes",
+                statement -> {
+                    statement.setObject(1, assetRef);
+                    statement.setLong(2, now);
+                    statement.setObject(3, assetRef);
+                    statement.setObject(4, workspaceUuid);
+                    statement.setString(5, groupWorkspaceKey);
+                },
+                result -> result.next()
+                        ? new AssetReadback(
+                                result.getObject("asset_ref", UUID.class),
+                                result.getString("usage"),
+                                result.getString("status"),
+                                result.getLong("version"),
+                                result.getLong("size_bytes"))
+                        : null);
+        if (activated == null) throw new AssetClaimRejectedException();
+        return activated;
     }
 
     @Override
@@ -827,15 +838,37 @@ public class PlatformAssetService
         if (assetRefs == null || assetRefs.isEmpty()) return;
         LinkedHashSet<UUID> distinct = new LinkedHashSet<>();
         for (UUID assetRef : assetRefs) if (assetRef != null) distinct.add(assetRef);
+        LinkedHashSet<UUID> held = transactionCatalogAssetLocks();
         distinct.stream()
                 .sorted()
-                .forEach(assetRef -> jdbc.query(
-                        "SELECT pg_advisory_xact_lock(?, ?)",
-                        statement -> {
-                            statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
-                            statement.setInt(2, (int) assetRef.getLeastSignificantBits());
-                        },
-                        result -> null));
+                .forEach(assetRef -> {
+                    if (held != null && held.contains(assetRef)) return;
+                    jdbc.query(
+                            "SELECT pg_advisory_xact_lock(?, ?)",
+                            statement -> {
+                                statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
+                                statement.setInt(2, (int) assetRef.getLeastSignificantBits());
+                            },
+                            result -> null);
+                    if (held != null) held.add(assetRef);
+                });
+    }
+
+    @SuppressWarnings("unchecked")
+    private LinkedHashSet<UUID> transactionCatalogAssetLocks() {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) return null;
+        Object existing = TransactionSynchronizationManager.getResource(CATALOG_ASSET_LOCK_RESOURCE_KEY);
+        if (existing != null) return (LinkedHashSet<UUID>) existing;
+        LinkedHashSet<UUID> held = new LinkedHashSet<>();
+        TransactionSynchronizationManager.bindResource(CATALOG_ASSET_LOCK_RESOURCE_KEY, held);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (TransactionSynchronizationManager.hasResource(CATALOG_ASSET_LOCK_RESOURCE_KEY))
+                    TransactionSynchronizationManager.unbindResource(CATALOG_ASSET_LOCK_RESOURCE_KEY);
+            }
+        });
+        return held;
     }
 
     @Override

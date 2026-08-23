@@ -157,8 +157,8 @@ final class CatalogItemDefinitionFacts {
         Map<String, ObjectNode> values = new LinkedHashMap<>();
         jdbc.query(
                 "SELECT config.item_ref,config.item_order_option_config_ref,definition.order_option_definition_ref,"
-                        + "definition.name,definition.selection_mode,config.is_required,config.min_selection_count,"
-                        + "config.max_selection_count,"
+                        + "definition.name,definition.selection_mode,config.display_order,config.is_required,"
+                        + "config.min_selection_count,config.max_selection_count,"
                         + "value_definition.order_option_definition_value_ref,value_definition.name,value_definitio"
                         + "n.display_order,"
                         + "override.item_order_option_value_override_ref,override.is_default,override.extra_price "
@@ -173,8 +173,9 @@ final class CatalogItemDefinitionFacts {
                         + "value_ref "
                         + "WHERE config.item_ref IN ("
                         + placeholders(refs)
-                        + ") ORDER BY config.item_ref,definition.name,definition.order_option_definition_ref,value_"
-                        + "definition.display_order,value_definition.order_option_definition_value_ref",
+                        + ") ORDER BY config.item_ref,config.display_order,definition.name,"
+                        + "definition.order_option_definition_ref,value_definition.display_order,"
+                        + "value_definition.order_option_definition_value_ref",
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {
@@ -188,24 +189,25 @@ final class CatalogItemDefinitionFacts {
                                     rows.getObject(3, UUID.class).toString());
                             config.put("name", rows.getString(4));
                             config.put("selectionMode", rows.getString(5));
-                            config.put("required", rows.getBoolean(6));
-                            if (rows.getObject(7) == null) config.putNull("minSelectionCount");
-                            else config.put("minSelectionCount", rows.getInt(7));
-                            if (rows.getObject(8) == null) config.putNull("maxSelectionCount");
-                            else config.put("maxSelectionCount", rows.getInt(8));
+                            config.put("displayOrder", rows.getInt(6));
+                            config.put("required", rows.getBoolean(7));
+                            if (rows.getObject(8) == null) config.putNull("minSelectionCount");
+                            else config.put("minSelectionCount", rows.getInt(8));
+                            if (rows.getObject(9) == null) config.putNull("maxSelectionCount");
+                            else config.put("maxSelectionCount", rows.getInt(9));
                             config.putArray("values");
                             configs.put(configRef, config);
                         }
-                        UUID definitionValueRef = rows.getObject(9, UUID.class);
+                        UUID definitionValueRef = rows.getObject(10, UUID.class);
                         ObjectNode value = values.get(valueKey(configRef, definitionValueRef));
                         if (value == null) {
                             value = config.withArray("values").addObject();
                             value.put("definitionValueRef", definitionValueRef.toString());
-                            value.put("name", rows.getString(10));
-                            value.put("displayOrder", rows.getInt(11));
-                            value.put("defaultValue", rows.getObject(12) != null && rows.getBoolean(13));
-                            if (rows.getObject(14) == null) value.putNull("extraPrice");
-                            else value.put("extraPrice", rows.getLong(14));
+                            value.put("name", rows.getString(11));
+                            value.put("displayOrder", rows.getInt(12));
+                            value.put("defaultValue", rows.getObject(13) != null && rows.getBoolean(14));
+                            if (rows.getObject(15) == null) value.putNull("extraPrice");
+                            else value.put("extraPrice", rows.getLong(15));
                             values.put(valueKey(configRef, definitionValueRef), value);
                         }
                     }
@@ -376,13 +378,18 @@ final class CatalogItemDefinitionFacts {
                     configRef,
                     itemRef,
                     config.definitionRef(),
+                    config.displayOrder(),
                     config.required(),
                     config.minSelectionCount(),
                     config.maxSelectionCount()
                 });
             } else {
                 updates.add(new Object[] {
-                    config.required(), config.minSelectionCount(), config.maxSelectionCount(), configRef
+                    config.displayOrder(),
+                    config.required(),
+                    config.minSelectionCount(),
+                    config.maxSelectionCount(),
+                    configRef
                 });
             }
             for (OrderOptionValueOverride override : config.values()) {
@@ -418,13 +425,13 @@ final class CatalogItemDefinitionFacts {
         if (!inserts.isEmpty())
             jdbc.batchUpdate(
                     "INSERT INTO catalog.catalog_item_order_option_config(item_order_option_config_ref,item_ref,"
-                            + "order_option_definition_ref,is_required,min_selection_count,max_selection_count) "
-                            + "VALUES(?,?,?,?,?,?)",
+                            + "order_option_definition_ref,display_order,is_required,min_selection_count,max_selection_count) "
+                            + "VALUES(?,?,?,?,?,?,?)",
                     inserts);
         if (!updates.isEmpty())
             jdbc.batchUpdate(
-                    "UPDATE catalog.catalog_item_order_option_config SET is_required=?,min_selection_count=?,"
-                            + "max_selection_count=? WHERE item_order_option_config_ref=?",
+                    "UPDATE catalog.catalog_item_order_option_config SET display_order=?,is_required=?,"
+                            + "min_selection_count=?,max_selection_count=? WHERE item_order_option_config_ref=?",
                     updates);
         if (!overrides.isEmpty())
             jdbc.batchUpdate(
@@ -519,12 +526,18 @@ final class CatalogItemDefinitionFacts {
         Map<UUID, ObjectNode> configs = new LinkedHashMap<>();
         Map<String, ObjectNode> values = new LinkedHashMap<>();
         Map<UUID, LinkedHashSet<UUID>> definitionRefsByItem = new LinkedHashMap<>();
+        Map<UUID, CopyOrderOptionDefinitionBuilder> definitionBuilders = new LinkedHashMap<>();
         jdbc.query(
                 "SELECT config.item_ref,config.item_order_option_config_ref,definition.order_option_definition_ref,"
-                        + "definition.name,definition.selection_mode,config.is_required,config.min_selection_count,"
+                        + "definition.code,definition.name,definition.selection_mode,definition.version,"
+                        + "config.display_order,config.is_required,config.min_selection_count,"
                         + "config.max_selection_count,value_definition.order_option_definition_value_ref,"
-                        + "value_definition.name,value_definition.display_order,"
-                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price"
+                        + "value_definition.code,value_definition.name,value_definition.display_order,"
+                        + "override.item_order_option_value_override_ref,override.is_default,override.extra_price,"
+                        + "material.order_option_definition_material_ref,material.material_item_ref,"
+                        + "material_item.code,material.stock_target_ref,material.consumption_unit_ref,"
+                        + "material.consumption_unit_code,material.consumption_unit_name,"
+                        + "material.consumption_unit_dimension,material.consumption_unit_precision"
                         + " FROM catalog.catalog_item_order_option_config config JOIN"
                         + " catalog.catalog_order_option_definition definition ON"
                         + " definition.order_option_definition_ref=config.order_option_definition_ref LEFT JOIN"
@@ -534,13 +547,17 @@ final class CatalogItemDefinitionFacts {
                         + " catalog.catalog_item_order_option_value_override override ON"
                         + " override.item_order_option_config_ref=config.item_order_option_config_ref AND"
                         + " override.order_option_definition_value_ref=value_definition."
-                        + "order_option_definition_value_ref"
+                        + "order_option_definition_value_ref LEFT JOIN"
+                        + " catalog.catalog_order_option_definition_material material ON"
+                        + " material.order_option_definition_value_ref=value_definition."
+                        + "order_option_definition_value_ref LEFT JOIN catalog.catalog_item material_item ON"
+                        + " material_item.item_ref=material.material_item_ref"
                         + " WHERE definition.data_node_ref=? AND definition.brand_ref=? AND config.item_ref IN ("
                         + placeholders(refs)
                         + ") ORDER BY"
-                        + " config.item_ref,definition.name,definition.order_option_definition_ref,"
-                        + "value_definition.display_order"
-                        + " NULLS LAST,value_definition.order_option_definition_value_ref",
+                        + " config.item_ref,config.display_order,definition.name,definition.order_option_definition_ref,"
+                        + "value_definition.display_order NULLS LAST,value_definition.order_option_definition_value_ref,"
+                        + "material.order_option_definition_material_ref",
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -551,22 +568,33 @@ final class CatalogItemDefinitionFacts {
                         UUID itemRef = rows.getObject(1, UUID.class);
                         UUID configRef = rows.getObject(2, UUID.class);
                         UUID definitionRef = rows.getObject(3, UUID.class);
+                        CopyOrderOptionDefinitionBuilder definition = definitionBuilders.get(definitionRef);
+                        if (definition == null) {
+                            definition = new CopyOrderOptionDefinitionBuilder(
+                                    definitionRef,
+                                    rows.getString(4),
+                                    rows.getString(5),
+                                    rows.getString(6),
+                                    rows.getLong(7));
+                            definitionBuilders.put(definitionRef, definition);
+                        }
                         definitionRefsByItem
                                 .computeIfAbsent(itemRef, ignored -> new LinkedHashSet<>())
                                 .add(definitionRef);
-                        UUID definitionValueRef = rows.getObject(9, UUID.class);
+                        UUID definitionValueRef = rows.getObject(12, UUID.class);
                         if (definitionValueRef == null) continue;
                         ObjectNode config = configs.get(configRef);
                         if (config == null) {
                             config = configsByItem.get(itemRef).addObject();
                             config.put("definitionRef", definitionRef.toString());
-                            config.put("name", rows.getString(4));
-                            config.put("selectionMode", rows.getString(5));
-                            config.put("required", rows.getBoolean(6));
-                            if (rows.getObject(7) == null) config.putNull("minSelectionCount");
-                            else config.put("minSelectionCount", rows.getInt(7));
-                            if (rows.getObject(8) == null) config.putNull("maxSelectionCount");
-                            else config.put("maxSelectionCount", rows.getInt(8));
+                            config.put("name", rows.getString(5));
+                            config.put("selectionMode", rows.getString(6));
+                            config.put("displayOrder", rows.getInt(8));
+                            config.put("required", rows.getBoolean(9));
+                            if (rows.getObject(10) == null) config.putNull("minSelectionCount");
+                            else config.put("minSelectionCount", rows.getInt(10));
+                            if (rows.getObject(11) == null) config.putNull("maxSelectionCount");
+                            else config.put("maxSelectionCount", rows.getInt(11));
                             config.putArray("values");
                             configs.put(configRef, config);
                         }
@@ -575,22 +603,41 @@ final class CatalogItemDefinitionFacts {
                         if (value == null) {
                             value = config.withArray("values").addObject();
                             value.put("definitionValueRef", definitionValueRef.toString());
-                            value.put("name", rows.getString(10));
-                            value.put("displayOrder", rows.getInt(11));
-                            value.put("defaultValue", rows.getObject(12) != null && rows.getBoolean(13));
-                            if (rows.getObject(14) == null) value.putNull("extraPrice");
-                            else value.put("extraPrice", rows.getLong(14));
+                            value.put("name", rows.getString(14));
+                            value.put("displayOrder", rows.getInt(15));
+                            value.put("defaultValue", rows.getObject(16) != null && rows.getBoolean(17));
+                            if (rows.getObject(18) == null) value.putNull("extraPrice");
+                            else value.put("extraPrice", rows.getLong(18));
                             values.put(valueKey, value);
+                        }
+                        CopyOrderOptionValueBuilder optionValue = definition.value(
+                                definitionValueRef, rows.getString(13), rows.getString(14), rows.getInt(15));
+                        UUID materialRef = rows.getObject(19, UUID.class);
+                        if (materialRef != null) {
+                            UUID materialItemRef = rows.getObject(20, UUID.class);
+                            String materialItemCode = rows.getString(21);
+                            if (materialItemRef == null || materialItemCode == null || materialItemCode.isBlank()) {
+                                throw new CatalogOwnerApi.Problem(
+                                        "REFERENCE_MAPPING_UNRESOLVED", 422, "点单选项扣料原材料不存在");
+                            }
+                            optionValue.addMaterial(new CopyOrderOptionMaterial(
+                                    materialRef,
+                                    materialItemRef,
+                                    materialItemCode,
+                                    rows.getObject(22, UUID.class),
+                                    new InventoryOwnerApi.UnitSnapshot(
+                                            rows.getObject(23, UUID.class),
+                                            rows.getString(24),
+                                            rows.getString(25),
+                                            rows.getString(26),
+                                            rows.getInt(27))));
                         }
                     }
                     return null;
                 });
-        List<UUID> definitionRefs = definitionRefsByItem.values().stream()
-                .flatMap(Collection::stream)
-                .distinct()
-                .toList();
         List<CopyOrderOptionDefinition> definitions =
-                loadCopyOrderOptionDefinitions(scope, brand, definitionRefs).values().stream()
+                definitionBuilders.values().stream()
+                        .map(CopyOrderOptionDefinitionBuilder::build)
                         .sorted(java.util.Comparator.comparing(CopyOrderOptionDefinition::code))
                         .toList();
         Map<UUID, List<UUID>> refsByItem = new LinkedHashMap<>();
@@ -928,12 +975,26 @@ final class CatalogItemDefinitionFacts {
         if (codes == null || codes.isEmpty()) return Map.of();
         List<String> distinctCodes = new ArrayList<>(new LinkedHashSet<>(codes));
         String placeholders = String.join(",", Collections.nCopies(distinctCodes.size(), "?"));
-        Map<String, CopyOrderOptionDefinition> definitions = jdbc.query(
-                "SELECT order_option_definition_ref,code,name,selection_mode,version FROM catalog.catalog_order_opt"
-                        + "ion_definition "
-                        + "WHERE data_node_ref=? AND brand_ref=? AND code IN ("
+        Map<String, CopyOrderOptionDefinitionBuilder> definitions = new LinkedHashMap<>();
+        jdbc.query(
+                "SELECT definition.order_option_definition_ref,definition.code,definition.name,"
+                        + "definition.selection_mode,definition.version,value_row.order_option_definition_value_ref,"
+                        + "value_row.code,value_row.name,value_row.display_order,"
+                        + "material.order_option_definition_material_ref,material.material_item_ref,"
+                        + "material_item.code,material.stock_target_ref,material.consumption_unit_ref,"
+                        + "material.consumption_unit_code,material.consumption_unit_name,"
+                        + "material.consumption_unit_dimension,material.consumption_unit_precision "
+                        + "FROM catalog.catalog_order_option_definition definition LEFT JOIN"
+                        + " catalog.catalog_order_option_definition_value value_row ON"
+                        + " value_row.order_option_definition_ref=definition.order_option_definition_ref LEFT JOIN"
+                        + " catalog.catalog_order_option_definition_material material ON"
+                        + " material.order_option_definition_value_ref=value_row.order_option_definition_value_ref LEFT JOIN"
+                        + " catalog.catalog_item material_item ON material_item.item_ref=material.material_item_ref "
+                        + "WHERE definition.data_node_ref=? AND definition.brand_ref=? AND definition.code IN ("
                         + placeholders
-                        + ") ORDER BY code,order_option_definition_ref",
+                        + ") ORDER BY definition.code,definition.order_option_definition_ref,"
+                        + "value_row.display_order NULLS LAST,value_row.order_option_definition_value_ref,"
+                        + "material.order_option_definition_material_ref",
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -941,33 +1002,46 @@ final class CatalogItemDefinitionFacts {
                         statement.setString(index + 3, distinctCodes.get(index));
                 },
                 rows -> {
-                    Map<String, CopyOrderOptionDefinition> result = new LinkedHashMap<>();
                     while (rows.next()) {
                         UUID ref = rows.getObject(1, UUID.class);
-                        CopyOrderOptionDefinition definition = new CopyOrderOptionDefinition(
-                                ref,
-                                rows.getString(2),
-                                rows.getString(3),
-                                rows.getString(4),
-                                rows.getLong(5),
-                                List.of());
-                        if (result.putIfAbsent(definition.code(), definition) != null)
+                        String code = rows.getString(2);
+                        CopyOrderOptionDefinitionBuilder definition = definitions.get(code);
+                        if (definition == null) {
+                            definition = new CopyOrderOptionDefinitionBuilder(
+                                    ref, code, rows.getString(3), rows.getString(4), rows.getLong(5));
+                            definitions.put(code, definition);
+                        } else if (!definition.ref.equals(ref)) {
                             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "点单选项编码不唯一");
+                        }
+                        UUID valueRef = rows.getObject(6, UUID.class);
+                        if (valueRef == null) continue;
+                        CopyOrderOptionValueBuilder value =
+                                definition.value(valueRef, rows.getString(7), rows.getString(8), rows.getInt(9));
+                        UUID materialRef = rows.getObject(10, UUID.class);
+                        if (materialRef == null) continue;
+                        UUID materialItemRef = rows.getObject(11, UUID.class);
+                        String materialItemCode = rows.getString(12);
+                        if (materialItemRef == null || materialItemCode == null || materialItemCode.isBlank()) {
+                            throw new CatalogOwnerApi.Problem(
+                                    "REFERENCE_MAPPING_UNRESOLVED", 422, "点单选项扣料原材料不存在");
+                        }
+                        value.addMaterial(new CopyOrderOptionMaterial(
+                                materialRef,
+                                materialItemRef,
+                                materialItemCode,
+                                rows.getObject(13, UUID.class),
+                                new InventoryOwnerApi.UnitSnapshot(
+                                        rows.getObject(14, UUID.class),
+                                        rows.getString(15),
+                                        rows.getString(16),
+                                        rows.getString(17),
+                                        rows.getInt(18))));
                     }
-                    return result;
+                    return null;
                 });
-        Map<UUID, List<CopyOrderOptionValue>> valuesByDefinition =
-                copyOrderOptionValuesByDefinitions(definitions.values().stream()
-                        .map(CopyOrderOptionDefinition::ref)
-                        .toList());
-        definitions.replaceAll((code, definition) -> new CopyOrderOptionDefinition(
-                definition.ref(),
-                definition.code(),
-                definition.name(),
-                definition.selectionMode(),
-                definition.version(),
-                valuesByDefinition.getOrDefault(definition.ref(), List.of())));
-        return definitions;
+        Map<String, CopyOrderOptionDefinition> result = new LinkedHashMap<>();
+        definitions.forEach((code, definition) -> result.put(code, definition.build()));
+        return Map.copyOf(result);
     }
 
     private List<CopyOrderOptionValue> copyOrderOptionValues(UUID definitionRef) {
@@ -1013,7 +1087,7 @@ final class CatalogItemDefinitionFacts {
                                 String problemMessage = "点单选项扣料原材料不存在";
                                 throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, problemMessage);
                             }
-                            value.materials.add(new CopyOrderOptionMaterial(
+                            value.addMaterial(new CopyOrderOptionMaterial(
                                     materialRef,
                                     materialItemRef,
                                     materialItemCode,
@@ -1571,9 +1645,13 @@ final class CatalogItemDefinitionFacts {
         if (submitted == null) return List.of();
         List<OrderOptionConfig> values = new ArrayList<>();
         LinkedHashSet<UUID> definitions = new LinkedHashSet<>();
+        LinkedHashSet<Integer> displayOrders = new LinkedHashSet<>();
         for (JsonNode node : submitted) {
             UUID definitionRef = requiredUuid(node, "definitionRef");
             if (!definitions.add(definitionRef)) throw problem("商品不能重复选择同一个点单选项");
+            Integer displayOrder = nullableInt(node, "displayOrder");
+            if (displayOrder == null || displayOrder < 0 || !displayOrders.add(displayOrder))
+                throw problem("点单选项显示顺序必须是从零开始且不能重复");
             Integer min = nullableInt(node, "minSelectionCount");
             Integer max = nullableInt(node, "maxSelectionCount");
             List<OrderOptionValueOverride> overrides = new ArrayList<>();
@@ -1587,7 +1665,12 @@ final class CatalogItemDefinitionFacts {
                                 : null));
             }
             values.add(new OrderOptionConfig(
-                    definitionRef, node.path("required").asBoolean(false), min, max, List.copyOf(overrides)));
+                    definitionRef,
+                    displayOrder,
+                    node.path("required").asBoolean(false),
+                    min,
+                    max,
+                    List.copyOf(overrides)));
         }
         return List.copyOf(values);
     }
@@ -1670,6 +1753,7 @@ final class CatalogItemDefinitionFacts {
 
     private record OrderOptionConfig(
             UUID definitionRef,
+            int displayOrder,
             boolean required,
             Integer minSelectionCount,
             Integer maxSelectionCount,
@@ -1714,12 +1798,45 @@ final class CatalogItemDefinitionFacts {
         }
     }
 
+    private static final class CopyOrderOptionDefinitionBuilder {
+        private final UUID ref;
+        private final String code;
+        private final String name;
+        private final String selectionMode;
+        private final long version;
+        private final Map<UUID, CopyOrderOptionValueBuilder> values = new LinkedHashMap<>();
+
+        private CopyOrderOptionDefinitionBuilder(
+                UUID ref, String code, String name, String selectionMode, long version) {
+            this.ref = ref;
+            this.code = code;
+            this.name = name;
+            this.selectionMode = selectionMode;
+            this.version = version;
+        }
+
+        private CopyOrderOptionValueBuilder value(UUID ref, String code, String name, int displayOrder) {
+            return values.computeIfAbsent(
+                    ref, ignored -> new CopyOrderOptionValueBuilder(ref, code, name, displayOrder));
+        }
+
+        private CopyOrderOptionDefinition build() {
+            return new CopyOrderOptionDefinition(
+                    ref,
+                    code,
+                    name,
+                    selectionMode,
+                    version,
+                    values.values().stream().map(CopyOrderOptionValueBuilder::build).toList());
+        }
+    }
+
     private static final class CopyOrderOptionValueBuilder {
         private final UUID ref;
         private final String code;
         private final String name;
         private final int displayOrder;
-        private final List<CopyOrderOptionMaterial> materials = new ArrayList<>();
+        private final Map<UUID, CopyOrderOptionMaterial> materials = new LinkedHashMap<>();
 
         private CopyOrderOptionValueBuilder(UUID ref, String code, String name, int displayOrder) {
             this.ref = ref;
@@ -1728,8 +1845,12 @@ final class CatalogItemDefinitionFacts {
             this.displayOrder = displayOrder;
         }
 
+        private void addMaterial(CopyOrderOptionMaterial material) {
+            materials.putIfAbsent(material.ref(), material);
+        }
+
         private CopyOrderOptionValue build() {
-            return new CopyOrderOptionValue(ref, code, name, displayOrder, List.copyOf(materials));
+            return new CopyOrderOptionValue(ref, code, name, displayOrder, List.copyOf(materials.values()));
         }
     }
 

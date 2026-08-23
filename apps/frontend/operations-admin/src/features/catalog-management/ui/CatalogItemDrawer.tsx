@@ -14,6 +14,7 @@ import {
   List,
   Modal,
   Row,
+  Radio,
   Select,
   Skeleton,
   Space,
@@ -73,9 +74,13 @@ import type {
   CatalogCompositeGroup,
   CatalogAttributeAssignment,
   CatalogDetail,
+  CatalogIdentifier,
+  CatalogIdentifierType,
   CatalogInventoryRuleNode,
   CatalogNavigation,
   CatalogOrderOptionConfig,
+  CatalogPreparationEffect,
+  CatalogPreparationProfile,
   CatalogSkuRow,
   CatalogSkuVariantDimension,
 } from '../model/catalogModel';
@@ -99,6 +104,10 @@ import {
   shouldHydrateCatalogItemDraft,
   type CatalogMediaLimits,
 } from '../model/catalogModel';
+import {
+  CATALOG_IDENTIFIER_TYPE_LABELS,
+  catalogIdentifierProblemFeedback,
+} from '../model/catalogIdentificationPreparationFeedback';
 import {catalogEnumLabel, catalogEnumOptions, catalogFieldLabel} from '../model/catalogManifestLabels';
 import {catalogTabLabel} from '../model/catalogTabLabels';
 import {catalogJoinedField, type CatalogDescriptorManifest} from '../model/catalogDescriptorManifest';
@@ -112,7 +121,6 @@ import {
   CatalogDictionaryDrawer,
   type CatalogDictionaryQuickManageCandidate,
   type DictionaryKind,
-  type ProductionTagCandidate,
 } from './CatalogDictionaryDrawer';
 import {LocalCatalogCopyDrawer} from './LocalCatalogCopyDrawer';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
@@ -146,10 +154,9 @@ type MediaDraft = {
   skuIndex?: number;
   previous?: {assetRef?: string; version?: number; staged: boolean};
 };
-type ProfileLayer = 'item' | 'sku' | 'optionValue';
-type ProductionProfileDraft = CatalogDetail['item']['productionProfiles'];
 type SkuDimensionDraft = CatalogSkuVariantDimension;
-type CatalogIdentifierDraft = CatalogDetail['item']['identifiers'][number] & {editorId: string};
+type CatalogIdentifierDraft = CatalogIdentifier & {editorId: string};
+type PreparationProfileDraft = CatalogPreparationProfile;
 type SkuRowDraft = CatalogSkuRow & {editorId: string};
 type CatalogDictionaryQuickManageKind = Exclude<DictionaryKind, 'PRODUCTION_TAG'>;
 type ProductionTagOption = {tagRef: string; code: string; name: string; owner: string; status?: string};
@@ -159,60 +166,75 @@ type PromotionFormValues = Pick<
 >;
 type CatalogManifest = Pick<
   CatalogShapeManifestView,
-  'enumLabels' | 'fields' | 'fieldRules' | 'tabRules' | 'typeEffects'
+  'enumLabels' | 'fields' | 'fieldRules' | 'tabRules' | 'typeEffects' | 'identifierRules' | 'preparationRules'
 >;
 type CatalogUnitOption = CatalogUnitList['data']['units'][number];
 // These values stay inside an incomplete editor draft. They are validated by
 // wireUuid only when a request is assembled for a generated endpoint.
 const draftUuid = (value = ''): ReturnType<typeof wireUuid> => value as ReturnType<typeof wireUuid>;
 
-const profileLayerLabels: Record<ProfileLayer, string> = {item: '商品', sku: 'SKU', optionValue: '选项值'};
-const profileFields: Array<{
-  key: 'printName' | 'stationTags' | 'printTags' | 'estimatedPreparationSeconds' | 'preparationNotes' | 'allergens';
-  label: string;
-  kind: 'text' | 'tags' | 'number';
-}> = [
-  {key: 'printName', label: '打印名称', kind: 'text'},
-  {key: 'stationTags', label: '处理标签', kind: 'tags'},
-  {key: 'printTags', label: '打印标签', kind: 'tags'},
-  {key: 'estimatedPreparationSeconds', label: '预计制作秒数', kind: 'number'},
-  {key: 'preparationNotes', label: '生产备注', kind: 'text'},
-  {key: 'allergens', label: '过敏原', kind: 'tags'},
-];
-
-function cloneProfiles(value: ProductionProfileDraft): ProductionProfileDraft {
-  return {item: {...value.item}, sku: {...value.sku}, optionValue: {...value.optionValue}};
+function clonePreparationProfile(value: PreparationProfileDraft | null): PreparationProfileDraft | null {
+  return value
+    ? {
+        ...value,
+        productionTagRefs: [...value.productionTagRefs],
+      }
+    : null;
 }
 function cloneSkuDimensions(value: SkuDimensionDraft[]): SkuDimensionDraft[] {
   return value.map(dimension => ({...dimension, values: dimension.values.map(entry => ({...entry}))}));
 }
-function cloneSkuRows(value: CatalogSkuRow[]): CatalogSkuRow[] {
+export function cloneSkuRows(value: CatalogSkuRow[]): CatalogSkuRow[] {
   return value.map(sku => ({
     ...sku,
     attributeValueRefs: sku.attributeValueRefs.map(entry => ({...entry})),
+    identifiers: sku.identifiers.map(entry => ({...entry})),
+    preparationOverride: {
+      mode: sku.preparationOverride.mode,
+      profile: clonePreparationProfile(sku.preparationOverride.profile),
+    },
+    effectivePreparation: clonePreparationProfile(sku.effectivePreparation),
     mediaRefs: [...sku.mediaRefs],
   }));
 }
-function profileString(profile: Record<string, JsonValue>, key: string) {
-  const value = profile[key];
-  return typeof value === 'string' ? value : '';
+export type CatalogPreparationLayout = 'ITEM_ONLY' | 'SKU' | 'OPTIONS' | 'SKU_AND_OPTIONS';
+export function catalogPreparationLayout(
+  shapeKey: string,
+  skuCount: number,
+  optionEffectCount: number,
+): CatalogPreparationLayout {
+  const hasSkuVariation = shapeKey === 'SKU_VARIANT_SALE_COUNTED' && skuCount > 0;
+  const hasOptionVariation = optionEffectCount > 0;
+  if (hasSkuVariation && hasOptionVariation) return 'SKU_AND_OPTIONS';
+  if (hasSkuVariation) return 'SKU';
+  if (hasOptionVariation) return 'OPTIONS';
+  return 'ITEM_ONLY';
 }
-function profileTags(profile: Record<string, JsonValue>, key: string) {
-  const value = profile[key];
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+export function skuPreparationOverrideForMode(
+  mode: CatalogSkuRow['preparationOverride']['mode'],
+  profile: PreparationProfileDraft | null,
+): CatalogSkuRow['preparationOverride'] {
+  return {mode, profile: mode === 'OVERRIDE' ? clonePreparationProfile(profile) : null};
 }
-function profileNumber(profile: Record<string, JsonValue>, key: string) {
-  const value = profile[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-function splitComma(value: string) {
-  return value
-    .split(',')
-    .map(entry => entry.trim())
-    .filter(Boolean);
-}
-function profileDisplayValue(value: JsonValue) {
-  return Array.isArray(value) ? value.map(entry => displayValue(entry)).join('、') || '—' : displayValue(value);
+export function buildAdditivePreparationEffect(
+  identity: Pick<CatalogPreparationEffect, 'definitionValueRef' | 'optionGroupDisplayOrder' | 'optionValueDisplayOrder'>,
+  current: CatalogPreparationEffect | null,
+  patch: Partial<Pick<CatalogPreparationEffect, 'addProductionTagRefs' | 'instruction' | 'preparationSecondsDelta'>>,
+): CatalogPreparationEffect | null {
+  const next = {
+    definitionValueRef: identity.definitionValueRef,
+    optionGroupDisplayOrder: identity.optionGroupDisplayOrder,
+    optionValueDisplayOrder: identity.optionValueDisplayOrder,
+    addProductionTagRefs: patch.addProductionTagRefs ?? current?.addProductionTagRefs ?? [],
+    instruction: patch.instruction !== undefined ? patch.instruction : current?.instruction ?? null,
+    preparationSecondsDelta:
+      patch.preparationSecondsDelta !== undefined
+        ? patch.preparationSecondsDelta
+        : current?.preparationSecondsDelta ?? null,
+  } satisfies CatalogPreparationEffect;
+  return next.addProductionTagRefs.length || Boolean(next.instruction) || next.preparationSecondsDelta !== null
+    ? next
+    : null;
 }
 function descriptorString(value: string | string[]) {
   return Array.isArray(value) ? (value[0] ?? '') : value;
@@ -238,14 +260,13 @@ const catalogDeniedFieldLabels: Record<string, string> = {
   baseMeasureUnitRef: '基础计量单位',
   standardSalePrice: '商品标准价',
   images: '图片资产',
-  productionTagRefs: '生产提示与生产标签',
+  preparationProfile: '制作信息',
   skuVariantDimensions: 'SKU 规格维度',
   skuVariantAttribute: 'SKU 规格属性',
   skuVariantValues: 'SKU 规格值',
   skuMatrix: 'SKU 矩阵',
   skus: 'SKU 矩阵',
   orderOptionConfigs: '点单选项',
-  productionProfiles: '生产提示',
   inventoryBomComponent: '耗用对象',
   inventoryRules: '库存与 BOM',
   compositeComponentSku: '套餐组件 SKU',
@@ -259,6 +280,23 @@ function deniedFieldLabel(manifest: CatalogManifest | undefined, fieldKey: strin
 
 function catalogUnitLabel(unit?: {name: string; code: string} | null) {
   return unit ? <NameCodeText name={unit.name} code={unit.code} /> : '—';
+}
+
+export function manifestIdentifierTypes(
+  manifest: CatalogManifest | undefined,
+  shapeKey: string,
+  grain: 'CATALOG_ITEM' | 'SKU',
+): CatalogIdentifierType[] {
+  const admission = manifest?.identifierRules?.admission;
+  if (!admission || typeof admission !== 'object' || Array.isArray(admission)) return [];
+  const shape = (admission as Record<string, unknown>)[shapeKey];
+  if (!shape || typeof shape !== 'object' || Array.isArray(shape)) return [];
+  const grainRule = (shape as Record<string, unknown>)[grain];
+  if (!grainRule || typeof grainRule !== 'object' || Array.isArray(grainRule)) return [];
+  return Object.entries(grainRule)
+    .filter(([, allowed]) => allowed === true)
+    .map(([value]) => value)
+    .filter((value): value is CatalogIdentifierType => value in CATALOG_IDENTIFIER_TYPE_LABELS);
 }
 
 type DisabledReasonButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
@@ -298,7 +336,6 @@ export function CatalogItemDrawer({
   const [activeTab, setActiveTab] = useState('basic');
   const [problem, setProblem] = useState<string>();
   const [localCopyOpen, setLocalCopyOpen] = useState(false);
-  const [productionTagQuickManageOpen, setProductionTagQuickManageOpen] = useState(false);
   const [dictionaryQuickManage, setDictionaryQuickManage] = useState<{
     kind: CatalogDictionaryQuickManageKind;
     dimensionIndex?: number;
@@ -308,6 +345,7 @@ export function CatalogItemDrawer({
   const [localDictionaryRevisions, setLocalDictionaryRevisions] = useState<Partial<Record<DictionaryKind, number>>>({});
   const [selectedProductionTagRefs, setSelectedProductionTagRefs] = useState<string[]>([]);
   const [selectedProductionTags, setSelectedProductionTags] = useState<ProductionTagOption[]>([]);
+  const [productionTagQuery, setProductionTagQuery] = useState('');
   const [selectedTagRefs, setSelectedTagRefs] = useState<string[]>([]);
   const [selectedSalesUnitRef, setSelectedSalesUnitRef] = useState<string>();
   const [selectedBaseMeasureUnitRef, setSelectedBaseMeasureUnitRef] = useState<string>();
@@ -343,12 +381,7 @@ export function CatalogItemDrawer({
   const [attributeAssignmentsDraft, setAttributeAssignmentsDraft] = useState<CatalogAttributeAssignment[]>([]);
   const [orderOptionConfigsDraft, setOrderOptionConfigsDraft] = useState<CatalogOrderOptionConfig[]>([]);
   const [standardSalePriceDraft, setStandardSalePriceDraft] = useState<number | null>(null);
-  const [productionProfilesDraft, setProductionProfilesDraft] = useState<ProductionProfileDraft>({
-    item: {},
-    sku: {},
-    optionValue: {},
-  });
-  const [productionProfileLayer, setProductionProfileLayer] = useState<ProfileLayer>('item');
+  const [preparationProfileDraft, setPreparationProfileDraft] = useState<PreparationProfileDraft | null>(null);
   const [inventoryRulesDraft, setInventoryRulesDraft] = useState<CatalogInventoryRuleNode[]>([]);
   const [compositeGroupsDraft, setCompositeGroupsDraft] = useState<CatalogCompositeGroup[]>([]);
   const [skuVariantDimensionsDraft, setSkuVariantDimensionsDraft] = useState<SkuDimensionDraft[]>([]);
@@ -382,6 +415,7 @@ export function CatalogItemDrawer({
   const manifest = manifestQuery.currentData?.data;
   const mediaLimits = useMemo(() => decodeCatalogMediaLimits(manifest), [manifest]);
   const productionTagCandidates = useCursorCandidates<ProductionTagOption>({
+    queryText: productionTagQuery,
     resetKey: `${itemCode ?? ''}|${queryContext.scopeRef ?? ''}|${brandRef ?? ''}`,
     pageSize: 50,
     keyOf: tag => tag.tagRef,
@@ -393,13 +427,23 @@ export function CatalogItemDrawer({
         {
           query: {
             dataNodeRef: wireUuid(queryContext.scopeRef ?? ''),
+            usage: 'BINDABLE_CANDIDATE',
+            ...(productionTagCandidates.debouncedQueryText
+              ? {query: productionTagCandidates.debouncedQueryText}
+              : {}),
             ...(productionTagCandidates.cursor ? {cursor: productionTagCandidates.cursor} : {}),
             pageSize: productionTagCandidates.pageSize,
           },
           headers,
         },
       ),
-    [headers, productionTagCandidates.cursor, productionTagCandidates.pageSize, queryContext.scopeRef],
+    [
+      headers,
+      productionTagCandidates.cursor,
+      productionTagCandidates.debouncedQueryText,
+      productionTagCandidates.pageSize,
+      queryContext.scopeRef,
+    ],
   );
   const productionTagsQuery = operationsRtk.useGetOperationsProductionTagsQuery(productionTagsRequest, {
     skip: !itemCode || !canWriteCatalog,
@@ -601,8 +645,7 @@ export function CatalogItemDrawer({
     setSelectedTagRefs([...detail.item.tagRefs]);
     setSelectedSalesUnitRef(detail.item.salesUnitRef ?? undefined);
     setSelectedBaseMeasureUnitRef(detail.item.baseMeasureUnitRef ?? undefined);
-    setProductionProfilesDraft(cloneProfiles(detail.item.productionProfiles));
-    setProductionProfileLayer('item');
+    setPreparationProfileDraft(clonePreparationProfile(detail.item.preparationProfile));
     setInventoryRulesDraft(
       detail.inventoryRules.nodes.map(node => ({
         ...node,
@@ -627,7 +670,7 @@ export function CatalogItemDrawer({
     setSkusDraft(normalizeSkuDraftRows(cloneSkuRows(detail.item.skus)));
     if (initializedProductionItem.current !== detail.item.code) {
       initializedProductionItem.current = detail.item.code;
-      setSelectedProductionTagRefs(detail.item.productionTagRefs);
+      setSelectedProductionTagRefs(detail.item.preparationProfile?.productionTagRefs ?? []);
       setSelectedProductionTags(detail.productionTags);
     }
     if (initializedMediaItem.current !== detail.item.code) {
@@ -682,14 +725,13 @@ export function CatalogItemDrawer({
       setSelectedBaseMeasureUnitRef(undefined);
       setSelectedProductionTagRefs([]);
       setSelectedProductionTags([]);
-      setProductionProfilesDraft({item: {}, sku: {}, optionValue: {}});
-      setProductionProfileLayer('item');
+      setProductionTagQuery('');
+      setPreparationProfileDraft(null);
       setInventoryRulesDraft([]);
       setCompositeGroupsDraft([]);
       setSkuVariantDimensionsDraft([]);
       setSkusDraft([]);
       setLocalCopyOpen(false);
-      setProductionTagQuickManageOpen(false);
       setDictionaryQuickManage(undefined);
       setLocalDictionaryRevisions({});
       setPromotion(undefined);
@@ -735,12 +777,10 @@ export function CatalogItemDrawer({
     }
     const visibleTabs = new Set(detail.tabs.filter(tab => tab.visible).map(tab => tab.tabKey));
     if (visibleTabs.has('identifiers')) {
-      const invalidIndex = identifierDraft.findIndex(
-        entry => !entry.kind.trim() || !entry.code.trim() || !entry.value.trim(),
-      );
+      const invalidIndex = identifierDraft.findIndex(entry => !entry.identifierType || !entry.identifierValue.trim());
       if (invalidIndex >= 0) {
         setActiveTab('identifiers');
-        setProblem(`条码与识别码第 ${invalidIndex + 1} 行缺少类型、编码或识别码。`);
+        setProblem(`条码与标识第 ${invalidIndex + 1} 行请填写识别方式和识别值。`);
         return;
       }
     }
@@ -826,7 +866,6 @@ export function CatalogItemDrawer({
         images: mediaDraft
           .filter(asset => (asset.status === 'READY' || asset.status === 'FAILED') && asset.assetRef)
           .map(asset => wireUuid(asset.assetRef)),
-        productionTagRefs: selectedProductionTagRefs.map(ref => wireUuid(ref)),
         tagRefs: selectedTagRefs.map(ref => wireUuid(ref)),
         salesUnitRef: selectedSalesUnitRef ? wireUuid(selectedSalesUnitRef) : null,
         baseMeasureUnitRef: selectedBaseMeasureUnitRef ? wireUuid(selectedBaseMeasureUnitRef) : null,
@@ -838,6 +877,7 @@ export function CatalogItemDrawer({
         })),
         orderOptionConfigs: orderOptionConfigsDraft.map(config => ({
           definitionRef: wireUuid(config.definitionRef),
+          displayOrder: config.displayOrder,
           required: config.required,
           minSelectionCount: config.selectionMode === 'MULTIPLE' ? config.minSelectionCount : null,
           maxSelectionCount: config.selectionMode === 'MULTIPLE' ? config.maxSelectionCount : null,
@@ -846,11 +886,21 @@ export function CatalogItemDrawer({
             defaultValue: value.defaultValue,
             extraPrice: value.extraPrice,
             expectedBomVersion: value.bomVersion ?? 0,
+            preparationEffect: value.preparationEffect
+              ? {
+                  addProductionTagRefs: value.preparationEffect.addProductionTagRefs.map(ref => wireUuid(ref)),
+                  instruction: value.preparationEffect.instruction,
+                  preparationSecondsDelta: value.preparationEffect.preparationSecondsDelta,
+                }
+              : null,
           })),
         })),
       };
       if (visibleTabs.has('identifiers'))
-        catalogDraft.identifiers = identifierDraft.map(({editorId: _editorId, ...entry}) => entry);
+        catalogDraft.identifiers = identifierDraft.map(entry => ({
+          identifierType: entry.identifierType,
+          identifierValue: entry.identifierValue,
+        }));
       if (visibleTabs.has('basic') && detail.item.priceGranularity === 'ITEM')
         catalogDraft.standardSalePrice = standardSalePriceDraft;
       if (visibleTabs.has('sku-specifications-pricing')) {
@@ -858,7 +908,13 @@ export function CatalogItemDrawer({
         catalogDraft.skus = serializeSkuRowsForSave(skusDraft.map(({editorId: _editorId, ...row}) => row));
       }
       if (visibleTabs.has('composite-content')) catalogDraft.compositeGroups = compositeGroupsDraft;
-      if (visibleTabs.has('production-prompts')) catalogDraft.productionProfiles = productionProfilesDraft;
+      if (visibleTabs.has('production-prompts'))
+        catalogDraft.preparationProfile = preparationProfileDraft
+          ? {
+              ...preparationProfileDraft,
+              productionTagRefs: selectedProductionTagRefs.map(ref => wireUuid(ref)),
+            }
+          : null;
       const bindGrants = Object.fromEntries(
         [...mediaDraft, ...skuStagedMedia]
           .filter((asset): asset is MediaDraft & {assetRef: string; bindGrant: string} =>
@@ -906,8 +962,22 @@ export function CatalogItemDrawer({
     } catch (error) {
       const feedback = operationsProblemOf(error);
       const problemTab = catalogInventoryProblemTab(feedback.errorCode);
-      if (problemTab) setActiveTab(problemTab);
-      setProblem(feedback.detail);
+      const cipgFeedback = catalogIdentifierProblemFeedback(feedback.errorCode);
+      if (cipgFeedback) {
+        const cipgTab =
+          cipgFeedback.target === 'optionPreparation'
+            ? 'order-options'
+            : cipgFeedback.target === 'skuIdentifier' || cipgFeedback.target === 'skuPreparation'
+              ? 'sku-specifications-pricing'
+              : cipgFeedback.target === 'identifier'
+                ? 'identifiers'
+                : 'production-prompts';
+        setActiveTab(cipgTab);
+        setProblem(cipgFeedback.message);
+      } else {
+        if (problemTab) setActiveTab(problemTab);
+        setProblem(feedback.detail);
+      }
       lifecycle.setSubmitting(false);
     }
   };
@@ -1097,15 +1167,6 @@ export function CatalogItemDrawer({
           : feedback.detail || '临时商品转正未完成，请重试。',
       );
     }
-  };
-  const onProductionTagCreated = (candidate: ProductionTagCandidate) => {
-    const option: ProductionTagOption = {...candidate};
-    setSelectedProductionTags(current =>
-      current.some(tag => tag.tagRef === option.tagRef) ? current : [...current, option],
-    );
-    setSelectedProductionTagRefs(current => (current.includes(option.tagRef) ? current : [...current, option.tagRef]));
-    lifecycle.setDirty(true);
-    setProductionTagQuickManageOpen(false);
   };
   const openDictionaryQuickManage = (
     kind: CatalogDictionaryQuickManageKind,
@@ -1478,8 +1539,8 @@ export function CatalogItemDrawer({
     setStandardSalePriceDraft(next);
     lifecycle.setDirty(true);
   };
-  const updateProductionProfiles = (next: ProductionProfileDraft) => {
-    setProductionProfilesDraft(next);
+  const updatePreparationProfile = (next: PreparationProfileDraft | null) => {
+    setPreparationProfileDraft(next);
     lifecycle.setDirty(true);
   };
   const updateInventoryRules = (next: CatalogInventoryRuleNode[]) => {
@@ -1534,6 +1595,7 @@ export function CatalogItemDrawer({
               onRemoveSkuStagedMedia={removeSkuStagedMedia}
               availableProductionTags={availableProductionTags}
               productionTagsLoading={productionTagsQuery.isLoading || productionTagsQuery.isFetching}
+              onProductionTagsSearch={setProductionTagQuery}
               onProductionTagsPopupScroll={event =>
                 productionTagCandidates.onPopupScroll(event, productionTagsQuery.isFetching)
               }
@@ -1541,6 +1603,14 @@ export function CatalogItemDrawer({
               selectedProductionTags={selectedProductionTags}
               onProductionTagsChange={next => {
                 setSelectedProductionTagRefs(next);
+                setPreparationProfileDraft(current =>
+                  current ? {...current, productionTagRefs: next.map(ref => wireUuid(ref))} : {
+                    productionTagRefs: next.map(ref => wireUuid(ref)),
+                    productionDisplayName: null,
+                    estimatedPreparationSeconds: null,
+                    preparationNotes: null,
+                  },
+                );
                 lifecycle.setDirty(true);
               }}
               selectedTagRefs={selectedTagRefs}
@@ -1573,9 +1643,7 @@ export function CatalogItemDrawer({
               identifierDraft={identifierDraft}
               createDraftRowId={createDraftRowId}
               standardSalePriceDraft={standardSalePriceDraft}
-              productionProfilesDraft={productionProfilesDraft}
-              productionProfileLayer={productionProfileLayer}
-              onProductionProfileLayerChange={setProductionProfileLayer}
+              preparationProfileDraft={preparationProfileDraft}
               inventoryRulesDraft={inventoryRulesDraft}
               compositeGroupsDraft={compositeGroupsDraft}
               skuVariantDimensionsDraft={skuVariantDimensionsDraft}
@@ -1594,7 +1662,7 @@ export function CatalogItemDrawer({
               )}
               onIdentifiersChange={updateIdentifiers}
               onStandardSalePriceChange={updateStandardSalePrice}
-              onProductionProfilesChange={updateProductionProfiles}
+              onPreparationProfileChange={updatePreparationProfile}
               onInventoryRulesChange={updateInventoryRules}
               onCompositeGroupsChange={updateCompositeGroups}
               onSkuVariantDimensionsChange={updateSkuVariantDimensions}
@@ -1602,7 +1670,6 @@ export function CatalogItemDrawer({
               onDirty={() => lifecycle.setDirty(true)}
               onOpenProductionTags={onOpenProductionTags}
               onOpenDictionaryQuickManage={openDictionaryQuickManage}
-              onOpenProductionQuickManage={() => setProductionTagQuickManageOpen(true)}
               onVoidSku={voidSku}
               voidingSkuRef={voidingSkuRef}
               onNavigateTab={next => setActiveTab(next)}
@@ -1886,16 +1953,6 @@ export function CatalogItemDrawer({
         onClose={() => setLocalCopyOpen(false)}
       />
       <CatalogDictionaryDrawer
-        open={productionTagQuickManageOpen}
-        initialKind="PRODUCTION_TAG"
-        queryContext={queryContext}
-        brandRef={brandRef}
-        canWrite={canWriteCatalog}
-        quickManage
-        onCreated={onProductionTagCreated}
-        onClose={() => setProductionTagQuickManageOpen(false)}
-      />
-      <CatalogDictionaryDrawer
         open={Boolean(dictionaryQuickManage)}
         initialKind={dictionaryQuickManage?.kind}
         parentEntryRef={dictionaryQuickManage?.parentEntryRef}
@@ -2082,6 +2139,7 @@ function CatalogTabContent({
   onRemoveSkuStagedMedia,
   availableProductionTags,
   productionTagsLoading,
+  onProductionTagsSearch,
   onProductionTagsPopupScroll,
   selectedProductionTagRefs,
   selectedProductionTags,
@@ -2101,9 +2159,7 @@ function CatalogTabContent({
   identifierDraft,
   createDraftRowId,
   standardSalePriceDraft,
-  productionProfilesDraft,
-  productionProfileLayer,
-  onProductionProfileLayerChange,
+  preparationProfileDraft,
   inventoryRulesDraft,
   compositeGroupsDraft,
   skuVariantDimensionsDraft,
@@ -2114,7 +2170,7 @@ function CatalogTabContent({
   dictionaryRevision,
   onIdentifiersChange,
   onStandardSalePriceChange,
-  onProductionProfilesChange,
+  onPreparationProfileChange,
   onInventoryRulesChange,
   onCompositeGroupsChange,
   onSkuVariantDimensionsChange,
@@ -2122,7 +2178,6 @@ function CatalogTabContent({
   onDirty,
   onOpenProductionTags,
   onOpenDictionaryQuickManage,
-  onOpenProductionQuickManage,
   onVoidSku,
   voidingSkuRef,
   onNavigateTab,
@@ -2145,6 +2200,7 @@ function CatalogTabContent({
   onRemoveSkuStagedMedia: (id: string) => void;
   availableProductionTags: ProductionTagOption[];
   productionTagsLoading: boolean;
+  onProductionTagsSearch: (value: string) => void;
   onProductionTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
   selectedProductionTagRefs: string[];
   selectedProductionTags: ProductionTagOption[];
@@ -2164,9 +2220,7 @@ function CatalogTabContent({
   identifierDraft: CatalogIdentifierDraft[];
   createDraftRowId: (prefix: string) => string;
   standardSalePriceDraft: number | null;
-  productionProfilesDraft: ProductionProfileDraft;
-  productionProfileLayer: ProfileLayer;
-  onProductionProfileLayerChange: (next: ProfileLayer) => void;
+  preparationProfileDraft: PreparationProfileDraft | null;
   inventoryRulesDraft: CatalogInventoryRuleNode[];
   compositeGroupsDraft: CatalogCompositeGroup[];
   skuVariantDimensionsDraft: SkuDimensionDraft[];
@@ -2177,7 +2231,7 @@ function CatalogTabContent({
   dictionaryRevision: Partial<Record<DictionaryKind, number>>;
   onIdentifiersChange: (next: CatalogIdentifierDraft[]) => void;
   onStandardSalePriceChange: (next: number | null) => void;
-  onProductionProfilesChange: (next: ProductionProfileDraft) => void;
+  onPreparationProfileChange: (next: PreparationProfileDraft | null) => void;
   onInventoryRulesChange: (next: CatalogInventoryRuleNode[]) => void;
   onCompositeGroupsChange: (next: CatalogCompositeGroup[]) => void;
   onSkuVariantDimensionsChange: (next: SkuDimensionDraft[]) => void;
@@ -2189,7 +2243,6 @@ function CatalogTabContent({
     dimensionIndex?: number,
     valueIndex?: number,
   ) => void;
-  onOpenProductionQuickManage: () => void;
   onVoidSku?: (sku: CatalogSkuRow) => void;
   voidingSkuRef?: string;
   onNavigateTab: (tabKey: string) => void;
@@ -2461,12 +2514,12 @@ function CatalogTabContent({
         <Descriptions
           {...adminWideDetailDescriptionsProps}
           items={identifierDraft.map((entry, index) => ({
-            key: `${entry.kind}-${index}`,
-            label: entry.kind,
+            key: `${entry.identifierType}-${index}`,
+            label: CATALOG_IDENTIFIER_TYPE_LABELS[entry.identifierType],
             children: (
               <Space>
-                <NameCodeText name={entry.value} code={entry.code} />
-                <Tag>绑定范围：商品</Tag>
+                <Typography.Text>{entry.identifierValue}</Typography.Text>
+                <Tag>商品</Tag>
               </Space>
             ),
           }))}
@@ -2475,6 +2528,7 @@ function CatalogTabContent({
     ) : (
       <IdentifierEditor
         values={identifierDraft}
+        allowedTypes={manifestIdentifierTypes(manifest, detail.item.shapeKey, 'CATALOG_ITEM')}
         createDraftRowId={createDraftRowId}
         onChange={onIdentifiersChange}
         onDirty={onDirty}
@@ -2485,12 +2539,12 @@ function CatalogTabContent({
       <Descriptions
         {...adminWideDetailDescriptionsProps}
         items={detail.item.identifiers.map((entry, index) => ({
-          key: `${entry.kind}-${index}`,
-          label: entry.kind,
+          key: `${entry.identifierType}-${index}`,
+          label: CATALOG_IDENTIFIER_TYPE_LABELS[entry.identifierType],
           children: (
             <Space>
-              <NameCodeText name={entry.value} code={entry.code} />
-              <Tag>绑定范围：商品</Tag>
+              <Typography.Text>{entry.identifierValue}</Typography.Text>
+              <Tag>商品</Tag>
             </Space>
           ),
         }))}
@@ -2521,6 +2575,13 @@ function CatalogTabContent({
         manifest={manifest}
         dimensions={skuVariantDimensionsDraft}
         skus={skusDraft}
+        allowedIdentifierTypes={manifestIdentifierTypes(manifest, detail.item.shapeKey, 'SKU')}
+        itemDefaultPreparation={preparationProfileDraft}
+        availableProductionTags={availableProductionTags}
+        selectedProductionTags={selectedProductionTags}
+        productionTagsLoading={productionTagsLoading}
+        onProductionTagsSearch={onProductionTagsSearch}
+        onProductionTagsPopupScroll={onProductionTagsPopupScroll}
         priceGranularity={detail.item.priceGranularity}
         skuStagedMedia={skuStagedMedia}
         scopeRef={queryContext.scopeRef}
@@ -2588,6 +2649,11 @@ function CatalogTabContent({
         onDirty={onDirty}
         scopeRef={queryContext.scopeRef}
         brandRef={brandRef}
+        availableProductionTags={availableProductionTags}
+        selectedProductionTags={selectedProductionTags}
+        productionTagsLoading={productionTagsLoading}
+        onProductionTagsSearch={onProductionTagsSearch}
+        onProductionTagsPopupScroll={onProductionTagsPopupScroll}
       />
     );
   if (tabKey === 'order-options') return <OrderOptionConfigurationsReadOnly values={detail.item.orderOptionConfigs} />;
@@ -2597,69 +2663,51 @@ function CatalogTabContent({
       [...detailProductionTags, ...availableProductionTags, ...selectedProductionTags].map(tag => [tag.tagRef, tag]),
     );
     const selectedTags = selectedProductionTagRefs.map(
-      tagRef => tagMap.get(tagRef) ?? {tagRef, code: '', name: '', owner: 'fulfillment-production'},
+      tagRef => tagMap.get(tagRef) ?? {
+        tagRef,
+        code: '',
+        name: '已维护的制作处理标签',
+        owner: 'fulfillment-production',
+        status: 'DISABLED',
+      },
     );
     const options = Array.from(tagMap.values()).map(tag => ({
-      label: tag.name || tag.code || tag.tagRef,
+      label: tag.name || tag.code || '已维护的制作处理标签',
       value: tag.tagRef,
       disabled: tag.status !== undefined && tag.status !== 'ENABLED',
     }));
     return (
       <Space direction="vertical" size={12} style={{display: 'flex'}}>
-        {editing && canWriteCatalog ? (
-          <>
-            <Typography.Text strong>{fieldLabel('productionTagRefs')}</Typography.Text>
-            <Select
-              mode="multiple"
-              value={selectedProductionTagRefs}
-              options={options}
-              loading={productionTagsLoading}
-              disabled={denied('productionTagRefs')}
-              placeholder={catalogFieldLabel(manifest, 'productionTagRefs')}
-              onChange={onProductionTagsChange}
-              onPopupScroll={onProductionTagsPopupScroll}
-              style={{width: '100%'}}
-              {...testId('catalog-production-tag-field')}
-            />
-            {locked('productionTagRefs')}
-          </>
-        ) : (
-          <Space wrap>
-            {selectedTags.length ? (
-              selectedTags.map(tag => <Tag key={tag.tagRef}>{tag.name || tag.code || '未命名标签'}</Tag>)
-            ) : (
-              <EmptySection text="未维护生产提示或商品处理标签" />
-            )}
-          </Space>
-        )}
-        {canWriteCatalog && editing && (
-          <Button
-            disabled={denied('productionTagRefs')}
-            onClick={onOpenProductionQuickManage}
-            {...testId('catalog-production-tag-quick-manage')}
-          >
-            快速创建商品处理标签
-          </Button>
-        )}
-        {!editing && onOpenProductionTags && (
-          <Button type="link" onClick={onOpenProductionTags} {...testId('catalog-production-tag-owner-open')}>
-            打开生产履约标签维护
-          </Button>
-        )}
-        {editing && !denied('productionProfiles') ? (
-          <ProductionProfileEditor
-            layer={productionProfileLayer}
-            profiles={productionProfilesDraft}
-            onLayerChange={onProductionProfileLayerChange}
-            onChange={onProductionProfilesChange}
+        {editing && canWriteCatalog && !denied('preparationProfile') ? (
+          <PreparationProfileEditor
+            profile={preparationProfileDraft}
+            selectedTagRefs={selectedProductionTagRefs}
+            selectedTags={selectedTags}
+            tagOptions={options}
+            tagsLoading={productionTagsLoading}
+            onTagsSearch={onProductionTagsSearch}
+            onTagsPopupScroll={onProductionTagsPopupScroll}
+            onTagsChange={onProductionTagsChange}
+            onChange={onPreparationProfileChange}
             onDirty={onDirty}
           />
         ) : (
           <>
-            {denied('productionProfiles') && locked('productionProfiles')}
-            <ProductionProfilesReadOnly profiles={detail.item.productionProfiles} />
+            {denied('preparationProfile') && locked('preparationProfile')}
+            <PreparationProfileReadOnly profile={detail.item.preparationProfile} tags={selectedTags} />
           </>
         )}
+        {!editing && onOpenProductionTags && (
+          <Button type="link" onClick={onOpenProductionTags} {...testId('catalog-production-tag-owner-open')}>
+            管理制作处理标签
+          </Button>
+        )}
+        <PreparationVariationSummary
+          skus={skusDraft}
+          orderOptions={orderOptionConfigsDraft}
+          shapeKey={detail.item.shapeKey}
+          onNavigateToOptions={() => onNavigateTab('order-options')}
+        />
       </Space>
     );
   }
@@ -2890,32 +2938,58 @@ function CatalogCategoryDescriptorField({
   );
 }
 
-function IdentifierEditor({
+export function IdentifierEditor({
   values,
+  allowedTypes,
+  heading = '条码与标识',
+  description = '识别码用于扫码、称重键码或快速检索。商品编码无需在此重复维护。',
   createDraftRowId,
   onChange,
   onDirty,
 }: {
   values: CatalogIdentifierDraft[];
+  allowedTypes: CatalogIdentifierType[];
+  heading?: string;
+  description?: string;
   createDraftRowId: (prefix: string) => string;
   onChange: (next: CatalogIdentifierDraft[]) => void;
   onDirty: () => void;
 }) {
-  const update = (index: number, patch: Partial<CatalogDetail['item']['identifiers'][number]>) =>
+  const update = (index: number, patch: Partial<CatalogIdentifierDraft>) =>
     onChange(values.map((entry, entryIndex) => (entryIndex === index ? {...entry, ...patch} : entry)));
   return (
     <Space direction="vertical" size={12} style={{display: 'flex'}} {...testId('catalog-item-identifiers-editor')}>
-      <Alert type="info" showIcon title="按 SKU 管理商品的识别码应在 SKU 矩阵中维护；本页仅维护商品级识别码。" />
+      <Typography.Title level={5} style={{margin: 0}}>
+        {heading}
+      </Typography.Title>
+      <Typography.Text type="secondary">
+        {description}
+      </Typography.Text>
       <Button
         onClick={() => {
-          onChange([...values, {editorId: createDraftRowId('identifier'), kind: 'BARCODE', code: '', value: ''}]);
+          const identifierType = allowedTypes[0] ?? 'MNEMONIC';
+          onChange([
+            ...values,
+            {
+              editorId: createDraftRowId('identifier'),
+              identifierRef: draftUuid(),
+              ownerType: 'CATALOG_ITEM',
+              ownerRef: draftUuid(),
+              identifierType,
+              identifierValue: '',
+              normalizedValue: '',
+              displayOrder: values.length,
+            },
+          ]);
           onDirty();
         }}
+        disabled={allowedTypes.length === 0}
         {...testId('catalog-item-identifier-add')}
       >
-        新增识别码
+        添加识别码
       </Button>
-      {values.length === 0 && <EmptySection text="未维护识别码，可新增一行" />}
+      {allowedTypes.length === 0 && <EmptySection text="当前商品类型不提供识别方式" />}
+      {values.length === 0 && allowedTypes.length > 0 && <EmptySection text="尚未维护识别码" />}
       {values.map((entry, index) => (
         <Card
           key={entry.editorId}
@@ -2936,37 +3010,235 @@ function IdentifierEditor({
           }
         >
           <Space wrap>
-            <Input
-              addonBefore="类型"
-              value={entry.kind}
-              onChange={event => {
-                update(index, {kind: event.target.value});
+            <Select
+              aria-label={`识别码 ${index + 1} 类型`}
+              value={entry.identifierType}
+              optionLabelProp="label"
+              options={allowedTypes.map(identifierType => ({
+                value: identifierType,
+                label: CATALOG_IDENTIFIER_TYPE_LABELS[identifierType],
+              }))}
+              onChange={identifierType => {
+                update(index, {identifierType});
                 onDirty();
               }}
-              {...testId(`catalog-item-identifier-kind-${index}`)}
+              {...testId(`catalog-item-identifier-type-${index}`)}
             />
             <Input
-              addonBefore="编码"
-              value={entry.code}
+              aria-label={`识别码 ${index + 1} 识别值`}
+              placeholder="请输入识别值"
+              maxLength={160}
+              value={entry.identifierValue}
               onChange={event => {
-                update(index, {code: event.target.value});
-                onDirty();
-              }}
-              {...testId(`catalog-item-identifier-code-${index}`)}
-            />
-            <Input
-              addonBefore="识别码"
-              value={entry.value}
-              onChange={event => {
-                update(index, {value: event.target.value});
+                update(index, {identifierValue: event.target.value});
                 onDirty();
               }}
               {...testId(`catalog-item-identifier-value-${index}`)}
             />
+            {entry.identifierType === 'MNEMONIC' && (
+              <Typography.Text type="secondary">助记码不区分大小写</Typography.Text>
+            )}
           </Space>
         </Card>
       ))}
     </Space>
+  );
+}
+
+export function SkuIdentifierEditorModal({
+  open,
+  sku,
+  allowedTypes,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  sku?: CatalogSkuRow;
+  allowedTypes: CatalogIdentifierType[];
+  onCancel: () => void;
+  onConfirm: (identifiers: CatalogIdentifier[]) => void;
+}) {
+  const [draft, setDraft] = useState<CatalogIdentifierDraft[]>([]);
+  const [problem, setProblem] = useState<string>();
+  const sequence = useRef(0);
+  const createDraftRowId = useCallback((prefix: string) => {
+    sequence.current += 1;
+    return `${prefix}-${sequence.current}`;
+  }, []);
+  useEffect(() => {
+    if (!open || !sku) return;
+    setDraft(sku.identifiers.map(identifier => ({...identifier, editorId: createDraftRowId('sku-identifier')})));
+    setProblem(undefined);
+  }, [createDraftRowId, open, sku]);
+  return (
+    <Modal
+      open={open}
+      title={sku ? `维护识别码 · ${sku.skuName || sku.skuCode}` : '维护识别码'}
+      onCancel={onCancel}
+      onOk={() => {
+        const invalid = draft.some(identifier => !identifier.identifierValue.trim());
+        if (invalid) {
+          setProblem('请填写识别值');
+          return;
+        }
+        onConfirm(draft.map(({editorId: _editorId, ...identifier}) => identifier));
+      }}
+      okText="确定"
+      cancelText="取消"
+      destroyOnHidden
+      {...testId('catalog-sku-identifier-modal')}
+    >
+      <Space direction="vertical" style={{display: 'flex'}} size={12}>
+        {problem && <Alert type="error" showIcon title={problem} role="alert" />}
+        <IdentifierEditor
+          values={draft}
+          allowedTypes={allowedTypes}
+          heading="规格识别码"
+          description="这些识别码只识别当前规格。返回商品页面后仍需点击保存才会生效。"
+          createDraftRowId={createDraftRowId}
+          onChange={setDraft}
+          onDirty={() => setProblem(undefined)}
+        />
+      </Space>
+    </Modal>
+  );
+}
+
+function emptyPreparationProfile(): PreparationProfileDraft {
+  return {
+    productionTagRefs: [],
+    productionDisplayName: null,
+    estimatedPreparationSeconds: null,
+    preparationNotes: null,
+  };
+}
+
+export function SkuPreparationEditorModal({
+  open,
+  sku,
+  itemDefaultPreparation,
+  availableProductionTags,
+  selectedProductionTags,
+  productionTagsLoading,
+  onProductionTagsSearch,
+  onProductionTagsPopupScroll,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  sku?: CatalogSkuRow;
+  itemDefaultPreparation: PreparationProfileDraft | null;
+  availableProductionTags: ProductionTagOption[];
+  selectedProductionTags: ProductionTagOption[];
+  productionTagsLoading: boolean;
+  onProductionTagsSearch: (value: string) => void;
+  onProductionTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
+  onCancel: () => void;
+  onConfirm: (value: CatalogSkuRow['preparationOverride']) => void;
+}) {
+  const [mode, setMode] = useState<'INHERIT_ITEM' | 'OVERRIDE'>('INHERIT_ITEM');
+  const [profile, setProfile] = useState<PreparationProfileDraft>(emptyPreparationProfile);
+  const [problem, setProblem] = useState<string>();
+  useEffect(() => {
+    if (!open || !sku) return;
+    setMode(sku.preparationOverride.mode);
+    setProfile(clonePreparationProfile(sku.preparationOverride.profile) ?? emptyPreparationProfile());
+    setProblem(undefined);
+  }, [open, sku]);
+  const knownTags = Array.from(
+    new Map(
+      [...selectedProductionTags, ...availableProductionTags].map(tag => [tag.tagRef, tag]),
+    ).values(),
+  );
+  const selectedTagRefs = profile.productionTagRefs.map(String);
+  const tagOptions = Array.from(new Set([...selectedTagRefs, ...knownTags.map(tag => tag.tagRef)])).map(tagRef => {
+    const tag = knownTags.find(candidate => candidate.tagRef === tagRef);
+    return {
+      value: tagRef,
+      label: tag?.name || tag?.code || '已维护的制作处理标签',
+      disabled: tag?.status !== undefined && tag.status !== 'ENABLED',
+    };
+  });
+  const inheritedPreview = itemDefaultPreparation ? (
+    <PreparationProfileReadOnly
+      profile={itemDefaultPreparation}
+      tags={itemDefaultPreparation.productionTagRefs.map(ref => knownTags.find(tag => tag.tagRef === ref)).filter(Boolean) as ProductionTagOption[]}
+    />
+  ) : (
+    <EmptySection text="当前商品尚未设置默认制作信息" />
+  );
+  return (
+    <Modal
+      open={open}
+      title={sku ? `维护制作信息 · ${sku.skuName || sku.skuCode}` : '维护制作信息'}
+      onCancel={onCancel}
+      onOk={() => {
+        if (mode === 'INHERIT_ITEM') {
+          onConfirm(skuPreparationOverrideForMode('INHERIT_ITEM', null));
+          return;
+        }
+        if (profile.estimatedPreparationSeconds !== null && profile.estimatedPreparationSeconds < 0) {
+          setProblem('预计制作时长请填写零或正整数。');
+          return;
+        }
+        onConfirm(skuPreparationOverrideForMode('OVERRIDE', profile));
+      }}
+      okText="确定"
+      cancelText="取消"
+      destroyOnHidden
+      {...testId('catalog-sku-preparation-modal')}
+    >
+      <Space direction="vertical" size={12} style={{display: 'flex'}}>
+        {problem && <Alert type="error" showIcon title={problem} role="alert" />}
+        <Radio.Group
+          value={mode}
+          onChange={event => {
+            setMode(event.target.value);
+            setProblem(undefined);
+          }}
+          options={[
+            {label: '使用商品默认', value: 'INHERIT_ITEM'},
+            {label: '单独设置', value: 'OVERRIDE'},
+          ]}
+          {...testId('catalog-sku-preparation-mode')}
+        />
+        {mode === 'INHERIT_ITEM' ? (
+          <>
+            <Typography.Text type="secondary">使用商品默认时，会随商品的默认制作信息一起变化。</Typography.Text>
+            <Card size="small" title="当前商品默认">{inheritedPreview}</Card>
+          </>
+        ) : (
+          <>
+            <Typography.Text type="secondary">单独设置时，将使用本规格自己的一整套制作信息。</Typography.Text>
+            <PreparationProfileEditor
+              profile={profile}
+              selectedTagRefs={selectedTagRefs}
+              selectedTags={knownTags.filter(tag => selectedTagRefs.includes(tag.tagRef))}
+              tagOptions={tagOptions}
+              tagsLoading={productionTagsLoading}
+              onTagsSearch={onProductionTagsSearch}
+              onTagsPopupScroll={onProductionTagsPopupScroll}
+              heading="本规格制作信息"
+              description="本规格的制作信息不会随商品默认自动变化。"
+              onTagsChange={next => setProfile(current => ({...current, productionTagRefs: next as PreparationProfileDraft['productionTagRefs']}))}
+              onChange={next => setProfile(next ?? emptyPreparationProfile())}
+              onDirty={() => setProblem(undefined)}
+            />
+            <Button
+              type="link"
+              onClick={() => {
+                setMode('INHERIT_ITEM');
+                setProfile(emptyPreparationProfile());
+              }}
+              {...testId('catalog-sku-preparation-clear')}
+            >
+              清除单独设置并恢复商品默认
+            </Button>
+          </>
+        )}
+        <Typography.Text type="secondary">返回商品页面后仍需点击保存才会生效。</Typography.Text>
+      </Space>
+    </Modal>
   );
 }
 
@@ -3003,6 +3275,13 @@ function SkuMatrixEditor({
   manifest,
   dimensions,
   skus,
+  allowedIdentifierTypes,
+  itemDefaultPreparation,
+  availableProductionTags,
+  selectedProductionTags,
+  productionTagsLoading,
+  onProductionTagsSearch,
+  onProductionTagsPopupScroll,
   priceGranularity,
   skuStagedMedia,
   scopeRef,
@@ -3026,6 +3305,13 @@ function SkuMatrixEditor({
   manifest?: CatalogManifest;
   dimensions: SkuDimensionDraft[];
   skus: SkuRowDraft[];
+  allowedIdentifierTypes: CatalogIdentifierType[];
+  itemDefaultPreparation: PreparationProfileDraft | null;
+  availableProductionTags: ProductionTagOption[];
+  selectedProductionTags: ProductionTagOption[];
+  productionTagsLoading: boolean;
+  onProductionTagsSearch: (value: string) => void;
+  onProductionTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
   priceGranularity: string;
   skuStagedMedia: MediaDraft[];
   scopeRef?: string;
@@ -3046,6 +3332,8 @@ function SkuMatrixEditor({
   voidingSkuRef?: string;
   onDirty: () => void;
 }) {
+  const [identifierModalIndex, setIdentifierModalIndex] = useState<number>();
+  const [preparationModalIndex, setPreparationModalIndex] = useState<number>();
   const fieldLabel = (fieldKey: string) => catalogFieldLabel(manifest, fieldKey);
   const mediaLimits = decodeCatalogMediaLimits(manifest);
   const unitSelectOptions = (current?: {unitRef: CatalogUnitOption['unitRef']; code: string; name: string}) => {
@@ -3388,15 +3676,18 @@ function SkuMatrixEditor({
                       {...testId(`catalog-item-sku-name-${skuIndex}`)}
                     />
                   </SkuFieldFeedback>
-                  <Input
-                    addonBefore="条码"
-                    value={sku.skuBarcode}
-                    onChange={event => {
-                      updateSku(skuIndex, {skuBarcode: event.target.value});
-                      onDirty();
-                    }}
-                    {...testId(`catalog-item-sku-barcode-${skuIndex}`)}
-                  />
+                  <Button
+                    onClick={() => setIdentifierModalIndex(skuIndex)}
+                    {...testId(`catalog-item-sku-identifiers-${skuIndex}`)}
+                  >
+                    维护识别码（{sku.identifiers.length ? `${sku.identifiers.length} 个` : '未维护'}）
+                  </Button>
+                  <Button
+                    onClick={() => setPreparationModalIndex(skuIndex)}
+                    {...testId(`catalog-item-sku-preparation-${skuIndex}`)}
+                  >
+                    维护制作信息（{sku.preparationOverride.mode === 'OVERRIDE' ? '已单独设置' : '使用商品默认'}）
+                  </Button>
                   <SkuFieldFeedback message={issue('MISSING_SKU_PRICE')}>
                     <InputNumber
                       prefix="标准价（元）"
@@ -3629,6 +3920,35 @@ function SkuMatrixEditor({
           })}
         </Space>
       </Card>
+      <SkuIdentifierEditorModal
+        open={identifierModalIndex !== undefined}
+        sku={identifierModalIndex === undefined ? undefined : skus[identifierModalIndex]}
+        allowedTypes={allowedIdentifierTypes}
+        onCancel={() => setIdentifierModalIndex(undefined)}
+        onConfirm={identifiers => {
+          if (identifierModalIndex === undefined) return;
+          updateSku(identifierModalIndex, {identifiers});
+          onDirty();
+          setIdentifierModalIndex(undefined);
+        }}
+      />
+      <SkuPreparationEditorModal
+        open={preparationModalIndex !== undefined}
+        sku={preparationModalIndex === undefined ? undefined : skus[preparationModalIndex]}
+        itemDefaultPreparation={itemDefaultPreparation}
+        availableProductionTags={availableProductionTags}
+        selectedProductionTags={selectedProductionTags}
+        productionTagsLoading={productionTagsLoading}
+        onProductionTagsSearch={onProductionTagsSearch}
+        onProductionTagsPopupScroll={onProductionTagsPopupScroll}
+        onCancel={() => setPreparationModalIndex(undefined)}
+        onConfirm={preparationOverride => {
+          if (preparationModalIndex === undefined) return;
+          updateSku(preparationModalIndex, {preparationOverride});
+          onDirty();
+          setPreparationModalIndex(undefined);
+        }}
+      />
     </Space>
   );
 }
@@ -3746,7 +4066,15 @@ function SkuMatrixReadOnly({
                     column={2}
                     items={[
                       {key: 'refs', label: catalogFieldLabel(manifest, 'skuVariantValues'), children: variantValues},
-                      {key: 'barcode', label: '条码', children: sku.skuBarcode || '—'},
+                      {
+                        key: 'identifiers',
+                        label: '识别码',
+                        children: sku.identifiers.length
+                          ? sku.identifiers
+                              .map(identifier => CATALOG_IDENTIFIER_TYPE_LABELS[identifier.identifierType])
+                              .join('、')
+                          : '未维护',
+                      },
                       {key: 'price', label: '标准价', children: money(sku.standardSalePrice)},
                       {
                         key: 'status',
@@ -3794,25 +4122,41 @@ function SkuMatrixReadOnly({
   );
 }
 
-function ProductionProfileEditor({
-  layer,
-  profiles,
-  onLayerChange,
+export function PreparationProfileEditor({
+  profile,
+  selectedTagRefs,
+  selectedTags,
+  tagOptions,
+  tagsLoading,
+  heading = '商品默认制作信息',
+  description = '这些信息会作为商品通常采用的制作内容。',
+  onTagsSearch,
+  onTagsPopupScroll,
+  onTagsChange,
   onChange,
   onDirty,
 }: {
-  layer: ProfileLayer;
-  profiles: ProductionProfileDraft;
-  onLayerChange: (next: ProfileLayer) => void;
-  onChange: (next: ProductionProfileDraft) => void;
+  profile: PreparationProfileDraft | null;
+  selectedTagRefs: string[];
+  selectedTags: ProductionTagOption[];
+  tagOptions: Array<{label: string; value: string; disabled?: boolean}>;
+  tagsLoading: boolean;
+  heading?: string;
+  description?: string;
+  onTagsSearch: (value: string) => void;
+  onTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
+  onTagsChange: (next: string[]) => void;
+  onChange: (next: PreparationProfileDraft | null) => void;
   onDirty: () => void;
 }) {
-  const profile = profiles[layer];
-  const setProfileValue = (key: string, value: JsonValue | undefined) => {
-    const nextProfile = {...profile};
-    if (value === undefined || value === '') delete nextProfile[key];
-    else nextProfile[key] = value;
-    onChange({...profiles, [layer]: nextProfile});
+  const current: PreparationProfileDraft = profile ?? {
+    productionTagRefs: selectedTagRefs as PreparationProfileDraft['productionTagRefs'],
+    productionDisplayName: null,
+    estimatedPreparationSeconds: null,
+    preparationNotes: null,
+  };
+  const update = (patch: Partial<PreparationProfileDraft>) => {
+    onChange({...current, ...patch});
     onDirty();
   };
   return (
@@ -3820,78 +4164,144 @@ function ProductionProfileEditor({
       direction="vertical"
       size={12}
       style={{display: 'flex'}}
-      {...testId('catalog-item-production-profile-editor')}
+      {...testId('catalog-item-preparation-editor')}
     >
-      <Space wrap>
-        <Typography.Text strong>生产提示节点</Typography.Text>
+      <Typography.Title level={5} style={{margin: 0}}>
+        {heading}
+      </Typography.Title>
+      <Typography.Text type="secondary">{description}</Typography.Text>
+      <div>
+        <Typography.Text strong>制作处理标签</Typography.Text>
         <Select
-          value={layer}
-          options={Object.entries(profileLayerLabels).map(([value, label]) => ({value, label}))}
-          onChange={onLayerChange}
-          {...testId('catalog-production-profile-node')}
+          mode="multiple"
+          value={selectedTagRefs}
+          options={tagOptions}
+          loading={tagsLoading}
+          showSearch
+          filterOption={false}
+          placeholder="选择已有制作处理标签"
+          onSearch={onTagsSearch}
+          onChange={onTagsChange}
+          onPopupScroll={onTagsPopupScroll}
+          style={{width: '100%', marginTop: 6}}
+          {...testId('catalog-item-production-tags')}
         />
-      </Space>
-      <Alert type="info" showIcon title="商品、SKU 和选项值可分别设置制作信息；切换对象不会自动沿用其他对象的设置。" />
-      {profileFields.map(field =>
-        field.kind === 'tags' ? (
-          <Input
-            key={field.key}
-            addonBefore={field.label}
-            value={profileTags(profile, field.key).join(',')}
-            placeholder="多个值用逗号分隔"
-            onChange={event => setProfileValue(field.key, splitComma(event.target.value))}
-            {...testId(`catalog-production-profile-${field.key}`)}
-          />
-        ) : field.kind === 'number' ? (
-          <InputNumber
-            key={field.key}
-            addonBefore={field.label}
-            min={0}
-            precision={0}
-            value={profileNumber(profile, field.key)}
-            onChange={value => setProfileValue(field.key, value ?? undefined)}
-            {...testId(`catalog-production-profile-${field.key}`)}
-          />
-        ) : (
-          <Input
-            key={field.key}
-            addonBefore={field.label}
-            value={profileString(profile, field.key)}
-            onChange={event => setProfileValue(field.key, event.target.value)}
-            {...testId(`catalog-production-profile-${field.key}`)}
-          />
-        ),
-      )}
+        {selectedTags.some(tag => tag.status === 'DISABLED') && (
+          <Typography.Text type="warning" style={{display: 'block', marginTop: 4}}>
+            已停用的标签会保留在当前设置中，但不能用于新选择。
+          </Typography.Text>
+        )}
+      </div>
+      <Input
+        addonBefore="制作单显示名称"
+        maxLength={120}
+        showCount
+        value={current.productionDisplayName ?? ''}
+        placeholder="例如：大杯热拿铁"
+        onChange={event => update({productionDisplayName: event.target.value || null})}
+        {...testId('catalog-item-production-name')}
+      />
+      <InputNumber
+        addonBefore="预计制作时长（秒）"
+        min={0}
+        precision={0}
+        value={current.estimatedPreparationSeconds ?? undefined}
+        placeholder="填写零或正整数"
+        onChange={value => update({estimatedPreparationSeconds: value ?? null})}
+        {...testId('catalog-item-production-seconds')}
+      />
+      <Input.TextArea
+        autoSize={{minRows: 3, maxRows: 8}}
+        maxLength={1000}
+        showCount
+        value={current.preparationNotes ?? ''}
+        placeholder="留空表示未维护"
+        onChange={event => update({preparationNotes: event.target.value || null})}
+        {...testId('catalog-item-production-notes')}
+      />
     </Space>
   );
 }
 
-function ProductionProfilesReadOnly({profiles}: {profiles: ProductionProfileDraft}) {
+function PreparationProfileReadOnly({
+  profile,
+  tags,
+}: {
+  profile: PreparationProfileDraft | null;
+  tags: ProductionTagOption[];
+}) {
   return (
     <Space
       direction="vertical"
       size={12}
       style={{display: 'flex'}}
-      {...testId('catalog-item-production-profile-readonly')}
+      {...testId('catalog-item-preparation-readonly')}
     >
-      {(Object.keys(profileLayerLabels) as ProfileLayer[]).map(layer => (
-        <Card key={layer} size="small" title={profileLayerLabels[layer]}>
-          {Object.keys(profiles[layer]).length ? (
-            <Descriptions
-              size="small"
-              column={2}
-              items={Object.entries(profiles[layer]).map(([key, value]) => ({
-                key,
-                label: profileFields.find(field => field.key === key)?.label ?? '其他制作信息',
-                children: profileDisplayValue(value),
-              }))}
-            />
-          ) : (
-            <EmptySection text="未维护该节点的生产提示" />
-          )}
-        </Card>
-      ))}
+      {!profile ? (
+        <EmptySection text="尚未设置制作信息" />
+      ) : (
+        <Descriptions
+          size="small"
+          column={2}
+          items={[
+            {
+              key: 'tags',
+              label: '制作处理标签',
+              children: tags.length ? (
+                <Space wrap>{tags.map(tag => <Tag key={tag.tagRef}>{tag.name || tag.code}</Tag>)}</Space>
+              ) : (
+                '—'
+              ),
+            },
+            {key: 'name', label: '制作单显示名称', children: profile.productionDisplayName || '—'},
+            {
+              key: 'seconds',
+              label: '预计制作时长（秒）',
+              children: profile.estimatedPreparationSeconds ?? '—',
+            },
+            {key: 'notes', label: '制作说明', children: profile.preparationNotes || '—'},
+          ]}
+        />
+      )}
     </Space>
+  );
+}
+
+export function PreparationVariationSummary({
+  skus,
+  orderOptions,
+  shapeKey,
+  onNavigateToOptions,
+}: {
+  skus: CatalogSkuRow[];
+  orderOptions: CatalogOrderOptionConfig[];
+  shapeKey: string;
+  onNavigateToOptions: () => void;
+}) {
+  const optionEffectCount = orderOptions.reduce(
+    (count, option) => count + option.values.filter(value => value.preparationEffect !== null).length,
+    0,
+  );
+  const layout = catalogPreparationLayout(
+    shapeKey,
+    skus.some(sku => sku.preparationOverride.mode === 'OVERRIDE') ? skus.length : 0,
+    optionEffectCount,
+  );
+  if (layout === 'ITEM_ONLY') return null;
+  return (
+    <Card
+      size="small"
+      title="各规格与点单选项的制作变化"
+      {...testId('catalog-preparation-variation-summary')}
+      data-preparation-layout={layout}
+    >
+      {(layout === 'SKU' || layout === 'SKU_AND_OPTIONS') && <Typography.Text>已有规格单独设置制作信息。</Typography.Text>}
+      {(layout === 'OPTIONS' || layout === 'SKU_AND_OPTIONS') && (
+        <Button type="link" onClick={onNavigateToOptions} {...testId('catalog-item-option-preparation-link')}>
+          {optionEffectCount} 个点单选项已设置制作变化，去点单选项维护
+        </Button>
+      )}
+    </Card>
   );
 }
 
@@ -4818,15 +5228,41 @@ function OrderOptionConfigurationsEditor({
   onDirty,
   scopeRef,
   brandRef,
+  availableProductionTags,
+  selectedProductionTags,
+  productionTagsLoading,
+  onProductionTagsSearch,
+  onProductionTagsPopupScroll,
 }: {
   values: CatalogOrderOptionConfig[];
   onChange: (next: CatalogOrderOptionConfig[]) => void;
   onDirty: () => void;
   scopeRef?: string;
   brandRef?: string;
+  availableProductionTags: ProductionTagOption[];
+  selectedProductionTags: ProductionTagOption[];
+  productionTagsLoading: boolean;
+  onProductionTagsSearch: (value: string) => void;
+  onProductionTagsPopupScroll: (event: UIEvent<HTMLDivElement>) => void;
 }) {
+  const normalizeDisplayOrders = (next: CatalogOrderOptionConfig[]) =>
+    next.map((config, configIndex) => ({
+      ...config,
+      displayOrder: configIndex,
+      values: config.values.map(value => ({
+        ...value,
+        preparationEffect: value.preparationEffect
+          ? {
+              ...value.preparationEffect,
+              definitionValueRef: value.definitionValueRef,
+              optionGroupDisplayOrder: configIndex,
+              optionValueDisplayOrder: value.displayOrder,
+            }
+          : null,
+      })),
+    }));
   const commit = (next: CatalogOrderOptionConfig[]) => {
-    onChange(next);
+    onChange(normalizeDisplayOrders(next));
     onDirty();
   };
   const [selectedDefinitionRef, setSelectedDefinitionRef] = useState<string>();
@@ -4858,6 +5294,7 @@ function OrderOptionConfigurationsEditor({
     definitionRef: definition.definitionRef,
     name: definition.name,
     selectionMode: definition.selectionMode,
+    displayOrder: values.length,
     required: false,
     minSelectionCount: definition.selectionMode === 'MULTIPLE' ? 0 : null,
     maxSelectionCount: definition.selectionMode === 'MULTIPLE' ? null : null,
@@ -4868,6 +5305,7 @@ function OrderOptionConfigurationsEditor({
       defaultValue: false,
       extraPrice: null,
       bomVersion: definition.version,
+      preparationEffect: null,
     })),
   });
   const addDefinitions = () => {
@@ -4909,6 +5347,20 @@ function OrderOptionConfigurationsEditor({
       values: (activeConfig?.values ?? []).map(value =>
         value.definitionValueRef === valueRef ? {...value, ...patch} : value,
       ),
+    });
+  const knownProductionTags = Array.from(
+    new Map(
+      [...selectedProductionTags, ...availableProductionTags].map(tag => [tag.tagRef, tag]),
+    ).values(),
+  );
+  const productionTagOptions = (refs: string[]) =>
+    Array.from(new Set([...refs, ...knownProductionTags.map(tag => tag.tagRef)])).map(tagRef => {
+      const tag = knownProductionTags.find(candidate => candidate.tagRef === tagRef);
+      return {
+        value: tagRef,
+        label: tag?.name || tag?.code || '已维护的制作处理标签',
+        disabled: tag?.status !== undefined && tag.status !== 'ENABLED',
+      };
     });
   return (
     <Space direction="vertical" style={{display: 'flex'}} size="middle">
@@ -5070,6 +5522,79 @@ function OrderOptionConfigurationsEditor({
                             }
                           />
                         </Space>
+                        <Divider style={{margin: '4px 0'}} />
+                        <Typography.Text strong>制作变化（可选）</Typography.Text>
+                        <Typography.Text type="secondary">
+                          这些变化会添加到商品或规格的制作信息中；多项说明会按点单选项顺序呈现。
+                        </Typography.Text>
+                        <Select
+                          mode="multiple"
+                          allowClear
+                          showSearch
+                          filterOption={false}
+                          value={value.preparationEffect?.addProductionTagRefs ?? []}
+                          options={productionTagOptions(value.preparationEffect?.addProductionTagRefs ?? [])}
+                          loading={productionTagsLoading}
+                          placeholder="只可选择要增加的标签"
+                          onSearch={onProductionTagsSearch}
+                          onPopupScroll={event => onProductionTagsPopupScroll(event)}
+                          onChange={addProductionTagRefs => {
+                            const nextRefs = addProductionTagRefs.map(String);
+                            const nextEffect = buildAdditivePreparationEffect(
+                              {
+                                definitionValueRef: value.definitionValueRef,
+                                optionGroupDisplayOrder: activeConfig.displayOrder,
+                                optionValueDisplayOrder: value.displayOrder,
+                              },
+                              value.preparationEffect,
+                              {addProductionTagRefs: nextRefs as CatalogPreparationEffect['addProductionTagRefs']},
+                            );
+                            updateValue(value.definitionValueRef, {preparationEffect: nextEffect});
+                          }}
+                          {...testId(`catalog-item-option-preparation-tags-${value.definitionValueRef}`)}
+                        />
+                         <InputNumber
+                           min={0}
+                           precision={0}
+                           addonBefore="增加制作时长（秒）"
+                          value={value.preparationEffect?.preparationSecondsDelta ?? undefined}
+                          placeholder="填写零或正整数"
+                          onChange={preparationSecondsDelta => {
+                            const nextValue = preparationSecondsDelta ?? null;
+                            const nextEffect = buildAdditivePreparationEffect(
+                              {
+                                definitionValueRef: value.definitionValueRef,
+                                optionGroupDisplayOrder: activeConfig.displayOrder,
+                                optionValueDisplayOrder: value.displayOrder,
+                              },
+                              value.preparationEffect,
+                              {preparationSecondsDelta: nextValue},
+                            );
+                            updateValue(value.definitionValueRef, {preparationEffect: nextEffect});
+                          }}
+                           {...testId(`catalog-item-option-preparation-seconds-${value.definitionValueRef}`)}
+                         />
+                         <Typography.Text strong>追加制作说明</Typography.Text>
+                         <Input.TextArea
+                           maxLength={1000}
+                          showCount
+                          value={value.preparationEffect?.instruction ?? ''}
+                          placeholder="例如：最后加冰"
+                          onChange={event => {
+                            const nextInstruction = event.target.value || null;
+                            const nextEffect = buildAdditivePreparationEffect(
+                              {
+                                definitionValueRef: value.definitionValueRef,
+                                optionGroupDisplayOrder: activeConfig.displayOrder,
+                                optionValueDisplayOrder: value.displayOrder,
+                              },
+                              value.preparationEffect,
+                              {instruction: nextInstruction},
+                            );
+                            updateValue(value.definitionValueRef, {preparationEffect: nextEffect});
+                          }}
+                          {...testId(`catalog-item-option-preparation-instruction-${value.definitionValueRef}`)}
+                        />
                       </Space>
                     </Card>
                   ))}
@@ -5106,6 +5631,7 @@ function OrderOptionConfigurationsEditor({
                           {value.extraPrice !== null && (
                             <Typography.Text type="secondary">加价 {money(value.extraPrice)}</Typography.Text>
                           )}
+                          {value.preparationEffect && <Tag color="green">有制作变化</Tag>}
                         </Space>
                       ))}
                     </Space>

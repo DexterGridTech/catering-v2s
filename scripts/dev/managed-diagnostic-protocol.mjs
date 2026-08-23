@@ -19,6 +19,11 @@ const headerName = (value) => {
 };
 
 const REMOTE_DIAGNOSTIC_KIND = 'REMOTE_SSH_PULL';
+// Seed and database diagnostic streams are intentionally bounded in memory
+// while being pulled from the managed remote run.  The previous implicit
+// spawnSync default is about 1 MiB and truncated this run's 2.3 MiB seed
+// event stream, turning a completed catalog seed into a false receipt failure.
+export const MAX_REMOTE_DIAGNOSTIC_BUFFER_BYTES = 64 * 1024 * 1024;
 const REMOTE_DIAGNOSTIC_FILES = Object.freeze({
   seedEventsPath: 'seed-request-events.jsonl',
   dbOperationsPath: 'db-operations.jsonl',
@@ -95,6 +100,7 @@ function pullRemoteDiagnosticFile(manifest, key) {
     'bash', '-s',
   ], {
     encoding: 'utf8',
+    maxBuffer: MAX_REMOTE_DIAGNOSTIC_BUFFER_BYTES,
     input: [
       'set -euo pipefail',
       `root='${remote.remoteRoot.replaceAll("'", "'\\''")}'`,

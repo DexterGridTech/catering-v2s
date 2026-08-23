@@ -257,19 +257,17 @@ class InventoryReceiptFirstUseConcurrencyIntegrationTest {
 
     private static UUID insertTarget() {
         UUID targetRef = UUID.randomUUID();
-        monitor.update(
-                "INSERT INTO inventory.stock_target("
-                        + "target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku_code,measure_mode,configuration,balance,version,"
-                        + "created_at_epoch_millis,updated_at_epoch_millis)"
-                        + " VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,100,5,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                monitor,
                 targetRef,
-                SCOPE.toString(),
+                SCOPE,
                 BRAND,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "RECEIPT-ITEM-" + targetRef,
-                "RECEIPT-SKU-" + targetRef);
+                "RECEIPT-SKU-" + targetRef,
+                new BigDecimal("100"),
+                5L);
         return targetRef;
     }
 

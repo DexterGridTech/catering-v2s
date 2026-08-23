@@ -137,10 +137,21 @@ const seedBusinessLabels = fixture.seedBusinessLabels ?? {};
 // complete representative definition-library experience that R5 must expose;
 // the executor only resolves its codes through owner HTTP readbacks.
 const catalogDefinitionSeed = fixture.catalogDefinitionSeed;
+const canonicalItemShapeByCode = new Map(
+  (plan?.seedDatasets ?? []).flatMap((dataset) =>
+    (dataset.entities?.catalogItems ?? [])
+      .filter((item) => item?.code && item?.shapeKey)
+      .map((item) => [item.code, item.shapeKey])));
+const itemPreparationAllowedShapes = new Set([
+  "STANDARD_SALE_COUNTED",
+  "STANDARD_SALE_WEIGHED",
+  "SKU_VARIANT_SALE_COUNTED",
+]);
 const requireCatalogDefinitionSeed = (seed = catalogDefinitionSeed) => {
-  if (!seed || !Array.isArray(seed.tagDefinitions) || !Array.isArray(seed.unitDefinitions)
+  if (!seed || !Array.isArray(seed.tagDefinitions) || !Array.isArray(seed.productionTagDefinitions) || !Array.isArray(seed.unitDefinitions)
       || !Array.isArray(seed.materialItemCodes) || !Array.isArray(seed.attributeDefinitions)
-      || !Array.isArray(seed.orderOptionDefinitions) || !Array.isArray(seed.itemAssignments))
+      || !Array.isArray(seed.orderOptionDefinitions) || !Array.isArray(seed.itemAssignments)
+      || !Array.isArray(seed.sourceItemAssignments))
     fail("SEED_CATALOG_DEFINITION_FIXTURE_REQUIRED");
   const attributeTypes = [...new Set(seed.attributeDefinitions.map((entry) => entry.valueType))].sort();
   const selectionModes = [...new Set(seed.orderOptionDefinitions.map((entry) => entry.selectionMode))].sort();
@@ -167,7 +178,12 @@ const requireCatalogDefinitionSeed = (seed = catalogDefinitionSeed) => {
         (override.salesUnitCode !== null && !unitCodes.has(override.salesUnitCode))
         || (override.baseMeasureUnitCode !== null && !unitCodes.has(override.baseMeasureUnitCode)))))
     fail("SEED_CATALOG_DEFINITION_UNIT_ASSIGNMENT_INVALID");
-  for (const name of [...seed.tagDefinitions, ...seed.unitDefinitions, ...seed.attributeDefinitions, ...seed.orderOptionDefinitions]
+  for (const assignment of seed.itemAssignments) {
+    const shapeKey = canonicalItemShapeByCode.get(assignment.itemCode);
+    if (shapeKey && assignment.preparationProfile != null && !itemPreparationAllowedShapes.has(shapeKey))
+      fail(`SEED_CATALOG_DEFINITION_PREPARATION_ADMISSION_INVALID:${assignment.itemCode}:${shapeKey}:ITEM`);
+  }
+  for (const name of [...seed.tagDefinitions, ...seed.productionTagDefinitions, ...seed.unitDefinitions, ...seed.attributeDefinitions, ...seed.orderOptionDefinitions]
     .map((entry) => entry.name)) if (!isChineseBusinessText(name)) fail("SEED_CATALOG_DEFINITION_BUSINESS_LABEL_INVALID");
   return seed;
 };
@@ -181,6 +197,102 @@ const categoryLabel = (code) => businessLabel(seedBusinessLabels.categories, cod
 const productionTagLabel = (code) => businessLabel(seedBusinessLabels.productionTags, code, "PRODUCTION_TAG");
 const dictionaryLabel = (kind, code) => businessLabel(seedBusinessLabels.dictionary?.[kind], code, kind);
 const unitLabel = (code) => businessLabel(seedBusinessLabels.units, code, "UNIT");
+const seedFactAssignmentFor = (itemCode) => catalogDefinitionSeed.itemAssignments.find((entry) => entry.itemCode === itemCode)
+  ?? catalogDefinitionSeed.sourceItemAssignments.find((entry) => entry.itemCode === itemCode)
+  ?? null;
+const seedIdentifiers = (entries = []) => entries.map((entry) => ({
+  identifierType: entry.identifierType,
+  identifierValue: entry.identifierValue,
+}));
+const seedProfile = (profile, refs, context) => {
+  if (profile == null) return null;
+  return {
+    productionTagRefs: (profile.productionTagCodes ?? []).map((code) => requiredUuid(refs.productionTagRefs.get(code), `PRODUCTION_TAG:${context}:${code}`)),
+    productionDisplayName: profile.productionDisplayName ?? null,
+    estimatedPreparationSeconds: profile.estimatedPreparationSeconds ?? null,
+    preparationNotes: profile.preparationNotes ?? null,
+  };
+};
+const seedPreparationEffect = (effect, refs, context) => effect == null ? null : {
+  addProductionTagRefs: (effect.addProductionTagCodes ?? []).map((code) => requiredUuid(refs.productionTagRefs.get(code), `PRODUCTION_TAG:${context}:${code}`)),
+  instruction: effect.instruction ?? null,
+  preparationSecondsDelta: effect.preparationSecondsDelta ?? null,
+};
+const seedSkuIdentifiers = (assignment, skuCode) => {
+  const declared = assignment?.skuIdentifiers?.find((entry) => entry.skuCode === skuCode)?.identifiers;
+  if (declared) return seedIdentifiers(declared);
+  return [];
+};
+const seedSkuPreparationOverride = (assignment, skuCode, refs) => {
+  const declared = assignment?.skuPreparationOverrides?.find((entry) => entry.skuCode === skuCode);
+  if (!declared) return {mode: "INHERIT_ITEM", profile: null};
+  return {mode: declared.mode, profile: seedProfile(declared.profile, refs, `${assignment.itemCode}:${skuCode}`)};
+};
+const seedOptionPreparationEffect = (assignment, valueCode, refs) => seedPreparationEffect(
+  assignment?.optionPreparationEffects?.find((entry) => entry.valueCode === valueCode),
+  refs,
+  `${assignment?.itemCode ?? "UNKNOWN"}:${valueCode}`,
+);
+const normalizedSeedIdentifierValue = (entry) => entry.identifierType === "MNEMONIC"
+  ? String(entry.identifierValue).trim().toLowerCase()
+  : String(entry.identifierValue).trim();
+const sameIdentifierFacts = (actual = [], expected = [], ownerType, ownerRef) => {
+  const actualFacts = actual.map((entry) => ({
+    ownerType: entry.ownerType,
+    ownerRef: String(entry.ownerRef ?? ""),
+    identifierType: entry.identifierType,
+    identifierValue: String(entry.identifierValue ?? "").trim(),
+    normalizedValue: String(entry.normalizedValue ?? "").trim(),
+  })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  const expectedFacts = expected.map((entry) => ({
+    ownerType,
+    ownerRef: String(ownerRef),
+    identifierType: entry.identifierType,
+    identifierValue: String(entry.identifierValue).trim(),
+    normalizedValue: normalizedSeedIdentifierValue(entry),
+  })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  return JSON.stringify(actualFacts) === JSON.stringify(expectedFacts);
+};
+const samePreparationProfile = (actual, expected) => {
+  if (actual == null || expected == null) return actual == null && expected == null;
+  return JSON.stringify({
+    refs: [...(actual.productionTagRefs ?? [])].map(String).sort(),
+    displayName: actual.productionDisplayName ?? null,
+    seconds: actual.estimatedPreparationSeconds ?? null,
+    notes: actual.preparationNotes ?? null,
+  }) === JSON.stringify({
+    refs: [...(expected.productionTagRefs ?? [])].map(String).sort(),
+    displayName: expected.productionDisplayName ?? null,
+    seconds: expected.estimatedPreparationSeconds ?? null,
+    notes: expected.preparationNotes ?? null,
+  });
+};
+const requiredDefinitionValueDisplayOrder = (value, context) => {
+  const displayOrder = Number(value?.displayOrder);
+  if (!Number.isInteger(displayOrder) || displayOrder < 0)
+    fail(`SEED_ORDER_OPTION_VALUE_DISPLAY_ORDER_MISSING:${context}`);
+  return displayOrder;
+};
+const preparationEffectComparison = (actual, expected, definitionValueRef, optionGroupDisplayOrder, optionValueDisplayOrder) => {
+  const actualPresent = actual != null;
+  const expectedPresent = expected != null;
+  if (!actualPresent || !expectedPresent)
+    return {matches: actual == null && expected == null, actualPresent, expectedPresent};
+  const comparison = {
+    actualPresent,
+    expectedPresent,
+    identityMatch: String(actual.definitionValueRef ?? "") === String(definitionValueRef ?? ""),
+    groupOrderMatch: Number(actual.optionGroupDisplayOrder ?? 0) === Number(optionGroupDisplayOrder ?? 0),
+    valueOrderMatch: Number(actual.optionValueDisplayOrder ?? 0) === Number(optionValueDisplayOrder ?? 0),
+    tagRefsMatch: JSON.stringify([...(actual.addProductionTagRefs ?? [])].map(String).sort())
+      === JSON.stringify([...(expected.addProductionTagRefs ?? [])].map(String).sort()),
+    instructionMatch: (actual.instruction ?? null) === (expected.instruction ?? null),
+    secondsMatch: (actual.preparationSecondsDelta ?? null) === (expected.preparationSecondsDelta ?? null),
+  };
+  return {...comparison, matches: Object.values(comparison).every(Boolean)};
+};
+const samePreparationEffect = (actual, expected, definitionValueRef, optionGroupDisplayOrder, optionValueDisplayOrder) =>
+  preparationEffectComparison(actual, expected, definitionValueRef, optionGroupDisplayOrder, optionValueDisplayOrder).matches;
 const skuAttributeValueCode = (attributeCode, valueCode, context = "UNKNOWN") => {
   const attribute = String(attributeCode ?? "").trim();
   const value = String(valueCode ?? "").trim();
@@ -303,7 +415,8 @@ const skuVariantDimensionsFor = (skus, refs, contextPrefix) => {
 
 const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {includeComposite = true} = {}) => {
   const shapeKey = source.shapeKey;
-  const assignment = sourceUnitAssignment(source);
+  const assignment = seedFactAssignmentFor(source.catalogItemCode);
+  const unitAssignment = sourceUnitAssignment(source);
   const priceGranularity = shapeKey === "SKU_VARIANT_SALE_COUNTED" ? "SKU" : "ITEM";
   const price = source.standardSalePriceCents ?? null;
   const skuVariantDimensions = skuVariantDimensionsFor(source.skus ?? [], refs, "source:" + (source.fixtureKey ?? source.catalogItemCode));
@@ -312,7 +425,8 @@ const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {in
     skuCode: sku.skuCode,
     skuName: sku.skuName,
     attributeValueRefs: Object.entries(sku.attributeValues ?? {}).map(([attributeCode, valueCode], index) => { const context = "source:" + (source.fixtureKey ?? source.catalogItemCode) + ":sku:" + sku.skuCode; const qualifiedValueCode = skuAttributeValueCode(attributeCode, valueCode, context); return {attributeRef: dictionaryRef(refs, "SKU_ATTRIBUTE", attributeCode), attributeCode, attributeName: dictionaryLabel("SKU_ATTRIBUTE", attributeCode), attributeValueRef: skuAttributeValueRef(refs, attributeCode, valueCode, context), valueCode: qualifiedValueCode, valueLabel: dictionaryLabel("SKU_ATTRIBUTE_VALUE", qualifiedValueCode), displayOrder: index, status: "ENABLED"}; }),
-    skuBarcode: sku.skuBarcode ?? "",
+    identifiers: seedSkuIdentifiers(assignment, sku.skuCode),
+    preparationOverride: seedSkuPreparationOverride(assignment, sku.skuCode, refs),
     standardSalePrice: sku.standardSalePriceCents ?? null,
     isDefault: Boolean(sku.isDefault),
     status: "ENABLED",
@@ -331,18 +445,18 @@ const convertSourceItem = (source, assetRefs, refs, sourceByKey = new Map(), {in
     attributeAssignments: [],
     orderOptionConfigs: [],
     images: assetRefs[source.mediaAssetKey] ? [assetRefs[source.mediaAssetKey]] : [],
-    productionTagRefs: (source.tagKeys ?? []).map((code) => requiredUuid(refs.productionTagRefs.get(String(code)), `PRODUCTION_TAG:${code}`)),
+    tagRefs: (source.tagKeys ?? []).map((code) => dictionaryRef(refs, "TAG", String(code))),
     categoryRef: categoryRefFor(source, refs),
-    salesUnitRef: unitRef(refs, assignment.salesUnitCode),
-    baseMeasureUnitRef: unitRef(refs, assignment.baseMeasureUnitCode),
+    salesUnitRef: unitRef(refs, unitAssignment.salesUnitCode),
+    baseMeasureUnitRef: unitRef(refs, unitAssignment.baseMeasureUnitCode),
     shortName: source.shortName ?? source.name,
-    identifiers: source.identifiers ?? [],
+    identifiers: seedIdentifiers(assignment?.identifiers ?? []),
+    preparationProfile: seedProfile(assignment?.preparationProfile, refs, source.catalogItemCode),
     priceGranularity,
     standardSalePrice: price,
     missingPriceCount: price === null ? 1 : 0,
     compositeGroups,
     skuVariantDimensions,
-    productionProfiles: {item: source.preparationProfile ?? {}, sku: {}, optionValue: {}},
     skus,
   };
 };
@@ -383,7 +497,8 @@ const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = nul
       status: sku.status || "ENABLED",
       };
     }),
-    skuBarcode: `${sku.code}-BARCODE`,
+    identifiers: seedSkuIdentifiers(assignment, sku.code),
+    preparationOverride: seedSkuPreparationOverride(assignment, sku.code, refs),
     standardSalePrice: null,
     isDefault: sku.code.endsWith("-S"),
     status: sku.status || "ENABLED",
@@ -409,8 +524,9 @@ const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = nul
     attributeAssignments: [],
     orderOptionConfigs: [],
     images: sourceImage,
-    identifiers: [],
-    productionTagRefs: [],
+    identifiers: seedIdentifiers(assignment.identifiers),
+    preparationProfile: seedProfile(assignment.preparationProfile, refs, item.code),
+    tagRefs: (assignment.tagCodes || []).map((code) => dictionaryRef(refs, "TAG", code)),
     categoryRef: null,
     salesUnitRef: unitRef(refs, assignment.salesUnitCode),
     baseMeasureUnitRef: unitRef(refs, assignment.baseMeasureUnitCode),
@@ -420,7 +536,6 @@ const canonicalDraft = (dataset, item, assetRefs, refs, assignmentOverride = nul
     skuVariantDimensions,
     skus: skuEntries,
     compositeGroups,
-    productionProfiles: {item: item.materialRole ? {materialRole: item.materialRole} : {}, sku: {}, optionValue: {}},
   };
   if (item.materialRole) draft.materialRole = item.materialRole;
   return draft;
@@ -505,7 +620,7 @@ const assertSeedBusinessLabels = (seedPlan) => {
   for (const source of seedPlan.sourceItems ?? []) sourceUnitAssignment(source);
   for (const assignment of catalogDefinitionSeed.itemAssignments) definitionAssignmentFor(assignment.itemCode);
   assertExactBusinessLabelSet("CATALOG_CATEGORY", (seedPlan.sourceItems ?? []).map((item) => item.categoryKey), seedBusinessLabels.categories);
-  assertExactBusinessLabelSet("PRODUCTION_TAG", (seedPlan.sourceItems ?? []).flatMap((item) => item.tagKeys ?? []), seedBusinessLabels.productionTags);
+  assertExactBusinessLabelSet("PRODUCTION_TAG", catalogDefinitionSeed.productionTagDefinitions.map((entry) => entry.code), seedBusinessLabels.productionTags);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE", references.attributes, seedBusinessLabels.dictionary?.SKU_ATTRIBUTE);
   assertExactBusinessLabelSet("SKU_ATTRIBUTE_VALUE", references.skuAttributeValues.map((entry) => entry.code), seedBusinessLabels.dictionary?.SKU_ATTRIBUTE_VALUE);
   assertExactBusinessLabelSet("UNIT", unitCodes, seedBusinessLabels.units);
@@ -816,7 +931,7 @@ async function execute() {
       if (allRows.length !== catalogDefinitionSeed.unitDefinitions.length)
         fail(`SEED_UNIT_LIBRARY_READBACK_INVALID:${client.scopeType}`);
       const categoryCodes = [...new Set(plan.sourceItems.map((item) => item.categoryKey).filter(Boolean))];
-      const tagCodes = [...new Set(plan.sourceItems.flatMap((item) => item.tagKeys || []))];
+      const tagCodes = catalogDefinitionSeed.productionTagDefinitions.map((entry) => entry.code);
       for (const code of categoryCodes) await request(`${client.scopeType}-category-${code}`, "createOperationsCatalogCategory", {}, {cookie: client.cookie, brandRef: client.brandRef, body: {dataNodeRef: client.dataNodeRef, code, name: categoryLabel(code), parentCategoryRef: null}});
       const navigation = await request(`${client.scopeType}-category-readback`, "getOperationsCatalogNavigation", {}, {cookie: client.cookie, brandRef: client.brandRef, queryParameters: {dataNodeRef: client.dataNodeRef}});
       for (const row of (navigation.json?.data ?? navigation.json)?.tree || []) {
@@ -1004,7 +1119,12 @@ async function execute() {
           }
           if (materials.size !== source.materialItemCodes.length || source.materialItemCodes.some((code) => !materials.has(code)))
             fail(`SEED_ORDER_OPTION_MATERIAL_READBACK_INVALID:${client.scopeType}:${definition.code}:${value.code}`);
-          values.set(value.code, {definitionValueRef: requiredUuid(value.valueRef, `ORDER_OPTION_DEFINITION_VALUE:${definition.code}:${value.code}`), materials});
+          values.set(value.code, {
+            code: value.code,
+            definitionValueRef: requiredUuid(value.valueRef, `ORDER_OPTION_DEFINITION_VALUE:${definition.code}:${value.code}`),
+            displayOrder: requiredDefinitionValueDisplayOrder(value, `ORDER_OPTION_DEFINITION_VALUE:${definition.code}:${value.code}`),
+            materials,
+          });
         }
         if (values.size !== definition.values.length) fail(`SEED_ORDER_OPTION_DEFINITION_VALUES_READBACK_INVALID:${client.scopeType}:${definition.code}`);
         refs.orderOptionDefinitions.set(definition.code, {definitionRef: requiredUuid(readback.definitionRef, `ORDER_OPTION_DEFINITION:${definition.code}`), values});
@@ -1038,11 +1158,12 @@ async function execute() {
           optionRefs: attribute.optionNames.map((name) => requiredUuid(definition.options.get(name), `ATTRIBUTE_ASSIGNMENT_OPTION:${attribute.definitionCode}:${name}`)),
         };
       });
-      draft.orderOptionConfigs = assignment.orderOptions.map((config) => {
+      draft.orderOptionConfigs = assignment.orderOptions.map((config, configIndex) => {
         const definition = refs.orderOptionDefinitions.get(config.definitionCode);
         if (!definition) fail(`SEED_ORDER_OPTION_ASSIGNMENT_DEFINITION_MISSING:${client.scopeType}:${config.definitionCode}`);
         return {
           definitionRef: definition.definitionRef,
+          displayOrder: configIndex,
           required: config.required,
           minSelectionCount: config.minSelectionCount,
           maxSelectionCount: config.maxSelectionCount,
@@ -1054,16 +1175,20 @@ async function execute() {
               defaultValue: value.defaultValue,
               extraPrice: value.extraPrice,
               expectedBomVersion: 0,
+              preparationEffect: seedOptionPreparationEffect(assignment, value.valueCode, refs),
             };
           }),
         };
       });
       draft.skus = (draft.skus ?? []).map((sku) => {
         const override = (assignment.skuUnitOverrides ?? []).find((entry) => entry.skuCode === sku.skuCode);
+        const preparationOverride = seedSkuPreparationOverride(assignment, sku.skuCode, refs);
         return {
           ...sku,
           salesUnitOverrideRef: unitRef(refs, override?.salesUnitCode ?? null),
           baseMeasureUnitOverrideRef: unitRef(refs, override?.baseMeasureUnitCode ?? null),
+          identifiers: seedSkuIdentifiers(assignment, sku.skuCode),
+          preparationOverride,
         };
       });
       return draft;
@@ -1083,6 +1208,11 @@ async function execute() {
       };
       assertEffectiveUnit(actual.salesUnit, expectedItemSalesUnitRef, expectedItemSalesUnitRef ? "ITEM_DEFAULT" : null, "ITEM_SALES");
       assertEffectiveUnit(actual.baseMeasureUnit, expectedItemBaseMeasureUnitRef, expectedItemBaseMeasureUnitRef ? "ITEM_DEFAULT" : null, "ITEM_BASE");
+      if (!sameIdentifierFacts(actual.identifiers ?? [], assignment.identifiers ?? [], "CATALOG_ITEM", refs.itemRefs.get(assignment.itemCode)))
+        fail(`SEED_ITEM_IDENTIFIER_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}`);
+      const expectedItemProfile = seedProfile(assignment.preparationProfile, refs, assignment.itemCode);
+      if (!samePreparationProfile(actual.preparationProfile, expectedItemProfile))
+        fail(`SEED_ITEM_PREPARATION_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}`);
       for (const sku of actual.skus ?? []) {
         const expected = (assignment.skuUnitOverrides ?? []).find((entry) => entry.skuCode === sku.skuCode);
         const expectedSalesOverrideRef = unitRef(refs, expected?.salesUnitCode ?? null);
@@ -1093,6 +1223,19 @@ async function execute() {
         const expectedBaseEffectiveRef = expectedBaseOverrideRef ?? expectedItemBaseMeasureUnitRef;
         assertEffectiveUnit(sku.salesUnit, expectedSalesEffectiveRef, expectedSalesEffectiveRef ? (expectedSalesOverrideRef ? "SKU_OVERRIDE" : "ITEM_DEFAULT") : null, `${sku.skuCode}:SALES`);
         assertEffectiveUnit(sku.baseMeasureUnit, expectedBaseEffectiveRef, expectedBaseEffectiveRef ? (expectedBaseOverrideRef ? "SKU_OVERRIDE" : "ITEM_DEFAULT") : null, `${sku.skuCode}:BASE`);
+        const expectedSku = (assignment.skuIdentifiers ?? []).find((entry) => entry.skuCode === sku.skuCode);
+        if (!sameIdentifierFacts(sku.identifiers ?? [], expectedSku?.identifiers ?? [], "SKU", refs.skuRefs.get(sku.skuCode)))
+          fail(`SEED_SKU_IDENTIFIER_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${sku.skuCode}`);
+        const expectedPreparationOverride = seedSkuPreparationOverride(assignment, sku.skuCode, refs);
+        if (sku.preparationOverride?.mode !== expectedPreparationOverride.mode
+            || !samePreparationProfile(sku.preparationOverride?.profile, expectedPreparationOverride.profile))
+          fail(`SEED_SKU_PREPARATION_OVERRIDE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${sku.skuCode}`);
+        const expectedEffective = expectedPreparationOverride.mode === "OVERRIDE"
+          ? expectedPreparationOverride.profile
+          : expectedItemProfile;
+        if (!samePreparationProfile(sku.effectivePreparation, expectedEffective)
+            || sku.preparationSource !== (expectedPreparationOverride.mode === "OVERRIDE" ? "SKU_OVERRIDE" : "ITEM_DEFAULT"))
+          fail(`SEED_SKU_EFFECTIVE_PREPARATION_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${sku.skuCode}`);
       }
       for (const expected of assignment.attributes) {
         const definition = refs.attributeDefinitions.get(expected.definitionCode);
@@ -1103,16 +1246,42 @@ async function execute() {
         if (JSON.stringify([...(value.optionRefs ?? [])].sort()) !== JSON.stringify(expectedOptions))
           fail(`SEED_ATTRIBUTE_ASSIGNMENT_OPTIONS_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}`);
       }
-      for (const expected of assignment.orderOptions) {
+      for (const [expectedOptionIndex, expected] of assignment.orderOptions.entries()) {
         const definition = refs.orderOptionDefinitions.get(expected.definitionCode);
         const config = (actual.orderOptionConfigs ?? []).find((entry) => entry.definitionRef === definition?.definitionRef);
-        if (!config || config.required !== expected.required || config.minSelectionCount !== expected.minSelectionCount || config.maxSelectionCount !== expected.maxSelectionCount)
+        if (!config || Number(config.displayOrder) !== expectedOptionIndex || config.required !== expected.required || config.minSelectionCount !== expected.minSelectionCount || config.maxSelectionCount !== expected.maxSelectionCount)
           fail(`SEED_ORDER_OPTION_CONFIG_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}`);
         for (const expectedValue of expected.values) {
           const definitionValue = definition.values.get(expectedValue.valueCode);
           const value = (config.values ?? []).find((entry) => entry.definitionValueRef === definitionValue?.definitionValueRef);
           if (!value || value.defaultValue !== expectedValue.defaultValue || Number(value.extraPrice) !== Number(expectedValue.extraPrice))
             fail(`SEED_ORDER_OPTION_OVERRIDE_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expected.definitionCode}:${expectedValue.valueCode}`);
+          const expectedEffect = seedOptionPreparationEffect(assignment, expectedValue.valueCode, refs);
+          const actualEffect = value.preparationEffect;
+          if (expectedEffect == null) {
+            if (actualEffect !== null && actualEffect !== undefined)
+              fail(`SEED_OPTION_PREPARATION_EFFECT_UNEXPECTED:${client.scopeType}:${assignment.itemCode}:${expectedValue.valueCode}`);
+          } else {
+            const comparison = preparationEffectComparison(
+              actualEffect,
+              expectedEffect,
+              definitionValue.definitionValueRef,
+              expectedOptionIndex,
+              requiredDefinitionValueDisplayOrder(
+                definitionValue,
+                `${client.scopeType}:${assignment.itemCode}:${expectedValue.valueCode}`,
+              ),
+            );
+            if (!comparison.matches) {
+              phase(`${client.scopeType}-option-preparation-effect-diagnostic-${assignment.itemCode}-${expectedValue.valueCode}`, "FAIL", {
+                operationId: "getOperationsCatalogItem",
+                itemCode: assignment.itemCode,
+                valueCode: expectedValue.valueCode,
+                ...comparison,
+              });
+              fail(`SEED_OPTION_PREPARATION_EFFECT_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${expectedValue.valueCode}`);
+            }
+          }
         }
       }
     };
@@ -1607,8 +1776,12 @@ async function execute() {
               && candidateOwner.itemRef === owner.itemRef
               && candidateOwner.optionValueRef === owner.optionValueRef;
           });
-          if (ruleIndex < 0) fail(`SEED_ORDER_OPTION_BOM_OWNER_MISSING:${client.scopeType}:${assignment.itemCode}:${optionBom.valueCode}`);
-          inventoryRules.nodes[ruleIndex] = rule;
+          // An option-value BOM owner is first materialized in this same
+          // aggregate save.  Replace an existing owner on rerun/readback, but
+          // append the legitimate first configuration instead of requiring a
+          // row that cannot exist before the option assignment is saved.
+          if (ruleIndex < 0) inventoryRules.nodes.push(rule);
+          else inventoryRules.nodes[ruleIndex] = rule;
           expectedOptionBoms.push({optionValueRef: owner.optionValueRef, valueCode: optionBom.valueCode, lines: targetLines});
         }
         const configured = await request(`${client.scopeType}-definition-assignment-${assignment.itemCode}`, "saveOperationsCatalogItem", {itemCode: assignment.itemCode}, {
@@ -1708,8 +1881,9 @@ async function execute() {
     for (const client of clients) {
       const refs = refsFor(client);
       for (const assignment of catalogDefinitionSeed.itemAssignments) {
-        const clearOverrides = (assignment.skuUnitOverrides ?? []).filter((override) => override.clearAfterReadback);
-        if (!clearOverrides.length) continue;
+        const clearUnitOverrides = (assignment.skuUnitOverrides ?? []).filter((override) => override.clearAfterReadback);
+        const clearPreparationOverrides = (assignment.skuPreparationOverrides ?? []).filter((override) => override.clearAfterReadback);
+        if (!clearUnitOverrides.length && !clearPreparationOverrides.length) continue;
         const current = await recordItemReadback(
           client,
           refs,
@@ -1720,6 +1894,9 @@ async function execute() {
           ...assignment,
           skuUnitOverrides: (assignment.skuUnitOverrides ?? []).map((override) => override.clearAfterReadback
             ? {...override, salesUnitCode: null, baseMeasureUnitCode: null, clearAfterReadback: false}
+            : override),
+          skuPreparationOverrides: (assignment.skuPreparationOverrides ?? []).map((override) => override.clearAfterReadback
+            ? {...override, mode: "INHERIT_ITEM", profile: null, clearAfterReadback: false}
             : override),
         };
         const draft = assignmentDraft(client, clearedAssignment);
@@ -1740,10 +1917,16 @@ async function execute() {
         canonicalVersions.set(canonicalItemKey(client, assignment.itemCode), itemVersion(cleared.json));
         const actual = await recordItemReadback(client, refs, assignment.itemCode, `${client.scopeType}-definition-assignment-clear-overrides-${assignment.itemCode}`);
         assertDefinitionAssignmentReadback(client, clearedAssignment, actual);
-        for (const override of clearOverrides) {
+        for (const override of clearUnitOverrides) {
           const sku = (actual.skus ?? []).find((entry) => entry.skuCode === override.skuCode);
           if (!sku || sku.salesUnitOverrideRef !== null || sku.baseMeasureUnitOverrideRef !== null)
             fail(`SEED_SKU_UNIT_OVERRIDE_CLEAR_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${override.skuCode}`);
+        }
+        for (const override of clearPreparationOverrides) {
+          const sku = (actual.skus ?? []).find((entry) => entry.skuCode === override.skuCode);
+          if (!sku || sku.preparationOverride?.mode !== "INHERIT_ITEM" || sku.preparationOverride?.profile !== null
+              || sku.preparationSource !== "ITEM_DEFAULT" || !samePreparationProfile(sku.effectivePreparation, seedProfile(clearedAssignment.preparationProfile, refs, assignment.itemCode)))
+            fail(`SEED_SKU_PREPARATION_OVERRIDE_CLEAR_READBACK_INVALID:${client.scopeType}:${assignment.itemCode}:${override.skuCode}`);
         }
       }
     }
@@ -1781,7 +1964,7 @@ async function execute() {
         }
         if (item.shapeKey === "MATERIAL") {
           const expectedRole = item.materialRole;
-          const actualRole = actual.materialRole ?? actual.productionProfiles?.item?.materialRole;
+          const actualRole = actual.materialRole;
           if (actualRole !== expectedRole) fail(`SEED_CANONICAL_MATERIAL_ROLE_READBACK_INVALID:${client.scopeType}:${item.code}`);
           if (!(actual.inventoryRules?.nodes ?? []).some((row) => row.mode === "DIRECT"
               && row.owner?.ownerType === "ITEM" && row.owner?.itemCode === item.code))
@@ -1831,6 +2014,7 @@ async function execute() {
 
 const selfTest = () => {
   assertSeedBusinessLabels(plan);
+  requireCatalogDefinitionSeed();
   const sample = {scopeContext: {store: {dataNodeRef: "store-ref"}}, dataNodeCandidates: [{dataNodeType: "STORE", dataNodeRef: "store-ref"}], contextVersion: 7};
   if (dataNodeFromSession(sample, "STORE", "store-ref").ref !== "store-ref") fail("SESSION_WIRE_DATA_NODE_REF_REQUIRED");
   const checks = [
@@ -1851,6 +2035,18 @@ const selfTest = () => {
     ["MISSING_SKU_ATTRIBUTE_VALUE_IDENTITY", () => skuAttributeValueCode("DRINK_SIZE", null, "red-mutation")],
     ["CATALOG_DEFINITION_FIXTURE_MISSING", () => requireCatalogDefinitionSeed(null)],
     ["CATALOG_DEFINITION_ATTRIBUTE_TYPES", () => requireCatalogDefinitionSeed({...catalogDefinitionSeed, attributeDefinitions: catalogDefinitionSeed.attributeDefinitions.filter((definition) => definition.valueType !== "TEXT")})],
+    ["CATALOG_PREPARATION_ADMISSION", () => {
+      const denied = [...canonicalItemShapeByCode.entries()].find(([itemCode, shapeKey]) =>
+        !itemPreparationAllowedShapes.has(shapeKey)
+        && catalogDefinitionSeed.itemAssignments.some((assignment) => assignment.itemCode === itemCode));
+      if (!denied) fail("SEED_CATALOG_DEFINITION_PREPARATION_RED_FIXTURE_MISSING");
+      const [itemCode] = denied;
+      const mutatedAssignments = catalogDefinitionSeed.itemAssignments.map((assignment) =>
+        assignment.itemCode === itemCode ? {...assignment, preparationProfile: {}} : assignment);
+      requireCatalogDefinitionSeed({...catalogDefinitionSeed, itemAssignments: mutatedAssignments});
+    }],
+    ["ORDER_OPTION_VALUE_DISPLAY_ORDER_REQUIRED", () =>
+      requiredDefinitionValueDisplayOrder({code: "CHICKEN"}, "red-mutation")],
     ["QUALIFIED_SKU_VALUE_CODE_COLLISION", () => {
       const collisionDataset = {fixtureId: "RED-CODE-COLLISION", entities: {catalogItems: [{code: "RED-CODE-COLLISION"}], skus: [{code: "RED-1", attributeValues: {A: "B-C"}}, {code: "RED-2", attributeValues: {"A-B": "C"}}]}};
       collectSeedReferences({...plan, seedDatasets: [...plan.seedDatasets, collisionDataset], canonicalDependencyOrder: [...plan.canonicalDependencyOrder, collisionDataset.fixtureId]});
@@ -1862,6 +2058,9 @@ const selfTest = () => {
     bomStageKey({ownerCode: "CAESAR-001"}),
   ]);
   if (realBomStageKeys.size !== 3) fail("SEED_BOM_STAGE_IDENTITY_INVALID");
+  if (normalizedSeedIdentifierValue({identifierType: "MNEMONIC", identifierValue: "Kitchen Default"}) !== "kitchen default")
+    fail("SEED_MNEMONIC_NORMALIZATION_INVALID");
+  process.stdout.write("SEED_MNEMONIC_NORMALIZATION=PASS\n");
   const skuAliasRefs = {skuRefs: new Map([["STEAK-MEDIUM", "11111111-1111-4111-8111-111111111111"]]), skuCodeByReference: new Map([["sku-steak-medium", "STEAK-MEDIUM"]])};
   if (skuRef(skuAliasRefs, "sku-steak-medium") !== "11111111-1111-4111-8111-111111111111") fail("SEED_SKU_REFERENCE_ALIAS_INVALID");
   for (const [name, check] of checks) { let rejected = false; try { check(); } catch { rejected = true; } if (!rejected) fail(`SEED_EXECUTOR_RED_MUTATION_NOT_REJECTED:${name}`); process.stdout.write(`SEED_EXECUTOR_RED_MUTATION=${name}\n`); }

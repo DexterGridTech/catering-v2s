@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="2320" viewBox="0 0 1500 2320">
+  <defs>
+    <style>
+      .bg{fill:#f4f6f8}.panel{fill:#fff;stroke:#c8d0da;stroke-width:2}.head{fill:#eff5ff;stroke:#91b8f6}.modal{fill:#fff;stroke:#5b8ff9;stroke-width:3}.line{stroke:#d9dfe8;stroke-width:1}.input{fill:#fff;stroke:#b9c2cf}.muted{fill:#f7f8fa;stroke:#d9dfe8}.primary{fill:#2962cc}.danger{fill:#d84a4a}.pill{fill:#eef3ff;stroke:#9ab6ee}.tag{fill:#f0f7ee;stroke:#8ec58c}.txt{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263238;font-size:16px}.small{font-size:14px;fill:#647080}.tiny{font-size:12px;fill:#6b7683}.title{font-size:30px;font-weight:700}.h2{font-size:20px;font-weight:700}.h3{font-size:17px;font-weight:700}.white{fill:white}.blue{fill:#2962cc}.bold{font-weight:700}.center{text-anchor:middle}.right{text-anchor:end}
+    </style>
+  </defs>
+  <rect class="bg" width="1500" height="2320"/>
+  <text class="txt title" x="40" y="52">商品条码与标识、制作信息优化 · 低保真线框</text>
+  <text class="txt small" x="40" y="80">原则：在同一个商品编辑页一次保存；识别码和制作信息分别归属当前商品、具体规格或具体选项值。</text>
+
+  <!-- A -->
+  <rect class="panel" x="40" y="105" width="1420" height="245" rx="12"/>
+  <text class="txt h2" x="65" y="138">A · 商品编辑主页面（CIPG-01）</text>
+  <rect class="head" x="65" y="155" width="1370" height="58" rx="7"/>
+  <text class="txt h3" x="85" y="190">烤鸡翅（APP-CHICKEN-WINGS-001）</text>
+  <rect class="pill" x="455" y="169" width="112" height="28" rx="14"/><text class="txt tiny center" x="511" y="188">普通销售商品</text>
+  <rect class="input" x="1270" y="169" width="64" height="30" rx="5"/><text class="txt small center" x="1302" y="190">取消</text>
+  <rect class="primary" x="1344" y="169" width="70" height="30" rx="5"/><text class="txt small white center" x="1379" y="190">保存</text>
+  <text class="txt small" x="80" y="245">基础</text><text class="txt small blue bold" x="145" y="245">条码与标识</text><text class="txt small" x="255" y="245">点单选项</text><text class="txt small" x="350" y="245">商品属性</text><text class="txt small blue bold" x="445" y="245">制作信息</text><text class="txt small" x="530" y="245">库存与 BOM</text><text class="txt small" x="650" y="245">引用关系</text>
+  <line class="line" x1="65" y1="262" x2="1435" y2="262"/>
+  <text class="txt small" x="80" y="295">按规格管理的商品：识别码和制作差异都从具体规格行进入。</text>
+  <text class="txt small" x="80" y="323">所有页签和弹窗中的修改都在底部“保存”时一次提交；关闭时统一检查未保存修改。</text>
+
+  <!-- B -->
+  <rect class="panel" x="40" y="380" width="690" height="520" rx="12"/>
+  <text class="txt h2" x="65" y="415">B · 商品级条码与标识（CIPG-02）</text>
+  <rect class="head" x="65" y="435" width="640" height="56" rx="7"/>
+  <text class="txt small" x="82" y="460">识别码用于扫码、称重键码或快速检索。</text>
+  <text class="txt small" x="82" y="481">商品编码无需在此重复维护。</text>
+  <rect class="primary" x="65" y="510" width="124" height="34" rx="5"/><text class="txt small white center" x="127" y="532">添加识别码</text>
+  <text class="txt tiny bold" x="83" y="580">类型</text><text class="txt tiny bold" x="255" y="580">识别值</text><text class="txt tiny bold" x="650" y="580">操作</text>
+  <rect class="input" x="75" y="595" width="150" height="42" rx="5"/><text class="txt small" x="92" y="621">条码  ▾</text>
+  <rect class="input" x="240" y="595" width="375" height="42" rx="5"/><text class="txt small" x="255" y="621">6901234567890</text><text class="txt small danger" x="640" y="621">移除</text>
+  <rect class="input" x="75" y="652" width="150" height="42" rx="5"/><text class="txt small" x="92" y="678">助记码  ▾</text>
+  <rect class="input" x="240" y="652" width="375" height="42" rx="5"/><text class="txt small" x="255" y="678">KJC</text><text class="txt small danger" x="640" y="678">移除</text>
+  <rect class="muted" x="75" y="718" width="590" height="64" rx="6"/><text class="txt small" x="92" y="744">服务与费用商品只支持助记码。</text><text class="txt tiny" x="92" y="767">条码和称重键码不适用于此类商品。</text>
+  <text class="txt small danger" x="75" y="817">该识别码已被同一品牌下的其他商品或规格使用</text>
+  <text class="txt tiny" x="75" y="852">没有“启用/停用”：移除后不再用于新识别，已有历史记录不会被改写。</text>
+
+  <!-- C -->
+  <rect class="panel" x="770" y="380" width="690" height="520" rx="12"/>
+  <text class="txt h2" x="795" y="415">C · 规格与商品编码摘要（CIPG-03）</text>
+  <rect class="head" x="795" y="435" width="640" height="48" rx="7"/>
+  <text class="txt small" x="812" y="465">每个规格分别维护识别码；商品本身不设置识别码。</text>
+  <text class="txt tiny bold" x="810" y="525">规格</text><text class="txt tiny bold" x="960" y="525">规格编码</text><text class="txt tiny bold" x="1085" y="525">识别码</text><text class="txt tiny bold" x="1240" y="525">制作信息</text>
+  <line class="line" x1="795" y1="540" x2="1435" y2="540"/>
+  <text class="txt small bold" x="810" y="575">大杯 / 热饮</text><text class="txt small" x="960" y="575">LATTE-L-H</text>
+  <text class="txt tiny" x="1085" y="564">条码 2 个</text><text class="txt tiny" x="1085" y="582">助记码 1 个</text><text class="txt small" x="1240" y="575">已单独设置</text>
+  <rect class="input" x="810" y="600" width="125" height="30" rx="5"/><text class="txt tiny center" x="872" y="620">维护识别码</text>
+  <rect class="input" x="945" y="600" width="135" height="30" rx="5"/><text class="txt tiny center" x="1012" y="620">维护制作信息</text>
+  <line class="line" x1="795" y1="650" x2="1435" y2="650"/>
+  <text class="txt small bold" x="810" y="685">中杯 / 冰饮</text><text class="txt small" x="960" y="685">LATTE-M-I</text>
+  <text class="txt small" x="1085" y="685">未维护</text><text class="txt small" x="1240" y="685">使用商品默认</text>
+  <rect class="input" x="810" y="710" width="125" height="30" rx="5"/><text class="txt tiny center" x="872" y="730">维护识别码</text>
+  <rect class="input" x="945" y="710" width="135" height="30" rx="5"/><text class="txt tiny center" x="1012" y="730">维护制作信息</text>
+  <rect class="muted" x="795" y="770" width="640" height="85" rx="6"/>
+  <text class="txt small" x="815" y="800">窄屏时每个规格改为卡片展示，不出现横向滚动。</text>
+  <text class="txt small" x="815" y="830">两个入口只维护当前行的规格，不会切换到其他规格。</text>
+
+  <!-- D -->
+  <rect class="modal" x="40" y="930" width="690" height="430" rx="12"/>
+  <text class="txt h2" x="65" y="968">D · 维护识别码 · 大杯 / 热饮（CIPG-04）</text>
+  <text class="txt small" x="65" y="1000">规格编码：LATTE-L-H　这些识别码只识别当前规格。</text>
+  <rect class="primary" x="65" y="1020" width="124" height="34" rx="5"/><text class="txt small white center" x="127" y="1042">添加识别码</text>
+  <rect class="input" x="65" y="1070" width="150" height="42" rx="5"/><text class="txt small" x="82" y="1096">条码  ▾</text>
+  <rect class="input" x="230" y="1070" width="375" height="42" rx="5"/><text class="txt small" x="245" y="1096">6902234567890</text><text class="txt small danger" x="625" y="1096">移除</text>
+  <rect class="input" x="65" y="1127" width="150" height="42" rx="5"/><text class="txt small" x="82" y="1153">助记码  ▾</text>
+  <rect class="input" x="230" y="1127" width="375" height="42" rx="5"/><text class="txt small" x="245" y="1153">DLR</text><text class="txt small danger" x="625" y="1153">移除</text>
+  <text class="txt tiny" x="65" y="1202">返回商品页面后仍需点击“保存”才会生效。</text>
+  <line class="line" x1="65" y1="1250" x2="705" y2="1250"/>
+  <rect class="input" x="550" y="1280" width="70" height="32" rx="5"/><text class="txt small center" x="585" y="1301">取消</text>
+  <rect class="primary" x="630" y="1280" width="70" height="32" rx="5"/><text class="txt small white center" x="665" y="1301">确定</text>
+
+  <!-- E -->
+  <rect class="panel" x="770" y="930" width="690" height="650" rx="12"/>
+  <text class="txt h2" x="795" y="968">E · 制作信息（CIPG-05）</text>
+  <text class="txt h3" x="795" y="1005">商品默认制作信息</text>
+  <text class="txt small right" x="940" y="1045">制作处理标签</text><rect class="input" x="960" y="1020" width="445" height="42" rx="5"/>
+  <rect class="tag" x="975" y="1030" width="68" height="22" rx="11"/><text class="txt tiny center" x="1009" y="1046">饮品</text>
+  <rect class="tag" x="1052" y="1030" width="112" height="22" rx="11"/><text class="txt tiny center" x="1108" y="1046">打包处理</text>
+  <text class="txt small right" x="940" y="1100">制作单显示名称</text><rect class="input" x="960" y="1075" width="445" height="42" rx="5"/><text class="txt small" x="975" y="1102">大杯热拿铁</text>
+  <text class="txt small right" x="940" y="1155">预计制作时长（秒）</text><rect class="input" x="960" y="1130" width="200" height="42" rx="5"/><text class="txt small" x="975" y="1157">180</text>
+  <text class="txt small right" x="940" y="1210">制作说明</text><rect class="input" x="960" y="1185" width="445" height="58" rx="5"/><text class="txt small" x="975" y="1218">出杯前确认温度</text>
+  <line class="line" x1="795" y1="1270" x2="1435" y2="1270"/>
+  <text class="txt h3" x="795" y="1305">各规格制作信息</text>
+  <text class="txt small" x="810" y="1342">大杯 / 热饮</text><text class="txt small" x="1010" y="1342">已单独设置</text><rect class="input" x="1260" y="1318" width="145" height="32" rx="5"/><text class="txt tiny center" x="1332" y="1339">维护制作信息</text>
+  <text class="txt small" x="810" y="1385">中杯 / 冰饮</text><text class="txt small" x="1010" y="1385">使用商品默认</text><rect class="input" x="1260" y="1361" width="145" height="32" rx="5"/><text class="txt tiny center" x="1332" y="1382">维护制作信息</text>
+  <line class="line" x1="795" y1="1410" x2="1435" y2="1410"/>
+  <text class="txt h3" x="795" y="1445">点单选择带来的制作变化</text>
+  <text class="txt small" x="810" y="1480">3 个选项值已设置制作变化</text><rect class="primary" x="1235" y="1457" width="170" height="34" rx="5"/><text class="txt small white center" x="1320" y="1479">去点单选项维护</text>
+  <text class="txt tiny" x="795" y="1530">商品页只选择已有制作处理标签，不在此快速创建共享标签。</text>
+
+  <!-- F -->
+  <rect class="modal" x="40" y="1400" width="690" height="690" rx="12"/>
+  <text class="txt h2" x="65" y="1438">F · 维护制作信息 · 大杯 / 热饮（CIPG-06）</text>
+  <rect class="pill" x="65" y="1465" width="160" height="36" rx="18"/><text class="txt small center" x="145" y="1488">使用商品默认</text>
+  <rect class="primary" x="235" y="1465" width="140" height="36" rx="18"/><text class="txt small white center" x="305" y="1488">单独设置</text>
+  <text class="txt tiny" x="65" y="1522">单独设置后，本规格使用自己的一整套制作信息。</text>
+  <rect class="muted" x="65" y="1540" width="640" height="86" rx="6"/>
+  <text class="txt small bold" x="82" y="1568">当前商品默认</text><text class="txt small" x="82" y="1595">饮品 / 打包处理 · 大杯热拿铁 · 180 秒</text>
+  <text class="txt tiny" x="82" y="1615">切回“使用商品默认”时使用这份内容。</text>
+  <text class="txt small right" x="220" y="1665">制作处理标签</text><rect class="input" x="240" y="1640" width="430" height="42" rx="5"/><text class="txt small" x="255" y="1667">饮品、热厨  ▾</text>
+  <text class="txt small right" x="220" y="1720">制作单显示名称</text><rect class="input" x="240" y="1695" width="430" height="42" rx="5"/><text class="txt small" x="255" y="1722">热饮大杯拿铁</text>
+  <text class="txt small right" x="220" y="1775">预计制作时长（秒）</text><rect class="input" x="240" y="1750" width="210" height="42" rx="5"/><text class="txt small" x="255" y="1777">210</text>
+  <text class="txt small right" x="220" y="1830">制作说明</text><rect class="input" x="240" y="1805" width="430" height="58" rx="5"/><text class="txt small" x="255" y="1838">使用热饮杯盖</text>
+  <text class="txt small danger" x="240" y="1895">清除单独设置并恢复商品默认</text>
+  <line class="line" x1="65" y1="1965" x2="705" y2="1965"/>
+  <rect class="input" x="550" y="1995" width="70" height="32" rx="5"/><text class="txt small center" x="585" y="2016">取消</text>
+  <rect class="primary" x="630" y="1995" width="70" height="32" rx="5"/><text class="txt small white center" x="665" y="2016">确定</text>
+  <text class="txt tiny" x="65" y="2062">返回商品页面后仍需点击“保存”才会生效。</text>
+
+  <!-- G -->
+  <rect class="panel" x="770" y="1610" width="690" height="480" rx="12"/>
+  <text class="txt h2" x="795" y="1648">G · 选项值制作变化（CIPG-07）</text>
+  <text class="txt h3" x="795" y="1685">温度　›　加冰</text>
+  <rect class="head" x="795" y="1700" width="640" height="48" rx="7"/><text class="txt small" x="812" y="1730">这些变化会添加到商品或规格的制作信息中。</text>
+  <text class="txt small right" x="965" y="1788">增加制作处理标签</text><rect class="input" x="985" y="1763" width="420" height="42" rx="5"/><text class="txt small" x="1000" y="1790">冷饮处理  ▾</text>
+  <text class="txt small right" x="965" y="1843">增加制作时长（秒）</text><rect class="input" x="985" y="1818" width="200" height="42" rx="5"/><text class="txt small" x="1000" y="1845">15</text>
+  <text class="txt small right" x="965" y="1898">追加制作说明</text><rect class="input" x="985" y="1873" width="420" height="58" rx="5"/><text class="txt small" x="1000" y="1906">最后加冰</text>
+  <rect class="muted" x="795" y="1955" width="640" height="88" rx="6"/>
+  <text class="txt small" x="812" y="1985">这里只能增加标签、增加零或正数时长、追加说明。</text>
+  <text class="txt small" x="812" y="2015">没有“移除标签”或“减少时长”；制作方式不同应为具体规格单独设置。</text>
+  <text class="txt tiny" x="795" y="2070">多项制作说明会按点单选项在页面中的顺序依次呈现。</text>
+
+  <rect class="head" x="40" y="2140" width="1420" height="125" rx="10"/>
+  <text class="txt h3" x="65" y="2175">Dexter 已确认的交互方向</text>
+  <text class="txt small" x="65" y="2205">1. 按规格管理的商品从具体规格行维护识别码，不显示父商品识别码入口。</text>
+  <text class="txt small" x="65" y="2235">2. “制作信息”维护商品默认和各规格摘要，点单选项变化回到具体选项值维护。</text>
+  <text class="txt small" x="800" y="2205">3. 两个规格子任务使用弹窗编辑，最终仍由商品页面一次保存。</text>
+  <text class="txt small" x="800" y="2235">4. 服务与费用商品只显示助记码，异常提交仍会被保存校验拒绝。</text>
+  <text class="txt tiny" x="40" y="2300">状态：DEXTER_ACCEPTED@2026-08-23；本线框只确认交互，不构成实施授权。</text>
+</svg>

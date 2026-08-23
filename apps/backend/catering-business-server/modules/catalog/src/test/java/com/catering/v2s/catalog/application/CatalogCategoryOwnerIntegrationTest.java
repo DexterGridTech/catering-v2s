@@ -69,6 +69,7 @@ class CatalogCategoryOwnerIntegrationTest {
     private static CatalogOwnerService service;
     private static InventoryOwnerService inventory;
     private static ProductionTagOwnerService production;
+    private static CatalogOwnerApi.UnitDefinitionReadback defaultTestUnit;
 
     @BeforeAll
     static void setup() {
@@ -84,6 +85,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 mock(CatalogAssetReferenceLock.class),
                 production,
                 inventory);
+        defaultTestUnit = createUnit(
+                "TEST-DEFAULT-UNIT", "测试默认单位", CatalogOwnerApi.UnitDimension.COUNT, 0);
     }
 
     @Test
@@ -521,11 +524,10 @@ class CatalogCategoryOwnerIntegrationTest {
                         .put("name", "relation-backed production tag")
                         .put("shapeKey", "STANDARD_SALE_COUNTED"));
         ObjectNode save = MAPPER.createObjectNode().put("itemCode", itemCode);
-        save.putObject("sections")
+        ObjectNode draft = save.putObject("sections")
                 .put("expectedCatalogVersion", created.path("version").asLong())
-                .putObject("catalogDraft")
-                .putArray("productionTagRefs")
-                .add(tagRef.toString());
+                .putObject("catalogDraft");
+        draft.putObject("preparationProfile").putArray("productionTagRefs").add(tagRef.toString());
         write("saveOperationsCatalogItem", save);
 
         assertFalse(jdbc.queryForObject(
@@ -942,10 +944,10 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID probeItemRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
+                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
                 probeItemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -1057,7 +1059,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("directConfiguration");
         bomNode.putObject("bom").putArray("lines");
         CatalogOwnerApi.Problem optionValueRejected =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", optionValueBom));
+                assertThrows(
+                        CatalogOwnerApi.Problem.class,
+                        () -> coordinatorSave(optionValueBom, "shape-admission-sku-item"));
         assertEquals("INVENTORY_DEDUCTION_MODE_NOT_ALLOWED", optionValueRejected.code());
         assertEquals(
                 1L,
@@ -1095,7 +1099,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("directConfiguration");
         serviceNode.putObject("bom").putArray("lines");
         CatalogOwnerApi.Problem serviceBomRejected =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", serviceBom));
+                assertThrows(
+                        CatalogOwnerApi.Problem.class,
+                        () -> coordinatorSave(serviceBom, "shape-admission-service"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", serviceBomRejected.code());
 
         String standardItemCode = generatedCatalogCode("OPTION-VALUE-MODE");
@@ -1130,7 +1136,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("conversionFactor", "1");
         invalidOptionNode.putNull("bom");
         CatalogOwnerApi.Problem invalidOptionModeRejected = assertThrows(
-                CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", invalidOptionMode));
+                CatalogOwnerApi.Problem.class,
+                () -> coordinatorSave(invalidOptionMode, "shape-admission-option"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", invalidOptionModeRejected.code());
         assertEquals(
                 1L,
@@ -1560,8 +1567,6 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID itemRef = UUID.fromString(created.path("resourceRef").asText());
         CatalogOwnerApi.UnitDefinitionReadback each =
                 createUnit("INVENTORY-EACH", "Each", CatalogOwnerApi.UnitDimension.COUNT, 0);
-        CatalogOwnerApi.UnitDefinitionReadback box =
-                createUnit("INVENTORY-BOX", "Box", CatalogOwnerApi.UnitDimension.COUNT, 0);
         CatalogOwnerApi.UnitDefinitionReadback kilogram =
                 createUnit("INVENTORY-KILOGRAM", "Kilogram", CatalogOwnerApi.UnitDimension.WEIGHT, 3);
         CatalogOwnerApi.UnitDefinitionReadback gram =
@@ -1570,9 +1575,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 "saveOperationsCatalogItem",
                 itemUnitSave(itemCode, created.path("version").asLong(), each, each));
         UUID componentItemRef = UUID.randomUUID();
-        UUID itemTargetRef = UUID.randomUUID();
         UUID componentTargetRef = UUID.randomUUID();
-        insertStockTargetWithUnits(itemTargetRef, itemRef, null, itemCode, null, each, box, false, false, "1.5", "2");
         insertStockTargetWithUnits(
                 componentTargetRef,
                 componentItemRef,
@@ -1622,30 +1625,10 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("inventoryRules")
                 .path("nodes");
 
-        assertEquals(2, nodes.size());
+        assertEquals(1, nodes.size());
         JsonNode target = nodes.get(0);
-        assertEquals(itemTargetRef.toString(), target.path("targetRef").asText());
-        assertEquals(
-                each.unitRef().toString(),
-                target.path("consumptionUnitSnapshot").path("unitRef").asText());
-        assertEquals(
-                "COUNT",
-                target.path("consumptionUnitSnapshot").path("unitDimension").asText());
-        assertFalse(target.has("consumptionUnit"));
-        assertEquals(4, target.path("configuration").size());
-        assertFalse(target.path("configuration").has("mode"));
-        assertEquals(
-                "1.5", target.path("configuration").path("lowStockThreshold").asText());
-        assertEquals(
-                box.unitRef().toString(),
-                target.path("configuration")
-                        .path("countingUnitSnapshot")
-                        .path("unitRef")
-                        .asText());
-        assertFalse(target.path("configuration").has("countingUnit"));
-        assertEquals("2", target.path("configuration").path("conversionFactor").asText());
-
-        JsonNode component = nodes.get(1);
+        assertEquals("BOM", target.path("mode").asText());
+        JsonNode component = target.path("bom").path("lines").get(0);
         assertEquals(componentTargetRef.toString(), component.path("targetRef").asText());
         assertEquals(
                 kilogram.unitRef().toString(),
@@ -1655,19 +1638,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 component.path("consumptionUnitSnapshot").path("unitDimension").asText());
         assertFalse(component.has("unit"));
         assertEquals("2", component.path("quantity").asText());
-        assertTrue(component.path("configuration").path("allowNegative").asBoolean());
-        assertEquals(
-                "3.5", component.path("configuration").path("lowStockThreshold").asText());
-        assertEquals(
-                gram.unitRef().toString(),
-                component
-                        .path("configuration")
-                        .path("countingUnitSnapshot")
-                        .path("unitRef")
-                        .asText());
-        assertFalse(component.path("configuration").has("countingUnit"));
-        assertEquals(
-                "2", component.path("configuration").path("conversionFactor").asText());
+        assertEquals("POSITIVE", component.path("lineSign").asText());
     }
 
     @Test
@@ -1705,13 +1676,27 @@ class CatalogCategoryOwnerIntegrationTest {
         ObjectNode draft = sections.putObject("catalogDraft");
         draft.put("name", "batch category inventory").put("shapeKey", "STANDARD_SALE_COUNTED");
         putItemUnitRefs(draft, each, each);
-        draft.putObject("attributes");
         draft.putArray("images");
-        draft.putArray("productionTagRefs");
+        draft.putObject("preparationProfile").putArray("productionTagRefs");
         draft.putArray("categoryRefs").add(category.path("categoryRef").asText());
-        sections.putObject("inventoryRules").putArray("nodes");
+        ArrayNode submittedInventoryNodes = MAPPER.createArrayNode();
+        ObjectNode submittedInventoryNode = submittedInventoryNodes.addObject();
+        submittedInventoryNode.set("owner", before.get(0).path("owner").deepCopy());
+        submittedInventoryNode.put("mode", "DIRECT");
+        submittedInventoryNode.set("consumptionUnitSnapshot", unitSnapshot(each));
+        submittedInventoryNode.put("expectedTargetVersion", 1L);
+        submittedInventoryNode.putNull("expectedBomVersion");
+        ObjectNode submittedDirect = submittedInventoryNode.putObject("directConfiguration");
+        submittedDirect.put("targetRef", targetRef.toString())
+                .put("allowNegative", false)
+                .put("lowStockThreshold", "2")
+                .put("countingUnitRef", box.unitRef().toString())
+                .set("countingUnitSnapshot", unitSnapshot(box));
+        submittedDirect.put("conversionFactor", "1.5");
+        submittedInventoryNode.putNull("bom");
+        sections.putObject("inventoryRules").set("nodes", submittedInventoryNodes);
 
-        new TransactionTemplate(new DataSourceTransactionManager(dataSource()))
+        new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()))
                 .executeWithoutResult(status -> coordinator.saveCatalogItem(
                         context("saveOperationsCatalogItem", SCOPE, "batch-category-save"),
                         new CatalogOwnerApi.CatalogItemSaveCommand(itemCode, canonical(request)),
@@ -1724,8 +1709,14 @@ class CatalogCategoryOwnerIntegrationTest {
                 .path("item")
                 .path("inventoryRules")
                 .path("nodes");
-        assertEquals(before, after, "a category-only batch save must not retire or rewrite inventory facts");
-        assertEquals(targetRef.toString(), after.get(0).path("targetRef").asText());
+        assertEquals(
+                before,
+                after,
+                () -> "a category-only batch save must not retire or rewrite inventory facts; before="
+                        + before
+                        + "; after="
+                        + after);
+        assertEquals(targetRef.toString(), after.get(0).path("directConfiguration").path("targetRef").asText());
     }
 
     private static CatalogInventoryCoordinator coordinatorForSave() {
@@ -1740,6 +1731,19 @@ class CatalogCategoryOwnerIntegrationTest {
                 MAPPER,
                 (TimeProvider) () -> 1_785_000_000_000L,
                 mock(CatalogScopeLookup.class));
+    }
+
+    private static CatalogOwnerApi.CatalogItemSaveReadback coordinatorSave(
+            ObjectNode request, String requestId) {
+        ObjectNode effectiveRequest = withDefaultUnitFacts(request);
+        CatalogInventoryCoordinator coordinator = coordinatorForSave();
+        return new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()))
+                .execute(status -> coordinator.saveCatalogItem(
+                        context("saveOperationsCatalogItem", SCOPE, requestId),
+                        new CatalogOwnerApi.CatalogItemSaveCommand(
+                                effectiveRequest.path("itemCode").asText(), canonical(effectiveRequest)),
+                        List.of(),
+                        requestId + "-key"));
     }
 
     @Test
@@ -1766,10 +1770,7 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(2L, replay.path("version").asLong());
         JsonNode replayResult = replay.path("result");
         assertEquals(5, replayResult.size());
-        assertEquals("CATALOG_ITEM", replayResult.path("item").path("factType").asText());
-        assertEquals(
-                CatalogOwnerTypes.REVISION,
-                replayResult.path("item").path("revision").asText());
+        assertEquals(created.path("resourceRef").asText(), replayResult.path("item").path("itemRef").asText());
         assertTrue(replayResult.path("inventoryRules").path("nodes").isArray());
         assertEquals(0, replayResult.path("inventoryRules").path("nodes").size());
         assertTrue(replayResult.path("productionTags").isArray());
@@ -1847,11 +1848,11 @@ class CatalogCategoryOwnerIntegrationTest {
 
         jdbc.update(
                 "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,short_name,shape_key,status,attributes,sections,"
+                        + "(item_ref,data_node_ref,brand_ref,code,name,short_name,shape_key,status,sections,"
                         + "vers"
                         + "ion,created_at_epoch_millis,updated_at_epoch_millis) "
                         + "SELECT md5('short-name-index-noise-' || value)::uuid, ?, ?, 'SHORT-NAME-NOISE-' || value, "
-                        + "'noise name', 'noise short name', 'STANDARD_SALE_COUNTED', 'DRAFT', '{}'::jsonb, "
+                        + "'noise name', 'noise short name', 'STANDARD_SALE_COUNTED', 'DRAFT', "
                         + "'{}'::jsonb, 1, 1, 1 FROM generate_series(1, 2000) AS value",
                 SCOPE.toString(),
                 BRAND);
@@ -2122,10 +2123,10 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID blockingItemRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
+                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
                 blockingItemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -2414,43 +2415,51 @@ class CatalogCategoryOwnerIntegrationTest {
 
     @Test
     void productSkuRefCannotCrossTheDeclaredItemRelation() {
-        UUID ownerItemRef = UUID.randomUUID(),
-                currentItemRef = UUID.randomUUID(),
-                ownerSkuRef = UUID.randomUUID(),
-                mismatchedSkuRef = UUID.randomUUID();
+        String ownerItemCode = "SKU-OWNER-" + UUID.randomUUID();
+        JsonNode ownerItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", ownerItemCode)
+                        .put("name", "SKU owner")
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
+        UUID ownerItemRef = UUID.fromString(ownerItem.path("resourceRef").asText());
+        UUID ownerSkuRef = UUID.randomUUID();
         jdbc.update(
-                "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
-                        + "ated"
-                        + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,CAST(? AS JSONB),1,1,1)",
+                "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
+                        + "display_order,variant_combination_digest) VALUES(?,?,?, ?,true,'ENABLED',0,?)",
+                ownerSkuRef,
                 ownerItemRef,
-                SCOPE.toString(),
-                BRAND,
-                "SKU-OWNER",
-                "SKU owner",
-                "{\"skus\":[{\"productSkuRef\":\"" + ownerSkuRef + "\"}]}");
+                "OWNER-SKU",
+                "Owner SKU",
+                "owner-sku-" + ownerSkuRef);
+        String currentItemCode = "SKU-CROSS-" + UUID.randomUUID();
+        JsonNode currentItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", currentItemCode)
+                        .put("name", "SKU cross")
+                        .put("shapeKey", "SKU_VARIANT_SALE_COUNTED"));
+        UUID currentItemRef = UUID.fromString(currentItem.path("resourceRef").asText());
+        UUID currentSkuRef = UUID.randomUUID();
         jdbc.update(
-                "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
-                        + "ated"
-                        + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                "INSERT INTO catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,"
+                        + "display_order,variant_combination_digest) VALUES(?,?,?, ?,true,'ENABLED',0,?)",
+                currentSkuRef,
                 currentItemRef,
-                SCOPE.toString(),
-                BRAND,
-                "SKU-CROSS",
-                "SKU cross");
-        ObjectNode save = MAPPER.createObjectNode().put("itemCode", "SKU-CROSS");
-        ObjectNode sections =
-                save.putObject("sections").put("expectedCatalogVersion", 1).putObject("catalogDraft");
+                "CURRENT-SKU",
+                "Current SKU",
+                "current-sku-" + currentSkuRef);
+        ObjectNode save = MAPPER.createObjectNode().put("itemCode", currentItemCode);
+        ObjectNode sections = save.putObject("sections")
+                .put("expectedCatalogVersion", currentItem.path("version").asLong());
+        sections.putObject("catalogDraft");
         ObjectNode rules = sections.putObject("inventoryRules");
         ObjectNode node = rules.putArray("nodes").addObject();
         node.putObject("owner")
                 .put("ownerType", "SKU")
-                .put("itemRef", ownerItemRef.toString())
-                .put("productSkuRef", mismatchedSkuRef.toString())
-                .put("skuCode", "MISMATCHED")
+                .put("itemRef", currentItemRef.toString())
+                .put("productSkuRef", ownerSkuRef.toString())
+                .put("skuCode", "OWNER-SKU")
                 .putNull("optionValueRef");
         node.put("mode", "NONE")
                 .putNull("consumptionUnitSnapshot")
@@ -2459,37 +2468,33 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("directConfiguration")
                 .putNull("bom");
         CatalogOwnerApi.Problem rejected =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", save));
-        assertEquals("REFERENCE_MAPPING_UNRESOLVED", rejected.code());
+                assertThrows(
+                        CatalogOwnerApi.Problem.class,
+                        () -> coordinatorSave(save, "shape-admission-cross-sku"));
+        assertEquals(
+                "REFERENCE_MAPPING_UNRESOLVED",
+                rejected.code(),
+                () -> "unexpected cross-SKU rejection: " + rejected.code() + ": " + rejected.getMessage());
     }
 
     @Test
     void skuOwnerCannotBeSubmittedForAnOrdinaryItemWithoutASkuOwnerShape() {
-        UUID currentItemRef = UUID.randomUUID(),
-                referencedItemRef = UUID.randomUUID(),
-                referencedSkuRef = UUID.randomUUID();
-        jdbc.update(
-                "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
-                        + "ated"
-                        + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
-                currentItemRef,
-                SCOPE.toString(),
-                BRAND,
-                "SKU-LINK-CURRENT",
-                "current");
-        jdbc.update(
-                "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
-                        + "ated"
-                        + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'STANDARD_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
-                referencedItemRef,
-                SCOPE.toString(),
-                BRAND,
-                "SKU-LINK-REF",
-                "referenced");
+        String currentItemCode = "SKU-LINK-CURRENT-" + UUID.randomUUID();
+        JsonNode currentItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", currentItemCode)
+                        .put("name", "current")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        UUID currentItemRef = UUID.fromString(currentItem.path("resourceRef").asText());
+        JsonNode referencedItem = write(
+                "createOperationsCatalogItem",
+                MAPPER.createObjectNode()
+                        .put("code", "SKU-LINK-REF-" + UUID.randomUUID())
+                        .put("name", "referenced")
+                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+        UUID referencedItemRef = UUID.fromString(referencedItem.path("resourceRef").asText());
+        UUID referencedSkuRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO "
                         + "catalog.catalog_sku(product_sku_ref,item_ref,sku_code,sku_name,is_default,status,display_ord"
@@ -2498,9 +2503,10 @@ class CatalogCategoryOwnerIntegrationTest {
                         + "'link-sku')",
                 referencedSkuRef,
                 referencedItemRef);
-        ObjectNode save = MAPPER.createObjectNode().put("itemCode", "SKU-LINK-CURRENT");
-        ObjectNode sections =
-                save.putObject("sections").put("expectedCatalogVersion", 1).putObject("catalogDraft");
+        ObjectNode save = MAPPER.createObjectNode().put("itemCode", currentItemCode);
+        ObjectNode sections = save.putObject("sections")
+                .put("expectedCatalogVersion", currentItem.path("version").asLong());
+        sections.putObject("catalogDraft");
         ObjectNode rules = sections.putObject("inventoryRules");
         ObjectNode node = rules.putArray("nodes").addObject();
         node.putObject("owner")
@@ -2517,7 +2523,9 @@ class CatalogCategoryOwnerIntegrationTest {
                 .putNull("bom");
 
         CatalogOwnerApi.Problem rejected =
-                assertThrows(CatalogOwnerApi.Problem.class, () -> write("saveOperationsCatalogItem", save));
+                assertThrows(
+                        CatalogOwnerApi.Problem.class,
+                        () -> coordinatorSave(save, "shape-admission-ordinary-item"));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", rejected.code());
     }
 
@@ -2549,10 +2557,15 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("productSkuRef", UUID.randomUUID().toString())
                 .put("skuCode", "LOCAL-SKU")
                 .put("skuName", "Local SKU")
-                .put("skuBarcode", "")
+                .put("displayOrder", 0)
                 .put("isDefault", true)
                 .put("status", "ENABLED")
                 .put("version", 0);
+        sourceSku.putNull("standardSalePrice")
+                .putNull("salesUnitOverrideRef")
+                .putNull("baseMeasureUnitOverrideRef")
+                .putArray("identifiers");
+        sourceSku.putObject("preparationOverride").put("mode", "INHERIT_ITEM").putNull("profile");
         sourceSku.putArray("attributeValueRefs");
         UUID sourceMedia = UUID.randomUUID();
         sourceSku.putArray("mediaRefs").add(sourceMedia.toString());
@@ -2844,7 +2857,7 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 1,
                 recordingJdbc.recordedSql().stream()
-                        .filter(sql -> sql.contains("product_sku_ref = ANY(?::uuid[])")
+                        .filter(sql -> sql.contains("product_sku_ref=ANY(?::uuid[])")
                                 && sql.contains("catalog.catalog_composite_component"))
                         .count());
     }
@@ -3035,7 +3048,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 MAPPER.createObjectNode()
                         .put("code", itemCode)
                         .put("name", "empty composite")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+                        .put("shapeKey", "COMPOSITE"));
         ObjectNode request = MAPPER.createObjectNode().put("itemCode", itemCode);
         ObjectNode group = request.putObject("sections")
                 .put("expectedCatalogVersion", created.path("version").asLong())
@@ -3111,7 +3124,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 MAPPER.createObjectNode()
                         .put("code", parentCode)
                         .put("name", "composite parent")
-                        .put("shapeKey", "STANDARD_SALE_COUNTED"));
+                        .put("shapeKey", "COMPOSITE"));
         ObjectNode first = compositeSave(parentCode, parent.path("version").asLong(), "配菜", componentRefs);
         assertEquals(
                 2L, write("saveOperationsCatalogItem", first).path("version").asLong());
@@ -3630,10 +3643,10 @@ class CatalogCategoryOwnerIntegrationTest {
         UUID competingSkuRef = UUID.randomUUID();
         jdbc.update(
                 "INSERT INTO catalog.catalog_item "
-                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,attributes,sections,version,cre"
+                        + "(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,sections,version,cre"
                         + "ated"
                         + "_at_epoch_millis,updated_at_epoch_millis) VALUES "
-                        + "(?,?,?,?,?,'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                        + "(?,?,?,?,?,'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
                 itemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -3796,10 +3809,12 @@ class CatalogCategoryOwnerIntegrationTest {
         ObjectNode draft = sections.putObject("catalogDraft")
                 .put("name", currentItem.path("name").asText())
                 .put("shapeKey", currentItem.path("shapeKey").asText());
-        for (String field : List.of("attributes", "images", "productionTagRefs", "categoryRefs")) {
+        for (String field : List.of("images")) {
             JsonNode value = currentItem.path(field);
             draft.set(field, value.isMissingNode() ? MAPPER.createArrayNode() : value.deepCopy());
         }
+        if (currentItem.has("categoryRef")) draft.set("categoryRef", currentItem.path("categoryRef").deepCopy());
+        else draft.putNull("categoryRef");
         sections.putObject("inventoryRules").putArray("nodes");
         return request;
     }
@@ -3948,9 +3963,10 @@ class CatalogCategoryOwnerIntegrationTest {
             boolean componentEligible,
             String lowStockThreshold,
             String conversionFactor) {
-        String mode = "DIRECT";
+        String measureMode = "COUNTED";
+        String inventoryMode = "DIRECT";
         ObjectNode configuration = MAPPER.createObjectNode()
-                .put("mode", mode)
+                .put("mode", inventoryMode)
                 .put("allowNegative", allowNegative)
                 .put("lowStockThreshold", lowStockThreshold)
                 .put("conversionFactor", conversionFactor);
@@ -3978,8 +3994,8 @@ class CatalogCategoryOwnerIntegrationTest {
                 productSkuRef,
                 itemCode,
                 skuCode,
-                mode,
-                mode,
+                measureMode,
+                inventoryMode,
                 consumptionUnit.unitRef(),
                 consumptionUnit.code(),
                 consumptionUnit.name(),
@@ -4045,9 +4061,9 @@ class CatalogCategoryOwnerIntegrationTest {
     private static void insertQG10Item(UUID itemRef, String code, String name) {
         jdbc.update(
                 "INSERT INTO catalog.catalog_item(item_ref,data_node_ref,brand_ref,code,name,shape_key,status,"
-                        + "attributes,sections,version,created_at_epoch_millis,"
+                        + "sections,version,created_at_epoch_millis,"
                         + "updated_at_epoch_millis) VALUES(?,?,?,?,?,"
-                        + "'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,'{}'::jsonb,1,1,1)",
+                        + "'SKU_VARIANT_SALE_COUNTED','DRAFT','{}'::jsonb,1,1,1)",
                 itemRef,
                 SCOPE.toString(),
                 BRAND,
@@ -4280,10 +4296,15 @@ class CatalogCategoryOwnerIntegrationTest {
                 .put("productSkuRef", ref.toString())
                 .put("skuCode", code)
                 .put("skuName", code)
-                .put("skuBarcode", "")
+                .put("displayOrder", 0)
                 .put("isDefault", isDefault)
                 .put("status", "ENABLED")
                 .put("version", 0);
+        sku.putNull("standardSalePrice")
+                .putNull("salesUnitOverrideRef")
+                .putNull("baseMeasureUnitOverrideRef")
+                .putArray("identifiers");
+        sku.putObject("preparationOverride").put("mode", "INHERIT_ITEM").putNull("profile");
         sku.putArray("attributeValueRefs")
                 .addObject()
                 .put("attributeRef", attributeRef)
@@ -4309,13 +4330,32 @@ class CatalogCategoryOwnerIntegrationTest {
 
     private static JsonNode write(CatalogOwnerService target, String operation, ObjectNode request) {
         String requestId = operation + UUID.randomUUID();
+        ObjectNode effectiveRequest = request;
+        if ("saveOperationsCatalogItem".equals(operation)) effectiveRequest = withDefaultUnitFacts(request);
         JsonNode response = target.write(
-                context(operation, SCOPE, requestId), request, UUID.randomUUID().toString());
+                context(operation, SCOPE, requestId), effectiveRequest, UUID.randomUUID().toString());
         return response.path("result");
     }
 
     private static JsonNode writeFull(String operation, ObjectNode request, String requestId, String idempotencyKey) {
-        return service.write(context(operation, SCOPE, requestId), request, idempotencyKey);
+        ObjectNode effectiveRequest = "saveOperationsCatalogItem".equals(operation)
+                ? withDefaultUnitFacts(request)
+                : request;
+        return service.write(context(operation, SCOPE, requestId), effectiveRequest, idempotencyKey);
+    }
+
+    private static ObjectNode withDefaultUnitFacts(ObjectNode request) {
+        if (request.has("skuTransitions")) return request.deepCopy();
+        ObjectNode copy = request.deepCopy();
+        ObjectNode sections = copy.path("sections").isObject()
+                ? (ObjectNode) copy.path("sections")
+                : copy.putObject("sections");
+        ObjectNode draft = sections.path("catalogDraft").isObject()
+                ? (ObjectNode) sections.path("catalogDraft")
+                : sections.putObject("catalogDraft");
+        if (!draft.has("salesUnitRef")) draft.put("salesUnitRef", defaultTestUnit.unitRef().toString());
+        if (!draft.has("baseMeasureUnitRef")) draft.put("baseMeasureUnitRef", defaultTestUnit.unitRef().toString());
+        return copy;
     }
 
     private static com.catering.v2s.platform.command.WorkspaceExecutionContext<

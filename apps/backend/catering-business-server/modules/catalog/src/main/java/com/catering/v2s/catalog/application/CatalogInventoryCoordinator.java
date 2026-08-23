@@ -1101,8 +1101,19 @@ public class CatalogInventoryCoordinator {
             CatalogJsonDocumentSizePolicy.validateCatalogDraft(request);
             JsonNode draft = request.path("sections").path("catalogDraft");
             if (draft.isObject()) {
-                promoteMaterialRoleFromOpaqueProfile((ObjectNode) draft);
                 omitTypedNullFields(draft, "/sections/catalogDraft");
+                /*
+                 * The generated save DTO materializes nullable catalog-draft members even when the HTTP
+                 * request omitted them.  A SKU lifecycle-only envelope is not a catalog-draft mutation, so
+                 * those materialized nulls must not become synthetic catalog changes before the owner validates
+                 * the transition.  Non-null values remain visible and are still rejected by the owner as a mixed
+                 * transition/catalog save.
+                 */
+                JsonNode transitions = request.path("skuTransitions");
+                if (transitions.isArray() && !transitions.isEmpty() && draft instanceof ObjectNode draftObject) {
+                    if (draftObject.path("categoryRef").isNull()) draftObject.remove("categoryRef");
+                    if (draftObject.path("preparationProfile").isNull()) draftObject.remove("preparationProfile");
+                }
             }
             return request;
         } catch (CatalogOwnerApi.Problem failure) {
@@ -1113,25 +1124,13 @@ public class CatalogInventoryCoordinator {
     }
 
     /**
-     * The generated catalog draft has no typed materialRole field; the edge request therefore preserves it only inside
-     * the opaque item profile. Promote that one public catalog field before the owner command while leaving the rest of
-     * the profile opaque and owner-owned.
-     */
-    private static void promoteMaterialRoleFromOpaqueProfile(ObjectNode draft) {
-        JsonNode explicit = draft.get("materialRole");
-        if (explicit != null && !explicit.isNull()) return;
-        JsonNode opaque = draft.path("productionProfiles").path("item").path("materialRole");
-        if (opaque.isTextual() && !opaque.asText().isBlank()) draft.set("materialRole", opaque.deepCopy());
-    }
-
-    /**
      * Jackson 3 materializes omitted nullable record components before this request crosses into the catalog owner.
      * Catalog draft save is a merge: an omitted field preserves the owner fact, while an empty collection or scalar
      * remains an explicit replacement. Restore omission only for the typed draft tree; raw CanonicalJsonDocument values
      * remain opaque owner JSON and are not rewritten.
      */
     private static void omitTypedNullFields(JsonNode value, String path) {
-        if (value == null || value.isNull() || isOpaqueCanonicalDocument(path)) return;
+        if (value == null || value.isNull()) return;
         if (value.isObject()) {
             ObjectNode object = (ObjectNode) value;
             List<String> nullFields = new java.util.ArrayList<>();
@@ -1140,7 +1139,7 @@ public class CatalogInventoryCoordinator {
                 // `categoryRef: null` is an explicit business action: remove
                 // the product's category.  It must cross the coordinator as a
                 // typed null instead of being mistaken for an omitted field.
-                if (entry.getValue().isNull() && !"/sections/catalogDraft/categoryRef".equals(childPath))
+                if (entry.getValue().isNull() && !isExplicitNullableTypedField(childPath))
                     nullFields.add(entry.getKey());
                 else omitTypedNullFields(entry.getValue(), childPath);
             });
@@ -1150,10 +1149,11 @@ public class CatalogInventoryCoordinator {
         }
     }
 
-    private static boolean isOpaqueCanonicalDocument(String path) {
-        return "/sections/catalogDraft/productionProfiles/item".equals(path)
-                || "/sections/catalogDraft/productionProfiles/sku".equals(path)
-                || "/sections/catalogDraft/productionProfiles/optionValue".equals(path);
+    private static boolean isExplicitNullableTypedField(String path) {
+        return "/sections/catalogDraft/categoryRef".equals(path)
+                || path.endsWith("/preparationProfile")
+                || path.endsWith("/preparationOverride/profile")
+                || path.endsWith("/preparationEffect");
     }
 
     private static CatalogAssetCommandApi.AssetBinding optionalAssetBinding(

@@ -25,6 +25,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/backend-performance-budget.test.mjs',
   'scripts/test/backend-performance-operation-reconciliation.test.mjs',
   'scripts/test/catalog-inventory-definition-seed.test.mjs',
+  'scripts/test/catalog-identification-migration.test.mjs',
   'scripts/test/catalog-inventory-reference-path-matrix.test.mjs',
   'scripts/test/catalog-inventory-query-envelope.test.mjs',
   'scripts/test/catalog-inventory-rtk-tag-generation.test.mjs',

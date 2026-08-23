@@ -188,6 +188,38 @@
         }
       }
     },
+    "ProductionTagQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "dataNodeRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "selected data node"
+        },
+        "usage": {
+          "type": "string",
+          "enum": [
+            "MANAGEMENT",
+            "BINDABLE_CANDIDATE"
+          ],
+          "description": "tag list purpose"
+        },
+        "query": {
+          "type": "string",
+          "description": "server-side tag search"
+        },
+        "cursor": {
+          "type": "string",
+          "description": "cursor"
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "page size"
+        }
+      }
+    },
     "ProductionTagCreateRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -348,26 +380,6 @@
         "version": {
           "type": "integer",
           "description": "version"
-        }
-      }
-    },
-    "ProductionTagQuery": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [],
-      "properties": {
-        "dataNodeRef": {
-          "type": "string",
-          "format": "uuid",
-          "description": "selected data node"
-        },
-        "cursor": {
-          "type": "string",
-          "description": "cursor"
-        },
-        "pageSize": {
-          "type": "integer",
-          "description": "page size"
         }
       }
     },

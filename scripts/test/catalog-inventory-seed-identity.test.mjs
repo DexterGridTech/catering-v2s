@@ -37,7 +37,14 @@ test("seed labels close the complete SKU tuple and reusable catalog-definition f
   assert.equal(dictionary.SKU_ATTRIBUTE_VALUE["DRINK_SIZE-MEDIUM"], "中杯");
   assert.equal(dictionary.SKU_ATTRIBUTE_VALUE["SIZE-MEDIUM"], "中杯");
   const definitions = fixture.catalogDefinitionSeed;
-  assert.deepEqual(definitions.tagDefinitions.map((entry) => entry.name), ["推荐商品", "当季推荐"]);
+  assert.deepEqual(
+    definitions.tagDefinitions.map((entry) => entry.name),
+    ["推荐商品", "当季推荐", "招牌推荐", "午餐常用", "晚餐常用", "适合外卖"],
+  );
+  assert.deepEqual(
+    definitions.productionTagDefinitions.map((entry) => entry.name),
+    ["热厨制作", "冷菜制作", "饮品制作", "打包处理"],
+  );
   assert.deepEqual(
     definitions.unitDefinitions.map((entry) => entry.name),
     ["份", "个", "杯", "瓶", "箱", "包", "克", "千克", "毫升", "升", "小时", "套", "片", "停用个"],

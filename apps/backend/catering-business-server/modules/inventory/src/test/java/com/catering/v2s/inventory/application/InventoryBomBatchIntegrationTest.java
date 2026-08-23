@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -115,26 +116,23 @@ class InventoryBomBatchIntegrationTest {
             rows.addObject()
                     .put("targetRef", ref.toString())
                     .put("quantity", "1")
-                    .put("unit", "份")
-                    .put("lineSign", "POSITIVE");
+                    .put("lineSign", "POSITIVE")
+                    .set("consumptionUnitSnapshot", InventoryTestUnitFacts.consumptionUnitSnapshot(MAPPER));
         return request;
     }
 
     private static void insertTarget(JdbcTemplate jdbc, UUID targetRef, String itemCode) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                jdbc,
                 targetRef,
-                SCOPE.toString(),
+                SCOPE,
                 "BRAND",
                 UUID.randomUUID(),
                 null,
                 itemCode,
-                null);
+                null,
+                BigDecimal.ZERO,
+                1L);
     }
 
     private static OperationsOwnerScopeGrant grant() {

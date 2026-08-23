@@ -230,15 +230,6 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         ObjectNode target = mapper.createObjectNode().put("itemRef", itemRef.toString());
         ObjectNode inventoryDetail = mapper.createObjectNode();
         inventoryDetail.putObject("target").set("itemRef", target.path("itemRef"));
-        ObjectNode catalogPage = mapper.createObjectNode();
-        catalogPage
-                .putObject("data")
-                .putArray("items")
-                .addObject()
-                .put("itemRef", itemRef.toString())
-                .put("name", "咖啡豆")
-                .put("shapeKey", "MATERIAL")
-                .putArray("skus");
         when(inventory.readTarget(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
@@ -246,22 +237,23 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(inventoryDetail);
-        when(catalog.readItems(
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
-                        org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn(catalogPage);
+        when(catalog.readInventoryTargetDisplayFact(
+                        org.mockito.ArgumentMatchers.eq("scope"),
+                        org.mockito.ArgumentMatchers.eq("brand"),
+                        org.mockito.ArgumentMatchers.eq(itemRef),
+                        org.mockito.ArgumentMatchers.isNull()))
+                .thenReturn(new CatalogOwnerApi.InventoryTargetDisplayFact(itemRef, "咖啡豆", "MATERIAL", null));
 
         service.readInventoryTarget("scope", "brand", "target", "request", "STORE");
 
         verify(catalog)
+                .readInventoryTargetDisplayFact("scope", "brand", itemRef, null);
+        verify(catalog, never())
                 .readItems(
-                        org.mockito.ArgumentMatchers.eq("scope"),
-                        org.mockito.ArgumentMatchers.eq("brand"),
-                        org.mockito.ArgumentMatchers.argThat(
-                                value -> value.path("itemRefs").path(0).asText().equals(itemRef.toString())),
-                        org.mockito.ArgumentMatchers.eq("request"));
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(ObjectNode.class),
+                        org.mockito.ArgumentMatchers.anyString());
         verify(catalog, never())
                 .readInventoryDisplayFacts(
                         org.mockito.ArgumentMatchers.anyString(),
@@ -285,7 +277,12 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         UUID itemRef = UUID.randomUUID();
         UUID targetRef = UUID.randomUUID();
         ObjectNode detail = mapper.createObjectNode();
-        detail.putObject("data").putObject("item").put("itemRef", itemRef.toString());
+        detail.putObject("data")
+                .putObject("item")
+                .put("itemRef", itemRef.toString())
+                .put("code", "ITEM-1")
+                .put("name", "测试商品")
+                .put("shapeKey", "STANDARD_SALE_COUNTED");
         ObjectNode data = (ObjectNode) detail.path("data");
         data.putObject("actionAvailability")
                 .putObject("voidAvailability")
@@ -293,7 +290,19 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 .putArray("blockingReferences");
         ((ObjectNode) data.path("actionAvailability").path("voidAvailability")).putArray("dependentFacts");
         ObjectNode definition = mapper.createObjectNode();
-        definition.putObject("data").putArray("nodes").addObject().put("targetRef", targetRef.toString());
+        ObjectNode inventoryNode = definition.putObject("data")
+                .putObject("inventoryRules")
+                .putArray("nodes")
+                .addObject();
+        inventoryNode.putObject("owner")
+                .put("ownerType", "ITEM")
+                .put("itemRef", itemRef.toString())
+                .putNull("productSkuRef")
+                .putNull("optionValueRef");
+        inventoryNode.put("mode", "DIRECT")
+                .putObject("directConfiguration")
+                .put("targetRef", targetRef.toString());
+        inventoryNode.putNull("bom");
         when(catalog.readItem(
                         org.mockito.ArgumentMatchers.anyString(),
                         org.mockito.ArgumentMatchers.anyString(),
@@ -399,16 +408,14 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
                 assertThrows(CatalogOwnerApi.Problem.class, () -> canonicalSaveRequest(service, "[]"));
         assertEquals("VALIDATION_ERROR", nonObject.code());
 
+        ObjectNode oversizedRequest = mapper.createObjectNode();
+        oversizedRequest.putObject("sections")
+                .putObject("catalogDraft")
+                .putObject("preparationProfile")
+                .put("preparationNotes", "x".repeat(256 * 1024));
         CatalogOwnerApi.Problem oversizedDraft = assertThrows(
                 CatalogOwnerApi.Problem.class,
-                () -> canonicalSaveRequest(
-                        service,
-                        mapper.createObjectNode()
-                                .putObject("sections")
-                                .putObject("catalogDraft")
-                                .putObject("productionProfiles")
-                                .put("item", "x".repeat(256 * 1024))
-                                .toString()));
+                () -> canonicalSaveRequest(service, oversizedRequest.toString()));
         assertEquals("VALIDATION_ERROR", oversizedDraft.code());
 
         CatalogOwnerApi.Problem malformedRequest =

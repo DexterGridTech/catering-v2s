@@ -20,7 +20,9 @@
         "linkageRules",
         "typeEffects",
         "saveSections",
-        "detailSections"
+        "detailSections",
+        "identifierRules",
+        "preparationRules"
       ],
       "properties": {
         "manifestRevision": {
@@ -407,6 +409,36 @@
           "additionalProperties": true,
           "properties": {},
           "required": []
+        },
+        "identifierRules": {
+          "type": "object",
+          "description": "identifier admission and normalization rules",
+          "additionalProperties": true,
+          "properties": {
+            "factType": {
+              "type": "string",
+              "description": "typed fact discriminator"
+            },
+            "revision": {
+              "type": "string",
+              "description": "fact revision"
+            }
+          }
+        },
+        "preparationRules": {
+          "type": "object",
+          "description": "preparation target and merge rules",
+          "additionalProperties": true,
+          "properties": {
+            "factType": {
+              "type": "string",
+              "description": "typed fact discriminator"
+            },
+            "revision": {
+              "type": "string",
+              "description": "fact revision"
+            }
+          }
         }
       }
     },
@@ -428,6 +460,15 @@
             "CATALOG_BASE_MEASURE_UNIT_CHANGE_BLOCKED",
             "CATALOG_COPY_DEFINITION_CONFLICT",
             "CATALOG_DEFINITION_LIMIT_EXCEEDED",
+            "CATALOG_IDENTIFIER_DUPLICATE",
+            "CATALOG_IDENTIFIER_OWNER_MISMATCH",
+            "CATALOG_IDENTIFIER_TYPE_NOT_ALLOWED",
+            "CATALOG_IDENTIFIER_VALUE_INVALID",
+            "CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED",
+            "CATALOG_PREPARATION_DURATION_INVALID",
+            "CATALOG_PREPARATION_NOT_ALLOWED",
+            "CATALOG_PREPARATION_TARGET_MISMATCH",
+            "CATALOG_PREPARATION_UNKNOWN_FIELD",
             "CATALOG_UNIT_IN_USE",
             "CATALOG_UNIT_LIMIT_EXCEEDED",
             "CATEGORY_DEPTH_EXCEEDED",
@@ -448,6 +489,7 @@
             "NEGATIVE_STOCK_NOT_ALLOWED",
             "NOT_FOUND",
             "OWNER_REFERENCE_LEAK",
+            "PRODUCTION_TAG_NOT_BINDABLE",
             "REFERENCE_BLOCKS_DELETE",
             "REFERENCE_BLOCKS_VOID",
             "REFERENCE_MAPPING_UNRESOLVED",

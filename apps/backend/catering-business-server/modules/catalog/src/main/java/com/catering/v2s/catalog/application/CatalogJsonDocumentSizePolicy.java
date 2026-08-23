@@ -25,11 +25,32 @@ final class CatalogJsonDocumentSizePolicy {
     static void validateCatalogDraft(JsonNode request) {
         JsonNode draft = request == null ? null : request.path("sections").path("catalogDraft");
         if (draft == null || !draft.isObject()) return;
-        JsonNode profiles = draft.get("productionProfiles");
-        if (profiles == null || !profiles.isObject()) return;
-        requireNodeWithin(profiles, "item", "sections.catalogDraft.productionProfiles.item");
-        requireNodeWithin(profiles, "sku", "sections.catalogDraft.productionProfiles.sku");
-        requireNodeWithin(profiles, "optionValue", "sections.catalogDraft.productionProfiles.optionValue");
+        requireNodeWithin(draft, "preparationProfile", "sections.catalogDraft.preparationProfile");
+        JsonNode skus = draft.get("skus");
+        if (skus != null && skus.isArray()) {
+            for (int index = 0; index < skus.size(); index++) {
+                JsonNode sku = skus.get(index);
+                if (sku != null && sku.isObject())
+                    requireNodeWithin(
+                            sku,
+                            "preparationOverride",
+                            "sections.catalogDraft.skus[" + index + "].preparationOverride");
+            }
+        }
+        JsonNode options = draft.get("orderOptionConfigs");
+        if (options != null && options.isArray()) {
+            for (int configIndex = 0; configIndex < options.size(); configIndex++) {
+                JsonNode config = options.get(configIndex);
+                JsonNode values = config == null ? null : config.path("values");
+                if (values != null && values.isArray())
+                    for (int valueIndex = 0; valueIndex < values.size(); valueIndex++)
+                        requireNodeWithin(
+                                values.get(valueIndex),
+                                "preparationEffect",
+                                "sections.catalogDraft.orderOptionConfigs[" + configIndex + "].values["
+                                        + valueIndex + "].preparationEffect");
+            }
+        }
     }
 
     private static void requireNodeWithin(JsonNode parent, String field, String path) {

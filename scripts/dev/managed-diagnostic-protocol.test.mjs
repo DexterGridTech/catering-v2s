@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
+import {buildManagedDiagnosticHeaders, MAX_REMOTE_DIAGNOSTIC_BUFFER_BYTES, measurementMetadataForReport, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
 import {normalizeEdgePath} from '../test/seed-report.mjs';
 
 const syntheticRoute = normalizeEdgePath('/things');
@@ -52,4 +52,8 @@ test('remote diagnostic transport is explicit and bound to the managed run root'
   });
   assert.throws(() => validateManagedDiagnosticTransport({...remoteManifest, remoteDiagnostic: {...remoteManifest.remoteDiagnostic, remoteRoot: '/tmp/unknown'}}), /SEED_DIAGNOSTIC_REMOTE_TRANSPORT_INVALID/);
   assert.throws(() => validateManagedDiagnosticTransport({...remoteManifest, remoteHostTrust: {host: 'bad host'}}), /SEED_DIAGNOSTIC_REMOTE_HOST_INVALID/);
+});
+
+test('remote diagnostic pull has an explicit bounded buffer above the seed event stream size', () => {
+  assert.equal(MAX_REMOTE_DIAGNOSTIC_BUFFER_BYTES, 64 * 1024 * 1024);
 });

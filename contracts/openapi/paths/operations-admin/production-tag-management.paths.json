@@ -75,6 +75,28 @@
             }
           },
           {
+            "name": "usage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MANAGEMENT",
+                "BINDABLE_CANDIDATE"
+              ],
+              "description": "tag list purpose"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "server-side tag search"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,

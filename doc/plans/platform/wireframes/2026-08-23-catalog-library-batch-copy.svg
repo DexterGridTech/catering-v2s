@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <style>
+    .bg{fill:#eef2f7}.surface{fill:#fff}.panel{fill:#f8fafc;stroke:#cbd5e1}.line{stroke:#dbe3ee}.primary{fill:#1d4ed8}.muted{fill:#f1f5f9}.success{fill:#ecfdf5;stroke:#a7f3d0}.failure{fill:#fff1f2;stroke:#fecdd3}.h1{font:700 23px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#162033}.h2{font:700 17px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#24324a}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#334155}.s{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#64748b}.white{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#fff}.note{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#7c3aed}.btn{fill:#fff;stroke:#94a3b8}.ok{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#047857}.bad{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#be123c}
+  </style>
+  <rect class="bg" width="1600" height="900"/>
+  <text class="h1" x="42" y="48">批量任务：同一弹窗内完成知情、进度与逐项结果</text>
+  <rect class="surface" x="34" y="70" width="780" height="796" rx="10"/>
+  <text class="h2" x="62" y="112">批量改分类</text><text class="s" x="62" y="137">已选择 18 个商品；商品规格不单独计数</text>
+  <rect class="panel" x="58" y="160" width="226" height="192" rx="7"/>
+  <text class="note" x="76" y="188">提交前</text><text class="t" x="76" y="220">目标分类</text><rect class="surface" x="76" y="232" width="188" height="38" rx="5"/><text class="s" x="86" y="256">饮品 / 咖啡饮品　⌄</text><text class="t" x="76" y="296">影响 18 个商品</text><text class="s" x="76" y="322">不会修改规格本身</text>
+  <rect class="panel" x="300" y="160" width="226" height="192" rx="7"/>
+  <text class="note" x="318" y="188">提交中</text><text class="t" x="318" y="222">正在处理 11 / 18</text><rect class="muted" x="318" y="242" width="190" height="12" rx="6"/><rect class="primary" x="318" y="242" width="116" height="12" rx="6"/><text class="s" x="318" y="290">已完成的结果持续保留</text><text class="s" x="318" y="316">关闭入口暂不可用</text>
+  <rect class="panel" x="542" y="160" width="244" height="192" rx="7"/>
+  <text class="note" x="560" y="188">完成后</text><text class="ok" x="560" y="220">成功 16 项</text><text class="bad" x="560" y="246">失败 2 项</text><text class="t" x="560" y="280">可按结果筛选</text><text class="s" x="560" y="310">刷新失败另行提示，</text><text class="s" x="560" y="332">不篡改权威结果</text>
+  <text class="h2" x="62" y="400">逐项结果</text>
+  <rect class="muted" x="58" y="418" width="728" height="38"/><text class="s" x="76" y="442">商品</text><text class="s" x="370" y="442">结果</text><text class="s" x="502" y="442">原因</text>
+  <text class="t" x="76" y="486">拿铁咖啡</text><text class="ok" x="370" y="486">成功</text><text class="s" x="502" y="486">—</text><line class="line" x1="58" y1="504" x2="786" y2="504"/>
+  <text class="t" x="76" y="538">烤鸡翅</text><text class="bad" x="370" y="538">失败</text><text class="t" x="502" y="538">商品状态已变化，请重新读取</text><line class="line" x1="58" y1="556" x2="786" y2="556"/>
+  <text class="t" x="76" y="590">培根</text><text class="bad" x="370" y="590">失败</text><text class="t" x="502" y="590">当前商品不可移动到该分类</text>
+  <rect class="failure" x="58" y="630" width="728" height="62" rx="6"/><text class="bad" x="76" y="658">结果已保存，列表暂未更新</text><text class="t" x="76" y="680">可在这里重新加载，不会重复执行批量操作。</text>
+  <rect class="btn" x="682" y="806" width="104" height="38" rx="6"/><text class="t" x="718" y="830">关闭</text>
+  <text class="h1" x="850" y="48">复制向导：每一步只回答一个业务问题</text>
+  <rect class="surface" x="836" y="70" width="730" height="796" rx="10"/>
+  <text class="h2" x="866" y="112">从已有商品复制配置</text><text class="s" x="866" y="138">步骤 2 / 4　选择要复制的内容</text>
+  <rect class="muted" x="866" y="162" width="670" height="46" rx="6"/><text class="t" x="888" y="190">来源商品：中杯拿铁　→　目标商品：新品拿铁</text>
+  <text class="h2" x="866" y="252">选择配置范围</text>
+  <rect class="panel" x="866" y="274" width="316" height="72" rx="7"/><text class="t" x="886" y="304">✓ 商品属性</text><text class="s" x="886" y="328">保质期、辣度、过敏原</text>
+  <rect class="panel" x="1200" y="274" width="316" height="72" rx="7"/><text class="t" x="1220" y="304">✓ 制作信息</text><text class="s" x="1220" y="328">显示名称、标签、预计用时</text>
+  <rect class="panel" x="866" y="360" width="316" height="72" rx="7"/><text class="t" x="886" y="390">✓ 库存与 BOM</text><text class="s" x="886" y="414">复制前会检查目标是否允许</text>
+  <rect class="panel" x="1200" y="360" width="316" height="72" rx="7"/><text class="t" x="1220" y="390">□ 点单选项</text><text class="s" x="1220" y="414">当前不复制</text>
+  <text class="h2" x="866" y="486">复制前检查</text>
+  <rect class="success" x="866" y="506" width="650" height="62" rx="7"/><text class="ok" x="886" y="536">3 类配置可以复制</text><text class="t" x="886" y="558">保存前还会按目标商品的最新状态重新检查。</text>
+  <rect class="failure" x="866" y="582" width="650" height="76" rx="7"/><text class="bad" x="886" y="612">1 项需要处理</text><text class="t" x="886" y="636">目标商品没有“杯型”规格；对应规格配置不会复制。</text>
+  <text class="s" x="866" y="700">上一步的选择保留；可返回修改，不会提前写入目标商品。</text>
+  <line class="line" x1="836" y1="778" x2="1566" y2="778"/>
+  <rect class="btn" x="1286" y="800" width="92" height="38" rx="6"/><text class="t" x="1315" y="824">上一步</text><rect class="primary" x="1390" y="800" width="126" height="38" rx="6"/><text class="white" x="1418" y="824">继续确认</text>
+</svg>

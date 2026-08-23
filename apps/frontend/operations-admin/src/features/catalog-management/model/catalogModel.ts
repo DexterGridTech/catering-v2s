@@ -189,23 +189,19 @@ export type CatalogDetail = {
     baseMeasureUnit: CatalogUnitAssignment | null;
     attributeAssignments: CatalogAttributeAssignment[];
     orderOptionConfigs: CatalogOrderOptionConfig[];
-    identifiers: Array<{kind: string; code: string; value: string}>;
+    identifiers: CatalogIdentifier[];
     skuVariantDimensions: CatalogSkuVariantDimension[];
     skus: CatalogSkuRow[];
     skuSummary: {enabledCount: number; nonArchivedCount: number; totalCount: number; dimensions: string[]};
     compositeGroups: CatalogCompositeGroup[];
-    productionProfiles: {
-      item: Record<string, JsonValue>;
-      sku: Record<string, JsonValue>;
-      optionValue: Record<string, JsonValue>;
-    };
+    preparationProfile: CatalogPreparationProfile | null;
     lifecycle: {status: string; version: number; source: string};
     externalIdentity: CatalogExternalIdentity;
   };
   tabs: Array<{tabKey: string; visible: boolean; disabled: boolean; reason?: string}>;
   references: Array<{referenceKind: string; referenceRef: Uuid; code: string; direction: string}>;
   inventoryRules: CatalogInventoryRules;
-  productionTags: Array<{code: string; tagRef: Uuid; name: string; owner: string}>;
+  productionTags: Array<{code: string; tagRef: Uuid; name: string; status: string; owner: string}>;
   compositeGroups: CatalogCompositeGroup[];
   actionAvailability: {
     canEdit: boolean;
@@ -237,6 +233,7 @@ export type CatalogOrderOptionConfig = {
   definitionRef: Uuid;
   name: string;
   selectionMode: 'SINGLE' | 'MULTIPLE';
+  displayOrder: number;
   required: boolean;
   minSelectionCount: number | null;
   maxSelectionCount: number | null;
@@ -247,7 +244,32 @@ export type CatalogOrderOptionConfig = {
     defaultValue: boolean;
     extraPrice: number | null;
     bomVersion: number | null;
+    preparationEffect: CatalogPreparationEffect | null;
   }>;
+};
+export type CatalogIdentifierType = 'BARCODE' | 'PLU' | 'MNEMONIC';
+export type CatalogIdentifier = {
+  identifierRef: Uuid;
+  ownerType: 'CATALOG_ITEM' | 'SKU';
+  ownerRef: Uuid;
+  identifierType: CatalogIdentifierType;
+  identifierValue: string;
+  normalizedValue: string;
+  displayOrder: number;
+};
+export type CatalogPreparationProfile = {
+  productionTagRefs: Uuid[];
+  productionDisplayName: string | null;
+  estimatedPreparationSeconds: number | null;
+  preparationNotes: string | null;
+};
+export type CatalogPreparationEffect = {
+  definitionValueRef: Uuid;
+  optionGroupDisplayOrder: number;
+  optionValueDisplayOrder: number;
+  addProductionTagRefs: Uuid[];
+  instruction: string | null;
+  preparationSecondsDelta: number | null;
 };
 export type CatalogCompositeComponent = {
   itemCode: string;
@@ -352,7 +374,10 @@ export type CatalogSkuRow = {
   displayOrder: number;
   variantCombinationDigest: string;
   attributeValueRefs: CatalogSkuAttributeValueRef[];
-  skuBarcode: string;
+  identifiers: CatalogIdentifier[];
+  preparationOverride: {mode: 'INHERIT_ITEM' | 'OVERRIDE'; profile: CatalogPreparationProfile | null};
+  effectivePreparation: CatalogPreparationProfile | null;
+  preparationSource: 'ITEM_DEFAULT' | 'SKU_OVERRIDE';
   standardSalePrice: number | null;
   isDefault: boolean;
   status: string;
@@ -434,6 +459,7 @@ export function buildCatalogSkuVoidRequest(
         })),
         orderOptionConfigs: item.orderOptionConfigs.map(config => ({
           definitionRef: config.definitionRef,
+          displayOrder: config.displayOrder,
           required: config.required,
           minSelectionCount: config.minSelectionCount,
           maxSelectionCount: config.maxSelectionCount,
@@ -442,10 +468,22 @@ export function buildCatalogSkuVoidRequest(
             defaultValue: value.defaultValue,
             extraPrice: value.extraPrice,
             expectedBomVersion: value.bomVersion ?? 0,
+            preparationEffect: value.preparationEffect
+              ? {
+                  addProductionTagRefs: value.preparationEffect.addProductionTagRefs,
+                  instruction: value.preparationEffect.instruction,
+                  preparationSecondsDelta: value.preparationEffect.preparationSecondsDelta,
+                }
+              : null,
           })),
         })),
         images: item.images,
-        productionTagRefs: item.productionTagRefs,
+        identifiers: item.identifiers.map(identifier => ({
+          identifierType: identifier.identifierType,
+          identifierValue: identifier.identifierValue,
+        })),
+        preparationProfile: item.preparationProfile,
+        tagRefs: item.tagRefs,
       },
       expectedCatalogVersion: item.version,
       inventoryRules: {nodes: inventoryRules.nodes.map(catalogInventoryRuleToDraft)},
@@ -735,7 +773,10 @@ export function buildSkuMatrix(
       displayOrder: result.length,
       variantCombinationDigest: '',
       attributeValueRefs,
-      skuBarcode: '',
+      identifiers: [],
+      preparationOverride: {mode: 'INHERIT_ITEM', profile: null},
+      effectivePreparation: null,
+      preparationSource: 'ITEM_DEFAULT',
       standardSalePrice: null,
       isDefault: false,
       status: 'ENABLED',
@@ -763,9 +804,24 @@ export function buildSkuMatrix(
 /** Response-only fields must never cross the save request boundary. */
 export function serializeSkuRowsForSave(rows: CatalogSkuRow[]): CatalogSkuSaveRow[] {
   return rows.map(row => {
-    const {variantCombinationDigest: ignoredDigest, version: ignoredVersion, productSkuRef, ...requestRow} = row;
+    const {
+      variantCombinationDigest: ignoredDigest,
+      version: ignoredVersion,
+      effectivePreparation: ignoredEffectivePreparation,
+      preparationSource: ignoredPreparationSource,
+      salesUnit: ignoredSalesUnit,
+      baseMeasureUnit: ignoredBaseMeasureUnit,
+      voidAvailability: ignoredVoidAvailability,
+      productSkuRef,
+      ...requestRow
+    } = row;
     void ignoredDigest;
     void ignoredVersion;
+    void ignoredEffectivePreparation;
+    void ignoredPreparationSource;
+    void ignoredSalesUnit;
+    void ignoredBaseMeasureUnit;
+    void ignoredVoidAvailability;
     return productSkuRef.trim() ? {...requestRow, productSkuRef} : requestRow;
   });
 }
@@ -1155,6 +1211,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
         definitionRef: readUuid(row.definitionRef),
         name: text(row.name),
         selectionMode: text(row.selectionMode) as CatalogOrderOptionConfig['selectionMode'],
+        displayOrder: integer(row.displayOrder),
         required: truth(row.required),
         minSelectionCount: optionalNumber(row.minSelectionCount) ?? null,
         maxSelectionCount: optionalNumber(row.maxSelectionCount) ?? null,
@@ -1165,22 +1222,15 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
           defaultValue: truth(value.defaultValue),
           extraPrice: optionalNumber(value.extraPrice) ?? null,
           bomVersion: optionalNumber(value.bomVersion) ?? null,
+          preparationEffect: decodePreparationEffect(value.preparationEffect),
         })),
       })),
-      identifiers: recordArray(item.identifiers).map(row => ({
-        kind: text(row.kind),
-        code: text(row.code),
-        value: text(row.value),
-      })),
+      identifiers: decodeIdentifiers(item.identifiers),
       skuVariantDimensions: itemSkuDimensions,
       skus: itemSkus,
       skuSummary,
       compositeGroups: itemCompositeGroups.length ? itemCompositeGroups : rootCompositeGroups,
-      productionProfiles: {
-        item: asRecord(asRecord(item.productionProfiles)?.item) ?? {},
-        sku: asRecord(asRecord(item.productionProfiles)?.sku) ?? {},
-        optionValue: asRecord(asRecord(item.productionProfiles)?.optionValue) ?? {},
-      },
+      preparationProfile: decodePreparationProfile(item.preparationProfile),
       lifecycle: {
         status: text(lifecycle.status) || text(item.status),
         version: integer(lifecycle.version) || integer(item.version),
@@ -1205,6 +1255,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       code: text(row.code),
       tagRef: readUuid(row.tagRef),
       name: text(row.name),
+      status: text(row.status),
       owner: text(row.owner),
     })),
     compositeGroups: rootCompositeGroups.length ? rootCompositeGroups : itemCompositeGroups,
@@ -1459,6 +1510,49 @@ function decodeSkuVariantDimensions(value: JsonValue | undefined): CatalogSkuVar
     })),
   }));
 }
+function decodeIdentifiers(value: JsonValue | undefined): CatalogIdentifier[] {
+  return recordArray(value).map(row => ({
+    identifierRef: readUuid(row.identifierRef),
+    ownerType: text(row.ownerType) as CatalogIdentifier['ownerType'],
+    ownerRef: readUuid(row.ownerRef),
+    identifierType: text(row.identifierType) as CatalogIdentifierType,
+    identifierValue: text(row.identifierValue),
+    normalizedValue: text(row.normalizedValue),
+    displayOrder: integer(row.displayOrder),
+  }));
+}
+function decodePreparationProfile(value: JsonValue | undefined): CatalogPreparationProfile | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  return {
+    productionTagRefs: readUuidArray(row.productionTagRefs),
+    productionDisplayName: row.productionDisplayName === null ? null : optionalText(row.productionDisplayName) ?? null,
+    estimatedPreparationSeconds:
+      row.estimatedPreparationSeconds === null ? null : optionalInteger(row.estimatedPreparationSeconds) ?? null,
+    preparationNotes: row.preparationNotes === null ? null : optionalText(row.preparationNotes) ?? null,
+  };
+}
+function decodePreparationOverride(value: JsonValue | undefined): CatalogSkuRow['preparationOverride'] {
+  const row = asRecord(value) ?? {};
+  const mode = text(row.mode) as CatalogSkuRow['preparationOverride']['mode'];
+  return {
+    mode: mode === 'OVERRIDE' ? 'OVERRIDE' : 'INHERIT_ITEM',
+    profile: decodePreparationProfile(row.profile),
+  };
+}
+function decodePreparationEffect(value: JsonValue | undefined): CatalogPreparationEffect | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  return {
+    definitionValueRef: readUuid(row.definitionValueRef),
+    optionGroupDisplayOrder: integer(row.optionGroupDisplayOrder),
+    optionValueDisplayOrder: integer(row.optionValueDisplayOrder),
+    addProductionTagRefs: readUuidArray(row.addProductionTagRefs),
+    instruction: row.instruction === null ? null : optionalText(row.instruction) ?? null,
+    preparationSecondsDelta:
+      row.preparationSecondsDelta === null ? null : optionalInteger(row.preparationSecondsDelta) ?? null,
+  };
+}
 function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
   return recordArray(value).map(row => ({
     productSkuRef: readUuid(row.productSkuRef),
@@ -1476,7 +1570,10 @@ function decodeSkuRows(value: JsonValue | undefined): CatalogSkuRow[] {
       displayOrder: integer(entry.displayOrder),
       status: text(entry.status),
     })),
-    skuBarcode: text(row.skuBarcode),
+    identifiers: decodeIdentifiers(row.identifiers),
+    preparationOverride: decodePreparationOverride(row.preparationOverride),
+    effectivePreparation: decodePreparationProfile(row.effectivePreparation),
+    preparationSource: text(row.preparationSource) as CatalogSkuRow['preparationSource'],
     standardSalePrice: typeof row.standardSalePrice === 'number' ? row.standardSalePrice : null,
     isDefault: truth(row.isDefault),
     status: text(row.status),

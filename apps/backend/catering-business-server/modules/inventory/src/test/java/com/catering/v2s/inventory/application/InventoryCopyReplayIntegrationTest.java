@@ -474,7 +474,7 @@ class InventoryCopyReplayIntegrationTest {
         mergePreflightReferenceMappings(request, preflight);
         DatabaseOperationTracker.Snapshot snapshot;
         try (var measurement = DatabaseOperationTracker.open(new DatabaseOperationTracker.Options(
-                "inventory-copy-metrics-key".getBytes(java.nio.charset.StandardCharsets.UTF_8), false, true))) {
+                "inventory-copy-metrics-key".getBytes(java.nio.charset.StandardCharsets.UTF_8), true, true))) {
             JsonNode readback = service.copy(
                     SOURCE_SCOPE.toString(),
                     TARGET_SCOPE.toString(),
@@ -544,6 +544,7 @@ class InventoryCopyReplayIntegrationTest {
                 .put("objectType", "SKU_ATTRIBUTE")
                 .put("sourceRef", UUID.randomUUID().toString())
                 .put("targetRef", UUID.randomUUID().toString());
+        addCatalogUnitMapping(mappings);
         return request;
     }
 
@@ -584,6 +585,7 @@ class InventoryCopyReplayIntegrationTest {
                 .put("sourceRef", sourceSku.toString())
                 .put("targetRef", targetSku.toString())
                 .put("targetSkuCode", targetSkuCode);
+        addCatalogUnitMapping(mappings);
         return request;
     }
 
@@ -607,7 +609,19 @@ class InventoryCopyReplayIntegrationTest {
                 .put("sourceRef", sourceOption.toString())
                 .put("targetRef", targetOption.toString())
                 .put("targetOptionValueCode", "LOCAL-TARGET-OPTION");
+        addCatalogUnitMapping(mappings);
         return request;
+    }
+
+    private static void addCatalogUnitMapping(ArrayNode mappings) {
+        mappings.addObject()
+                .put("objectType", "CATALOG_UNIT")
+                .put("sourceRef", InventoryTestUnitFacts.CONSUMPTION_UNIT_REF.toString())
+                .put("targetRef", InventoryTestUnitFacts.CONSUMPTION_UNIT_REF.toString())
+                .put("targetCode", InventoryTestUnitFacts.CONSUMPTION_UNIT_CODE)
+                .put("targetUnitName", InventoryTestUnitFacts.CONSUMPTION_UNIT_NAME)
+                .put("targetUnitDimension", InventoryTestUnitFacts.CONSUMPTION_UNIT_DIMENSION)
+                .put("targetUnitPrecision", InventoryTestUnitFacts.CONSUMPTION_UNIT_PRECISION);
     }
 
     private static void insertTarget(UUID ref, UUID scope, UUID item, UUID sku, String itemCode, String skuCode) {
@@ -616,20 +630,17 @@ class InventoryCopyReplayIntegrationTest {
 
     private static void insertTarget(
             UUID ref, UUID scope, UUID item, UUID sku, String itemCode, String skuCode, String brand) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,configuration,balance,version,created_at_epoch_millis,updated_at_epoch_mi"
-                        + "llis"
-                        + ") VALUES(?,?,?,?,?,?,?,'UNIT','{}'::jsonb,0,1,1,1)",
+        InventoryTestUnitFacts.insertDirectTarget(
+                jdbc,
                 ref,
-                scope.toString(),
+                scope,
                 brand,
                 item,
                 sku,
                 itemCode,
-                skuCode);
+                skuCode,
+                java.math.BigDecimal.ZERO,
+                1L);
     }
 
     private static void insertBom(
@@ -647,7 +658,11 @@ class InventoryCopyReplayIntegrationTest {
                 sku,
                 itemCode,
                 skuCode,
-                "[{\"targetRef\":\"" + componentTargetRef + "\"}]");
+                "[{\"targetRef\":\""
+                        + componentTargetRef
+                        + "\",\"quantity\":\"1\",\"lineSign\":\"POSITIVE\",\"consumptionUnitSnapshot\":"
+                        + InventoryTestUnitFacts.consumptionUnitSnapshotJson()
+                        + "}]");
     }
 
     private static void insertBomOwner(
